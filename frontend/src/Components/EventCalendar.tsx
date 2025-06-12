@@ -8,12 +8,14 @@ const localizer = momentLocalizer(moment);
 interface EventCalendarProps {
     events: FacilityProgramClassEvent[] | ShortCalendarEvent[];
     view?: View;
+    classId?: string;
     handleDateClick?: (event: FacilityProgramClassEvent) => void;
 }
 
 export default function EventCalendar({
     events,
     view = 'month',
+    classId,
     handleDateClick
 }: EventCalendarProps) {
     const eventPropGetter = (event: FacilityProgramClassEvent) => {
@@ -22,6 +24,12 @@ export default function EventCalendar({
                 className: 'rbc-event-cancelled'
             };
         }
+        if (classId && event.class_id.toString() != classId) {
+            return {
+                className: 'rbc-event-lighter'
+            };
+        }
+
         return {};
     };
     const scrollTime = new Date();

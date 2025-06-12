@@ -432,7 +432,7 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 	return models.NewCalendar(days), nil
 }
 
-func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
+func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange, classID int) ([]models.FacilityProgramClassEvent, error) {
 	events := make([]models.FacilityProgramClassEvent, 0, 10)
 	// TO DO: finish adding overrides as is_cancelled (so it renders in the frontend)
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
@@ -445,8 +445,11 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		Joins("JOIN programs p ON p.id = c.program_id").
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
-		Where("c.facility_id = ?", args.FacilityID).
-		Group("pcev.id, c.instructor_name, c.name, p.name")
+		Where("c.facility_id = ?", args.FacilityID)
+	if classID > 0 {
+		tx.Where("c.id = ?", classID)
+	}
+	tx.Group("pcev.id, c.instructor_name, c.name, p.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}

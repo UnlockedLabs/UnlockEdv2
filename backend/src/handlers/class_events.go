@@ -28,8 +28,16 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
+	id := r.URL.Query().Get("class_id")
+	var classID int
+	if id != "" {
+		classID, err = strconv.Atoi(id)
+		if err != nil {
+			return newInvalidIdServiceError(err, "class_id")
+		}
+	}
 	args := srv.getQueryContext(r)
-	events, err := srv.Db.GetFacilityCalendar(&args, dtRng)
+	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
