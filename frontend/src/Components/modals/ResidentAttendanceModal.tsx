@@ -27,8 +27,6 @@ export const ResidentAttendanceModal = forwardRef(function (
         `/api/program-classes/${selectedClass?.class_id}/events?&page=${page}&per_page=10&order_by=created_at&order=desc&user_id=${residentId}`
     );
     const meta = attendance?.meta;
-    console.log(selectedClass);
-    console.log(attendance?.data);
     function AttendanceTable() {
         return (
             <>

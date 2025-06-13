@@ -729,6 +729,9 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 				return nil, newGetRecordsDBError(err, "program_class_enrollments")
 			}
 			startTime = rRule.GetDTStart()
+			if enrollment.CreatedAt.After(startTime) {
+				startTime = enrollment.CreatedAt
+			}
 			untilTime = time.Now().AddDate(0, 0, 1).Truncate(24 * time.Hour)
 			if enrollment.EnrollmentStatus != "Enrolled" {
 				untilTime = enrollment.UpdatedAt.AddDate(0, 0, 1).Truncate(24 * time.Hour)
