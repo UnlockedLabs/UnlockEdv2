@@ -78,7 +78,7 @@ export default function ProgramOverviewDashboard() {
 
     useEffect(() => {
         if (!program) navigate('/404');
-        else if (classesError) navigate('/error');
+        else if (classesError instanceof Error) navigate('/error');
     }, [program, classesError]);
 
     const classes = classesResp?.data ?? [];
@@ -213,7 +213,7 @@ export default function ProgramOverviewDashboard() {
     }
 
     const status = getProgramStatus(program, userFacilityId);
-    // const canAddClass = status === 'active';
+    const canAddClass = status === 'active';
 
     function getTooltip(): string | undefined {
         const tooltipMap: Record<ProgramStatus, string | undefined> = {
@@ -362,7 +362,7 @@ export default function ProgramOverviewDashboard() {
                     ) : (
                         <AddButton
                             dataTip={getTooltip()}
-                            // disabled={!canAddClass}
+                            disabled={!canAddClass}
                             label="Add Class"
                             onClick={() =>
                                 navigate(`/programs/${program_id}/classes/new`)
