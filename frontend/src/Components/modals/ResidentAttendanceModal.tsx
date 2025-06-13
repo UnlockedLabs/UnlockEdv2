@@ -49,51 +49,37 @@ export const ResidentAttendanceModal = forwardRef(function (
                             <tbody>
                                 {attendance && attendance?.data.length > 0 ? (
                                     attendance?.data.map((event) => {
-                                        if (event.attendance_records != null) {
-                                            const attendanceRecord =
-                                                event.attendance_records[0];
-                                            return (
-                                                <tr
-                                                    key={attendanceRecord.id}
-                                                    className="grid-cols-3 text-center"
-                                                >
-                                                    <td className="justify-self-start">
-                                                        {textMonthLocalDate(
-                                                            event.date
-                                                        )}
-                                                    </td>
-                                                    <td>
-                                                        {
-                                                            attendanceLabelMap[
-                                                                attendanceRecord
-                                                                    .attendance_status
-                                                            ]
-                                                        }
-                                                    </td>
-                                                    <td className="justify-self-end">
-                                                        {attendanceRecord.note}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        } else {
-                                            return (
-                                                <tr
-                                                    key={event.date}
-                                                    className="grid-cols-3 text-center"
-                                                >
-                                                    <td className="justify-self-start">
-                                                        {textMonthLocalDate(
-                                                            event.date
-                                                        )}
-                                                    </td>
-                                                    <td>
-                                                        No attendance data
-                                                        available yet.
-                                                    </td>
-                                                    <td></td>
-                                                </tr>
-                                            );
-                                        }
+                                        const attendanceRecord =
+                                            event.attendance_records?.[0];
+                                        return (
+                                            <tr
+                                                key={
+                                                    attendanceRecord
+                                                        ? attendanceRecord.id
+                                                        : event.date
+                                                }
+                                                className="grid-cols-3 text-center"
+                                            >
+                                                <td className="justify-self-start">
+                                                    {textMonthLocalDate(
+                                                        event.date
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {attendanceRecord
+                                                        ? attendanceLabelMap[
+                                                              attendanceRecord
+                                                                  .attendance_status
+                                                          ]
+                                                        : 'No attendance data available yet.'}
+                                                </td>
+                                                <td className="justify-self-end">
+                                                    {attendanceRecord
+                                                        ? attendanceRecord.note
+                                                        : ''}
+                                                </td>
+                                            </tr>
+                                        );
                                     })
                                 ) : (
                                     <tr>
@@ -117,8 +103,8 @@ export const ResidentAttendanceModal = forwardRef(function (
             ref={ref}
             width="max-w-4xl"
             text={<AttendanceTable />}
-            onSubmit={() => void console.log('submit')}
-            onClose={() => void console.log('close')}
+            onSubmit={() => {}} //eslint-disable-line
+            onClose={() => {}} //eslint-disable-line
         />
     );
 });
