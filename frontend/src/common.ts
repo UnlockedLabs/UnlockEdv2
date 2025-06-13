@@ -725,9 +725,13 @@ export interface ProgramOverview extends Program {
     active_class_facility_ids: number[];
 }
 
-export interface DailyProgramsLastRunDateAndTime {
-    last_ran_dt: string;
-    last_ran_tm: string;
+export interface RunnableTask {
+    id: number;
+    job_id: string;
+    last_run: Date;
+    provider_platform_id: number;
+    open_content_provider_id: number;
+    status: string;
 }
 
 export interface ProgramClassOutcomes {

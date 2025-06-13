@@ -8,7 +8,7 @@ import {
     ProgramsOverviewTable,
     ProgramsFacilitiesStats,
     UserRole,
-    DailyProgramsLastRunDateAndTime
+    RunnableTask
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -123,9 +123,8 @@ export default function ProgramManagement() {
         return;
     }
     const { daily_run } = useLoaderData() as {
-        daily_run: DailyProgramsLastRunDateAndTime;
+        daily_run: RunnableTask;
     };
-
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [dateRange, setDateRange] = useState<FilterPastTime>(
@@ -184,6 +183,22 @@ export default function ProgramManagement() {
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
         setPage(1);
+    }
+
+    function formatLastRanMessage(): string {
+        if (!daily_run?.last_run) return '';
+        const lastRanDtTime = new Date(daily_run.last_run);
+        const formattedDate = lastRanDtTime.toLocaleString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC'
+        });
+        const formattedTime = lastRanDtTime.toLocaleString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        return `Last updated ${formattedDate} at ${formattedTime}.`;
     }
 
     return (
@@ -333,14 +348,7 @@ export default function ProgramManagement() {
                 <p className="flex justify-center body italic">
                     {`Program data in table reflects the selected date range: ${tableDateRangeLabel}`}
                     <br />
-                    {daily_run.last_ran_dt &&
-                        `Last updated 
-                        ${new Intl.DateTimeFormat('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            timeZone: 'UTC'
-                        }).format(new Date(daily_run.last_ran_dt))}
-                        at ${daily_run.last_ran_tm}.`}
+                    {formatLastRanMessage()}
                 </p>
                 {meta && (
                     <div className="flex justify-center">

@@ -7,10 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-
-	"github.com/go-co-op/gocron/v2"
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {
@@ -263,28 +260,11 @@ func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request,
 }
 
 func (srv *Server) handleGetProgramOverviewLastUpdatedAt(w http.ResponseWriter, r *http.Request, log sLog) error {
-	lastUpatedAt, err := srv.Db.GetProgramOverviewLastUpdatedAt(r.Context())
+	runnableTask, err := srv.Db.GetRunnableTask(r.Context(), models.DailyProgHistoryJob)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-
-	cronExpression := os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
-	if cronExpression != "" { //parsing the cron expression used by program overview
-		scheduler, err := gocron.NewScheduler()
-		if err != nil {
-			return newBadRequestServiceError(err, "unable to create cron scheduler used for parsing cron schedule")
-		}
-		job, err := scheduler.NewJob(gocron.CronJob(cronExpression, false), gocron.NewTask(func() {}))
-		if err != nil {
-			return newBadRequestServiceError(err, "unable to create new generic job using the cron schedule: "+cronExpression)
-		}
-		next, err := job.NextRun()
-		if err != nil {
-			return newBadRequestServiceError(err, "unble to get the next run of job")
-		}
-		lastUpatedAt.LastRanTime = next.Format("3:04 PM")
-	}
-	return writeJsonResponse(w, http.StatusOK, lastUpatedAt)
+	return writeJsonResponse(w, http.StatusOK, runnableTask)
 }
 
 func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
