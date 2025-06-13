@@ -5,21 +5,20 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 func InsertDailyProgHistory(ctx context.Context, db *gorm.DB) error {
 	if err := InsertDailyProgramsFacilitiesHistory(ctx, db); err != nil {
-		log.Errorln("error inserting daily programs facilities history")
+		logger().Errorln("error inserting daily programs facilities history")
 		return err
 	}
 	if err := InsertDailyProgramFacilitiesHistory(ctx, db); err != nil {
-		log.Errorln("error inserting daily program facilities history")
+		logger().Errorln("error inserting daily program facilities history")
 		return err
 	}
 	if err := InsertDailyProgramFacilityHistory(ctx, db); err != nil {
-		log.Errorln("error inserting daily program facility history")
+		logger().Errorln("error inserting daily program facility history")
 		return err
 	}
 	return nil
@@ -39,7 +38,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 			SUM(CASE WHEN archived_at IS NOT NULL THEN 1 ELSE 0 END) AS total_archived_programs
 		`).
 		Scan(&programStats).Error; err != nil {
-		log.Errorln("error getting total, active, archived programs")
+		logger().Errorln("error getting total, active, archived programs")
 		return err
 	}
 	history.TotalPrograms = programStats.TotalPrograms
@@ -56,7 +55,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 			SUM(CASE WHEN enrollment_status = 'Completed' THEN 1 ELSE 0 END) AS total_completions
 		`).
 		Scan(&enrollmentStats).Error; err != nil {
-		log.Errorln("error getting total, completed enrollments")
+		logger().Errorln("error getting total, completed enrollments")
 		return err
 	}
 	history.TotalEnrollments = enrollmentStats.TotalEnrollments
@@ -67,7 +66,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 		Select("COUNT(*) AS total_program_offerings").
 		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true AND programs.archived_at IS NULL").
 		Scan(&totalProgramOfferings).Error; err != nil {
-		log.Errorln("error getting total program offerings")
+		logger().Errorln("error getting total program offerings")
 		return err
 	}
 	history.TotalProgramOfferings = totalProgramOfferings
@@ -76,7 +75,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	if err := db.WithContext(ctx).Model(&models.Facility{}).
 		Select("COUNT(*) AS total_facilities").
 		Scan(&totalFacilities).Error; err != nil {
-		log.Errorln("error getting total facilities")
+		logger().Errorln("error getting total facilities")
 		return err
 	}
 	history.TotalFacilities = totalFacilities
@@ -91,7 +90,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 		COALESCE(SUM(CASE WHEN attendance_status = 'present' THEN 1 ELSE 0 END), 0) AS total_students_present
 		`).
 		Scan(&attendanceStats).Error; err != nil {
-		log.Errorln("error getting total students present")
+		logger().Errorln("error getting total students present")
 		return err
 	}
 	history.TotalStudentsPresent = attendanceStats.TotalStudentsPresent
@@ -99,9 +98,9 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 
 	history.Date = time.Now()
 
-	log.Infof("History struct before insert: %+v", history)
+	logger().Infof("History struct before insert: %+v", history)
 	if err := db.Create(&history).Error; err != nil {
-		log.Errorln("error creating daily program history")
+		logger().Errorln("error creating daily program history")
 		return err
 	}
 
@@ -109,8 +108,8 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 }
 
 func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error {
-	programs := make([]models.DailyProgramFacilitiesHistory, 10)
-	tx := db.Model(&models.Program{}).
+	programs := make([]models.DailyProgramFacilitiesHistory, 0, 10)
+	tx := db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
 			COUNT(DISTINCT CASE WHEN programs.is_active AND programs.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
@@ -129,7 +128,7 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id").
 		Group("programs.id")
 	if err := tx.Scan(&programs).Error; err != nil {
-		log.Errorln("error getting daily program facilities history")
+		logger().Errorln("error getting daily program facilities history")
 		return err
 	}
 
@@ -139,8 +138,8 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 	}
 
 	if len(programs) > 0 {
-		if err := db.Create(&programs).Error; err != nil {
-			log.Errorln("error creating daily program facilities history")
+		if err := db.WithContext(ctx).Create(&programs).Error; err != nil {
+			logger().Errorln("error creating daily program facilities history")
 			return err
 		}
 	}
@@ -149,8 +148,8 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 }
 
 func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
-	histories := make([]models.DailyProgramFacilityHistory, 25)
-	tx := db.Model(&models.Program{}).
+	histories := make([]models.DailyProgramFacilityHistory, 0, 25)
+	tx := db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
 			fp.facility_id AS facility_id,
@@ -169,7 +168,7 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id").
 		Group("programs.id, fp.facility_id")
 	if err := tx.Scan(&histories).Error; err != nil {
-		log.Errorln("error getting daily program facility history")
+		logger().Errorln("error getting daily program facility history")
 		return err
 	}
 
@@ -179,8 +178,8 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 	}
 
 	if len(histories) > 0 {
-		if err := db.Create(&histories).Error; err != nil {
-			log.Errorln("error creating daily program facility history")
+		if err := db.WithContext(ctx).Create(&histories).Error; err != nil {
+			logger().Errorln("error creating daily program facility history")
 			return err
 		}
 	}
