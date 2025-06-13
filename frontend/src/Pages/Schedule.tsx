@@ -26,6 +26,9 @@ export default function Schedule() {
     if (clsLoader?.redirect) {
         navigate(clsLoader.redirect);
     }
+    const toolTip = clsLoader
+        ? `This event is from another class and cannot be edited on the ${clsLoader.class?.name} schedule.`
+        : '';
     const { class_id } = useParams<{ class_id?: string }>();
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
@@ -154,29 +157,29 @@ export default function Schedule() {
                             <div className="space-y-2 flex flex-col w-full">
                                 <button
                                     disabled={!canUpdateEvent()}
-                                    className={`button${!canUpdateEvent() ? ' tooltip' : ''}`}
+                                    className={`button${!canUpdateEvent() && toolTip != '' ? ' tooltip' : ''}`}
                                     onClick={() => {
                                         showModal(rescheduleClassEventModal);
                                     }}
-                                    data-tip={`This event is from another class and cannot be edited on the ${selectedEvent.title} schedule.`}
+                                    data-tip={toolTip}
                                 >
                                     Edit Event
                                 </button>
                                 <button
                                     disabled={!canUpdateEvent()}
-                                    className={`button-outline${!canUpdateEvent() ? ' tooltip' : ''}`}
+                                    className={`button-outline${!canUpdateEvent() && toolTip != '' ? ' tooltip' : ''}`}
                                     onClick={() => {
                                         showModal(
                                             rescheduleClassEventSeriesModal
                                         );
                                     }}
-                                    data-tip={`This event is from another class and cannot be edited on the ${selectedEvent.title} schedule.`}
+                                    data-tip={toolTip}
                                 >
                                     Edit Series
                                 </button>
                                 <div
-                                    className={`flex flex-col w-full${!canUpdateEvent() ? ' tooltip' : ''}`}
-                                    data-tip={`This event is from another class and cannot be edited on the ${selectedEvent.title} schedule.`}
+                                    className={`flex flex-col w-full${!canUpdateEvent() && toolTip != '' ? ' tooltip' : ''}`}
+                                    data-tip={toolTip}
                                 >
                                     <CancelButton
                                         disabled={!canUpdateEvent()}
