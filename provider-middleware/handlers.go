@@ -68,7 +68,7 @@ func (sh *ServiceHandler) handleInsertDailyProgHistory(ctx context.Context, msg 
 		logger().Errorf("failed to parse job_id: %v", body["job_id"])
 		return
 	}
-	success := InsertDailyProgHistory(ctx, sh.db) != nil
+	success := InsertDailyProgHistory(ctx, sh.db) == nil
 	sh.cleanupJob(ctx, nil, jobId, success)
 }
 
@@ -86,7 +86,7 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 	params := service.GetJobParams()
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	success := service.ImportCourses(sh.db) != nil
+	success := service.ImportCourses(sh.db) == nil
 	sh.cleanupJob(ctx, &providerPlatformId, jobId, success)
 }
 
@@ -98,7 +98,7 @@ func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.M
 	}
 	jobId := body["job_id"].(string)
 	kiwixService := NewKiwixService(provider, body)
-	success := kiwixService.ImportLibraries(ctx, sh.db) != nil
+	success := kiwixService.ImportLibraries(ctx, sh.db) == nil
 	providerIdPtr := int(provider.ID)
 	sh.cleanupJob(ctx, &providerIdPtr, jobId, success)
 }
