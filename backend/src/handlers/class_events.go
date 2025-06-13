@@ -150,6 +150,11 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
+	var userId *int
+	uid, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	if err == nil {
+		userId = &uid
+	}
 	log.add("class id", classID)
 	month := r.URL.Query().Get("month")
 	year := r.URL.Query().Get("year")
@@ -164,7 +169,7 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	}
 
 	qryCtx := srv.getQueryContext(r)
-	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year)
+	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year, userId)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

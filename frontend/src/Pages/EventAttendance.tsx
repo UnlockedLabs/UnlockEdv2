@@ -183,7 +183,7 @@ export default function EventAttendance() {
                 ...currentRow,
                 selected: newSelected,
                 attendance_status: newSelected
-                    ? currentRow?.attendance_status
+                    ? currentRow?.attendance_status ?? Attendance.Present
                     : undefined
             }
         }));

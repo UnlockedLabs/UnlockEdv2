@@ -423,7 +423,7 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		total := present + absent
 
 		if total == 0 {
-			userPrograms[i].AttendancePercentage = "0%"
+			userPrograms[i].AttendancePercentage = "--"
 		} else {
 			pct := float64(present) / float64(total) * 100
 			userPrograms[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)

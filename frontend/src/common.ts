@@ -895,6 +895,12 @@ export enum Attendance {
     Absent_Unexcused = 'absent_unexcused'
 }
 
+export const attendanceLabelMap: Record<Attendance, string> = {
+    [Attendance.Absent_Excused]: 'Excused Absence',
+    [Attendance.Absent_Unexcused]: 'Unexcused Absence',
+    [Attendance.Present]: 'Present'
+};
+
 export enum SelectedClassStatus {
     Scheduled = 'Scheduled',
     Active = 'Active',
