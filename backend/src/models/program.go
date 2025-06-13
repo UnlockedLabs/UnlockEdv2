@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type FundingType string
 type ProgType string
@@ -49,6 +52,28 @@ type Program struct {
 }
 
 func (Program) TableName() string { return "programs" }
+
+func (p *Program) OfferedAtFacility(facilityID uint) bool {
+	for _, f := range p.Facilities {
+		if f.ID == facilityID {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Program) ValidateProgramEligibilityForClassCreation(facilityID uint) error {
+	if !p.OfferedAtFacility(facilityID) {
+		return errors.New("Program isn’t available at the selected facility")
+	}
+	if !p.IsActive {
+		return errors.New("Program is inactive and cannot accept new classes")
+	}
+	if p.ArchivedAt != nil {
+		return errors.New("Program has been archived and cannot be modified")
+	}
+	return nil
+}
 
 type ProgramType struct {
 	ProgramType ProgType `json:"program_type" gorm:"primaryKey;type:program_type" validate:"required"`
