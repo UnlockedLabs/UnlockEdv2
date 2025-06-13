@@ -70,16 +70,16 @@ export default function ProgramOverviewDashboard() {
 
     const {
         data: classesResp,
-        error: classesError,
+        // error: classesError,
         mutate: mutateClasses
     } = useSWR<ServerResponseMany<Class>, Error>(
         `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    useEffect(() => {
-        if (!program) navigate('/404');
-        else if (classesError) navigate('/error');
-    }, [program, classesError]);
+    // useEffect(() => {
+    //     if (!program) navigate('/404');
+    //     else if (classesError) navigate('/error');
+    // }, [program, classesError]);
 
     const classes = classesResp?.data ?? [];
     const meta = classesResp?.meta ?? {
@@ -202,13 +202,13 @@ export default function ProgramOverviewDashboard() {
         program: ProgramOverview,
         userFacilityId: number | undefined
     ): ProgramStatus {
-        if (!userFacilityId) return 'notOfferedAtFacility';
-        if (!program) return 'inactiveProgram';
-        if (!program.facilities) return 'notOfferedAtFacility';
-        if (!program.facilities.some((f) => f.id === userFacilityId))
+        if (
+            !userFacilityId ||
+            !program?.facilities?.some((f) => f.id === userFacilityId)
+        )
             return 'notOfferedAtFacility';
+        if (!program?.is_active) return 'inactiveProgram';
         if (program.archived_at !== null) return 'archivedProgram';
-        if (!program.is_active) return 'inactiveProgram';
         return 'active';
     }
 
