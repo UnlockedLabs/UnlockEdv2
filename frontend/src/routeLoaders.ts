@@ -15,7 +15,7 @@ import {
     ServerResponseOne,
     ClassLoaderData,
     ProgramOverview,
-    DailyProgramsLastRunDateAndTime
+    RunnableTask
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -127,7 +127,6 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
     const [tagsResp] = await Promise.all([API.get(`tags`)]);
     const categories = tagsResp.data as Option[];
     let program: ProgramOverview | undefined;
-    let dailyLastRun: DailyProgramsLastRunDateAndTime | undefined;
     let redirect: string | undefined;
     if (program_id) {
         const resp = await API.get(`programs/${program_id}`);
@@ -137,23 +136,18 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
             redirectOnError(resp);
         }
     }
-    const resp = await API.get(`programs/stats/lastRun`);
-    if (resp.success) {
-        dailyLastRun = resp.data as DailyProgramsLastRunDateAndTime;
-    }
     return json({
         categories: categories,
         program: program,
-        redirect: redirect,
-        daily_run: dailyLastRun
+        redirect: redirect
     });
 };
 
 export const getDailyProgramsLastDtAndTm: LoaderFunction = async () => {
-    let dailyLastRun: DailyProgramsLastRunDateAndTime | undefined;
+    let dailyLastRun: RunnableTask | undefined;
     const resp = await API.get(`programs/stats/lastRun`);
     if (resp.success) {
-        dailyLastRun = resp.data as DailyProgramsLastRunDateAndTime;
+        dailyLastRun = resp.data as RunnableTask;
     }
     return json({
         daily_run: dailyLastRun
