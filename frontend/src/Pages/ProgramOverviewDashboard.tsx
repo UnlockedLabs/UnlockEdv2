@@ -76,11 +76,10 @@ export default function ProgramOverviewDashboard() {
         `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    if (!program) {
-        navigate('/404');
-    } else if (classesError) {
-        navigate('/error');
-    }
+    useEffect(() => {
+        if (!program) navigate('/404');
+        else if (classesError) navigate('/error');
+    }, [program, classesError]);
 
     const classes = classesResp?.data ?? [];
     const meta = classesResp?.meta ?? {
