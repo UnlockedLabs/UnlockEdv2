@@ -51,7 +51,7 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 	class := newClass(program, facility)
 
 	resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 
@@ -76,7 +76,7 @@ func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *mod
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
 		Do().
-		ExpectStatus(http.StatusConflict)
+		ExpectStatus(http.StatusUnauthorized)
 }
 
 // creates a boilerplate class
