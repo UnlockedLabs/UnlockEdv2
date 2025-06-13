@@ -730,12 +730,13 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 			}
 			startTime = rRule.GetDTStart()
 			if enrollment.CreatedAt.After(startTime) {
-				startTime = enrollment.CreatedAt
+				startTime = enrollment.CreatedAt.Truncate(24 * time.Hour)
 			}
 			untilTime = time.Now().AddDate(0, 0, 1).Truncate(24 * time.Hour)
 			if enrollment.EnrollmentStatus != "Enrolled" {
 				untilTime = enrollment.UpdatedAt.AddDate(0, 0, 1).Truncate(24 * time.Hour)
 			}
+			logrus.Printf("start time: %v, until time: %v", startTime, untilTime)
 		} else {
 			startTime = time.Now().Add(time.Hour * 24 * -14)
 			untilTime = startTime.AddDate(0, 1, 0)
@@ -754,6 +755,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	}
 
 	occurrences := rRule.Between(startTime, untilTime, true)
+	logrus.Printf("occurrences: %v", occurrences)
 	if len(occurrences) == 0 {
 		qryCtx.Total = 0
 		return []models.ClassEventInstance{}, nil
