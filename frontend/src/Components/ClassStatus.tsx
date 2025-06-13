@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import ULIComponent from './ULIComponent';
 import {
     CheckCircleIcon,
@@ -127,12 +127,10 @@ export default function ClassStatus({
             return;
         setDropdownOpen(false);
         setSelectedModifyOption(option);
+        setTimeout(() => showModal(modifyClassRef), 0);
+        showModal(modifyClassRef);
         e.stopPropagation();
     }
-
-    useEffect(() => {
-        showModal(modifyClassRef);
-    }, [selectedModifyOption]);
 
     return (
         <>
