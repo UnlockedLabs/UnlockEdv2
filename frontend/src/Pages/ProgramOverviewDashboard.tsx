@@ -78,7 +78,7 @@ export default function ProgramOverviewDashboard() {
 
     useEffect(() => {
         if (!program) navigate('/404');
-        else if (classesError instanceof Error) navigate('/error');
+        else if (classesError) navigate('/error');
     }, [program, classesError]);
 
     const classes = classesResp?.data ?? [];
