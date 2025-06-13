@@ -7,12 +7,13 @@ import {
     ServerResponseOne,
     ProgramsOverviewTable,
     ProgramsFacilitiesStats,
-    UserRole
+    UserRole,
+    RunnableTask
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
-import { useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
@@ -121,6 +122,9 @@ export default function ProgramManagement() {
     if (!isAdministrator(user)) {
         return;
     }
+    const { daily_run } = useLoaderData() as {
+        daily_run: RunnableTask;
+    };
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [dateRange, setDateRange] = useState<FilterPastTime>(
@@ -179,6 +183,22 @@ export default function ProgramManagement() {
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
         setPage(1);
+    }
+
+    function formatLastRanMessage(): string {
+        if (!daily_run?.last_run) return '';
+        const lastRanDtTime = new Date(daily_run.last_run);
+        const formattedDate = lastRanDtTime.toLocaleString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC'
+        });
+        const formattedTime = lastRanDtTime.toLocaleString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        return `Last updated ${formattedDate} at ${formattedTime}.`;
     }
 
     return (
@@ -327,6 +347,8 @@ export default function ProgramManagement() {
                 </table>
                 <p className="flex justify-center body italic">
                     {`Program data in table reflects the selected date range: ${tableDateRangeLabel}`}
+                    <br />
+                    {formatLastRanMessage()}
                 </p>
                 {meta && (
                     <div className="flex justify-center">
