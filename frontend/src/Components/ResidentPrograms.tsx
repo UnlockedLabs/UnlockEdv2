@@ -138,7 +138,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                 <>
                                     <ProgramSectionDividerRow type="Active Enrollments" />
                                     {activePrograms.map((pc) => (
-                                        <ResidentProgramRow pc={pc} />
+                                        <ResidentProgramRow
+                                            pc={pc}
+                                            key={pc.class_id}
+                                        />
                                     ))}
                                 </>
                             )}
@@ -149,7 +152,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                     <>
                                         <ProgramSectionDividerRow type="Scheduled Enrollments" />
                                         {scheduledPrograms.map((pc) => (
-                                            <ResidentProgramRow pc={pc} />
+                                            <ResidentProgramRow
+                                                pc={pc}
+                                                key={pc.class_id}
+                                            />
                                         ))}
                                     </>
                                 )}
@@ -160,7 +166,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                     <>
                                         <ProgramSectionDividerRow type="Completed Enrollments" />
                                         {completedPrograms.map((pc) => (
-                                            <ResidentProgramRow pc={pc} />
+                                            <ResidentProgramRow
+                                                pc={pc}
+                                                key={pc.class_id}
+                                            />
                                         ))}
                                     </>
                                 )}
@@ -169,7 +178,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                     <>
                                         <ProgramSectionDividerRow type="Did Not Complete" />
                                         {didNotCompletePrograms.map((pc) => (
-                                            <ResidentProgramRow pc={pc} />
+                                            <ResidentProgramRow
+                                                pc={pc}
+                                                key={pc.class_id}
+                                            />
                                         ))}
                                     </>
                                 )}
