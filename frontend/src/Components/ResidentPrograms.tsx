@@ -78,7 +78,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
     }
 
     function ResidentProgramRow({ pc }: { pc: ResidentProgramOverview }) {
-        const clickableElement = `cursor-pointer hover:bg-base-100 p-2`;
+        const clickableElement = `cursor-pointer hover:underline p-2`;
         return (
             <tr
                 key={`${pc.class_id}-${pc.start_date}`}
