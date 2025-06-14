@@ -1,8 +1,11 @@
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import {
     OpenContentResponse,
     ResidentEngagementProfile,
     ServerResponseOne,
+    ToastState,
+    User,
+    UserRole,
     ValidResident
 } from '@/common';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
@@ -13,11 +16,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import OpenContentCardRow from '@/Components/cards/OpenContentCard';
 import {
     closeModal,
+    CRUDActions,
     showModal,
+    TargetItem,
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { VerifyResidentModal } from '@/Components/modals/VerifyResidentModal';
 import API from '@/api/api';
@@ -26,6 +31,7 @@ import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
 import calculateEngagementMetrics from '@/Components/helperFunctions/calculateEngagementMetrics';
 import ResidentPrograms from '@/Components/ResidentPrograms';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
+import { useToast } from '@/Context/ToastCtx';
 
 function UserProfileInfoRow({
     column,
@@ -102,6 +108,46 @@ const ResidentProfile = () => {
     const handleShowLibraryClick = (id: number) => {
         navigate(`/viewer/libraries/${id}`);
     };
+    // start delete logic
+    const [targetUser, setTargetUser] = useState<TargetItem<User> | null>(null);
+    const deleteUserModal = useRef<HTMLDialogElement>(null);
+    const { toaster } = useToast();
+
+    const checkResponseForDelete = useCheckResponse({
+        mutate: mutate,
+        refModal: deleteUserModal
+    });
+
+    useEffect(() => {
+        const ref =
+            targetUser?.action === CRUDActions.Delete ? deleteUserModal : null;
+        if (ref) {
+            showModal(ref);
+        }
+    }, [targetUser]);
+
+    const deleteUser = async () => {
+        const user = targetUser?.target;
+        if (user?.role === UserRole.SystemAdmin) {
+            toaster(
+                'This is the primary administrator and cannot be deleted',
+                ToastState.error
+            );
+            return;
+        }
+
+        const response = await API.delete('users/' + user?.id);
+
+        checkResponseForDelete(
+            response.success,
+            'Failed to delete user',
+            'User deleted successfully'
+        );
+        if (response.success) {
+            navigate('/residents');
+        }
+        closeModal(deleteUserModal);
+    };
 
     //start transfer logic
     const verifyResidentModal = useRef<HTMLDialogElement>(null);
@@ -135,6 +181,7 @@ const ResidentProfile = () => {
             }
         }
     }
+
     //end transfer logic
     return (
         <div className="overflow-x-hidden px-5 pb-4">
@@ -188,7 +235,17 @@ const ResidentProfile = () => {
                                 }
                             />
                             <div className="flex flex-row gap-2 mt-4 justify-center">
-                                <button className="button-grey bg-grey-1 hover:bg-grey-2 text-red-4">
+                                <button
+                                    className="button-grey bg-grey-1 hover:bg-grey-2 text-red-4"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTargetUser({
+                                            action: CRUDActions.Delete,
+                                            target: data.data.user
+                                        });
+                                        showModal(deleteUserModal);
+                                    }}
+                                >
                                     Delete Resident
                                 </button>
                                 {user && canSwitchFacility(user) && (
@@ -362,6 +419,16 @@ const ResidentProfile = () => {
                     closeModal(confirmTransferModal);
                     setResident(null);
                 }}
+            />
+            <TextOnlyModal
+                ref={deleteUserModal}
+                type={TextModalType.Delete}
+                title={'Delete Resident'}
+                text={
+                    'Are you sure you would like to delete this resident? This action cannot be undone.'
+                }
+                onSubmit={() => void deleteUser()}
+                onClose={() => void closeModal(deleteUserModal)}
             />
         </div>
     );
