@@ -67,7 +67,8 @@ func (db *DB) CreateProgramClassEnrollments(classID int, userIds []int) (int, er
 	err := db.
 		Table("program_classes").
 		Select("program_classes.capacity - COALESCE(COUNT(pce.id), 0) AS available").
-		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = program_classes.id").
+		Joins(`LEFT JOIN program_class_enrollments pce ON pce.class_id = program_classes.id
+			and pce.enrollment_status = 'Enrolled'`).
 		Where("program_classes.id = ?", classID).
 		Group("program_classes.id, program_classes.capacity").
 		Scan(&result).Error
