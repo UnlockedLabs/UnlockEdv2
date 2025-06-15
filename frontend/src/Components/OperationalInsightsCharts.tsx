@@ -1,21 +1,13 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import {
-    Facility,
-    FilterPastTime,
-    LoginMetrics,
-    ServerResponseOne
-} from '@/common';
+import { FilterPastTime, LoginMetrics, ServerResponseOne } from '@/common';
 import StatsCard from './StatsCard';
 import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
 import { useAuth, canSwitchFacility } from '@/useAuth';
 import DropdownControl from './inputs/DropdownControl';
-interface Props {
-    facilities: Facility[];
-}
 
-const OperationalInsights = ({ facilities }: Props) => {
+const OperationalInsights = () => {
     const [facility, setFacility] = useState('all');
     const [timeFilter, setTimeFilter] = useState<FilterPastTime>(
         FilterPastTime['Past 30 days']
@@ -86,7 +78,7 @@ const OperationalInsights = ({ facilities }: Props) => {
                                         <option key={'all'} value={'all'}>
                                             All
                                         </option>
-                                        {facilities?.map((facility) => (
+                                        {user?.facilities?.map((facility) => (
                                             <option
                                                 key={facility.name}
                                                 value={facility.id}
