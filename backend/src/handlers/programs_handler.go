@@ -19,7 +19,6 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		/* admin */
 		adminFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, axx),
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
-		adminFeatureRoute("GET /api/programs/stats/lastRun", srv.handleGetProgramOverviewLastUpdatedAt, axx),
 		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
 		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
@@ -59,9 +58,16 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 	} else {
 		programs, err = srv.Db.GetProgramsFacilitiesStats(&args, timeFilter)
 	}
+
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+
+	runnableTask, err := srv.Db.GetRunnableTask(r.Context(), models.DailyProgHistoryJob)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	programs.TaskLastRan = *runnableTask
 	return writeJsonResponse(w, http.StatusOK, programs)
 }
 
@@ -257,14 +263,6 @@ func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request,
 		return nil
 	}
 	return writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
-}
-
-func (srv *Server) handleGetProgramOverviewLastUpdatedAt(w http.ResponseWriter, r *http.Request, log sLog) error {
-	runnableTask, err := srv.Db.GetRunnableTask(r.Context(), models.DailyProgHistoryJob)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, runnableTask)
 }
 
 func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {

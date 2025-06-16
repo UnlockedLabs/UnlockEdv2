@@ -14,8 +14,7 @@ import {
     Class,
     ServerResponseOne,
     ClassLoaderData,
-    ProgramOverview,
-    RunnableTask
+    ProgramOverview
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -140,17 +139,6 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
         categories: categories,
         program: program,
         redirect: redirect
-    });
-};
-
-export const getDailyProgramsLastDtAndTm: LoaderFunction = async () => {
-    let dailyLastRun: RunnableTask | undefined;
-    const resp = await API.get(`programs/stats/lastRun`);
-    if (resp.success) {
-        dailyLastRun = resp.data as RunnableTask;
-    }
-    return json({
-        daily_run: dailyLastRun
     });
 };
 

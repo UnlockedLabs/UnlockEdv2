@@ -746,6 +746,7 @@ export interface ProgramsFacilitiesStats {
     total_enrollments: number;
     attendance_rate: number;
     completion_rate: number;
+    task_last_ran: RunnableTask;
 }
 
 export interface ProgramsOverviewTable {

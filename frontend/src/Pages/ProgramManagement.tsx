@@ -7,13 +7,11 @@ import {
     ServerResponseOne,
     ProgramsOverviewTable,
     ProgramsFacilitiesStats,
-    UserRole,
-    RunnableTask
+    UserRole
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
-import { useLoaderData, useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
@@ -25,6 +23,7 @@ import {
 } from '@/Components/helperFunctions';
 import { AddButton } from '@/Components/inputs';
 import ProgramStatus from '@/Components/ProgramStatus';
+import { useNavigate } from 'react-router-dom';
 
 export function ProgramRow({
     program,
@@ -122,9 +121,6 @@ export default function ProgramManagement() {
     if (!isAdministrator(user)) {
         return;
     }
-    const { daily_run } = useLoaderData() as {
-        daily_run: RunnableTask;
-    };
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [dateRange, setDateRange] = useState<FilterPastTime>(
@@ -145,13 +141,15 @@ export default function ProgramManagement() {
         avg_active_programs_per_facility,
         total_enrollments,
         attendance_rate,
-        completion_rate
+        completion_rate,
+        task_last_ran
     } = programsFacilitiesStats?.data ?? {
         total_programs: '--',
         avg_active_programs_per_facility: '--',
         total_enrollments: '--',
         attendance_rate: '--',
-        completion_rate: '--'
+        completion_rate: '--',
+        task_last_ran: null
     };
 
     const {
@@ -186,8 +184,12 @@ export default function ProgramManagement() {
     }
 
     function formatLastRanMessage(): string {
-        if (!daily_run?.last_run) return '';
-        const lastRanDtTime = new Date(daily_run.last_run);
+        if (
+            !task_last_ran?.last_run ||
+            task_last_ran?.last_run.toString() === '0001-01-01T00:00:00Z'
+        )
+            return 'Not updated yet.';
+        const lastRanDtTime = new Date(task_last_ran.last_run);
         const formattedDate = lastRanDtTime.toLocaleString('en-US', {
             month: 'long',
             day: 'numeric',
