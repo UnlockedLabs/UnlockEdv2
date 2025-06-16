@@ -24,7 +24,9 @@ export const ResidentAttendanceModal = forwardRef(function (
         error,
         isLoading
     } = useSWR<ServerResponseMany<ClassEventInstance>, Error>(
-        `/api/program-classes/${selectedClass?.class_id}/events?&page=${page}&per_page=10&order_by=created_at&order=desc&user_id=${residentId}`
+        selectedClass?.class_id
+            ? `/api/program-classes/${selectedClass?.class_id}/events?&page=${page}&per_page=10&order_by=created_at&order=desc&user_id=${residentId}`
+            : null
     );
     const meta = attendance?.meta;
     function AttendanceTable() {
