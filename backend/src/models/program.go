@@ -174,11 +174,13 @@ type ProgramOverviewResponse struct {
 }
 
 type ProgramCSVData struct {
-	UnlockEdID           uint       `json:"unlock_ed_id" gorm:"column:unlock_ed_id"`
-	ResidentID           uint       `json:"resident_id" gorm:"column:resident_id"`
 	FacilityName         string     `json:"facility_name" gorm:"column:facility_name"`
 	ProgramName          string     `json:"program_name" gorm:"column:program_name"`
 	ClassName            string     `json:"class_name" gorm:"column:class_name"`
+	UnlockEdID           uint       `json:"unlock_ed_id" gorm:"column:unlock_ed_id"`
+	NameFirst            string     `json:"name_first" gorm:"column:name_first"`
+	NameLast             string     `json:"name_last" gorm:"column:name_last"`
+	ResidentID           uint       `json:"resident_id" gorm:"column:resident_id"`
 	EnrollmentDate       time.Time  `json:"enrollment_date" gorm:"column:enrollment_date"`
 	EndDate              *time.Time `json:"end_date" gorm:"column:end_date"`
 	EndStatus            string     `json:"end_status" gorm:"column:end_status"`

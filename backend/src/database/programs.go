@@ -494,12 +494,14 @@ func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool)
 		Joins("LEFT JOIN program_completions c on c.program_class_id = pc.id and c.user_id = u.id").
 		Joins("LEFT JOIN program_class_events pce on pce.class_id = pc.id").
 		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id = pce.id AND pca.user_id = u.id").
-		Select(`
-	           u.id as unlock_ed_id,
-	           u.doc_id AS resident_id,
+		Select(` 
 	           f.name AS facility_name,
 	           p.name AS program_name,
 	           pc.name AS class_name,
+			   u.id as unlock_ed_id,
+	           u.doc_id AS resident_id,
+				u.name_last AS name_last,
+				u.name_first AS name_first,
 	           pe.created_at as enrollment_date,
 			   COALESCE(
 	           CASE
@@ -535,7 +537,8 @@ func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool)
 			models.EnrollmentIncompleteDropped,
 			models.EnrollmentIncompleteFailedToComplete,
 			models.EnrollmentIncompleteTransfered).
-		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt")
+		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
+		Order("f.name ASC, p.name ASC, pc.name ASC, end_date DESC")
 
 	if !allFacilities {
 		tx = tx.Where("f.id = ?", args.FacilityID)
