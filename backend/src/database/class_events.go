@@ -710,7 +710,8 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		Model(&models.ProgramClassEvent{}).
 		Preload("Overrides").
 		Where("class_id = ?", classId).
-		Find(&event).Error; err != nil {
+		Order("created_at DESC").
+		First(&event).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 
@@ -883,8 +884,10 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 	var event models.ProgramClassEvent
 	if err := db.
 		Preload("Overrides").
-		First(&event, "class_id = ?", classID).Error; err != nil {
-		return nil, err
+		Where("class_id = ?", classID).
+		Order("created_at DESC").
+		First(&event).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 
 	loc, _ := time.LoadLocation(timezone)
