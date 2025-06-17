@@ -486,7 +486,6 @@ func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (model
 
 func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool) ([]models.ProgramCSVData, error) {
 	var programCSVData []models.ProgramCSVData
-
 	tx := db.WithContext(args.Ctx).Table("programs p").
 		Joins("JOIN program_classes pc ON pc.program_id = p.id").
 		Joins("JOIN program_class_enrollments pe ON pe.class_id = pc.id").
@@ -494,24 +493,50 @@ func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool)
 		Joins("JOIN facilities f ON f.id = u.facility_id").
 		Joins("LEFT JOIN program_completions c on c.program_class_id = pc.id and c.user_id = u.id").
 		Joins("LEFT JOIN program_class_events pce on pce.class_id = pc.id").
-		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id  = pce.id AND pca.user_id = u.id").
+		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id = pce.id AND pca.user_id = u.id").
 		Select(`
-            u.id as unlock_ed_id,
-            u.doc_id AS resident_id,
-            f.name AS facility_name,
-            p.name AS program_name,
-            pc.name AS class_name,
-            pe.created_at as enrollment_date,
-            CASE
-                WHEN c.id IS NOT NULL THEN c.created_at
-                WHEN pe.enrollment_status NOT IN (?, ?, ?) THEN pe.updated_at
-                ELSE NULL
-            END as end_date,
-            pe.enrollment_status AS end_status,
-            COALESCE(SUM(CASE WHEN pca.attendance_status  = 'Present' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(pca.id), 0), 0) AS attendance_percentage
-        `, models.Enrolled, models.EnrollmentCancelled, models.EnrollmentCompleted).
-		Where("pe.updated_at IS NOT NULL AND pe.enrollment_status != ?", models.Enrolled).
-		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at")
+	           u.id as unlock_ed_id,
+	           u.doc_id AS resident_id,
+	           f.name AS facility_name,
+	           p.name AS program_name,
+	           pc.name AS class_name,
+	           pe.created_at as enrollment_date,
+			   COALESCE(
+	           CASE
+	               WHEN c.id IS NOT NULL THEN c.created_at
+	               WHEN pe.enrollment_status IN (?, ?, ?, ?, ?) THEN pe.updated_at
+	               END, 
+	               pc.end_dt
+	 		) as end_date,
+	           pe.enrollment_status AS end_status,
+	           CASE 
+	               WHEN COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END) = 0 THEN 0
+	               ELSE 
+	                   COALESCE(
+	                       SUM(CASE WHEN pca.attendance_status = 'present' THEN 1 ELSE 0 END) * 100.0 / 
+	                       NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
+	                       0
+	                   )
+	           END AS attendance_percentage
+	       `,
+			models.EnrollmentCompleted,
+			models.EnrollmentIncompleteWithdrawn,
+			models.EnrollmentIncompleteDropped,
+			models.EnrollmentIncompleteFailedToComplete,
+			models.EnrollmentIncompleteTransfered).
+		Where(`
+			(
+				c.id IS NOT NULL 
+				OR pe.enrollment_status IN (?, ?, ?, ?, ?)
+			)
+		`,
+			models.EnrollmentCompleted,
+			models.EnrollmentIncompleteWithdrawn,
+			models.EnrollmentIncompleteDropped,
+			models.EnrollmentIncompleteFailedToComplete,
+			models.EnrollmentIncompleteTransfered).
+		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt")
+
 	if !allFacilities {
 		tx = tx.Where("f.id = ?", args.FacilityID)
 	}

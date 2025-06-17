@@ -288,6 +288,13 @@ func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML st
 func (srv *Server) ProgramDataToCSVFormat(data []models.ProgramCSVData) ([][]string, error) {
 	csvData := [][]string{{"UnlockED ID", "Resident ID", "Facility Name", "Program Name", "Class Name", "Enrollment Date", "End Date", "End Status", "Attendance Percentage"}}
 	for _, record := range data {
+		var endDateStr string
+		if record.EndDate != nil && !record.EndDate.IsZero() {
+			endDateStr = record.EndDate.Format("2006-01-02")
+		} else {
+			endDateStr = ""
+		}
+
 		row := []string{
 			strconv.Itoa(int(record.UnlockEdID)),
 			strconv.Itoa(int(record.ResidentID)),
@@ -295,7 +302,7 @@ func (srv *Server) ProgramDataToCSVFormat(data []models.ProgramCSVData) ([][]str
 			record.ProgramName,
 			record.ClassName,
 			record.EnrollmentDate.Format("2006-01-02"),
-			record.EndDate.Format("2006-01-02"),
+			endDateStr,
 			fmt.Sprintf("%s", record.EndStatus),
 			fmt.Sprintf("%.2f%%", record.AttendancePercentage),
 		}
