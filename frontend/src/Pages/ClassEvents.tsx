@@ -15,7 +15,8 @@ import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 function toLocalMidnight(dateOnly: string): Date {
-    return new Date(dateOnly + 'T00:00:00Z');
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    return new Date(year, month - 1, day);
 }
 
 export default function ClassEvents() {

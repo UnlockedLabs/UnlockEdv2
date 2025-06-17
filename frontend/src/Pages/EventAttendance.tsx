@@ -195,7 +195,10 @@ export default function EventAttendance() {
             rows.forEach((row) => {
                 newModifications[row.user_id] = {
                     ...(prev[row.user_id] || row),
-                    selected: !allSelected
+                    selected: !allSelected,
+                    attendance_status: !allSelected
+                        ? Attendance.Present
+                        : undefined
                 };
             });
             return newModifications;
