@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"golang.org/x/net/context"
-	"gorm.io/gorm"
+	// "gorm.io/gorm"
 )
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
@@ -63,7 +63,19 @@ func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramCla
 	allChanges = append(allChanges, classLogEntries...)
 
 	models.UpdateStruct(existing, content)
-	if err := trans.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
+	if len(content.Events) > 0 {
+		e := content.Events[0]
+		if e.Room != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).
+				Where("id = ?", e.ID).
+				Update("room", e.Room).Error; err != nil {
+				trans.Rollback()
+				return nil, newUpdateDBError(err, "program_class_events")
+			}
+		}
+	}
+
+	if err := trans.Omit("Events").Updates(existing).Error; err != nil {
 		trans.Rollback()
 		return nil, newUpdateDBError(err, "program classes")
 	}
