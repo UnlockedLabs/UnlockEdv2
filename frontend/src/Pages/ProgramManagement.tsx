@@ -142,14 +142,14 @@ export default function ProgramManagement() {
         total_enrollments,
         attendance_rate,
         completion_rate,
-        task_last_ran
+        last_run
     } = programsFacilitiesStats?.data ?? {
         total_programs: '--',
         avg_active_programs_per_facility: '--',
         total_enrollments: '--',
         attendance_rate: '--',
         completion_rate: '--',
-        task_last_ran: null
+        last_run: null
     };
 
     const {
@@ -184,12 +184,9 @@ export default function ProgramManagement() {
     }
 
     function formatLastRanMessage(): string {
-        if (
-            !task_last_ran?.last_run ||
-            task_last_ran?.last_run.toString() === '0001-01-01T00:00:00Z'
-        )
+        if (!last_run || last_run.toString() === '0001-01-01T00:00:00Z')
             return 'Not updated yet.';
-        const lastRanDtTime = new Date(task_last_ran.last_run);
+        const lastRanDtTime = new Date(last_run);
         const formattedDate = lastRanDtTime.toLocaleString('en-US', {
             month: 'long',
             day: 'numeric',

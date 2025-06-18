@@ -67,7 +67,7 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	programs.TaskLastRan = *runnableTask
+	programs.LastRun = runnableTask.LastRun
 	return writeJsonResponse(w, http.StatusOK, programs)
 }
 
