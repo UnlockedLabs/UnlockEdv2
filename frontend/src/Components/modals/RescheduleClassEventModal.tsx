@@ -106,7 +106,7 @@ export const RescheduleClassEventModal = forwardRef(function (
         },
         {
             type: FormInputTypes.Date,
-            allowPastDate: false,
+            allowPastDate: true,
             label: 'Date',
             interfaceRef: 'date',
             required: true
