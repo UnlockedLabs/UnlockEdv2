@@ -202,7 +202,7 @@ export default function ProgramManagement() {
     }
 
     function downloadCSV() {
-        API.downloadFile('programs/csv')
+        API.downloadFile(`programs/csv&all=${canSwitchFacility(user!)}`)
             .then(({ blob, headers }) => {
                 const disposition = headers.get('Content-Disposition') ?? '';
                 const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(

@@ -484,7 +484,7 @@ func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (model
 	return programDetails, nil
 }
 
-func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool) ([]models.ProgramCSVData, error) {
+func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSVData, error) {
 	var programCSVData []models.ProgramCSVData
 	tx := db.WithContext(args.Ctx).Table("programs p").
 		Joins("JOIN program_classes pc ON pc.program_id = p.id").
@@ -540,7 +540,7 @@ func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool)
 		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
 		Order("f.name ASC, p.name ASC, pc.name ASC, end_date DESC")
 
-	if !allFacilities {
+	if !args.All {
 		tx = tx.Where("f.id = ?", args.FacilityID)
 	}
 
