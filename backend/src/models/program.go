@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -185,4 +187,32 @@ type ProgramCSVData struct {
 	EndDate              *time.Time `json:"end_date" gorm:"column:end_date"`
 	EndStatus            string     `json:"end_status" gorm:"column:end_status"`
 	AttendancePercentage float64    `json:"attendance_percentage" gorm:"column:attendance_percentage"`
+}
+
+func ProgramDataToCSVFormat(data []ProgramCSVData) ([][]string, error) {
+	csvData := [][]string{{"Facility Name", "Program Name", "Class Name", "Last Name", "First Name", "Resident ID", "UnlockEd ID", "Enrollment Date", "End Date", "End Status", "Attendance Percentage"}}
+	for _, record := range data {
+		var endDateStr string
+		if record.EndDate != nil && !record.EndDate.IsZero() {
+			endDateStr = record.EndDate.Format("2006-01-02")
+		} else {
+			endDateStr = ""
+		}
+
+		row := []string{
+			record.FacilityName,
+			record.ProgramName,
+			record.ClassName,
+			record.NameLast,
+			record.NameFirst,
+			strconv.Itoa(int(record.ResidentID)),
+			strconv.Itoa(int(record.UnlockEdID)),
+			record.EnrollmentDate.Format("2006-01-02"),
+			endDateStr,
+			record.EndStatus,
+			fmt.Sprintf("%.2f%%", record.AttendancePercentage),
+		}
+		csvData = append(csvData, row)
+	}
+	return csvData, nil
 }

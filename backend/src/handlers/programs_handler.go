@@ -325,18 +325,14 @@ func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta mod
 
 func (srv *Server) handleExportProgramCSV(w http.ResponseWriter, r *http.Request, log sLog) error {
 	queryCtx := srv.getQueryContext(r)
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	var allFacilities bool
-	if claims.canSwitchFacility() {
-		allFacilities = true
-	} else {
-		allFacilities = false
+	if queryCtx.All && !userIsSystemAdmin(r) {
+		return newUnauthorizedServiceError()
 	}
-	csvData, err := srv.Db.ExportProgramsToCSV(&queryCtx, allFacilities)
+	csvData, err := srv.Db.GetProgramsCSVData(&queryCtx)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	toCSV, err := srv.ProgramDataToCSVFormat(csvData)
+	toCSV, err := models.ProgramDataToCSVFormat(csvData)
 	if err != nil {
 		return newInternalServerServiceError(err, "Failed to convert program data to CSV format")
 	}
