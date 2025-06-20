@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type FundingType string
 type ProgType string
@@ -49,6 +51,15 @@ type Program struct {
 }
 
 func (Program) TableName() string { return "programs" }
+
+func (p *Program) OfferedAtFacility(facilityID uint) bool {
+	for _, f := range p.Facilities {
+		if f.ID == facilityID {
+			return true
+		}
+	}
+	return false
+}
 
 type ProgramType struct {
 	ProgramType ProgType `json:"program_type" gorm:"primaryKey;type:program_type" validate:"required"`

@@ -36,7 +36,8 @@ type Response[T any] struct {
 	t       *testing.T
 	resp    *http.Response
 	env     *envelope
-	parsed  *T   // the typed data from calling the api
+	parsed  *T // the typed data from calling the api
+	rawBody string
 	decoded bool // protection from parsing the body multiple times
 }
 
@@ -89,7 +90,6 @@ func (r *Request[T]) Do() *Response[T] {
 	r.t.Helper()
 	resp, err := r.client.httpClient.Do(r.req)
 	require.NoError(r.t, err, "failed to execute http request")
-
 	rawBytes, err := io.ReadAll(resp.Body)
 	require.NoError(r.t, err, "failed to read response body")
 	defer func() {
@@ -101,8 +101,9 @@ func (r *Request[T]) Do() *Response[T] {
 	var env envelope
 	var parsed *T
 	var decoded bool
+	rawStr := string(rawBytes)
 
-	if r.asJson {
+	if r.asJson && resp.StatusCode < 400 {
 		require.NoError(r.t, json.Unmarshal(rawBytes, &env), "failed to unmarshal response body")
 
 		parsed = new(T)
@@ -110,10 +111,6 @@ func (r *Request[T]) Do() *Response[T] {
 			require.NoError(r.t, json.Unmarshal(env.Data, parsed), "failed to unmarshal response data")
 			decoded = true
 		}
-	} else {
-		rawString := string(rawBytes)
-		parsed = any(&rawString).(*T)
-		decoded = true
 	}
 
 	return &Response[T]{
@@ -121,6 +118,7 @@ func (r *Request[T]) Do() *Response[T] {
 		resp:    resp,
 		env:     &env,
 		parsed:  parsed,
+		rawBody: rawStr,
 		decoded: decoded,
 	}
 }
@@ -161,7 +159,7 @@ type envelope struct {
 func (r *Response[T]) ExpectRaw(expected string) {
 	r.t.Helper()
 
-	require.Equal(r.t, expected, *r.parsed)
+	require.Equal(r.t, expected, r.rawBody)
 }
 
 func (c *Client) buildURL(endpoint string) (string, error) {

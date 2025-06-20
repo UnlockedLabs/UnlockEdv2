@@ -76,11 +76,10 @@ export default function ProgramOverviewDashboard() {
         `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    if (!program) {
-        navigate('/404');
-    } else if (classesError) {
-        navigate('/error');
-    }
+    useEffect(() => {
+        if (!program) navigate('/404');
+        else if (classesError) navigate('/error');
+    }, [program, classesError]);
 
     const classes = classesResp?.data ?? [];
     const meta = classesResp?.meta ?? {
@@ -193,12 +192,42 @@ export default function ProgramOverviewDashboard() {
             .join(', ');
     }
 
-    const canAddClass =
-        (canSwitchFacility(user.user!) ||
-            program.facilities.some((f) => f.id === userFacilityId)) &&
-        program.is_active &&
-        program.archived_at == null;
+    type ProgramStatus =
+        | 'active'
+        | 'inactiveProgram'
+        | 'archivedProgram'
+        | 'notOfferedAtFacility';
 
+    function getProgramStatus(
+        program: ProgramOverview,
+        userFacilityId: number | undefined
+    ): ProgramStatus {
+        if (
+            !userFacilityId ||
+            !program?.facilities?.some((f) => f.id === userFacilityId)
+        )
+            return 'notOfferedAtFacility';
+        if (!program?.is_active) return 'inactiveProgram';
+        if (program.archived_at !== null) return 'archivedProgram';
+        return 'active';
+    }
+
+    const status = getProgramStatus(program, userFacilityId);
+    const canAddClass = status === 'active';
+
+    function getTooltip(): string | undefined {
+        const tooltipMap: Record<ProgramStatus, string | undefined> = {
+            active: undefined,
+            inactiveProgram:
+                'This program is inactive and cannot accept new classes.',
+            archivedProgram:
+                'This program has been archived and cannot be modified.',
+            notOfferedAtFacility:
+                'This program isn’t available at the selected facility.'
+        };
+        return tooltipMap[status];
+    }
+    //comment
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
@@ -345,6 +374,7 @@ export default function ProgramOverviewDashboard() {
                         </button>
                     ) : (
                         <AddButton
+                            dataTip={getTooltip()}
                             disabled={!canAddClass}
                             label="Add Class"
                             onClick={() =>

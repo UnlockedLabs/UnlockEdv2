@@ -82,38 +82,46 @@ func claimsFromUser(user *models.User) *Claims {
 func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "authMiddleware"}
+		var claims *Claims
+
 		if s.testingMode {
 			if testClaimsJSON := r.Header.Get("X-Test-Claims"); testClaimsJSON != "" {
 				var testClaims Claims
 				if err := json.Unmarshal([]byte(testClaimsJSON), &testClaims); err == nil {
-					ctx := context.WithValue(r.Context(), ClaimsKey, &testClaims)
-					next.ServeHTTP(w, r.WithContext(ctx))
-					return
+					claims = &testClaims
 				}
 			}
 		}
-		claims, hasCookie, err := s.validateOrySession(r)
-		if err != nil {
-			if hasCookie {
-				// if the user has a cookie, but the session is invalid, clear the cookie for them
-				s.clearKratosCookies(w, r)
+
+		if claims == nil {
+			var hasCookie bool
+			var err error
+			claims, hasCookie, err = s.validateOrySession(r)
+			if err != nil {
+				if hasCookie {
+					s.clearKratosCookies(w, r)
+				}
+				log.WithFields(fields).Error("Error validating ory session: ", err)
+				s.errorResponse(w, http.StatusUnauthorized, "invalid ory session, please clear your cookies")
+				return
 			}
-			log.WithFields(fields).Error("Error validating ory session: ", err)
-			s.errorResponse(w, http.StatusUnauthorized, "invalid ory session, please clear your cookies")
-			return
 		}
+
 		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
+
 		if claims.PasswordReset && !isAuthRoute(r) {
 			http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 			return
 		}
-		// resolver is for permissions of students or facility level administrators
+
+		// Call to named or custom resolver by routedef
 		if resolver != nil {
 			if !resolver(s.Db, r.WithContext(ctx)) {
 				http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
 				return
 			}
 		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
