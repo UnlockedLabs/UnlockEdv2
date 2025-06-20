@@ -168,7 +168,9 @@ export default function ClassManagementForm() {
         });
     }
 
+    console.log('class_id', class_id);
     const isNewClass = class_id === 'new' || !class_id;
+    console.log('isNewClass', isNewClass);
     const filteredEnumType: Partial<typeof ProgClassStatus> = isNewClass
         ? {
               SCHEDULED: ProgClassStatus.SCHEDULED,
@@ -266,47 +268,50 @@ export default function ClassManagementForm() {
                             errors={errors}
                         />
                     </div>
-                    <div className="card p-6 rounded-lg shadow-md space-y-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold">
-                                Scheduling
-                            </h2>
-                            <div className="flex justify-end mb-4">
-                                <input
-                                    type="button"
-                                    onClick={() => openCalendar()}
-                                    disabled={!canOpenCalendar}
-                                    className="button"
-                                    value="View Calendar"
-                                />
+                    {isNewClass && (
+                        <div className="card p-6 rounded-lg shadow-md space-y-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold">
+                                    Scheduling
+                                </h2>
+                                <div className="flex justify-end mb-4">
+                                    <input
+                                        type="button"
+                                        onClick={() => openCalendar()}
+                                        disabled={!canOpenCalendar}
+                                        className="button"
+                                        value="View Calendar"
+                                    />
+                                </div>
                             </div>
+                            <RRuleControl
+                                ref={rruleFormRef}
+                                getValues={getValues}
+                                endDateRef="end_dt"
+                                startDateRef="start_dt"
+                                formErrors={errors}
+                                register={register}
+                                onChange={setRruleIsValid}
+                                disabled={!isNewClass}
+                                initialDuration={
+                                    clsLoader.class?.events[0].duration
+                                }
+                                initialRule={
+                                    clsLoader.class?.events[0].recurrence_rule
+                                }
+                            />
+                            <DropdownInput
+                                label="Status"
+                                register={register}
+                                enumType={filteredEnumType}
+                                interfaceRef="status"
+                                required
+                                errors={errors}
+                                disabled={!isNewClass}
+                            />
                         </div>
-                        <RRuleControl
-                            ref={rruleFormRef}
-                            getValues={getValues}
-                            endDateRef="end_dt"
-                            startDateRef="start_dt"
-                            formErrors={errors}
-                            register={register}
-                            onChange={setRruleIsValid}
-                            disabled={!isNewClass}
-                            initialDuration={
-                                clsLoader.class?.events[0].duration
-                            }
-                            initialRule={
-                                clsLoader.class?.events[0].recurrence_rule
-                            }
-                        />
-                        <DropdownInput
-                            label="Status"
-                            register={register}
-                            enumType={filteredEnumType}
-                            interfaceRef="status"
-                            required
-                            errors={errors}
-                            disabled={!isNewClass}
-                        />
-                    </div>
+                    )}
+
                     <div className="col-span-4 flex justify-end gap-4 mt-4">
                         <div className="w-32">
                             <label className="form-control pt-4">
@@ -321,7 +326,7 @@ export default function ClassManagementForm() {
                     </div>
                 </div>
             </form>
-            {showCalendar && (
+            {isNewClass && showCalendar && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
                     <div className="card w-[90vw] max-w-[1024px] max-h-[90vh] overflow-auto p-6 relative">
                         <CloseX close={() => setShowCalendar(false)} />
