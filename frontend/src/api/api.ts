@@ -155,6 +155,25 @@ class API {
     public static delete<T>(url: string): Promise<ServerResponse<T>> {
         return API.fetchWithHandling<T>('DELETE', url);
     }
+
+    public static async downloadFile(
+        url: string
+    ): Promise<{ blob: Blob; headers: Headers }> {
+        const resp = await fetch('/api/' + url, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!resp.ok) {
+            throw new Error(`Failed to download file: ${resp.statusText}`);
+        }
+
+        const blob = await resp.blob();
+        return { blob, headers: resp.headers };
+    }
 }
 
 export default API;
