@@ -59,7 +59,6 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         {
             path: 'programs',
             id: 'programs-facilities',
-            loader: getProgramData,
             element: <Programs />,
             handle: {
                 title: 'Programs Management',
