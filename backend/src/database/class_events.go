@@ -762,6 +762,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		qryCtx.Total = 0
 		return []models.ClassEventInstance{}, nil
 	}
+
 	duration, err := time.ParseDuration(event.Duration)
 	if err != nil {
 		logrus.Errorf("error parsing duration for event: %v", err)
@@ -885,7 +886,6 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 	if err := db.
 		Preload("Overrides").
 		Where("class_id = ?", classID).
-		Order("created_at DESC").
 		First(&event).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
