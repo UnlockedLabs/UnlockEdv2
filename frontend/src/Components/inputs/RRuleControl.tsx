@@ -11,7 +11,6 @@ import { useAuth } from '@/useAuth';
 import {
     formatDuration,
     isEndDtBeforeStartDt,
-    isPastDate,
     timeToMinutes
 } from '../helperFunctions';
 export interface RRuleFormHandle {
@@ -177,8 +176,6 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             let startDate = getValues(startDateRef) as string;
             startDate = startDate ? startDate.trim() : '';
             if (startDate === '') errors.startDate = 'Start Date is required.';
-            if (startDate != '' && isPastDate(startDate))
-                errors.startDate = 'Start Date cannot be in the past.';
 
             if (endOption === 'until') {
                 let endDate = getValues(endDateRef) as string;
@@ -293,6 +290,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             <div className="space-y-5">
                 <div className="-mb-4">
                     <DateInput
+                        allowPastDate={true}
                         defaultValue={startDateVal}
                         label="Start Date"
                         register={register}
