@@ -76,7 +76,34 @@ func TestCreateFacilityHandler(t *testing.T) {
 func TestUpdateFacilityHandler(t *testing.T) {
 	env = SetupTestEnv(t)
 	defer env.CleanupTestEnv()
+	// Begining of code from James
+	t.Run("Update facility fails with invalid data", func(t *testing.T) {
+		facility, err := env.CreateTestFacility("Test Facility") // Creating a test facility to update
+		require.NoError(t, err)                                  // An assertion to ensure the facility was created successfully
 
+		// Attempt to update with invalid data (e.g., empty name)
+		facility.Name = "" // Set an invalid name
+		NewRequest[models.Facility](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/facilities/%d", facility.ID), facility).
+			WithTestClaims(&handlers.Claims{Role: models.SystemAdmin}).
+			Do().
+			ExpectStatus(http.StatusBadRequest).
+			ExpectMessage("facility name is required") // Expect a specific error message
+	})
+	t.Run("Update facility fails with non-existent ID", func(t *testing.T) {
+		// Attempt to update a facility that does not exist
+		nonExistentID := 9999 // Assuming this ID does not exist
+		facility := models.Facility{
+			Name:     "Non-existent Facility",
+			Timezone: "America/Chicago",
+		}
+		NewRequest[models.Facility](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/facilities/%d", nonExistentID), facility).
+			WithTestClaims(&handlers.Claims{Role: models.SystemAdmin}).
+			Do().
+			ExpectStatus(http.StatusNotFound).
+			ExpectMessage("facility not found") // Expect a specific error message for non-existent facility
+	})
+	// I think this is a good place to add a test for successful update, but I'm not sure if it should be here or in a separate function.
+	// END OF CODE FROM JAMES
 	t.Run("Update facility succeeds", func(t *testing.T) {
 		facility, err := env.CreateTestFacility("Test Facility")
 		require.NoError(t, err)
