@@ -737,6 +737,7 @@ export interface ProgramsFacilitiesStats {
     total_enrollments: number;
     attendance_rate: number;
     completion_rate: number;
+    last_run: Date;
 }
 
 export interface ProgramsOverviewTable {
