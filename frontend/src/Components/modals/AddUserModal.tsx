@@ -98,6 +98,8 @@ export const AddUserModal = forwardRef(function (
             onSubmit={addUser}
             error={formError}
             ref={addUserModal}
+            showCancel={true}
+            submitText="Create User  "
         />
     );
 });

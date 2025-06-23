@@ -22,12 +22,14 @@ export const EditFacilityModal = forwardRef(function (
         );
     };
     return (
-        <FormModal
+       <FormModal
             title="Edit Facility"
             inputs={facilityInputs}
             defaultValues={target ? target : undefined}
             onSubmit={updateFacility}
             ref={editFacilityModal}
+            showCancel={true}
+            submitText="Save Changes "
         />
     );
 });

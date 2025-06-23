@@ -24,11 +24,13 @@ export const EditUserModal = forwardRef(function (
     };
     return (
         <FormModal
-            title={'Edit User'}
-            inputs={getUserInputs(target.role, CRUDActions.Edit)}
-            defaultValues={target}
-            onSubmit={editUser}
-            ref={editUserModal}
+                title={'Edit User'}
+                inputs={getUserInputs(target.role, CRUDActions.Edit)}
+                defaultValues={target}
+                onSubmit={editUser}
+                ref={editUserModal}
+                showCancel={true}
+                submitText="Save Changes "
         />
     );
 });

@@ -23,11 +23,13 @@ export const AddFacilityModal = forwardRef(function (
     };
 
     return (
-        <FormModal
-            title="Add Facility"
-            inputs={facilityInputs}
-            onSubmit={addFacility}
-            ref={addFacilityModal}
+       <FormModal
+         title="Add Facility"
+         inputs={facilityInputs}
+         onSubmit={addFacility}
+         ref={addFacilityModal}
+         showCancel={true}
+         submitText="Create Facility "
         />
     );
 });
