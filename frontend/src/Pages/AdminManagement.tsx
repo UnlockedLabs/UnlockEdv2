@@ -223,9 +223,10 @@ export default function AdminManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
                         <thead>
-                            <tr className="grid grid-cols-6 px-4">
+                            <tr className="grid grid-cols-7 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
+                                <th>Last Active</th>
                                 <th>Role</th>
                                 <th>Last Updated</th>
                                 <th>Created At</th>
@@ -247,7 +248,7 @@ export default function AdminManagement() {
                                     return (
                                         <tr
                                             key={targetUser.id}
-                                            className="card p-4 w-full grid-cols-6 justify-items-center"
+                                            className="card p-4 w-full grid-cols-7 justify-items-center"
                                         >
                                             <td className="justify-self-start">
                                                 {targetUser.name_last}
@@ -255,6 +256,35 @@ export default function AdminManagement() {
                                                 {targetUser.name_first}
                                             </td>
                                             <td>{targetUser.username}</td>
+                                            <td>
+                                                {targetUser.login_count
+                                                    ?.last_login
+                                                    ? (() => {
+                                                          const dt = new Date(
+                                                              targetUser.login_count?.last_login
+                                                          );
+                                                          const date =
+                                                              dt.toLocaleDateString(
+                                                                  'en-US',
+                                                                  {
+                                                                      month: 'short',
+                                                                      day: 'numeric',
+                                                                      year: 'numeric'
+                                                                  }
+                                                              );
+                                                          const time =
+                                                              dt.toLocaleTimeString(
+                                                                  'en-US',
+                                                                  {
+                                                                      hour: 'numeric',
+                                                                      minute: '2-digit',
+                                                                      hour12: true
+                                                                  }
+                                                              );
+                                                          return `${date} - ${time}`;
+                                                      })()
+                                                    : '—'}
+                                            </td>
                                             <td>
                                                 {getUserRoleDesc(
                                                     targetUser.role
