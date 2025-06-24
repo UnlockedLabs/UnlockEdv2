@@ -94,7 +94,6 @@ export default function FacilityManagement() {
         closeModal(deleteFacilityModal);
         setTargetFacility(null);
     }
-
     return (
         <>
             <div className="px-5 py-4 flex flex-col justify-center gap-4">
@@ -103,12 +102,19 @@ export default function FacilityManagement() {
                         {/* TO DO: this is where SEARCH and SORT will go */}
                         <div className="flex flex-row gap-x-2"></div>
                     </div>
-                    <AddButton
-                        label="Add Facility"
-                        onClick={() => {
-                            showModal(addFacilityModal);
-                        }}
-                    />
+                    <div
+                        data-tip="Only System Admins can add new facilities."
+                        className="tooltip tooltip-left"
+                    >
+                        <AddButton
+                            label="Add Facility"
+                            onClick={() => {
+                                showModal(addFacilityModal);
+                            }}
+                            disabled={!user || !isSysAdmin(user)}
+                            data-tip="Only System Admins can add new facilities."
+                        />
+                    </div>
                 </div>
                 <table className="table-2">
                     <thead>
