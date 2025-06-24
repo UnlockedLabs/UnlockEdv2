@@ -19,16 +19,16 @@ func calcOffset(page, perPage int) int {
 }
 
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
-	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("facility_id = ?", args.FacilityID)
+	tx := db.WithContext(args.Ctx).Model(&models.User{})
 	switch role {
 	case "system_admin":
-		tx = tx.Where("role IN ('system_admin',  'department_admin', 'facility_admin')")
+		tx = tx.Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "department_admin":
-		tx = tx.Where("role IN ('department_admin', 'facility_admin')")
+		tx = tx.Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "facility_admin":
-		tx = tx.Where("role = 'facility_admin'")
+		tx = tx.Where("facility_id = ? and role = 'facility_admin'", args.FacilityID)
 	case "student":
-		tx = tx.Where("role = 'student'")
+		tx = tx.Where("facility_id = ? and role = 'student'", args.FacilityID)
 	}
 	if args.Search != "" {
 		tx = fuzzySearchUsers(tx, args)

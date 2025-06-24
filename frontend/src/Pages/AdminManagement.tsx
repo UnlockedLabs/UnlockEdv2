@@ -136,6 +136,26 @@ export default function AdminManagement() {
         return;
     };
 
+    function getUserRoleDesc(role: UserRole): string {
+        let roleDescription;
+        switch (role) {
+            case UserRole.SystemAdmin:
+                roleDescription = 'System Admin';
+                break;
+            case UserRole.DepartmentAdmin:
+                roleDescription = 'Department Admin';
+                break;
+            case UserRole.FacilityAdmin:
+                roleDescription = 'Facility Admin';
+                break;
+            case UserRole.Student:
+                roleDescription = 'Student';
+                break;
+            default:
+                roleDescription = 'Unknown';
+        }
+        return roleDescription;
+    }
     return (
         <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-5">
@@ -203,9 +223,10 @@ export default function AdminManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
                         <thead>
-                            <tr className="grid grid-cols-5 px-4">
+                            <tr className="grid grid-cols-6 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
+                                <th>Role</th>
                                 <th>Last Updated</th>
                                 <th>Created At</th>
                                 <th className="justify-self-end pr-4">
@@ -226,7 +247,7 @@ export default function AdminManagement() {
                                     return (
                                         <tr
                                             key={targetUser.id}
-                                            className="card p-4 w-full grid-cols-5 justify-items-center"
+                                            className="card p-4 w-full grid-cols-6 justify-items-center"
                                         >
                                             <td className="justify-self-start">
                                                 {targetUser.name_last}
@@ -234,6 +255,11 @@ export default function AdminManagement() {
                                                 {targetUser.name_first}
                                             </td>
                                             <td>{targetUser.username}</td>
+                                            <td>
+                                                {getUserRoleDesc(
+                                                    targetUser.role
+                                                )}
+                                            </td>
                                             <td>
                                                 <div
                                                     className="tooltip"
@@ -277,7 +303,7 @@ export default function AdminManagement() {
                                                     {canEdit(
                                                         user!,
                                                         targetUser
-                                                    ) && (
+                                                    ) ? (
                                                         <ULIComponent
                                                             dataTip={
                                                                 'Edit Admin'
@@ -294,11 +320,22 @@ export default function AdminManagement() {
                                                                 PencilSquareIcon
                                                             }
                                                         />
+                                                    ) : (
+                                                        <ULIComponent
+                                                            icon={
+                                                                PencilSquareIcon
+                                                            }
+                                                            dataTip={
+                                                                'Edit not allowed'
+                                                            }
+                                                            tooltipClassName="tooltip-left"
+                                                            iconClassName="text-grey-2"
+                                                        />
                                                     )}
                                                     {canEdit(
                                                         user!,
                                                         targetUser
-                                                    ) && (
+                                                    ) ? (
                                                         <ULIComponent
                                                             dataTip={
                                                                 'Reset Password'
@@ -317,6 +354,17 @@ export default function AdminManagement() {
                                                             icon={
                                                                 ArrowPathRoundedSquareIcon
                                                             }
+                                                        />
+                                                    ) : (
+                                                        <ULIComponent
+                                                            icon={
+                                                                ArrowPathRoundedSquareIcon
+                                                            }
+                                                            dataTip={
+                                                                'Reset password not allowed'
+                                                            }
+                                                            tooltipClassName="tooltip-left"
+                                                            iconClassName="text-grey-2"
                                                         />
                                                     )}
                                                     {canDelete(
@@ -348,7 +396,16 @@ export default function AdminManagement() {
                                                                 LockClosedIcon
                                                             }
                                                         />
-                                                    ) : null}
+                                                    ) : (
+                                                        <ULIComponent
+                                                            icon={TrashIcon}
+                                                            dataTip={
+                                                                'Delete not allowed'
+                                                            }
+                                                            tooltipClassName="tooltip-left"
+                                                            iconClassName="text-grey-2"
+                                                        />
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
