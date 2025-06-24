@@ -85,7 +85,7 @@ export default function VideoContent() {
                             />
                         </div>
                         <DropdownControl
-                            label="Order by"
+                            value={sortQuery}
                             setState={setSortQuery}
                             enumType={{
                                 'Title (A-Z)': 'title ASC',

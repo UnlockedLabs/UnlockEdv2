@@ -42,7 +42,7 @@ export default function CourseCatalog() {
                     changeCallback={handleSearch}
                 />
                 <DropdownControl
-                    label="order"
+                    value={order}
                     setState={setOrder}
                     enumType={{
                         Ascending: 'asc',

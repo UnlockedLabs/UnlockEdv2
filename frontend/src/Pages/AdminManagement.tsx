@@ -153,7 +153,7 @@ export default function AdminManagement() {
                             changeCallback={handleChange}
                         />
                         <DropdownControl
-                            label="order by"
+                            value={sortQuery}
                             setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
