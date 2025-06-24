@@ -281,7 +281,7 @@ func (db *DB) NewUsersInTimePeriod(days int, facilityId *uint) (int64, int64, er
 func (db *DB) GetTotalLogins(days int, facilityId *uint) (int64, error) {
 	var total int64
 	daysAgo := time.Now().AddDate(0, 0, -days)
-	tx := db.Model(&models.LoginActivity{}).Select("SUM(total_logins)").Where("time_interval >= ?", daysAgo)
+	tx := db.Model(&models.LoginActivity{}).Select("COALESCE(SUM(total_logins), 0)").Where("time_interval >= ?", daysAgo)
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
