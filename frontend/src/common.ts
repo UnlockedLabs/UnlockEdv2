@@ -36,13 +36,18 @@ export interface User {
     feature_access: FeatureAccess[];
     timezone: string;
     facilities?: Facility[];
+    login_count?: {
+        last_login: string;
+    };
+
     [key: string]:
         | number
         | string
         | boolean
         | undefined
         | FeatureAccess[]
-        | Facility[];
+        | Facility[]
+        | { last_login: string };
 }
 
 export enum FilterResidentNames {
