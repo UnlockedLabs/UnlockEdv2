@@ -341,8 +341,20 @@ export default function ProgramManagementForm() {
                     ''
                 )}
                 <div className="flex items-center justify-end gap-4 mt-2">
-                    <CancelButton onClick={() => navigate(`/programs`)} />
-                    <SubmitButton label="Submit" />
+                    <div className="w-32">
+                        <label className="form-control pt-4">
+                            <CancelButton
+                                onClick={() => navigate(`/programs`)}
+                            />
+                        </label>
+                    </div>
+                    <div className="w-32 pt-4">
+                        <SubmitButton
+                            label={
+                                program_id ? 'Save Changes' : 'Create Program'
+                            }
+                        />
+                    </div>
                 </div>
             </form>
             <TextOnlyModal
