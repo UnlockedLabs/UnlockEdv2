@@ -76,7 +76,7 @@ export default function MyProgress() {
                             <div className="flex flex-row justify-between">
                                 <h2 className="mt-2">All Courses</h2>
                                 <DropdownControl
-                                    label="Sort by"
+                                    value={sortCourses}
                                     customCallback={handleSortCourses}
                                     enumType={{
                                         Name: 'order=asc&order_by=course_name',

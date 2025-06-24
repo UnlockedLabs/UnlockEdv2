@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 
 interface DropdownControlProps {
-    label?: string;
+    value?: any; // eslint-disable-line
     setState?: Dispatch<SetStateAction<string>>;
     customCallback?: (value: string) => void;
     enumType: Record<string, string>;
@@ -9,7 +9,7 @@ interface DropdownControlProps {
 
 /* a dropdown that executes a callback function on change */
 export default function DropdownControl({
-    label,
+    value,
     setState: callback,
     customCallback,
     enumType
@@ -17,7 +17,7 @@ export default function DropdownControl({
     return (
         <label className="form-control">
             <select
-                defaultValue={label}
+                value={value} // eslint-disable-line
                 className="select select-bordered"
                 onChange={(e) => {
                     if (callback) {
@@ -28,13 +28,6 @@ export default function DropdownControl({
                     }
                 }}
             >
-                {label ? (
-                    <option value="" disabled>
-                        {label}
-                    </option>
-                ) : (
-                    ''
-                )}
                 {Object.entries(enumType).map(([key, value]) => (
                     <option key={key} value={value}>
                         {key}

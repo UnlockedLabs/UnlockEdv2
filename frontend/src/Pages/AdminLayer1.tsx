@@ -51,6 +51,7 @@ export default function AdminLayer1() {
             <div className="flex flex-row justify-between items-center">
                 <h2>Insights</h2>
                 <DropdownControl
+                    value={timeFilter}
                     enumType={FilterPastTime}
                     setState={setTimeFilter}
                 />

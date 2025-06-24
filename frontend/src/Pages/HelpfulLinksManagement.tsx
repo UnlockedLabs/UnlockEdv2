@@ -109,7 +109,7 @@ export default function HelpfulLinksManagement() {
                         changeCallback={handleChange}
                     />
                     <DropdownControl
-                        label="Order by"
+                        value={sortQuery}
                         setState={setSortQuery}
                         enumType={FilterLibrariesVidsandHelpfulLinksResident}
                     />

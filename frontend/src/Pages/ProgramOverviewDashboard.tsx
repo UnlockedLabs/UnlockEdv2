@@ -152,7 +152,7 @@ export default function ProgramOverview() {
                         changeCallback={handleChange}
                     />
                     <DropdownControl
-                        label="order by"
+                        value={sortQuery}
                         setState={setSortQuery}
                         enumType={{
                             'Facility (A-Z)': 'facility_name asc',

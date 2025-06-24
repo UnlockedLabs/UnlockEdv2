@@ -114,6 +114,7 @@ export default function LibaryLayout({
                 </div>
                 {isAdministrator(user) && !adminWithStudentView() && (
                     <DropdownControl
+                        value={filterVisibilityAdmin}
                         enumType={LibraryAdminVisibility}
                         setState={setFilterVisibilityAdmin}
                     />
