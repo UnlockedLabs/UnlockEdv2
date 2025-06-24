@@ -335,7 +335,14 @@ export default function ClassManagementForm() {
                             </label>
                         </div>
                         <div className="w-32 pt-4">
-                            <SubmitButton errorMessage={errorMessage} />
+                            <SubmitButton
+                                label={
+                                    class_id && class_id !== 'new'
+                                        ? 'Save Changes'
+                                        : 'Create Class'
+                                }
+                                errorMessage={errorMessage}
+                            />
                         </div>
                     </div>
                 </div>
