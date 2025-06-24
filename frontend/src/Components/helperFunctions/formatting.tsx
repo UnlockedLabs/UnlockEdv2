@@ -64,14 +64,6 @@ export function isEndDtBeforeStartDt(
     return end < start;
 }
 
-export function isPastDate(inputDate: string): boolean {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const [year, month, day] = inputDate.split('-').map(Number);
-    const theDate = new Date(year, month - 1, day);
-    return theDate < now;
-}
-
 export function parseRRule(
     rRule: string,
     timezone: string,
