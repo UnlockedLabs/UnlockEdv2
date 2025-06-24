@@ -337,9 +337,7 @@ export default function ClassManagementForm() {
                         <div className="w-32 pt-4">
                             <SubmitButton
                                 label={
-                                    class_id && class_id !== 'new'
-                                        ? 'Save Changes'
-                                        : 'Create Class'
+                                    isNewClass ? 'Create Class' : 'Save Changes'
                                 }
                                 errorMessage={errorMessage}
                             />
