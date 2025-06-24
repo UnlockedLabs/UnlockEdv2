@@ -223,11 +223,11 @@ export default function ProgramOverviewDashboard() {
             archivedProgram:
                 'This program has been archived and cannot be modified.',
             notOfferedAtFacility:
-                'This program isn’t available at the selected facility.'
+                'This program is not available at the selected facility.'
         };
         return tooltipMap[status];
     }
-    //comment
+
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
