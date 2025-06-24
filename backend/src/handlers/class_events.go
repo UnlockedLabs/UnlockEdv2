@@ -167,7 +167,15 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	justDates := r.URL.Query().Get("dates")
 	if justDates == "true" {
 		timezone := srv.getQueryContext(r).Timezone
-		dates, err := srv.Db.GetClassEventDatesForRecurrence(classID, timezone, month, year)
+		// Check for optional event_id parameter to get dates for a specific event
+		eventIdStr := r.URL.Query().Get("event_id")
+		var eventId *int
+		if eventIdStr != "" {
+			if parsedEventId, err := strconv.Atoi(eventIdStr); err == nil {
+				eventId = &parsedEventId
+			}
+		}
+		dates, err := srv.Db.GetClassEventDatesForRecurrence(classID, timezone, month, year, eventId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}

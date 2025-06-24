@@ -85,7 +85,7 @@ export default function EventAttendance() {
         error: datesError,
         isLoading: datesLoading
     } = useSWR<{ message: string; data: EventDate[] }, Error>(
-        `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true`
+        `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true&event_id=${event_id}`
     );
 
     useEffect(() => {

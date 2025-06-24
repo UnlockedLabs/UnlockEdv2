@@ -881,12 +881,18 @@ func (db *DB) GetCancelledOverrideEvents(qryCtx *models.QueryContext, eventId in
 	return overrides, nil
 }
 
-func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, month, year string) ([]models.EventDates, error) {
+func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, month, year string, eventId *int) ([]models.EventDates, error) {
 	var event models.ProgramClassEvent
-	if err := db.
-		Preload("Overrides").
-		Where("class_id = ?", classID).
-		First(&event).Error; err != nil {
+	query := db.Preload("Overrides").Where("class_id = ?", classID)
+
+	// if specific event_id is provided, use it, otherwise get the latest event
+	if eventId != nil {
+		query = query.Where("id = ?", *eventId)
+	} else {
+		query = query.Order("created_at DESC")
+	}
+
+	if err := query.First(&event).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 
