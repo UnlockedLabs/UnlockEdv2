@@ -223,7 +223,7 @@ export default function AdminManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
                         <thead>
-                            <tr className="grid grid-cols-5 px-4">
+                            <tr className="grid grid-cols-6 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
                                 <th>Role</th>
@@ -247,7 +247,7 @@ export default function AdminManagement() {
                                     return (
                                         <tr
                                             key={targetUser.id}
-                                            className="card p-4 w-full grid-cols-5 justify-items-center"
+                                            className="card p-4 w-full grid-cols-6 justify-items-center"
                                         >
                                             <td className="justify-self-start">
                                                 {targetUser.name_last}
