@@ -29,6 +29,7 @@ import ULIComponent from '@/Components/ULIComponent.tsx';
 import { useToast } from '@/Context/ToastCtx';
 import {
     AddUserModal,
+    BulkUploadModal,
     closeModal,
     CRUDActions,
     EditUserModal,
@@ -47,11 +48,13 @@ export default function StudentManagement() {
     const editUserModal = useRef<HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
     const deleteUserModal = useRef<HTMLDialogElement>(null);
+    const bulkUploadModal = useRef<HTMLDialogElement>(null);
     const [targetUser, setTargetUser] = useState<TargetItem<User> | null>(null);
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
     const navigate = useNavigate();
+
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState(
         FilterResidentNames['Resident Name (A-Z)']
@@ -168,14 +171,25 @@ export default function StudentManagement() {
                         />
                     </div>
 
-                    <div
-                        className="tooltip tooltip-left"
-                        data-tip="Add Resident"
-                    >
-                        <AddButton
-                            label="Add Resident"
-                            onClick={() => showModal(addUserModal)}
-                        />
+                    <div className="flex gap-2">
+                        <div
+                            className="tooltip tooltip-left"
+                            data-tip="Import multiple residents from CSV"
+                        >
+                            <AddButton
+                                label="Import Residents"
+                                onClick={() => showModal(bulkUploadModal)}
+                            />
+                        </div>
+                        <div
+                            className="tooltip tooltip-left"
+                            data-tip="Add Resident"
+                        >
+                            <AddButton
+                                label="Add Resident"
+                                onClick={() => showModal(addUserModal)}
+                            />
+                        </div>
                     </div>
                 </div>
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
@@ -404,7 +418,7 @@ export default function StudentManagement() {
                 type={TextModalType.Information}
                 title={'New Password'}
                 text={` Copy the password below and share it with the resident.
-                        If it's lost, you’ll need to reset it again.`}
+                        If it's lost, you'll need to reset it again.`}
                 onSubmit={() => {}} //eslint-disable-line
                 onClose={() => handleCancelModal(showUserPassword)}
             >
@@ -415,6 +429,13 @@ export default function StudentManagement() {
                     </div>
                 </div>
             </TextOnlyModal>
+            <BulkUploadModal
+                ref={bulkUploadModal}
+                onSuccess={() => {
+                    void mutate();
+                    closeModal(bulkUploadModal);
+                }}
+            />
         </div>
     );
 }

@@ -357,3 +357,7 @@ export { CancelClassEventModal } from './CancelClassEventModal';
 export { RescheduleClassEventModal } from './RescheduleClassEventModal';
 
 export { RescheduleClassEventSeriesModal } from './RescheduleClassEventSeriesModal';
+
+export { BulkUploadModal } from './BulkUploadModal';
+export { ValidationResultsModal } from './ValidationResultsModal';
+export { UploadCompleteModal } from './UploadCompleteModal';
