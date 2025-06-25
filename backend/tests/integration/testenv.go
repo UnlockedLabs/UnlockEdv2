@@ -133,7 +133,7 @@ func (env *TestEnv) CreateTestFacility(name string) (*models.Facility, error) {
 	return facility, nil
 }
 
-func (env *TestEnv) CreateTestProgram(name string, fundingType models.FundingType, programTypes []models.ProgramType, creditTypes []models.ProgramCreditType, isActive bool) (*models.Program, error) {
+func (env *TestEnv) CreateTestProgram(name string, fundingType models.FundingType, programTypes []models.ProgramType, creditTypes []models.ProgramCreditType, isActive bool, archivedAt *time.Time) (*models.Program, error) {
 	program := &models.Program{
 		Name:               name,
 		Description:        "This is a test program created for integration testing purposes.",
@@ -141,6 +141,7 @@ func (env *TestEnv) CreateTestProgram(name string, fundingType models.FundingTyp
 		ProgramTypes:       programTypes,
 		ProgramCreditTypes: creditTypes,
 		IsActive:           isActive,
+		ArchivedAt:         archivedAt,
 	}
 
 	if err := env.DB.CreateProgram(program); err != nil {

@@ -38,11 +38,19 @@ func TestCreateClassHandler(t *testing.T) {
 	t.Run("Create class for inactive program is invalid", func(t *testing.T) {
 		runCreateClassInactiveProgramTest(t, env, facility, facilityAdmin)
 	})
+
+	t.Run("Create class for archived program is invalid", func(t *testing.T) {
+		runCreateClassArchivedProgramTest(t, env, facility, facilityAdmin)
+	})
+
+	t.Run("Create class at facility not offered is invalid", func(t *testing.T) {
+		runCreateClassNotOfferedFacilityTest(t, env, facility, facilityAdmin)
+	})
 }
 
 // successful class is created
 func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
-	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true)
+	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
 
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
@@ -51,7 +59,7 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 	class := newClass(program, facility)
 
 	resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 
@@ -68,7 +76,10 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 }
 
 func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
-	program, err := env.CreateTestProgram("Inactive Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, false)
+	program, err := env.CreateTestProgram("Inactive Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, false, nil)
+	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
 	class := newClass(program, facility)
@@ -76,7 +87,34 @@ func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *mod
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
 		Do().
-		ExpectStatus(http.StatusConflict)
+		ExpectStatus(http.StatusUnauthorized)
+}
+
+func runCreateClassArchivedProgramTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
+	archivedAt := time.Date(2022, 12, 1, 0, 0, 0, 0, time.UTC)
+	program, err := env.CreateTestProgram("Archived Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, &archivedAt)
+	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
+	class := newClass(program, facility)
+
+	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusUnauthorized)
+}
+
+func runCreateClassNotOfferedFacilityTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
+	program, err := env.CreateTestProgram("Not Offered at Facility", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+	class := newClass(program, facility)
+
+	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusUnauthorized)
 }
 
 // creates a boilerplate class
