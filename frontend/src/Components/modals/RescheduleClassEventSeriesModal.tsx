@@ -176,7 +176,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         <>
             <FormModal
                 setFormDataRef={setFormDataRef}
-                submitText="Update Schedule"
+                submitText="Save Changes"
                 ref={ref}
                 title={'Edit Schedule (Recurring)'}
                 inputs={rescheduleClassEventSeriesInputs}
