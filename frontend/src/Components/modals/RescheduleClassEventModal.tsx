@@ -22,10 +22,12 @@ import { formatDuration } from '../helperFunctions';
 export const RescheduleClassEventModal = forwardRef(function (
     {
         calendarEvent,
-        mutate
+        mutate,
+        handleCallback
     }: {
         calendarEvent?: FacilityProgramClassEvent;
         mutate: KeyedMutator<ServerResponseMany<FacilityProgramClassEvent>>;
+        handleCallback?: () => void;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -47,11 +49,14 @@ export const RescheduleClassEventModal = forwardRef(function (
         if (!calendarEvent) {
             return;
         }
-        const cancelledEventObj = createCancelledEvent(
-            calendarEvent,
-            'rescheduled',
-            user?.timezone
-        );
+        let cancelledEventObj;
+        if (!calendarEvent.is_override) {
+            cancelledEventObj = createCancelledEvent(
+                calendarEvent,
+                'rescheduled',
+                user?.timezone
+            );
+        }
 
         //reschedule logic
         const timeZoneStartDateTime = fromZonedTime(
@@ -69,6 +74,11 @@ export const RescheduleClassEventModal = forwardRef(function (
             data.end_time as string
         );
         const rescheduledEvent = {
+            ...(calendarEvent.linked_override_event && {
+                linked_override_event_id:
+                    calendarEvent.linked_override_event.override_id
+            }),
+            ...(calendarEvent.is_override && { id: calendarEvent.override_id }),
             event_id: calendarEvent.id,
             class_id: calendarEvent.class_id,
             override_rrule: rescheduledRule,
@@ -76,9 +86,13 @@ export const RescheduleClassEventModal = forwardRef(function (
             room: data.room as string,
             is_cancelled: false
         };
+
+        const payload = [];
+        if (cancelledEventObj) payload.push(cancelledEventObj);
+        payload.push(rescheduledEvent);
         const response = await API.put(
             `program-classes/${calendarEvent.class_id}/events/${calendarEvent.id}`,
-            [cancelledEventObj, rescheduledEvent]
+            payload
         );
 
         checkResponse(
@@ -86,6 +100,10 @@ export const RescheduleClassEventModal = forwardRef(function (
             'Failed to update event',
             'Successfully updated event'
         );
+
+        if (response.success && handleCallback) {
+            handleCallback();
+        }
     };
 
     const rescheduleClassEventInputs: Input[] = [

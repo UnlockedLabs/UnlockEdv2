@@ -24,6 +24,11 @@ export function createCancelledEvent(
             .slice(0, 15) + 'Z';
     const overrideRule = `DTSTART:${eventDtStart}\nRRULE:FREQ=DAILY;COUNT=1`;
     const formattedJson = {
+        ...(calendarEvent.linked_override_event && {
+            linked_override_event_id:
+                calendarEvent.linked_override_event.override_id
+        }),
+        ...(calendarEvent.is_override && { id: calendarEvent.override_id }),
         event_id: calendarEvent.id,
         class_id: calendarEvent.class_id,
         override_rrule: overrideRule,
@@ -38,10 +43,12 @@ export function createCancelledEvent(
 export const CancelClassEventModal = forwardRef(function (
     {
         calendarEvent,
-        mutate
+        mutate,
+        handleCallback
     }: {
         calendarEvent?: FacilityProgramClassEvent;
         mutate: KeyedMutator<ServerResponseMany<FacilityProgramClassEvent>>;
+        handleCallback?: () => void;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -77,6 +84,10 @@ export const CancelClassEventModal = forwardRef(function (
             'Failed to cancel event',
             'Successfully cancelled event'
         );
+
+        if (response.success && handleCallback) {
+            handleCallback();
+        }
     };
 
     useEffect(() => {

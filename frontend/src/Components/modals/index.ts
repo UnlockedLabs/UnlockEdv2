@@ -349,3 +349,11 @@ export const requestContentInputs: Input[] = [
 export { RequestContentModal } from './RequestContentModal';
 
 export { ResidentAttendanceModal } from './ResidentAttendanceModal';
+
+export { RestoreClassEventModal } from './RestoreClassEventModal';
+
+export { CancelClassEventModal } from './CancelClassEventModal';
+
+export { RescheduleClassEventModal } from './RescheduleClassEventModal';
+
+export { RescheduleClassEventSeriesModal } from './RescheduleClassEventSeriesModal';
