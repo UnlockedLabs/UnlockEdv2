@@ -486,6 +486,13 @@ func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (model
 
 func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSVData, error) {
 	var programCSVData []models.ProgramCSVData
+	statuses := [5]models.ProgramEnrollmentStatus{
+		models.EnrollmentCompleted,
+		models.EnrollmentIncompleteWithdrawn,
+		models.EnrollmentIncompleteDropped,
+		models.EnrollmentIncompleteFailedToComplete,
+		models.EnrollmentIncompleteTransfered,
+	}
 	tx := db.WithContext(args.Ctx).Table("programs p").
 		Joins("JOIN program_classes pc ON pc.program_id = p.id").
 		Joins("JOIN program_class_enrollments pe ON pe.class_id = pc.id").
@@ -506,7 +513,7 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 			   COALESCE(
 	           CASE
 	               WHEN c.id IS NOT NULL THEN c.created_at
-	               WHEN pe.enrollment_status IN (?, ?, ?, ?, ?) THEN pe.updated_at
+	               WHEN pe.enrollment_status IN (?) THEN pe.updated_at
 	               END, 
 	               pc.end_dt
 	 		) as end_date,
@@ -519,24 +526,13 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 	                       NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
 	                       0
 	                   )
-	           END AS attendance_percentage
-	       `,
-			models.EnrollmentCompleted,
-			models.EnrollmentIncompleteWithdrawn,
-			models.EnrollmentIncompleteDropped,
-			models.EnrollmentIncompleteFailedToComplete,
-			models.EnrollmentIncompleteTransfered).
+	           END AS attendance_percentage`, statuses).
 		Where(`
 			(
 				c.id IS NOT NULL 
-				OR pe.enrollment_status IN (?, ?, ?, ?, ?)
+				OR pe.enrollment_status IN (?)
 			)
-		`,
-			models.EnrollmentCompleted,
-			models.EnrollmentIncompleteWithdrawn,
-			models.EnrollmentIncompleteDropped,
-			models.EnrollmentIncompleteFailedToComplete,
-			models.EnrollmentIncompleteTransfered).
+		`, statuses).
 		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
 		Order("f.name ASC, p.name ASC, pc.name ASC, end_date DESC")
 
