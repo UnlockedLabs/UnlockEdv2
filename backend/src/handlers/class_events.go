@@ -18,6 +18,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
 	}
@@ -74,6 +75,25 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Override(s) created successfully")
+}
+
+func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("event_override_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event override ID")
+	}
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	log.add("class_id", classID)
+	log.add("event_override_id", id)
+	args := srv.getQueryContext(r)
+	err = srv.Db.DeleteOverrideEvent(&args, id, classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusNoContent, "Event override(s) deleted successfully")
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {

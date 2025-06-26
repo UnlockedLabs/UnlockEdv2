@@ -96,13 +96,14 @@ func (event *ProgramClassEvent) RRuleUntil() (time.Time, error) {
 /** Overrides are used to cancel or reschedule events **/
 type ProgramClassEventOverride struct {
 	DatabaseFields
-	EventID       uint   `json:"event_id" gorm:"not null"`
-	Duration      string `json:"duration" gorm:"not null"`
-	OverrideRrule string `json:"override_rrule" gorm:"not null"`
-	ClassID       uint   `json:"class_id" gorm:"->" `
-	IsCancelled   bool   `json:"is_cancelled"`
-	Room          string `json:"room"`
-	Reason        string `json:"reason"`
+	EventID               uint   `json:"event_id" gorm:"not null"`
+	Duration              string `json:"duration" gorm:"not null"`
+	OverrideRrule         string `json:"override_rrule" gorm:"not null"`
+	ClassID               uint   `json:"class_id" gorm:"->" `
+	IsCancelled           bool   `json:"is_cancelled"`
+	Room                  string `json:"room"`
+	Reason                string `json:"reason"`
+	LinkedOverrideEventID *uint  `json:"linked_override_event_id"`
 
 	/* Foreign keys */
 	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
@@ -111,10 +112,7 @@ type ProgramClassEventOverride struct {
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
 
 // format argument will take a string in the format of "2006-01-02", "1/02/2006", ect
-func (pce *ProgramClassEventOverride) GetFormattedCancelledDate(format string) (*string, error) {
-	if !pce.IsCancelled {
-		return StringPtr(""), nil
-	}
+func (pce *ProgramClassEventOverride) GetFormattedOverrideDate(format string) (*string, error) {
 	rRule, err := rrule.StrToRRule(pce.OverrideRrule)
 	if err != nil {
 		return nil, err
@@ -211,13 +209,15 @@ type EventDates struct {
 
 type FacilityProgramClassEvent struct {
 	ProgramClassEvent
-	InstructorName string     `json:"instructor_name"`
-	ProgramName    string     `json:"program_name"`
-	ClassName      string     `json:"title"`
-	IsCancelled    bool       `json:"is_cancelled"`
-	IsOverride     bool       `json:"is_override"`
-	EnrolledUsers  string     `json:"enrolled_users"`
-	StartTime      *time.Time `json:"start"`
-	EndTime        *time.Time `json:"end"`
-	Frequency      string     `json:"frequency"`
+	InstructorName      string                     `json:"instructor_name"`
+	ProgramName         string                     `json:"program_name"`
+	ClassName           string                     `json:"title"`
+	IsCancelled         bool                       `json:"is_cancelled"`
+	IsOverride          bool                       `json:"is_override"`
+	EnrolledUsers       string                     `json:"enrolled_users"`
+	StartTime           *time.Time                 `json:"start"`
+	EndTime             *time.Time                 `json:"end"`
+	Frequency           string                     `json:"frequency"`
+	OverrideID          uint                       `json:"override_id"`
+	LinkedOverrideEvent *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
 }

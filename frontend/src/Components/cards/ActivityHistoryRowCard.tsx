@@ -66,6 +66,8 @@ function ActivityHistoryRowCard({
             case 'event_rescheduled_series':
                 text = `All future sessions rescheduled starting ${parseRRule(activity.new_value, user.timezone, true)} by ${activity.admin_username}`;
                 break;
+            case 'event_restored':
+                text = `${activity.admin_username} restored event on ${parseRRule(activity.old_value, user.timezone)}`;
         }
         return text;
     };

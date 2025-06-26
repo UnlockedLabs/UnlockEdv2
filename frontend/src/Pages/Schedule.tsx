@@ -4,11 +4,15 @@ import {
     ServerResponseMany
 } from '@/common';
 import EventCalendar from '@/Components/EventCalendar';
+import { fromLocalDateToTime } from '@/Components/helperFunctions';
 import { CancelButton, CloseX } from '@/Components/inputs';
-import { showModal } from '@/Components/modals';
-import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal';
-import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEventModal';
-import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleClassEventSeriesModal';
+import {
+    CancelClassEventModal,
+    RescheduleClassEventModal,
+    RescheduleClassEventSeriesModal,
+    RestoreClassEventModal,
+    showModal
+} from '@/Components/modals';
 import { useAuth } from '@/useAuth';
 import { toZonedTime } from 'date-fns-tz';
 import { useMemo, useRef, useState } from 'react';
@@ -33,6 +37,7 @@ export default function Schedule() {
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
+    const restoreClassEventModal = useRef<HTMLDialogElement>(null);
     const { startDate, endDate } = useMemo(() => {
         const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
         const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
@@ -81,12 +86,96 @@ export default function Schedule() {
     }
 
     function canUpdateEvent(): boolean {
-        if (!selectedEvent || selectedEvent.is_override) {
-            return false;
-        }
-        if (class_id && selectedEvent.class_id.toString() != class_id)
+        if (
+            selectedEvent &&
+            class_id &&
+            selectedEvent.class_id.toString() != class_id
+        )
             return false;
         return true;
+    }
+
+    function renderButtons() {
+        const eventType = !selectedEvent?.is_override
+            ? 'series'
+            : selectedEvent?.is_cancelled
+              ? 'canceled'
+              : 'rescheduled';
+        switch (eventType) {
+            case 'series':
+                return (
+                    <>
+                        <button
+                            disabled={!canUpdateEvent()}
+                            className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            onClick={() => showModal(rescheduleClassEventModal)}
+                            data-tip={toolTip}
+                        >
+                            Edit Event
+                        </button>
+                        <button
+                            disabled={!canUpdateEvent()}
+                            className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            onClick={() =>
+                                showModal(rescheduleClassEventSeriesModal)
+                            }
+                            data-tip={toolTip}
+                        >
+                            Edit Series
+                        </button>
+                        <div
+                            className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            data-tip={toolTip}
+                        >
+                            <CancelButton
+                                disabled={!canUpdateEvent()}
+                                onClick={() => showModal(cancelClassEventModal)}
+                            />
+                        </div>
+                    </>
+                );
+            case 'canceled':
+                return (
+                    <button
+                        className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                        onClick={() => showModal(restoreClassEventModal)}
+                        data-tip={toolTip}
+                    >
+                        Restore Event
+                    </button>
+                );
+            case 'rescheduled':
+                return (
+                    <>
+                        {' '}
+                        <button
+                            disabled={!canUpdateEvent()}
+                            className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            onClick={() => showModal(rescheduleClassEventModal)}
+                            data-tip={toolTip}
+                        >
+                            Edit Event
+                        </button>
+                        <button
+                            className="button-outline"
+                            onClick={() => showModal(restoreClassEventModal)}
+                        >
+                            Restore Event
+                        </button>
+                        <div
+                            className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            data-tip={toolTip}
+                        >
+                            <CancelButton
+                                disabled={!canUpdateEvent()}
+                                onClick={() => showModal(cancelClassEventModal)}
+                            />
+                        </div>
+                    </>
+                );
+            default:
+                return '';
+        }
     }
 
     return (
@@ -118,7 +207,7 @@ export default function Schedule() {
                 )}
                 <div className="card p-4 h-full">
                     {selectedEvent ? (
-                        <div className="flex flex-col justify-between gap-2 h-[600px]">
+                        <div className="flex flex-col flex-grow gap-2 h-[600px]">
                             <div>
                                 <h2 className="text-lg">Event Details</h2>
                                 <CloseX close={() => clearSelectedEvent()} />
@@ -134,18 +223,8 @@ export default function Schedule() {
                                 <p>{selectedEvent.room}</p>
                                 <h3>Time</h3>
                                 <p>
-                                    {selectedEvent.start.toLocaleTimeString(
-                                        [],
-                                        {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        }
-                                    )}{' '}
-                                    -{' '}
-                                    {selectedEvent.end.toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
+                                    {fromLocalDateToTime(selectedEvent.start)} -{' '}
+                                    {fromLocalDateToTime(selectedEvent.end)}
                                 </p>
                                 <h3>Frequency</h3>
                                 <p>{selectedEvent.frequency}</p>
@@ -155,39 +234,7 @@ export default function Schedule() {
                                 )}
                             </div>
                             <div className="space-y-2 flex flex-col w-full">
-                                <button
-                                    disabled={!canUpdateEvent()}
-                                    className={`button${!canUpdateEvent() && toolTip != '' ? ' tooltip' : ''}`}
-                                    onClick={() => {
-                                        showModal(rescheduleClassEventModal);
-                                    }}
-                                    data-tip={toolTip}
-                                >
-                                    Edit Event
-                                </button>
-                                <button
-                                    disabled={!canUpdateEvent()}
-                                    className={`button-outline${!canUpdateEvent() && toolTip != '' ? ' tooltip' : ''}`}
-                                    onClick={() => {
-                                        showModal(
-                                            rescheduleClassEventSeriesModal
-                                        );
-                                    }}
-                                    data-tip={toolTip}
-                                >
-                                    Edit Series
-                                </button>
-                                <div
-                                    className={`flex flex-col w-full${!canUpdateEvent() && toolTip != '' ? ' tooltip' : ''}`}
-                                    data-tip={toolTip}
-                                >
-                                    <CancelButton
-                                        disabled={!canUpdateEvent()}
-                                        onClick={() => {
-                                            showModal(cancelClassEventModal);
-                                        }}
-                                    />
-                                </div>
+                                {renderButtons()}
                             </div>
                         </div>
                     ) : (
@@ -203,6 +250,7 @@ export default function Schedule() {
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={cancelClassEventModal}
+                    handleCallback={clearSelectedEvent}
                 />
             )}
             {selectedEvent && (
@@ -211,6 +259,7 @@ export default function Schedule() {
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={rescheduleClassEventSeriesModal}
+                    handleCallback={clearSelectedEvent}
                 />
             )}
             {selectedEvent && (
@@ -218,6 +267,15 @@ export default function Schedule() {
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={rescheduleClassEventModal}
+                    handleCallback={clearSelectedEvent}
+                />
+            )}
+            {selectedEvent && (
+                <RestoreClassEventModal
+                    mutate={mutateEvents}
+                    calendarEvent={selectedEvent}
+                    ref={restoreClassEventModal}
+                    handleCallback={clearSelectedEvent}
                 />
             )}
         </div>

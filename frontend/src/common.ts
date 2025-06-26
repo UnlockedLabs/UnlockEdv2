@@ -824,6 +824,8 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     start: Date;
     end: Date;
     frequency: string;
+    override_id: number;
+    linked_override_event: FacilityProgramClassEvent;
 }
 
 export interface CalendarEvent {
