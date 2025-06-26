@@ -250,6 +250,15 @@ func adminValidatedFeatureRoute(method string, handler HttpFunc, features models
 	}
 }
 
+func enforceDeptAdminForAllQuery(tx *database.DB, r *http.Request) bool {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	all := r.URL.Query().Get("all") == "true"
+	if all && !claims.canSwitchFacility() {
+		return false
+	}
+	return claims.isAdmin()
+}
+
 func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML string) error {
 	charset := aws.String("UTF-8")
 	input := &sesv2.SendEmailInput{

@@ -26,7 +26,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}", srv.handleUpdateProgram, axx),
-		adminFeatureRoute("GET /api/programs/csv", srv.handleExportProgramCSV, axx),
+		adminValidatedFeatureRoute("GET /api/programs/csv", srv.handleExportProgramCSV, axx, enforceDeptAdminForAllQuery),
 	}
 }
 
@@ -325,9 +325,6 @@ func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta mod
 
 func (srv *Server) handleExportProgramCSV(w http.ResponseWriter, r *http.Request, log sLog) error {
 	queryCtx := srv.getQueryContext(r)
-	if queryCtx.All && !userIsSystemAdmin(r) {
-		return newUnauthorizedServiceError()
-	}
 	csvData, err := srv.Db.GetProgramsCSVData(&queryCtx)
 	if err != nil {
 		return newDatabaseServiceError(err)
