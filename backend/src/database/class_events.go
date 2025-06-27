@@ -149,7 +149,7 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		eventDate        *string
 		err              error
 		linkedOverrideID *uint
-		isOverrideUpdate = false
+		isOverrideUpdate bool
 	)
 
 	changeLogEntry = models.NewChangeLogEntry("program_classes", "", nil, nil, 0, ctx.UserID)
