@@ -816,6 +816,7 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     start: Date;
     end: Date;
     frequency: string;
+    credit_types: string;
 }
 
 export interface CalendarEvent {
@@ -833,9 +834,6 @@ export interface StudentCalendar {
     events: CalendarEvent[];
 }
 
-export interface StudentCalendarResponse {
-    days: StudentCalendar[];
-}
 export interface DayData {
     date: string;
     events: CalendarEvent[];
