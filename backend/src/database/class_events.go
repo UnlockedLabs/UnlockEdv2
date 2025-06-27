@@ -158,7 +158,7 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 			overrideEvent.LinkedOverrideEventID = linkedOverrideID
 		}
 		isOverrideUpdate = overrideEvent.ID > 0
-		if err := trans.Debug().Clauses(clause.OnConflict{
+		if err := trans.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room", "reason", "linked_override_event_id"}),
 		}).Create(&overrideEvent).Error; err != nil {
