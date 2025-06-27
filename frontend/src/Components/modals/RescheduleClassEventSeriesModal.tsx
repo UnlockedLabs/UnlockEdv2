@@ -28,10 +28,12 @@ import { parseRRuleUntilDate } from '../helperFunctions';
 export const RescheduleClassEventSeriesModal = forwardRef(function (
     {
         calendarEvent,
-        mutate
+        mutate,
+        handleCallback
     }: {
         calendarEvent?: FacilityProgramClassEvent;
         mutate: KeyedMutator<ServerResponseMany<FacilityProgramClassEvent>>;
+        handleCallback?: () => void;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -95,6 +97,10 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
             'The event series could not be updated',
             'The events in this series have been updated'
         );
+
+        if (response.success && handleCallback) {
+            handleCallback();
+        }
     };
 
     const rescheduleClassEventSeriesInputs: Input[] = [

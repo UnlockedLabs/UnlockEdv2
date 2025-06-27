@@ -121,3 +121,19 @@ export function textMonthLocalDate(date: string | Date) {
         });
     }
 }
+
+export function fromLocalDateToTime(date: Date) {
+    return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+export function fromLocalDateToNumericDateFormat(date: Date, timezone: string) {
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        timeZone: timezone
+    });
+}

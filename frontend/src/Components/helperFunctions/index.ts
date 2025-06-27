@@ -5,5 +5,7 @@ export {
     timeToMinutes,
     isEndDtBeforeStartDt,
     parseRRule,
-    parseRRuleUntilDate
+    parseRRuleUntilDate,
+    fromLocalDateToTime,
+    fromLocalDateToNumericDateFormat
 } from './formatting';
