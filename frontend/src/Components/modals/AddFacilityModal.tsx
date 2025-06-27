@@ -22,12 +22,22 @@ export const AddFacilityModal = forwardRef(function (
         );
     };
 
+    const handleClose = () => {(addFacilityModal as React.RefObject<HTMLDialogElement>)?.current?.close();
+      };
+
+
+
+
+
     return (
         <FormModal
             title="Add Facility"
             inputs={facilityInputs}
             onSubmit={addFacility}
             ref={addFacilityModal}
+            showCancel={true}
+            submitText="Create Facility"
+            onClose={handleClose}
         />
     );
 });

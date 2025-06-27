@@ -21,6 +21,13 @@ export const EditFacilityModal = forwardRef(function (
             'Facility updated successfully'
         );
     };
+
+         const handleClose = () => {
+        (editFacilityModal as React.RefObject<HTMLDialogElement>)?.current?.close();
+    };
+
+
+
     return (
         <FormModal
             title="Edit Facility"
@@ -28,6 +35,9 @@ export const EditFacilityModal = forwardRef(function (
             defaultValues={target ? target : undefined}
             onSubmit={updateFacility}
             ref={editFacilityModal}
+            showCancel={true}
+            submitText="Create Facility"
+            onClose={handleClose}
         />
     );
 });

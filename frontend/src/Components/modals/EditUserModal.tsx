@@ -22,6 +22,14 @@ export const EditUserModal = forwardRef(function (
             'User updated successfully'
         );
     };
+          const handleClose = () => {
+                  (editUserModal as React.RefObject<HTMLDialogElement>)?.current?.close();
+          }; 
+
+
+
+
+
     return (
         <FormModal
             title={'Edit User'}
@@ -29,6 +37,9 @@ export const EditUserModal = forwardRef(function (
             defaultValues={target}
             onSubmit={editUser}
             ref={editUserModal}
+            showCancel={true}
+            submitText="Save Changes"
+            onClose={handleClose}
         />
     );
 });

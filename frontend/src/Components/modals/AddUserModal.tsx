@@ -91,6 +91,8 @@ export const AddUserModal = forwardRef(function (
         }
     };
 
+        const handleClose = () => { (addUserModal as React.RefObject<HTMLDialogElement>)?.current?.close();
+        };
     return (
         <FormModal
             title={'Add User'}
@@ -98,6 +100,9 @@ export const AddUserModal = forwardRef(function (
             onSubmit={addUser}
             error={formError}
             ref={addUserModal}
+            showCancel={true}
+            submitText="Create User"
+            onClose={handleClose}
         />
     );
 });
