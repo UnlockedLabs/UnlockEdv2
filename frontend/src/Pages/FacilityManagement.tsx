@@ -28,6 +28,10 @@ export default function FacilityManagement() {
     const [targetFacility, setTargetFacility] =
         useState<TargetItem<Facility> | null>(null);
     const { user } = useAuth();
+    const [isDisabled, tooltip] =
+        !user || !isSysAdmin(user)
+            ? [true, 'Only System Admins can add new facilities.']
+            : [false, undefined];
 
     const {
         page: pageQuery,
@@ -102,19 +106,14 @@ export default function FacilityManagement() {
                         {/* TO DO: this is where SEARCH and SORT will go */}
                         <div className="flex flex-row gap-x-2"></div>
                     </div>
-                    <div
-                        data-tip="Only System Admins can add new facilities."
-                        className="tooltip tooltip-left"
-                    >
-                        <AddButton
-                            label="Add Facility"
-                            onClick={() => {
-                                showModal(addFacilityModal);
-                            }}
-                            disabled={!user || !isSysAdmin(user)}
-                            data-tip="Only System Admins can add new facilities."
-                        />
-                    </div>
+                    <AddButton
+                        label="Add Facility"
+                        onClick={() => {
+                            showModal(addFacilityModal);
+                        }}
+                        disabled={isDisabled}
+                        {...(isDisabled ? { dataTip: tooltip } : {})}
+                    />
                 </div>
                 <table className="table-2">
                     <thead>
