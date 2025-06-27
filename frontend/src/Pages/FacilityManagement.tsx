@@ -28,6 +28,10 @@ export default function FacilityManagement() {
     const [targetFacility, setTargetFacility] =
         useState<TargetItem<Facility> | null>(null);
     const { user } = useAuth();
+    const [isDisabled, tooltip] =
+        !user || !isSysAdmin(user)
+            ? [true, 'Only System Admins can add new facilities.']
+            : [false, undefined];
 
     const {
         page: pageQuery,
@@ -94,7 +98,6 @@ export default function FacilityManagement() {
         closeModal(deleteFacilityModal);
         setTargetFacility(null);
     }
-
     return (
         <>
             <div className="px-5 py-4 flex flex-col justify-center gap-4">
@@ -108,6 +111,8 @@ export default function FacilityManagement() {
                         onClick={() => {
                             showModal(addFacilityModal);
                         }}
+                        disabled={isDisabled}
+                        {...(isDisabled ? { dataTip: tooltip } : {})}
                     />
                 </div>
                 <table className="table-2">
