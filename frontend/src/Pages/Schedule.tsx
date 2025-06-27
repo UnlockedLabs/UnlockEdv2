@@ -3,7 +3,9 @@ import {
     FacilityProgramClassEvent,
     ServerResponseMany
 } from '@/common';
+import ClasssInformationDetailsCard from '@/Components/ClassInformationDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
+<<<<<<< HEAD
 import { fromLocalDateToTime } from '@/Components/helperFunctions';
 import { CancelButton, CloseX } from '@/Components/inputs';
 import {
@@ -16,6 +18,11 @@ import {
 import { useAuth } from '@/useAuth';
 import moment from 'moment-timezone';
 import { useMemo, useRef, useState } from 'react';
+=======
+import { useAuth } from '@/useAuth';
+import { toZonedTime } from 'date-fns-tz';
+import { useMemo, useState } from 'react';
+>>>>>>> df576af9 (refactor: added EventCalendar and ResidentPrograms table to Resident Programs page)
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 
@@ -33,11 +40,15 @@ export default function Schedule() {
     const toolTip = clsLoader
         ? `This event is from another class and cannot be edited on the ${clsLoader.class?.name} schedule.`
         : '';
+
     const { class_id } = useParams<{ class_id?: string }>();
+<<<<<<< HEAD
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
     const restoreClassEventModal = useRef<HTMLDialogElement>(null);
+=======
+>>>>>>> df576af9 (refactor: added EventCalendar and ResidentPrograms table to Resident Programs page)
     const { startDate, endDate } = useMemo(() => {
         const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
         const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
@@ -53,6 +64,7 @@ export default function Schedule() {
     const [selectedEvent, setSelectedEvent] =
         useState<FacilityProgramClassEvent | null>(null);
 
+<<<<<<< HEAD
     function parseEnrolledNames(enrolledResidents: string) {
         if (enrolledResidents == '') return <p>No residents enrolled</p>;
         return (
@@ -78,6 +90,8 @@ export default function Schedule() {
         return [startMoment.toDate(), endMoment.toDate()];
     }
 
+=======
+>>>>>>> df576af9 (refactor: added EventCalendar and ResidentPrograms table to Resident Programs page)
     const formattedEvents = events
         ? events.map((event) => {
               const [startDate, endDate] = parseDateTimes(event);
@@ -88,7 +102,6 @@ export default function Schedule() {
               };
           })
         : [];
-
     function clearSelectedEvent() {
         const selectedElement = document.querySelector<HTMLElement>(
             '.rbc-event.rbc-selected'
@@ -98,6 +111,7 @@ export default function Schedule() {
         }
         setSelectedEvent(null);
     }
+<<<<<<< HEAD
 
     function canUpdateEvent(): boolean {
         if (
@@ -192,6 +206,8 @@ export default function Schedule() {
         }
     }
 
+=======
+>>>>>>> df576af9 (refactor: added EventCalendar and ResidentPrograms table to Resident Programs page)
     return (
         <div className={`flex flex-col-2 gap-2${!class_id ? ' px-2' : ''}`}>
             <div className="w-3/4 card">
@@ -220,6 +236,7 @@ export default function Schedule() {
                     </>
                 )}
                 <div className="card p-4 h-full">
+<<<<<<< HEAD
                     {selectedEvent ? (
                         <div className="flex flex-col flex-grow gap-2 h-[600px]">
                             <div>
@@ -292,6 +309,17 @@ export default function Schedule() {
                     handleCallback={clearSelectedEvent}
                 />
             )}
+=======
+                    <ClasssInformationDetailsCard
+                        classId={class_id}
+                        event={selectedEvent}
+                        mutateEvents={mutateEvents}
+                        toolTip={toolTip}
+                        clearSelectedEvent={clearSelectedEvent}
+                    />
+                </div>
+            </div>
+>>>>>>> df576af9 (refactor: added EventCalendar and ResidentPrograms table to Resident Programs page)
         </div>
     );
 }

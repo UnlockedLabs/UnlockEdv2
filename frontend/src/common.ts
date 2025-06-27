@@ -826,6 +826,7 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     frequency: string;
     override_id: number;
     linked_override_event: FacilityProgramClassEvent;
+    credit_types: string;
 }
 
 export interface CalendarEvent {
@@ -843,9 +844,6 @@ export interface StudentCalendar {
     events: CalendarEvent[];
 }
 
-export interface StudentCalendarResponse {
-    days: StudentCalendar[];
-}
 export interface DayData {
     date: string;
     events: CalendarEvent[];

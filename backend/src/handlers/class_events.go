@@ -50,12 +50,21 @@ func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	calendar, err := srv.Db.GetCalendar(dtRng, &claims.UserID)
+	id := r.URL.Query().Get("class_id")
+	var class_id int
+	if id != "" {
+		class_id, err = strconv.Atoi(id)
+		if err != nil {
+			return newInvalidIdServiceError(err, "class_id")
+		}
+	}
+
+	args := srv.getQueryContext(r)
+	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, class_id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, calendar)
+	return writeJsonResponse(w, http.StatusOK, events)
 }
 
 func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, log sLog) error {
