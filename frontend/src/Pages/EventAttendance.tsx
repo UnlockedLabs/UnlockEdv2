@@ -462,7 +462,7 @@ export default function EventAttendance() {
                                 )
                             }
                         >
-                            Back
+                            Cancel Me
                         </button>
                         <button
                             type="submit"

@@ -326,23 +326,23 @@ export default function ClassManagementForm() {
                         </div>
                     )}
 
-                    <div className="col-span-4 flex justify-end gap-4 mt-4">
-                        <div className="w-32">
-                            <label className="form-control pt-4">
-                                <CancelButton
-                                    onClick={() => navigate(`/programs/${id}`)}
-                                />
-                            </label>
-                        </div>
-                        <div className="w-32 pt-4">
-                            <SubmitButton
-                                label={
-                                    isNewClass ? 'Create Class' : 'Save Changes'
-                                }
-                                errorMessage={errorMessage}
-                            />
-                        </div>
-                    </div>
+                    <div className="flex items-center justify-end gap-4 mt-2">
+                       <div className="w-32">
+                         <label className="form-control pt-4">
+                            <CancelButton
+                               onClick={() => navigate(`/programs/${id}`)}
+                              />
+                        </label>
+                       </div>
+                    <div className="w-32 pt-4">
+                      <SubmitButton
+                          label={
+                             isNewClass ? 'Create Class' : 'Save Changes'
+                            }
+                          errorMessage={errorMessage}
+                       />
+                     </div>
+                </div>
                 </div>
             </form>
             {isNewClass && showCalendar && (
