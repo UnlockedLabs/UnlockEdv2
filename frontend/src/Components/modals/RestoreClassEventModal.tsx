@@ -41,10 +41,10 @@ export const RestoreClassEventModal = forwardRef(function (
         let recurrencePhrase = '';
         const timezone = user ? user.timezone : '';
         if (calendarEvent) {
-            const isLinkedEvent = calendarEvent.linked_override_event
+            const isRescheduledEvent = calendarEvent.linked_override_event
                 ? true
                 : false;
-            scheduledDate = isLinkedEvent
+            scheduledDate = isRescheduledEvent
                 ? fromLocalDateToNumericDateFormat(
                       toZonedTime(
                           calendarEvent.linked_override_event.start,
@@ -58,7 +58,7 @@ export const RestoreClassEventModal = forwardRef(function (
                   );
             frequency = calendarEvent.frequency;
             startTime = fromLocalDateToTime(
-                isLinkedEvent
+                isRescheduledEvent
                     ? toZonedTime(
                           calendarEvent.linked_override_event.start,
                           timezone
@@ -66,7 +66,7 @@ export const RestoreClassEventModal = forwardRef(function (
                     : calendarEvent.start
             );
             endTime = fromLocalDateToTime(
-                isLinkedEvent
+                isRescheduledEvent
                     ? toZonedTime(
                           calendarEvent.linked_override_event.end,
                           timezone
