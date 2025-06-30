@@ -22,9 +22,7 @@ export const EditUserModal = forwardRef(function (
             'User updated successfully'
         );
     };
-          const handleClose = () => {
-                  (editUserModal as React.RefObject<HTMLDialogElement>)?.current?.close();
-          }; 
+             const  handleClose = () => closeModal(editUserModal);
 
 
 

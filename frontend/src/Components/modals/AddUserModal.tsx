@@ -91,8 +91,7 @@ export const AddUserModal = forwardRef(function (
         }
     };
 
-        const handleClose = () => { (addUserModal as React.RefObject<HTMLDialogElement>)?.current?.close();
-        };
+       const  handleClose = () => closeModal(editUserModal);
     return (
         <FormModal
             title={'Add User'}

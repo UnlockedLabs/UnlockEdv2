@@ -22,11 +22,7 @@ export const EditFacilityModal = forwardRef(function (
         );
     };
 
-         const handleClose = () => {
-        (editFacilityModal as React.RefObject<HTMLDialogElement>)?.current?.close();
-    };
-
-
+        const  handleClose = () => closeModal(editFacilityModal);
 
     return (
         <FormModal
@@ -36,7 +32,7 @@ export const EditFacilityModal = forwardRef(function (
             onSubmit={updateFacility}
             ref={editFacilityModal}
             showCancel={true}
-            submitText="Create Facility"
+            submitText="Save Changes"
             onClose={handleClose}
         />
     );

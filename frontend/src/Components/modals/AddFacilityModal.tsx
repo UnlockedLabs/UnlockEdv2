@@ -22,9 +22,7 @@ export const AddFacilityModal = forwardRef(function (
         );
     };
 
-    const handleClose = () => {(addFacilityModal as React.RefObject<HTMLDialogElement>)?.current?.close();
-      };
-
+   const  handleClose = () => closeModal(editFacilityModal);
 
 
 
