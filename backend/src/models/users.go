@@ -167,24 +167,12 @@ type ResidentTransferProgramConflicts struct {
 	ClassName   string `json:"class_name"`
 }
 
-// Bulk Upload Session Management (in-memory)
-type UploadSession struct {
-	ID           string             `json:"id"`
-	OriginalFile []byte             `json:"-"`
-	FileName     string             `json:"file_name"`
-	ValidRows    []ValidatedUserRow `json:"valid_rows"`
-	InvalidRows  []InvalidUserRow   `json:"invalid_rows"`
-	CreatedAt    time.Time          `json:"created_at"`
-	FacilityID   uint               `json:"facility_id"`
-	AdminID      uint               `json:"admin_id"`
-}
-
 type ValidatedUserRow struct {
 	RowNumber  int    `json:"row_number"`
 	LastName   string `json:"last_name"`
 	FirstName  string `json:"first_name"`
 	ResidentID string `json:"resident_id"`
-	Username   string `json:"username"` // Generated if empty
+	Username   string `json:"username"`
 }
 
 type InvalidUserRow struct {
@@ -196,12 +184,12 @@ type InvalidUserRow struct {
 	ErrorReasons []string `json:"error_reasons"`
 }
 
-// API Response structures
 type BulkUploadResponse struct {
-	UploadID   string   `json:"upload_id"`
-	ValidCount int      `json:"valid_count"`
-	ErrorCount int      `json:"error_count"`
-	Errors     []string `json:"errors,omitempty"`
+	ValidCount   int                `json:"valid_count"`
+	ErrorCount   int                `json:"error_count"`
+	ValidRows    []ValidatedUserRow `json:"valid_rows"`
+	InvalidRows  []InvalidUserRow   `json:"invalid_rows"`
+	ErrorCSVData []byte             `json:"error_csv_data,omitempty"`
 }
 
 type BulkCreateResponse struct {

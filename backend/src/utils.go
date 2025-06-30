@@ -2,20 +2,11 @@ package src
 
 import (
 	"UnlockEdv2/src/models"
-	"crypto/rand"
 	"encoding/csv"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"sync"
-	"time"
-)
-
-var (
-	uploadSessions     = make(map[string]*models.UploadSession)
-	uploadSessionsLock sync.RWMutex
 )
 
 func FilterMap[T any](ss []T, test func(T) bool) (ret []T) {
@@ -91,13 +82,13 @@ func ValidateCSVHeaders(headers []string) (*HeaderMapping, error) {
 	mapping := createHeaderMapping(headers)
 
 	requiredFields := map[string][]string{
-		"last_name":   {"last name", "lastname", "surname", "family name", "last"},
-		"first_name":  {"first name", "firstname", "given name", "name first", "first"},
-		"resident_id": {"resident id", "residentid", "resident", "id", "doc id", "docid"},
+		"last_name":   {"last name", "lastname", "surname", "family name", "last", "NameLast", "LastName", "last_name", "name_last"},
+		"first_name":  {"first name", "firstname", "given name", "name first", "first", "NameFirst", "FirstName", "first_name", "name_first"},
+		"resident_id": {"resident id", "residentid", "resident", "id", "doc id", "docid", "resident_id", "doc_id", "docid", "residentid", "resident id", "OffenderID", "offenderid", "offender id", "Offender ID", "OffenderId", "OffenderID", "offender_id"},
 	}
 
 	optionalFields := map[string][]string{
-		"username": {"username", "user name", "login", "user"},
+		"username": {"username", "user name", "login", "user", "user_name", "UserName", "user_name", "login name", "loginname"},
 	}
 
 	headerMap := &HeaderMapping{
@@ -143,7 +134,7 @@ func ValidateCSVHeaders(headers []string) (*HeaderMapping, error) {
 	return headerMap, nil
 }
 
-// ValidateUserRowFunc signature to avoid import cycle
+// signature to avoid import cycle
 type UserIdentityChecker func(username string, docID string) (bool, bool)
 
 func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existingResidentIDs map[string]int, checkIdentity UserIdentityChecker) (*models.ValidatedUserRow, *models.InvalidUserRow) {
@@ -267,41 +258,4 @@ func GenerateErrorCSV(invalidRows []models.InvalidUserRow) ([]byte, error) {
 	}
 
 	return []byte(csvContent.String()), nil
-}
-
-func GenerateUploadSessionID() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
-}
-
-func StoreUploadSession(session *models.UploadSession) {
-	uploadSessionsLock.Lock()
-	defer uploadSessionsLock.Unlock()
-	uploadSessions[session.ID] = session
-}
-
-func GetUploadSession(sessionID string) (*models.UploadSession, bool) {
-	uploadSessionsLock.RLock()
-	defer uploadSessionsLock.RUnlock()
-	session, exists := uploadSessions[sessionID]
-	return session, exists
-}
-
-func DeleteUploadSession(sessionID string) {
-	uploadSessionsLock.Lock()
-	defer uploadSessionsLock.Unlock()
-	delete(uploadSessions, sessionID)
-}
-
-func CleanupExpiredSessions() {
-	uploadSessionsLock.Lock()
-	defer uploadSessionsLock.Unlock()
-
-	expiration := time.Now().Add(-1 * time.Hour) // 1 hour TTL
-	for id, session := range uploadSessions {
-		if session.CreatedAt.Before(expiration) {
-			delete(uploadSessions, id)
-		}
-	}
 }

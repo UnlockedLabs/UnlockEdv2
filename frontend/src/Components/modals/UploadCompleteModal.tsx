@@ -4,12 +4,7 @@ import {
     CheckCircleIcon,
     ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-
-interface BulkCreateResponse {
-    created_count: number;
-    failed_count: number;
-    errors?: string[];
-}
+import type { BulkCreateResponse } from '@/common';
 
 interface UploadCompleteModalProps {
     createResponse: BulkCreateResponse | null;
@@ -49,7 +44,7 @@ export const UploadCompleteModal = forwardRef<
 
                             {createResponse.failed_count > 0 && (
                                 <p className="body text-lg mt-2">
-                                    <span className="font-bold text-warning">
+                                    <span className="font-bold text-error">
                                         {createResponse.failed_count}
                                     </span>{' '}
                                     rows were not created due to errors
@@ -58,9 +53,9 @@ export const UploadCompleteModal = forwardRef<
                         </div>
 
                         {createResponse.failed_count > 0 && (
-                            <div className="space-y-3 p-4 bg-warning/10 rounded-lg">
+                            <div className="space-y-3 p-4 bg-error/10 rounded-lg">
                                 <div className="flex items-center gap-2">
-                                    <ExclamationTriangleIcon className="w-5 h-5 text-warning" />
+                                    <ExclamationTriangleIcon className="w-5 h-5 text-error" />
                                     <span className="body font-semibold">
                                         Some accounts could not be created
                                     </span>

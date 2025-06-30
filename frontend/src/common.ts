@@ -1199,3 +1199,34 @@ export interface EventDate {
     event_id: number;
     date: string;
 }
+
+export interface ValidatedUserRow {
+    row_number: number;
+    last_name: string;
+    first_name: string;
+    resident_id: string;
+    username: string;
+}
+
+export interface InvalidUserRow {
+    row_number: number;
+    last_name: string;
+    first_name: string;
+    resident_id: string;
+    username: string;
+    error_reasons: string[];
+}
+
+export interface BulkUploadResponse {
+    valid_count: number;
+    error_count: number;
+    valid_rows: ValidatedUserRow[];
+    invalid_rows: InvalidUserRow[];
+    error_csv_data?: string; // Base64 encoded CSV data from []byte
+}
+
+export interface BulkCreateResponse {
+    created_count: number;
+    failed_count: number;
+    errors?: string[];
+}

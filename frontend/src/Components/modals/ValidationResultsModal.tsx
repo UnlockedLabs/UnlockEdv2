@@ -4,13 +4,7 @@ import {
     CheckCircleIcon,
     ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-
-interface BulkUploadResponse {
-    upload_id: string;
-    valid_count: number;
-    error_count: number;
-    errors?: string[];
-}
+import { BulkUploadResponse } from '@/common';
 
 interface ValidationResultsModalProps {
     uploadResponse: BulkUploadResponse | null;
@@ -26,14 +20,7 @@ export const ValidationResultsModal = forwardRef<
     { uploadResponse, onCreateAccounts, onDownloadErrorReport, onClose },
     ref
 ) {
-    console.log(
-        'ValidationResultsModal rendering with uploadResponse:',
-        uploadResponse
-    );
     if (!uploadResponse) {
-        console.log(
-            'ValidationResultsModal: No uploadResponse, returning null'
-        );
         return null;
     }
 
@@ -75,7 +62,7 @@ export const ValidationResultsModal = forwardRef<
                                     <div className="flex items-center gap-3">
                                         <ExclamationTriangleIcon className="w-8 h-8 text-warning" />
                                         <div>
-                                            <p className="text-2xl font-bold text-warning">
+                                            <p className="text-2xl font-bold text-error">
                                                 {uploadResponse.error_count}
                                             </p>
                                             <p className="body-small text-grey-4">
