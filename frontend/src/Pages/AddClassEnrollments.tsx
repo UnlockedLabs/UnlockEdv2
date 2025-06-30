@@ -188,7 +188,7 @@ export default function AddClassEnrollments() {
             >
                 <table className="table-2 p-6">
                     <thead className="px-1">
-                        <tr className="grid grid-cols-4 pb-4 px-4 mr-4">
+                        <tr className="grid grid-cols-4 pb-4 px-4">
                             <th className="justify-self-start">
                                 <label className="text-sm space-x-2">
                                     <input
@@ -218,7 +218,7 @@ export default function AddClassEnrollments() {
                                             onClick={() =>
                                                 handleToggleRow(user.id)
                                             }
-                                            className={`card p-4 grid-cols-4 cursor-pointer ${isSelected ? 'gray-1' : ''}`}
+                                            className={`card w-full p-4 grid-cols-4 cursor-pointer ${isSelected ? 'gray-1' : ''}`}
                                         >
                                             <td className="justify-self-start">
                                                 <input
@@ -271,7 +271,7 @@ export default function AddClassEnrollments() {
                         />
                     )}
                 </div>
-                <div className="px-4 py-6 flex flex-row justify-between items-center sticky bottom-0 border-t bg-background mr-3">
+                <div className="px-4 py-6 flex flex-row justify-between items-center sticky bottom-0 border-t bg-background">
                     <div className="flex flex-row gap-2">
                         <p>
                             {selectedUsers.length} resident
