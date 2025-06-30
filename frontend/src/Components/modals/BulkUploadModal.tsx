@@ -6,20 +6,12 @@ import { UploadCompleteModal } from './UploadCompleteModal';
 import { showModal, closeModal } from '.';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
-import { ToastState, ServerResponseOne } from '@/common';
-
-interface BulkUploadResponse {
-    upload_id: string;
-    valid_count: number;
-    error_count: number;
-    errors?: string[];
-}
-
-interface BulkCreateResponse {
-    created_count: number;
-    failed_count: number;
-    errors?: string[];
-}
+import {
+    ToastState,
+    ServerResponseOne,
+    BulkUploadResponse,
+    BulkCreateResponse
+} from '@/common';
 
 export const BulkUploadModal = forwardRef<
     HTMLDialogElement,
@@ -41,15 +33,12 @@ export const BulkUploadModal = forwardRef<
     const uploadCompleteModal = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
 
-    // When modalStep changes to validation, show validation modal
+    // when modalStep changes to validation, show validation modal
     useEffect(() => {
         if (modalStep === 'validation' && uploadResponse) {
-            console.log(
-                'modalStep changed to validation, showing validation modal'
-            );
-            closeModal(ref); // Close upload modal first
+            closeModal(ref); // close upload modal first
             setTimeout(() => {
-                showModal(validationResultsModal); // Then show validation modal
+                showModal(validationResultsModal); // open  validation modal
             }, 100);
         } else if (modalStep === 'complete' && createResponse) {
             closeModal(validationResultsModal);
@@ -83,7 +72,7 @@ export const BulkUploadModal = forwardRef<
             const response = await fetch('/api/users/bulk/upload', {
                 method: 'POST',
                 credentials: 'include',
-                body: formData // Don't set Content-Type - let browser handle it
+                body: formData
             });
 
             const data = (await response.json()) as {
@@ -92,18 +81,8 @@ export const BulkUploadModal = forwardRef<
             };
 
             if (response.ok && data.data) {
-                console.log(
-                    'Upload successful, setting response data:',
-                    data.data
-                );
-                console.log(
-                    'Current uploadResponse before setState:',
-                    uploadResponse
-                );
                 setUploadResponse(data.data);
-                setModalStep('validation'); // Trigger showing validation modal
-                console.log('setUploadResponse called');
-                // Don't close the upload modal immediately - let useEffect handle the transition
+                setModalStep('validation');
             } else {
                 toaster(
                     'Failed to upload file. Please try again.',
@@ -125,10 +104,9 @@ export const BulkUploadModal = forwardRef<
         if (!uploadResponse) return;
 
         try {
-            const response = (await API.post(
-                `users/bulk/create/${uploadResponse.upload_id}`,
-                {}
-            )) as ServerResponseOne<BulkCreateResponse>;
+            const response = (await API.post('users/bulk/create', {
+                valid_rows: uploadResponse.valid_rows
+            })) as ServerResponseOne<BulkCreateResponse>;
 
             if (response.success) {
                 setCreateResponse(response.data);
@@ -164,26 +142,33 @@ export const BulkUploadModal = forwardRef<
         window.URL.revokeObjectURL(url);
     };
 
-    const handleDownloadErrorReport = async () => {
-        if (!uploadResponse) return;
+    const handleDownloadErrorReport = () => {
+        if (!uploadResponse?.error_csv_data) {
+            return;
+        }
 
         try {
-            const response = await fetch(
-                `/api/users/bulk/errors/${uploadResponse.upload_id}`
-            );
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'error_report.csv';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            } else {
-                toaster('Failed to download error report.', ToastState.error);
+            const binaryString = atob(uploadResponse.error_csv_data);
+
+            const uint8Array = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                uint8Array[i] = binaryString.charCodeAt(i);
             }
+
+            const blob = new Blob([uint8Array], { type: 'text/csv' });
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            const originalName =
+                selectedFile?.name?.replace('.csv', '') ?? 'upload';
+            link.download = `${originalName}-error_report.csv`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Download error report error:', error);
             toaster('Failed to download error report.', ToastState.error);
@@ -201,35 +186,34 @@ export const BulkUploadModal = forwardRef<
                         </h2>
 
                         <div className="space-y-4">
-                            <p className="body">
-                                Upload a CSV to create multiple resident
-                                accounts.
-                            </p>
-                            <p className="body">
-                                Use the template below to make sure your file is
-                                formatted correctly.
-                            </p>
-
-                            <button
-                                type="button"
-                                onClick={handleDownloadTemplate}
-                                className="button-outline inline-flex items-center gap-2"
-                            >
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                            <div className="flex flex-col gap-2">
+                                <p className="body">
+                                    Upload a CSV file with user information to
+                                    create multiple accounts at once.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        void handleDownloadTemplate()
+                                    }
+                                    className="button-outline self-start inline-flex items-center gap-2"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                    />
-                                </svg>
-                                Download CSV Template
-                            </button>
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        />
+                                    </svg>
+                                    Download Template
+                                </button>
+                            </div>
                         </div>
 
                         <DragDropFileInput
@@ -240,6 +224,13 @@ export const BulkUploadModal = forwardRef<
                             disabled={isUploading}
                         />
 
+                        {selectedFile && (
+                            <p className="text-sm text-base-content/70">
+                                Click Continue to check the file for errors
+                                before creating resident accounts.
+                            </p>
+                        )}
+
                         <div className="flex justify-end gap-4 mt-6">
                             <CancelButton onClick={handleClose} />
                             <button
@@ -248,7 +239,7 @@ export const BulkUploadModal = forwardRef<
                                 disabled={!selectedFile || isUploading}
                                 className="button"
                             >
-                                {isUploading ? 'Uploading...' : 'Upload'}
+                                {isUploading ? 'Uploading...' : 'Continue'}
                             </button>
                         </div>
                     </div>

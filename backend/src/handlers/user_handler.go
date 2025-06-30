@@ -12,7 +12,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 )
 
@@ -35,8 +34,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 		newAdminRoute("POST /api/users/bulk/upload", srv.handleBulkUpload),
-		newAdminRoute("POST /api/users/bulk/create/{upload_id}", srv.handleBulkCreate),
-		newAdminRoute("GET /api/users/bulk/errors/{upload_id}", srv.handleBulkUploadErrors),
+		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
 	}
 }
 
@@ -441,7 +439,7 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 
-	err := r.ParseMultipartForm(5 << 20)
+	err := r.ParseMultipartForm(5 << 20) // 5mb file size limit for reference
 	if err != nil {
 		log.add("error", "failed to parse multipart form")
 		return newBadRequestServiceError(err, "file too large or invalid format")
@@ -498,8 +496,8 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 		return srv.Db.UserIdentityExists(username, docID)
 	}
 
-	for i, record := range records[1:] { // skip header row
-		rowNum := i + 2 // start from row 2 (1-indexed, accounting for header)
+	for i, record := range records[1:] {
+		rowNum := i + 2
 
 		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity)
 		if validRow != nil {
@@ -510,29 +508,27 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 		}
 	}
 
-	sessionID := src.GenerateUploadSessionID()
-	session := &models.UploadSession{
-		ID:           sessionID,
-		OriginalFile: fileBytes,
-		FileName:     header.Filename,
-		ValidRows:    validRows,
-		InvalidRows:  invalidRows,
-		CreatedAt:    time.Now(),
-		FacilityID:   claims.FacilityID,
-		AdminID:      claims.UserID,
-	}
-
-	src.StoreUploadSession(session)
-
-	log.add("upload_id", sessionID)
 	log.add("valid_count", len(validRows))
 	log.add("error_count", len(invalidRows))
 	log.info("CSV upload processed and validated")
 
+	var errorCSVData []byte
+	if len(invalidRows) > 0 {
+		errorCSVData, err = src.GenerateErrorCSV(invalidRows)
+		if err != nil {
+			log.add("error", err.Error())
+			return newInternalServerServiceError(err, "failed to generate error report")
+		}
+		log.add("error_csv_size", len(errorCSVData))
+		log.info("Error CSV generated successfully")
+	}
+
 	response := models.BulkUploadResponse{
-		UploadID:   sessionID,
-		ValidCount: len(validRows),
-		ErrorCount: len(invalidRows),
+		ValidCount:   len(validRows),
+		ErrorCount:   len(invalidRows),
+		ValidRows:    validRows,
+		InvalidRows:  invalidRows,
+		ErrorCSVData: errorCSVData,
 	}
 
 	return writeJsonResponse(w, http.StatusOK, response)
@@ -540,30 +536,26 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 
 func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	uploadID := r.PathValue("upload_id")
 
-	if uploadID == "" {
-		return newBadRequestServiceError(errors.New("missing upload_id"), "upload_id is required")
+	var requestBody struct {
+		ValidRows []models.ValidatedUserRow `json:"valid_rows"`
 	}
 
-	log.add("upload_id", uploadID)
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		log.add("error", "failed to decode request body")
+		return newBadRequestServiceError(err, "invalid request body")
+	}
+
+	if len(requestBody.ValidRows) == 0 {
+		return newBadRequestServiceError(errors.New("no valid rows"), "no valid rows provided for user creation")
+	}
+
 	log.add("admin_id", claims.UserID)
 	log.add("facility_id", claims.FacilityID)
-
-	session, exists := src.GetUploadSession(uploadID)
-	if !exists {
-		log.add("error", "session not found")
-		return newBadRequestServiceError(errors.New("session not found"), "upload session not found or expired")
-	}
-
-	if session.AdminID != claims.UserID || session.FacilityID != claims.FacilityID {
-		log.add("session_admin_id", session.AdminID)
-		log.add("session_facility_id", session.FacilityID)
-		return newUnauthorizedServiceError()
-	}
+	log.add("users_to_create", len(requestBody.ValidRows))
 
 	var usersToCreate []models.User
-	for _, validRow := range session.ValidRows {
+	for _, validRow := range requestBody.ValidRows {
 		user := models.User{
 			Username: stripNonAlphaChars(validRow.Username, func(char rune) bool {
 				return unicode.IsLetter(char) || unicode.IsDigit(char)
@@ -577,8 +569,6 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 		usersToCreate = append(usersToCreate, user)
 	}
 
-	log.add("users_to_create", len(usersToCreate))
-
 	createdUsers, err := srv.Db.CreateUsersBulk(usersToCreate, claims.UserID)
 	if err != nil {
 		log.add("transaction_error", err.Error())
@@ -586,10 +576,7 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 
-	log.add("created_count", len(createdUsers))
-	log.info("Bulk user creation transaction completed successfully")
-
-	src.DeleteUploadSession(uploadID)
+	log.add("created_users", len(createdUsers))
 
 	response := models.BulkCreateResponse{
 		CreatedCount: len(createdUsers),
@@ -598,50 +585,4 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 	}
 
 	return writeJsonResponse(w, http.StatusOK, response)
-}
-
-func (srv *Server) handleBulkUploadErrors(w http.ResponseWriter, r *http.Request, log sLog) error {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	uploadID := r.PathValue("upload_id")
-
-	if uploadID == "" {
-		return newBadRequestServiceError(errors.New("missing upload_id"), "upload_id is required")
-	}
-
-	log.add("upload_id", uploadID)
-	log.add("admin_id", claims.UserID)
-
-	session, exists := src.GetUploadSession(uploadID)
-	if !exists {
-		return newBadRequestServiceError(errors.New("session not found"), "upload session not found or expired")
-	}
-
-	if session.AdminID != claims.UserID || session.FacilityID != claims.FacilityID {
-		return newUnauthorizedServiceError()
-	}
-
-	if len(session.InvalidRows) == 0 {
-		return newBadRequestServiceError(errors.New("no errors"), "no errors found for this upload")
-	}
-
-	csvData, err := src.GenerateErrorCSV(session.InvalidRows)
-	if err != nil {
-		log.add("error", err.Error())
-		return newInternalServerServiceError(err, "failed to generate error report")
-	}
-
-	log.add("error_rows", len(session.InvalidRows))
-	log.info("Error report generated")
-
-	w.Header().Set("Content-Type", "text/csv")
-	w.Header().Set("Content-Disposition", "attachment; filename=error_report.csv")
-	w.Header().Set("Content-Length", strconv.Itoa(len(csvData)))
-
-	_, err = w.Write(csvData)
-	if err != nil {
-		log.add("error", err.Error())
-		return newInternalServerServiceError(err, "failed to write response")
-	}
-
-	return nil
 }
