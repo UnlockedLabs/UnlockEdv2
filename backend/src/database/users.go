@@ -20,7 +20,7 @@ func calcOffset(page, perPage int) int {
 
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(models.User{}).
-		Preload("LoginCount").
+		Preload("LoginMetrics").
 		Where("facility_id = ?", args.FacilityID)
 
 	switch role {

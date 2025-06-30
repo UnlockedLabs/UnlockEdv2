@@ -216,10 +216,10 @@ export default function StudentManagement() {
                                             </td>
                                             <td>{user.username}</td>
                                             <td>
-                                                {user.login_count?.last_login
+                                                {user.login_metrics?.last_login
                                                     ? (() => {
                                                           const dt = new Date(
-                                                              user.login_count?.last_login
+                                                              user.login_metrics?.last_login
                                                           );
                                                           const date =
                                                               dt.toLocaleDateString(

@@ -257,11 +257,11 @@ export default function AdminManagement() {
                                             </td>
                                             <td>{targetUser.username}</td>
                                             <td>
-                                                {targetUser.login_count
+                                                {targetUser.login_metrics
                                                     ?.last_login
                                                     ? (() => {
                                                           const dt = new Date(
-                                                              targetUser.login_count?.last_login
+                                                              targetUser.login_metrics?.last_login
                                                           );
                                                           const date =
                                                               dt.toLocaleDateString(

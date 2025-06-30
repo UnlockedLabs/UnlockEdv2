@@ -36,10 +36,7 @@ export interface User {
     feature_access: FeatureAccess[];
     timezone: string;
     facilities?: Facility[];
-    login_count?: {
-        last_login: string;
-    };
-
+    login_metrics: LoginMetrics;
     [key: string]:
         | number
         | string
@@ -47,7 +44,13 @@ export interface User {
         | undefined
         | FeatureAccess[]
         | Facility[]
-        | { last_login: string };
+        | LoginMetrics;
+}
+
+export interface LoginMetrics {
+    user_id: number;
+    total: number;
+    last_login: string;
 }
 
 export enum FilterResidentNames {
@@ -372,7 +375,7 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
-export interface LoginMetrics {
+export interface DeptartmentMetrics {
     data: {
         active_users: number;
         total_logins: number;
