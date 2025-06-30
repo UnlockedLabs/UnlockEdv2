@@ -47,7 +47,7 @@ type User struct {
 	OpenContentFavorites []OpenContentFavorite `json:"favorites,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
 	Facility             *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
 	UserRole             *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
-	LoginCount           *LoginMetrics         `json:"login_count,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	LoginMetrics         *LoginMetrics         `json:"login_metrics,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
 }
 
 type ImportUser struct {

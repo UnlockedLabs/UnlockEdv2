@@ -17,7 +17,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	axx := models.ProviderAccess
 	resolver := UserRoleResolver("id")
 	return []routeDef{
-		newAdminRoute("GET /api/login-metrics", srv.handleLoginMetrics),
+		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
 		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
 		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
@@ -132,7 +132,7 @@ type DashboardMetrics struct {
 	PeakLoginTimes    []models.LoginActivity `json:"peak_login_times"`
 }
 
-func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)

@@ -181,9 +181,10 @@ export default function StudentManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
                         <thead>
-                            <tr className="grid grid-cols-6 px-4">
+                            <tr className="grid grid-cols-7 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
+                                <th>Last Active</th>
                                 <th>Resident ID</th>
                                 <th>Last Updated</th>
                                 <th>Created At</th>
@@ -201,7 +202,7 @@ export default function StudentManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-6 justify-items-center cursor-pointer"
+                                            className="card p-4 w-full grid-cols-7 justify-items-center cursor-pointer"
                                             onClick={() =>
                                                 handleShowUserProfileClick(
                                                     user.id
@@ -214,6 +215,34 @@ export default function StudentManagement() {
                                                 {user.name_first}
                                             </td>
                                             <td>{user.username}</td>
+                                            <td>
+                                                {user.login_metrics?.last_login
+                                                    ? (() => {
+                                                          const dt = new Date(
+                                                              user.login_metrics?.last_login
+                                                          );
+                                                          const date =
+                                                              dt.toLocaleDateString(
+                                                                  'en-US',
+                                                                  {
+                                                                      month: 'short',
+                                                                      day: 'numeric',
+                                                                      year: 'numeric'
+                                                                  }
+                                                              );
+                                                          const time =
+                                                              dt.toLocaleTimeString(
+                                                                  'en-US',
+                                                                  {
+                                                                      hour: 'numeric',
+                                                                      minute: '2-digit',
+                                                                      hour12: true
+                                                                  }
+                                                              );
+                                                          return `${date} - ${time}`;
+                                                      })()
+                                                    : '—'}
+                                            </td>
                                             <td>{user.doc_id}</td>
                                             <td>
                                                 <div
