@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import API from '@/api/api';
 import { Facility } from '@/common';
-import { CRUDModalProps, facilityInputs, FormModal } from '.';
+import { closeModal, CRUDModalProps, facilityInputs, FormModal } from '.';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 
 export const AddFacilityModal = forwardRef(function (
@@ -22,10 +22,7 @@ export const AddFacilityModal = forwardRef(function (
         );
     };
 
-   const  handleClose = () => closeModal(editFacilityModal);
-
-
-
+    const handleClose = () => closeModal(addFacilityModal);
 
     return (
         <FormModal

@@ -1,5 +1,5 @@
 import { forwardRef, useState } from 'react';
-import { CRUDActions, CRUDModalProps, getUserInputs } from '.';
+import { closeModal, CRUDActions, CRUDModalProps, getUserInputs } from '.';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { NewUserResponse, ProviderPlatform, User, UserRole } from '@/common';
 import API from '@/api/api';
@@ -91,7 +91,7 @@ export const AddUserModal = forwardRef(function (
         }
     };
 
-       const  handleClose = () => closeModal(editUserModal);
+    const handleClose = () => closeModal(addUserModal);
     return (
         <FormModal
             title={'Add User'}

@@ -1,5 +1,11 @@
 import { forwardRef } from 'react';
-import { CRUDActions, CRUDModalProps, FormModal, getUserInputs } from '.';
+import {
+    closeModal,
+    CRUDActions,
+    CRUDModalProps,
+    FormModal,
+    getUserInputs
+} from '.';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { User } from '@/common';
 import API from '@/api/api';
@@ -22,11 +28,7 @@ export const EditUserModal = forwardRef(function (
             'User updated successfully'
         );
     };
-             const  handleClose = () => closeModal(editUserModal);
-
-
-
-
+    const handleClose = () => closeModal(editUserModal);
 
     return (
         <FormModal
