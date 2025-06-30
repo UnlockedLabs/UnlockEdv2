@@ -14,7 +14,7 @@ import {
     showModal
 } from '@/Components/modals';
 import { useAuth } from '@/useAuth';
-import { toZonedTime } from 'date-fns-tz';
+import moment from 'moment-timezone';
 import { useMemo, useRef, useState } from 'react';
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
@@ -65,12 +65,26 @@ export default function Schedule() {
         );
     }
 
+    function parseDateTimes(event: FacilityProgramClassEvent): Date[] {
+        const timezone = user ? user?.timezone : '';
+        const startDate = new Date(event.start);
+        const endDate = new Date(event.end);
+        const startMoment = moment.utc(startDate).tz(timezone);
+        const endMoment = moment.utc(endDate).tz(timezone);
+        if (!startMoment.isDST() && !endMoment.isDST()) {
+            startMoment.add(1, 'hour');
+            endMoment.add(1, 'hour');
+        }
+        return [startMoment.toDate(), endMoment.toDate()];
+    }
+
     const formattedEvents = events
         ? events.map((event) => {
+              const [startDate, endDate] = parseDateTimes(event);
               return {
                   ...event,
-                  start: toZonedTime(event.start, user?.timezone),
-                  end: toZonedTime(new Date(event.end), user?.timezone)
+                  start: startDate,
+                  end: endDate
               };
           })
         : [];
