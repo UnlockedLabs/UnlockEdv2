@@ -195,12 +195,12 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 	}
 
 	if residentID != "" {
-		usernameExists, docExists := checkIdentity("", residentID)
+		_, docExists := checkIdentity("", residentID)
 		if docExists {
 			errors = append(errors, "Resident ID already exists")
 		}
 		if username != "" {
-			usernameExists, _ = checkIdentity(username, "")
+			usernameExists, _ := checkIdentity(username, "")
 			if usernameExists {
 				errors = append(errors, "Username already exists in system")
 			}

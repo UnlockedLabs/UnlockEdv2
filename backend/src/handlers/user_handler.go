@@ -447,10 +447,14 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		log.add("error", "no file in request")
-		return newBadRequestServiceError(err, "no file provided")
+		log.errorf("error closing file %v", err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if file.Close() != nil {
+			log.errorf("Failed to close file %v", err)
+		}
+	}()
 
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".csv") {
 		log.add("filename", header.Filename)
