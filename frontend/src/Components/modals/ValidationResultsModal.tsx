@@ -26,7 +26,16 @@ export const ValidationResultsModal = forwardRef<
     { uploadResponse, onCreateAccounts, onDownloadErrorReport, onClose },
     ref
 ) {
-    if (!uploadResponse) return null;
+    console.log(
+        'ValidationResultsModal rendering with uploadResponse:',
+        uploadResponse
+    );
+    if (!uploadResponse) {
+        console.log(
+            'ValidationResultsModal: No uploadResponse, returning null'
+        );
+        return null;
+    }
 
     return (
         <dialog ref={ref} className="modal" onClose={onClose}>

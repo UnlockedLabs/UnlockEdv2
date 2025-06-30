@@ -166,3 +166,46 @@ type ResidentTransferProgramConflicts struct {
 	ProgramName string `json:"program_name"`
 	ClassName   string `json:"class_name"`
 }
+
+// Bulk Upload Session Management (in-memory)
+type UploadSession struct {
+	ID           string             `json:"id"`
+	OriginalFile []byte             `json:"-"`
+	FileName     string             `json:"file_name"`
+	ValidRows    []ValidatedUserRow `json:"valid_rows"`
+	InvalidRows  []InvalidUserRow   `json:"invalid_rows"`
+	CreatedAt    time.Time          `json:"created_at"`
+	FacilityID   uint               `json:"facility_id"`
+	AdminID      uint               `json:"admin_id"`
+}
+
+type ValidatedUserRow struct {
+	RowNumber  int    `json:"row_number"`
+	LastName   string `json:"last_name"`
+	FirstName  string `json:"first_name"`
+	ResidentID string `json:"resident_id"`
+	Username   string `json:"username"` // Generated if empty
+}
+
+type InvalidUserRow struct {
+	RowNumber    int      `json:"row_number"`
+	LastName     string   `json:"last_name"`
+	FirstName    string   `json:"first_name"`
+	ResidentID   string   `json:"resident_id"`
+	Username     string   `json:"username"`
+	ErrorReasons []string `json:"error_reasons"`
+}
+
+// API Response structures
+type BulkUploadResponse struct {
+	UploadID   string   `json:"upload_id"`
+	ValidCount int      `json:"valid_count"`
+	ErrorCount int      `json:"error_count"`
+	Errors     []string `json:"errors,omitempty"`
+}
+
+type BulkCreateResponse struct {
+	CreatedCount int      `json:"created_count"`
+	FailedCount  int      `json:"failed_count"`
+	Errors       []string `json:"errors,omitempty"`
+}

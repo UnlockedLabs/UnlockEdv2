@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src"
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/tasks"
@@ -189,6 +190,20 @@ func newServer(ctx context.Context) *Server {
 	}
 	server.wsClient = newClientManager()
 	server.scheduler = tasks.InitScheduling(dev, server.nats, server.Db.DB)
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				src.CleanupExpiredSessions()
+			}
+		}
+	}()
+
 	return &server
 }
 

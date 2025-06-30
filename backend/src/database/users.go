@@ -680,3 +680,24 @@ func (db *DB) IsAccountLocked(userID uint) (FailedLoginStatus, error) {
 func (db *DB) ResetFailedLoginAttempts(userID uint) error {
 	return db.Delete(&models.FailedLoginAttempts{}, "user_id = ?", userID).Error
 }
+
+func (db *DB) CreateUsersBulk(users []models.User, adminID uint) ([]models.User, error) {
+	if len(users) == 0 {
+		return []models.User{}, nil
+	}
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.CreateInBatches(users, 100).Error; err != nil {
+			return newCreateDBError(err, "users")
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Errorf("CSV user creation transaction failed: %v", err)
+		return nil, err
+	}
+
+	log.Infof("Successfully created %d users", len(users))
+	return users, nil
+}
