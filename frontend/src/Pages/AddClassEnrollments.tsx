@@ -273,9 +273,15 @@ export default function AddClassEnrollments() {
                 </div>
                 <div className="px-4 py-6 flex flex-row justify-between items-center sticky bottom-0 border-t bg-background mr-3">
                     <div className="flex flex-row gap-2">
-                        <p>{selectedUsers.length} residents selected</p>
+                        <p>
+                            {selectedUsers.length} resident
+                            {selectedUsers.length === 1 ? '' : 's'} selected
+                        </p>
                         <span>•</span>
-                        <p>{remainingCapacity} spots remaining</p>
+                        <p>
+                            {remainingCapacity} spot
+                            {remainingCapacity === 1 ? '' : 's'} remaining
+                        </p>
                     </div>
                     <div className="flex flex-row gap-2">
                         <CancelButton
