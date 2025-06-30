@@ -271,7 +271,7 @@ export default function AddClassEnrollments() {
                         />
                     )}
                 </div>
-                <div className="px-4 py-6 flex flex-row justify-between items-center sticky bottom-0 border-t bg-background">
+                <div className="py-4 flex flex-row justify-between items-center sticky bottom-0 border-t bg-background">
                     <div className="flex flex-row gap-2">
                         <p>
                             {selectedUsers.length} resident
