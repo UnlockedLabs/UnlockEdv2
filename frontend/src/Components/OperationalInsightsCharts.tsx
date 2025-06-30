@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import {
-    FilterPastTime,
-    DeptartmentMetrics,
-    ServerResponseOne
-} from '@/common';
+import { FilterPastTime, DepartmentMetrics, ServerResponseOne } from '@/common';
 import StatsCard from './StatsCard';
 import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
@@ -20,7 +16,7 @@ const OperationalInsights = () => {
     const { user } = useAuth();
 
     const { data, error, isLoading, mutate } = useSWR<
-        ServerResponseOne<DeptartmentMetrics>,
+        ServerResponseOne<DepartmentMetrics>,
         Error
     >(
         `/api/department-metrics?facility=${facility}&days=${timeFilter}&reset=${resetCache}`

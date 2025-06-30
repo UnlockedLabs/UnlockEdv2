@@ -375,7 +375,7 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
-export interface DeptartmentMetrics {
+export interface DepartmentMetrics {
     data: {
         active_users: number;
         total_logins: number;
