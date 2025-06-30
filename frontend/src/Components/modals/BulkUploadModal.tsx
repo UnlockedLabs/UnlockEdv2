@@ -1,4 +1,4 @@
-import { forwardRef, useState, useRef } from 'react';
+import { forwardRef, useState, useRef, useEffect } from 'react';
 import { CloseX, CancelButton } from '../inputs';
 import { DragDropFileInput } from '../inputs/DragDropFileInput';
 import { ValidationResultsModal } from './ValidationResultsModal';
@@ -33,10 +33,31 @@ export const BulkUploadModal = forwardRef<
         useState<BulkUploadResponse | null>(null);
     const [createResponse, setCreateResponse] =
         useState<BulkCreateResponse | null>(null);
+    const [modalStep, setModalStep] = useState<
+        'upload' | 'validation' | 'complete'
+    >('upload');
 
     const validationResultsModal = useRef<HTMLDialogElement>(null);
     const uploadCompleteModal = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
+
+    // When modalStep changes to validation, show validation modal
+    useEffect(() => {
+        if (modalStep === 'validation' && uploadResponse) {
+            console.log(
+                'modalStep changed to validation, showing validation modal'
+            );
+            closeModal(ref); // Close upload modal first
+            setTimeout(() => {
+                showModal(validationResultsModal); // Then show validation modal
+            }, 100);
+        } else if (modalStep === 'complete' && createResponse) {
+            closeModal(validationResultsModal);
+            setTimeout(() => {
+                showModal(uploadCompleteModal);
+            }, 100);
+        }
+    }, [modalStep, uploadResponse, createResponse]);
 
     const handleFileSelect = (file: File | null) => {
         setSelectedFile(file);
@@ -47,6 +68,7 @@ export const BulkUploadModal = forwardRef<
         setIsUploading(false);
         setUploadResponse(null);
         setCreateResponse(null);
+        setModalStep('upload');
         closeModal(ref);
     };
 
@@ -57,15 +79,31 @@ export const BulkUploadModal = forwardRef<
         try {
             const formData = new FormData();
             formData.append('file', selectedFile);
-            const response = (await API.post(
-                'users/bulk-upload',
-                formData
-            )) as ServerResponseOne<BulkUploadResponse>;
 
-            if (response.success) {
-                setUploadResponse(response.data);
-                closeModal(ref);
-                showModal(validationResultsModal);
+            const response = await fetch('/api/users/bulk/upload', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData // Don't set Content-Type - let browser handle it
+            });
+
+            const data = (await response.json()) as {
+                message: string;
+                data: BulkUploadResponse;
+            };
+
+            if (response.ok && data.data) {
+                console.log(
+                    'Upload successful, setting response data:',
+                    data.data
+                );
+                console.log(
+                    'Current uploadResponse before setState:',
+                    uploadResponse
+                );
+                setUploadResponse(data.data);
+                setModalStep('validation'); // Trigger showing validation modal
+                console.log('setUploadResponse called');
+                // Don't close the upload modal immediately - let useEffect handle the transition
             } else {
                 toaster(
                     'Failed to upload file. Please try again.',
@@ -88,14 +126,13 @@ export const BulkUploadModal = forwardRef<
 
         try {
             const response = (await API.post(
-                `users/bulk-create/${uploadResponse.upload_id}`,
+                `users/bulk/create/${uploadResponse.upload_id}`,
                 {}
             )) as ServerResponseOne<BulkCreateResponse>;
 
             if (response.success) {
                 setCreateResponse(response.data);
-                closeModal(validationResultsModal);
-                showModal(uploadCompleteModal);
+                setModalStep('complete');
                 onSuccess?.();
             } else {
                 toaster(
@@ -132,7 +169,7 @@ export const BulkUploadModal = forwardRef<
 
         try {
             const response = await fetch(
-                `/api/users/bulk-upload/errors/${uploadResponse.upload_id}`
+                `/api/users/bulk/errors/${uploadResponse.upload_id}`
             );
             if (response.ok) {
                 const blob = await response.blob();
@@ -155,7 +192,7 @@ export const BulkUploadModal = forwardRef<
 
     return (
         <>
-            <dialog ref={ref} className="modal" onClose={handleClose}>
+            <dialog ref={ref} className="modal">
                 <div className="modal-box max-w-2xl">
                     <CloseX close={handleClose} />
                     <div className="flex flex-col gap-6">
@@ -226,6 +263,7 @@ export const BulkUploadModal = forwardRef<
                 onClose={() => {
                     closeModal(validationResultsModal);
                     setUploadResponse(null);
+                    setModalStep('upload');
                 }}
             />
 
@@ -236,6 +274,7 @@ export const BulkUploadModal = forwardRef<
                 onClose={() => {
                     closeModal(uploadCompleteModal);
                     setCreateResponse(null);
+                    setModalStep('upload');
                     handleClose();
                 }}
             />
