@@ -244,7 +244,7 @@ export default function ProgramManagement() {
                             : total_programs.toString()
                     }
                     label={'programs'}
-                    tooltip="Count of unique programs offered across all facilities."
+                    tooltip={`Count of unique programs offered ${user?.role === UserRole.FacilityAdmin ? 'at ' + user.facility_name : 'across all facilities'}.`}
                     useToLocaleString={false}
                 />
                 {user?.role !== UserRole.FacilityAdmin && (

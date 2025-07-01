@@ -370,10 +370,29 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 
 func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
 	var programsFacilityStats models.ProgramsFacilitiesStats
-	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramFacilityHistory{}).
+	var mostRecentDate time.Time
+	if err := db.WithContext(args.Ctx).
+		Model(&models.DailyProgramFacilityHistory{}).
+		Select("MAX(date)").
+		Where("facility_id = ?", args.FacilityID).
+		Scan(&mostRecentDate).Error; err != nil {
+		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats (max date)")
+	}
+	var totals struct {
+		TotalPrograms    int64 `json:"total_programs"`
+		TotalEnrollments int64 `json:"total_enrollments"`
+	}
+	if err := db.WithContext(args.Ctx).
+		Model(&models.DailyProgramFacilityHistory{}).
 		Select(`
 		COUNT(*) AS total_programs,
-		SUM(total_enrollments) AS total_enrollments,
+		SUM(total_enrollments) AS total_enrollments`).
+		Where("facility_id = ? AND date = ?", args.FacilityID, mostRecentDate).
+		Scan(&totals).Error; err != nil {
+		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats (totals for most recent date)")
+	}
+	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramFacilityHistory{}).
+		Select(`
 		SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0) * 100 AS attendance_rate,
 		SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0) * 100 AS completion_rate
 	`).Where("facility_id = ?", args.FacilityID)
@@ -383,6 +402,9 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	if err := tx.Scan(&programsFacilityStats).Error; err != nil {
 		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats")
 	}
+	programsFacilityStats.TotalPrograms = &totals.TotalPrograms
+	programsFacilityStats.TotalEnrollments = &totals.TotalEnrollments
+
 	return programsFacilityStats, nil
 }
 
