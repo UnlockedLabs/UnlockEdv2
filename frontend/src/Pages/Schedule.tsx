@@ -3,7 +3,7 @@ import {
     FacilityProgramClassEvent,
     ServerResponseMany
 } from '@/common';
-import ClasssInformationDetailsCard from '@/Components/ClassInformationDetailsCard';
+import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
 <<<<<<< HEAD
 import { fromLocalDateToTime } from '@/Components/helperFunctions';
@@ -235,89 +235,14 @@ export default function Schedule() {
                         </div>
                     </>
                 )}
-                <div className="card p-4 h-full">
-<<<<<<< HEAD
-                    {selectedEvent ? (
-                        <div className="flex flex-col flex-grow gap-2 h-[600px]">
-                            <div>
-                                <h2 className="text-lg">Event Details</h2>
-                                <CloseX close={() => clearSelectedEvent()} />
-                            </div>
-                            <div className="space-y-2 overflow-y-scroll">
-                                <h3>Program Name</h3>
-                                <p>{selectedEvent.program_name}</p>
-                                <h3>Class Name</h3>
-                                <p>{selectedEvent.title}</p>
-                                <h3>Instructor</h3>
-                                <p>{selectedEvent.instructor_name}</p>
-                                <h3>Room</h3>
-                                <p>{selectedEvent.room}</p>
-                                <h3>Time</h3>
-                                <p>
-                                    {fromLocalDateToTime(selectedEvent.start)} -{' '}
-                                    {fromLocalDateToTime(selectedEvent.end)}
-                                </p>
-                                <h3>Frequency</h3>
-                                <p>{selectedEvent.frequency}</p>
-                                <h3>Enrolled Residents</h3>
-                                {parseEnrolledNames(
-                                    selectedEvent.enrolled_users
-                                )}
-                            </div>
-                            <div className="space-y-2 flex flex-col w-full">
-                                {renderButtons()}
-                            </div>
-                        </div>
-                    ) : (
-                        <p className="my-auto body text-center">
-                            Select an event to view details, make changes, or
-                            cancel a session.
-                        </p>
-                    )}
-                </div>
-            </div>
-            {selectedEvent && (
-                <CancelClassEventModal
-                    mutate={mutateEvents}
-                    calendarEvent={selectedEvent}
-                    ref={cancelClassEventModal}
-                    handleCallback={clearSelectedEvent}
+                <ClassEventDetailsCard
+                    classId={class_id}
+                    event={selectedEvent}
+                    mutateEvents={mutateEvents}
+                    toolTip={toolTip}
+                    clearSelectedEvent={clearSelectedEvent}
+                    readOnly={false}
                 />
-            )}
-            {selectedEvent && (
-                <RescheduleClassEventSeriesModal
-                    key={Date.now()}
-                    mutate={mutateEvents}
-                    calendarEvent={selectedEvent}
-                    ref={rescheduleClassEventSeriesModal}
-                    handleCallback={clearSelectedEvent}
-                />
-            )}
-            {selectedEvent && (
-                <RescheduleClassEventModal
-                    mutate={mutateEvents}
-                    calendarEvent={selectedEvent}
-                    ref={rescheduleClassEventModal}
-                    handleCallback={clearSelectedEvent}
-                />
-            )}
-            {selectedEvent && (
-                <RestoreClassEventModal
-                    mutate={mutateEvents}
-                    calendarEvent={selectedEvent}
-                    ref={restoreClassEventModal}
-                    handleCallback={clearSelectedEvent}
-                />
-            )}
-=======
-                    <ClasssInformationDetailsCard
-                        classId={class_id}
-                        event={selectedEvent}
-                        mutateEvents={mutateEvents}
-                        toolTip={toolTip}
-                        clearSelectedEvent={clearSelectedEvent}
-                    />
-                </div>
             </div>
 >>>>>>> df576af9 (refactor: added EventCalendar and ResidentPrograms table to Resident Programs page)
         </div>

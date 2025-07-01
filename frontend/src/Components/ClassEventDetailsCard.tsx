@@ -7,21 +7,23 @@ import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleC
 import { useRef } from 'react';
 import { KeyedMutator } from 'swr';
 
-interface ClasssInformationDetailsCardProps {
+interface ClassEventDetailsCardProps {
     classId: string | undefined;
     event: FacilityProgramClassEvent | null;
     mutateEvents: KeyedMutator<ServerResponseMany<FacilityProgramClassEvent>>;
     toolTip: string;
     clearSelectedEvent: () => void;
+    readOnly: boolean;
 }
 
-export default function ClasssInformationDetailsCard({
+export default function ClassEventDetailsCard({
     classId,
     event,
     mutateEvents,
     toolTip,
-    clearSelectedEvent
-}: ClasssInformationDetailsCardProps) {
+    clearSelectedEvent,
+    readOnly
+}: ClassEventDetailsCardProps) {
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
@@ -49,13 +51,13 @@ export default function ClasssInformationDetailsCard({
     return (
         <div className="card p-4 h-full">
             {event ? (
-                <div className="flex flex-col justify-between gap-2 h-[600px]">
+                <div className="flex flex-col gap-2 h-[600px]">
                     <div>
                         <h2 className="text-lg">Event Details</h2>
                         <CloseX close={clearSelectedEvent} />
                     </div>
 
-                    <div className="space-y-2 overflow-y-scroll">
+                    <div className="space-y-2 overflow-y-scroll h-full">
                         <h3>Program Name</h3>
                         <p>{event.program_name}</p>
                         <h3>Class Name</h3>
@@ -81,36 +83,41 @@ export default function ClasssInformationDetailsCard({
                         <h3>Enrolled Residents</h3>
                         {parseEnrolledNames(event.enrolled_users)}
                     </div>
-
-                    <div className="space-y-2 flex flex-col w-full">
-                        <button
-                            disabled={!canUpdateEvent()}
-                            className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
-                            onClick={() => showModal(rescheduleClassEventModal)}
-                            data-tip={toolTip}
-                        >
-                            Edit Event
-                        </button>
-                        <button
-                            disabled={!canUpdateEvent()}
-                            className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
-                            onClick={() =>
-                                showModal(rescheduleClassEventSeriesModal)
-                            }
-                            data-tip={toolTip}
-                        >
-                            Edit Series
-                        </button>
-                        <div
-                            className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
-                            data-tip={toolTip}
-                        >
-                            <CancelButton
+                    {!readOnly && (
+                        <div className="space-y-2 flex flex-col w-full min-h-[150px]">
+                            <button
                                 disabled={!canUpdateEvent()}
-                                onClick={() => showModal(cancelClassEventModal)}
-                            />
+                                className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                                onClick={() =>
+                                    showModal(rescheduleClassEventModal)
+                                }
+                                data-tip={toolTip}
+                            >
+                                Edit Event
+                            </button>
+                            <button
+                                disabled={!canUpdateEvent()}
+                                className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                                onClick={() =>
+                                    showModal(rescheduleClassEventSeriesModal)
+                                }
+                                data-tip={toolTip}
+                            >
+                                Edit Series
+                            </button>
+                            <div
+                                className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                                data-tip={toolTip}
+                            >
+                                <CancelButton
+                                    disabled={!canUpdateEvent()}
+                                    onClick={() =>
+                                        showModal(cancelClassEventModal)
+                                    }
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             ) : (
                 <p className="my-auto body text-center">

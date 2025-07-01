@@ -10,8 +10,11 @@ import useSWR from 'swr';
 import Pagination from './Pagination';
 import { textMonthLocalDate } from './helperFunctions/formatting';
 import { showModal, ResidentAttendanceModal } from './modals';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function ResidentPrograms({ user_id }: { user_id: string }) {
+    const user = useAuth();
+    const can_navigate = isAdministrator(user.user);
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const residentAttendanceModal = useRef(null);
@@ -86,8 +89,12 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
             >
                 <td className="justify-self-start">{pc.program_name}</td>
                 <td
-                    className={clickableElement}
-                    onClick={() => handleNavigate(pc.class_id)}
+                    className={can_navigate ? clickableElement : ''}
+                    onClick={
+                        can_navigate
+                            ? () => handleNavigate(pc.class_id)
+                            : undefined
+                    }
                 >
                     {pc.class_name}
                 </td>
