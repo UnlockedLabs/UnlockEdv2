@@ -458,7 +458,7 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".csv") {
 		log.add("filename", header.Filename)
-		return newBadRequestServiceError(errors.New("invalid file type"), "file type not supported — only .csv files can be uploaded")
+		return newBadRequestServiceError(errors.New("invalid file type"), "file type not supported - only .csv files can be uploaded")
 	}
 
 	fileBytes, err := io.ReadAll(file)
@@ -468,7 +468,7 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 	}
 
 	if len(fileBytes) == 0 {
-		return newBadRequestServiceError(errors.New("empty file"), "file is empty — no data found")
+		return newBadRequestServiceError(errors.New("empty file"), "file is empty - no data found")
 	}
 
 	log.add("filename", header.Filename)
@@ -482,7 +482,7 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 	}
 
 	if len(records) == 0 {
-		return newBadRequestServiceError(errors.New("empty file"), "file is empty — no data found")
+		return newBadRequestServiceError(errors.New("empty file"), "file is empty - no data found")
 	}
 
 	headers := records[0]
@@ -523,8 +523,6 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 			log.add("error", err.Error())
 			return newInternalServerServiceError(err, "failed to generate error report")
 		}
-		log.add("error_csv_size", len(errorCSVData))
-		log.info("Error CSV generated successfully")
 	}
 
 	response := models.BulkUploadResponse{
@@ -541,25 +539,23 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 
-	var requestBody struct {
-		ValidRows []models.ValidatedUserRow `json:"valid_rows"`
-	}
+	var validRows []models.ValidatedUserRow
 
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&validRows); err != nil {
 		log.add("error", "failed to decode request body")
 		return newBadRequestServiceError(err, "invalid request body")
 	}
 
-	if len(requestBody.ValidRows) == 0 {
+	if len(validRows) == 0 {
 		return newBadRequestServiceError(errors.New("no valid rows"), "no valid rows provided for user creation")
 	}
 
 	log.add("admin_id", claims.UserID)
 	log.add("facility_id", claims.FacilityID)
-	log.add("users_to_create", len(requestBody.ValidRows))
+	log.add("users_to_create", len(validRows))
 
-	var usersToCreate []models.User
-	for _, validRow := range requestBody.ValidRows {
+	usersToCreate := make([]models.User, 0, len(validRows))
+	for _, validRow := range validRows {
 		user := models.User{
 			Username: stripNonAlphaChars(validRow.Username, func(char rune) bool {
 				return unicode.IsLetter(char) || unicode.IsDigit(char)
@@ -573,20 +569,15 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 		usersToCreate = append(usersToCreate, user)
 	}
 
-	createdUsers, err := srv.Db.CreateUsersBulk(usersToCreate, claims.UserID)
+	err := srv.Db.CreateUsersBulk(usersToCreate)
 	if err != nil {
 		log.add("transaction_error", err.Error())
 		log.error("Bulk user creation transaction failed")
 		return newDatabaseServiceError(err)
 	}
 
-	log.add("created_users", len(createdUsers))
+	log.add("created_users", len(usersToCreate))
+	log.info("Bulk user creation transaction completed successfully")
 
-	response := models.BulkCreateResponse{
-		CreatedCount: len(createdUsers),
-		FailedCount:  0,
-		Errors:       []string{},
-	}
-
-	return writeJsonResponse(w, http.StatusOK, response)
+	return writeJsonResponse(w, http.StatusOK, len(usersToCreate))
 }

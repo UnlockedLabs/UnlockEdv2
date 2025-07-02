@@ -2,12 +2,16 @@ import { forwardRef } from 'react';
 import { CloseX } from '../inputs';
 import {
     CheckCircleIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
-import type { BulkCreateResponse } from '@/common';
+import type { BulkUploadResponse } from '@/common';
 
 interface UploadCompleteModalProps {
-    createResponse: BulkCreateResponse | null;
+    uploadResponse: BulkUploadResponse | null;
+    createdCount: number | null;
+    errorCount: number;
+    errorCsvData: string | undefined;
     onDownloadErrorReport: () => void;
     onClose: () => void;
 }
@@ -16,10 +20,12 @@ export const UploadCompleteModal = forwardRef<
     HTMLDialogElement,
     UploadCompleteModalProps
 >(function UploadCompleteModal(
-    { createResponse, onDownloadErrorReport, onClose },
+    { createdCount, errorCount, errorCsvData, onDownloadErrorReport, onClose },
     ref
 ) {
-    if (!createResponse) return null;
+    if (!createdCount) return null;
+
+    const hasErrors = errorCount > 0 && errorCsvData;
 
     return (
         <dialog ref={ref} className="modal" onClose={onClose}>
@@ -37,52 +43,31 @@ export const UploadCompleteModal = forwardRef<
                         <div className="text-center">
                             <p className="body text-lg">
                                 <span className="font-bold text-success">
-                                    {createResponse.created_count}
+                                    {createdCount}
                                 </span>{' '}
                                 accounts successfully created
                             </p>
-
-                            {createResponse.failed_count > 0 && (
-                                <p className="body text-lg mt-2">
-                                    <span className="font-bold text-error">
-                                        {createResponse.failed_count}
-                                    </span>{' '}
-                                    rows were not created due to errors
-                                </p>
-                            )}
                         </div>
 
-                        {createResponse.failed_count > 0 && (
-                            <div className="space-y-3 p-4 bg-error/10 rounded-lg">
+                        {hasErrors && (
+                            <div className="space-y-3 p-4 bg-warning/10 rounded-lg">
                                 <div className="flex items-center gap-2">
-                                    <ExclamationTriangleIcon className="w-5 h-5 text-error" />
+                                    <ExclamationTriangleIcon className="w-5 h-5 text-warning" />
                                     <span className="body font-semibold">
-                                        Some accounts could not be created
+                                        Error Report Available
                                     </span>
                                 </div>
                                 <p className="body-small text-grey-4">
-                                    Review and correct the errors in the
-                                    downloaded file before re-uploading those
-                                    rows.
+                                    Download the error report to see which rows
+                                    had validation errors. Fix the errors and
+                                    upload those rows again.
                                 </p>
                                 <button
                                     type="button"
                                     onClick={() => void onDownloadErrorReport()}
                                     className="button-outline inline-flex items-center gap-2"
                                 >
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        />
-                                    </svg>
+                                    <ArrowDownTrayIcon className="w-4 h-4" />
                                     Download Error File
                                 </button>
                             </div>

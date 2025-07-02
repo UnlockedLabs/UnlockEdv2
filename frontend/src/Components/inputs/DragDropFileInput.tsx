@@ -1,4 +1,11 @@
-import { useState, useRef, DragEvent, ChangeEvent } from 'react';
+import {
+    useState,
+    useRef,
+    DragEvent,
+    ChangeEvent,
+    forwardRef,
+    useImperativeHandle
+} from 'react';
 import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
 
 interface DragDropFileInputProps {
@@ -9,16 +16,30 @@ interface DragDropFileInputProps {
     currentFile?: File | null;
 }
 
-export function DragDropFileInput({
-    onFileSelect,
-    acceptedFileTypes,
-    maxSizeInMB = 10,
-    disabled = false,
-    currentFile = null
-}: DragDropFileInputProps) {
+export const DragDropFileInput = forwardRef<
+    { clear: () => void },
+    DragDropFileInputProps
+>(function DragDropFileInput(
+    {
+        onFileSelect,
+        acceptedFileTypes,
+        maxSizeInMB = 10,
+        disabled = false,
+        currentFile = null
+    },
+    ref
+) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useImperativeHandle(
+        ref,
+        () => ({
+            clear: handleRemoveFile
+        }),
+        []
+    );
 
     const validateFile = (file: File): string | null => {
         const acceptedTypes = acceptedFileTypes
@@ -105,7 +126,7 @@ export function DragDropFileInput({
                             : 'border-grey-2 hover:border-grey-3'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                    ${error ? 'border-red-3 bg-red-1' : ''}
+                    ${error ? 'border-red-3 ' : ''}
                 `}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -156,11 +177,15 @@ export function DragDropFileInput({
                 </div>
             </div>
 
-            {error && <p className="body-small text-red-3 mt-2">{error}</p>}
-
-            <p className="body-small text-grey-4 mt-2">
-                Only {acceptedFileTypes} files are supported
-            </p>
+            {error ? (
+                <p className="body-large mt-2 text-center text-error ">
+                    {error}
+                </p>
+            ) : (
+                <p className="body-small text-grey-4 mt-2">
+                    Only {acceptedFileTypes} files are supported
+                </p>
+            )}
         </div>
     );
-}
+});
