@@ -8,7 +8,7 @@ import { useRef } from 'react';
 import { KeyedMutator } from 'swr';
 
 interface ClassEventDetailsCardProps {
-    classId: string | undefined;
+    classId?: string;
     event: FacilityProgramClassEvent | null;
     mutateEvents: KeyedMutator<ServerResponseMany<FacilityProgramClassEvent>>;
     toolTip: string;

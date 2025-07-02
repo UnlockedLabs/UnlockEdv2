@@ -3,7 +3,6 @@ import EventCalendar from '@/Components/EventCalendar';
 import ResidentPrograms from '@/Components/ResidentPrograms';
 import { useAuth } from '@/useAuth';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toZonedTime } from 'date-fns-tz';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
@@ -14,7 +13,6 @@ export default function ResidentOverview() {
         return null;
     }
     const user_id = user?.id;
-    const { class_id } = useParams<{ class_id?: string }>();
     const { startDate, endDate } = useMemo(() => {
         const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
         const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
@@ -53,7 +51,6 @@ export default function ResidentOverview() {
             <div className={`flex flex-col-2 gap-2`}>
                 <div className="w-3/4 card">
                     <EventCalendar
-                        classId={class_id}
                         events={formattedEvents}
                         view="week"
                         handleDateClick={(event) => setSelectedEvent(event)}
@@ -61,7 +58,6 @@ export default function ResidentOverview() {
                 </div>
                 <div className="w-1/4 flex flex-col gap-2">
                     <ClassEventDetailsCard
-                        classId={class_id}
                         event={selectedEvent}
                         mutateEvents={mutateEvents}
                         toolTip=""

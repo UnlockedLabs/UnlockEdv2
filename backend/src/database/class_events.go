@@ -500,7 +500,7 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 	return models.NewCalendar(days), nil
 }
 
-func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange, classID int) ([]models.FacilityProgramClassEvent, error) {
+func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
 	events := make([]models.FacilityProgramClassEvent, 0, 10)
 	// TO DO: finish adding overrides as is_cancelled (so it renders in the frontend)
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
@@ -514,9 +514,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID)
-	if classID > 0 {
-		tx.Where("c.id = ?", classID)
-	}
+
 	if !args.IsAdmin {
 		tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
