@@ -681,9 +681,9 @@ func (db *DB) ResetFailedLoginAttempts(userID uint) error {
 	return db.Delete(&models.FailedLoginAttempts{}, "user_id = ?", userID).Error
 }
 
-func (db *DB) CreateUsersBulk(users []models.User, adminID uint) ([]models.User, error) {
+func (db *DB) CreateUsersBulk(users []models.User) error {
 	if len(users) == 0 {
-		return []models.User{}, nil
+		return newCreateDBError(errors.New("no users to create"), "users")
 	}
 
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -695,9 +695,9 @@ func (db *DB) CreateUsersBulk(users []models.User, adminID uint) ([]models.User,
 
 	if err != nil {
 		log.Errorf("CSV user creation transaction failed: %v", err)
-		return nil, err
+		return err
 	}
 
 	log.Infof("Successfully created %d users", len(users))
-	return users, nil
+	return nil
 }

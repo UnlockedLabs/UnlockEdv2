@@ -6,12 +6,8 @@ import { UploadCompleteModal } from './UploadCompleteModal';
 import { showModal, closeModal } from '.';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
-import {
-    ToastState,
-    ServerResponseOne,
-    BulkUploadResponse,
-    BulkCreateResponse
-} from '@/common';
+import { ToastState, ServerResponseOne, BulkUploadResponse } from '@/common';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export const BulkUploadModal = forwardRef<
     HTMLDialogElement,
@@ -23,8 +19,11 @@ export const BulkUploadModal = forwardRef<
     const [isUploading, setIsUploading] = useState(false);
     const [uploadResponse, setUploadResponse] =
         useState<BulkUploadResponse | null>(null);
-    const [createResponse, setCreateResponse] =
-        useState<BulkCreateResponse | null>(null);
+    const [createdCount, setCreatedCount] = useState<number | null>(null);
+    const [errorData, setErrorData] = useState<{
+        errorCount: number;
+        errorCsvData: string | undefined;
+    }>({ errorCount: 0, errorCsvData: undefined });
     const [modalStep, setModalStep] = useState<
         'upload' | 'validation' | 'complete'
     >('upload');
@@ -33,20 +32,17 @@ export const BulkUploadModal = forwardRef<
     const uploadCompleteModal = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
 
-    // when modalStep changes to validation, show validation modal
+    const dragDropInputRef = useRef<{ clear: () => void }>(null);
+
     useEffect(() => {
         if (modalStep === 'validation' && uploadResponse) {
             closeModal(ref); // close upload modal first
-            setTimeout(() => {
-                showModal(validationResultsModal); // open  validation modal
-            }, 100);
-        } else if (modalStep === 'complete' && createResponse) {
+            showModal(validationResultsModal); // open  validation modal
+        } else if (modalStep === 'complete' && createdCount !== null) {
             closeModal(validationResultsModal);
-            setTimeout(() => {
-                showModal(uploadCompleteModal);
-            }, 100);
+            showModal(uploadCompleteModal);
         }
-    }, [modalStep, uploadResponse, createResponse]);
+    }, [modalStep, uploadResponse, createdCount]);
 
     const handleFileSelect = (file: File | null) => {
         setSelectedFile(file);
@@ -56,8 +52,10 @@ export const BulkUploadModal = forwardRef<
         setSelectedFile(null);
         setIsUploading(false);
         setUploadResponse(null);
-        setCreateResponse(null);
+        setCreatedCount(null);
+        setErrorData({ errorCount: 0, errorCsvData: undefined });
         setModalStep('upload');
+        dragDropInputRef.current?.clear?.();
         closeModal(ref);
     };
 
@@ -82,17 +80,21 @@ export const BulkUploadModal = forwardRef<
 
             if (response.ok && data.data) {
                 setUploadResponse(data.data);
+                setErrorData({
+                    errorCount: data.data.error_count,
+                    errorCsvData: data.data.error_csv_data
+                });
                 setModalStep('validation');
             } else {
                 toaster(
-                    'Failed to upload file. Please try again.',
+                    `${data.message || 'Failed to upload file.'}`,
                     ToastState.error
                 );
             }
         } catch (error) {
             console.error('Upload error:', error);
             toaster(
-                'Failed to upload file. Please try again.',
+                `${error instanceof Error ? error.message : 'An error occurred while uploading the file.'}`,
                 ToastState.error
             );
         } finally {
@@ -104,12 +106,13 @@ export const BulkUploadModal = forwardRef<
         if (!uploadResponse) return;
 
         try {
-            const response = (await API.post('users/bulk/create', {
-                valid_rows: uploadResponse.valid_rows
-            })) as ServerResponseOne<BulkCreateResponse>;
+            const response = (await API.post(
+                'users/bulk/create',
+                uploadResponse.valid_rows
+            )) as ServerResponseOne<number>;
 
             if (response.success) {
-                setCreateResponse(response.data);
+                setCreatedCount(response.data);
                 setModalStep('complete');
                 onSuccess?.();
             } else {
@@ -128,7 +131,7 @@ export const BulkUploadModal = forwardRef<
     };
 
     const handleDownloadTemplate = () => {
-        const headers = ['Last Name', 'First Name', 'Resident ID', 'Username'];
+        const headers = ['LastName', 'FirstName', 'ResidentID', 'Username'];
         const csvContent = headers.join(',') + '\n';
 
         const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -143,12 +146,13 @@ export const BulkUploadModal = forwardRef<
     };
 
     const handleDownloadErrorReport = () => {
-        if (!uploadResponse?.error_csv_data) {
+        if (!errorData.errorCsvData) {
+            toaster('No error report available.', ToastState.error);
             return;
         }
 
         try {
-            const binaryString = atob(uploadResponse.error_csv_data);
+            const binaryString = atob(errorData.errorCsvData);
 
             const uint8Array = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
@@ -198,25 +202,14 @@ export const BulkUploadModal = forwardRef<
                                     }
                                     className="button-outline self-start inline-flex items-center gap-2"
                                 >
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        />
-                                    </svg>
+                                    <ArrowDownTrayIcon className="w-4 h-4" />
                                     Download Template
                                 </button>
                             </div>
                         </div>
 
                         <DragDropFileInput
+                            ref={dragDropInputRef}
                             onFileSelect={handleFileSelect}
                             acceptedFileTypes=".csv"
                             maxSizeInMB={5}
@@ -260,11 +253,14 @@ export const BulkUploadModal = forwardRef<
 
             <UploadCompleteModal
                 ref={uploadCompleteModal}
-                createResponse={createResponse}
+                uploadResponse={uploadResponse}
+                createdCount={createdCount}
+                errorCount={errorData.errorCount}
+                errorCsvData={errorData.errorCsvData}
                 onDownloadErrorReport={() => void handleDownloadErrorReport()}
                 onClose={() => {
                     closeModal(uploadCompleteModal);
-                    setCreateResponse(null);
+                    setCreatedCount(null);
                     setModalStep('upload');
                     handleClose();
                 }}

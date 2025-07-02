@@ -176,11 +176,7 @@ type ValidatedUserRow struct {
 }
 
 type InvalidUserRow struct {
-	RowNumber    int      `json:"row_number"`
-	LastName     string   `json:"last_name"`
-	FirstName    string   `json:"first_name"`
-	ResidentID   string   `json:"resident_id"`
-	Username     string   `json:"username"`
+	ValidatedUserRow
 	ErrorReasons []string `json:"error_reasons"`
 }
 
@@ -190,10 +186,4 @@ type BulkUploadResponse struct {
 	ValidRows    []ValidatedUserRow `json:"valid_rows"`
 	InvalidRows  []InvalidUserRow   `json:"invalid_rows"`
 	ErrorCSVData []byte             `json:"error_csv_data,omitempty"`
-}
-
-type BulkCreateResponse struct {
-	CreatedCount int      `json:"created_count"`
-	FailedCount  int      `json:"failed_count"`
-	Errors       []string `json:"errors,omitempty"`
 }

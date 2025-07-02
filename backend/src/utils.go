@@ -43,7 +43,7 @@ func ParseCSVFile(fileBytes []byte) ([][]string, error) {
 	}
 
 	if len(records) == 0 {
-		return nil, errors.New("file is empty — no data found")
+		return nil, errors.New("file is empty - no data found")
 	}
 
 	return records, nil
@@ -82,8 +82,8 @@ func ValidateCSVHeaders(headers []string) (*HeaderMapping, error) {
 	mapping := createHeaderMapping(headers)
 
 	requiredFields := map[string][]string{
-		"last_name":   {"last name", "lastname", "surname", "family name", "last", "NameLast", "LastName", "last_name", "name_last"},
-		"first_name":  {"first name", "firstname", "given name", "name first", "first", "NameFirst", "FirstName", "first_name", "name_first"},
+		"last_name":   {"last name", "lastname", "surname", "family name", "NameLast", "LastName", "last_name", "name_last"},
+		"first_name":  {"first name", "firstname", "given name", "name first", "NameFirst", "FirstName", "first_name", "name_first"},
 		"resident_id": {"resident id", "residentid", "resident", "id", "doc id", "docid", "resident_id", "doc_id", "docid", "residentid", "resident id", "OffenderID", "offenderid", "offender id", "Offender ID", "OffenderId", "OffenderID", "offender_id"},
 	}
 
@@ -140,7 +140,9 @@ type UserIdentityChecker func(username string, docID string) (bool, bool)
 func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existingResidentIDs map[string]int, checkIdentity UserIdentityChecker) (*models.ValidatedUserRow, *models.InvalidUserRow) {
 	if len(row) == 0 {
 		return nil, &models.InvalidUserRow{
-			RowNumber:    rowNum,
+			ValidatedUserRow: models.ValidatedUserRow{
+				RowNumber: rowNum,
+			},
 			ErrorReasons: []string{"Row is empty"},
 		}
 	}
@@ -154,7 +156,9 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 	}
 	if isEmpty {
 		return nil, &models.InvalidUserRow{
-			RowNumber:    rowNum,
+			ValidatedUserRow: models.ValidatedUserRow{
+				RowNumber: rowNum,
+			},
 			ErrorReasons: []string{"Row is empty"},
 		}
 	}
@@ -177,18 +181,18 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 	}
 
 	if lastName == "" {
-		errors = append(errors, "Missing required field — Last Name")
+		errors = append(errors, "Missing required field - Last Name")
 	}
 	if firstName == "" {
-		errors = append(errors, "Missing required field — First Name")
+		errors = append(errors, "Missing required field - First Name")
 	}
 	if residentID == "" {
-		errors = append(errors, "Missing required field — Resident ID")
+		errors = append(errors, "Missing required field - Resident ID")
 	}
 
 	if residentID != "" {
 		if existingRowNum, exists := existingResidentIDs[residentID]; exists {
-			errors = append(errors, fmt.Sprintf("Duplicate Resident ID — also found in row %d", existingRowNum))
+			errors = append(errors, fmt.Sprintf("Duplicate Resident ID - also found in row %d", existingRowNum))
 		} else {
 			existingResidentIDs[residentID] = rowNum
 		}
@@ -220,11 +224,13 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 
 	if len(errors) > 0 {
 		return nil, &models.InvalidUserRow{
-			RowNumber:    rowNum,
-			LastName:     lastName,
-			FirstName:    firstName,
-			ResidentID:   residentID,
-			Username:     username,
+			ValidatedUserRow: models.ValidatedUserRow{
+				RowNumber:  rowNum,
+				LastName:   lastName,
+				FirstName:  firstName,
+				ResidentID: residentID,
+				Username:   username,
+			},
 			ErrorReasons: errors,
 		}
 	}
@@ -241,7 +247,7 @@ func ValidateUserRow(row []string, rowNum int, headerMap *HeaderMapping, existin
 func GenerateErrorCSV(invalidRows []models.InvalidUserRow) ([]byte, error) {
 	var csvContent strings.Builder
 
-	headers := []string{"Last Name", "First Name", "Resident ID", "Username", "Error Reason"}
+	headers := []string{"LastName", "FirstName", "ResidentID", "Username", "Error Reason"}
 	csvContent.WriteString(strings.Join(headers, ",") + "\n")
 
 	for _, row := range invalidRows {
