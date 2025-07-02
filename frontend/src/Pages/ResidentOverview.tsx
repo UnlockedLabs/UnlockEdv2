@@ -22,7 +22,7 @@ export default function ResidentOverview() {
         ServerResponseMany<FacilityProgramClassEvent>,
         Error
     >(
-        `/api/student-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}}`
+        `/api/student-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`
     );
     const events = eventsResp?.data;
     const [selectedEvent, setSelectedEvent] =

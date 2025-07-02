@@ -14,6 +14,8 @@ interface ClassEventDetailsCardProps {
     toolTip: string;
     clearSelectedEvent: () => void;
     readOnly: boolean;
+    showAllClasses?: boolean;
+    setShowAllClasses?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function ClassEventDetailsCard({
@@ -22,7 +24,9 @@ export default function ClassEventDetailsCard({
     mutateEvents,
     toolTip,
     clearSelectedEvent,
-    readOnly
+    readOnly,
+    showAllClasses,
+    setShowAllClasses
 }: ClassEventDetailsCardProps) {
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
@@ -50,6 +54,17 @@ export default function ClassEventDetailsCard({
 
     return (
         <div className="card p-4 h-full">
+            {classId && showAllClasses !== undefined && setShowAllClasses && (
+                <div className="mb-2">
+                    <input
+                        type="checkbox"
+                        checked={showAllClasses}
+                        className="checkbox checkbox-sm mr-2"
+                        onChange={(e) => setShowAllClasses(e.target.checked)}
+                    />
+                    <label className="body">Show other classes</label>
+                </div>
+            )}
             {event ? (
                 <div className="flex flex-col gap-2 h-[600px]">
                     <div>

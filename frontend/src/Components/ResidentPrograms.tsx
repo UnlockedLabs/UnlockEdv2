@@ -14,7 +14,7 @@ import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const user = useAuth();
-    const can_navigate = isAdministrator(user.user);
+    const canViewClassDetails = isAdministrator(user.user);
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const residentAttendanceModal = useRef(null);
@@ -89,9 +89,9 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
             >
                 <td className="justify-self-start">{pc.program_name}</td>
                 <td
-                    className={can_navigate ? clickableElement : ''}
+                    className={canViewClassDetails ? clickableElement : ''}
                     onClick={
-                        can_navigate
+                        canViewClassDetails
                             ? () => handleNavigate(pc.class_id)
                             : undefined
                     }
