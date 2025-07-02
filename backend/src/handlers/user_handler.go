@@ -570,7 +570,7 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 		usersToCreate = append(usersToCreate, user)
 	}
 
-	err := srv.Db.CreateUsersBulk(usersToCreate)
+	err := srv.Db.CreateUsersBulk(usersToCreate, claims.UserID)
 	if err != nil {
 		log.add("transaction_error", err.Error())
 		log.error("Bulk user creation transaction failed")
