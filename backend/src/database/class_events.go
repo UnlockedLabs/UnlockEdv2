@@ -86,6 +86,8 @@ func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, events []mod
 	return nil
 }
 
+// Soft deletes ProgramClassEventOverride by its ID, removes any associated attendance records, and logs the change.
+// If the ProgramClassEventOverride to be deleted has an exiting LinkedOverrideEventID (rescheduled event) that ProgramClassEventOverride is deleted
 func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classID int) error {
 	trans := db.WithContext(args.Ctx).Begin()
 	if trans.Error != nil {
@@ -138,6 +140,11 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 	return nil
 }
 
+// Creates multiple ProgramClassEventOverride records within a single database transaction. It performs the following operations based upon conditions:
+// - Cancels an event
+// - Links two override events together for rescheduling purposes.
+// - Deletes attendance records for events that have been rescheduled or cancelled.
+// - Logs a single change
 func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*models.ProgramClassEventOverride) error {
 	trans := db.WithContext(ctx.Ctx).Begin() //only need to pass context here, it will be used/shared within the transaction
 	if trans.Error != nil {
