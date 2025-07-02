@@ -681,7 +681,7 @@ func (db *DB) ResetFailedLoginAttempts(userID uint) error {
 	return db.Delete(&models.FailedLoginAttempts{}, "user_id = ?", userID).Error
 }
 
-func (db *DB) CreateUsersBulk(users []models.User) error {
+func (db *DB) CreateUsersBulk(users []models.User, adminID uint) error {
 	if len(users) == 0 {
 		return newCreateDBError(errors.New("no users to create"), "users")
 	}
@@ -689,6 +689,19 @@ func (db *DB) CreateUsersBulk(users []models.User) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.CreateInBatches(users, 100).Error; err != nil {
 			return newCreateDBError(err, "users")
+		}
+		for _, user := range users {
+			accountCreation := models.NewUserAccountHistory(
+				user.ID,
+				models.AccountCreation,
+				&adminID,
+				nil,
+				nil,
+			)
+			if err := tx.Create(accountCreation).Error; err != nil {
+				log.Errorf("Error creating account history for user %d: %v", user.ID, err)
+				return newCreateDBError(err, "user_account_history")
+			}
 		}
 		return nil
 	})
@@ -698,6 +711,6 @@ func (db *DB) CreateUsersBulk(users []models.User) error {
 		return err
 	}
 
-	log.Infof("Successfully created %d users", len(users))
+	log.Infof("Successfully created %d users with account history", len(users))
 	return nil
 }
