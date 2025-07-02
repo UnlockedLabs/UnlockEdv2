@@ -235,6 +235,7 @@ export default function AddClassEnrollments() {
                                             </td>
                                             <td>
                                                 {user.name_last}
+                                                {', '}
                                                 {user.name_first}
                                             </td>
                                             <td>{user.doc_id}</td>
