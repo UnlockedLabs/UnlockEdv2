@@ -17,7 +17,10 @@ import { useAuth } from '@/useAuth';
 import { RRule } from 'rrule';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { createCancelledEvent } from './CancelClassEventModal';
-import { formatDuration } from '../helperFunctions';
+import {
+    formatDuration,
+    fromLocalDateToNumericDateFormat
+} from '../helperFunctions';
 
 export const RescheduleClassEventModal = forwardRef(function (
     {
@@ -166,15 +169,7 @@ export const RescheduleClassEventModal = forwardRef(function (
 
         if (newDate < originalStart) {
             setConfirmMessage(
-                `You are scheduling this event before the planned start date of ${originalStart.toLocaleDateString(
-                    'en-US',
-                    {
-                        year: 'numeric',
-                        month: 'numeric',
-                        day: 'numeric',
-                        timeZone: 'UTC'
-                    }
-                )}.`
+                `You are scheduling this event before the planned start date of ${fromLocalDateToNumericDateFormat(originalStart, 'UTC')}.`
             );
         } else if (originalRRule.options.until) {
             const originalEndDate = toZonedTime(
@@ -183,15 +178,7 @@ export const RescheduleClassEventModal = forwardRef(function (
             );
             if (newDate > originalEndDate) {
                 setConfirmMessage(
-                    `You are scheduling this event beyond the planned end date of ${originalEndDate.toLocaleDateString(
-                        'en-US',
-                        {
-                            year: 'numeric',
-                            month: 'numeric',
-                            day: 'numeric',
-                            timeZone: 'UTC'
-                        }
-                    )}.`
+                    `You are scheduling this event beyond the planned end date of ${fromLocalDateToNumericDateFormat(originalEndDate, 'UTC')}.`
                 );
             }
         }

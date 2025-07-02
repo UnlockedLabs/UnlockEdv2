@@ -73,12 +73,7 @@ export function parseRRule(
     try {
         rule = RRule.fromString(rRule);
         const eventDate = startDtOnly ? rule.options.dtstart : rule.all()[0];
-        return eventDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            timeZone: timezone
-        });
+        return fromLocalDateToNumericDateFormat(eventDate, timezone);
     } catch (error) {
         console.error(
             'error parsing rrule, rRule is: ',
