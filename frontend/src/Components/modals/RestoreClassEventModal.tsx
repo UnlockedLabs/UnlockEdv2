@@ -76,7 +76,7 @@ export const RestoreClassEventModal = forwardRef(function (
             const rulePartMap = parseRRule(calendarEvent.recurrence_rule);
             recurrencePhrase = buildRecurrencePhrase(rulePartMap);
         }
-        const message = `This event was originally scheduled for ${scheduledDate} as part of a ${frequency} series that meets every ${recurrencePhrase} at ${startTime} - ${endTime}`;
+        const message = `This event was originally scheduled for ${scheduledDate} as part of a ${frequency} series that meets every ${recurrencePhrase} at ${startTime} - ${endTime}.`;
         return message;
     }
 
