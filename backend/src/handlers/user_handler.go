@@ -495,6 +495,7 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 	var validRows []models.ValidatedUserRow
 	var invalidRows []models.InvalidUserRow
 	existingResidentIDs := make(map[string]int)
+	existingUsernames := make(map[string]int)
 
 	checkIdentity := func(username string, docID string) (bool, bool) {
 		return srv.Db.UserIdentityExists(username, docID)
@@ -503,7 +504,7 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 	for i, record := range records[1:] {
 		rowNum := i + 2
 
-		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity)
+		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity, existingUsernames)
 		if validRow != nil {
 			validRows = append(validRows, *validRow)
 		}
