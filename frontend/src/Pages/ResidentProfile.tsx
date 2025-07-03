@@ -190,7 +190,7 @@ const ResidentProfile = () => {
                 <div className="space-y-6">
                     <div className="flex flex-row gap-6">
                         <div className="card card-row-padding flex flex-col justify-center flex-[0_0_340px]">
-                            <div className="justify-items-center">
+                            <div className="flex justify-center">
                                 <UserCircleIcon className="w-24" />
                             </div>
                             <h1 className="text-center mb-2">
