@@ -78,7 +78,10 @@ const (
 	EnrollmentIncompleteDropped          ProgramEnrollmentStatus = "Incomplete: Dropped"
 	EnrollmentIncompleteFailedToComplete ProgramEnrollmentStatus = "Incomplete: Failed to Complete"
 	EnrollmentIncompleteTransfered       ProgramEnrollmentStatus = "Incomplete: Transfered"
+	EnrollmentIncompleteSegregated      ProgramEnrollmentStatus = "Incomplete: Segregated"
 )
+
+
 
 type ProgramCompletion struct {
 	DatabaseFields

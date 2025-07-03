@@ -59,7 +59,8 @@ export default function ClassEnrollmentDetails() {
         [
             'incomplete: withdrawn',
             'incomplete: dropped',
-            'incomplete: failed to complete'
+            'incomplete: failed to complete',
+            'incomplete: segregated-dropped'
         ].includes(status?.toLowerCase() ?? '');
 
     const { data, error, isLoading, mutate } = useSWR<
@@ -188,6 +189,7 @@ export default function ClassEnrollmentDetails() {
         Enrolled = 'Enrolled',
         Cancelled = 'Cancelled',
         Completed = 'Completed',
+        Segregated = 'Segregated: Dropped',
         Withdrawn = 'Incomplete: Withdrawn',
         Dropped = 'Incomplete: Dropped',
         'Failed To Complete' = 'Incomplete: Failed to Complete'
@@ -225,6 +227,7 @@ export default function ClassEnrollmentDetails() {
                             All: 'all',
                             Enrolled: 'enrolled',
                             Completed: 'completed',
+                            Segregated: 'segregated: dropped',
                             Withdrawn: 'incomplete: withdrawn',
                             Dropped: 'incomplete: dropped',
                             'Failed To Complete':

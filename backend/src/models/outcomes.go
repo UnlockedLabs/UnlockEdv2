@@ -2,6 +2,7 @@ package models
 
 type Outcome struct {
 	DatabaseFields
+    ProgramName string `gorm:"size:255" json:"program_name"`
 	Type     OutcomeType `gorm:"size:255;not null" json:"type"`
 	CourseID uint        `gorm:"not null" json:"course_id"`
 	UserID   uint        `gorm:"not null" json:"user_id"`
