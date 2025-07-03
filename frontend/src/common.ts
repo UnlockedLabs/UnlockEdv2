@@ -925,7 +925,8 @@ export enum EnrollmentStatus {
     Withdrawn = 'Incomplete: Withdrawn',
     Dropped = 'Incomplete: Dropped',
     'Failed To Complete' = 'Incomplete: Failed to Complete',
-    Transfered = 'Incomplete: Transfered'
+    Transfered = 'Incomplete: Transfered',
+    Segregated = 'Incomplete: Segregated'
 }
 
 export enum CancelEventReason {
