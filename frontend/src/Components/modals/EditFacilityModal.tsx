@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { Facility } from '@/common';
-import { CRUDModalProps, facilityInputs, FormModal } from '.';
+import { closeModal, CRUDModalProps, facilityInputs, FormModal } from '.';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
@@ -21,6 +21,9 @@ export const EditFacilityModal = forwardRef(function (
             'Facility updated successfully'
         );
     };
+
+    const handleClose = () => closeModal(editFacilityModal);
+
     return (
         <FormModal
             title="Edit Facility"
@@ -28,6 +31,9 @@ export const EditFacilityModal = forwardRef(function (
             defaultValues={target ? target : undefined}
             onSubmit={updateFacility}
             ref={editFacilityModal}
+            showCancel={true}
+            submitText="Save Changes"
+            onClose={handleClose}
         />
     );
 });
