@@ -514,8 +514,12 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID)
+
 	if classID > 0 {
 		tx.Where("c.id = ?", classID)
+	}
+	if !args.IsAdmin {
+		tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
 	tx.Group("pcev.id, c.instructor_name, c.name, p.name")
 	if err := tx.Scan(&events).Error; err != nil {
