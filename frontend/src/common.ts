@@ -926,6 +926,7 @@ export enum EnrollmentStatus {
     Completed = 'Completed',
     Withdrawn = 'Incomplete: Withdrawn',
     Dropped = 'Incomplete: Dropped',
+    Segregated = 'Incomplete: Segregated',
     'Failed To Complete' = 'Incomplete: Failed to Complete',
     Transfered = 'Incomplete: Transfered'
 }
