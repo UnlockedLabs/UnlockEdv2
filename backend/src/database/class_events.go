@@ -516,12 +516,12 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		Where("c.facility_id = ?", args.FacilityID)
 
 	if classID > 0 {
-		tx.Where("c.id = ?", classID)
+		tx = tx.Where("c.id = ?", classID)
 	}
 	if !args.IsAdmin {
-		tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
+		tx = tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
-	tx.Group("pcev.id, c.instructor_name, c.name, p.name")
+	tx = tx.Group("pcev.id, c.instructor_name, c.name, p.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
