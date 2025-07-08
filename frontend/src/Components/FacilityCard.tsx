@@ -34,19 +34,19 @@ export default function FacilityCard({
                 ) : (
                     <>
                         <ULIComponent
+                            dataTip={'Edit Facility'}
+                            icon={PencilSquareIcon}
+                            onClick={() => {
+                                openEditFacility(facility);
+                            }}
+                        />
+                        <ULIComponent
                             dataTip={'Delete Facility'}
                             icon={TrashIcon}
                             onClick={() => {
                                 openDeleteFacility(facility);
                             }}
                             tooltipClassName="tooltip-left"
-                        />
-                        <ULIComponent
-                            dataTip={'Edit Facility'}
-                            icon={PencilSquareIcon}
-                            onClick={() => {
-                                openEditFacility(facility);
-                            }}
                         />
                     </>
                 )}
