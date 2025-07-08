@@ -1,6 +1,6 @@
 import { ServerResponseMany, FacilityProgramClassEvent } from '@/common';
 import { CancelButton, CloseX } from '@/Components/inputs';
-import { showModal } from '@/Components/modals';
+import { RestoreClassEventModal, showModal } from '@/Components/modals';
 import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal';
 import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEventModal';
 import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleClassEventSeriesModal';
@@ -31,6 +31,7 @@ export default function ClassEventDetailsCard({
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
+    const restoreClassEventModal = useRef<HTMLDialogElement>(null);
 
     function parseEnrolledNames(enrolledResidents: string) {
         if (enrolledResidents == '') return <p>No residents enrolled</p>;
@@ -50,6 +51,88 @@ export default function ClassEventDetailsCard({
         }
         if (classId && event.class_id.toString() !== classId) return false;
         return true;
+    }
+
+    function renderButtons() {
+        const eventType = !event?.is_override
+            ? 'series'
+            : event?.is_cancelled
+              ? 'canceled'
+              : 'rescheduled';
+        switch (eventType) {
+            case 'series':
+                return (
+                    <>
+                        <button
+                            disabled={!canUpdateEvent()}
+                            className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            onClick={() => showModal(rescheduleClassEventModal)}
+                            data-tip={toolTip}
+                        >
+                            Edit Event
+                        </button>
+                        <button
+                            disabled={!canUpdateEvent()}
+                            className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            onClick={() =>
+                                showModal(rescheduleClassEventSeriesModal)
+                            }
+                            data-tip={toolTip}
+                        >
+                            Edit Series
+                        </button>
+                        <div
+                            className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            data-tip={toolTip}
+                        >
+                            <CancelButton
+                                disabled={!canUpdateEvent()}
+                                onClick={() => showModal(cancelClassEventModal)}
+                            />
+                        </div>
+                    </>
+                );
+            case 'canceled':
+                return (
+                    <button
+                        className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                        onClick={() => showModal(restoreClassEventModal)}
+                        data-tip={toolTip}
+                    >
+                        Restore Event
+                    </button>
+                );
+            case 'rescheduled':
+                return (
+                    <>
+                        <button
+                            disabled={!canUpdateEvent()}
+                            className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            onClick={() => showModal(rescheduleClassEventModal)}
+                            data-tip={toolTip}
+                        >
+                            Edit Event
+                        </button>
+                        <button
+                            className="button-outline"
+                            onClick={() => showModal(restoreClassEventModal)}
+                        >
+                            Restore Event
+                        </button>
+                        <div
+                            className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
+                            data-tip={toolTip}
+                        >
+                            <CancelButton
+                                disabled={!canUpdateEvent()}
+                                onClick={() => showModal(cancelClassEventModal)}
+                            />
+                        </div>
+                    </>
+                );
+            default:
+                return '';
+        }
     }
 
     return (
@@ -101,39 +184,7 @@ export default function ClassEventDetailsCard({
                         </div>
                         {!readOnly && (
                             <div className="space-y-2 flex flex-col w-full min-h-[150px]">
-                                <button
-                                    disabled={!canUpdateEvent()}
-                                    className={`button${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
-                                    onClick={() =>
-                                        showModal(rescheduleClassEventModal)
-                                    }
-                                    data-tip={toolTip}
-                                >
-                                    Edit Event
-                                </button>
-                                <button
-                                    disabled={!canUpdateEvent()}
-                                    className={`button-outline${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
-                                    onClick={() =>
-                                        showModal(
-                                            rescheduleClassEventSeriesModal
-                                        )
-                                    }
-                                    data-tip={toolTip}
-                                >
-                                    Edit Series
-                                </button>
-                                <div
-                                    className={`flex flex-col w-full${!canUpdateEvent() && toolTip ? ' tooltip' : ''}`}
-                                    data-tip={toolTip}
-                                >
-                                    <CancelButton
-                                        disabled={!canUpdateEvent()}
-                                        onClick={() =>
-                                            showModal(cancelClassEventModal)
-                                        }
-                                    />
-                                </div>
+                                {renderButtons()}
                             </div>
                         )}
                     </div>
@@ -165,6 +216,14 @@ export default function ClassEventDetailsCard({
                         mutate={mutateEvents}
                         calendarEvent={event}
                         ref={rescheduleClassEventModal}
+                        handleCallback={clearSelectedEvent}
+                    />
+                )}
+                {event && (
+                    <RestoreClassEventModal
+                        mutate={mutateEvents}
+                        calendarEvent={event}
+                        ref={restoreClassEventModal}
                         handleCallback={clearSelectedEvent}
                     />
                 )}
