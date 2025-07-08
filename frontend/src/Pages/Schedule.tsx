@@ -47,8 +47,7 @@ export default function Schedule() {
         () =>
             `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}${
                 class_id && !showAllClasses ? `&class_id=${class_id}` : ''
-            }`,
-        { keepPreviousData: true }
+            }`
     );
 
     const events = eventsResp?.data;
