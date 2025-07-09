@@ -32,14 +32,15 @@ type Role struct {
 
 type User struct {
 	DatabaseFields
-	Username   string   `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
-	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
-	Email      string   `gorm:"size:255;not null;unique" json:"email" validate:"-"`
-	NameLast   string   `gorm:"size:255;not null" json:"name_last"  validate:"alphanumspace"`
-	Role       UserRole `gorm:"size:64;default:student" json:"role" validate:"oneof=student system_admin facility_admin department_admin"`
-	KratosID   string   `gorm:"size:255" json:"kratos_id"`
-	FacilityID uint     `json:"facility_id"`
-	DocID      string   `json:"doc_id" gorm:"column:doc_id;size:25"`
+	Username      string     `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
+	NameFirst     string     `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
+	Email         string     `gorm:"size:255;not null;unique" json:"email" validate:"-"`
+	NameLast      string     `gorm:"size:255;not null" json:"name_last"  validate:"alphanumspace"`
+	Role          UserRole   `gorm:"size:64;default:student" json:"role" validate:"oneof=student system_admin facility_admin department_admin"`
+	KratosID      string     `gorm:"size:255" json:"kratos_id"`
+	FacilityID    uint       `json:"facility_id"`
+	DocID         string     `json:"doc_id" gorm:"column:doc_id;size:25"`
+	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
 
 	/* foreign keys */
 	Mappings             []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
@@ -118,6 +119,7 @@ const (
 	SetPassword      ActivityHistoryAction = "set_password"
 	ResetPassword    ActivityHistoryAction = "reset_password"
 	ProgClassHistory ActivityHistoryAction = "progclass_history"
+	UserDeactivated  ActivityHistoryAction = "user_deactivated"
 )
 
 type ActivityHistoryResponse struct {

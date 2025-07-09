@@ -714,3 +714,35 @@ func (db *DB) CreateUsersBulk(users []models.User, adminID uint) error {
 	log.Infof("Successfully created %d users with account history", len(users))
 	return nil
 }
+
+func (db *DB) DeactivateUser(ctx context.Context, userID uint, adminID *uint) error {
+	tx := db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	now := time.Now()
+	if err := tx.Model(&models.User{}).Where("id = ?", userID).Update("deactivated_at", now).Error; err != nil {
+		return newUpdateDBError(err, "users")
+	}
+	updateData := map[string]any{
+		"enrollment_status": models.EnrollmentIncompleteWithdrawn,
+		"change_reason":     "Account deactivated",
+	}
+	if err := tx.Model(&models.ProgramClassEnrollment{}).Where("user_id = ? AND enrollment_status = ?", userID, models.Enrolled).Updates(updateData).Error; err != nil {
+		return newUpdateDBError(err, "program_class_enrollments")
+	}
+	history := models.UserAccountHistory{
+		UserID:                  userID,
+		Action:                  models.UserDeactivated,
+		AdminID:                 adminID,
+		ProgramClassesHistoryID: nil,
+		FacilityID:              nil,
+	}
+	if err := tx.Create(&history).Error; err != nil {
+		return newCreateDBError(err, "user_account_history")
+	}
+
+	return tx.Commit().Error
+}

@@ -35,6 +35,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 		newAdminRoute("POST /api/users/bulk/upload", srv.handleBulkUpload),
 		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
+		validatedAdminRoute("POST /api/users/{id}/deactivate", srv.handleDeactivateUser, FacilityAdminResolver("users", "id")),
 	}
 }
 
@@ -581,4 +582,18 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 	log.info("Bulk user creation transaction completed successfully")
 
 	return writeJsonResponse(w, http.StatusOK, len(usersToCreate))
+}
+func (srv *Server) handleDeactivateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	err = srv.Db.DeactivateUser(r.Context(), uint(id), &claims.UserID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, "User deactivated successfully")
 }
