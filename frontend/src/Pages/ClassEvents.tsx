@@ -15,6 +15,12 @@ import {
     ClassEventInstance,
     ProgramClassEventAttendance
 } from '@/types/events';
+import { parseLocalDay } from '@/Components/helperFunctions/formatting';
+import {
+    ClipboardDocumentCheckIcon,
+    EyeIcon
+} from '@heroicons/react/24/outline';
+import moment from 'moment';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
@@ -32,7 +38,7 @@ export default function ClassEvents() {
     } = useUrlPagination(1, 20);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const { register, watch } = useForm<{ selectedMonth: string }>({
+    const { register, watch, setValue } = useForm<{ selectedMonth: string }>({
         defaultValues: { selectedMonth: defaultMonth }
     });
     const selectedMonthValue = watch('selectedMonth');
@@ -58,6 +64,13 @@ export default function ClassEvents() {
     );
     const meta = data?.meta;
     const events = data?.data ?? [];
+
+    function isFutureDate(date: string): boolean {
+        const day = parseLocalDay(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return day > today;
+    }
 
     function getPresentCount(records: ProgramClassEventAttendance[]): number {
         return records.filter(
@@ -106,6 +119,9 @@ export default function ClassEvents() {
                     register={register}
                     monthOnly={true}
                     disabled={false}
+                    onChange={(e: string) => {
+                        setValue('selectedMonth', e);
+                    }}
                 />
             </div>
 
@@ -128,7 +144,7 @@ export default function ClassEvents() {
                             {events.map((event) => (
                                 <tr
                                     key={`${event.event_id}-${event.date}`}
-                                    className="card grid-cols-5 justify-items-center"
+                                    className="card grid-cols-5 justify-items-center p-4"
                                 >
                                     <td className="justify-self-start px-4">
                                         {toLocalMidnight(
@@ -148,38 +164,61 @@ export default function ClassEvents() {
                                         enrolled ? `/ ${enrolled}` : ''
                                     }`}</td>
                                     <td className="px-5">{getStatus(event)}</td>
-                                    <td className="justify-self-end">
-                                        {event.attendance_records?.length >
-                                        0 ? (
-                                            <button
-                                                onClick={() =>
-                                                    handleViewEditMarkAttendance(
-                                                        event.event_id,
-                                                        event.date
-                                                    )
-                                                }
-                                                className="button"
-                                            >
-                                                View / Edit
-                                            </button>
-                                        ) : (
-                                            <button
-                                                disabled={
-                                                    blockEdits ||
-                                                    event.is_cancelled
-                                                }
-                                                onClick={() =>
-                                                    handleViewEditMarkAttendance(
-                                                        event.event_id,
-                                                        event.date
-                                                    )
-                                                }
-                                                className={`button ${blockEdits ? 'tooltip tooltip-left' : ''}`}
-                                                data-tip={`${blockEdits ? `This class is ${this_program?.status.toLowerCase()} and cannot be modified.` : ''}`}
-                                            >
-                                                Mark Attendance
-                                            </button>
-                                        )}
+                                    <td className="justify-self-end pr-5">
+                                        {(() => {
+                                            const isViewOnly =
+                                                blockEdits ||
+                                                event.is_cancelled;
+                                            const isFuture = isFutureDate(
+                                                event.date
+                                            );
+
+                                            if (isViewOnly) {
+                                                return (
+                                                    <>
+                                                        <div
+                                                            className="cursor-pointer"
+                                                            onClick={() =>
+                                                                handleViewEditMarkAttendance(
+                                                                    event.event_id,
+                                                                    event.date
+                                                                )
+                                                            }
+                                                        >
+                                                            <EyeIcon className="w-4 h-4 inline-block mr-1" />
+                                                            <span className="hover:underline">
+                                                                View attendance
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            }
+
+                                            if (isFuture) {
+                                                return (
+                                                    <span className="text-grey-2">
+                                                        {`Available after ${moment(event.date).format('M/D')}`}
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <div
+                                                    className="cursor-pointer"
+                                                    onClick={() =>
+                                                        handleViewEditMarkAttendance(
+                                                            event.event_id,
+                                                            event.date
+                                                        )
+                                                    }
+                                                >
+                                                    <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block mr-1" />
+                                                    <span className="hover:underline">
+                                                        Mark attendance
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                 </tr>
                             ))}
