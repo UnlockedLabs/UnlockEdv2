@@ -8,15 +8,6 @@ const (
 	All     string = "all"
 )
 
-type Calendar struct {
-	Days []Day `json:"days"`
-}
-
-func NewCalendar(events []Day) *Calendar {
-	return &Calendar{
-		Days: events,
-	}
-}
 
 type EventInstance struct {
 	EventID     uint          `json:"event_id"`
