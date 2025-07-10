@@ -9,7 +9,8 @@ export enum UserRole {
 
 export enum ResidentAccountAction {
     'Transfer Resident' = 'transfer',
-    'Delete Resident' = 'delete'
+    'Delete Resident' = 'delete',
+    'Deactivate Resident' = 'deactivate'
 }
 
 export enum FeatureAccess {
@@ -37,11 +38,13 @@ export interface User {
     timezone: string;
     facilities?: Facility[];
     login_metrics: LoginMetrics;
+    deactivated_at?: string | null;
     [key: string]:
         | number
         | string
         | boolean
         | undefined
+        | null
         | FeatureAccess[]
         | Facility[]
         | LoginMetrics;
@@ -1218,4 +1221,8 @@ export interface BulkUploadResponse {
     valid_rows: ValidatedUserRow[];
     invalid_rows: InvalidUserRow[];
     error_csv_data?: string; // Base64 encoded CSV data from []byte
+}
+
+export function isUserDeactivated(user: User): boolean {
+    return user.deactivated_at != null;
 }

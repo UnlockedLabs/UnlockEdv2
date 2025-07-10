@@ -204,6 +204,10 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	//Should we be able to delete a deactivated user?? Come back to this.
+	if user.DeactivatedAt != nil {
+		return newBadRequestServiceError(errors.New("cannot delete deactivated user"), "User is deactivated - deletion would remove historical data")
+	}
 	log.add("deleted_username", user.Username)
 	if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
 		log.add("deleted_kratos_id", user.KratosID)
@@ -234,6 +238,10 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		log.error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		return newDatabaseServiceError(err)
+	}
+	// Check if user is deactivated
+	if toUpdate.DeactivatedAt != nil {
+		return newBadRequestServiceError(errors.New("cannot update deactivated user"), "User is deactivated")
 	}
 	if toUpdate.Username != user.Username && user.Username != "" {
 		// usernames are immutable
@@ -385,6 +393,15 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	log.add("admin_id", args.UserID)
 	log.add("transfer_facility_id", transRequest.TransFacilityID)
 	log.add("current_facility_id", transRequest.CurrFacilityID)
+
+	// Check if user is deactivated before transfer
+	user, err := srv.Db.GetUserByID(uint(transRequest.UserID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if user.DeactivatedAt != nil {
+		return newBadRequestServiceError(errors.New("cannot transfer deactivated user"), "User is deactivated")
+	}
 	tx, err := srv.Db.TransferResident(&args, transRequest.UserID, transRequest.CurrFacilityID, transRequest.TransFacilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)

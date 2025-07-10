@@ -18,6 +18,8 @@ export enum TextModalType {
 }
 
 export { TextOnlyModal } from './TextOnlyModal';
+export { FormModal } from './FormModal';
+export { DeactivateUserModal } from './DeactivateUserModal';
 
 export enum CRUDActions {
     Add,
@@ -93,8 +95,6 @@ export interface TargetItem<T> {
     action: CRUDActions;
     target: T;
 }
-
-export { FormModal } from './FormModal';
 
 // Facility Exports
 export const facilityInputs: Input[] = [

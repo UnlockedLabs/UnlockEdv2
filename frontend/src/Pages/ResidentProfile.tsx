@@ -1,12 +1,14 @@
 import useSWR, { mutate } from 'swr';
 import {
     OpenContentResponse,
+    ResidentAccountAction,
     ResidentEngagementProfile,
     ServerResponseOne,
     ToastState,
     User,
     UserRole,
-    ValidResident
+    ValidResident,
+    isUserDeactivated
 } from '@/common';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
 import { ResponsiveContainer } from 'recharts';
@@ -20,18 +22,20 @@ import {
     showModal,
     TargetItem,
     TextModalType,
-    TextOnlyModal
+    TextOnlyModal,
+    DeactivateUserModal
 } from '@/Components/modals';
 import { useEffect, useRef, useState } from 'react';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { VerifyResidentModal } from '@/Components/modals/VerifyResidentModal';
 import API from '@/api/api';
-import { canSwitchFacility, useAuth } from '@/useAuth';
+import { useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
 import calculateEngagementMetrics from '@/Components/helperFunctions/calculateEngagementMetrics';
 import ResidentPrograms from '@/Components/ResidentPrograms';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { useToast } from '@/Context/ToastCtx';
+import UserActionsDropdown from '@/Components/UserActionsDropdown';
 
 function UserProfileInfoRow({
     column,
@@ -152,6 +156,9 @@ const ResidentProfile = () => {
     //start transfer logic
     const verifyResidentModal = useRef<HTMLDialogElement>(null);
     const confirmTransferModal = useRef<HTMLDialogElement>(null);
+
+    //deactivation logic
+    const deactivateUserModal = useRef<HTMLDialogElement>(null);
     const checkResponse = useCheckResponse({
         mutate: mutateResident,
         refModal: confirmTransferModal
@@ -181,6 +188,44 @@ const ResidentProfile = () => {
             }
         }
     }
+
+    const deactivateUser = async () => {
+        if (!data?.data?.user?.id) return;
+
+        const response = await API.post(
+            `users/${data.data.user.id}/deactivate`,
+            {}
+        );
+
+        if (response.success) {
+            toaster('User deactivated successfully', ToastState.success);
+            void mutateResident();
+        } else {
+            toaster('Failed to deactivate user', ToastState.error);
+        }
+        closeModal(deactivateUserModal);
+    };
+
+    // Handle action selection
+    const handleActionSelect = (action: ResidentAccountAction) => {
+        if (!data?.data?.user) return;
+
+        switch (action) {
+            case ResidentAccountAction['Transfer Resident']:
+                showModal(verifyResidentModal);
+                break;
+            case ResidentAccountAction['Delete Resident']:
+                setTargetUser({
+                    action: CRUDActions.Delete,
+                    target: data.data.user
+                });
+                showModal(deleteUserModal);
+                break;
+            case ResidentAccountAction['Deactivate Resident']:
+                showModal(deactivateUserModal);
+                break;
+        }
+    };
 
     //end transfer logic
     return (
@@ -234,29 +279,28 @@ const ResidentProfile = () => {
                                         : 'N/A'
                                 }
                             />
-                            <div className="flex flex-row gap-2 mt-4 justify-center">
-                                <button
-                                    className="button-grey bg-grey-1 hover:bg-grey-2 text-red-4"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setTargetUser({
-                                            action: CRUDActions.Delete,
-                                            target: data.data.user
-                                        });
-                                        showModal(deleteUserModal);
-                                    }}
-                                >
-                                    Delete Resident
-                                </button>
-                                {user && canSwitchFacility(user) && (
-                                    <button
-                                        className="button-grey bg-grey-1 hover:bg-grey-2 text-teal-5"
-                                        onClick={() =>
-                                            showModal(verifyResidentModal)
-                                        }
-                                    >
-                                        Transfer Resident
-                                    </button>
+                            {data.data.user.deactivated_at && (
+                                <UserProfileInfoRow
+                                    column="Date Deactivated"
+                                    value={new Date(
+                                        data.data.user.deactivated_at
+                                    ).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    })}
+                                />
+                            )}
+                            <div className="flex flex-row gap-2 mt-4 justify-center items-center">
+                                <UserActionsDropdown
+                                    user={data.data.user}
+                                    currentUser={user}
+                                    onActionSelect={handleActionSelect}
+                                />
+                                {isUserDeactivated(data.data.user) && (
+                                    <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
+                                        Inactive
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -430,6 +474,14 @@ const ResidentProfile = () => {
                 onSubmit={() => void deleteUser()}
                 onClose={() => void closeModal(deleteUserModal)}
             />
+            {data?.data?.user && (
+                <DeactivateUserModal
+                    ref={deactivateUserModal}
+                    user={data.data.user}
+                    onConfirm={() => void deactivateUser()}
+                    onClose={() => closeModal(deactivateUserModal)}
+                />
+            )}
         </div>
     );
 };
