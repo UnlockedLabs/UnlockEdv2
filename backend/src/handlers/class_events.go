@@ -14,9 +14,9 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	return []routeDef{
 		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
 		featureRoute("GET /api/student-attendance", srv.handleGetStudentAttendanceData, axx),
+		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
@@ -29,6 +29,8 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
+	args := srv.getQueryContext(r)
+
 	id := r.URL.Query().Get("class_id")
 	var classID int
 	if id != "" {
@@ -37,7 +39,6 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 			return newInvalidIdServiceError(err, "class_id")
 		}
 	}
-	args := srv.getQueryContext(r)
 	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -50,12 +51,12 @@ func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	calendar, err := srv.Db.GetCalendar(dtRng, &claims.UserID)
+	args := srv.getQueryContext(r)
+	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, 0)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, calendar)
+	return writeJsonResponse(w, http.StatusOK, events)
 }
 
 func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -170,14 +171,19 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
-
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var userId *int
-	userIdStr := r.URL.Query().Get("user_id")
-	if userIdStr != "" {
-		if parsedUserId, err := strconv.Atoi(userIdStr); err == nil {
-			userId = &parsedUserId
-		} else {
-			log.errorf("Error parsing user id: %v", err)
+	if !claims.isAdmin() {
+		tmp := int(claims.UserID)
+		userId = &tmp
+	} else {
+		userIdStr := r.URL.Query().Get("user_id")
+		if userIdStr != "" {
+			if parsedUserId, err := strconv.Atoi(userIdStr); err == nil {
+				userId = &parsedUserId
+			} else {
+				log.errorf("Error parsing user id: %v", err)
+			}
 		}
 	}
 

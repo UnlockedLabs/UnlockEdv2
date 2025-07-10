@@ -443,63 +443,6 @@ func (db *DB) GetStudentProgramAttendanceData(userId uint) ([]ProgramData, error
 	return programDataList, nil
 }
 
-func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *models.DateRange) (*models.Calendar, error) {
-	daysMap := make(map[string]*models.Day)
-	currentDate := rng.Start
-	for !currentDate.After(rng.End) {
-		dateStr := currentDate.Format("2006-01-02")
-		daysMap[dateStr] = &models.Day{
-			DayIdx: currentDate.Day(),
-			Date:   currentDate,
-			Events: []models.EventInstance{},
-		}
-		currentDate = currentDate.AddDate(0, 0, 1)
-	}
-
-	for _, event := range events {
-		rruleStr := event.RecurrenceRule
-		rruleSet := rrule.Set{}
-		rruleOptions, err := rrule.StrToROption(rruleStr)
-		if err != nil {
-			logrus.Errorf("Error parsing rrule: %s", err)
-			return nil, err
-		}
-		r, err := rrule.NewRRule(*rruleOptions)
-		if err != nil {
-			return nil, err
-		}
-		rruleSet.RRule(r)
-
-		eventInstances := generateEventInstances(event, rng.Start, rng.End.Add(time.Duration(24*time.Hour-1)))
-
-		for _, instance := range eventInstances {
-			dateStr := instance.StartTime.Format("2006-01-02")
-			day, exists := daysMap[dateStr]
-			if !exists {
-				/* unreachable? but handle anyay */
-				day = &models.Day{
-					Date:   instance.StartTime.Truncate(24 * time.Hour),
-					Events: []models.EventInstance{},
-				}
-				daysMap[dateStr] = day
-			}
-			if instance.Room == "" {
-				instance.Room = event.Room
-			}
-			instance.ProgramName = event.Class.Program.Name
-			day.Events = append(day.Events, instance)
-		}
-	}
-	var days []models.Day
-	for _, day := range daysMap {
-		days = append(days, *day)
-	}
-	sort.Slice(days, func(i, j int) bool {
-		return days[i].Date.Before(days[j].Date)
-	})
-	return models.NewCalendar(days), nil
-}
-
 func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange, classID int) ([]models.FacilityProgramClassEvent, error) {
 	events := make([]models.FacilityProgramClassEvent, 0, 10)
 	// TO DO: finish adding overrides as is_cancelled (so it renders in the frontend)
@@ -514,10 +457,14 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID)
+
 	if classID > 0 {
-		tx.Where("c.id = ?", classID)
+		tx = tx.Where("c.id = ?", classID)
 	}
-	tx.Group("pcev.id, c.instructor_name, c.name, p.name")
+	if !args.IsAdmin {
+		tx = tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
+	}
+	tx = tx.Group("pcev.id, c.instructor_name, c.name, p.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -697,34 +644,6 @@ func checkEventCancelledAndRescheduled(occurrence time.Time, overrides []models.
 		}
 	}
 	return isCancelled, isRescheduled, overrideID
-}
-
-func (db *DB) GetCalendar(dtRng *models.DateRange, userId *uint) (*models.Calendar, error) {
-	content := []models.ProgramClassEvent{}
-	tx := db.Model(&models.ProgramClassEvent{}).
-		Joins("JOIN program_classes c ON c.id = program_class_events.class_id").
-		Joins("JOIN programs p ON p.id = c.program_id").
-		Joins("JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
-		Where("p.archived_at IS NULL AND p.is_active = true").
-		Where("c.status IN ('Scheduled', 'Active')")
-
-	if userId != nil {
-		tx = tx.Where("e.user_id = ?", userId)
-	}
-
-	tx = tx.
-		Preload("Overrides").
-		Preload("Class", "status IN ('Scheduled','Active')").
-		Preload("Class.Program", "programs.archived_at IS NULL AND is_active = true")
-
-	if userId != nil {
-		tx = tx.Preload("Class.Enrollments", "user_id = ? AND enrollment_status = 'Enrolled'", *userId)
-	}
-
-	if err := tx.Find(&content).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "calendar")
-	}
-	return db.getCalendarFromEvents(content, dtRng)
 }
 
 func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []models.EventInstance {

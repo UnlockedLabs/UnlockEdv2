@@ -1,170 +1,74 @@
-import {
-    EnrollmentStatus,
-    ProgClassStatus,
-    ResidentProgramOverview,
-    ServerResponseMany,
-    ServerResponseOne,
-    StudentCalendarResponse
-} from '@/common';
-import GreyPill from '@/Components/pill-labels/GreyPill';
-import WeeklyScheduleTable from '@/Components/WeeklyScheduleTable';
+import { FacilityProgramClassEvent, ServerResponseMany } from '@/common';
+import EventCalendar from '@/Components/EventCalendar';
+import ResidentPrograms from '@/Components/ResidentPrograms';
 import { useAuth } from '@/useAuth';
+import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-type ProgramInfoMap = Record<string, ResidentProgramOverview[]>;
+import { toZonedTime } from 'date-fns-tz';
+import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 
 export default function ResidentOverview() {
     const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const user_id = user?.id;
-    const { data: programsResp } = useSWR<
-        ServerResponseMany<ResidentProgramOverview>,
+    const { startDate, endDate } = useMemo(() => {
+        const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
+        const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
+        return { startDate: start, endDate: end };
+    }, []);
+    const { data: eventsResp, mutate: mutateEvents } = useSWR<
+        ServerResponseMany<FacilityProgramClassEvent>,
         Error
     >(
-        `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=p.name&all=true`
+        `/api/student-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`
     );
-    const programData = programsResp?.data;
-
-    const programDataMap: ProgramInfoMap = {};
-    if (programData) {
-        programDataMap.enrollment_metrics = programData.filter(
-            (item) =>
-                item.status === ProgClassStatus.ACTIVE ||
-                item.status === ProgClassStatus.SCHEDULED
+    const events = eventsResp?.data;
+    const [selectedEvent, setSelectedEvent] =
+        useState<FacilityProgramClassEvent | null>(null);
+    function clearSelectedEvent() {
+        const selectedElement = document.querySelector<HTMLElement>(
+            '.rbc-event.rbc-selected'
         );
-        programDataMap.activity_metrics = programData.filter(
-            (item) =>
-                item.enrollment_status === EnrollmentStatus.Completed ||
-                item.enrollment_status ===
-                    EnrollmentStatus['Failed To Complete']
-        );
+        if (selectedElement) {
+            selectedElement.classList.remove('rbc-selected');
+        }
+        setSelectedEvent(null);
     }
-    const enrollment_metrics = programDataMap.enrollment_metrics?.sort(
-        (a, b) => {
-            if (a.program_name < b.program_name) {
-                return -1;
-            }
-            if (a.program_name > b.program_name) {
-                return 1;
-            }
-            return 0;
-        }
-    );
-    const activity_metrics = programDataMap.activity_data?.sort((a, b) => {
-        if (a.updated_at < b.updated_at) {
-            return 1;
-        }
-        if (a.updated_at > b.updated_at) {
-            return -1;
-        }
-        return 0;
-    });
-    const { data: scheduleResp } = useSWR<
-        ServerResponseOne<StudentCalendarResponse>,
-        Error
-    >(`/api/student-calendar`);
-    const weekly_schedule_metrics = scheduleResp?.data;
+    const formattedEvents = events
+        ? events.map((event) => {
+              return {
+                  ...event,
+                  start: toZonedTime(event.start, user?.timezone),
+                  end: toZonedTime(new Date(event.end), user?.timezone)
+              };
+          })
+        : [];
 
-    function formatDate(dateString: string): string {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const options: Intl.DateTimeFormatOptions = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        };
-        return date.toLocaleDateString('en-US', options);
-    }
     return (
         <div className="px-5">
-            {enrollment_metrics && enrollment_metrics?.length > 0 ? (
-                <div>
-                    {enrollment_metrics.map((program) => (
-                        <div className="card card-row-padding mb-4">
-                            <div className="mb-2 flex justify-between">
-                                <h2>{program.program_name}</h2>
-                                <GreyPill>{program.status}</GreyPill>
-                            </div>
-                            <div>
-                                <div className="flex">
-                                    <span className="mr-1">Program:</span>
-                                    {program.class_name}
-                                </div>
-                                <div className="flex">
-                                    <span className="mr-1">Credit Types:</span>
-                                    {program.credit_types}
-                                </div>
-                                {program.status.toString() === 'Scheduled' && (
-                                    <>
-                                        <div className="flex">
-                                            <span className="mr-1">
-                                                Start Date:
-                                            </span>
-                                            {formatDate(program.start_date)}
-                                        </div>
-                                        <div className="flex">
-                                            <span className="mr-1">
-                                                Date Updated:
-                                            </span>
-                                            {formatDate(program.updated_at)}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="body">
-                    You are not currently enrolled in any programs.
-                </p>
-            )}
-            <div className="card card-row-padding mb-4">
-                <div className="mb-2 flex justify-between">
-                    <h1>Weekly Schedule</h1>
-                </div>
-                {weekly_schedule_metrics &&
-                weekly_schedule_metrics?.days.length > 0 ? (
-                    <WeeklyScheduleTable
-                        days={weekly_schedule_metrics.days ?? []}
+            <div className={`flex flex-col-2 gap-2`}>
+                <div className="w-3/4 card">
+                    <EventCalendar
+                        events={formattedEvents}
+                        view="week"
+                        handleDateClick={(event) => setSelectedEvent(event)}
                     />
-                ) : (
-                    <p className="body">No classes scheduled for this week.</p>
-                )}
+                </div>
+                <div className="w-1/4 flex flex-col gap-2">
+                    <ClassEventDetailsCard
+                        event={selectedEvent}
+                        mutateEvents={mutateEvents}
+                        toolTip=""
+                        clearSelectedEvent={clearSelectedEvent}
+                        readOnly
+                    />
+                </div>
             </div>
-            <div className="mb-4 flex gap-1">
-                <h1
-                    className="tooltip"
-                    data-tip="Tracking history only for programs in UnlockEd."
-                >
-                    Program History
-                </h1>
-                ⓘ
+            <div className="card card-row-padding col-span-2 w-full mt-4">
+                <ResidentPrograms user_id={user_id?.toString() ?? ''} />
             </div>
-            {activity_metrics && activity_metrics?.length > 0 ? (
-                activity_metrics.map((program) => (
-                    <>
-                        <div className="flex">
-                            <span className="mr-1">Program:</span>
-                            {program.program_name}
-                        </div>
-                        <div className="card card-row-padding mb-4">
-                            <div className="mb-2 flex justify-between">
-                                <h2>{program.class_name}</h2>
-                                <GreyPill>{program.status}</GreyPill>
-                            </div>
-                            <div className="flex">{program.status}</div>
-                            <div className="flex">
-                                {program.status}
-                                {' on '}
-                                {formatDate(program.updated_at)}
-                            </div>
-                        </div>
-                    </>
-                ))
-            ) : (
-                <p className="body">
-                    No program participation history available.
-                </p>
-            )}
         </div>
     );
 }
