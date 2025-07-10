@@ -55,7 +55,8 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
             p.enrollment_status === EnrollmentStatus['Failed To Complete'] ||
             p.enrollment_status === EnrollmentStatus.Withdrawn ||
             p.enrollment_status === EnrollmentStatus.Cancelled ||
-            p.enrollment_status === EnrollmentStatus.Transfered
+            p.enrollment_status === EnrollmentStatus.Transfered ||
+            p.enrollment_status === EnrollmentStatus.Segregated
     );
 
     const handleSetPerPage = (perPage: number) => {
