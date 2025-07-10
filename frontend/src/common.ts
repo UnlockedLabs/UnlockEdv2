@@ -805,6 +805,7 @@ export interface ResidentProgramOverview {
     present_attendance?: number;
     absent_attendance?: number;
     attendance_percentage?: number;
+    change_reason?: string;
 }
 
 // TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
