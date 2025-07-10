@@ -56,6 +56,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return newUnauthorizedServiceError()
 	}
+	// This is assuming only residents are being deactivated currently
+	// If admins or other roles are deactivated, this will need to be updated
+	if user.DeactivatedAt != nil {
+		log.error("User is deactivated, cannot access auth endpoint")
+		return newUnauthorizedServiceError()
+	}
 	lockedStatus, err := s.Db.IsAccountLocked(user.ID)
 	if err != nil {
 		return newDatabaseServiceError(err)

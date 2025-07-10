@@ -74,6 +74,16 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+
+	for _, userID := range enrollment.UserIDs {
+		user, err := srv.Db.GetUserByID(uint(userID))
+		if err != nil {
+			continue
+		}
+		if user.DeactivatedAt != nil {
+			return newBadRequestServiceError(errors.New("cannot enroll deactivated user"), fmt.Sprintf("User %d is deactivated", userID))
+		}
+	}
 	skipped, err := srv.Db.CreateProgramClassEnrollments(classID, enrollment.UserIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
