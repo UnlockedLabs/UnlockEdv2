@@ -160,6 +160,7 @@ type ResidentProgramClassInfo struct {
 	AbsentAttendance     int                     `json:"absent_attendance"`
 	CreditTypes          string                  `json:"credit_types"`
 	UpdatedAt            string                  `json:"updated_at"`
+	ChangeReason         string                  `json:"change_reason"`
 }
 
 type ResidentTransferProgramConflicts struct {
