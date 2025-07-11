@@ -565,7 +565,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             -- count everything else as absent
             COALESCE(SUM(
               CASE WHEN pcea.attendance_status <> 'present' THEN 1 ELSE 0 END
-            ), 0)  AS absent_attendance
+            ), 0)  AS absent_attendance, pce.change_reason
         `).
 		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
@@ -581,7 +581,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		Group(`
             pce.enrollment_status,
             p.name, p.id,
-            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at
+            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at, pce.change_reason
         `).Order(args.OrderClause("pce.created_at desc"))
 
 	if !args.All {

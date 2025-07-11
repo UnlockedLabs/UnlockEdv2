@@ -11,6 +11,7 @@ import Pagination from './Pagination';
 import { textMonthLocalDate } from './helperFunctions/formatting';
 import { showModal, ResidentAttendanceModal } from './modals';
 import { isAdministrator, useAuth } from '@/useAuth';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
 export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const user = useAuth();
@@ -98,7 +99,28 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                 >
                     {pc.class_name}
                 </td>
-                <td>{pc.enrollment_status}</td>
+                <td>
+                    {(() => {
+                        const failedToComplete =
+                            pc.enrollment_status ===
+                            EnrollmentStatus['Failed To Complete'];
+                        if (failedToComplete) {
+                            return (
+                                <div className="flex items-center">
+                                    <span
+                                        className="cursor-pointer tooltip"
+                                        data-tip={pc.change_reason}
+                                    >
+                                        <InformationCircleIcon className="w-4 h-4 inline-block mr-1" />
+                                    </span>
+                                    {pc.enrollment_status}
+                                </div>
+                            );
+                        } else {
+                            return pc.enrollment_status;
+                        }
+                    })()}
+                </td>
                 <td>{textMonthLocalDate(pc.start_date)}</td>
                 <td>{pc.end_date ? textMonthLocalDate(pc.end_date) : ''}</td>
                 <td
