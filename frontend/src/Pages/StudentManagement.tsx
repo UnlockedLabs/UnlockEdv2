@@ -59,6 +59,8 @@ export default function StudentManagement() {
     const [sortQuery, setSortQuery] = useState(
         FilterResidentNames['Resident Name (A-Z)']
     );
+    const [includeDeactivated, setIncludeDeactivated] =
+        useState<boolean>(false);
     const {
         page: pageQuery,
         perPage,
@@ -70,7 +72,7 @@ export default function StudentManagement() {
         ServerResponseMany<User>,
         Error
     >(
-        `/api/users?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
+        `/api/users?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&include_deactivated=${includeDeactivated}`
     );
     const handleSearchTermChange = (newTerm: string) => {
         startTransition(() => {
@@ -169,6 +171,21 @@ export default function StudentManagement() {
                                 'Account Created  (Oldest)': 'created_at asc'
                             }}
                         />
+                        <div className="form-control">
+                            <label className="label cursor-pointer gap-2">
+                                <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-sm"
+                                    checked={includeDeactivated}
+                                    onChange={(e) =>
+                                        setIncludeDeactivated(e.target.checked)
+                                    }
+                                />
+                                <span className="label-text text-sm">
+                                    Include Deactivated Residents
+                                </span>
+                            </label>
+                        </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -216,7 +233,11 @@ export default function StudentManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-7 justify-items-center cursor-pointer"
+                                            className={`card p-4 w-full grid-cols-7 justify-items-center cursor-pointer ${
+                                                user.deactivated_at
+                                                    ? 'opacity-50 bg-gray-100'
+                                                    : ''
+                                            }`}
                                             onClick={() =>
                                                 handleShowUserProfileClick(
                                                     user.id

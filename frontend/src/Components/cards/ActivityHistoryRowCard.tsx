@@ -77,6 +77,9 @@ function ActivityHistoryRowCard({
         case 'account_creation':
             introText = `Account created by ${activity.admin_username}`;
             break;
+        case 'user_deactivated':
+            introText = `Account deactivated by ${activity.admin_username}`;
+            break;
         case 'facility_transfer':
             introText = `Account assigned to ${activity.facility_name} by ${activity.admin_username}`;
             break;

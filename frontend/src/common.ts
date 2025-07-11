@@ -34,6 +34,7 @@ export interface User {
     updated_at: string;
     facility_id: number;
     facility_name?: string;
+    facility?: Facility;
     feature_access: FeatureAccess[];
     timezone: string;
     facilities?: Facility[];
@@ -47,6 +48,7 @@ export interface User {
         | null
         | FeatureAccess[]
         | Facility[]
+        | Facility
         | LoginMetrics;
 }
 
@@ -1182,7 +1184,8 @@ export type ActivityHistoryAction =
     | 'facility_transfer'
     | 'set_password'
     | 'reset_password'
-    | 'progclass_history';
+    | 'progclass_history'
+    | 'user_deactivated';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
 

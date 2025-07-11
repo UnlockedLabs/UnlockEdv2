@@ -23,6 +23,10 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		Preload("LoginMetrics").
 		Where("facility_id = ?", args.FacilityID)
 
+	if !args.IncludeDeactivated {
+		tx = tx.Where("deactivated_at IS NULL")
+	}
+
 	switch role {
 	case "system_admin":
 		tx = tx.Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
@@ -156,7 +160,7 @@ func fuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) *gorm.DB {
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	user := models.User{}
-	if err := db.First(&user, id).Error; err != nil {
+	if err := db.Preload("Facility").First(&user, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "users")
 	}
 	return &user, nil
