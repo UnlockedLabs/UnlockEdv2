@@ -13,6 +13,12 @@ import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { parseLocalDay } from '@/Components/helperFunctions/formatting';
+import {
+    ClipboardDocumentCheckIcon,
+    EyeIcon
+} from '@heroicons/react/24/outline';
+import { format, parseISO } from 'date-fns';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
@@ -56,6 +62,14 @@ export default function ClassEvents() {
     );
     const meta = data?.meta;
     const events = data?.data ?? [];
+
+    function isFutureDate(date: string): boolean {
+        const day = parseLocalDay(date);
+        console.log(day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return day > today;
+    }
 
     function getPresentCount(records: ProgramClassEventAttendance[]): number {
         return records.filter(
@@ -126,7 +140,7 @@ export default function ClassEvents() {
                             {events.map((event) => (
                                 <tr
                                     key={`${event.event_id}-${event.date}`}
-                                    className="card grid-cols-5 justify-items-center"
+                                    className="card grid-cols-5 justify-items-center p-4"
                                 >
                                     <td className="justify-self-start px-4">
                                         {toLocalMidnight(
@@ -146,38 +160,61 @@ export default function ClassEvents() {
                                         enrolled ? `/ ${enrolled}` : ''
                                     }`}</td>
                                     <td className="px-5">{getStatus(event)}</td>
-                                    <td className="justify-self-end">
-                                        {event.attendance_records?.length >
-                                        0 ? (
-                                            <button
-                                                onClick={() =>
-                                                    handleViewEditMarkAttendance(
-                                                        event.event_id,
-                                                        event.date
-                                                    )
-                                                }
-                                                className="button"
-                                            >
-                                                View / Edit
-                                            </button>
-                                        ) : (
-                                            <button
-                                                disabled={
-                                                    blockEdits ||
-                                                    event.is_cancelled
-                                                }
-                                                onClick={() =>
-                                                    handleViewEditMarkAttendance(
-                                                        event.event_id,
-                                                        event.date
-                                                    )
-                                                }
-                                                className={`button ${blockEdits ? 'tooltip tooltip-left' : ''}`}
-                                                data-tip={`${blockEdits ? `This class is ${this_program?.status.toLowerCase()} and cannot be modified.` : ''}`}
-                                            >
-                                                Mark Attendance
-                                            </button>
-                                        )}
+                                    <td className="justify-self-end pr-5">
+                                        {(() => {
+                                            const isViewOnly =
+                                                blockEdits ||
+                                                event.is_cancelled;
+                                            const isFuture = isFutureDate(
+                                                event.date
+                                            );
+
+                                            if (isViewOnly) {
+                                                return (
+                                                    <>
+                                                        <div
+                                                            className="cursor-pointer"
+                                                            onClick={() =>
+                                                                handleViewEditMarkAttendance(
+                                                                    event.event_id,
+                                                                    event.date
+                                                                )
+                                                            }
+                                                        >
+                                                            <EyeIcon className="w-4 h-4 inline-block mr-1" />
+                                                            <span className="hover:underline">
+                                                                View attendance
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            }
+
+                                            if (isFuture) {
+                                                return (
+                                                    <span className="text-grey-2">
+                                                        {`Available after ${format(parseISO(event.date), 'M/d')}`}
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <div
+                                                    className="cursor-pointer"
+                                                    onClick={() =>
+                                                        handleViewEditMarkAttendance(
+                                                            event.event_id,
+                                                            event.date
+                                                        )
+                                                    }
+                                                >
+                                                    <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block mr-1" />
+                                                    <span className="hover:underline">
+                                                        Mark attendance
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                 </tr>
                             ))}
