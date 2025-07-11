@@ -94,21 +94,23 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	tags := r.URL.Query()["tags"]
 	all := r.URL.Query().Get("all") == "true"
+	includeDeactivated := r.URL.Query().Get("include_deactivated") == "true"
 	tz := claims.TimeZone
 	return models.QueryContext{
-		Params:     r.URL.Query(),
-		Ctx:        r.Context(),
-		Page:       page,
-		PerPage:    perPage,
-		FacilityID: uint(facilityID),
-		UserID:     uint(userID),
-		OrderBy:    orderBy,
-		Order:      order,
-		IsAdmin:    claims.isAdmin(),
-		Search:     search,
-		Tags:       tags,
-		All:        all,
-		Timezone:   tz,
+		Params:             r.URL.Query(),
+		Ctx:                r.Context(),
+		Page:               page,
+		PerPage:            perPage,
+		FacilityID:         uint(facilityID),
+		UserID:             uint(userID),
+		OrderBy:            orderBy,
+		Order:              order,
+		IsAdmin:            claims.isAdmin(),
+		Search:             search,
+		Tags:               tags,
+		All:                all,
+		Timezone:           tz,
+		IncludeDeactivated: includeDeactivated,
 	}
 }
 
