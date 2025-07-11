@@ -394,7 +394,6 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	log.add("transfer_facility_id", transRequest.TransFacilityID)
 	log.add("current_facility_id", transRequest.CurrFacilityID)
 
-	// Check if user is deactivated before transfer
 	user, err := srv.Db.GetUserByID(uint(transRequest.UserID))
 	if err != nil {
 		return newDatabaseServiceError(err)

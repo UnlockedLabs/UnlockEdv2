@@ -259,11 +259,9 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")
 					return nil, hasCookie, err
 				}
-				// This is assuming only residents are being deactivated currently
-				// If admins or other roles are deactivated, this will need to be updated
 				if user.DeactivatedAt != nil {
 					log.Error("User is deactivated, cannot access auth endpoint")
-					return &Claims{}, false, newUnauthorizedServiceError()
+					return &Claims{}, false, newBadRequestServiceError(errors.New("account deactivated"), "Account deactivated. Contact the facility administrator for support.")
 				}
 				traits := identity["traits"].(map[string]any)
 				fields["user"] = user

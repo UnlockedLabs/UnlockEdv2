@@ -49,7 +49,7 @@ export const DeactivateUserModal = forwardRef<
                         <p className="mb-2">
                             You are about to deactivate this resident's account.
                         </p>
-                        <ul className="list-disc list-inside space-y-1 text-xs">
+                        <ul className="list-disc list-outside space-y-1 text-xs pl-4">
                             <li>
                                 The resident will be withdrawn from all active
                                 classes and programs
