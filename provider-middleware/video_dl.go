@@ -467,9 +467,12 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 		vidInfo.RawURL,
 	)
 	cmd.Env = os.Environ()
+	var outBuf, errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
 	err := cmd.Run()
 	if err != nil {
-		logger().Errorf("yt-dlp failed: %v", err)
+		logger().Errorf("yt-dlp failed: %v\nstdout:\n%s\nstderr:\n%s", err, outBuf.String(), errBuf.String())
 		video.Availability = models.VideoHasError
 		return yt.incrementFailedAttempt(ctx, video, err.Error())
 	}
