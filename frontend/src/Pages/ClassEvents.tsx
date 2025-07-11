@@ -181,10 +181,10 @@ export default function ClassEvents() {
                                                                 )
                                                             }
                                                         >
+                                                            <EyeIcon className="w-4 h-4 inline-block mr-1" />
                                                             <span className="hover:underline">
                                                                 View attendance
                                                             </span>
-                                                            <EyeIcon className="w-4 h-4 inline-block ml-1" />
                                                         </div>
                                                     </>
                                                 );
@@ -208,10 +208,10 @@ export default function ClassEvents() {
                                                         )
                                                     }
                                                 >
+                                                    <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block mr-1" />
                                                     <span className="hover:underline">
                                                         Mark attendance
                                                     </span>
-                                                    <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block ml-1" />
                                                 </div>
                                             );
                                         })()}
