@@ -178,11 +178,10 @@ export default function AdminManagement() {
                             }}
                         />
                     </div>
-
                     {isSysAdmin(user!) ? (
                         <div className="flex gap-2">
                             <div
-                                className="w-64 tooltip tooltip-bottom"
+                                className="tooltip tooltip-bottom"
                                 data-tip="Add Department-wide Admin"
                             >
                                 <AddButton
@@ -196,7 +195,7 @@ export default function AdminManagement() {
                                 />
                             </div>
                             <div
-                                className="w-64 tooltip  tooltip-bottom"
+                                className="tooltip tooltip-bottom"
                                 data-tip={`Add ${user!.facility_name} Admin`}
                             >
                                 <AddButton
