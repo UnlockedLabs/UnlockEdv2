@@ -106,13 +106,15 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             EnrollmentStatus['Failed To Complete'];
                         if (failedToComplete) {
                             return (
-                                <span
-                                    className="flex tooltip cursor-pointer"
-                                    data-tip={pc.change_reason}
-                                >
-                                    <InformationCircleIcon className="w-4 h-4 inline-block mr-1" />
+                                <div className="flex items-center">
+                                    <span
+                                        className="cursor-pointer tooltip"
+                                        data-tip={pc.change_reason}
+                                    >
+                                        <InformationCircleIcon className="w-4 h-4 inline-block mr-1" />
+                                    </span>
                                     {pc.enrollment_status}
-                                </span>
+                                </div>
                             );
                         } else {
                             return pc.enrollment_status;
