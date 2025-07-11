@@ -456,7 +456,7 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 		ctx,
 		"yt-dlp",
 		"-f", "bv*+ba/b",
-		"-S ", "res:480,ext:mp4",
+		"-S", "res:480,ext:mp4",
 		"--merge-output-format", "mp4",
 		"--remux-video", "mp4",
 		"--restrict-filenames",
