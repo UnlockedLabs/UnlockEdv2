@@ -26,6 +26,7 @@ import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import { useToast } from '@/Context/ToastCtx';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { CancelButton } from '@/Components/inputs';
 
 interface LocalRowData {
     selected: boolean;
@@ -454,16 +455,13 @@ export default function EventAttendance() {
                         </table>
                     </div>
                     <div className="flex gap-4 justify-end pt-4 ">
-                        <button
-                            className="button bg-grey"
+                        <CancelButton
                             onClick={() =>
                                 navigate(
                                     `/program-classes/${class_id}/attendance`
                                 )
                             }
-                        >
-                            Cancel
-                        </button>
+                        />
                         <button
                             type="submit"
                             className={`button ${tooltip}`}
