@@ -527,6 +527,7 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 	           f.name AS facility_name,
 	           p.name AS program_name,
 	           pc.name AS class_name,
+		       pc.instructor_name AS instructor_name,
 			   u.id as unlock_ed_id,
 	           u.doc_id AS resident_id,
 				u.name_last AS name_last,
@@ -555,7 +556,7 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 				OR pe.enrollment_status IN (?)
 			)
 		`, statuses).
-		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
+		Group("u.id, u.doc_id, f.name, p.name, pc.name,pc.instructor_name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
 		Order("f.name ASC, p.name ASC, pc.name ASC, end_date DESC")
 
 	if !args.All {
