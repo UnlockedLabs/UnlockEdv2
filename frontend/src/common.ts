@@ -1222,7 +1222,3 @@ export interface BulkUploadResponse {
     invalid_rows: InvalidUserRow[];
     error_csv_data?: string; // Base64 encoded CSV data from []byte
 }
-
-export function isUserDeactivated(user: User): boolean {
-    return user.deactivated_at != null;
-}
