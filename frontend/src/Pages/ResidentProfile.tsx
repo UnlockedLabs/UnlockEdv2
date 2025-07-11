@@ -7,9 +7,9 @@ import {
     ToastState,
     User,
     UserRole,
-    ValidResident,
-    isUserDeactivated
+    ValidResident
 } from '@/common';
+import { isUserDeactivated } from '@/useAuth';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
 import { ResponsiveContainer } from 'recharts';
 import StatsCard from '@/Components/StatsCard';
@@ -189,6 +189,7 @@ const ResidentProfile = () => {
         }
     }
 
+    // deactivation logic
     const deactivateUser = async () => {
         if (!data?.data?.user?.id) return;
 

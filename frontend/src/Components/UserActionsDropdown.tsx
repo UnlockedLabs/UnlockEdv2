@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
-import { User, ResidentAccountAction, isUserDeactivated } from '@/common';
-import { canSwitchFacility } from '@/useAuth';
+import { User, ResidentAccountAction } from '@/common';
+import { canSwitchFacility, isUserDeactivated } from '@/useAuth';
 
 interface UserActionsDropdownProps {
     user: User;
