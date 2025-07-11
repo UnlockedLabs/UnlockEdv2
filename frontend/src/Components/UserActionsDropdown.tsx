@@ -27,17 +27,18 @@ export default function UserActionsDropdown({
             show: canSwitchFacility(currentUser) && !isDeactivated,
             className: 'text-teal-5'
         },
-        {
-            action: ResidentAccountAction['Delete Resident'],
-            label: 'Delete Resident',
-            show: !isDeactivated,
-            className: 'text-error'
-        },
+
         {
             action: ResidentAccountAction['Deactivate Resident'],
             label: 'Deactivate Resident',
             show: !isDeactivated,
             className: 'text-warning'
+        },
+        {
+            action: ResidentAccountAction['Delete Resident'],
+            label: 'Delete Resident',
+            show: !isDeactivated,
+            className: 'text-error'
         }
     ];
 

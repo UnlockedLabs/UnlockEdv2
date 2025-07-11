@@ -319,43 +319,57 @@ export default function StudentManagement() {
                                             </td>
                                             <td className="justify-self-end">
                                                 <div className="flex space-x-4">
-                                                    <ULIComponent
-                                                        dataTip={
-                                                            'Edit Resident'
-                                                        }
-                                                        tooltipClassName="tooltip-left cursor-pointer"
-                                                        icon={PencilSquareIcon}
-                                                        onClick={(e) => {
-                                                            e?.stopPropagation();
-                                                            setTargetUser({
-                                                                action: CRUDActions.Edit,
-                                                                target: user
-                                                            });
-                                                            showModal(
-                                                                editUserModal
-                                                            );
-                                                        }}
-                                                    />
+                                                    {!user.deactivated_at && (
+                                                        <>
+                                                            <ULIComponent
+                                                                dataTip={
+                                                                    'Edit Resident'
+                                                                }
+                                                                tooltipClassName="tooltip-left cursor-pointer"
+                                                                icon={
+                                                                    PencilSquareIcon
+                                                                }
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e?.stopPropagation();
+                                                                    setTargetUser(
+                                                                        {
+                                                                            action: CRUDActions.Edit,
+                                                                            target: user
+                                                                        }
+                                                                    );
+                                                                    showModal(
+                                                                        editUserModal
+                                                                    );
+                                                                }}
+                                                            />
 
-                                                    <ULIComponent
-                                                        dataTip={
-                                                            'Reset Password'
-                                                        }
-                                                        tooltipClassName="tooltip-left cursor-pointer"
-                                                        icon={
-                                                            ArrowPathRoundedSquareIcon
-                                                        }
-                                                        onClick={(e) => {
-                                                            e?.stopPropagation();
-                                                            setTargetUser({
-                                                                action: CRUDActions.Reset,
-                                                                target: user
-                                                            });
-                                                            showModal(
-                                                                resetUserPasswordModal
-                                                            );
-                                                        }}
-                                                    />
+                                                            <ULIComponent
+                                                                dataTip={
+                                                                    'Reset Password'
+                                                                }
+                                                                tooltipClassName="tooltip-left cursor-pointer"
+                                                                icon={
+                                                                    ArrowPathRoundedSquareIcon
+                                                                }
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e?.stopPropagation();
+                                                                    setTargetUser(
+                                                                        {
+                                                                            action: CRUDActions.Reset,
+                                                                            target: user
+                                                                        }
+                                                                    );
+                                                                    showModal(
+                                                                        resetUserPasswordModal
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </>
+                                                    )}
 
                                                     <ULIComponent
                                                         dataTip={

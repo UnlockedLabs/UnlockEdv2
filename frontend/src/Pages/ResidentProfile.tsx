@@ -157,7 +157,6 @@ const ResidentProfile = () => {
     const verifyResidentModal = useRef<HTMLDialogElement>(null);
     const confirmTransferModal = useRef<HTMLDialogElement>(null);
 
-    //deactivation logic
     const deactivateUserModal = useRef<HTMLDialogElement>(null);
     const checkResponse = useCheckResponse({
         mutate: mutateResident,
@@ -189,7 +188,6 @@ const ResidentProfile = () => {
         }
     }
 
-    // deactivation logic
     const deactivateUser = async () => {
         if (!data?.data?.user?.id) return;
 
@@ -207,7 +205,6 @@ const ResidentProfile = () => {
         closeModal(deactivateUserModal);
     };
 
-    // Handle action selection
     const handleActionSelect = (action: ResidentAccountAction) => {
         if (!data?.data?.user) return;
 
@@ -228,7 +225,6 @@ const ResidentProfile = () => {
         }
     };
 
-    //end transfer logic
     return (
         <div className="overflow-x-hidden px-5 pb-4">
             {!data || (isLoading && <div>Loading...</div>)}
@@ -300,7 +296,7 @@ const ResidentProfile = () => {
                                 />
                                 {isUserDeactivated(data.data.user) && (
                                     <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
-                                        Inactive
+                                        Deactivated
                                     </span>
                                 )}
                             </div>

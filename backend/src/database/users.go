@@ -124,7 +124,8 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		Joins("JOIN facilities_programs fp ON users.facility_id = fp.facility_id").
 		Joins("JOIN program_classes c ON c.program_id = fp.program_id AND c.id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
-		Where("users.role = 'student' AND users.facility_id = ?", args.FacilityID)
+		Where("users.role = 'student' AND users.facility_id = ?", args.FacilityID).
+		Where("users.deactivated_at IS NULL")
 
 	if args.SearchQuery() != "" {
 		tx = fuzzySearchUsers(tx, args)

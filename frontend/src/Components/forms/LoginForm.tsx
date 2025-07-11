@@ -28,6 +28,9 @@ export default function LoginForm() {
     const processing = navigation.state === 'submitting';
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
+    const [errorType, setErrorType] = useState<
+        'generic' | 'locked' | 'deactivated'
+    >('generic');
 
     const [lockedOutSeconds, setLockedOutSeconds] = useState<number | null>(
         null
@@ -94,6 +97,9 @@ export default function LoginForm() {
             data.identifier = user;
         }
 
+        // Reset error state
+        setErrorMessage(false);
+        setErrorType('generic');
         setValue('password', '');
         const resp = (await API.post<AuthResponse, Inputs>(
             'login',
@@ -122,10 +128,16 @@ export default function LoginForm() {
             } else {
                 setLockedOutSeconds(null);
             }
+            setErrorType('locked');
+            setErrorMessage(true);
+            return;
+        } else if (resp.message?.includes('Account deactivated')) {
+            setErrorType('deactivated');
             setErrorMessage(true);
             return;
         }
 
+        setErrorType('generic');
         setErrorMessage(true);
     };
 
@@ -190,10 +202,14 @@ export default function LoginForm() {
 
             {errorMessage && (
                 <div className="block">
-                    {lockedOutSeconds !== null && lockedOutSeconds > 0 ? (
+                    {errorType === 'locked' &&
+                    lockedOutSeconds !== null &&
+                    lockedOutSeconds > 0 ? (
                         <InputError
                             message={`Currently locked out. Try again in ${countdownDisplay}.`}
                         />
+                    ) : errorType === 'deactivated' ? (
+                        <InputError message="Account deactivated. Contact the facility administrator for support." />
                     ) : (
                         <InputError message="Incorrect username or password." />
                     )}
