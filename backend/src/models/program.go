@@ -179,6 +179,7 @@ type ProgramCSVData struct {
 	FacilityName         string     `json:"facility_name" gorm:"column:facility_name"`
 	ProgramName          string     `json:"program_name" gorm:"column:program_name"`
 	ClassName            string     `json:"class_name" gorm:"column:class_name"`
+	InstructorName       string     `json:"instructor_name" gorm:"column:instructor_name"`
 	UnlockEdID           uint       `json:"unlock_ed_id" gorm:"column:unlock_ed_id"`
 	NameFirst            string     `json:"name_first" gorm:"column:name_first"`
 	NameLast             string     `json:"name_last" gorm:"column:name_last"`
@@ -190,7 +191,7 @@ type ProgramCSVData struct {
 }
 
 func ProgramDataToCSVFormat(data []ProgramCSVData) ([][]string, error) {
-	csvData := [][]string{{"Facility Name", "Program Name", "Class Name", "Last Name", "First Name", "Resident ID", "UnlockEd ID", "Enrollment Date", "End Date", "End Status", "Attendance Percentage"}}
+	csvData := [][]string{{"Facility Name", "Program Name", "Class Name", "Instructor Name", "Last Name", "First Name", "Resident ID", "UnlockEd ID", "Enrollment Date", "End Date", "End Status", "Attendance Percentage"}}
 	for _, record := range data {
 		var endDateStr string
 		if record.EndDate != nil && !record.EndDate.IsZero() {
@@ -203,6 +204,7 @@ func ProgramDataToCSVFormat(data []ProgramCSVData) ([][]string, error) {
 			record.FacilityName,
 			record.ProgramName,
 			record.ClassName,
+			record.InstructorName,
 			record.NameLast,
 			record.NameFirst,
 			strconv.Itoa(int(record.ResidentID)),
