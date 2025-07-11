@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=1&count="
+	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=0&count="
 )
 
 var maxLibraries = sync.OnceValue(func() int {
