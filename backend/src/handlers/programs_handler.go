@@ -17,7 +17,6 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 	return []routeDef{
 		featureRoute("GET /api/programs", srv.handleIndexPrograms, axx),
 		featureRoute("GET /api/programs/{id}", srv.handleShowProgram, axx),
-		featureRoute("PUT /api/programs/{id}/save", srv.handleFavoriteProgram, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, axx),
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
@@ -246,26 +245,6 @@ func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, l
 	}
 	log.info("Program deleted")
 	return writeJsonResponse(w, http.StatusNoContent, "Program deleted successfully")
-}
-
-func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "program ID")
-	}
-	user_id := srv.getUserID(r)
-	favoriteRemoved, err := srv.Db.ToggleProgramFavorite(user_id, uint(id))
-	if err != nil {
-		log.add("program_id", id)
-		log.add("user_id", user_id)
-		return newDatabaseServiceError(err)
-	}
-	log.debugf("Favorite removed: %v", favoriteRemoved)
-	if favoriteRemoved {
-		w.WriteHeader(http.StatusNoContent)
-		return nil
-	}
-	return writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
 }
 
 func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
