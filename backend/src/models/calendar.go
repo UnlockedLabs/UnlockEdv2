@@ -8,7 +8,6 @@ const (
 	All     string = "all"
 )
 
-
 type EventInstance struct {
 	EventID     uint          `json:"event_id"`
 	ClassID     uint          `json:"class_id"`
