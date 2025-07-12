@@ -302,16 +302,7 @@ export default function EventAttendance() {
                         <table className="table-2 mb-5">
                             <thead>
                                 <tr className="grid-cols-[1fr_1fr_350px_1fr] grid gap-2">
-                                    <th className="justify-self-start space-x-2 px-3">
-                                        {/* <input
-                                            type="checkbox"
-                                            checked={
-                                                rows.length > 0 &&
-                                                rows.every((r) => r.selected)
-                                            }
-                                            onChange={handleSelectAll}
-                                            className="checkbox cursor-pointer"
-                                        /> */}
+                                    <th className="justify-self-start px-3">
                                         Name
                                     </th>
                                     <th className="justify-self-start">
@@ -327,18 +318,8 @@ export default function EventAttendance() {
                                         key={row.user_id}
                                         className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid cursor-pointer p-2 gap-2"
                                     >
-                                        <td className="justify-self-start space-x-2">
-                                            {/* <input
-                                                type="checkbox"
-                                                checked={row.selected}
-                                                onChange={() =>
-                                                    handleToggleSelect(
-                                                        row.user_id
-                                                    )
-                                                }
-                                                className="checkbox cursor-pointer"
-                                            /> */}
-                                            {row.name_last}, {row.name_first}{' '}
+                                        <td className="justify-self-start">
+                                            {row.name_last}, {row.name_first}
                                         </td>
                                         <td className="justify-self-start">
                                             {' '}
