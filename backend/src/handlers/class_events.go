@@ -13,7 +13,6 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	resolver := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
 		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
-		featureRoute("GET /api/student-attendance", srv.handleGetStudentAttendanceData, axx),
 		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
@@ -155,15 +154,6 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Event rescheduled successfully")
-}
-
-func (srv *Server) handleGetStudentAttendanceData(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userId := r.Context().Value(ClaimsKey).(*Claims).UserID
-	programData, err := srv.Db.GetStudentProgramAttendanceData(userId)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, programData)
 }
 
 func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Request, log sLog) error {
