@@ -20,7 +20,7 @@ export default function AttendanceStatusToggle({
             <button
                 className={`flex flex-1 items-center justify-center gap-2 rounded-md bg-grey-1 px-4 py-2 text-base ${
                     value === Attendance.Present
-                        ? 'bg-teal-3 opacity-70 text-white'
+                        ? 'bg-teal-3 opacity-70 hover:shadow-md text-white'
                         : 'bg-grey-1 hover:bg-grey-2'
                 }`}
                 onClick={() => onChange(Attendance.Present)}
@@ -32,7 +32,7 @@ export default function AttendanceStatusToggle({
             <button
                 className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-base ${
                     value === Attendance.Absent_Excused
-                        ? 'bg-pale-yellow text-base'
+                        ? 'bg-pale-yellow hover:shadow-md text-base'
                         : 'bg-grey-1 hover:bg-grey-2'
                 }`}
                 onClick={() => onChange(Attendance.Absent_Excused)}
@@ -44,7 +44,7 @@ export default function AttendanceStatusToggle({
             <button
                 className={`flex flex-1 items-center justify-center gap-2 rounded-md bg-grey-1 px-4 py-2 text-base ${
                     value === Attendance.Absent_Unexcused
-                        ? 'bg-red-2 opacity-80 text-white'
+                        ? 'bg-red-2 opacity-80 hover:shadow-md text-white'
                         : 'bg-grey-1 hover:bg-grey-2'
                 }`}
                 onClick={() => onChange(Attendance.Absent_Unexcused)}
