@@ -55,9 +55,8 @@ export default function PageNav({
             {}
         );
         if (resp.success) {
-            // Navigate to the first page of the residents list
             navigate('/residents?page=1');
-            // If you need to reload to ensure all data is fresh, you can do so after a short delay
+
             setTimeout(() => {
                 window.location.reload();
             }, 100);
