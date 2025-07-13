@@ -3,7 +3,7 @@ import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, RouteTitleHandler, TitleHandler, UserRole } from '@/common';
-import { useMatches } from 'react-router-dom';
+import { useMatches, useNavigate } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { resolveTitle } from '@/routeLoaders';
@@ -25,6 +25,8 @@ export default function PageNav({
     const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
     const pageTitle = resolveTitle(routeHandle, routeData);
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
+    const navigate = useNavigate();
+
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
@@ -53,7 +55,12 @@ export default function PageNav({
             {}
         );
         if (resp.success) {
-            window.location.reload();
+            // Navigate to the first page of the residents list
+            navigate('/residents?page=1');
+            // If you need to reload to ensure all data is fresh, you can do so after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
         }
     };
 
