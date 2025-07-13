@@ -36,7 +36,7 @@ export default function ClassEvents() {
     } = useUrlPagination(1, 20);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const { register, watch } = useForm<{ selectedMonth: string }>({
+    const { register, watch, setValue } = useForm<{ selectedMonth: string }>({
         defaultValues: { selectedMonth: defaultMonth }
     });
     const selectedMonthValue = watch('selectedMonth');
@@ -118,6 +118,9 @@ export default function ClassEvents() {
                     register={register}
                     monthOnly={true}
                     disabled={false}
+                    onChange={(e) => {
+                        setValue('selectedMonth', e);
+                    }}
                 />
             </div>
 
