@@ -210,10 +210,10 @@ export default function AdminManagement() {
                     ) : (
                         <div
                             className="tooltip tooltip-left"
-                            data-tip="Add Admin"
+                            data-tip={`Add ${user!.facility_name} Admin`}
                         >
                             <AddButton
-                                label={`Add Admin`}
+                                label={`Add Facility Admin`}
                                 onClick={() => showModal(addUserModal)}
                             />
                         </div>
