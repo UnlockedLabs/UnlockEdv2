@@ -190,7 +190,7 @@ export default function ClassEnrollmentDetails() {
         Completed = 'Completed',
         Withdrawn = 'Incomplete: Withdrawn',
         Dropped = 'Incomplete: Dropped',
-        Segregated = 'Incomplete: Segregated',
+        'Segregated - Dropped' = 'Incomplete: Segregated',
         'Failed To Complete' = 'Incomplete: Failed to Complete'
     }
     return (
