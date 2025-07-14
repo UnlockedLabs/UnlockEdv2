@@ -18,7 +18,7 @@ import {
     ClipboardDocumentCheckIcon,
     EyeIcon
 } from '@heroicons/react/24/outline';
-import { format, parseISO } from 'date-fns';
+import moment from 'moment';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
@@ -65,7 +65,6 @@ export default function ClassEvents() {
 
     function isFutureDate(date: string): boolean {
         const day = parseLocalDay(date);
-        console.log(day);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return day > today;
@@ -118,7 +117,7 @@ export default function ClassEvents() {
                     register={register}
                     monthOnly={true}
                     disabled={false}
-                    onChange={(e) => {
+                    onChange={(e: string) => {
                         setValue('selectedMonth', e);
                     }}
                 />
@@ -196,7 +195,7 @@ export default function ClassEvents() {
                                             if (isFuture) {
                                                 return (
                                                     <span className="text-grey-2">
-                                                        {`Available after ${format(parseISO(event.date), 'M/d')}`}
+                                                        {`Available after ${moment(event.date).format('M/D')}`}
                                                     </span>
                                                 );
                                             }
