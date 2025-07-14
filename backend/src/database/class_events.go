@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"cmp"
+	"fmt"
 	"slices"
 	"sort"
 	"strconv"
@@ -526,7 +527,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		}
 
 		linkedOverridesMap := getLinkedOverrideEventMap(event, overrides)
-
+		fmt.Println(">>>>>>>>>>>>>>>>>>>>>linkedOverridesMap", linkedOverridesMap)
 		for _, override := range overrides { //adding the rescheduled ones to instances slice
 			if override.IsCancelled && override.LinkedOverrideEventID == nil { //skip only cancelled ones with no links
 				continue
@@ -546,6 +547,11 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				logrus.Errorf("error parsing duration for event: %v", err)
 			}
 			overrideEndTime := overrideDate.Add(duration)
+
+			var linkedOverrideEvent *models.FacilityProgramClassEvent
+			if override.LinkedOverrideEventID != nil {
+				linkedOverrideEvent = linkedOverridesMap[*override.LinkedOverrideEventID]
+			}
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent:   event.ProgramClassEvent,
 				InstructorName:      event.InstructorName,
@@ -558,7 +564,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				IsOverride:          true,
 				IsCancelled:         override.IsCancelled,
 				OverrideID:          override.ID,
-				LinkedOverrideEvent: linkedOverridesMap[*override.LinkedOverrideEventID],
+				LinkedOverrideEvent: linkedOverrideEvent,
 			}
 			facilityEvents = append(facilityEvents, facilityEvent)
 		}
@@ -604,6 +610,7 @@ func getLinkedOverrideEventMap(event models.FacilityProgramClassEvent, overrides
 				logrus.Errorf("error parsing duration for event: %v", err)
 			}
 			overrideEndTime := overrideDate.Add(duration)
+			fmt.Println(programClassEvent.ID, "<<<<<<<<<<<<<<<<<<<<<<<ID")
 			programClassEvent.StartTime = &overrideDate
 			programClassEvent.EndTime = &overrideEndTime
 			programClassEvent.Frequency = rRule.OrigOptions.Freq.String()
