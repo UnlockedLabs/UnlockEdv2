@@ -8,13 +8,7 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import {
-    ProgClassStatus,
-    Class,
-    ToastState,
-    ClassLoaderData,
-    ShortCalendarEvent
-} from '@/common';
+import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -30,6 +24,7 @@ import { RRule } from 'rrule';
 import moment from 'moment';
 import { toZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/useAuth';
+import { ShortCalendarEvent } from '@/types/events';
 
 export default function ClassManagementForm() {
     const { user } = useAuth();

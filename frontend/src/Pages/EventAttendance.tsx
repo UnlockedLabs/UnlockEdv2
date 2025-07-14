@@ -14,7 +14,6 @@ import {
     Attendance,
     ServerResponseMany,
     FilterResidentNames,
-    EventDate,
     Class,
     ToastState
 } from '@/common';
@@ -26,6 +25,7 @@ import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import { useToast } from '@/Context/ToastCtx';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { EventDate } from '@/types/events';
 
 interface LocalRowData {
     selected: boolean;

@@ -1,5 +1,4 @@
-import { StudentCalendar } from '@/common';
-import React from 'react';
+import { StudentCalendar } from '@/types/events';
 
 const timeGroups = [
     { label: 'Morning (6am - 12pm)', start: 6, end: 12 },
