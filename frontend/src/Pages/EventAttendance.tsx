@@ -14,7 +14,6 @@ import {
     Attendance,
     ServerResponseMany,
     FilterResidentNames,
-    EventDate,
     Class,
     ToastState
 } from '@/common';
@@ -34,6 +33,7 @@ import {
     showModal,
     closeModal
 } from '@/Components/modals';
+import { EventDate } from '@/types/events';
 
 interface LocalRowData {
     selected: boolean;

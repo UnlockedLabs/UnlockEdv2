@@ -4,8 +4,6 @@ import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import {
     Attendance,
     Class,
-    ClassEventInstance,
-    ProgramClassEventAttendance,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -13,6 +11,10 @@ import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import {
+    ClassEventInstance,
+    ProgramClassEventAttendance
+} from '@/types/events';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);

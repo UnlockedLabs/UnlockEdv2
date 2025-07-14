@@ -1,4 +1,4 @@
-import { FacilityProgramClassEvent, ServerResponseMany } from '@/common';
+import { ServerResponseMany } from '@/common';
 import EventCalendar from '@/Components/EventCalendar';
 import ResidentPrograms from '@/Components/ResidentPrograms';
 import { useAuth } from '@/useAuth';
@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { toZonedTime } from 'date-fns-tz';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
+import { FacilityProgramClassEvent } from '@/types/events';
 
 export default function ResidentOverview() {
     const { user } = useAuth();

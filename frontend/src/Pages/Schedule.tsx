@@ -1,10 +1,7 @@
-import {
-    ClassLoaderData,
-    FacilityProgramClassEvent,
-    ServerResponseMany
-} from '@/common';
+import { ClassLoaderData, ServerResponseMany } from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
+import { FacilityProgramClassEvent } from '@/types/events';
 import { useAuth } from '@/useAuth';
 import { toZonedTime } from 'date-fns-tz';
 import { useMemo, useState } from 'react';

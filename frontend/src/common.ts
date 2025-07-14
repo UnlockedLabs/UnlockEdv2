@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { ProgramClassEvent } from './types/events';
 
 export enum UserRole {
     SystemAdmin = 'system_admin',
@@ -560,30 +561,6 @@ export interface AdminLayer2Join {
     last_cache: string;
 }
 
-export interface EventCalendar {
-    month: Month;
-    year: number;
-}
-
-export interface Month {
-    name: string;
-    days: Day[];
-}
-
-export interface Day {
-    date: string;
-    events: Event[];
-}
-export interface Event {
-    event_id: number;
-    class_id: number;
-    start_time: string;
-    duration: number;
-    is_cancelled: boolean;
-    location: string;
-    program_name: string;
-}
-
 export interface OverrideForm {
     start_time: string;
     date: string;
@@ -811,85 +788,6 @@ export interface ResidentProgramOverview {
     absent_attendance?: number;
     attendance_percentage?: number;
     change_reason?: string;
-}
-
-// TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
-export interface ShortCalendarEvent {
-    title: string;
-    start: Date;
-    end: Date;
-}
-
-export interface FacilityProgramClassEvent extends ProgramClassEvent {
-    instructor_name: string;
-    program_name: string;
-    title: string;
-    is_cancelled: boolean;
-    is_override: boolean;
-    enrolled_users: string;
-    start: Date;
-    end: Date;
-    frequency: string;
-    override_id: number;
-    linked_override_event: FacilityProgramClassEvent;
-    credit_types: string;
-}
-
-export interface CalendarEvent {
-    event_id: number;
-    class_id: number;
-    program_name: string;
-    start_time: string;
-    duration: number;
-    location: string;
-    is_cancelled: boolean;
-}
-export interface StudentCalendar {
-    day_index: number;
-    date: string;
-    events: CalendarEvent[];
-}
-
-export interface DayData {
-    date: string;
-    events: CalendarEvent[];
-}
-export interface ProgramClassEvent {
-    id: number;
-    class_id: number;
-    duration: string;
-    room: string;
-    recurrence_rule: string;
-    overrides: ProgramClassEventOverride[];
-}
-
-export interface ProgramClassEventOverride {
-    id: number;
-    event_id: number;
-    override_rrule: string;
-    duration: string;
-    room: string;
-    is_cancelled: boolean;
-    reason: string;
-}
-
-export interface ClassEventInstance {
-    is_cancelled: boolean;
-    event_id: number;
-    class_time: string;
-    date: string;
-    attendance_records: ProgramClassEventAttendance[];
-}
-
-export interface ProgramClassEventAttendance {
-    id: number;
-    created_at: Date;
-    updated_at: Date;
-    event_id: number;
-    user_id: number;
-    date: string;
-    attendance_status: Attendance;
-    note: string;
 }
 
 export interface EnrollmentAttendance {
@@ -1200,11 +1098,6 @@ export type ProgramAction =
     | 'set_inactive'
     | 'archive'
     | 'reactivate';
-
-export interface EventDate {
-    event_id: number;
-    date: string;
-}
 
 export interface ValidatedUserRow {
     row_number: number;
