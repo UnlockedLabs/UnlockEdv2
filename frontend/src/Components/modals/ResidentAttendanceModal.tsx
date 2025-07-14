@@ -4,7 +4,6 @@ import { TextModalType } from '.';
 import useSWR from 'swr';
 import {
     attendanceLabelMap,
-    ClassEventInstance,
     ResidentProgramOverview,
     ServerResponseMany
 } from '@/common';
@@ -12,6 +11,7 @@ import Pagination from '../Pagination';
 import Loading from '../Loading';
 import { useParams } from 'react-router-dom';
 import { textMonthLocalDate } from '../helperFunctions/formatting';
+import { ClassEventInstance } from '@/types/events';
 
 export const ResidentAttendanceModal = forwardRef(function (
     { selectedClass }: { selectedClass: ResidentProgramOverview | null },

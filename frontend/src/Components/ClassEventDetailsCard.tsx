@@ -1,9 +1,10 @@
-import { ServerResponseMany, FacilityProgramClassEvent } from '@/common';
+import { ServerResponseMany } from '@/common';
 import { CancelButton, CloseX } from '@/Components/inputs';
 import { RestoreClassEventModal, showModal } from '@/Components/modals';
 import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal';
 import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEventModal';
 import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleClassEventSeriesModal';
+import { FacilityProgramClassEvent } from '@/types/events';
 import { useRef } from 'react';
 import { KeyedMutator } from 'swr';
 

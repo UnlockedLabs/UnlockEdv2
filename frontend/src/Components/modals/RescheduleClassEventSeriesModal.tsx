@@ -8,7 +8,7 @@ import {
     TextModalType,
     TextOnlyModal
 } from '.';
-import { FacilityProgramClassEvent, ServerResponseMany } from '@/common';
+import { ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import {
     FieldValues,
@@ -24,6 +24,7 @@ import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { RRuleControl, RRuleFormHandle } from '../inputs/RRuleControl';
 import { addDays } from 'date-fns';
 import { parseRRuleUntilDate } from '../helperFunctions';
+import { FacilityProgramClassEvent } from '@/types/events';
 
 export const RescheduleClassEventSeriesModal = forwardRef(function (
     {

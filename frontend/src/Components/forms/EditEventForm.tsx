@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Event, OverrideForm } from '@/common';
+import { OverrideForm } from '@/common';
+import { Event } from '@/types/events';
 import API from '@/api/api';
 
 export interface ClassEventProps {

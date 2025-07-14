@@ -1,16 +1,13 @@
 import { forwardRef, useEffect, useState } from 'react';
 import { FormInputTypes, FormModal, Input } from '.';
-import {
-    CancelEventReason,
-    FacilityProgramClassEvent,
-    ServerResponseMany
-} from '@/common';
+import { CancelEventReason, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { fromZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/useAuth';
+import { FacilityProgramClassEvent } from '@/types/events';
 
 export function createCancelledEvent(
     calendarEvent: FacilityProgramClassEvent,
