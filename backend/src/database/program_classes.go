@@ -142,7 +142,8 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 	incompleteStatuses := []models.ProgramEnrollmentStatus{
 		models.EnrollmentIncompleteDropped,
 		models.EnrollmentIncompleteFailedToComplete,
-		models.EnrollmentIncompleteTransfered}
+		models.EnrollmentIncompleteTransfered,
+		models.EnrollmentIncompleteSegregated}
 
 	// Create a set that includes the last 6 months, excluding the current month, of program outcomes
 	const lastSixMonthsSubquery = `(SELECT TO_CHAR(
