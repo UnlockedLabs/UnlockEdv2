@@ -106,6 +106,45 @@ export default function ClassEvents() {
                 : 'Not Marked';
     }
 
+    function AttendanceAction({ event }: { event: ClassEventInstance }) {
+        const isViewOnly = blockEdits || event.is_cancelled;
+        const isFuture = isFutureDate(event.date);
+
+        if (isViewOnly) {
+            return (
+                <div
+                    className="cursor-pointer"
+                    onClick={() =>
+                        handleViewEditMarkAttendance(event.event_id, event.date)
+                    }
+                >
+                    <EyeIcon className="w-4 h-4 inline-block mr-1" />
+                    <span className="hover:underline">View attendance</span>
+                </div>
+            );
+        }
+
+        if (isFuture) {
+            return (
+                <span className="text-grey-2">
+                    {`Available on ${moment(event.date).format('M/D')}`}
+                </span>
+            );
+        }
+
+        return (
+            <div
+                className="cursor-pointer"
+                onClick={() =>
+                    handleViewEditMarkAttendance(event.event_id, event.date)
+                }
+            >
+                <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block mr-1" />
+                <span className="hover:underline">Mark attendance</span>
+            </div>
+        );
+    }
+
     return (
         <div>
             <div className="flex mb-4 justify-start">
@@ -163,60 +202,7 @@ export default function ClassEvents() {
                                     }`}</td>
                                     <td className="px-5">{getStatus(event)}</td>
                                     <td className="justify-self-end pr-5">
-                                        {(() => {
-                                            const isViewOnly =
-                                                blockEdits ||
-                                                event.is_cancelled;
-                                            const isFuture = isFutureDate(
-                                                event.date
-                                            );
-
-                                            if (isViewOnly) {
-                                                return (
-                                                    <>
-                                                        <div
-                                                            className="cursor-pointer"
-                                                            onClick={() =>
-                                                                handleViewEditMarkAttendance(
-                                                                    event.event_id,
-                                                                    event.date
-                                                                )
-                                                            }
-                                                        >
-                                                            <EyeIcon className="w-4 h-4 inline-block mr-1" />
-                                                            <span className="hover:underline">
-                                                                View attendance
-                                                            </span>
-                                                        </div>
-                                                    </>
-                                                );
-                                            }
-
-                                            if (isFuture) {
-                                                return (
-                                                    <span className="text-grey-2">
-                                                        {`Available after ${moment(event.date).format('M/D')}`}
-                                                    </span>
-                                                );
-                                            }
-
-                                            return (
-                                                <div
-                                                    className="cursor-pointer"
-                                                    onClick={() =>
-                                                        handleViewEditMarkAttendance(
-                                                            event.event_id,
-                                                            event.date
-                                                        )
-                                                    }
-                                                >
-                                                    <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block mr-1" />
-                                                    <span className="hover:underline">
-                                                        Mark attendance
-                                                    </span>
-                                                </div>
-                                            );
-                                        })()}
+                                        <AttendanceAction event={event} />
                                     </td>
                                 </tr>
                             ))}
