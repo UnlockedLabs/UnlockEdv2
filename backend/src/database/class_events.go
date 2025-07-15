@@ -332,17 +332,6 @@ func (db *DB) NewEventOverride(eventId int, form *models.OverrideForm) (*models.
 	return &override, nil
 }
 
-type ProgramData struct {
-	ProgramID          uint                                 `json:"program_id"`
-	ProgramName        string                               `json:"program_name"`
-	ClassID            uint                                 `json:"class_id"`
-	TotalEvents        int                                  `json:"total_events"`
-	AttendedEvents     int                                  `json:"attended_events"`
-	PercentageComplete float64                              `json:"percentage_complete"`
-	EventsLeft         int                                  `json:"events_left"`
-	AttendanceRecords  []models.ProgramClassEventAttendance `json:"attendance_records"`
-}
-
 func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange, classID int) ([]models.FacilityProgramClassEvent, error) {
 	events := make([]models.FacilityProgramClassEvent, 0, 10)
 	// TO DO: finish adding overrides as is_cancelled (so it renders in the frontend)
