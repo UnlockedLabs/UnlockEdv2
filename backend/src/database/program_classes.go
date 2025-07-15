@@ -13,13 +13,18 @@ func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Enrollments").Preload("Program").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
-	var enrollments int
+	var enrollments, completed int
+
 	for _, enrolled := range content.Enrollments {
-		if enrolled.EnrollmentStatus == models.Enrolled {
+		switch enrolled.EnrollmentStatus {
+		case models.Enrolled:
 			enrollments += 1
+		case models.EnrollmentCompleted:
+			completed += 1
 		}
 	}
 	content.Enrolled = int64(enrollments)
+	content.Completed = int64(completed)
 	return content, nil
 }
 

@@ -763,6 +763,7 @@ export interface Class {
     end_dt: string;
     status: SelectedClassStatus;
     enrolled: number;
+    completed: number;
     capacity: number;
     credit_hours: number;
     archived_at: string | null;
