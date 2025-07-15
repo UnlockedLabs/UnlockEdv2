@@ -36,6 +36,7 @@ import ResidentPrograms from '@/Components/ResidentPrograms';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { useToast } from '@/Context/ToastCtx';
 import UserActionsDropdown from '@/Components/UserActionsDropdown';
+import { textMonthLocalDate } from '@/Components/helperFunctions/formatting';
 
 function UserProfileInfoRow({
     column,
@@ -189,10 +190,10 @@ const ResidentProfile = () => {
     }
 
     const deactivateUser = async () => {
-        if (!data?.data?.user?.id) return;
+        if (!metrics?.user?.id) return;
 
         const response = await API.post(
-            `users/${data.data.user.id}/deactivate`,
+            `users/${metrics?.user.id}/deactivate`,
             {}
         );
 
@@ -206,7 +207,7 @@ const ResidentProfile = () => {
     };
 
     const handleActionSelect = (action: ResidentAccountAction) => {
-        if (!data?.data?.user) return;
+        if (!metrics?.user) return;
 
         switch (action) {
             case ResidentAccountAction['Transfer Resident']:
@@ -215,7 +216,7 @@ const ResidentProfile = () => {
             case ResidentAccountAction['Delete Resident']:
                 setTargetUser({
                     action: CRUDActions.Delete,
-                    target: data.data.user
+                    target: metrics?.user
                 });
                 showModal(deleteUserModal);
                 break;
@@ -279,13 +280,9 @@ const ResidentProfile = () => {
                             {data.data.user.deactivated_at && (
                                 <UserProfileInfoRow
                                     column="Date Deactivated"
-                                    value={new Date(
-                                        data.data.user.deactivated_at
-                                    ).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric'
-                                    })}
+                                    value={textMonthLocalDate(
+                                        metrics.user.deactivated_at!
+                                    )}
                                 />
                             )}
                             <div className="flex flex-row gap-2 mt-4 justify-center items-center">
@@ -295,7 +292,7 @@ const ResidentProfile = () => {
                                     onActionSelect={handleActionSelect}
                                 />
                                 {isUserDeactivated(data.data.user) && (
-                                    <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
+                                    <span className="px-3 py-1 bg-orange-100 text-orange-800 body  rounded-full">
                                         Deactivated
                                     </span>
                                 )}
