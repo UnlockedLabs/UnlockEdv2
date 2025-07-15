@@ -723,7 +723,7 @@ func (db *DB) CreateUsersBulk(users []models.User, adminID uint) error {
 func (db *DB) DeactivateUser(ctx context.Context, userID uint, adminID *uint) error {
 	tx := db.WithContext(ctx).Begin()
 	if tx.Error != nil {
-		return tx.Error
+		return NewDBError(tx.Error, "unable to start DB transaction")
 	}
 	defer tx.Rollback()
 
@@ -738,16 +738,22 @@ func (db *DB) DeactivateUser(ctx context.Context, userID uint, adminID *uint) er
 	if err := tx.Model(&models.ProgramClassEnrollment{}).Where("user_id = ? AND enrollment_status = ?", userID, models.Enrolled).Updates(updateData).Error; err != nil {
 		return newUpdateDBError(err, "program_class_enrollments")
 	}
-	history := models.UserAccountHistory{
-		UserID:                  userID,
-		Action:                  models.UserDeactivated,
-		AdminID:                 adminID,
-		ProgramClassesHistoryID: nil,
-		FacilityID:              nil,
-	}
+	history := models.NewUserAccountHistory(userID, models.UserDeactivated, adminID, nil, nil)
 	if err := tx.Create(&history).Error; err != nil {
 		return newCreateDBError(err, "user_account_history")
 	}
 
-	return tx.Commit().Error
+	return NewDBError(tx.Commit().Error, "committing transaction after deactivating user")
+}
+
+func (db *DB) DeactivatedUsersPresent(userIDs []int) (bool, error) {
+	if len(userIDs) == 0 {
+		return false, nil
+	}
+	var count int64
+	if err := db.Model(&models.User{}).Where("id IN (?) AND deactivated_at IS NOT NULL", userIDs).Count(&count).Error; err != nil {
+		log.Errorf("Error checking deactivated users: %v", err)
+		return false, newGetRecordsDBError(err, "users")
+	}
+	return count > 0, nil
 }
