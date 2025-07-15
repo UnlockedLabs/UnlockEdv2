@@ -137,7 +137,6 @@ export default function LoginForm() {
             return;
         }
 
-        setErrorType('generic');
         setErrorMessage(true);
     };
 

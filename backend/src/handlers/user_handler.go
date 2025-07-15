@@ -599,6 +599,7 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 
 	return writeJsonResponse(w, http.StatusOK, len(usersToCreate))
 }
+
 func (srv *Server) handleDeactivateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
