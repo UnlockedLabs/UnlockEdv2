@@ -125,18 +125,18 @@ export default function ProgramManagement() {
         Name: 'name',
         ...(user?.role !== UserRole.FacilityAdmin
             ? {
-                  '# of Facilities Assigned': 'num_facilities_assigned',
-                  'Total Enrollments': 'total_enrollments'
+                  '# of Facilities Assigned': 'mr.total_active_facilities',
+                  'Total Enrollments': 'mr.total_enrollments'
               }
-            : { 'Total Enrollments': 'total_enrollments' }),
-        'Active Enrollments': 'active_enrollments',
-        'Total Classes': 'total_classes',
-        'Avg. Completion Rate': 'avg_completion_rate',
-        'Avg. Attendance Rate': 'avg_attendance_rate',
-        Category: 'category',
-        'Credit Type': 'credit_type',
-        'Funding Type': 'funding_type',
-        Status: 'status'
+            : { 'Total Enrollments': 'mr.total_enrollments' }),
+        'Active Enrollments': 'mr.total_active_enrollments',
+        'Total Classes': 'mr.total_classes',
+        'Avg. Completion Rate': 'completion_rate',
+        'Avg. Attendance Rate': 'attendance_rate',
+        Category: 'programs.category',
+        'Credit Type': 'pct.credit_type',
+        'Funding Type': 'programs.funding_type',
+        Status: 'programs.is_active'
     };
 
     const tableColsLength = Object.keys(tableCols).length;
@@ -152,6 +152,8 @@ export default function ProgramManagement() {
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
     const [includeArchived, setIncludeArchived] = useState<boolean>(false);
     const [appliedSort, setAppliedSort] = useState(false);
+    const [order, setOrder] = useState('');
+    const [orderBy, setOrderBy] = useState('');
 
     const navigate = useNavigate();
 
@@ -181,7 +183,7 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=asc&order_by=name&include_archived=${includeArchived}`
+        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=${order}&order_by=${orderBy}&include_archived=${includeArchived}`
     );
     const meta = programs?.meta;
 
@@ -247,6 +249,11 @@ export default function ProgramManagement() {
             .catch((error) => {
                 console.error('Error downloading CSV:', error);
             });
+    }
+
+    function orderCallback(column: string, order: string) {
+        setOrder(order);
+        setOrderBy(column);
     }
 
     return (
@@ -348,11 +355,20 @@ export default function ProgramManagement() {
             </div>
             <div className="flex flex-row gap-2">
                 <SortPillButton
-                    columns={tableCols}
+                    columns={Object.fromEntries(
+                        Object.entries(tableCols).filter(
+                            ([key]) =>
+                                key !== 'Category' &&
+                                key !== 'Credit Type' &&
+                                key !== 'Funding Type' &&
+                                key !== 'Status'
+                        )
+                    )}
                     appliedSort={{
                         appliedSortBool: appliedSort,
                         setAppliedSort: setAppliedSort
                     }}
+                    orderCallback={orderCallback}
                 />
                 <FilterPillButton />
             </div>
