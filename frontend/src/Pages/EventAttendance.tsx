@@ -188,8 +188,7 @@ export default function EventAttendance() {
             doc_id: '',
             name_last: '',
             name_first: '',
-            attendance_status: newStatus,
-            note: ''
+            attendance_status: newStatus
         };
         setModifiedRows((prev) => ({
             ...prev,
@@ -197,7 +196,9 @@ export default function EventAttendance() {
                 ...currentRow,
                 ...prev[user_id],
                 selected: true,
-                attendance_status: newStatus
+                attendance_status: newStatus,
+                note:
+                    newStatus === Attendance.Present ? '' : prev[user_id]?.note
             }
         }));
     }
@@ -295,19 +296,12 @@ export default function EventAttendance() {
                         void handleSubmit(onSubmit)(e);
                     }}
                 >
-                    <div
-                        className="relative w-full"
-                        style={{ overflowX: 'clip' }}
-                    >
+                    <div className="relative w-full">
                         <table className="table-2 mb-5">
                             <thead>
-                                <tr className="grid-cols-[1fr_1fr_350px_1fr] grid gap-2">
-                                    <th className="justify-self-start px-3">
-                                        Name
-                                    </th>
-                                    <th className="justify-self-start">
-                                        Resident ID
-                                    </th>
+                                <tr className="grid-cols-[1fr_1fr_350px_1fr] grid gap-2 px-2">
+                                    <th>Name</th>
+                                    <th>Resident ID</th>
                                     <th className="">Status</th>
                                     <th className="">Note</th>
                                 </tr>
@@ -316,18 +310,18 @@ export default function EventAttendance() {
                                 {rows.map((row) => (
                                     <tr
                                         key={row.user_id}
-                                        className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid cursor-pointer p-2 gap-2"
+                                        className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid p-2 gap-2"
                                     >
-                                        <td className="justify-self-start">
+                                        <td>
                                             {row.name_last}, {row.name_first}
                                         </td>
-                                        <td className="justify-self-start">
+                                        <td>
                                             {' '}
                                             {row.doc_id == ''
                                                 ? ' '
                                                 : `${row.doc_id}`}
                                         </td>
-                                        <td className="flex justify-center">
+                                        <td className="flex">
                                             <AttendanceStatusToggle
                                                 value={
                                                     row.attendance_status ??
@@ -343,11 +337,26 @@ export default function EventAttendance() {
                                                 }
                                             />
                                         </td>
-
-                                        <td className="justify-self-end align-middle">
+                                        <td className="">
                                             <TextInput
                                                 label=""
                                                 defaultValue={row.note}
+                                                disabled={
+                                                    !(
+                                                        row.attendance_status &&
+                                                        row.attendance_status !==
+                                                            Attendance.Present
+                                                    )
+                                                }
+                                                inputClassName={
+                                                    !(
+                                                        row.attendance_status &&
+                                                        row.attendance_status !==
+                                                            Attendance.Present
+                                                    )
+                                                        ? 'opacity-40'
+                                                        : ''
+                                                }
                                                 interfaceRef={`note_${row.user_id}`}
                                                 required={false}
                                                 length={500}
@@ -399,7 +408,7 @@ export default function EventAttendance() {
                 ref={markAllPresentModal}
                 type={TextModalType.Confirm}
                 title="Mark All Present"
-                text={`Are you sure you want to mark all ${rows.length} residents on this page as Present? This action will override any existing attendance status.`}
+                text={`Are you sure you want to mark all ${rows.length} residents on this page as "Present"? This will override any existing attendance status.`}
                 onSubmit={() => void handleMarkAllPresent()}
                 onClose={() => void closeModal(markAllPresentModal)}
             />
