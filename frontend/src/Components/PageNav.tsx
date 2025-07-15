@@ -3,7 +3,7 @@ import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, RouteTitleHandler, TitleHandler, UserRole } from '@/common';
-import { useMatches, useNavigate } from 'react-router-dom';
+import { useMatches, useNavigate, useLocation } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { resolveTitle } from '@/routeLoaders';
@@ -26,6 +26,7 @@ export default function PageNav({
     const pageTitle = resolveTitle(routeHandle, routeData);
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -55,11 +56,16 @@ export default function PageNav({
             {}
         );
         if (resp.success) {
-            navigate('/residents?page=1');
-
-            setTimeout(() => {
+            if (location.pathname.startsWith('/residents')) {
+                // If we're on the residents page, navigate to the first page
+                navigate('/residents?page=1');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+            } else {
+                // For all other pages, just reload
                 window.location.reload();
-            }, 100);
+            }
         }
     };
 
