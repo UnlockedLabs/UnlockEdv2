@@ -12,13 +12,15 @@ import TealPill from './TealPill';
 const buttonClassName = `flex gap-1 items-center catalog-pill !m-0 text-grey-3 hover:bg-grey-1`;
 export function SortPillButton({
     columns,
-    appliedSort
+    appliedSort,
+    orderCallback
 }: {
     columns: Record<string, string>;
     appliedSort: {
         appliedSortBool: boolean;
         setAppliedSort: Dispatch<SetStateAction<any>>; // eslint-disable-line
     };
+    orderCallback: (column: string, order: string) => void;
 }) {
     const [openDropdown, setOpenDropdown] = useState(false);
     const [selectedColumn, setSelectedColumn] = useState<string>(
@@ -51,7 +53,7 @@ export function SortPillButton({
                 <button
                     className={`${buttonClassName} ${openDropdown ? 'bg-grey-1' : ''}`}
                     onClick={() => (
-                        setOpenDropdown(!openDropdown), setAppliedSort(true)
+                        setOpenDropdown(true), setAppliedSort(true)
                     )}
                 >
                     <ULIComponent icon={PlusIcon} />
@@ -60,32 +62,34 @@ export function SortPillButton({
             );
         }
         return (
-            <TealPill>
-                <div className="flex gap-1 items-center">
-                    {selectedOrder === order.Ascending ? (
-                        <ULIComponent
-                            icon={ArrowUpIcon}
-                            iconClassName="!w-3 !h-3"
-                        />
-                    ) : (
-                        <ULIComponent
-                            icon={ArrowDownIcon}
-                            iconClassName="!w-3 !h-3"
-                        />
-                    )}
-                    <p className="body-small">
-                        {Object.keys(columns).find(
-                            (key) => columns[key] === selectedColumn
+            <div onClick={() => (setOpenDropdown(true), setAppliedSort(true))}>
+                <TealPill>
+                    <div className="flex gap-1 items-center">
+                        {selectedOrder === order.Ascending ? (
+                            <ULIComponent
+                                icon={ArrowUpIcon}
+                                iconClassName="!w-3 !h-3"
+                            />
+                        ) : (
+                            <ULIComponent
+                                icon={ArrowDownIcon}
+                                iconClassName="!w-3 !h-3"
+                            />
                         )}
-                    </p>
-                    <ULIComponent
-                        icon={XMarkIcon}
-                        iconClassName="!w-3 !h-3"
-                        dataTip="Remove Sort"
-                        onClick={() => resetSort()}
-                    />
-                </div>
-            </TealPill>
+                        <p className="body-small">
+                            {Object.keys(columns).find(
+                                (key) => columns[key] === selectedColumn
+                            )}
+                        </p>
+                        <ULIComponent
+                            icon={XMarkIcon}
+                            iconClassName="!w-3 !h-3"
+                            dataTip="Remove Sort"
+                            onClick={(e) => (resetSort(), e?.stopPropagation())}
+                        />
+                    </div>
+                </TealPill>
+            </div>
         );
     }
 
@@ -98,6 +102,7 @@ export function SortPillButton({
 
     useEffect(() => {
         updateSortPill();
+        if (appliedSort) orderCallback(selectedColumn, selectedOrder);
     }, [selectedColumn, selectedOrder]);
 
     return (
