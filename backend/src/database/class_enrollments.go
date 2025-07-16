@@ -152,34 +152,44 @@ func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userId
 
 	if err = tx.Create(&completions).Error; err != nil {
 		tx.Rollback()
-		return newCreateDBError(err, "enrollment completion")
+		return newCreateDBError(err, "enrollment status")
 	}
 
-	// update enrollment status to "Completed"
-	if err = tx.Model(&models.ProgramClassEnrollment{}).
-		Where("user_id IN (?) AND class_id = ?", userIds, classId).
-		Update("enrollment_status", models.Completed).Error; err != nil {
+	var enrollments []models.ProgramClassEnrollment
+	if err = tx.Where("user_id IN (?) AND class_id = ?", userIds, classId).Find(&enrollments).Error; err != nil {
 		tx.Rollback()
-		return newUpdateDBError(err, "enrollment status")
+		return newUpdateDBError(err, "enrollments")
 	}
 
+	for i := range enrollments {
+		enrollments[i].EnrollmentStatus = models.ProgramEnrollmentStatus(models.Completed)
+		if err = tx.Save(&enrollments[i]).Error; err != nil {
+			tx.Rollback()
+			return newUpdateDBError(err, "enrollment status")
+		}
+	}
 	// commit the transaction
 	return tx.Commit().Error
 }
 
 func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status string, changeReason *string) error {
-	updates := map[string]any{
-		"enrollment_status": status,
+	var enrollments []models.ProgramClassEnrollment
+	if err := db.Where("class_id = ? AND user_id IN (?)", classId, userIds).
+		Find(&enrollments).Error; err != nil {
+		return newUpdateDBError(err, "fetch enrollments for update")
 	}
-	if changeReason != nil {
-		updates["change_reason"] = *changeReason
-	}
-	if err := db.Model(&models.ProgramClassEnrollment{}).
-		Where("class_id = ? AND user_id IN (?)", classId, userIds).
-		Updates(updates).Error; err != nil {
-		return newUpdateDBError(err, "class enrollment status")
+
+	for i := range enrollments {
+		enrollments[i].EnrollmentStatus = models.ProgramEnrollmentStatus(status)
+		if changeReason != nil {
+			enrollments[i].ChangeReason = *changeReason
+		}
+		if err := db.Save(&enrollments[i]).Error; err != nil {
+			return newUpdateDBError(err, "save updated enrollment")
+		}
 	}
 	return nil
+
 }
 
 func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap map[string]any) error {
