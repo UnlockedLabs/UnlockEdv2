@@ -2,9 +2,10 @@ package models
 
 import (
 	"encoding/json"
-	"gorm.io/gorm"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ClassStatus string
@@ -75,16 +76,15 @@ func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
-	if tx.Statement.Changed("EnrollmentStatus") {
-
-		t := time.Now()
-		if e.EnrollmentStatus == "Enrolled" {
-			e.EnrolledAt = &t
-		} else if e.EnrollmentStatus == "Cancelled" ||
-			e.EnrollmentStatus == "Completed" ||
-			strings.HasPrefix(string(e.EnrollmentStatus), "Incomplete:") {
-			e.EnrollmentEndedAt = &t
-		}
+	t := time.Now()
+	if e.EnrollmentStatus == "Enrolled" {
+		e.EnrolledAt = &t
+		tx.Statement.SetColumn("enrolled_at", e.EnrolledAt)
+	} else if e.EnrollmentStatus == "Cancelled" ||
+		e.EnrollmentStatus == "Completed" ||
+		strings.HasPrefix(string(e.EnrollmentStatus), "Incomplete:") {
+		e.EnrollmentEndedAt = &t
+		tx.Statement.SetColumn("enrolled_at", e.EnrollmentEndedAt)
 	}
 	return nil
 }
