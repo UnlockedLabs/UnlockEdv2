@@ -52,27 +52,27 @@ export const DeactivateUserModal = forwardRef<
                         <ul className="list-disc list-outside space-y-1 text-xs pl-4">
                             <li>
                                 The resident will be withdrawn from all active
-                                classes and programs
+                                classes and programs.
                             </li>
                             <li>
                                 The resident's account will be locked and marked
-                                as Deactivated
+                                as Deactivated.
                             </li>
                             <li>
                                 Staff will no longer be able to edit this
-                                resident's account
+                                resident's account.
                             </li>
                             <li>
                                 The resident will not be able to log in or
-                                enroll in new programs
+                                enroll in new programs.
                             </li>
                             <li>
                                 The time this account was deactivated will be
-                                recorded
+                                recorded.
                             </li>
                             <li>
                                 The resident's account history and favorites
-                                will be preserved and remain searchable
+                                will be preserved and remain searchable.
                             </li>
                         </ul>
                     </div>
