@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useState, useRef } from 'react';
 import {
     useParams,
     useNavigate,
@@ -26,6 +26,14 @@ import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import { useToast } from '@/Context/ToastCtx';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { CancelButton } from '@/Components/inputs';
+import AttendanceStatusToggle from '@/Components/AttendanceStatusToggle';
+import {
+    TextOnlyModal,
+    TextModalType,
+    showModal,
+    closeModal
+} from '@/Components/modals';
 
 interface LocalRowData {
     selected: boolean;
@@ -80,6 +88,7 @@ export default function EventAttendance() {
         Record<number, LocalRowData>
     >({});
     const { toaster } = useToast();
+    const markAllPresentModal = useRef<HTMLDialogElement>(null);
     const {
         data: dates,
         error: datesError,
@@ -172,39 +181,6 @@ export default function EventAttendance() {
         }));
     }
 
-    function handleToggleSelect(user_id: number) {
-        const currentRow =
-            modifiedRows[user_id] || rows.find((r) => r.user_id === user_id);
-        const newSelected = !(currentRow?.selected ?? false);
-
-        setModifiedRows((prev) => ({
-            ...prev,
-            [user_id]: {
-                ...currentRow,
-                selected: newSelected,
-                attendance_status: newSelected
-                    ? currentRow?.attendance_status ?? Attendance.Present
-                    : undefined
-            }
-        }));
-    }
-    function handleSelectAll() {
-        const allSelected = rows.every((row) => row.selected);
-        setModifiedRows((prev) => {
-            const newModifications = { ...prev };
-            rows.forEach((row) => {
-                newModifications[row.user_id] = {
-                    ...(prev[row.user_id] || row),
-                    selected: !allSelected,
-                    attendance_status: !allSelected
-                        ? Attendance.Present
-                        : undefined
-                };
-            });
-            return newModifications;
-        });
-    }
-
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {
         const currentRow = rows.find((r) => r.user_id === user_id) ?? {
             selected: false,
@@ -212,8 +188,7 @@ export default function EventAttendance() {
             doc_id: '',
             name_last: '',
             name_first: '',
-            attendance_status: newStatus,
-            note: ''
+            attendance_status: newStatus
         };
         setModifiedRows((prev) => ({
             ...prev,
@@ -221,7 +196,9 @@ export default function EventAttendance() {
                 ...currentRow,
                 ...prev[user_id],
                 selected: true,
-                attendance_status: newStatus
+                attendance_status: newStatus,
+                note:
+                    newStatus === Attendance.Present ? '' : prev[user_id]?.note
             }
         }));
     }
@@ -259,7 +236,9 @@ export default function EventAttendance() {
 
             return newMods;
         });
+        closeModal(markAllPresentModal);
     }
+
     async function onSubmit() {
         if (blockEdits) {
             toaster(
@@ -288,9 +267,9 @@ export default function EventAttendance() {
                     />
                 </div>
                 <button
-                    onClick={() => void handleMarkAllPresent()}
-                    disabled={anyRowSelected || blockEdits}
-                    className={`button ${tooltip} ${anyRowSelected ? `bg-grey-4 cursor-not-allowed` : ``}`}
+                    onClick={() => showModal(markAllPresentModal)}
+                    disabled={blockEdits}
+                    className={`button ${tooltip}`}
                     data-tip={
                         blockEdits
                             ? `This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`
@@ -317,27 +296,13 @@ export default function EventAttendance() {
                         void handleSubmit(onSubmit)(e);
                     }}
                 >
-                    <div
-                        className="relative w-full"
-                        style={{ overflowX: 'clip' }}
-                    >
+                    <div className="relative w-full">
                         <table className="table-2 mb-5">
                             <thead>
-                                <tr className="grid-cols-4 grid ">
-                                    <th className="justify-self-start space-x-2 px-3">
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                rows.length > 0 &&
-                                                rows.every((r) => r.selected)
-                                            }
-                                            onChange={handleSelectAll}
-                                            className="checkbox cursor-pointer"
-                                        />
-                                        <span>Last, First</span>
-                                    </th>
+                                <tr className="grid-cols-[1fr_1fr_350px_1fr] grid gap-2 px-2">
+                                    <th>Name</th>
                                     <th>Resident ID</th>
-                                    <th className="">Attendance</th>
+                                    <th className="">Status</th>
                                     <th className="">Note</th>
                                 </tr>
                             </thead>
@@ -345,96 +310,53 @@ export default function EventAttendance() {
                                 {rows.map((row) => (
                                     <tr
                                         key={row.user_id}
-                                        className="card w-full justify-items-center grid-cols-4 cursor-pointer p-2"
+                                        className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid p-2 gap-2"
                                     >
-                                        <td className="justify-self-start space-x-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={row.selected}
-                                                onChange={() =>
-                                                    handleToggleSelect(
-                                                        row.user_id
-                                                    )
-                                                }
-                                                className="checkbox cursor-pointer"
-                                            />
-                                            <span>
-                                                {row.name_last},{' '}
-                                                {row.name_first}{' '}
-                                            </span>
+                                        <td>
+                                            {row.name_last}, {row.name_first}
                                         </td>
-                                        <td className="items-center">
+                                        <td>
                                             {' '}
                                             {row.doc_id == ''
                                                 ? ' '
                                                 : `${row.doc_id}`}
                                         </td>
-                                        <td className="flex justify-center space-x-2">
-                                            <label className="flex items-center space-x-1 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name={`attendance_${row.user_id}`}
-                                                    disabled={!row.selected}
-                                                    checked={
-                                                        row.attendance_status ===
-                                                            Attendance.Present ||
-                                                        (!row.attendance_status && // default to present when selected row
-                                                            row.selected)
-                                                    }
-                                                    onChange={() =>
-                                                        handleAttendanceChange(
-                                                            row.user_id,
-                                                            Attendance.Present
-                                                        )
-                                                    }
-                                                    className="radio cursor-pointer"
-                                                />
-                                                <span>Present</span>
-                                            </label>
-                                            <label className="flex items-center space-x-1 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name={`attendance_${row.user_id}`}
-                                                    disabled={!row.selected}
-                                                    checked={
-                                                        row.attendance_status ===
-                                                        Attendance.Absent_Excused
-                                                    }
-                                                    onChange={() =>
-                                                        handleAttendanceChange(
-                                                            row.user_id,
-                                                            Attendance.Absent_Excused
-                                                        )
-                                                    }
-                                                    className="radio cursor-pointer"
-                                                />
-                                                <span>Absent - excused</span>
-                                            </label>
-                                            <label className="flex items-center space-x-1 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name={`attendance_${row.user_id}`}
-                                                    disabled={!row.selected}
-                                                    checked={
-                                                        row.attendance_status ===
-                                                        Attendance.Absent_Unexcused
-                                                    }
-                                                    onChange={() =>
-                                                        handleAttendanceChange(
-                                                            row.user_id,
-                                                            Attendance.Absent_Unexcused
-                                                        )
-                                                    }
-                                                    className="radio cursor-pointer"
-                                                />
-                                                <span>Absent - unexcused</span>
-                                            </label>
+                                        <td className="flex">
+                                            <AttendanceStatusToggle
+                                                value={
+                                                    row.attendance_status ??
+                                                    (row.selected
+                                                        ? Attendance.Present
+                                                        : undefined)
+                                                }
+                                                onChange={(newStatus) =>
+                                                    handleAttendanceChange(
+                                                        row.user_id,
+                                                        newStatus
+                                                    )
+                                                }
+                                            />
                                         </td>
-
-                                        <td className="justify-self-end align-middle">
+                                        <td className="">
                                             <TextInput
                                                 label=""
                                                 defaultValue={row.note}
+                                                disabled={
+                                                    !(
+                                                        row.attendance_status &&
+                                                        row.attendance_status !==
+                                                            Attendance.Present
+                                                    )
+                                                }
+                                                inputClassName={
+                                                    !(
+                                                        row.attendance_status &&
+                                                        row.attendance_status !==
+                                                            Attendance.Present
+                                                    )
+                                                        ? 'opacity-40'
+                                                        : ''
+                                                }
                                                 interfaceRef={`note_${row.user_id}`}
                                                 required={false}
                                                 length={500}
@@ -454,16 +376,13 @@ export default function EventAttendance() {
                         </table>
                     </div>
                     <div className="flex gap-4 justify-end pt-4 ">
-                        <button
-                            className="button bg-grey"
+                        <CancelButton
                             onClick={() =>
                                 navigate(
                                     `/program-classes/${class_id}/attendance`
                                 )
                             }
-                        >
-                            Cancel
-                        </button>
+                        />
                         <button
                             type="submit"
                             className={`button ${tooltip}`}
@@ -485,6 +404,14 @@ export default function EventAttendance() {
                     />
                 </div>
             )}
+            <TextOnlyModal
+                ref={markAllPresentModal}
+                type={TextModalType.Confirm}
+                title="Mark All Present"
+                text={`Are you sure you want to mark all ${rows.length} residents on this page as "Present"? This will override any existing attendance status.`}
+                onSubmit={() => void handleMarkAllPresent()}
+                onClose={() => void closeModal(markAllPresentModal)}
+            />
         </div>
     );
 }

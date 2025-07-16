@@ -19,6 +19,7 @@ interface TextProps {
     defaultValue?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;
     placeholder?: string;
+    inputClassName?: string;
 }
 export function TextInput({
     label,
@@ -35,7 +36,8 @@ export function TextInput({
     disabled = false,
     defaultValue,
     onChange,
-    placeholder
+    placeholder,
+    inputClassName
 }: TextProps) {
     const options = {
         required: {
@@ -63,7 +65,7 @@ export function TextInput({
 
             <input
                 type={`${password ? 'password' : 'text'}`}
-                className={`input input-bordered w-full`}
+                className={`input input-bordered w-full ${inputClassName}`}
                 {...restRegisterProps}
                 autoComplete={autoComplete}
                 defaultValue={defaultValue}
