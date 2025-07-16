@@ -12,6 +12,7 @@ import { textMonthLocalDate } from './helperFunctions/formatting';
 import { showModal, ResidentAttendanceModal } from './modals';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import ULIComponent from './ULIComponent';
 
 export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const user = useAuth();
@@ -102,18 +103,13 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                 </td>
                 <td>
                     {(() => {
-                        const failedToComplete =
-                            pc.enrollment_status ===
-                            EnrollmentStatus['Failed To Complete'];
-                        if (failedToComplete) {
+                        if (pc.change_reason) {
                             return (
                                 <div className="flex items-center">
-                                    <span
-                                        className="cursor-pointer tooltip"
-                                        data-tip={pc.change_reason}
-                                    >
-                                        <InformationCircleIcon className="w-4 h-4 inline-block mr-1" />
-                                    </span>
+                                    <ULIComponent
+                                        icon={InformationCircleIcon}
+                                        dataTip={pc.change_reason}
+                                    />
                                     {pc.enrollment_status}
                                 </div>
                             );
