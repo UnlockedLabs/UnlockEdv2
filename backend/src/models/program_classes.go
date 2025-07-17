@@ -2,7 +2,10 @@ package models
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ClassStatus string
@@ -51,16 +54,40 @@ meaning they will need to attend the ClassEvents for that class: tracked by Clas
 */
 type ProgramClassEnrollment struct {
 	DatabaseFields
-	ClassID          uint                    `json:"class_id" gorm:"not null"`
-	UserID           uint                    `json:"user_id" gorm:"not null"`
-	EnrollmentStatus ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
-	ChangeReason     string                  `json:"change_reason" gorm:"size:255" validate:"max=255"`
+	ClassID           uint                    `json:"class_id" gorm:"not null"`
+	UserID            uint                    `json:"user_id" gorm:"not null"`
+	EnrollmentStatus  ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
+	ChangeReason      string                  `json:"change_reason" gorm:"size:255" validate:"max=255"`
+	EnrolledAt        *time.Time              `json:"enrolled_at"`
+	EnrollmentEndedAt *time.Time              `json:"enrollment_ended_at"`
 
 	User  *User         `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	Class *ProgramClass `json:"class" gorm:"foreignKey:ClassID;references:ID"`
 }
 
 func (ProgramClassEnrollment) TableName() string { return "program_class_enrollments" }
+
+func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
+	if e.EnrollmentStatus == "Enrolled" {
+		t := time.Now()
+		e.EnrolledAt = &t
+	}
+	return nil
+}
+
+func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
+	t := time.Now()
+	if e.EnrollmentStatus == "Enrolled" {
+		e.EnrolledAt = &t
+		tx.Statement.SetColumn("enrolled_at", e.EnrolledAt)
+	} else if e.EnrollmentStatus == "Cancelled" ||
+		e.EnrollmentStatus == "Completed" ||
+		strings.HasPrefix(string(e.EnrollmentStatus), "Incomplete:") {
+		e.EnrollmentEndedAt = &t
+		tx.Statement.SetColumn("enrolled_at", e.EnrollmentEndedAt)
+	}
+	return nil
+}
 
 type ProgramClassDetail struct {
 	ProgramClass
