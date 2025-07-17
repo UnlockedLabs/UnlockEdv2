@@ -1,6 +1,7 @@
 import { forwardRef, useState } from 'react';
 import { User } from '@/common';
-import { TextOnlyModal, TextModalType } from './';
+import { FormModal, FormInputTypes, Input } from './';
+import { FieldValues, SubmitHandler } from 'react-hook-form';
 
 interface DeactivateUserModalProps {
     user: User;
@@ -14,19 +15,19 @@ export const DeactivateUserModal = forwardRef<
 >(function DeactivateUserModal({ user, onConfirm, onClose }, ref) {
     const [confirmationText, setConfirmationText] = useState('');
     const expectedText = user.doc_id ?? user.id.toString();
+    const isValidConfirmation = confirmationText === expectedText;
 
-    const handleSubmit = () => {
-        if (confirmationText === expectedText) {
-            onConfirm();
-        }
+    const handleSubmit: SubmitHandler<FieldValues> = () => {
+        onConfirm();
     };
 
-    return (
-        <TextOnlyModal
-            ref={ref}
-            type={TextModalType.Confirm}
-            title="Deactivate Account"
-            text={
+    const deactivateUserInputs: Input[] = [
+        {
+            type: FormInputTypes.Unique,
+            label: '',
+            interfaceRef: '',
+            required: false,
+            uniqueComponent: (
                 <div className="space-y-4">
                     <div className="bg-grey-1 p-4 rounded-lg">
                         <h4 className="font-semibold mb-2">
@@ -76,38 +77,36 @@ export const DeactivateUserModal = forwardRef<
                             </li>
                         </ul>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-2">
-                            Type the resident's ID (
-                            <strong>{expectedText}</strong>) to confirm:
-                        </label>
-                        <input
-                            type="text"
-                            value={confirmationText}
-                            onChange={(e) =>
-                                setConfirmationText(e.target.value)
-                            }
-                            className={`input input-bordered w-full ${
-                                confirmationText &&
-                                confirmationText !== expectedText
-                                    ? 'border-red-400'
-                                    : ''
-                            }`}
-                            placeholder={expectedText}
-                            autoFocus
-                        />
-                        {confirmationText &&
-                            confirmationText !== expectedText && (
-                                <p className="text-red-500 text-xs mt-1">
-                                    Please enter exactly: {expectedText}
-                                </p>
-                            )}
-                    </div>
                 </div>
+            )
+        },
+        {
+            type: FormInputTypes.Text,
+            label: `Type the resident's ID (${expectedText}) to confirm:`,
+            interfaceRef: 'confirmation',
+            required: true,
+            length: 50,
+            placeholder: expectedText,
+            onChange: (e) => setConfirmationText(e.target.value),
+            validate: (value: string) => {
+                if (value !== expectedText) {
+                    return `Please enter exactly: ${expectedText}`;
+                }
+                return true;
             }
+        }
+    ];
+
+    return (
+        <FormModal
+            ref={ref}
+            title="Deactivate Account"
+            inputs={deactivateUserInputs}
             onSubmit={handleSubmit}
             onClose={onClose}
+            showCancel={true}
+            submitText="Deactivate User"
+            enableSubmit={isValidConfirmation}
         />
     );
 });

@@ -277,11 +277,11 @@ const ResidentProfile = () => {
                                         : 'N/A'
                                 }
                             />
-                            {data.data.user.deactivated_at && (
+                            {metrics.user.deactivated_at && (
                                 <UserProfileInfoRow
                                     column="Date Deactivated"
                                     value={textMonthLocalDate(
-                                        metrics.user.deactivated_at!
+                                        metrics.user.deactivated_at
                                     )}
                                 />
                             )}
