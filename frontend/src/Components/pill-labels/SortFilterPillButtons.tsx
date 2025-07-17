@@ -129,14 +129,3 @@ export function SortPillButton({
         </div>
     );
 }
-
-export function FilterPillButton() {
-    return (
-        <>
-            <button className={buttonClassName}>
-                <ULIComponent icon={PlusIcon} />
-                <label className="body cursor-pointer">Filter</label>
-            </button>
-        </>
-    );
-}

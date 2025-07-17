@@ -25,10 +25,7 @@ import { AddButton } from '@/Components/inputs';
 import ProgramStatus from '@/Components/ProgramStatus';
 import { useNavigate } from 'react-router-dom';
 import API from '@/api/api';
-import {
-    FilterPillButton,
-    SortPillButton
-} from '@/Components/pill-labels/SortFilterPillButtons';
+import { SortPillButton } from '@/Components/pill-labels/SortFilterPillButtons';
 
 export function ProgramRow({
     program,
@@ -370,7 +367,6 @@ export default function ProgramManagement() {
                     }}
                     orderCallback={orderCallback}
                 />
-                <FilterPillButton />
             </div>
             <div className="card px-6 pb-6 space-y-4">
                 <table className="table-2">
