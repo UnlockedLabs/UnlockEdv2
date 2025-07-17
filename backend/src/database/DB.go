@@ -114,7 +114,6 @@ func MigrateTesting(db *gorm.DB) {
 		&models.Outcome{},
 		&models.Activity{},
 		&models.OidcClient{},
-		&models.ProgramFavorite{},
 		&models.Facility{},
 		&models.FacilitiesPrograms{},
 		&models.ChangeLogEntry{},
