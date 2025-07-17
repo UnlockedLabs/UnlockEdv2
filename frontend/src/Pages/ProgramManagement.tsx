@@ -25,14 +25,15 @@ import { AddButton } from '@/Components/inputs';
 import ProgramStatus from '@/Components/ProgramStatus';
 import { useNavigate } from 'react-router-dom';
 import API from '@/api/api';
+import { SortPillButton } from '@/Components/pill-labels/SortFilterPillButtons';
 
 export function ProgramRow({
     program,
-    tableCols,
+    length,
     mutate
 }: {
     program: ProgramsOverviewTable;
-    tableCols: string;
+    length: number;
     mutate: KeyedMutator<ServerResponseMany<ProgramsOverviewTable>>;
 }) {
     const { user } = useAuth();
@@ -72,7 +73,7 @@ export function ProgramRow({
     }
     return (
         <tr
-            className={`grid ${tableCols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
+            className={`grid grid-cols-${length} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
             onClick={(e) => {
                 e.stopPropagation();
                 navigate(`${program.program_id}`);
@@ -115,10 +116,28 @@ export function ProgramRow({
 
 export default function ProgramManagement() {
     const { user } = useAuth();
-    const { statsCols, tableCols } =
-        user?.role === UserRole.FacilityAdmin
-            ? { statsCols: 'grid-cols-4', tableCols: 'grid-cols-10' }
-            : { statsCols: 'grid-cols-5', tableCols: 'grid-cols-11' };
+    const statsCols =
+        user?.role === UserRole.FacilityAdmin ? 'grid-cols-4' : 'grid-cols-5';
+    const tableCols = {
+        Name: 'name',
+        ...(user?.role !== UserRole.FacilityAdmin
+            ? {
+                  '# of Facilities Assigned': 'mr.total_active_facilities',
+                  'Total Enrollments': 'mr.total_enrollments'
+              }
+            : { 'Total Enrollments': 'mr.total_enrollments' }),
+        'Active Enrollments': 'mr.total_active_enrollments',
+        'Total Classes': 'mr.total_classes',
+        'Avg. Completion Rate': 'completion_rate',
+        'Avg. Attendance Rate': 'attendance_rate',
+        Category: 'programs.category',
+        'Credit Type': 'pct.credit_type',
+        'Funding Type': 'programs.funding_type',
+        Status: 'programs.is_active'
+    };
+
+    const tableColsLength = Object.keys(tableCols).length;
+
     if (!isAdministrator(user)) {
         return;
     }
@@ -129,6 +148,9 @@ export default function ProgramManagement() {
     );
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
     const [includeArchived, setIncludeArchived] = useState<boolean>(false);
+    const [appliedSort, setAppliedSort] = useState(false);
+    const [order, setOrder] = useState('');
+    const [orderBy, setOrderBy] = useState('');
 
     const navigate = useNavigate();
 
@@ -158,7 +180,7 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=asc&order_by=name&include_archived=${includeArchived}`
+        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=${order}&order_by=${orderBy}&include_archived=${includeArchived}`
     );
     const meta = programs?.meta;
 
@@ -226,6 +248,11 @@ export default function ProgramManagement() {
             });
     }
 
+    function orderCallback(column: string, order: string) {
+        setOrder(order);
+        setOrderBy(column);
+    }
+
     return (
         <div className="px-5 py-4 flex flex-col gap-4 overflow-x-hidden">
             <div className="flex flex-row justify-end">
@@ -287,7 +314,7 @@ export default function ProgramManagement() {
                     tooltipClass="tooltip-left"
                 />
             </div>
-            <div className="flex flex-row justify-between items-center my-4">
+            <div className="flex flex-row justify-between items-center mt-4">
                 <div className="flex flex-row items-center space-x-4">
                     <SearchBar
                         searchTerm={searchTerm}
@@ -323,37 +350,54 @@ export default function ProgramManagement() {
                     />
                 </div>
             </div>
+            <div className="flex flex-row gap-2">
+                <SortPillButton
+                    columns={Object.fromEntries(
+                        Object.entries(tableCols).filter(
+                            ([key]) =>
+                                key !== 'Category' &&
+                                key !== 'Credit Type' &&
+                                key !== 'Funding Type' &&
+                                key !== 'Status'
+                        )
+                    )}
+                    appliedSort={{
+                        appliedSortBool: appliedSort,
+                        setAppliedSort: setAppliedSort
+                    }}
+                    orderCallback={orderCallback}
+                />
+            </div>
             <div className="card px-6 pb-6 space-y-4">
                 <table className="table-2">
                     <thead>
                         <tr
-                            className={`grid ${tableCols} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
+                            className={`grid grid-cols-${tableColsLength} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
                         >
-                            <th>Name</th>
-                            {user?.role != UserRole.FacilityAdmin && (
-                                <th># of Facilities Assigned</th>
-                            )}
-                            <th>Total Enrollments</th>
-                            <th>Active Enrollments</th>
-                            <th>Total Classes</th>
-                            <th>Avg. Completion Rate</th>
-                            <th>Avg. Attendance Rate</th>
-                            <th>Category</th>
-                            <th>Credit Type</th>
-                            <th>Funding Type</th>
-                            <th className="flex items-center">
-                                Status
-                                {user?.role === UserRole.FacilityAdmin && (
-                                    <ULIComponent
-                                        icon={InformationCircleIcon}
-                                        dataTip={
-                                            'This status reflects whether the program is currently available for scheduling new classes. Inactive programs may still have active classes running if they were scheduled before deactivation.'
-                                        }
-                                        tooltipClassName="tooltip-left"
-                                        iconClassName="text-teal-4 cursor-help"
-                                    />
-                                )}
-                            </th>
+                            {Object.entries(tableCols).map(([key], index) => (
+                                <th
+                                    key={index}
+                                    className={
+                                        key === 'Status'
+                                            ? 'flex items-center'
+                                            : ''
+                                    }
+                                >
+                                    {key}
+                                    {key === 'Status' &&
+                                        user?.role ===
+                                            UserRole.FacilityAdmin && (
+                                            <ULIComponent
+                                                icon={InformationCircleIcon}
+                                                dataTip={
+                                                    'This status reflects whether the program is currently available for scheduling new classes. Inactive programs may still have active classes running if they were scheduled before deactivation.'
+                                                }
+                                                tooltipClassName="tooltip-left"
+                                                iconClassName="text-teal-4 cursor-help"
+                                            />
+                                        )}
+                                </th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
@@ -370,7 +414,7 @@ export default function ProgramManagement() {
                                 <ProgramRow
                                     key={index}
                                     program={program}
-                                    tableCols={tableCols}
+                                    length={tableColsLength}
                                     mutate={mutate}
                                 />
                             ))

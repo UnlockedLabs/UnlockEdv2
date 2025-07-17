@@ -1,7 +1,9 @@
-export default function TealPill(props: { children: string }) {
+export default function TealPill(props: {
+    children: string | React.ReactElement;
+}) {
     return (
-        <p className="catalog-pill bg-[#B0DFDA] text-[#006059]">
+        <div className="catalog-pill bg-[#B0DFDA] text-[#006059]">
             {props.children}
-        </p>
+        </div>
     );
 }
