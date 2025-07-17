@@ -743,7 +743,10 @@ func (db *DB) DeactivateUser(ctx context.Context, userID uint, adminID *uint) er
 		return newCreateDBError(err, "user_account_history")
 	}
 
-	return NewDBError(tx.Commit().Error, "committing transaction after deactivating user")
+	if err := tx.Commit().Error; err != nil {
+		return NewDBError(err, "committing transaction after deactivating user")
+	}
+	return nil
 }
 
 func (db *DB) DeactivatedUsersPresent(userIDs []int) (bool, error) {
