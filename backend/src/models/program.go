@@ -48,7 +48,6 @@ type Program struct {
 	ProgramCreditTypes []ProgramCreditType  `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Facilities         []Facility           `json:"facilities" gorm:"-"`                         //preserve original json key
 	FacilitiesPrograms []FacilitiesPrograms `json:"-" gorm:"foreignKey:ProgramID;references:ID"` //gorm had issues with many2many
-	Favorites          []ProgramFavorite    `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 	Classes            []ProgramClass       `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 }
 

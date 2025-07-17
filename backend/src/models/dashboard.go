@@ -32,19 +32,6 @@ func (hl *HelpfulLink) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-type ProgramFavorite struct {
-	ID        uint `gorm:"primaryKey" json:"-"`
-	UserID    uint `json:"user_id"`
-	ProgramID uint `json:"program_id"`
-
-	User    *User    `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Program *Program `json:"program,omitempty" gorm:"foreignKey:ProgramID;constraint:OnDelete CASCADE"`
-}
-
-func (ProgramFavorite) TableName() string {
-	return "program_favorites"
-}
-
 type CachedDashboard[T any] struct {
 	LastCache time.Time `json:"last_cache"`
 	Data      T         `json:"data"`
