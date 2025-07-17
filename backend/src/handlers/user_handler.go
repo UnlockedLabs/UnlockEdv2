@@ -204,10 +204,6 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	//Should we be able to delete a deactivated user?? Come back to this.
-	if user.DeactivatedAt != nil {
-		return newBadRequestServiceError(errors.New("cannot delete deactivated user"), "User is deactivated - deletion would remove historical data")
-	}
 	log.add("deleted_username", user.Username)
 	if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
 		log.add("deleted_kratos_id", user.KratosID)
