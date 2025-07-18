@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS public.program_favorites CASCADE;
 
 -- +goose Down
 -- +goose StatementBegin
-CREATE TABLE public.program_favorites (id SERIAL NOT NULL, 
+CREATE TABLE IF NOT EXISTS public.program_favorites (id SERIAL NOT NULL, 
 program_id INTEGER NOT NULL, 
 user_id INTEGER NOT NULL, 
 PRIMARY KEY (id), 
