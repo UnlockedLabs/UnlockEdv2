@@ -416,7 +416,6 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		}
 
 		linkedOverridesMap := getLinkedOverrideEventMap(event, overrides)
-		fmt.Println(">>>>>>>>>>>>>>>>>>>>>linkedOverridesMap", linkedOverridesMap)
 		for _, override := range overrides { //adding the rescheduled ones to instances slice
 			if override.IsCancelled && override.LinkedOverrideEventID == nil { //skip only cancelled ones with no links
 				continue
