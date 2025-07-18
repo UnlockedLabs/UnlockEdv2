@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"cmp"
-	"fmt"
 	"slices"
 	"sort"
 	"strconv"
@@ -498,7 +497,6 @@ func getLinkedOverrideEventMap(event models.FacilityProgramClassEvent, overrides
 				logrus.Errorf("error parsing duration for event: %v", err)
 			}
 			overrideEndTime := overrideDate.Add(duration)
-			fmt.Println(programClassEvent.ID, "<<<<<<<<<<<<<<<<<<<<<<<ID")
 			programClassEvent.StartTime = &overrideDate
 			programClassEvent.EndTime = &overrideEndTime
 			programClassEvent.Frequency = rRule.OrigOptions.Freq.String()
