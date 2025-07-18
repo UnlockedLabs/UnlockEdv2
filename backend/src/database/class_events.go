@@ -526,7 +526,6 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		}
 
 		linkedOverridesMap := getLinkedOverrideEventMap(event, overrides)
-
 		for _, override := range overrides { //adding the rescheduled ones to instances slice
 			if override.IsCancelled && override.LinkedOverrideEventID == nil { //skip only cancelled ones with no links
 				continue
@@ -546,6 +545,11 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				logrus.Errorf("error parsing duration for event: %v", err)
 			}
 			overrideEndTime := overrideDate.Add(duration)
+
+			var linkedOverrideEvent *models.FacilityProgramClassEvent
+			if override.LinkedOverrideEventID != nil {
+				linkedOverrideEvent = linkedOverridesMap[*override.LinkedOverrideEventID]
+			}
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent:   event.ProgramClassEvent,
 				InstructorName:      event.InstructorName,
@@ -558,7 +562,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				IsOverride:          true,
 				IsCancelled:         override.IsCancelled,
 				OverrideID:          override.ID,
-				LinkedOverrideEvent: linkedOverridesMap[*override.LinkedOverrideEventID],
+				LinkedOverrideEvent: linkedOverrideEvent,
 			}
 			facilityEvents = append(facilityEvents, facilityEvent)
 		}

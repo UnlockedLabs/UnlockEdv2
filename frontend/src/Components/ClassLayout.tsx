@@ -4,7 +4,6 @@ import {
     Class,
     ClassLoaderData,
     EnrollmentStatus,
-    ProgramClassEvent,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -20,6 +19,7 @@ import ClampedText from './ClampedText';
 import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
+import { ProgramClassEvent } from '@/types/events';
 
 export function getClassEndDate(events: ProgramClassEvent[]): Date | null {
     if (!events || events.length === 0) return null;
