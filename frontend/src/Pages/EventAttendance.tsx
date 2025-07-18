@@ -25,7 +25,7 @@ import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import { useToast } from '@/Context/ToastCtx';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
-import { EventDate } from '@/types/events';
+import { ClassEventInstance } from '@/types/events';
 
 interface LocalRowData {
     selected: boolean;
@@ -84,7 +84,7 @@ export default function EventAttendance() {
         data: dates,
         error: datesError,
         isLoading: datesLoading
-    } = useSWR<{ message: string; data: EventDate[] }, Error>(
+    } = useSWR<{ message: string; data: ClassEventInstance[] }, Error>(
         `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true&event_id=${event_id}`
     );
 

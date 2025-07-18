@@ -10,25 +10,16 @@ export interface Event {
     program_name: string;
 }
 
-export interface EventDate {
-    event_id: number;
+export interface ClassEventInstance extends Event {
     date: string;
-}
-
-export interface CalendarEvent {
-    event_id: number;
-    class_id: number;
-    program_name: string;
-    start_time: string;
-    duration: number;
-    location: string;
-    is_cancelled: boolean;
+    class_time: string;
+    attendance_records: ProgramClassEventAttendance[];
 }
 
 export interface StudentCalendar {
     day_index: number;
     date: string;
-    events: CalendarEvent[];
+    events: Event[];
 }
 
 // TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
@@ -36,19 +27,6 @@ export interface ShortCalendarEvent {
     title: string;
     start: Date;
     end: Date;
-}
-
-export interface EventDate {
-    event_id: number;
-    date: string;
-}
-
-export interface ClassEventInstance {
-    is_cancelled: boolean;
-    event_id: number;
-    class_time: string;
-    date: string;
-    attendance_records: ProgramClassEventAttendance[];
 }
 
 export interface ProgramClassEventAttendance {
