@@ -1,25 +1,10 @@
 import { Attendance } from '@/common';
 
-export interface Event {
+export interface ClassEventInstance extends ProgramClassEvent {
     event_id: number;
-    class_id: number;
-    start_time: string;
-    duration: number;
-    is_cancelled: boolean;
-    location: string;
-    program_name: string;
-}
-
-export interface ClassEventInstance extends Event {
     date: string;
     class_time: string;
     attendance_records: ProgramClassEventAttendance[];
-}
-
-export interface StudentCalendar {
-    day_index: number;
-    date: string;
-    events: Event[];
 }
 
 // TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
@@ -46,6 +31,7 @@ export interface ProgramClassEvent {
     duration: string;
     room: string;
     recurrence_rule: string;
+    is_cancelled: boolean;
     overrides: ProgramClassEventOverride[];
 }
 
@@ -63,7 +49,6 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     instructor_name: string;
     program_name: string;
     title: string;
-    is_cancelled: boolean;
     is_override: boolean;
     enrolled_users: string;
     start: Date;
