@@ -287,11 +287,11 @@ const ResidentProfile = () => {
                             )}
                             <div className="flex flex-row gap-2 mt-4 justify-center items-center">
                                 <UserActionsDropdown
-                                    user={data.data.user}
+                                    user={metrics.user}
                                     currentUser={user}
                                     onActionSelect={handleActionSelect}
                                 />
-                                {isUserDeactivated(data.data.user) && (
+                                {isUserDeactivated(metrics.user) && (
                                     <span className="px-3 py-1 bg-orange-100 text-orange-800 body  rounded-full">
                                         Deactivated
                                     </span>
@@ -468,10 +468,10 @@ const ResidentProfile = () => {
                 onSubmit={() => void deleteUser()}
                 onClose={() => void closeModal(deleteUserModal)}
             />
-            {data?.data?.user && (
+            {metrics?.user && (
                 <DeactivateUserModal
                     ref={deactivateUserModal}
-                    user={data.data.user}
+                    user={metrics.user}
                     onConfirm={() => void deactivateUser()}
                     onClose={() => closeModal(deactivateUserModal)}
                 />
