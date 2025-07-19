@@ -25,6 +25,7 @@ export default function PageNav({
     const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
     const pageTitle = resolveTitle(routeHandle, routeData);
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
+
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
@@ -53,7 +54,12 @@ export default function PageNav({
             {}
         );
         if (resp.success) {
-            window.location.reload();
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('page') !== null) {
+                params.set('page', '1');
+            }
+            const paramsString = params.size > 0 ? '?' + params.toString() : '';
+            window.location.href = window.location.pathname + paramsString;
         }
     };
 
