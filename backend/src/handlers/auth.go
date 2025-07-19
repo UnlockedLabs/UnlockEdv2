@@ -259,6 +259,10 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")
 					return nil, hasCookie, err
 				}
+				if user.DeactivatedAt != nil {
+					log.Error("User is deactivated, cannot access auth endpoint")
+					return &Claims{}, false, newBadRequestServiceError(errors.New("account deactivated"), "Account deactivated. Contact the facility administrator for support.")
+				}
 				traits := identity["traits"].(map[string]any)
 				fields["user"] = user
 				log.WithFields(fields).Trace("found user from ory session")

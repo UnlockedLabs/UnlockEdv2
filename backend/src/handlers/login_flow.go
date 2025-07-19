@@ -56,6 +56,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return newUnauthorizedServiceError()
 	}
+	if user.DeactivatedAt != nil {
+		log.error("User is deactivated, cannot access auth endpoint")
+		return newBadRequestServiceError(errors.New("account deactivated"), "Account deactivated. Contact the facility administrator for support.")
+	}
 	lockedStatus, err := s.Db.IsAccountLocked(user.ID)
 	if err != nil {
 		return newDatabaseServiceError(err)
