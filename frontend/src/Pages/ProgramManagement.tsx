@@ -29,11 +29,11 @@ import { SortPillButton } from '@/Components/pill-labels/SortFilterPillButtons';
 
 export function ProgramRow({
     program,
-    length,
+    tableColsLen,
     mutate
 }: {
     program: ProgramsOverviewTable;
-    length: number;
+    tableColsLen: string;
     mutate: KeyedMutator<ServerResponseMany<ProgramsOverviewTable>>;
 }) {
     const { user } = useAuth();
@@ -73,7 +73,7 @@ export function ProgramRow({
     }
     return (
         <tr
-            className={`grid grid-cols-${length} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
+            className={`grid ${tableColsLen} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
             onClick={(e) => {
                 e.stopPropagation();
                 navigate(`${program.program_id}`);
@@ -116,8 +116,10 @@ export function ProgramRow({
 
 export default function ProgramManagement() {
     const { user } = useAuth();
-    const statsCols =
-        user?.role === UserRole.FacilityAdmin ? 'grid-cols-4' : 'grid-cols-5';
+    const { statsCols, tableColsLen } =
+        user?.role === UserRole.FacilityAdmin
+            ? { statsCols: 'grid-cols-4', tableColsLen: 'grid-cols-10' }
+            : { statsCols: 'grid-cols-5', tableColsLen: 'grid-cols-11' };
     const tableCols = {
         Name: 'name',
         ...(user?.role !== UserRole.FacilityAdmin
@@ -135,8 +137,6 @@ export default function ProgramManagement() {
         'Funding Type': 'programs.funding_type',
         Status: 'programs.is_active'
     };
-
-    const tableColsLength = Object.keys(tableCols).length;
 
     if (!isAdministrator(user)) {
         return;
@@ -372,7 +372,7 @@ export default function ProgramManagement() {
                 <table className="table-2">
                     <thead>
                         <tr
-                            className={`grid grid-cols-${tableColsLength} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
+                            className={`grid ${tableColsLen} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
                         >
                             {Object.entries(tableCols).map(([key], index) => (
                                 <th
@@ -414,7 +414,7 @@ export default function ProgramManagement() {
                                 <ProgramRow
                                     key={index}
                                     program={program}
-                                    length={tableColsLength}
+                                    tableColsLen={tableColsLen}
                                     mutate={mutate}
                                 />
                             ))
