@@ -37,6 +37,7 @@ import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { useToast } from '@/Context/ToastCtx';
 import UserActionsDropdown from '@/Components/UserActionsDropdown';
 import { textMonthLocalDate } from '@/Components/helperFunctions/formatting';
+import YellowPill from '@/Components/pill-labels/YellowPill';
 
 function UserProfileInfoRow({
     column,
@@ -292,9 +293,7 @@ const ResidentProfile = () => {
                                     onActionSelect={handleActionSelect}
                                 />
                                 {isUserDeactivated(metrics.user) && (
-                                    <span className="px-3 py-1 bg-orange-100 text-orange-800 body  rounded-full">
-                                        Deactivated
-                                    </span>
+                                    <YellowPill>Deactivated</YellowPill>
                                 )}
                             </div>
                         </div>

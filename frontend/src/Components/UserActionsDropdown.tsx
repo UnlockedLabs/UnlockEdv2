@@ -32,7 +32,7 @@ export default function UserActionsDropdown({
             action: ResidentAccountAction['Deactivate Resident'],
             label: 'Deactivate Resident',
             show: !isDeactivated,
-            className: 'text-warning'
+            className: 'text-dark-yellow'
         },
         {
             action: ResidentAccountAction['Delete Resident'],

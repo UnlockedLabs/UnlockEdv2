@@ -235,7 +235,7 @@ export default function StudentManagement() {
                                             key={user.id}
                                             className={`card p-4 w-full grid-cols-7 justify-items-center cursor-pointer ${
                                                 user.deactivated_at
-                                                    ? 'opacity-50 bg-gray-100'
+                                                    ? 'opacity-50 bg-grey-1'
                                                     : ''
                                             }`}
                                             onClick={() =>
