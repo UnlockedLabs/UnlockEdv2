@@ -422,8 +422,6 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
 		totalActiveFacilitiesSubQuery = "total_active_facilities,"
 	}
-	const completionRate = "(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 "
-	const attendanceRate = "(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 "
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Select(fmt.Sprintf(`
 			programs.id AS program_id,
@@ -433,13 +431,13 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
-			%s AS completion_rate,
-			%s AS attendance_rate,
+			(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 AS completion_rate,
+			(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 AS attendance_rate,
 			pt.program_types AS program_types,
 			pct.credit_types AS credit_types,
 			programs.funding_type AS funding_type,
 			BOOL_OR(programs.is_active) AS status
-		`, totalActiveFacilitiesQuery, completionRate, attendanceRate))
+		`, totalActiveFacilitiesQuery))
 	if timeFilter > 0 {
 		joinCondition := fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id AND dpfh.date >= ?`, tableName)
 		tx = tx.Joins(joinCondition, time.Now().AddDate(0, 0, -timeFilter))
@@ -482,25 +480,16 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.program_id IN (?)", args.Tags)
 	}
-	if args.OrderBy != "" && args.Order != "" {
-		var orderExpr string
-		switch args.OrderBy {
-		case "completion_rate":
-			orderExpr = completionRate + args.Order
-		case "attendance_rate":
-			orderExpr = attendanceRate + args.Order
-		default:
-			orderExpr = args.OrderBy + " " + args.Order
-		}
-		tx = tx.Order(orderExpr)
-	} else {
-		tx = tx.Order(args.OrderClause("programs.created_at desc"))
-	}
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs table")
+	}
+	if args.OrderBy != "" && args.Order != "" {
+		tx = tx.Order(args.OrderBy + " " + args.Order)
+	} else {
+		tx = tx.Order(args.OrderClause("programs.created_at desc"))
 	}
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
 		return programsTable, newGetRecordsDBError(err, "programs table")
