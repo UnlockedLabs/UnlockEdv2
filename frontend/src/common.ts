@@ -9,7 +9,8 @@ export enum UserRole {
 
 export enum ResidentAccountAction {
     'Transfer Resident' = 'transfer',
-    'Delete Resident' = 'delete'
+    'Delete Resident' = 'delete',
+    'Deactivate Resident' = 'deactivate'
 }
 
 export enum FeatureAccess {
@@ -33,17 +34,21 @@ export interface User {
     updated_at: string;
     facility_id: number;
     facility_name?: string;
+    facility?: Facility;
     feature_access: FeatureAccess[];
     timezone: string;
     facilities?: Facility[];
     login_metrics: LoginMetrics;
+    deactivated_at?: string | null;
     [key: string]:
         | number
         | string
         | boolean
         | undefined
+        | null
         | FeatureAccess[]
         | Facility[]
+        | Facility
         | LoginMetrics;
 }
 
@@ -1179,7 +1184,8 @@ export type ActivityHistoryAction =
     | 'facility_transfer'
     | 'set_password'
     | 'reset_password'
-    | 'progclass_history';
+    | 'progclass_history'
+    | 'user_deactivated';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
 

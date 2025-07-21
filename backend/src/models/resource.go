@@ -78,20 +78,21 @@ func StringPtr(s string) *string {
 }
 
 type QueryContext struct {
-	Params     url.Values
-	Page       int
-	PerPage    int
-	FacilityID uint
-	UserID     uint
-	OrderBy    string
-	Order      string
-	IsAdmin    bool
-	Search     string
-	Tags       []string
-	Total      int64
-	All        bool
-	Ctx        context.Context
-	Timezone   string
+	Params             url.Values
+	Page               int
+	PerPage            int
+	FacilityID         uint
+	UserID             uint
+	OrderBy            string
+	Order              string
+	IsAdmin            bool
+	Search             string
+	Tags               []string
+	Total              int64
+	All                bool
+	Ctx                context.Context
+	Timezone           string
+	IncludeDeactivated bool
 }
 
 func (q *QueryContext) MaybeID(key string) *int {

@@ -202,3 +202,7 @@ const getResidentLink = (user: User): string => {
     }
     return '/temp-home';
 };
+
+export function isUserDeactivated(user: User): boolean {
+    return user.deactivated_at != null;
+}
