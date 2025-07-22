@@ -5,8 +5,12 @@ ADD COLUMN enrolled_at TIMESTAMP,
 ADD COLUMN enrollment_ended_at TIMESTAMP;
 
 -- Backfill timestamps for enrolled_at and enrollment_ended_at
-UPDATE program_class_enrollments SET enrolled_at = created_at 
-WHERE enrollment_status in (
+UPDATE public.program_class_enrollments pce
+SET enrolled_at = pce.created_at
+FROM program_classes pc
+WHERE pce.class_id = pc.id
+  AND pc.status IN ('Active', 'Completed')
+  AND pce.enrollment_status IN (
     'Enrolled',
     'Completed',
     'Incomplete: Withdrawn',
@@ -15,20 +19,24 @@ WHERE enrollment_status in (
     'Incomplete: Failed to Complete',
     'Incomplete: Transfered',
     'Incomplete: Segregated'
-)
-AND enrolled_at IS NULL;
+  )
+  AND pce.enrolled_at IS NULL;
 
-UPDATE program_class_enrollments SET enrollment_ended_at = updated_at
-WHERE enrollment_status IN (
-    'Completed'
+UPDATE public.program_class_enrollments pce
+SET enrollment_ended_at = pce.updated_at
+FROM program_classes pc
+WHERE pce.class_id = pc.id
+  AND pc.status IN ('Active', 'Completed')
+  AND pce.enrollment_status IN (
+    'Completed',
     'Incomplete: Withdrawn',
     'Incomplete: Dropped',
     'Incomplete: Inactive',
     'Incomplete: Failed to Complete',
     'Incomplete: Transfered',
-    'Incomplete: Segregated'    
-)
-AND enrollment_ended_at IS NULL;
+    'Incomplete: Segregated'
+  )
+  AND pce.enrollment_ended_at IS NULL;
 -- +goose StatementEnd
 
 
