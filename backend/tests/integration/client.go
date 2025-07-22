@@ -166,12 +166,12 @@ func (c *Client) buildURL(endpoint string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid base URL: %w", err)
 	}
-	
+
 	endpointURL, err := url.Parse(endpoint)
 	if err != nil {
 		return "", fmt.Errorf("invalid endpoint: %w", err)
 	}
-	
+
 	// Resolve the endpoint URL against the base URL
 	fullURL := baseURL.ResolveReference(endpointURL)
 	return fullURL.String(), nil
