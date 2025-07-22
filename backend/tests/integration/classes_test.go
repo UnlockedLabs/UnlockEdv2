@@ -147,18 +147,19 @@ func TestUpdateClasses(t *testing.T) {
 	facilityAdmin, err := env.CreateTestUser("testadmin", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
-	t.Run("Update class from Scheduled to Active sets enrolled_at for existing enrollments", func(t *testing.T) {
-		runUpdateClassScheduledToActiveTest(t, env, facility, facilityAdmin)
-	})
-}
-
-func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
 	// Create program and make it available at facility
 	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
 
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
+
+	t.Run("Update class from Scheduled to Active sets enrolled_at for existing enrollments", func(t *testing.T) {
+		runUpdateClassScheduledToActiveTest(t, env, facility, facilityAdmin, program)
+	})
+}
+
+func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 
 	// Create a scheduled class using helper function
 	class, err := env.CreateTestClass(program, facility, models.Scheduled)

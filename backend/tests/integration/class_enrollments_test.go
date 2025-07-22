@@ -22,16 +22,6 @@ func TestEnrollUsersInClass(t *testing.T) {
 	facilityAdmin, err := env.CreateTestUser("testadmin", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
-	t.Run("Enroll users in Active class sets enrolled_at immediately", func(t *testing.T) {
-		runEnrollInActiveClassTest(t, env, facility, facilityAdmin)
-	})
-
-	t.Run("Enroll users in Scheduled class leaves enrolled_at NULL", func(t *testing.T) {
-		runEnrollInScheduledClassTest(t, env, facility, facilityAdmin)
-	})
-}
-
-func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
 	// Create program and make it available at facility
 	program, err := env.CreateTestProgram("Active Class Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
@@ -39,6 +29,16 @@ func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Fac
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
+	t.Run("Enroll users in Active class sets enrolled_at immediately", func(t *testing.T) {
+		runEnrollInActiveClassTest(t, env, facility, facilityAdmin, program)
+	})
+
+	t.Run("Enroll users in Scheduled class leaves enrolled_at NULL", func(t *testing.T) {
+		runEnrollInScheduledClassTest(t, env, facility, facilityAdmin, program)
+	})
+}
+
+func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	// Create an Active class
 	activeClass, err := env.CreateTestClass(program, facility, models.Active)
 	require.NoError(t, err)
@@ -73,14 +73,7 @@ func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Fac
 	}
 }
 
-func runEnrollInScheduledClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
-	// Create program and make it available at facility
-	program, err := env.CreateTestProgram("Scheduled Class Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
-	require.NoError(t, err)
-
-	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
-	require.NoError(t, err)
-
+func runEnrollInScheduledClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	// Create a Scheduled class
 	scheduledClass, err := env.CreateTestClass(program, facility, models.Scheduled)
 	require.NoError(t, err)
