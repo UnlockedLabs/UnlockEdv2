@@ -137,6 +137,80 @@ func newClass(program *models.Program, facility *models.Facility) models.Program
 	return class
 }
 
+func TestUpdateClasses(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facility, err := env.CreateTestFacility("Test Facility")
+	require.NoError(t, err)
+
+	facilityAdmin, err := env.CreateTestUser("testadmin", models.FacilityAdmin, facility.ID, "")
+	require.NoError(t, err)
+
+	t.Run("Update class from Scheduled to Active sets enrolled_at for existing enrollments", func(t *testing.T) {
+		runUpdateClassScheduledToActiveTest(t, env, facility, facilityAdmin)
+	})
+}
+
+func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
+	// Create program and make it available at facility
+	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
+	// Create a scheduled class using helper function
+	class, err := env.CreateTestClass(program, facility, models.Scheduled)
+	require.NoError(t, err)
+
+	// Create test users
+	user1, err := env.CreateTestUser("testuser1", models.Student, facility.ID, "123")
+	require.NoError(t, err)
+	user2, err := env.CreateTestUser("testuser2", models.Student, facility.ID, "456")
+	require.NoError(t, err)
+
+	// Create enrollments using helper function
+	enrollment1, err := env.CreateTestEnrollment(class.ID, user1.ID, models.Enrolled)
+	require.NoError(t, err)
+	enrollment2, err := env.CreateTestEnrollment(class.ID, user2.ID, models.Enrolled)
+	require.NoError(t, err)
+
+	// Verify enrollments start with enrolled_at = NULL
+	enrolledAt1, endedAt1, err := env.GetEnrollmentTimestamps(enrollment1.ID)
+	require.NoError(t, err)
+	require.Nil(t, enrolledAt1, "enrolled_at should be NULL for scheduled class")
+	require.Nil(t, endedAt1, "enrollment_ended_at should be NULL initially")
+
+	enrolledAt2, endedAt2, err := env.GetEnrollmentTimestamps(enrollment2.ID)
+	require.NoError(t, err)
+	require.Nil(t, enrolledAt2, "enrolled_at should be NULL for scheduled class")
+	require.Nil(t, endedAt2, "enrollment_ended_at should be NULL initially")
+
+	// Update class status to Active via API using the bulk update endpoint
+	updateData := map[string]interface{}{
+		"status": string(models.Active),
+	}
+
+	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	// Verify enrolled_at timestamps were set
+	enrolledAt1After, endedAt1After, err := env.GetEnrollmentTimestamps(enrollment1.ID)
+	require.NoError(t, err)
+	require.NotNil(t, enrolledAt1After, "enrolled_at should be set when class becomes Active")
+	require.WithinDuration(t, time.Now(), *enrolledAt1After, time.Second*5, "enrolled_at should be recent")
+	require.Nil(t, endedAt1After, "enrollment_ended_at should still be NULL")
+
+	enrolledAt2After, endedAt2After, err := env.GetEnrollmentTimestamps(enrollment2.ID)
+	require.NoError(t, err)
+	require.NotNil(t, enrolledAt2After, "enrolled_at should be set when class becomes Active")
+	require.WithinDuration(t, time.Now(), *enrolledAt2After, time.Second*5, "enrolled_at should be recent")
+	require.Nil(t, endedAt2After, "enrollment_ended_at should still be NULL")
+}
+
 func TestMain(m *testing.M) {
 	logrus.SetOutput(io.Discard)
 	code := m.Run()

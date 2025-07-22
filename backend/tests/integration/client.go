@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -163,10 +162,17 @@ func (r *Response[T]) ExpectRaw(expected string) {
 }
 
 func (c *Client) buildURL(endpoint string) (string, error) {
-	u, err := url.Parse(c.baseURL)
+	baseURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid base URL: %w", err)
 	}
-	u.Path = path.Join(u.Path, endpoint)
-	return u.String(), nil
+	
+	endpointURL, err := url.Parse(endpoint)
+	if err != nil {
+		return "", fmt.Errorf("invalid endpoint: %w", err)
+	}
+	
+	// Resolve the endpoint URL against the base URL
+	fullURL := baseURL.ResolveReference(endpointURL)
+	return fullURL.String(), nil
 }

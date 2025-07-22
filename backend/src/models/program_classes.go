@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -48,6 +49,47 @@ type ProgramClass struct {
 
 func (ProgramClass) TableName() string { return "program_classes" }
 
+// AfterUpdate hook that runs when going from Scheduled -> Active to set enrolled_at
+func (c *ProgramClass) AfterUpdate(tx *gorm.DB) (err error) {
+	if !tx.Statement.Changed("status") {
+		return nil
+	}
+
+	var newClassStatus ClassStatus
+	if m, ok := tx.Statement.Dest.(map[string]interface{}); ok {
+		if v, ok := m["status"]; ok {
+			switch val := v.(type) {
+			case string:
+				newClassStatus = ClassStatus(val)
+			case ClassStatus:
+				newClassStatus = val
+			default:
+				return fmt.Errorf("unknown type %T", val)
+			}
+		}
+	}
+
+	// Detect Scheduled -> Active
+	if newClassStatus != Active {
+		return nil
+	}
+
+	var classIDs []int
+	if v, ok := tx.Get("class_ids"); ok {
+		classIDs = v.([]int)
+	}
+
+	now := time.Now().UTC()
+
+	result := tx.Model(&ProgramClassEnrollment{}).
+		Where("class_id IN ?", classIDs).
+		Where("enrollment_status = ?", Enrolled).
+		Where("enrolled_at IS NULL").
+		Update("enrolled_at", now)
+
+	return result.Error
+}
+
 /*
 ProgramClassEnrollments is a User's enrollment in a particular Program's 'class' at their respective facility,
 meaning they will need to attend the ClassEvents for that class: tracked by ClassEventAttendance
@@ -68,25 +110,84 @@ type ProgramClassEnrollment struct {
 func (ProgramClassEnrollment) TableName() string { return "program_class_enrollments" }
 
 func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
-	if e.EnrollmentStatus == "Enrolled" {
-		t := time.Now()
-		e.EnrolledAt = &t
+
+	// allow calling code to override
+	if e.EnrolledAt != nil {
+		return nil
 	}
+
+	var classStatus ClassStatus
+	if e.ClassID != 0 {
+		if err := tx.Model(&ProgramClass{}).
+			Select("status").
+			Where("id = ?", e.ClassID).
+			Scan(&classStatus).Error; err != nil {
+			return err
+		}
+	}
+
+	if classStatus == Active && e.EnrollmentStatus == Enrolled {
+		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
+		return nil
+	}
+
 	return nil
 }
 
 func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
-	t := time.Now()
-	if e.EnrollmentStatus == "Enrolled" {
-		e.EnrolledAt = &t
-		tx.Statement.SetColumn("enrolled_at", e.EnrolledAt)
-	} else if e.EnrollmentStatus == "Cancelled" ||
-		e.EnrollmentStatus == "Completed" ||
-		strings.HasPrefix(string(e.EnrollmentStatus), "Incomplete:") {
-		e.EnrollmentEndedAt = &t
-		tx.Statement.SetColumn("enrolled_at", e.EnrollmentEndedAt)
+	// allow calling code to override
+	if !tx.Statement.Changed("enrollment_status") ||
+		tx.Statement.Changed("enrolled_at") ||
+		tx.Statement.Changed("enrolled_ended_at") {
+		return nil
 	}
+
+	var newEnrollmentStatus ProgramEnrollmentStatus
+	if m, ok := tx.Statement.Dest.(map[string]interface{}); ok {
+		if v, ok := m["enrollment_status"]; ok {
+			switch val := v.(type) {
+			case string:
+				newEnrollmentStatus = ProgramEnrollmentStatus(val)
+			case ProgramEnrollmentStatus:
+				newEnrollmentStatus = val
+			default:
+				return fmt.Errorf("unknown type %T", val)
+			}
+		}
+	}
+
+	var classID int
+	if v, ok := tx.Get("class_id"); ok {
+		classID = v.(int)
+	}
+
+	var classStatus ClassStatus
+	if classID != 0 {
+		if err := tx.Model(&ProgramClass{}).
+			Select("status").
+			Where("id = ?", classID).
+			Scan(&classStatus).Error; err != nil {
+			return err
+		}
+	}
+
+	// This likely gets hit when we introduce "Waitlist" as a status
+	if newEnrollmentStatus == Enrolled && classStatus == Active {
+		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
+		// ? do we need to worry about updating fields to the same value (enrolled -> enrolled)?
+	}
+
+	// This is when an enrollment ends while the class remains active
+	if IsTerminalEnrollment(newEnrollmentStatus) && classStatus == Active {
+		tx.Statement.SetColumn("enrollment_ended_at", time.Now().UTC())
+	}
+
 	return nil
+}
+
+func IsTerminalEnrollment(s ProgramEnrollmentStatus) bool {
+	return s == EnrollmentCancelled || s == EnrollmentCompleted ||
+		strings.HasPrefix(string(s), "Incomplete:")
 }
 
 type ProgramClassDetail struct {

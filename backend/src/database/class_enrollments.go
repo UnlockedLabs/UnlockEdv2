@@ -63,14 +63,15 @@ func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityI
 func (db *DB) CreateProgramClassEnrollments(classID int, userIds []int) (int, error) {
 	var result struct {
 		Available int
+		Status    models.ClassStatus
 	}
 	err := db.
 		Table("program_classes").
-		Select("program_classes.capacity - COALESCE(COUNT(pce.id), 0) AS available").
+		Select("program_classes.status, program_classes.capacity - COALESCE(COUNT(pce.id), 0) AS available").
 		Joins(`LEFT JOIN program_class_enrollments pce ON pce.class_id = program_classes.id
 			and pce.enrollment_status = 'Enrolled'`).
 		Where("program_classes.id = ?", classID).
-		Group("program_classes.id, program_classes.capacity").
+		Group("program_classes.status, program_classes.id, program_classes.capacity").
 		Scan(&result).Error
 	if err != nil {
 		return 0, newNotFoundDBError(err, "program_classes")
@@ -152,44 +153,35 @@ func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userId
 
 	if err = tx.Create(&completions).Error; err != nil {
 		tx.Rollback()
-		return newCreateDBError(err, "enrollment status")
+		return newCreateDBError(err, "enrollment completion")
 	}
 
-	var enrollments []models.ProgramClassEnrollment
-	if err = tx.Where("user_id IN (?) AND class_id = ?", userIds, classId).Find(&enrollments).Error; err != nil {
+	if err = tx.Model(&models.ProgramClassEnrollment{}).
+		Where("user_id IN (?) AND class_id = ?", userIds, classId).
+		Set("class_id", classId).
+		Update("enrollment_status", models.EnrollmentCompleted).Error; err != nil {
 		tx.Rollback()
-		return newUpdateDBError(err, "enrollments")
+		return newUpdateDBError(err, "enrollment status")
 	}
 
-	for i := range enrollments {
-		enrollments[i].EnrollmentStatus = models.ProgramEnrollmentStatus(models.Completed)
-		if err = tx.Save(&enrollments[i]).Error; err != nil {
-			tx.Rollback()
-			return newUpdateDBError(err, "enrollment status")
-		}
-	}
 	// commit the transaction
 	return tx.Commit().Error
 }
 
 func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status string, changeReason *string) error {
-	var enrollments []models.ProgramClassEnrollment
-	if err := db.Where("class_id = ? AND user_id IN (?)", classId, userIds).
-		Find(&enrollments).Error; err != nil {
-		return newUpdateDBError(err, "fetch enrollments for update")
+	updates := map[string]any{
+		"enrollment_status": status,
 	}
-
-	for i := range enrollments {
-		enrollments[i].EnrollmentStatus = models.ProgramEnrollmentStatus(status)
-		if changeReason != nil {
-			enrollments[i].ChangeReason = *changeReason
-		}
-		if err := db.Save(&enrollments[i]).Error; err != nil {
-			return newUpdateDBError(err, "save updated enrollment")
-		}
+	if changeReason != nil {
+		updates["change_reason"] = *changeReason
+	}
+	if err := db.Model(&models.ProgramClassEnrollment{}).
+		Where("class_id = ? AND user_id IN (?)", classId, userIds).
+		Set("class_id", classId).
+		Updates(updates).Error; err != nil {
+		return newUpdateDBError(err, "class enrollment status")
 	}
 	return nil
-
 }
 
 func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap map[string]any) error {
@@ -197,6 +189,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 	if tx.Error != nil {
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
+
 	if status, ok := classMap["status"]; ok &&
 		status == string(models.Cancelled) || status == string(models.Completed) {
 		var enrollmentStatus models.ProgramEnrollmentStatus
@@ -215,9 +208,11 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			return newUpdateDBError(err, "class enrollment statuses")
 		}
 	}
+
 	if err := tx.
 		Model(&models.ProgramClass{}).
 		Where("id IN ?", classIDs).
+		Set("class_ids", classIDs).
 		Updates(classMap).
 		Error; err != nil {
 		tx.Rollback()
@@ -248,6 +243,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 	if err := tx.Commit().Error; err != nil {
 		return newUpdateDBError(err, "unable to commit database transaction")
 	}
+
 	return nil
 }
 
