@@ -64,22 +64,22 @@ export default function AuthenticatedLayout() {
 
     return (
         <PageTitleProvider>
-            <div className="font-lato">
+            <div className="font-lato h-full">
                 <div title={title} />
                 <UnlockEdTour />
                 <div
                     className={`drawer ${isNavPinned ? 'lg:drawer-open' : ''} `}
                 >
-                    <div className="drawer-content flex flex-col border-l border-grey-1">
-                        <main className="w-full min-h-screen bg-background flex flex-col">
+                    <div className="drawer-content flex flex-col h-screen border-l border-grey-1">
+                        <main className="w-full h-full bg-background flex flex-col">
                             <PageNav
                                 facilities={user?.facilities ?? []}
                                 showOpenMenu={!isNavPinned}
                                 onShowNav={showNav}
                             />
-                            <div className="flex grow relative">
+                            <div className="flex flex-1 relative min-h-0">
                                 <div
-                                    className={`transition-all duration-100 ease-in-out ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
+                                    className={`transition-all duration-100 ease-in-out h-full ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
                                 >
                                     <Outlet />
                                 </div>

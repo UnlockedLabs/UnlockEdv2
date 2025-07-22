@@ -210,8 +210,8 @@ export default function LibraryViewer() {
     };
 
     return (
-        <div>
-            <div className="px-5 pb-4">
+        <div className="flex flex-col h-full">
+            <div className="px-5 pt-4">
                 <div
                     className="flex items-center gap-4 mb-4"
                     id="library-viewer-sub-page"
@@ -255,38 +255,41 @@ export default function LibraryViewer() {
                         onModalClose={closeModal}
                     />
                 </div>
-                <div className="w-full pt-4 justify-center">
-                    {isLoading ? (
-                        <div className="flex h-screen gap-4 justify-center content-center">
-                            <span className="my-auto loading loading-spinner loading-lg"></span>
-                            <p className="my-auto text-lg">Loading...</p>
-                        </div>
-                    ) : src !== '' ? (
-                        <iframe
-                            sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
-                            className="w-full h-screen pt-4"
-                            id="library-viewer-iframe"
-                            src={src}
-                        />
-                    ) : (
-                        <div />
-                    )}
-                </div>
-                <FormModal
-                    title="Favorite Page"
-                    inputs={[
-                        {
-                            type: FormInputTypes.Text,
-                            label: 'Favorite Name',
-                            interfaceRef: 'favoriteName',
-                            required: true,
-                            length: 100
-                        }
-                    ]}
-                    ref={favoriteModalRef}
-                    onSubmit={handleBookmarkSubmit}
-                />
             </div>
+            <div className="flex-1 px-5 pb-4 min-h-0">
+                {isLoading ? (
+                    <div className="flex h-full gap-4 justify-center items-center">
+                        <span className="my-auto loading loading-spinner loading-lg"></span>
+                        <p className="my-auto text-lg">Loading...</p>
+                    </div>
+                ) : src !== '' ? (
+                    <iframe
+                        sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
+                        className="w-full h-full"
+                        id="library-viewer-iframe"
+                        src={src}
+                        style={{
+                            border: 'none'
+                        }}
+                    />
+                ) : (
+                    <div />
+                )}
+            </div>
+            <FormModal
+                title="Favorite Page"
+                inputs={[
+                    {
+                        type: FormInputTypes.Text,
+                        label: 'Favorite Name',
+                        interfaceRef: 'favoriteName',
+                        required: true,
+                        length: 100
+                    }
+                ]}
+                ref={favoriteModalRef}
+                onSubmit={handleBookmarkSubmit}
+            />
         </div>
     );
 }
