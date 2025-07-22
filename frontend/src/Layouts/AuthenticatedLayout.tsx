@@ -77,9 +77,9 @@ export default function AuthenticatedLayout() {
                                 showOpenMenu={!isNavPinned}
                                 onShowNav={showNav}
                             />
-                            <div className="flex flex-1 relative min-h-0">
+                            <div className="flex flex-1 relative min-h-0 overflow-y-auto">
                                 <div
-                                    className={`transition-all duration-100 ease-in-out h-full ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
+                                    className={`transition-all duration-100 ease-in-out ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
                                 >
                                     <Outlet />
                                 </div>
