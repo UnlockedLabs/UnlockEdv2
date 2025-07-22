@@ -6,7 +6,7 @@ import {
     useLoaderData
 } from 'react-router-dom';
 import useSWR from 'swr';
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormRegister, FieldValues } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import {
@@ -54,12 +54,8 @@ export default function EventAttendance() {
         class_id: string;
         date: string;
     }>();
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        formState: { errors }
-    } = useForm<FormData>();
+    const { register, handleSubmit, getValues, setValue, trigger } =
+        useForm<FormData>();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState(
         FilterResidentNames['Resident Name (A-Z)']
@@ -168,39 +164,20 @@ export default function EventAttendance() {
         setPageQuery(1);
     };
 
-    function handleNoteChange(user_id: number, newNote: string) {
-        const currentRow = rows.find((r) => r.user_id === user_id);
-        setModifiedRows((prev) => ({
-            ...prev,
-            [user_id]: {
-                ...(currentRow ?? {}),
-                ...(prev[user_id] ?? {}),
-                selected: true,
-                note: newNote
-            }
-        }));
-    }
-
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {
-        const currentRow = rows.find((r) => r.user_id === user_id) ?? {
-            selected: false,
-            user_id: user_id,
-            doc_id: '',
-            name_last: '',
-            name_first: '',
-            attendance_status: newStatus
-        };
-        setModifiedRows((prev) => ({
-            ...prev,
-            [user_id]: {
-                ...currentRow,
-                ...prev[user_id],
-                selected: true,
-                attendance_status: newStatus,
-                note:
-                    newStatus === Attendance.Present ? '' : prev[user_id]?.note
-            }
-        }));
+        if (newStatus === Attendance.Present) {
+            setValue(`note_${user_id}`, '');
+        } else {
+            void trigger(`note_${user_id}`);
+        }
+
+        setModifiedRows((prev) => {
+            const current = prev[user_id] ?? {
+                ...rows.find((r) => r.user_id === user_id)
+            };
+            current.attendance_status = newStatus;
+            return { ...prev, [user_id]: current };
+        });
     }
 
     async function submitAttendanceForRows(updatedRows: LocalRowData[]) {
@@ -342,31 +319,23 @@ export default function EventAttendance() {
                                                 label=""
                                                 defaultValue={row.note}
                                                 disabled={
-                                                    !(
-                                                        row.attendance_status &&
-                                                        row.attendance_status !==
-                                                            Attendance.Present
-                                                    )
+                                                    row.attendance_status ===
+                                                    Attendance.Present
                                                 }
                                                 inputClassName={
-                                                    !(
-                                                        row.attendance_status &&
-                                                        row.attendance_status !==
-                                                            Attendance.Present
-                                                    )
+                                                    row.attendance_status ===
+                                                    Attendance.Present
                                                         ? 'opacity-40'
                                                         : ''
                                                 }
                                                 interfaceRef={`note_${row.user_id}`}
-                                                required={false}
+                                                required={
+                                                    row.attendance_status !==
+                                                    Attendance.Present
+                                                }
                                                 length={500}
-                                                errors={errors}
-                                                register={register}
-                                                onChange={(e) =>
-                                                    handleNoteChange(
-                                                        row.user_id,
-                                                        e.target.value
-                                                    )
+                                                register={
+                                                    register as UseFormRegister<FieldValues>
                                                 }
                                             />
                                         </td>
