@@ -192,21 +192,26 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 
 	if status, ok := classMap["status"]; ok &&
 		status == string(models.Cancelled) || status == string(models.Completed) {
-		var enrollmentStatus models.ProgramEnrollmentStatus
-		switch status {
-		case string(models.Cancelled):
-			enrollmentStatus = models.EnrollmentCancelled
-		case string(models.Completed):
-			enrollmentStatus = models.EnrollmentCompleted
+
+		for _, classID := range classIDs {
+			var enrollmentStatus models.ProgramEnrollmentStatus
+			switch status {
+			case string(models.Cancelled):
+				enrollmentStatus = models.EnrollmentCancelled
+			case string(models.Completed):
+				enrollmentStatus = models.EnrollmentCompleted
+			}
+			if err := tx.
+				Model(&models.ProgramClassEnrollment{}).
+				Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
+				Set("class_id", classID).
+				Update("enrollment_status", enrollmentStatus).
+				Error; err != nil {
+				tx.Rollback()
+				return newUpdateDBError(err, "class enrollment statuses")
+			}
 		}
-		if err := tx.
-			Model(&models.ProgramClassEnrollment{}).
-			Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
-			Update("enrollment_status", enrollmentStatus).
-			Error; err != nil {
-			tx.Rollback()
-			return newUpdateDBError(err, "class enrollment statuses")
-		}
+
 	}
 
 	if err := tx.

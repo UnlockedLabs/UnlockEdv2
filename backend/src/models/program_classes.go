@@ -178,7 +178,7 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 	}
 
 	// This is when an enrollment ends while the class remains active
-	if IsTerminalEnrollment(newEnrollmentStatus) && classStatus == Active {
+	if IsTerminalEnrollment(newEnrollmentStatus) && (classStatus == Active || classStatus == Paused) {
 		tx.Statement.SetColumn("enrollment_ended_at", time.Now().UTC())
 	}
 
