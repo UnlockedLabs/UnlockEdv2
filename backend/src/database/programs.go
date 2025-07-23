@@ -1,7 +1,6 @@
 package database
 
 import (
-	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
@@ -69,7 +68,6 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Preload("Facilities").
-		Preload("Favorites", "user_id = ?", args.UserID).
 		Preload("ProgramTypes").
 		Preload("ProgramCreditTypes")
 	if len(args.Tags) > 0 {
@@ -87,14 +85,7 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
-	programs := src.IterMap(func(prog models.Program) models.Program {
-		if len(prog.Favorites) > 0 {
-			prog.IsFavorited = true
-			return prog
-		}
-		return prog
-	}, content)
-	return programs, nil
+	return content, nil
 }
 
 func (db *DB) CreateProgram(content *models.Program) error {
