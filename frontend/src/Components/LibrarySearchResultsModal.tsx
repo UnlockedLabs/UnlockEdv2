@@ -253,8 +253,8 @@ const LibrarySearchResultsModal = forwardRef<
 
     return (
         <dialog ref={ref} className="modal" onClose={handleCloseModal}>
-            <div className="w-[1200px] h-[700px] bg-background rounded-lg shadow-lg flex flex-col">
-                <div className="sticky top-0 bg-background z-50 p-4 border-b border-grey-2 rounded-t-lg">
+            <div className="w-[min(90vw,1200px)] h-[min(85vh,700px)] bg-background rounded-lg shadow-lg flex flex-col">
+                <div className="flex-shrink-0 bg-background z-50 p-4 border-b border-grey-2 rounded-t-lg">
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                             <h2 className="text-2xl">{searchResults.title}</h2>
@@ -317,43 +317,45 @@ const LibrarySearchResultsModal = forwardRef<
                         </div>
                     )}
                 </div>
-                <div
-                    ref={scrollContainerRef}
-                    className="flex flex-col gap-4 overflow-y-auto p-4 scrollbar"
-                >
-                    {searchResults.items?.map((item, index) => (
-                        <LibrarySearchResultCard
-                            key={index}
-                            item={item}
-                            onItemClick={navToViewer}
-                        />
-                    ))}
+
+                <div className="flex-1 min-h-0 flex flex-col">
+                    {isLoading ? (
+                        <div className="flex-1 flex gap-4 justify-center items-center">
+                            <span className="loading loading-spinner loading-lg"></span>
+                            <p className="text-lg">Loading...</p>
+                        </div>
+                    ) : searchError ? (
+                        <div className="flex-1 flex gap-4 justify-center items-center">
+                            <p className="text-lg text-error">{searchError}</p>
+                        </div>
+                    ) : searchResults.title === 'Search' ? (
+                        <div className="flex-1 flex gap-4 justify-center items-center">
+                            <p className="text-lg">Press 'Enter' to search</p>
+                        </div>
+                    ) : searchResults.items &&
+                      searchResults.items.length === 0 ? (
+                        <div className="flex-1 flex gap-4 justify-center items-center">
+                            <p className="text-lg">No Results Found</p>
+                        </div>
+                    ) : (
+                        <div
+                            ref={scrollContainerRef}
+                            className="flex-1 min-h-0 overflow-y-auto p-4 scrollbar"
+                        >
+                            <div className="flex flex-col gap-4">
+                                {searchResults.items?.map((item, index) => (
+                                    <LibrarySearchResultCard
+                                        key={index}
+                                        item={item}
+                                        onItemClick={navToViewer}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                {isLoading ? (
-                    <div className="flex h-screen gap-4 justify-center content-center">
-                        <span className="my-auto loading loading-spinner loading-lg"></span>
-                        <p className="my-auto text-lg">Loading...</p>
-                    </div>
-                ) : searchError ? (
-                    <div className="flex h-screen gap-4 justify-center content-center">
-                        <p className="my-auto text-lg text-error">
-                            {searchError}
-                        </p>
-                    </div>
-                ) : searchResults.title === 'Search' ? (
-                    <div className="flex h-screen gap-4 justify-center content-center">
-                        <p className="my-auto text-lg">
-                            Press 'Enter' to search
-                        </p>
-                    </div>
-                ) : searchResults.items && searchResults.items.length === 0 ? (
-                    <div className="flex h-screen gap-4 justify-center content-center">
-                        <p className="my-auto text-lg">No Results Found</p>
-                    </div>
-                ) : (
-                    ' '
-                )}
-                <div className="border-t border-grey-2 px-6 py-4 flex justify-center rounded-b-lg">
+
+                <div className="flex-shrink-0 border-t border-grey-2 px-6 py-4 flex justify-center rounded-b-lg">
                     <Pagination
                         meta={meta}
                         setPage={handleSetPage}
