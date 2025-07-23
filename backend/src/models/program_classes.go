@@ -138,7 +138,7 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 	// allow calling code to override
 	if !tx.Statement.Changed("enrollment_status") ||
 		tx.Statement.Changed("enrolled_at") ||
-		tx.Statement.Changed("enrolled_ended_at") {
+		tx.Statement.Changed("enrollment_ended_at") {
 		return nil
 	}
 
