@@ -1,5 +1,6 @@
 import { Attendance } from '@/common';
 
+// ClassEventInstance represents a single scheduled class event with attendance records
 export interface ClassEventInstance extends ProgramClassEvent {
     event_id: number;
     date: string;
@@ -8,12 +9,14 @@ export interface ClassEventInstance extends ProgramClassEvent {
 }
 
 // TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
+// ShortCalendarEvent represents a basic calendar event with a title and time range.
 export interface ShortCalendarEvent {
     title: string;
     start: Date;
     end: Date;
 }
 
+// ProgramClassEventAttendance Represents a single user's attendance record for a class event, including status and notes.
 export interface ProgramClassEventAttendance {
     id: number;
     created_at: Date;
@@ -25,6 +28,7 @@ export interface ProgramClassEventAttendance {
     note: string;
 }
 
+// ProgramClassEvent represents a single class event, including scheduling, recurrence, and override rules.
 export interface ProgramClassEvent {
     id: number;
     class_id: number;
@@ -35,6 +39,7 @@ export interface ProgramClassEvent {
     overrides: ProgramClassEventOverride[];
 }
 
+// ProgramClassEventOverride represents an override or exception to a recurring class event, such as cancellations or rescheduling.
 export interface ProgramClassEventOverride {
     id: number;
     event_id: number;
@@ -45,6 +50,7 @@ export interface ProgramClassEventOverride {
     reason: string;
 }
 
+// FacilityProgramClassEvent represents a detailed scheduled class event at a facility, including instructor, program, calendar, and override info.
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
     instructor_name: string;
     program_name: string;
