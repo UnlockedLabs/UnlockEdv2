@@ -38,10 +38,26 @@ export default function LibraryViewer() {
     const [searchPlaceholder, setSearchPlaceholder] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const modalRef = useRef<HTMLDialogElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const { tourState, setTourState } = useTourContext();
+
+    const syncHeight = () => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        try {
+            const doc =
+                iframe.contentDocument ?? iframe.contentWindow?.document;
+            if (doc) {
+                iframe.style.height = doc.documentElement.scrollHeight + 'px';
+            }
+        } catch {
+            // cross-origin iframe, can't access the document content
+        }
+    };
 
     const openModal = () => {
         if (modalRef.current) {
@@ -73,6 +89,46 @@ export default function LibraryViewer() {
             );
         }
     };
+
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        let resizeObserver: ResizeObserver | null = null;
+
+        const setupHeightSync = () => {
+            syncHeight();
+
+            try {
+                const doc =
+                    iframe.contentDocument ?? iframe.contentWindow?.document;
+                if (doc?.documentElement) {
+                    resizeObserver = new ResizeObserver(() => {
+                        syncHeight();
+                    });
+                    resizeObserver.observe(doc.documentElement);
+                }
+            } catch {
+                // cross-origin iframe, can't access the document content
+            }
+
+            return () => {
+                if (resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+            };
+        };
+
+        // Setup height sync when iframe loads
+        iframe.addEventListener('load', setupHeightSync);
+
+        return () => {
+            iframe.removeEventListener('load', setupHeightSync);
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+            }
+        };
+    }, [src]);
 
     useEffect(() => {
         const fetchLibraryData = async () => {
@@ -264,12 +320,14 @@ export default function LibraryViewer() {
                     </div>
                 ) : src !== '' ? (
                     <iframe
+                        ref={iframeRef}
                         sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
                         className="w-full h-full"
                         id="library-viewer-iframe"
                         src={src}
                         style={{
-                            border: 'none'
+                            border: 'none',
+                            minHeight: '600px'
                         }}
                     />
                 ) : (
