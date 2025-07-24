@@ -49,7 +49,7 @@ type ProgramClass struct {
 
 func (ProgramClass) TableName() string { return "program_classes" }
 
-// AfterUpdate hook that runs when going from Scheduled -> Active to set enrolled_at
+// AfterUpdate hook that runs when switching class status to Active to verify existing enrollments have enrolled_at set.
 func (c *ProgramClass) AfterUpdate(tx *gorm.DB) (err error) {
 	if !tx.Statement.Changed("status") {
 		return nil
@@ -109,8 +109,8 @@ type ProgramClassEnrollment struct {
 
 func (ProgramClassEnrollment) TableName() string { return "program_class_enrollments" }
 
+// BeforeCreate hook that runs to set enrolled_at when enrolling in an Active class
 func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
-
 	// allow calling code to override
 	if e.EnrolledAt != nil {
 		return nil
@@ -134,6 +134,7 @@ func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
 	return nil
 }
 
+// BeforeUpdate hook that runs to set enrolled_at if enrolling in an Active class or enrollment_ended_at if entering a terminal state while class is Active|Paused.
 func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 	// allow calling code to override
 	if !tx.Statement.Changed("enrollment_status") ||
