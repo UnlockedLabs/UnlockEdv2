@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { closeModal, TextModalType, TextOnlyModal } from '.';
-import { FacilityProgramClassEvent, ServerResponseMany } from '@/common';
+import { ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
@@ -11,6 +11,7 @@ import {
     fromLocalDateToTime
 } from '../helperFunctions';
 import { toZonedTime } from 'date-fns-tz';
+import { FacilityProgramClassEvent } from '@/types/events';
 
 export const RestoreClassEventModal = forwardRef(function (
     {

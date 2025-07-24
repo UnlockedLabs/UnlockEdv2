@@ -8,7 +8,7 @@ import {
     TextModalType,
     TextOnlyModal
 } from '.';
-import { FacilityProgramClassEvent, ServerResponseMany } from '@/common';
+import { ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import { FieldValues, SubmitHandler, UseFormGetValues } from 'react-hook-form';
 import { KeyedMutator } from 'swr';
@@ -21,6 +21,7 @@ import {
     formatDuration,
     fromLocalDateToNumericDateFormat
 } from '../helperFunctions';
+import { FacilityProgramClassEvent } from '@/types/events';
 
 export const RescheduleClassEventModal = forwardRef(function (
     {
