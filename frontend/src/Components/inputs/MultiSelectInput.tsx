@@ -56,10 +56,10 @@ export function MultiSelectInput<T>({
         })
     };
 
-    const labelFormatter = formatter
-        ? formatter
-        : (val: T) =>
-              typeof val === 'string' ? val.replace(/_/g, ' ') : String(val);
+    const labelFormatter =
+        formatter ??
+        ((val: T) =>
+            typeof val === 'string' ? val.replace(/_/g, ' ') : String(val));
     const options = preformattedOptions
         ? (optionList as GenericOption<T>[])
         : createOptions(optionList, labelFormatter);

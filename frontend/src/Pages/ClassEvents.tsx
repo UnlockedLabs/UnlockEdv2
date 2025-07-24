@@ -6,6 +6,7 @@ import {
     Class,
     ClassEventInstance,
     ProgramClassEventAttendance,
+    SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -94,16 +95,29 @@ export default function ClassEvents() {
         return `${startDateTime.toLocaleTimeString([], options)} – ${endDateTime.toLocaleTimeString([], options)}`;
     }
 
-    function getStatus(event: ClassEventInstance): string {
+    function getStatus(
+        program_class: Class | undefined,
+        event: ClassEventInstance
+    ): string {
         const eventDate = toLocalMidnight(event.date).getTime();
         const today = new Date().setHours(0, 0, 0, 0);
-        return event.is_cancelled
-            ? 'Cancelled'
-            : eventDate > today
-              ? 'Scheduled'
-              : event.attendance_records?.length === enrolled
-                ? 'Marked'
-                : 'Not Marked';
+        if (
+            program_class?.status === SelectedClassStatus.Cancelled ||
+            event.is_cancelled
+        ) {
+            return 'Cancelled';
+        }
+        if (eventDate > today) {
+            return 'Scheduled';
+        }
+        const expectedCount =
+            program_class?.status === SelectedClassStatus.Completed
+                ? program_class.completed
+                : program_class?.enrolled;
+        if (event.attendance_records?.length === expectedCount) {
+            return 'Marked';
+        }
+        return 'Unmarked';
     }
 
     function AttendanceAction({ event }: { event: ClassEventInstance }) {
@@ -200,7 +214,12 @@ export default function ClassEvents() {
                                     <td className="px-5">{`${event.attendance_records ? getPresentCount(event.attendance_records) : 0} ${
                                         enrolled ? `/ ${enrolled}` : ''
                                     }`}</td>
-                                    <td className="px-5">{getStatus(event)}</td>
+                                    <td className="px-5">
+                                        {getStatus(
+                                            this_program ?? undefined,
+                                            event
+                                        )}
+                                    </td>
                                     <td className="justify-self-end pr-5">
                                         <AttendanceAction event={event} />
                                     </td>
