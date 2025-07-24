@@ -15,6 +15,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/wader/goutubedl"
 	"gorm.io/gorm"
 )
@@ -31,15 +34,29 @@ type VideoService struct {
 	Client                *http.Client
 	Body                  map[string]any
 	db                    *gorm.DB
+	bucketName            string
+	s3Svc                 *s3.Client
 }
 
 func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[string]any) *VideoService {
+	bucketName := os.Getenv("S3_BUCKET_NAME")
+	var svc *s3.Client = nil
+	if bucketName != "" {
+		logger().Info("s3 bucket found, creating client")
+		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(os.Getenv("AWS_REGION")))
+		if err != nil {
+			logger().Fatal(err)
+		}
+		svc = s3.NewFromConfig(cfg)
+	}
 	return &VideoService{
 		BaseUrl:               prov.Url,
 		Client:                &http.Client{},
 		Body:                  body,
 		OpenContentProviderID: prov.ID,
 		db:                    db,
+		bucketName:            bucketName,
+		s3Svc:                 svc,
 	}
 }
 
@@ -282,12 +299,6 @@ func (vs *VideoService) retryFailedVideos(ctx context.Context) error {
 	return nil
 }
 
-func (vs *VideoService) videoIsPresent(ytId string) bool {
-	fileName := fmt.Sprintf("/videos/%s.mp4", ytId)
-	_, err := os.Stat(fileName)
-	return err == nil
-}
-
 func (vs *VideoService) retrySingleVideo(ctx context.Context, videoId int) error {
 	var video models.Video
 	if err := vs.db.WithContext(ctx).Preload("Attempts").First(&video, videoId).Error; err != nil {
@@ -449,7 +460,7 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 	}
 
 	// if we already have the video on disk, skip the download
-	if yt.videoIsPresent(vidInfo.Info.ID) {
+	if yt.videoExistsInS3(ctx, vidInfo.Info.ID) {
 		return nil
 	}
 	cmd := exec.CommandContext(
@@ -476,20 +487,73 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 		video.Availability = models.VideoHasError
 		return yt.incrementFailedAttempt(ctx, video, err.Error())
 	}
+	if yt.s3Svc != nil {
+		videoPath := fmt.Sprintf("/videos/%s.mp4", video.ExternalID)
+		videoFile, err := os.Open(videoPath)
+		if err != nil {
+			logger().Errorf("error opening video file %s for s3 upload: %v", videoPath, err)
+			return err
+		}
+		defer videoFile.Close()
+		err = yt.uploadFileToS3(ctx, videoFile, video)
+		if err != nil {
+			logger().Errorf("error reading download result: %v", err)
+			return err
+		}
+		err = os.Remove(videoFile.Name())
+		if err != nil {
+			logger().Errorf("error reading download result: %v", err)
+			return err
+		}
+	}
 	video.Availability = models.VideoAvailable
-	jsonData, err := json.Marshal(video)
-	if err != nil {
-		logger().Errorf("Error marshalling json for newly downloaded video, not a fatal error: %v", err)
-	}
-	// write json metadata file to disk
-	fileName := fmt.Sprintf("/videos/%s.json", video.ExternalID)
-	jsonFile, err := os.Create(fileName)
-	if err != nil {
-		logger().Errorf("error creating json file: %v", err)
-	}
-	_, err = jsonFile.Write(jsonData)
-	if err != nil {
-		logger().Errorf("error writing json file: %v", err)
-	}
 	return yt.db.WithContext(ctx).Save(video).Error
+}
+
+func (yt *VideoService) uploadFileToS3(ctx context.Context, file *os.File, video *models.Video) error {
+	logger().Infof("Uploading to bucket: %s, key: %s", yt.bucketName, video.GetS3KeyMp4())
+	uploadParams := &s3.PutObjectInput{
+		Bucket:      aws.String(yt.bucketName),
+		Key:         aws.String(video.GetS3KeyMp4()),
+		Body:        file,
+		ContentType: aws.String("video/mp4"),
+	}
+
+	output, err := yt.s3Svc.PutObject(ctx, uploadParams)
+	if err != nil {
+		logger().Errorf("error uploading file to s3: %v", err)
+		return err
+	}
+	logger().Infof("Successfully uploaded file to %s/%s with ETAG: %s", yt.bucketName, video.GetS3KeyMp4(), *output.ETag)
+	videoBytes, err := json.Marshal(video)
+	if err != nil {
+		logger().Errorf("error marshalling video: %v", err)
+		return err
+	}
+	logger().Infof("Uploading to bucket: %s, key: %s", yt.bucketName, video.GetS3KeyJson())
+	uploadJson := &s3.PutObjectInput{
+		Bucket:      aws.String(yt.bucketName),
+		Key:         aws.String(video.GetS3KeyJson()),
+		Body:        bytes.NewReader(videoBytes),
+		ContentType: aws.String("application/json"),
+	}
+	jsonOutput, err := yt.s3Svc.PutObject(ctx, uploadJson)
+	if err != nil {
+		logger().Errorf("error uploading file to s3: %v", err)
+		return err
+	}
+	logger().Infof("Successfully uploaded file to %s/%s with ETAG: %s", yt.bucketName, video.GetS3KeyJson(), *jsonOutput.ETag)
+	return nil
+}
+
+func (vs *VideoService) videoExistsInS3(ctx context.Context, ytId string) bool {
+	if vs.s3Svc == nil {
+		return false
+	}
+	input := &s3.HeadObjectInput{
+		Bucket: aws.String(vs.bucketName),
+		Key:    aws.String(fmt.Sprintf("/videos/%s.mp4", ytId)),
+	}
+	_, err := vs.s3Svc.HeadObject(ctx, input)
+	return err == nil
 }
