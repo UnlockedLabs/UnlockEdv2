@@ -459,7 +459,7 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 		vidInfo = &result
 	}
 
-	// if we already have the video on disk, skip the download
+	// if we already have the video in the S3 bucket, skip the download
 	if yt.videoExistsInS3(ctx, vidInfo.Info.ID) {
 		return nil
 	}
