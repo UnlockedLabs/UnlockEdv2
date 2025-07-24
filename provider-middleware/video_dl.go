@@ -494,7 +494,11 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 			logger().Errorf("error opening video file %s for s3 upload: %v", videoPath, err)
 			return err
 		}
-		defer videoFile.Close()
+		defer func() {
+			if err := videoFile.Close(); err != nil {
+				logger().Errorf("error closing file %s: %v", videoPath, err)
+			}
+		}()
 		err = yt.uploadFileToS3(ctx, videoFile, video)
 		if err != nil {
 			logger().Errorf("error reading download result: %v", err)
