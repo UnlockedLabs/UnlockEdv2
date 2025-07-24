@@ -108,6 +108,7 @@ func MigrateTesting(db *gorm.DB) {
 		&models.ProgramType{},
 		&models.ProgramClassEvent{},
 		&models.ProgramClassEnrollment{},
+		&models.ProgramCompletion{},
 		&models.ProgramClassEventOverride{},
 		&models.ProgramClassEventAttendance{},
 		&models.Milestone{},

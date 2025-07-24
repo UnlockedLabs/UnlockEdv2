@@ -198,3 +198,49 @@ func (env *TestEnv) CleanupDatabase() error {
 
 	return nil
 }
+
+func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Facility, status models.ClassStatus) (*models.ProgramClass, error) {
+	endDt := time.Now().Add(time.Hour * 24)
+	creditHours := int64(2)
+
+	class := &models.ProgramClass{
+		ProgramID:      program.ID,
+		FacilityID:     facility.ID,
+		Capacity:       10,
+		Name:           "Test Class",
+		InstructorName: "Test Instructor",
+		Description:    "This is a test class created for integration testing purposes.",
+		StartDt:        time.Now(),
+		EndDt:          &endDt,
+		Status:         status,
+		CreditHours:    &creditHours,
+	}
+
+	if err := env.DB.Create(class).Error; err != nil {
+		return nil, err
+	}
+
+	return class, nil
+}
+
+func (env *TestEnv) CreateTestEnrollment(classID, userID uint, status models.ProgramEnrollmentStatus) (*models.ProgramClassEnrollment, error) {
+	enrollment := &models.ProgramClassEnrollment{
+		ClassID:          classID,
+		UserID:           userID,
+		EnrollmentStatus: status,
+	}
+
+	if err := env.DB.Create(enrollment).Error; err != nil {
+		return nil, err
+	}
+
+	return enrollment, nil
+}
+
+func (env *TestEnv) GetEnrollmentTimestamps(enrollmentID uint) (enrolledAt, endedAt *time.Time, err error) {
+	var enrollment models.ProgramClassEnrollment
+	if err := env.DB.First(&enrollment, "id = ?", enrollmentID).Error; err != nil {
+		return nil, nil, err
+	}
+	return enrollment.EnrolledAt, enrollment.EnrollmentEndedAt, nil
+}
