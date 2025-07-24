@@ -22,6 +22,11 @@
     body {
         @apply text-body-text font-inter font-medium;
     }
+    html,
+    body,
+    #root {
+        height: 100%;
+    }
 }
 
 @layer components {
