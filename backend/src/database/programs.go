@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -482,11 +483,11 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		case "attendance_rate":
 			tx = tx.Where(fmt.Sprintf("attendance_rate %s", val))
 		case "pt.program_types":
-			tx = tx.Where("pt.program_types ILIKE ?", val)
+			tx = tx.Where("pt.program_types ~* ?", val)
 		case "pct.credit_types":
-			tx = tx.Where("pct.credit_types ILIKE ?", val)
+			tx = tx.Where("pct.credit_types ~* ?", val)
 		case "programs.funding_type":
-			tx = tx.Where("programs.funding_type = ?", val)
+			tx = tx.Where("programs.funding_type IN (?)", strings.Split(val, "|"))
 		case "programs.is_active":
 			tx = tx.Where("programs.is_active = ?", val)
 		}

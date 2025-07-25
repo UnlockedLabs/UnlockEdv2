@@ -350,6 +350,7 @@ export default function ProgramManagement() {
 
     useEffect(() => {
         const filterQueryParams = filters
+            .filter((f) => f.value !== '')
             .map((f) => `filter_${f.column}=${f.value}`)
             .join('&');
         setFilterQueryString(filterQueryParams);
