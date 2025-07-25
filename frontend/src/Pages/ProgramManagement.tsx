@@ -340,7 +340,6 @@ export default function ProgramManagement() {
     }
 
     function onApplyFilter(filter: Filter) {
-        console.log(filter);
         setFilters((prev: Filter[]) => [...prev, filter]);
         setPage(1);
     }

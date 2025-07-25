@@ -125,11 +125,10 @@ export function FilterPillButton({
     onApplyFilter: (filter: Filter) => void;
     onRemoveFilter: (column: string) => void;
 }) {
+    const defaultCol = columns[Object.keys(columns)[0]];
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [openDropdown, setOpenDropdown] = useState(false);
-    const [selectedColumn, setSelectedColumn] = useState<string>(
-        columns[Object.keys(columns)[0]]
-    );
+    const [selectedColumn, setSelectedColumn] = useState<string>(defaultCol);
     const [selectedValue, setSelectedValue] = useState<string>('');
 
     useEffect(() => {
@@ -169,7 +168,6 @@ export function FilterPillButton({
                 !dropdownRef.current.contains(event.target as Node)
             ) {
                 setOpenDropdown(false);
-                resetSort();
             }
         };
 
@@ -182,7 +180,7 @@ export function FilterPillButton({
     function resetSort(column?: string) {
         onRemoveFilter(column ?? selectedColumn);
         setOpenDropdown(false);
-        setSelectedColumn(columns[Object.keys(columns)[0]]);
+        setSelectedColumn(defaultCol);
         setSelectedValue('');
     }
 
@@ -221,12 +219,6 @@ export function FilterPillButton({
         });
     }
 
-    function changeSelectedColumn(column: string) {
-        onRemoveFilter(selectedColumn);
-        setSelectedColumn(column);
-        setSelectedValue('');
-    }
-
     return (
         <div
             ref={dropdownRef}
@@ -237,7 +229,11 @@ export function FilterPillButton({
             {renderExistingFilters()}
             <button
                 className={`${buttonClassName} ${openDropdown ? 'bg-grey-1' : ''}`}
-                onClick={() => setOpenDropdown(true)}
+                onClick={() => {
+                    setOpenDropdown(true);
+                    setSelectedColumn(defaultCol);
+                    setSelectedValue('');
+                }}
             >
                 <ULIComponent icon={PlusIcon} />
                 <label className="body cursor-pointer">Filter</label>
@@ -248,7 +244,7 @@ export function FilterPillButton({
                         <DropdownControl
                             value={selectedColumn}
                             enumType={columns}
-                            customCallback={changeSelectedColumn}
+                            setState={setSelectedColumn}
                             small={true}
                         />
                         {selectedColumn && renderSecondDropdown()}
