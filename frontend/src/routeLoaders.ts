@@ -258,3 +258,8 @@ function redirectOnError<T>(resp: ServerResponse<T>) {
     }
     return redirect('/error');
 }
+
+export const getFilterDropdowns: LoaderFunction = async () => {
+    const resp = await API.get(`programs/filters`);
+    return json(resp.data);
+};

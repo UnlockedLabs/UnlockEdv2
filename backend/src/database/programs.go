@@ -399,7 +399,7 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	return programsFacilityStats, nil
 }
 
-func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
+func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole, filters map[string]string) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
 	var tableName string
 	var totalActiveFacilitiesQuery string
@@ -470,6 +470,26 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.program_id IN (?)", args.Tags)
+	}
+	for col, val := range filters {
+		switch col {
+		case "programs.name":
+			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
+		case "mr.total_enrollments", "mr.total_active_enrollments", "mr.total_classes", "mr.total_active_facilities":
+			tx = tx.Where(fmt.Sprintf("%s %s", col, val))
+		case "completion_rate":
+			tx = tx.Where(fmt.Sprintf("completion_rate %s", val))
+		case "attendance_rate":
+			tx = tx.Where(fmt.Sprintf("attendance_rate %s", val))
+		case "pt.program_types":
+			tx = tx.Where("pt.program_types ILIKE ?", val)
+		case "pct.credit_types":
+			tx = tx.Where("pct.credit_types ILIKE ?", val)
+		case "programs.funding_type":
+			tx = tx.Where("programs.funding_type = ?", val)
+		case "programs.is_active":
+			tx = tx.Where("programs.is_active = ?", val)
+		}
 	}
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())

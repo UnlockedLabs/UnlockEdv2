@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,6 +17,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 	axx := models.ProgramAccess
 	return []routeDef{
 		featureRoute("GET /api/programs", srv.handleIndexPrograms, axx),
+		featureRoute("GET /api/programs/filters", srv.handleGetProgramFilters, axx),
 		featureRoute("GET /api/programs/{id}", srv.handleShowProgram, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, axx),
@@ -81,7 +83,15 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 		timeFilter = -1
 	}
 	includeArchived := r.URL.Query().Get("include_archived") == "true"
-	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter, includeArchived, adminRole)
+	filters := make(map[string]string, 11)
+	for key, values := range r.URL.Query() {
+		fmt.Println(key)
+		if strings.HasPrefix(key, "filter_") && len(values) > 0 {
+			fmt.Printf("key: %s, value: %s\n", key, values[0])
+			filters[strings.TrimPrefix(key, "filter_")] = values[0]
+		}
+	}
+	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter, includeArchived, adminRole, filters)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -323,4 +333,18 @@ func (srv *Server) handleExportProgramCSV(w http.ResponseWriter, r *http.Request
 		return newInternalServerServiceError(writeErr, "Failed to write CSV data")
 	}
 	return nil
+}
+
+func (srv *Server) handleGetProgramFilters(w http.ResponseWriter, r *http.Request, log sLog) error {
+	type EnumResponse struct {
+		FundingTypes []models.FundingType `json:"funding_types"`
+		ProgramTypes []models.ProgType    `json:"program_types"`
+		CreditTypes  []models.CreditType  `json:"credit_types"`
+	}
+	resp := EnumResponse{
+		FundingTypes: models.AllFundingTypes,
+		ProgramTypes: models.AllProgTypes,
+		CreditTypes:  models.AllCreditTypes,
+	}
+	return writeJsonResponse(w, http.StatusOK, resp)
 }
