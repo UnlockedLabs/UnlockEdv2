@@ -6,8 +6,8 @@ import TealPill from './TealPill';
 import { useDebounceValue } from 'usehooks-ts';
 import { MultiSelectDropdown } from '../inputs';
 import { Option } from '@/common';
+import { buttonClassName } from './SortByPillButton';
 
-const buttonClassName = `flex gap-1 items-center catalog-pill !m-0 text-grey-3 hover:bg-grey-1`;
 // BUG: the appearance of the number options in the pills appears as the value, when it should be the key
 
 function NumberDropdown({
