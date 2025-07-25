@@ -218,7 +218,7 @@ export default function ProgramManagement() {
             key: 'Status',
             value: 'programs.is_active',
             type: FilterOptionType.category,
-            categories: null
+            categories: ['Available', 'Inactive', 'Archived']
         }
     ];
 
