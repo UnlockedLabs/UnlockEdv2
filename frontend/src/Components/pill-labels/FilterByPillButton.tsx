@@ -4,8 +4,11 @@ import ULIComponent from '../ULIComponent';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import TealPill from './TealPill';
 import { useDebounceValue } from 'usehooks-ts';
+import { MultiSelectDropdown } from '../inputs';
+import { Option } from '@/common';
 
 const buttonClassName = `flex gap-1 items-center catalog-pill !m-0 text-grey-3 hover:bg-grey-1`;
+// BUG: the appearance of the number options in the pills appears as the value, when it should be the key
 
 function NumberDropdown({
     setSelectedValue
@@ -76,22 +79,32 @@ function FilterCategoryDropdown({
     option: FilterOptions;
 }) {
     if (option.categories === null) return null;
-    const categoriesEnum: Record<string, string> = option.categories.reduce(
-        (obj, category) => {
-            obj[category.replace(/_/g, ' ')] = category;
-            return obj;
-        },
-        {} as Record<string, string>
+    const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+    const categoriesOptions: Option[] = option.categories.map(
+        (category, index) => ({
+            key: index,
+            value: category.replace(/_/g, ' ')
+        })
     );
     useEffect(() => {
-        setSelectedValue(Object.values(categoriesEnum)[0]);
-    }, []);
+        if (selectedCategories.length === 0) setSelectedValue('');
+        const query =
+            option.categories &&
+            selectedCategories.map((i) => `${option.categories![i]}`).join('|');
+        setSelectedValue(query);
+    }, [selectedCategories, option.categories]);
+
     return (
-        <DropdownControl
-            enumType={categoriesEnum}
-            small={true}
-            setState={setSelectedValue}
-        />
+        <div className="w-48">
+            <MultiSelectDropdown
+                options={categoriesOptions}
+                selectedOptions={selectedCategories}
+                onSelectionChange={setSelectedCategories}
+                onBlurSearch={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
+                small={true}
+                label={`Select ${option.key}`}
+            />
+        </div>
     );
 }
 
@@ -125,17 +138,14 @@ export function FilterPillButton({
     onApplyFilter: (filter: Filter) => void;
     onRemoveFilter: (column: string) => void;
 }) {
-    const defaultCol = columns[Object.keys(columns)[0]];
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [openDropdown, setOpenDropdown] = useState(false);
-    const [selectedColumn, setSelectedColumn] = useState<string>(defaultCol);
+    const [selectedColumn, setSelectedColumn] = useState<string>('');
     const [selectedValue, setSelectedValue] = useState<string>('');
 
     useEffect(() => {
-        if (selectedValue !== '') {
-            onRemoveFilter(selectedColumn);
-            onApplyFilter({ column: selectedColumn, value: selectedValue });
-        }
+        onRemoveFilter(selectedColumn);
+        onApplyFilter({ column: selectedColumn, value: selectedValue });
     }, [selectedValue]);
 
     function renderSecondDropdown() {
@@ -180,7 +190,7 @@ export function FilterPillButton({
     function resetSort(column?: string) {
         onRemoveFilter(column ?? selectedColumn);
         setOpenDropdown(false);
-        setSelectedColumn(defaultCol);
+        setSelectedColumn('');
         setSelectedValue('');
     }
 
@@ -226,18 +236,18 @@ export function FilterPillButton({
             className="relative flex items-center"
             tabIndex={-1}
         >
-            {renderExistingFilters()}
             <button
                 className={`${buttonClassName} ${openDropdown ? 'bg-grey-1' : ''}`}
                 onClick={() => {
                     setOpenDropdown(true);
-                    setSelectedColumn(defaultCol);
+                    setSelectedColumn('');
                     setSelectedValue('');
                 }}
             >
                 <ULIComponent icon={PlusIcon} />
                 <label className="body cursor-pointer">Filter</label>
             </button>
+            {renderExistingFilters()}
             {openDropdown && (
                 <ul className="card bg-grey-1 absolute top-full mt-2 z-10 p-4">
                     <li className="flex flex-row gap-2 items-center">
@@ -246,8 +256,16 @@ export function FilterPillButton({
                             enumType={columns}
                             setState={setSelectedColumn}
                             small={true}
+                            blockedDefault={true}
                         />
-                        {selectedColumn && renderSecondDropdown()}
+                        {selectedColumn && (
+                            <div
+                                key={selectedColumn}
+                                className="flex flex-row gap-1 items-center"
+                            >
+                                {renderSecondDropdown()}
+                            </div>
+                        )}
                     </li>
                 </ul>
             )}
