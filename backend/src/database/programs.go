@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -399,7 +400,18 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	return programsFacilityStats, nil
 }
 
-func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
+func parseOperatorAndValue(input string) (string, string) {
+	ops := []string{">=", "<=", "!=", "=", ">", "<"}
+	for _, op := range ops {
+		if strings.HasPrefix(input, op) {
+			return op, strings.TrimSpace(input[len(op):])
+		}
+	}
+	// Default fallback
+	return "=", strings.TrimSpace(input)
+}
+
+func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole, filters map[string]string) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
 	var tableName string
 	var totalActiveFacilitiesQuery string
@@ -470,6 +482,36 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.program_id IN (?)", args.Tags)
+	}
+	for col, val := range filters {
+		switch col {
+		case "programs.name":
+			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
+		case "mr.total_enrollments", "mr.total_active_enrollments", "mr.total_classes", "mr.total_active_facilities":
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Where(fmt.Sprintf("%s %s ?", col, op), num)
+		case "completion_rate":
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Having("(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 "+op+" ?", num)
+		case "attendance_rate":
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Having("(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 "+op+" ?", num)
+		case "pt.program_types":
+			tx = tx.Where("pt.program_types ~* ?", val)
+		case "pct.credit_types":
+			tx = tx.Where("pct.credit_types ~* ?", val)
+		case "programs.funding_type":
+			tx = tx.Where("programs.funding_type IN (?)", strings.Split(val, "|"))
+		case "programs.is_active":
+			switch val {
+			case "Available":
+				tx = tx.Where("programs.is_active = ?", true)
+			case "Archived":
+				tx = tx.Where("programs.archived_at IS NOT NULL")
+			case "Inactive":
+				tx = tx.Where("programs.is_active = ?", false)
+			}
+		}
 	}
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
