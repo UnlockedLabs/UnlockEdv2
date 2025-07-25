@@ -9,7 +9,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import DropdownControl from '../inputs/DropdownControl';
 import TealPill from './TealPill';
 
-const buttonClassName = `flex gap-1 items-center catalog-pill !m-0 text-grey-3 hover:bg-grey-1`;
+export const buttonClassName = `flex gap-1 items-center catalog-pill !m-0 text-grey-3 hover:bg-grey-1`;
 export function SortPillButton({
     columns,
     appliedSort,

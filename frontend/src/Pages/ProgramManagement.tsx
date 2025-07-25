@@ -1,5 +1,5 @@
 import { canSwitchFacility, isAdministrator, useAuth } from '@/useAuth';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     ServerResponseMany,
@@ -23,9 +23,15 @@ import {
 } from '@/Components/helperFunctions';
 import { AddButton } from '@/Components/inputs';
 import ProgramStatus from '@/Components/ProgramStatus';
-import { useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import API from '@/api/api';
-import { SortPillButton } from '@/Components/pill-labels/SortFilterPillButtons';
+import { SortPillButton } from '@/Components/pill-labels/SortByPillButton';
+import {
+    Filter,
+    FilterOptions,
+    FilterOptionType,
+    FilterPillButton
+} from '@/Components/pill-labels/FilterByPillButton';
 
 export function ProgramRow({
     program,
@@ -116,12 +122,17 @@ export function ProgramRow({
 
 export default function ProgramManagement() {
     const { user } = useAuth();
+    const { funding_types, credit_types, program_types } = useLoaderData() as {
+        funding_types: string[];
+        credit_types: string[];
+        program_types: string[];
+    };
     const { statsCols, tableColsLen } =
         user?.role === UserRole.FacilityAdmin
             ? { statsCols: 'grid-cols-4', tableColsLen: 'grid-cols-10' }
             : { statsCols: 'grid-cols-5', tableColsLen: 'grid-cols-11' };
     const tableCols = {
-        Name: 'name',
+        Name: 'programs.name',
         ...(user?.role !== UserRole.FacilityAdmin
             ? {
                   '# of Facilities Assigned': 'mr.total_active_facilities',
@@ -132,11 +143,84 @@ export default function ProgramManagement() {
         'Total Classes': 'mr.total_classes',
         'Avg. Completion Rate': 'completion_rate',
         'Avg. Attendance Rate': 'attendance_rate',
-        Category: 'programs.category',
-        'Credit Type': 'pct.credit_type',
+        Category: 'pt.program_types',
+        'Credit Type': 'pct.credit_types',
         'Funding Type': 'programs.funding_type',
         Status: 'programs.is_active'
     };
+
+    const filterMapping: FilterOptions[] = [
+        {
+            key: 'Name',
+            value: 'programs.name',
+            type: FilterOptionType.string,
+            categories: null
+        },
+        ...(user?.role !== UserRole.FacilityAdmin
+            ? [
+                  {
+                      key: '# of Facilities Assigned',
+                      value: 'mr.total_active_facilities',
+                      type: FilterOptionType.number,
+                      categories: null
+                  }
+              ]
+            : []),
+        {
+            key: 'Total Enrollments',
+            value: 'mr.total_enrollments',
+            type: FilterOptionType.number,
+            categories: null
+        },
+        {
+            key: 'Active Enrollments',
+            value: 'mr.total_active_enrollments',
+            type: FilterOptionType.number,
+            categories: null
+        },
+        {
+            key: 'Total Classes',
+            value: 'mr.total_classes',
+            type: FilterOptionType.number,
+            categories: null
+        },
+        {
+            key: 'Avg. Completion Rate',
+            value: 'completion_rate',
+            type: FilterOptionType.number,
+            categories: null
+        },
+        {
+            key: 'Avg. Attendance Rate',
+            value: 'attendance_rate',
+            type: FilterOptionType.number,
+            categories: null
+        },
+        {
+            key: 'Category',
+            value: 'pt.program_types',
+            type: FilterOptionType.category,
+            categories: program_types
+        },
+        {
+            key: 'Credit Type',
+            value: 'pct.credit_types',
+            type: FilterOptionType.category,
+            categories: credit_types
+        },
+        {
+            key: 'Funding Type',
+            value: 'programs.funding_type',
+            type: FilterOptionType.category,
+            categories: funding_types
+        },
+        {
+            key: 'Status',
+            value: 'programs.is_active',
+            type: FilterOptionType.category,
+            categories: null
+        }
+    ];
 
     if (!isAdministrator(user)) {
         return;
@@ -151,6 +235,8 @@ export default function ProgramManagement() {
     const [appliedSort, setAppliedSort] = useState(false);
     const [order, setOrder] = useState('');
     const [orderBy, setOrderBy] = useState('');
+    const [filters, setFilters] = useState<Filter[]>([]);
+    const [filterQueryString, setFilterQueryString] = useState<string>('');
 
     const navigate = useNavigate();
 
@@ -180,7 +266,7 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=${order}&order_by=${orderBy}&include_archived=${includeArchived}`
+        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=${order}&order_by=${orderBy}&include_archived=${includeArchived}&${filterQueryString}`
     );
     const meta = programs?.meta;
 
@@ -252,6 +338,23 @@ export default function ProgramManagement() {
         setOrder(order);
         setOrderBy(column);
     }
+
+    function onApplyFilter(filter: Filter) {
+        console.log(filter);
+        setFilters((prev: Filter[]) => [...prev, filter]);
+        setPage(1);
+    }
+
+    function onRemoveFilter(column: string) {
+        setFilters((prev: Filter[]) => prev.filter((f) => f.column !== column));
+    }
+
+    useEffect(() => {
+        const filterQueryParams = filters
+            .map((f) => `filter_${f.column}=${f.value}`)
+            .join('&');
+        setFilterQueryString(filterQueryParams);
+    }, [filters]);
 
     return (
         <div className="px-5 py-4 flex flex-col gap-4 overflow-x-hidden">
@@ -366,6 +469,13 @@ export default function ProgramManagement() {
                         setAppliedSort: setAppliedSort
                     }}
                     orderCallback={orderCallback}
+                />
+                <FilterPillButton
+                    filters={filters}
+                    columns={tableCols}
+                    filterOptions={filterMapping}
+                    onApplyFilter={onApplyFilter}
+                    onRemoveFilter={onRemoveFilter}
                 />
             </div>
             <div className="card px-6 pb-6 space-y-4">
