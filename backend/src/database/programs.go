@@ -400,6 +400,17 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	return programsFacilityStats, nil
 }
 
+func parseOperatorAndValue(input string) (string, string) {
+	ops := []string{">=", "<=", "!=", "=", ">", "<"}
+	for _, op := range ops {
+		if strings.HasPrefix(input, op) {
+			return op, strings.TrimSpace(input[len(op):])
+		}
+	}
+	// Default fallback
+	return "=", strings.TrimSpace(input)
+}
+
 func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole, filters map[string]string) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
 	var tableName string
@@ -477,11 +488,14 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		case "programs.name":
 			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
 		case "mr.total_enrollments", "mr.total_active_enrollments", "mr.total_classes", "mr.total_active_facilities":
-			tx = tx.Where(fmt.Sprintf("%s %s", col, val))
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Where(fmt.Sprintf("%s %s ?", col, op), num)
 		case "completion_rate":
-			tx = tx.Where(fmt.Sprintf("completion_rate %s", val))
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Having("(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 "+op+" ?", num)
 		case "attendance_rate":
-			tx = tx.Where(fmt.Sprintf("attendance_rate %s", val))
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Having("(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 "+op+" ?", num)
 		case "pt.program_types":
 			tx = tx.Where("pt.program_types ~* ?", val)
 		case "pct.credit_types":
