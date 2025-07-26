@@ -28,7 +28,7 @@ export const EditFacilityModal = forwardRef(function (
         <FormModal
             title="Edit Facility"
             inputs={facilityInputs}
-            defaultValues={target ?? undefined}
+            defaultValues={target ? target : undefined}
             onSubmit={updateFacility}
             ref={editFacilityModal}
             showCancel={true}

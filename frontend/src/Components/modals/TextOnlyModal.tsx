@@ -41,7 +41,7 @@ export const TextOnlyModal = forwardRef(function TextModal(
                 if (event.key === 'Escape') onClose();
             }}
         >
-            <div className={`modal-box ` + (width ?? '')}>
+            <div className={`modal-box ` + (width ? width : '')}>
                 <CloseX close={onClose} />
                 <div className="flex flex-col gap-6">
                     <span className={`text-3xl font-semibold text-neutral`}>

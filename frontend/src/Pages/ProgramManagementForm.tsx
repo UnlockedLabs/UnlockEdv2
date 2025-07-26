@@ -181,7 +181,7 @@ export default function ProgramManagementForm() {
         const selectedIDs = selected.map((selectedOpt) =>
             String(selectedOpt.value)
         );
-        const currentIDs = options.map((option) => String(option.value.value));
+        const currentIDs = options.map((option) => String(option.value));
         const removedIDs = currentIDs.filter((id) => !selectedIDs.includes(id));
         const disabledIDs = removedIDs.filter((id) =>
             activeClassIDs.includes(id)
@@ -194,12 +194,12 @@ export default function ProgramManagementForm() {
             ]);
 
             return options.filter((option) =>
-                preservedSet.has(String(option.value.value))
+                preservedSet.has(String(option.value))
             );
         }
 
         if (selected.find((opt) => opt.value === 'all')) {
-            return options.filter((opt) => String(opt.value.value) !== 'all');
+            return options.filter((opt) => String(opt.value) !== 'all');
         }
         return selected;
     }

@@ -296,7 +296,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                         register={register}
                         interfaceRef={startDateRef}
                         required
-                        errors={formErrors ?? {}}
+                        errors={formErrors ? formErrors : {}}
                         disabled={disabled}
                         {...(!formErrors && {
                             onChange: () => {
@@ -430,7 +430,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                                 register={register}
                                 interfaceRef={endDateRef}
                                 getValues={getValues}
-                                errors={formErrors ?? {}}
+                                errors={formErrors ? formErrors : {}}
                                 required={endOption === 'until'}
                                 disabled={disabled}
                                 {...(!formErrors && {

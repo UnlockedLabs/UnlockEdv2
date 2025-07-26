@@ -1,9 +1,4 @@
-import {
-    Calendar,
-    CalendarProps,
-    momentLocalizer,
-    View
-} from 'react-big-calendar';
+import { Calendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { FacilityProgramClassEvent, ShortCalendarEvent } from '@/common';
@@ -17,10 +12,6 @@ interface EventCalendarProps {
     classId?: string;
     handleDateClick?: (event: FacilityProgramClassEvent) => void;
 }
-
-const TypedCalendar = Calendar as unknown as React.ComponentType<
-    CalendarProps<FacilityProgramClassEvent>
->;
 
 export default function EventCalendar({
     events,
@@ -46,7 +37,7 @@ export default function EventCalendar({
     scrollTime.setHours(6, 0, 0, 0);
     return (
         <div className="p-4">
-            <TypedCalendar
+            <Calendar
                 localizer={localizer}
                 events={events as FacilityProgramClassEvent[]}
                 startAccessor="start"
