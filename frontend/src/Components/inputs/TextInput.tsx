@@ -1,32 +1,36 @@
-import { FieldErrors, UseFormRegister, Validate } from 'react-hook-form';
-import { Pattern } from '../modals';
+import React from 'react';
+import {
+    UseFormRegister,
+    Validate,
+    FieldValues,
+    Path,
+    FieldErrors
+} from 'react-hook-form';
 
-interface TextProps {
+interface TextProps<T extends FieldValues> {
     label?: string;
-    interfaceRef: string;
+    interfaceRef: Path<T>; // Must be Path<T>
     required?: boolean;
-    length: number | undefined;
-    errors: FieldErrors<any>; // eslint-disable-line
-    register: UseFormRegister<any>; // eslint-disable-line
+    length?: number;
+    register: UseFormRegister<T>;
     password?: boolean;
     isFocused?: boolean;
     autoComplete?: string;
-    pattern?: Pattern;
-    validate?:
-        | Validate<any, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    pattern?: RegExp;
+    validate?: Validate<T, unknown> | Record<string, Validate<T, unknown>>;
     disabled?: boolean;
     defaultValue?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;
     placeholder?: string;
     inputClassName?: string;
+    errors?: FieldErrors<T>;
 }
-export function TextInput({
+
+export const TextInput = <T extends FieldValues>({
     label,
     interfaceRef,
     required = false,
     length,
-    errors,
     register,
     password = false,
     isFocused = false,
@@ -37,24 +41,43 @@ export function TextInput({
     defaultValue,
     onChange,
     placeholder,
-    inputClassName
-}: TextProps) {
+    inputClassName = '',
+    errors
+}: TextProps<T>) => {
     const options = {
-        required: {
-            value: required,
-            message: `${label} is required`
-        },
-        ...(length && {
-            maxLength: {
-                value: length,
-                message: `${label} should be ${length} characters or less`
-            }
-        }),
-        ...(pattern && { pattern }),
-        ...(validate && { validate })
+        required: required
+            ? {
+                  value: true,
+                  message: `${label ?? 'Field'} is required`
+              }
+            : false,
+        ...(length !== undefined
+            ? {
+                  maxLength: {
+                      value: length,
+                      message: `${label ?? 'Field'} should be ${length} characters or less`
+                  }
+              }
+            : {}),
+        ...(pattern !== undefined ? { pattern } : {}),
+        ...(validate !== undefined ? { validate } : {})
     };
+
     const registerProps = register(interfaceRef, options);
-    const { onChange: rhfOnChange, ...restRegisterProps } = registerProps;
+    const {
+        onChange: rhfOnChange,
+        ref: registerRef,
+        ...restRegisterProps
+    } = registerProps;
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+        void rhfOnChange(event);
+
+        if (onChange) {
+            onChange(event);
+        }
+    };
+
     return (
         <label className="form-control">
             {label && (
@@ -62,24 +85,24 @@ export function TextInput({
                     <span className="label-text">{label}</span>
                 </div>
             )}
-
             <input
-                type={`${password ? 'password' : 'text'}`}
-                className={`input input-bordered w-full ${inputClassName}`}
                 {...restRegisterProps}
+                ref={registerRef}
+                type={password ? 'password' : 'text'}
+                className={`input input-bordered w-full ${inputClassName}`}
                 autoComplete={autoComplete}
                 defaultValue={defaultValue}
                 autoFocus={isFocused}
                 disabled={disabled}
-                onChange={(e) => {
-                    if (rhfOnChange) void rhfOnChange(e);
-                    if (onChange) void onChange(e);
-                }}
                 placeholder={placeholder}
+                onChange={handleChange}
             />
-            <div className="text-error text-sm">
-                {errors[interfaceRef]?.message as string}
-            </div>
+            {/* Display error message if present */}
+            {errors && errors[interfaceRef] && (
+                <div className="text-error text-sm mt-1">
+                    {errors[interfaceRef]?.message?.toString()}
+                </div>
+            )}
         </label>
     );
-}
+};

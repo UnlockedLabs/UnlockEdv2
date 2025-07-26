@@ -46,7 +46,7 @@ interface LocalRowData {
 }
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
-type FormData = Record<string, string>;
+type AttendanceFormValues = Record<`note_${number}`, string>;
 
 export default function EventAttendance() {
     const { class_id, event_id, date } = useParams<{
@@ -54,12 +54,8 @@ export default function EventAttendance() {
         class_id: string;
         date: string;
     }>();
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        formState: { errors }
-    } = useForm<FormData>();
+    const { register, handleSubmit, getValues, setValue, trigger } =
+        useForm<AttendanceFormValues>();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState(
         FilterResidentNames['Resident Name (A-Z)']
@@ -168,57 +164,43 @@ export default function EventAttendance() {
         setPageQuery(1);
     };
 
-    function handleNoteChange(user_id: number, newNote: string) {
-        const currentRow = rows.find((r) => r.user_id === user_id);
-        setModifiedRows((prev) => ({
-            ...prev,
-            [user_id]: {
-                ...(currentRow ?? {}),
-                ...(prev[user_id] ?? {}),
-                selected: true,
-                note: newNote
-            }
-        }));
-    }
-
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {
-        const currentRow = rows.find((r) => r.user_id === user_id) ?? {
-            selected: false,
-            user_id: user_id,
-            doc_id: '',
-            name_last: '',
-            name_first: '',
-            attendance_status: newStatus
-        };
-        setModifiedRows((prev) => ({
-            ...prev,
-            [user_id]: {
-                ...currentRow,
-                ...prev[user_id],
-                selected: true,
-                attendance_status: newStatus,
-                note:
-                    newStatus === Attendance.Present ? '' : prev[user_id]?.note
-            }
-        }));
+        if (newStatus === Attendance.Present) {
+            setValue(`note_${user_id}`, '');
+        } else {
+            void trigger(`note_${user_id}`);
+        }
+
+        setModifiedRows((prev) => {
+            const current = prev[user_id] ?? {
+                ...rows.find((r) => r.user_id === user_id)
+            };
+            current.attendance_status = newStatus;
+            return { ...prev, [user_id]: current };
+        });
     }
 
     async function submitAttendanceForRows(updatedRows: LocalRowData[]) {
-        const notes = getValues();
-        const payload = updatedRows
-            .filter((row) => row.selected)
-            .map((row) => ({
-                user_id: row.user_id,
-                event_id: Number(event_id),
-                date: date,
-                attendance_status: row?.attendance_status,
-                note: notes[`note_${row.user_id}`] ?? ''
-            }));
-        if (payload.length > 0) {
-            await API.post(
-                `program-classes/${class_id}/events/${event_id}/attendance`,
-                payload
-            );
+        try {
+            const notes = getValues();
+            const payload = updatedRows
+                .filter((row) => row.selected)
+                .map((row) => ({
+                    user_id: row.user_id,
+                    event_id: Number(event_id),
+                    date: date,
+                    attendance_status: row?.attendance_status,
+                    note: notes[`note_${row.user_id}`] ?? ''
+                }));
+            if (payload.length > 0) {
+                await API.post(
+                    `program-classes/${class_id}/events/${event_id}/attendance`,
+                    payload
+                );
+            }
+        } catch (error) {
+            console.error('Failed to submit attendance:', error);
+            toaster('Failed to save attendance', ToastState.error);
         }
     }
 
@@ -317,7 +299,7 @@ export default function EventAttendance() {
                                         </td>
                                         <td>
                                             {' '}
-                                            {row.doc_id == ''
+                                            {row.doc_id === ''
                                                 ? ' '
                                                 : `${row.doc_id}`}
                                         </td>
@@ -342,32 +324,22 @@ export default function EventAttendance() {
                                                 label=""
                                                 defaultValue={row.note}
                                                 disabled={
-                                                    !(
-                                                        row.attendance_status &&
-                                                        row.attendance_status !==
-                                                            Attendance.Present
-                                                    )
+                                                    row.attendance_status ===
+                                                    Attendance.Present
                                                 }
                                                 inputClassName={
-                                                    !(
-                                                        row.attendance_status &&
-                                                        row.attendance_status !==
-                                                            Attendance.Present
-                                                    )
+                                                    row.attendance_status ===
+                                                    Attendance.Present
                                                         ? 'opacity-40'
                                                         : ''
                                                 }
                                                 interfaceRef={`note_${row.user_id}`}
-                                                required={false}
-                                                length={500}
-                                                errors={errors}
-                                                register={register}
-                                                onChange={(e) =>
-                                                    handleNoteChange(
-                                                        row.user_id,
-                                                        e.target.value
-                                                    )
+                                                required={
+                                                    row.attendance_status !==
+                                                    Attendance.Present
                                                 }
+                                                length={500}
+                                                register={register}
                                             />
                                         </td>
                                     </tr>
@@ -409,8 +381,8 @@ export default function EventAttendance() {
                 type={TextModalType.Confirm}
                 title="Mark All Present"
                 text={`Are you sure you want to mark all ${rows.length} residents on this page as "Present"? This will override any existing attendance status.`}
-                onSubmit={() => void handleMarkAllPresent()}
-                onClose={() => void closeModal(markAllPresentModal)}
+                onSubmit={() => handleMarkAllPresent()}
+                onClose={() => closeModal(markAllPresentModal)}
             />
         </div>
     );
