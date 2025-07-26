@@ -132,7 +132,9 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                         <TextInput
                                             key={index}
                                             label={input.label}
-                                            interfaceRef={input.interfaceRef}
+                                            interfaceRef={
+                                                input.interfaceRef as import('react-hook-form').Path<T>
+                                            }
                                             required={input.required}
                                             length={input.length}
                                             errors={errors}

@@ -6,7 +6,7 @@ import {
     useLoaderData
 } from 'react-router-dom';
 import useSWR from 'swr';
-import { useForm, UseFormRegister, FieldValues } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import {
@@ -46,7 +46,7 @@ interface LocalRowData {
 }
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
-type FormData = Record<string, string>;
+type AttendanceFormValues = Record<`note_${number}`, string>;
 
 export default function EventAttendance() {
     const { class_id, event_id, date } = useParams<{
@@ -55,7 +55,7 @@ export default function EventAttendance() {
         date: string;
     }>();
     const { register, handleSubmit, getValues, setValue, trigger } =
-        useForm<FormData>();
+        useForm<AttendanceFormValues>();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState(
         FilterResidentNames['Resident Name (A-Z)']
@@ -181,21 +181,26 @@ export default function EventAttendance() {
     }
 
     async function submitAttendanceForRows(updatedRows: LocalRowData[]) {
-        const notes = getValues();
-        const payload = updatedRows
-            .filter((row) => row.selected)
-            .map((row) => ({
-                user_id: row.user_id,
-                event_id: Number(event_id),
-                date: date,
-                attendance_status: row?.attendance_status,
-                note: notes[`note_${row.user_id}`] ?? ''
-            }));
-        if (payload.length > 0) {
-            await API.post(
-                `program-classes/${class_id}/events/${event_id}/attendance`,
-                payload
-            );
+        try {
+            const notes = getValues();
+            const payload = updatedRows
+                .filter((row) => row.selected)
+                .map((row) => ({
+                    user_id: row.user_id,
+                    event_id: Number(event_id),
+                    date: date,
+                    attendance_status: row?.attendance_status,
+                    note: notes[`note_${row.user_id}`] ?? ''
+                }));
+            if (payload.length > 0) {
+                await API.post(
+                    `program-classes/${class_id}/events/${event_id}/attendance`,
+                    payload
+                );
+            }
+        } catch (error) {
+            console.error('Failed to submit attendance:', error);
+            toaster('Failed to save attendance', ToastState.error);
         }
     }
 
@@ -294,7 +299,7 @@ export default function EventAttendance() {
                                         </td>
                                         <td>
                                             {' '}
-                                            {row.doc_id == ''
+                                            {row.doc_id === ''
                                                 ? ' '
                                                 : `${row.doc_id}`}
                                         </td>
@@ -334,9 +339,7 @@ export default function EventAttendance() {
                                                     Attendance.Present
                                                 }
                                                 length={500}
-                                                register={
-                                                    register as UseFormRegister<FieldValues>
-                                                }
+                                                register={register}
                                             />
                                         </td>
                                     </tr>
@@ -378,8 +381,8 @@ export default function EventAttendance() {
                 type={TextModalType.Confirm}
                 title="Mark All Present"
                 text={`Are you sure you want to mark all ${rows.length} residents on this page as "Present"? This will override any existing attendance status.`}
-                onSubmit={() => void handleMarkAllPresent()}
-                onClose={() => void closeModal(markAllPresentModal)}
+                onSubmit={() => handleMarkAllPresent()}
+                onClose={() => closeModal(markAllPresentModal)}
             />
         </div>
     );
