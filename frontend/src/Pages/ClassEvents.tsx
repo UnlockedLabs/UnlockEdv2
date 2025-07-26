@@ -6,6 +6,7 @@ import {
     Class,
     ClassEventInstance,
     ProgramClassEventAttendance,
+    SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -13,6 +14,12 @@ import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { parseLocalDay } from '@/Components/helperFunctions/formatting';
+import {
+    ClipboardDocumentCheckIcon,
+    EyeIcon
+} from '@heroicons/react/24/outline';
+import moment from 'moment';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
@@ -30,7 +37,7 @@ export default function ClassEvents() {
     } = useUrlPagination(1, 20);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const { register, watch } = useForm<{ selectedMonth: string }>({
+    const { register, watch, setValue } = useForm<{ selectedMonth: string }>({
         defaultValues: { selectedMonth: defaultMonth }
     });
     const selectedMonthValue = watch('selectedMonth');
@@ -57,6 +64,13 @@ export default function ClassEvents() {
     const meta = data?.meta;
     const events = data?.data ?? [];
 
+    function isFutureDate(date: string): boolean {
+        const day = parseLocalDay(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return day > today;
+    }
+
     function getPresentCount(records: ProgramClassEventAttendance[]): number {
         return records.filter(
             (record) => record.attendance_status === Attendance.Present
@@ -81,16 +95,68 @@ export default function ClassEvents() {
         return `${startDateTime.toLocaleTimeString([], options)} – ${endDateTime.toLocaleTimeString([], options)}`;
     }
 
-    function getStatus(event: ClassEventInstance): string {
+    function getStatus(
+        program_class: Class | undefined,
+        event: ClassEventInstance
+    ): string {
         const eventDate = toLocalMidnight(event.date).getTime();
         const today = new Date().setHours(0, 0, 0, 0);
-        return event.is_cancelled
-            ? 'Cancelled'
-            : eventDate > today
-              ? 'Scheduled'
-              : event.attendance_records?.length === enrolled
-                ? 'Marked'
-                : 'Not Marked';
+        if (
+            program_class?.status === SelectedClassStatus.Cancelled ||
+            event.is_cancelled
+        ) {
+            return 'Cancelled';
+        }
+        if (eventDate > today) {
+            return 'Scheduled';
+        }
+        const expectedCount =
+            program_class?.status === SelectedClassStatus.Completed
+                ? program_class.completed
+                : program_class?.enrolled;
+        if (event.attendance_records?.length === expectedCount) {
+            return 'Marked';
+        }
+        return 'Unmarked';
+    }
+
+    function AttendanceAction({ event }: { event: ClassEventInstance }) {
+        const isViewOnly = blockEdits || event.is_cancelled;
+        const isFuture = isFutureDate(event.date);
+
+        if (isViewOnly) {
+            return (
+                <div
+                    className="cursor-pointer"
+                    onClick={() =>
+                        handleViewEditMarkAttendance(event.event_id, event.date)
+                    }
+                >
+                    <EyeIcon className="w-4 h-4 inline-block mr-1" />
+                    <span className="hover:underline">View attendance</span>
+                </div>
+            );
+        }
+
+        if (isFuture) {
+            return (
+                <span className="text-grey-2">
+                    {`Available on ${moment(event.date).format('M/D')}`}
+                </span>
+            );
+        }
+
+        return (
+            <div
+                className="cursor-pointer"
+                onClick={() =>
+                    handleViewEditMarkAttendance(event.event_id, event.date)
+                }
+            >
+                <ClipboardDocumentCheckIcon className="w-4 h-4 inline-block mr-1" />
+                <span className="hover:underline">Mark attendance</span>
+            </div>
+        );
     }
 
     return (
@@ -104,6 +170,9 @@ export default function ClassEvents() {
                     register={register}
                     monthOnly={true}
                     disabled={false}
+                    onChange={(e: string) => {
+                        setValue('selectedMonth', e);
+                    }}
                 />
             </div>
 
@@ -126,7 +195,7 @@ export default function ClassEvents() {
                             {events.map((event) => (
                                 <tr
                                     key={`${event.event_id}-${event.date}`}
-                                    className="card grid-cols-5 justify-items-center"
+                                    className="card grid-cols-5 justify-items-center p-4"
                                 >
                                     <td className="justify-self-start px-4">
                                         {toLocalMidnight(
@@ -145,39 +214,14 @@ export default function ClassEvents() {
                                     <td className="px-5">{`${event.attendance_records ? getPresentCount(event.attendance_records) : 0} ${
                                         enrolled ? `/ ${enrolled}` : ''
                                     }`}</td>
-                                    <td className="px-5">{getStatus(event)}</td>
-                                    <td className="justify-self-end">
-                                        {event.attendance_records?.length >
-                                        0 ? (
-                                            <button
-                                                onClick={() =>
-                                                    handleViewEditMarkAttendance(
-                                                        event.event_id,
-                                                        event.date
-                                                    )
-                                                }
-                                                className="button"
-                                            >
-                                                View / Edit
-                                            </button>
-                                        ) : (
-                                            <button
-                                                disabled={
-                                                    blockEdits ||
-                                                    event.is_cancelled
-                                                }
-                                                onClick={() =>
-                                                    handleViewEditMarkAttendance(
-                                                        event.event_id,
-                                                        event.date
-                                                    )
-                                                }
-                                                className={`button ${blockEdits ? 'tooltip tooltip-left' : ''}`}
-                                                data-tip={`${blockEdits ? `This class is ${this_program?.status.toLowerCase()} and cannot be modified.` : ''}`}
-                                            >
-                                                Mark Attendance
-                                            </button>
+                                    <td className="px-5">
+                                        {getStatus(
+                                            this_program ?? undefined,
+                                            event
                                         )}
+                                    </td>
+                                    <td className="justify-self-end pr-5">
+                                        <AttendanceAction event={event} />
                                     </td>
                                 </tr>
                             ))}
