@@ -253,8 +253,8 @@ const LibrarySearchResultsModal = forwardRef<
 
     return (
         <dialog ref={ref} className="modal" onClose={handleCloseModal}>
-            <div className="relative w-[min(90vw,1200px)]  h-[min(90vh,900px)]] bg-background rounded-lg shadow-lg flex flex-col">
-                <div className="flex-shrink-0 bg-background z-50 p-4 border-b border-grey-2 rounded-t-lg">
+            <div className="w-[min(90vw,1200px)]  h-[min(90vh,900px)] bg-background rounded-lg shadow-lg flex flex-col">
+                <div className="relative flex-shrink-0 bg-background z-50 p-4 border-b border-grey-2 rounded-t-lg">
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                             <h2 className="text-2xl">{searchResults.title}</h2>
