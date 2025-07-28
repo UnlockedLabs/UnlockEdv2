@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/wader/goutubedl"
 	"gorm.io/gorm"
 )
@@ -501,12 +501,12 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 		}()
 		err = yt.uploadFileToS3(ctx, videoFile, video)
 		if err != nil {
-			logger().Errorf("error reading download result: %v", err)
+			logger().Errorf("error uploading file to S3 bucket: %v", err)
 			return err
 		}
 		err = os.Remove(videoFile.Name())
 		if err != nil {
-			logger().Errorf("error reading download result: %v", err)
+			logger().Errorf("error deleting downloaded file: %v", err)
 			return err
 		}
 	}
