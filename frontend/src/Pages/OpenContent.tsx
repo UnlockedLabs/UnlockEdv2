@@ -15,7 +15,7 @@ import {
     useLoaderData
 } from 'react-router-dom';
 import { isAdministrator, useAuth } from '@/useAuth';
-import { initialTourState, useTourContext } from '@/Context/TourContext';
+import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -104,15 +104,7 @@ export default function OpenContent() {
                         targetToStepIndexMap['#knowledge-center-fav-lib'],
                     target: '#knowledge-center-fav-lib'
                 });
-            } else {
-                setTourState({
-                    stepIndex:
-                        targetToStepIndexMap['#knowledge-center-landing'],
-                    target: '#knowledge-center-landing'
-                });
             }
-        } else if (tourState.target !== initialTourState.target) {
-            setTourState(initialTourState);
         }
     }, [isManagement, tourState, setTourState]);
 

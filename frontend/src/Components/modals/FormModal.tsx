@@ -77,7 +77,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
             setFormDataRef({ getValues, register });
         }
     }, [setFormDataRef, getValues, register]);
-    const { setTourState } = useTourContext();
+    const { tourState, setTourState } = useTourContext();
 
     useEffect(() => {
         reset(defaultValues);
@@ -96,10 +96,12 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
     };
 
     useEffect(() => {
-        setTourState({
-            stepIndex: targetToStepIndexMap['#navigate-homepage'],
-            target: '#navigate-homepage'
-        });
+        if (tourState.tourActive) {
+            setTourState({
+                stepIndex: targetToStepIndexMap['#navigate-homepage'],
+                target: '#navigate-homepage'
+            });
+        }
     }, []);
 
     return (

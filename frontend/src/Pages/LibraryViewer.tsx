@@ -229,16 +229,18 @@ export default function LibraryViewer() {
     };
 
     useEffect(() => {
-        if (tourState.target === '#top-content') {
-            setTourState({
-                stepIndex: targetToStepIndexMap['#library-viewer-favorite'],
-                target: '#library-viewer-favorite'
-            });
-        } else {
-            setTourState({
-                stepIndex: targetToStepIndexMap['#library-viewer-sub-page'],
-                target: '#library-viewer-sub-page'
-            });
+        if (tourState.tourActive) {
+            if (tourState.target === '#top-content') {
+                setTourState({
+                    stepIndex: targetToStepIndexMap['#library-viewer-favorite'],
+                    target: '#library-viewer-favorite'
+                });
+            } else {
+                setTourState({
+                    stepIndex: targetToStepIndexMap['#library-viewer-sub-page'],
+                    target: '#library-viewer-sub-page'
+                });
+            }
         }
     }, []);
 

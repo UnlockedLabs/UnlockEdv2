@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import Pagination from './Pagination';
 import { useLocation, useOutletContext } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
-import { initialTourState, useTourContext } from '@/Context/TourContext';
+import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { closeModal, showModal } from './modals';
@@ -95,8 +95,6 @@ export default function LibaryLayout({
                     target: '#knowledge-center-enter-library'
                 });
             }
-        } else {
-            setTourState(initialTourState);
         }
     }, []);
 
@@ -111,8 +109,9 @@ export default function LibaryLayout({
                             <div
                                 id="knowledge-center-enter-library"
                                 className={
+                                    tourState.tourActive &&
                                     tourState.target ===
-                                    '#knowledge-center-enter-library'
+                                        '#knowledge-center-enter-library'
                                         ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
                                         : ''
                                 }
