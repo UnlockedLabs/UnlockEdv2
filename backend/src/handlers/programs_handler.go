@@ -85,9 +85,7 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	includeArchived := r.URL.Query().Get("include_archived") == "true"
 	filters := make(map[string]string, 11)
 	for key, values := range r.URL.Query() {
-		fmt.Println(key)
 		if strings.HasPrefix(key, "filter_") && len(values) > 0 {
-			fmt.Printf("key: %s, value: %s\n", key, values[0])
 			filters[strings.TrimPrefix(key, "filter_")] = values[0]
 		}
 	}
