@@ -38,9 +38,15 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
-			return tx.WithContext(r.Context()).Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
-				Where("facility_id <> ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
-				First(&models.ProgramClass{}).Error != nil
+			var programClass models.ProgramClass
+			err := tx.WithContext(r.Context()).
+				Table("program_classes").
+				Select("facility_id").
+				Where("id IN (?)", r.URL.Query()["id"]).
+				Where("facility_id = ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+				First(&programClass).Error
+
+			return err == nil
 		}),
 		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
 	}

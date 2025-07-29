@@ -2,7 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ClassStatus string
@@ -46,22 +50,160 @@ type ProgramClass struct {
 
 func (ProgramClass) TableName() string { return "program_classes" }
 
+// AfterUpdate hook that runs when switching class status to Active to verify existing enrollments have enrolled_at set.
+func (c *ProgramClass) AfterUpdate(tx *gorm.DB) (err error) {
+
+	// We're only worried about updating enrollment IF status changes
+	if !tx.Statement.Changed("status") {
+		return nil
+	}
+
+	m, ok := tx.Statement.Dest.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("expected tx.Statement.Dest to be a map, got %T", tx.Statement.Dest)
+	}
+
+	rawStatus := m["status"]
+
+	var newClassStatus ClassStatus
+	switch val := rawStatus.(type) {
+	case string:
+		newClassStatus = ClassStatus(val)
+	case ClassStatus:
+		newClassStatus = val
+	default:
+		return fmt.Errorf("unexpected type for 'status': %T", val)
+	}
+
+	// Detect Scheduled -> Active
+	if newClassStatus != Active {
+		return nil
+	}
+
+	rawIDs, ok := tx.Get("class_ids")
+	if !ok {
+		return fmt.Errorf("missing 'class_ids' in transaction context")
+	}
+
+	classIDs, ok := rawIDs.([]int)
+	if !ok {
+		return fmt.Errorf("expected 'class_ids' to be a []int, got %T", rawIDs)
+	}
+	if len(classIDs) == 0 {
+		return nil
+	}
+
+	now := time.Now().UTC()
+
+	result := tx.Model(&ProgramClassEnrollment{}).
+		Where("class_id IN ?", classIDs).
+		Where("enrollment_status = ?", Enrolled).
+		Where("enrolled_at IS NULL").
+		Update("enrolled_at", now)
+
+	return result.Error
+}
+
 /*
 ProgramClassEnrollments is a User's enrollment in a particular Program's 'class' at their respective facility,
 meaning they will need to attend the ClassEvents for that class: tracked by ClassEventAttendance
 */
 type ProgramClassEnrollment struct {
 	DatabaseFields
-	ClassID          uint                    `json:"class_id" gorm:"not null"`
-	UserID           uint                    `json:"user_id" gorm:"not null"`
-	EnrollmentStatus ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
-	ChangeReason     string                  `json:"change_reason" gorm:"size:255" validate:"max=255"`
+	ClassID           uint                    `json:"class_id" gorm:"not null"`
+	UserID            uint                    `json:"user_id" gorm:"not null"`
+	EnrollmentStatus  ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
+	ChangeReason      string                  `json:"change_reason" gorm:"size:255" validate:"max=255"`
+	EnrolledAt        *time.Time              `json:"enrolled_at"`
+	EnrollmentEndedAt *time.Time              `json:"enrollment_ended_at"`
 
 	User  *User         `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	Class *ProgramClass `json:"class" gorm:"foreignKey:ClassID;references:ID"`
 }
 
 func (ProgramClassEnrollment) TableName() string { return "program_class_enrollments" }
+
+// BeforeCreate hook that runs to set enrolled_at when enrolling in an Active class
+func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
+	// allow calling code to override
+	if e.EnrolledAt != nil {
+		return nil
+	}
+
+	var classStatus ClassStatus
+	if e.ClassID != 0 {
+		if err := tx.Model(&ProgramClass{}).
+			Select("status").
+			Where("id = ?", e.ClassID).
+			Scan(&classStatus).Error; err != nil {
+			return err
+		}
+	}
+
+	if classStatus == Active && e.EnrollmentStatus == Enrolled {
+		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
+		return nil
+	}
+
+	return nil
+}
+
+// BeforeUpdate hook that runs to set enrolled_at if enrolling in an Active class or enrollment_ended_at if entering a terminal state while class is Active|Paused.
+func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
+	// allow calling code to override
+	if !tx.Statement.Changed("enrollment_status") ||
+		tx.Statement.Changed("enrolled_at") ||
+		tx.Statement.Changed("enrollment_ended_at") {
+		return nil
+	}
+
+	var newEnrollmentStatus ProgramEnrollmentStatus
+	if m, ok := tx.Statement.Dest.(map[string]interface{}); ok {
+		if v, ok := m["enrollment_status"]; ok {
+			switch val := v.(type) {
+			case string:
+				newEnrollmentStatus = ProgramEnrollmentStatus(val)
+			case ProgramEnrollmentStatus:
+				newEnrollmentStatus = val
+			default:
+				return fmt.Errorf("unknown type %T", val)
+			}
+		}
+	}
+
+	var classID int
+	if v, ok := tx.Get("class_id"); ok {
+		classID = v.(int)
+	}
+
+	var classStatus ClassStatus
+	if classID != 0 {
+		if err := tx.Model(&ProgramClass{}).
+			Select("status").
+			Where("id = ?", classID).
+			Scan(&classStatus).Error; err != nil {
+			return err
+		}
+	}
+
+	// This likely gets hit when we introduce "Waitlist" as a status
+	if newEnrollmentStatus == Enrolled && classStatus == Active {
+		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
+		// ? do we need to worry about updating fields to the same value (enrolled -> enrolled)?
+	}
+
+	// This is when an enrollment ends while the class remains active
+	if IsTerminalEnrollment(newEnrollmentStatus) && (classStatus == Active || classStatus == Paused) {
+		tx.Statement.SetColumn("enrollment_ended_at", time.Now().UTC())
+	}
+
+	return nil
+}
+
+func IsTerminalEnrollment(s ProgramEnrollmentStatus) bool {
+	return s == EnrollmentCancelled || s == EnrollmentCompleted ||
+		strings.HasPrefix(string(s), "Incomplete:")
+}
 
 type ProgramClassDetail struct {
 	ProgramClass
