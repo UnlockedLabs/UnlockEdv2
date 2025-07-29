@@ -136,7 +136,7 @@ export function FilterPillButton({
     columns: Record<string, string>;
     filterOptions: FilterOptions[];
     onApplyFilter: (filter: Filter) => void;
-    onRemoveFilter: (column: string) => void;
+    onRemoveFilter: (column?: string) => void;
 }) {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [openDropdown, setOpenDropdown] = useState(false);
@@ -178,6 +178,7 @@ export function FilterPillButton({
                 !dropdownRef.current.contains(event.target as Node)
             ) {
                 setOpenDropdown(false);
+                onRemoveFilter();
             }
         };
 
@@ -213,11 +214,11 @@ export function FilterPillButton({
             }
             return (
                 <TealPill key={index}>
-                    <div className="flex gap-1 items-center">
+                    <div className="flex gap-1 items-center text-nowrap">
                         {pillString}
                         <ULIComponent
                             icon={XMarkIcon}
-                            iconClassName="!w-3 !h-3"
+                            iconClassName="!w-3 !h-3 cursor-pointer"
                             dataTip="Remove Filter"
                             onClick={(e) => (
                                 resetSort(filter.column), e?.stopPropagation()
@@ -247,7 +248,9 @@ export function FilterPillButton({
                 <ULIComponent icon={PlusIcon} />
                 <label className="body cursor-pointer">Filter</label>
             </button>
-            {renderExistingFilters()}
+            <div className="flex flex-wrap gap-y-1">
+                {renderExistingFilters()}
+            </div>
             {openDropdown && (
                 <ul className="card bg-grey-1 absolute top-full mt-2 z-10 p-4">
                     <li className="flex flex-row gap-2 items-center">

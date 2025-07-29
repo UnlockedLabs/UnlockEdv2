@@ -344,14 +344,27 @@ export default function ProgramManagement() {
         setPage(1);
     }
 
-    function onRemoveFilter(column: string) {
-        setFilters((prev: Filter[]) => prev.filter((f) => f.column !== column));
+    function onRemoveFilter(column?: string) {
+        setFilters((prev: Filter[]) => {
+            if (column === undefined) {
+                return prev.filter((f) => f.value !== ''); // Remove filters with empty value
+            } else {
+                return prev.filter((f) => f.column !== column); // Remove filters matching the column
+            }
+        });
     }
 
     useEffect(() => {
         const filterQueryParams = filters
             .filter((f) => f.value !== '')
-            .map((f) => `filter_${f.column}=${f.value}`)
+            .map((f) => {
+                if (f.value.includes('Archived')) {
+                    setIncludeArchived(true);
+                } else {
+                    setIncludeArchived(false);
+                }
+                return `filter_${f.column}=${f.value}`;
+            })
             .join('&');
         setFilterQueryString(filterQueryParams);
     }, [filters]);
@@ -427,6 +440,7 @@ export default function ProgramManagement() {
                         <input
                             type="checkbox"
                             className="checkbox checkbox-sm mr-2"
+                            checked={includeArchived}
                             onChange={(e) => {
                                 setIncludeArchived(e.target.checked);
                             }}
