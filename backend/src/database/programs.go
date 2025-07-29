@@ -503,13 +503,22 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		case "programs.funding_type":
 			tx = tx.Where("programs.funding_type IN (?)", strings.Split(val, "|"))
 		case "programs.is_active":
-			switch val {
-			case "Available":
-				tx = tx.Where("programs.is_active = ?", true)
-			case "Archived":
-				tx = tx.Where("programs.archived_at IS NOT NULL")
-			case "Inactive":
-				tx = tx.Where("programs.is_active = ?", false)
+			fmt.Println(val)
+			statuses := strings.Split(val, "|")
+			conditions := make([]string, 0, len(statuses))
+			for _, status := range statuses {
+				switch status {
+				case "Available":
+					conditions = append(conditions, "programs.is_active = true")
+				case "Archived":
+					conditions = append(conditions, "programs.archived_at IS NOT NULL")
+				case "Inactive":
+					conditions = append(conditions, "programs.is_active = false")
+				}
+			}
+			if len(conditions) > 0 {
+				whereStatement := "(" + strings.Join(conditions, " OR ") + ")"
+				tx = tx.Where(whereStatement)
 			}
 		}
 	}
