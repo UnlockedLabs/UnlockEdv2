@@ -1,8 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE public.program_class_enrollments
-ADD COLUMN enrolled_at TIMESTAMP,
-ADD COLUMN enrollment_ended_at TIMESTAMP;
+ADD COLUMN enrolled_at TIMESTAMP with TIME ZONE,
+ADD COLUMN enrollment_ended_at TIMESTAMP with TIME ZONE;
 
 -- Backfill timestamps for enrolled_at and enrollment_ended_at
 UPDATE public.program_class_enrollments pce

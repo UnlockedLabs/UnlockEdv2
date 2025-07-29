@@ -51,22 +51,27 @@ func (ProgramClass) TableName() string { return "program_classes" }
 
 // AfterUpdate hook that runs when switching class status to Active to verify existing enrollments have enrolled_at set.
 func (c *ProgramClass) AfterUpdate(tx *gorm.DB) (err error) {
+
+	// We're only worried about updating enrollment IF status changes
 	if !tx.Statement.Changed("status") {
 		return nil
 	}
 
+	m, ok := tx.Statement.Dest.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("expected tx.Statement.Dest to be a map, got %T", tx.Statement.Dest)
+	}
+
+	rawStatus := m["status"]
+
 	var newClassStatus ClassStatus
-	if m, ok := tx.Statement.Dest.(map[string]interface{}); ok {
-		if v, ok := m["status"]; ok {
-			switch val := v.(type) {
-			case string:
-				newClassStatus = ClassStatus(val)
-			case ClassStatus:
-				newClassStatus = val
-			default:
-				return fmt.Errorf("unknown type %T", val)
-			}
-		}
+	switch val := rawStatus.(type) {
+	case string:
+		newClassStatus = ClassStatus(val)
+	case ClassStatus:
+		newClassStatus = val
+	default:
+		return fmt.Errorf("unexpected type for 'status': %T", val)
 	}
 
 	// Detect Scheduled -> Active
@@ -74,9 +79,17 @@ func (c *ProgramClass) AfterUpdate(tx *gorm.DB) (err error) {
 		return nil
 	}
 
-	var classIDs []int
-	if v, ok := tx.Get("class_ids"); ok {
-		classIDs = v.([]int)
+	rawIDs, ok := tx.Get("class_ids")
+	if !ok {
+		return fmt.Errorf("missing 'class_ids' in transaction context")
+	}
+
+	classIDs, ok := rawIDs.([]int)
+	if !ok {
+		return fmt.Errorf("expected 'class_ids' to be a []int, got %T", rawIDs)
+	}
+	if len(classIDs) == 0 {
+		return nil
 	}
 
 	now := time.Now().UTC()

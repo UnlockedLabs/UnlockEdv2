@@ -165,6 +165,10 @@ func TestUpdateClasses(t *testing.T) {
 	t.Run("Update Paused class to Cancelled sets enrollment_ended_at for existing enrollments", func(t *testing.T) {
 		runUpdatePausedClassToCancelledTest(t, env, facility, facilityAdmin, program)
 	})
+
+	t.Run("Update Active to Paused to Active preserves original enrolled_at timestamps", func(t *testing.T) {
+		runUpdateActivePausedActiveTest(t, env, facility, facilityAdmin, program)
+	})
 }
 
 func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
@@ -332,6 +336,60 @@ func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 		require.NotNil(t, enrollment.EnrollmentEndedAt, "enrollment_ended_at should be set when class is cancelled")
 		require.WithinDuration(t, time.Now(), *enrollment.EnrollmentEndedAt, time.Second*5, "enrollment_ended_at should be recent")
 	}
+}
+
+func runUpdateActivePausedActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	// Create an Active class
+	class, err := env.CreateTestClass(program, facility, models.Active)
+	require.NoError(t, err)
+
+	// Create test user and enrollment
+	user, err := env.CreateTestUser("activepauseduser", models.Student, facility.ID, "793")
+	require.NoError(t, err)
+
+	enrollment, err := env.CreateTestEnrollment(class.ID, user.ID, models.Enrolled)
+	require.NoError(t, err)
+
+	// Capture original enrolled_at timestamp
+	originalEnrolledAt, endedAt, err := env.GetEnrollmentTimestamps(enrollment.ID)
+	require.NoError(t, err)
+	require.NotNil(t, originalEnrolledAt, "enrolled_at should be set for Active class")
+	require.Nil(t, endedAt, "enrollment_ended_at should be NULL initially")
+
+	// Wait to ensure any new timestamps would be different
+	time.Sleep(time.Millisecond * 50)
+
+	// Update class status from Active to Paused
+	updateData := map[string]interface{}{
+		"status": string(models.Paused),
+	}
+
+	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	// Verify enrolled_at timestamp remains unchanged after pausing
+	enrolledAtAfterPause, endedAtAfterPause, err := env.GetEnrollmentTimestamps(enrollment.ID)
+	require.NoError(t, err)
+	require.Equal(t, originalEnrolledAt, enrolledAtAfterPause, "enrolled_at should not change when pausing")
+	require.Nil(t, endedAtAfterPause, "enrollment_ended_at should still be NULL after pausing")
+
+	// Update class status from Paused back to Active
+	updateData = map[string]interface{}{
+		"status": string(models.Active),
+	}
+
+	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	// Verify enrolled_at timestamp STILL remains unchanged (not updated to new timestamp)
+	enrolledAtFinal, endedAtFinal, err := env.GetEnrollmentTimestamps(enrollment.ID)
+	require.NoError(t, err)
+	require.Equal(t, originalEnrolledAt, enrolledAtFinal, "enrolled_at should preserve original timestamp when going Paused->Active")
+	require.Nil(t, endedAtFinal, "enrollment_ended_at should still be NULL after reactivating")
 }
 
 func TestMain(m *testing.M) {
