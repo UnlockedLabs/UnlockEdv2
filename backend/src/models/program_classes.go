@@ -33,6 +33,7 @@ type ProgramClass struct {
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 	Enrolled       int64       `json:"enrolled" gorm:"-"`
+	Completed      int64       `json:"completed" gorm:"-"`
 	CreateUserID   uint        `json:"create_user_id"`
 	UpdateUserID   uint        `json:"update_user_id"`
 

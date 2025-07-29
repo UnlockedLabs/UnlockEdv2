@@ -21,7 +21,7 @@ interface DateProps {
     disabled?: boolean;
     monthOnly?: boolean;
     defaultValue?: string;
-    onChange?: () => void;
+    onChange?: (value: string) => void;
 }
 
 export function DateInput({
@@ -102,9 +102,9 @@ export function DateInput({
                 {...register(interfaceRef, options)}
                 autoFocus={isFocused}
                 disabled={disabled}
-                onChange={() => {
+                onChange={(e) => {
                     if (onChange) {
-                        onChange();
+                        onChange(e.target.value);
                     }
                 }}
             />
