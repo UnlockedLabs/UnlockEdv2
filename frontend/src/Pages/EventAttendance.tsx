@@ -358,7 +358,11 @@ export default function EventAttendance() {
                                                         : ''
                                                 }
                                                 interfaceRef={`note_${row.user_id}`}
-                                                required={false}
+                                                required={
+                                                    row.selected &&
+                                                    row.attendance_status !==
+                                                        Attendance.Present
+                                                }
                                                 length={500}
                                                 errors={errors}
                                                 register={register}
