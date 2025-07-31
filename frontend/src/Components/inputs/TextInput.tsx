@@ -77,7 +77,7 @@ export function TextInput({
                 }}
                 placeholder={placeholder}
             />
-            <div className="text-error text-sm">
+            <div className="text-error text-sm text-center">
                 {errors[interfaceRef]?.message as string}
             </div>
         </label>
