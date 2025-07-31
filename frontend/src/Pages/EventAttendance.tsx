@@ -376,6 +376,7 @@ export default function EventAttendance() {
                                                         e.target.value
                                                     )
                                                 }
+                                                errorTextAlign="center"
                                             />
                                         </td>
                                     </tr>
