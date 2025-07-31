@@ -39,7 +39,7 @@ export function TextInput({
     onChange,
     placeholder,
     inputClassName,
-    errorTextAlign = 'left'
+    errorTextAlign = 'center'
 }: TextProps) {
     const options = {
         required: {
