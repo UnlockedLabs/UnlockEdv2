@@ -7,6 +7,7 @@ interface TextProps {
     required?: boolean;
     length: number | undefined;
     errors: FieldErrors<any>; // eslint-disable-line
+    errorTextAlign?: 'left' | 'center' | 'right';
     register: UseFormRegister<any>; // eslint-disable-line
     password?: boolean;
     isFocused?: boolean;
@@ -37,7 +38,8 @@ export function TextInput({
     defaultValue,
     onChange,
     placeholder,
-    inputClassName
+    inputClassName,
+    errorTextAlign = 'left'
 }: TextProps) {
     const options = {
         required: {
@@ -77,7 +79,15 @@ export function TextInput({
                 }}
                 placeholder={placeholder}
             />
-            <div className="text-error text-sm text-center">
+            <div
+                className={`text-error text-sm ${
+                    errorTextAlign === 'center'
+                        ? 'text-center'
+                        : errorTextAlign === 'right'
+                          ? 'text-right'
+                          : ''
+                }`}
+            >
                 {errors[interfaceRef]?.message as string}
             </div>
         </label>
