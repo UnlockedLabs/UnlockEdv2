@@ -35,6 +35,15 @@ func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, 
 	}
 }
 
+func derefToString(v reflect.Value) string {
+	if v.Kind() == reflect.Ptr && !v.IsNil() {
+		return fmt.Sprint(v.Elem().Interface())
+	}
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		return ""
+	}
+	return fmt.Sprint(v.Interface())
+}
 func GenerateChangeLogEntries(oldRecord, updRecord interface{}, tableName string, parentID uint, userID uint, ignoreFieldNames []string) []ChangeLogEntry {
 	var entries []ChangeLogEntry
 	oldVal := reflect.ValueOf(oldRecord).Elem()
@@ -47,8 +56,10 @@ func GenerateChangeLogEntries(oldRecord, updRecord interface{}, tableName string
 		if !oldVal.Field(i).CanInterface() || slices.Contains(ignoreFieldNames, name) || name == "-" || name == "" {
 			continue
 		}
-		oldValue := fmt.Sprintf("%v", oldVal.Field(i).Interface())
-		newValue := fmt.Sprintf("%v", newVal.Field(i).Interface())
+
+		oldValue := derefToString(oldVal.Field(i))
+		newValue := derefToString(newVal.Field(i))
+
 		if oldValue != newValue {
 			entries = append(entries, *NewChangeLogEntry(tableName, name, StringPtr(oldValue), StringPtr(newValue), parentID, userID))
 		}
