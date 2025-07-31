@@ -39,7 +39,7 @@ export function TextInput({
     onChange,
     placeholder,
     inputClassName,
-    errorTextAlign = 'center'
+    errorTextAlign
 }: TextProps) {
     const options = {
         required: {
@@ -85,7 +85,7 @@ export function TextInput({
                         ? 'text-center'
                         : errorTextAlign === 'right'
                           ? 'text-right'
-                          : ''
+                          : 'text-left'
                 }`}
             >
                 {errors[interfaceRef]?.message as string}
