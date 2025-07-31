@@ -40,9 +40,9 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		srv.errorResponse(w, http.StatusBadRequest, "Error parsing target URL")
 		return
 	}
-	scheme := "https"
+	scheme := "http"
 	if srv.dev {
-		scheme = "http"
+		scheme = "http" //FIXME Need to make a better solution for STL this is just temporary (rather than using load balancer we are directly communicating between ec2 instances in private subnet)
 	}
 	proxy := httputil.ReverseProxy{
 		Director: func(req *http.Request) {
