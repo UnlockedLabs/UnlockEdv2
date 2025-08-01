@@ -400,15 +400,38 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	return programsFacilityStats, nil
 }
 
-func parseOperatorAndValue(input string) (string, string) {
+func parseOperatorAndValue(input string) (string, float64) {
 	ops := []string{">=", "<=", "!=", "=", ">", "<"}
 	for _, op := range ops {
 		if strings.HasPrefix(input, op) {
-			return op, strings.TrimSpace(input[len(op):])
+			numString := strings.TrimSpace(input[len(op):])
+			num, err := strconv.ParseFloat(numString, 64)
+			if err == nil {
+				return op, num
+			}
+			break
 		}
 	}
-	// Default fallback
-	return "=", strings.TrimSpace(input)
+	return "", 0
+}
+
+func applyRateFilter(tx *gorm.DB, rateExpr string, val string, floatTolerance float64) *gorm.DB {
+	op, num := parseOperatorAndValue(val)
+	switch op {
+	case "!=":
+		return tx.Having("ABS("+rateExpr+" - ?) > ?", num, floatTolerance)
+	case "=":
+		return tx.Having(rateExpr+" BETWEEN ? AND ?", num-floatTolerance, num+floatTolerance)
+	case ">=":
+		return tx.Having(rateExpr+" >= ?", num-floatTolerance)
+	case "<=":
+		return tx.Having(rateExpr+" <= ?", num+floatTolerance)
+	case ">":
+		return tx.Having(rateExpr+" > ?", num+floatTolerance)
+	case "<":
+		return tx.Having(rateExpr+" < ?", num-floatTolerance)
+	}
+	return tx
 }
 
 func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole, filters map[string]string) ([]models.ProgramsOverviewTable, error) {
@@ -425,6 +448,8 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
 		totalActiveFacilitiesSubQuery = "total_active_facilities,"
 	}
+	const completionRate = "(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100"
+	const attendanceRate = "(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100"
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Select(fmt.Sprintf(`
 			programs.id AS program_id,
@@ -434,13 +459,13 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
-			(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 AS completion_rate,
-			(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 AS attendance_rate,
+			%s AS completion_rate,
+			%s AS attendance_rate,
 			pt.program_types AS program_types,
 			pct.credit_types AS credit_types,
 			programs.funding_type AS funding_type,
 			BOOL_OR(programs.is_active) AS status
-		`, totalActiveFacilitiesQuery))
+		`, totalActiveFacilitiesQuery, completionRate, attendanceRate))
 	if timeFilter > 0 {
 		joinCondition := fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id AND dpfh.date >= ?`, tableName)
 		tx = tx.Joins(joinCondition, time.Now().AddDate(0, 0, -timeFilter))
@@ -483,6 +508,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.program_id IN (?)", args.Tags)
 	}
+	const floatTolerance = 0.01
 	for col, val := range filters {
 		switch col {
 		case "programs.name":
@@ -491,11 +517,9 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			op, num := parseOperatorAndValue(val)
 			tx = tx.Where(fmt.Sprintf("%s %s ?", col, op), num)
 		case "completion_rate":
-			op, num := parseOperatorAndValue(val)
-			tx = tx.Having("(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 "+op+" ?", num)
+			tx = applyRateFilter(tx, completionRate, val, floatTolerance)
 		case "attendance_rate":
-			op, num := parseOperatorAndValue(val)
-			tx = tx.Having("(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 "+op+" ?", num)
+			tx = applyRateFilter(tx, attendanceRate, val, floatTolerance)
 		case "pt.program_types":
 			tx = tx.Where("pt.program_types ~* ?", val)
 		case "pct.credit_types":
@@ -503,7 +527,6 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		case "programs.funding_type":
 			tx = tx.Where("programs.funding_type IN (?)", strings.Split(val, "|"))
 		case "programs.is_active":
-			fmt.Println(val)
 			statuses := strings.Split(val, "|")
 			conditions := make([]string, 0, len(statuses))
 			for _, status := range statuses {
