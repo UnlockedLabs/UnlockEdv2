@@ -33,6 +33,18 @@ const (
 	Education     CreditType = "Education"
 )
 
+var AllFundingTypes = []FundingType{
+	FederalGrants, StateGrants, NonProfitOrgs, EduGrants, InmateWelfare, Other,
+}
+
+var AllProgTypes = []ProgType{
+	Educational, Vocational, MentalHealth, Religious, ReEntry, Therapeutic, LifeSkills,
+}
+
+var AllCreditTypes = []CreditType{
+	Completion, Participation, EarnedTime, Education,
+}
+
 type Program struct {
 	DatabaseFields
 	Name         string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`

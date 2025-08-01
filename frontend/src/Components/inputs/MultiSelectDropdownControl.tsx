@@ -8,6 +8,7 @@ interface MultiSelectDropdownProps {
     addSelectAllOption?: boolean;
     onSelectionChange: (selected: number[]) => void;
     onBlurSearch: () => void;
+    small?: boolean;
 }
 
 export function MultiSelectDropdown({
@@ -15,7 +16,8 @@ export function MultiSelectDropdown({
     options,
     selectedOptions,
     onSelectionChange,
-    onBlurSearch
+    onBlurSearch,
+    small
 }: MultiSelectDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ export function MultiSelectDropdown({
             <div className="relative" onBlur={handleBlur} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="select select-bordered w-full text-left flex items-center hover:none"
+                    className={`select select-bordered w-full text-left flex items-center hover:none ${small ? 'select-sm text-xs' : ''}`}
                     onClick={toggleDropdown}
                 >
                     {displayText()}

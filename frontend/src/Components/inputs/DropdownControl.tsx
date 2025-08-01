@@ -6,6 +6,7 @@ interface DropdownControlProps {
     customCallback?: (value: string) => void;
     enumType: Record<string, string>;
     small?: boolean;
+    blockedDefault?: boolean;
 }
 
 /* a dropdown that executes a callback function on change */
@@ -14,7 +15,8 @@ export default function DropdownControl({
     setState: callback,
     customCallback,
     enumType,
-    small
+    small,
+    blockedDefault = false
 }: DropdownControlProps) {
     return (
         <label className="form-control">
@@ -30,6 +32,11 @@ export default function DropdownControl({
                     }
                 }}
             >
+                {blockedDefault && (
+                    <option value="" disabled>
+                        Select option
+                    </option>
+                )}
                 {Object.entries(enumType).map(([key, value]) => (
                     <option key={key} value={value}>
                         {key}

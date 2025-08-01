@@ -1,6 +1,7 @@
 import {
     getClassMgmtData,
     getClassTitle,
+    getFilterDropdowns,
     getProgramData,
     getProgramTitle
 } from '@/routeLoaders';
@@ -60,6 +61,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             path: 'programs',
             id: 'programs-facilities',
             element: <Programs />,
+            loader: getFilterDropdowns,
             handle: {
                 title: 'Programs Management',
                 path: ['programs']
