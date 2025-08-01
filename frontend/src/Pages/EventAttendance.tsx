@@ -59,6 +59,7 @@ export default function EventAttendance() {
         handleSubmit,
         setValue,
         getValues,
+        clearErrors,
         formState: { errors }
     } = useForm<FormData>();
     const [searchTerm, setSearchTerm] = useState('');
@@ -185,6 +186,7 @@ export default function EventAttendance() {
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {
         if (newStatus === Attendance.Present) {
             setValue(`note_${user_id}`, '');
+            clearErrors(`note_${user_id}`);
         }
         const currentRow = rows.find((r) => r.user_id === user_id) ?? {
             selected: false,
