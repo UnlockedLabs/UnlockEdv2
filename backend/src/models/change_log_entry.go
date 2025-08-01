@@ -36,14 +36,16 @@ func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, 
 }
 
 func derefToString(v reflect.Value) string {
-	if v.Kind() == reflect.Ptr && !v.IsNil() {
-		return fmt.Sprint(v.Elem().Interface())
-	}
-	if v.Kind() == reflect.Ptr && v.IsNil() {
-		return ""
+
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return ""
+		}
+		v = v.Elem()
 	}
 	return fmt.Sprint(v.Interface())
 }
+
 func GenerateChangeLogEntries(oldRecord, updRecord interface{}, tableName string, parentID uint, userID uint, ignoreFieldNames []string) []ChangeLogEntry {
 	var entries []ChangeLogEntry
 	oldVal := reflect.ValueOf(oldRecord).Elem()
