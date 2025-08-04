@@ -37,13 +37,14 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const activePrograms = programs?.filter(
         (p) =>
             p.enrollment_status === EnrollmentStatus.Enrolled &&
-            p.start_date <= today &&
-            (!p.end_date || p.end_date >= today)
+            new Date(p.start_date).toISOString().split('T')[0] <= today &&
+            (!p.end_date ||
+                new Date(p.end_date).toISOString().split('T')[0] >= today)
     );
     const scheduledPrograms = programs?.filter(
         (p) =>
             p.enrollment_status === EnrollmentStatus.Enrolled &&
-            p.start_date > today
+            new Date(p.start_date).toISOString().split('T')[0] > today
     );
 
     const completedPrograms = programs?.filter(
