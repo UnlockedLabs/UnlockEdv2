@@ -415,7 +415,8 @@ func parseOperatorAndValue(input string) (string, float64) {
 	return "", 0
 }
 
-func applyRateFilter(tx *gorm.DB, rateExpr string, val string, floatTolerance float64) *gorm.DB {
+func applyRateFilter(tx *gorm.DB, rateExpr string, val string) *gorm.DB {
+	const floatTolerance = 0.005
 	op, num := parseOperatorAndValue(val)
 	switch op {
 	case "!=":
@@ -427,9 +428,9 @@ func applyRateFilter(tx *gorm.DB, rateExpr string, val string, floatTolerance fl
 	case "<=":
 		return tx.Having(rateExpr+" <= ?", num+floatTolerance)
 	case ">":
-		return tx.Having(rateExpr+" > ?", num+floatTolerance)
+		return tx.Having(rateExpr+" > ?", num)
 	case "<":
-		return tx.Having(rateExpr+" < ?", num-floatTolerance)
+		return tx.Having(rateExpr+" < ?", num)
 	}
 	return tx
 }
@@ -508,7 +509,6 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.program_id IN (?)", args.Tags)
 	}
-	const floatTolerance = 0.01
 	for col, val := range filters {
 		switch col {
 		case "programs.name":
@@ -517,9 +517,9 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			op, num := parseOperatorAndValue(val)
 			tx = tx.Where(fmt.Sprintf("%s %s ?", col, op), num)
 		case "completion_rate":
-			tx = applyRateFilter(tx, completionRate, val, floatTolerance)
+			tx = applyRateFilter(tx, completionRate, val)
 		case "attendance_rate":
-			tx = applyRateFilter(tx, attendanceRate, val, floatTolerance)
+			tx = applyRateFilter(tx, attendanceRate, val)
 		case "pt.program_types":
 			tx = tx.Where("pt.program_types ~* ?", val)
 		case "pct.credit_types":
