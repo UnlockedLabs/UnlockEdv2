@@ -33,18 +33,21 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const programs = programsResp?.data;
     const meta = programsResp?.meta;
 
+    // Helper function to extract date portion (YYYY-MM-DD) from date string
+    const getDateOnly = (dateString: string) =>
+        new Date(dateString).toISOString().split('T')[0];
+
     const today = new Date().toISOString().split('T')[0];
     const activePrograms = programs?.filter(
         (p) =>
             p.enrollment_status === EnrollmentStatus.Enrolled &&
-            new Date(p.start_date).toISOString().split('T')[0] <= today &&
-            (!p.end_date ||
-                new Date(p.end_date).toISOString().split('T')[0] >= today)
+            getDateOnly(p.start_date) <= today &&
+            (!p.end_date || getDateOnly(p.end_date) >= today)
     );
     const scheduledPrograms = programs?.filter(
         (p) =>
             p.enrollment_status === EnrollmentStatus.Enrolled &&
-            new Date(p.start_date).toISOString().split('T')[0] > today
+            getDateOnly(p.start_date) > today
     );
 
     const completedPrograms = programs?.filter(
