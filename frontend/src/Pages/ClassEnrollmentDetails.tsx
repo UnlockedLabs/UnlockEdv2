@@ -217,7 +217,8 @@ export default function ClassEnrollmentDetails() {
             case SelectedClassStatus.Scheduled:
                 return Object.fromEntries(
                     Object.entries(EnrollmentStatusOptions).filter(
-                        ([value]) => value === 'Cancelled'
+                        ([value]) =>
+                            value === 'Cancelled' || value === 'Enrolled'
                     )
                 );
             case SelectedClassStatus.Active:
