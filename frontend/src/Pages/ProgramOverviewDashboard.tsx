@@ -1,7 +1,11 @@
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import {
+    ArchiveBoxIcon,
+    ExclamationTriangleIcon,
+    PencilSquareIcon
+} from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -231,6 +235,15 @@ export default function ProgramOverviewDashboard() {
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
+                {status === 'notOfferedAtFacility' && (
+                    <div className="card bg-pale-yellow text-body-text flex flex-row items-center gap-2 p-4">
+                        <ULIComponent icon={ExclamationTriangleIcon} />
+                        <p className="body text-body-text">
+                            This program is not currently offered at{' '}
+                            {user.user?.facility_name}.
+                        </p>
+                    </div>
+                )}
                 <div className="grid grid-cols-5 gap-4 items-stretch">
                     <div className="card card-row-padding col-span-3">
                         <h1 className="mb-2">
