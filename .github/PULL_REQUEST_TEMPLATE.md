@@ -2,14 +2,19 @@
 
 Please provide a brief description of the changes included in this PR.
 
-- **Related issues**: Link to related issue(s) this PR addresses, if any (use phrases like "fixes #1234" or "closes #1234").
+- **Related issues**: Link to related Asana ticket that this closes.
 
 ## Screenshot(s)
 
-If the PR includes changes to the UI, please add screenshots or a brief screengrab to demonstrate the changes.
+If the PR includes changes to the UI: 
+- Please add screenshots or a short screengrab of the change 
+- Include images at 1366 x 768 resolution for any Resident-facing changes.
 
 ## Additional context
 
-Please include any additional context or information that the reviewer may need to understand the PR.
+Please include additional context or information that the reviewer needs to understand the PR. This includes:
+- Known issues that the PR does not address
+- What areas to focus on
+- What decisions were considered and decided against.
 
 If any core features or components were removed with this PR, please note them here so that they can be added to the wiki (see [Deprecated features and Components](https://github.com/UnlockedLabs/UnlockEdv2/wiki/Deprecated-Features-and-Components)).
