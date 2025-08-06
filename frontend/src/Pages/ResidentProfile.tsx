@@ -1,5 +1,6 @@
 import useSWR, { mutate } from 'swr';
 import {
+    FeatureAccess,
     OpenContentResponse,
     ResidentAccountAction,
     ResidentEngagementProfile,
@@ -9,7 +10,7 @@ import {
     UserRole,
     ValidResident
 } from '@/common';
-import { isUserDeactivated } from '@/useAuth';
+import { hasFeature, isUserDeactivated } from '@/useAuth';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
 import { ResponsiveContainer } from 'recharts';
 import StatsCard from '@/Components/StatsCard';
@@ -350,9 +351,13 @@ const ResidentProfile = () => {
                     </div>
                     {/* Tables */}
                     <div className="grid grid-cols-2 gap-6">
-                        <div className="card card-row-padding col-span-2 w-full">
-                            <ResidentPrograms user_id={residentId ? residentId : ''} />
-                        </div>
+                        {hasFeature(user, FeatureAccess.ProgramAccess) && (
+                            <div className="card card-row-padding col-span-2 w-full">
+                                <ResidentPrograms
+                                    user_id={residentId ? residentId : ''}
+                                />
+                            </div>
+                        )}
                         <ActivityHistoryCard residentId={residentId} />
                         <div className="card card-row-padding">
                             <OpenContentCardToggle
@@ -393,8 +398,8 @@ const ResidentProfile = () => {
                                                                           items.title ??
                                                                           'Untitled'
                                                                       } *`
-                                                                    : (items.title ??
-                                                                      'Untitled')}
+                                                                    : items.title ??
+                                                                      'Untitled'}
                                                             </td>
                                                             <td className="justify-self-end">
                                                                 {items.total_hours.toFixed(
