@@ -46,6 +46,7 @@ func TestCreateClassHandler(t *testing.T) {
 	t.Run("Create class at facility not offered is invalid", func(t *testing.T) {
 		runCreateClassNotOfferedFacilityTest(t, env, facility, facilityAdmin)
 	})
+
 }
 
 // successful class is created
@@ -168,6 +169,9 @@ func TestUpdateClasses(t *testing.T) {
 
 	t.Run("Update Active to Paused to Active preserves original enrolled_at timestamps", func(t *testing.T) {
 		runUpdateActivePausedActiveTest(t, env, facility, facilityAdmin, program)
+	})
+	t.Run("Update class from Active to Completed", func(t *testing.T) {
+		runUpdateActiveClassToCompletedTest(t, env, facility, facilityAdmin)
 	})
 }
 
@@ -390,6 +394,93 @@ func runUpdateActivePausedActiveTest(t *testing.T, env *TestEnv, facility *model
 	require.NoError(t, err)
 	require.Equal(t, originalEnrolledAt, enrolledAtFinal, "enrolled_at should preserve original timestamp when going Paused->Active")
 	require.Nil(t, endedAtFinal, "enrollment_ended_at should still be NULL after reactivating")
+}
+
+// When a class is marked Completed:
+// - All enrollments become Completed
+// - A ProgramCompletion record is created for each affected student
+
+func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
+	// Create program and make it available at facility
+	program, err := env.CreateTestProgram("Active Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+	// Create an Active class
+	class, err := env.CreateTestClass(program, facility, models.Active)
+	require.NoError(t, err)
+
+	// Create test users
+	user1, err := env.CreateTestUser("student1", models.Student, facility.ID, "794")
+	require.NoError(t, err)
+	user2, err := env.CreateTestUser("student2", models.Student, facility.ID, "795")
+	require.NoError(t, err)
+	// Create enrollments
+	_, err = env.CreateTestEnrollment(class.ID, user1.ID, models.Enrolled)
+	require.NoError(t, err)
+	_, err = env.CreateTestEnrollment(class.ID, user2.ID, models.Enrolled)
+	require.NoError(t, err)
+
+	var preUpdateEnrollments []models.ProgramClassEnrollment
+	err = env.DB.Where("class_id = ? AND user_id in (?, ?)", class.ID, user1.ID, user2.ID).Find(&preUpdateEnrollments).Error
+	require.NoError(t, err)
+
+	for _, enrollment := range preUpdateEnrollments {
+		require.Equal(t, models.Enrolled, enrollment.EnrollmentStatus, "enrollment status should be Enrolled")
+	}
+
+	var preUpdateEnrollmentsCount int64
+	err = env.DB.Model(&models.ProgramClassEnrollment{}).
+		Where("class_id = ? AND enrollment_status = ?", class.ID, models.Enrolled).
+		Count(&preUpdateEnrollmentsCount).Error
+	require.NoError(t, err)
+
+	updateData := map[string]interface{}{
+		"status": string(models.Completed),
+	}
+
+	// Call to /api/program-classes API endpoint with updateData as the request payload
+	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	// Exactly 2 enrollments are found for the users in the class with an EnrollmentStatus of EnrollmentCompleted
+	var afterUpdateEnrollments []models.ProgramClassEnrollment
+	err = env.DB.Where("class_id = ? AND user_id in (?, ?)", class.ID, user1.ID, user2.ID).Find(&afterUpdateEnrollments).Error
+	require.NoError(t, err)
+	require.Len(t, afterUpdateEnrollments, 2)
+
+	for _, enrollment := range afterUpdateEnrollments {
+		require.Equal(t, models.EnrollmentCompleted, enrollment.EnrollmentStatus, "enrollment status should be Completed")
+	}
+
+	// all  enrollments with the same class.ID should be completed
+	var afterUpdateEnrollmentsCount int64
+	err = env.DB.Model(&models.ProgramClassEnrollment{}).
+		Where("class_id = ? AND enrollment_status = ?", class.ID, models.Enrolled).
+		Count(&afterUpdateEnrollmentsCount).Error
+	require.NoError(t, err)
+	require.Equal(t, 0, int(afterUpdateEnrollmentsCount), "records with enrollment_status of Enrolled should update to Completed so the count should be 0")
+
+	// query the program_completion table for records with a program_class_id matching the ID of the updated class.
+	var programCompletions []models.ProgramCompletion
+	err = env.DB.
+		Where("user_id IN (?, ?)", user1.ID, user2.ID).
+		Where("program_class_id = ?", class.ID).
+		Find(&programCompletions).Error
+	require.NoError(t, err)
+
+	fmt.Println(class.ID, "class.ID!!!!!!!!!!!!!")
+	fmt.Println(len(programCompletions), "program completions", afterUpdateEnrollmentsCount, "afterUpdateEnrollmentsCount!!!!!!!!!!!!")
+
+	// Check if the same number of program completion records were created as the students enrolled (this is the expected behavior)
+	require.Len(
+		t,
+		programCompletions,
+		int(preUpdateEnrollmentsCount),
+		"number of program completions (%d) should be equal to the previous number of enrollments (%d)",
+		len(programCompletions),
+		preUpdateEnrollmentsCount,
+	)
 }
 
 func TestMain(m *testing.M) {
