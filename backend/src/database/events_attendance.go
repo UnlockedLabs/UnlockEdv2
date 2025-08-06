@@ -78,10 +78,13 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 		LEFT JOIN program_class_event_attendance AS a
 			ON a.user_id = e.user_id AND a.event_id = ? AND a.date = ?
 		WHERE e.class_id = ?
-			AND e.enrollment_status = 'Enrolled'
+	       AND e.enrolled_at >= ? 
+	       AND (? <= e.enrollment_ended_at
+				OR (e.enrollment_ended_at IS NULL AND e.enrollment_status = 'Enrolled')
+		       )
 		`
 
-	args := []any{eventID, date, classID}
+	args := []any{eventID, date, classID, date, date}
 
 	if qryCtx.Search != "" {
 		query := qryCtx.SearchQuery()

@@ -341,6 +341,7 @@ export default function EventAttendance() {
                                                         newStatus
                                                     )
                                                 }
+                                                disabled={blockEdits}
                                             />
                                         </td>
                                         <td className="">
