@@ -351,14 +351,12 @@ const ResidentProfile = () => {
                     </div>
                     {/* Tables */}
                     <div className="grid grid-cols-2 gap-6">
-                        {hasFeature(user, FeatureAccess.ProgramAccess) ? (
+                        {hasFeature(user, FeatureAccess.ProgramAccess) && (
                             <div className="card card-row-padding col-span-2 w-full">
                                 <ResidentPrograms
                                     user_id={residentId ? residentId : ''}
                                 />
                             </div>
-                        ) : (
-                            ' '
                         )}
                         <ActivityHistoryCard residentId={residentId} />
                         <div className="card card-row-padding">
