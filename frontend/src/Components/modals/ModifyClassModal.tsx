@@ -68,7 +68,7 @@ const ModifyClassModal = forwardRef(function (
     if (action === undefined) return;
     const { title, text } = StatusMessagesMap[action] || {};
     if (title === undefined || text === undefined) return;
-
+    // TODO: this is called when class status is changed from the ClassLayout page makes call to: handleUpdateClasses api
     async function onConfirm() {
         const updatedStatus = ClassStatusMap[action!];
 

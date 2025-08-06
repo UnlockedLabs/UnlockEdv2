@@ -151,6 +151,7 @@ func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userId
 		})
 	}
 
+	// TODO: update to the program class completions table here
 	if err = tx.Create(&completions).Error; err != nil {
 		tx.Rollback()
 		return newCreateDBError(err, "enrollment completion")
@@ -201,6 +202,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			case string(models.Completed):
 				enrollmentStatus = models.EnrollmentCompleted
 			}
+			// check status here and do something else
 			if err := tx.
 				Model(&models.ProgramClassEnrollment{}).
 				Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).

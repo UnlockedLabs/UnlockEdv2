@@ -139,6 +139,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	return writeJsonResponse(w, http.StatusOK, updated)
 }
 
+// Class is being updated in ths function in bulk by
 func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, log sLog) error {
 	ids := r.URL.Query()["id"]
 	classIDs := make([]int, 0, len(ids))
@@ -155,6 +156,7 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	classMap["update_user_id"] = claims.UserID
 
+	// TODO: the class is being updated here and not program_completions
 	if err := srv.Db.UpdateProgramClasses(r.Context(), classIDs, classMap); err != nil {
 		return newDatabaseServiceError(err)
 	}

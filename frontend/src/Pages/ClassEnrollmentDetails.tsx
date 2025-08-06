@@ -147,6 +147,7 @@ export default function ClassEnrollmentDetails() {
         }
     };
 
+    // TODO: this is called when enrollment status is changed to completed on the ClassEnrollmentDetails page call is made to
     const handleSubmitEnrollmentChange = async (reasonText?: string) => {
         if (!changeStatusValue) return;
         const { status, user_id } = changeStatusValue;

@@ -244,3 +244,11 @@ func (env *TestEnv) GetEnrollmentTimestamps(enrollmentID uint) (enrolledAt, ende
 	}
 	return enrollment.EnrolledAt, enrollment.EnrollmentEndedAt, nil
 }
+
+func (env *TestEnv) GetEnrollmentStatus(enrollmentID uint) (models.ProgramEnrollmentStatus, error) {
+	var enrollment models.ProgramClassEnrollment
+	if err := env.DB.First(&enrollment, "id = ?", enrollmentID).Error; err != nil {
+		return "", err
+	}
+	return enrollment.EnrollmentStatus, nil
+}

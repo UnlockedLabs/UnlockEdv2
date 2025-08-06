@@ -135,6 +135,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	switch enrollment.EnrollmentStatus {
 	case "Completed":
 		err = srv.Db.GraduateEnrollments(r.Context(), adminEmail, enrollment.UserIDs, classId)
+		// TODO: Class is being updated in thif call as well
 	default:
 		err = srv.Db.UpdateProgramClassEnrollments(classId, enrollment.UserIDs, enrollment.EnrollmentStatus, enrollment.ChangeReason)
 	}
