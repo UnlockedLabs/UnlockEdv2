@@ -130,7 +130,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 		return newDatabaseServiceError(err)
 	}
 	if class.CannotUpdateClassWithEnrollment(enrollment.EnrollmentStatus) {
-		return newBadRequestServiceError(err, "cannot perform action on class that is completed, cancelled, archived, class is scheduled and enrollment is not cancelled, or class is active and enrollment is cancelled")
+		return newBadRequestServiceError(err, "cannot perform action due to invalid class or enrollment status")
 	}
 	switch enrollment.EnrollmentStatus {
 	case "Completed":
