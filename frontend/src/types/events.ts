@@ -1,4 +1,4 @@
-import { Attendance } from '@/common';
+import { Attendance, SelectedClassStatus } from '@/common';
 
 // ClassEventInstance represents a single scheduled class event with attendance records
 export interface ClassEventInstance extends ProgramClassEvent {
@@ -63,4 +63,5 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     override_id: number;
     linked_override_event: FacilityProgramClassEvent;
     credit_types: string;
+    class_status: SelectedClassStatus;
 }
