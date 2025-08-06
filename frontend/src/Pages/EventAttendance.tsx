@@ -349,6 +349,7 @@ export default function EventAttendance() {
                                                 label=""
                                                 defaultValue={row.note}
                                                 disabled={
+                                                    blockEdits ||
                                                     !(
                                                         row.attendance_status &&
                                                         row.attendance_status !==
@@ -356,6 +357,7 @@ export default function EventAttendance() {
                                                     )
                                                 }
                                                 inputClassName={
+                                                    blockEdits ||
                                                     !(
                                                         row.attendance_status &&
                                                         row.attendance_status !==
@@ -366,6 +368,7 @@ export default function EventAttendance() {
                                                 }
                                                 interfaceRef={`note_${row.user_id}`}
                                                 required={
+                                                    !blockEdits &&
                                                     row.selected &&
                                                     row.attendance_status !==
                                                         Attendance.Present
