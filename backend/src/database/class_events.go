@@ -355,7 +355,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		tx = tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
 	tx = tx.Group("pcev.id, c.instructor_name, c.name, c.status, p.name")
-	if err := tx.Debug().Scan(&events).Error; err != nil {
+	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 
