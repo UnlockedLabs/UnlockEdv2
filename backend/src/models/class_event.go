@@ -218,6 +218,7 @@ type FacilityProgramClassEvent struct {
 	StartTime           *time.Time                 `json:"start"`
 	EndTime             *time.Time                 `json:"end"`
 	Frequency           string                     `json:"frequency"`
+	ClassStatus         ClassStatus                `json:"class_status"`
 	OverrideID          uint                       `json:"override_id"`
 	LinkedOverrideEvent *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
 }

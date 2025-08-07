@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -63,6 +64,17 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newInvalidIdServiceError(err, "event_id")
 	}
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	cannotCreateOverride, err := srv.cannotUpdateEvent(classID)
+	if err != nil {
+		return err
+	}
+	if cannotCreateOverride {
+		return newBadRequestServiceError(errors.New("cannot create an event override for a completed or cancelled class"), "cannot create event override")
+	}
 	var overrides []*models.ProgramClassEventOverride
 	if err := json.NewDecoder(r.Body).Decode(&overrides); err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -86,6 +98,13 @@ func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
+	cannotDelete, err := srv.cannotUpdateEvent(classID)
+	if err != nil {
+		return err
+	}
+	if cannotDelete {
+		return newBadRequestServiceError(errors.New("cannot delete an event for a completed or cancelled class"), "cannot delete event")
+	}
 	log.add("class_id", classID)
 	log.add("event_override_id", id)
 	args := srv.getQueryContext(r)
@@ -100,6 +119,13 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
+	}
+	cannotCreate, err := srv.cannotUpdateEvent(classID)
+	if err != nil {
+		return err
+	}
+	if cannotCreate {
+		return newBadRequestServiceError(errors.New("cannot create new event for a completed or cancelled class"), "cannot create event")
 	}
 	event := &models.ProgramClassEvent{}
 	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
@@ -116,6 +142,13 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
+	}
+	cannotUpdate, err := srv.cannotUpdateEvent(classID)
+	if err != nil {
+		return err
+	}
+	if cannotUpdate {
+		return newBadRequestServiceError(errors.New("cannot reschedule event series for a completed or cancelled class"), "cannot update event")
 	}
 	var eventSeriesRequest struct {
 		EventSeries       models.ProgramClassEvent `json:"event_series"`
@@ -154,6 +187,14 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Event rescheduled successfully")
+}
+
+func (srv *Server) cannotUpdateEvent(classID int) (bool, error) {
+	class, err := srv.Db.GetClassByID(classID)
+	if err != nil {
+		return false, newDatabaseServiceError(err)
+	}
+	return class.Status == models.Completed || class.Status == models.Cancelled, nil
 }
 
 func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Request, log sLog) error {
