@@ -102,7 +102,7 @@ func (r *Request[T]) Do() *Response[T] {
 	var decoded bool
 	rawStr := string(rawBytes)
 
-	if r.asJson && resp.StatusCode < 400 {
+	if r.asJson && resp.StatusCode < 400 && resp.StatusCode != http.StatusNoContent {
 		require.NoError(r.t, json.Unmarshal(rawBytes, &env), "failed to unmarshal response body")
 
 		parsed = new(T)
@@ -159,6 +159,13 @@ func (r *Response[T]) ExpectRaw(expected string) {
 	r.t.Helper()
 
 	require.Equal(r.t, expected, r.rawBody)
+}
+
+func (r *Response[T]) ExpectBodyContains(expected string) *Response[T] {
+	r.t.Helper()
+
+	require.Contains(r.t, r.rawBody, expected, "expected response body to contain '%s', got: %s", expected, r.rawBody)
+	return r
 }
 
 func (c *Client) buildURL(endpoint string) (string, error) {

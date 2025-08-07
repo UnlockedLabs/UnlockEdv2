@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,6 +47,12 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	now := time.Now().In(time.Local)
 	endOfToday := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.Local)
 
+	args := srv.getQueryContext(r)
+	overrides, err := srv.Db.GetProgramClassEventOverrides(&args, []uint{uint(eventID)}...)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
 	for i := range attendances {
 		if attendances[i].Date == "" {
 			attendances[i].Date = time.Now().Format("2006-01-02")
@@ -59,6 +66,20 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		if parsed.After(endOfToday) {
 			return writeJsonResponse(w, http.StatusUnprocessableEntity, "attempted attendance date in future")
 		}
+
+		if isDateCancelled(overrides, attendances[i].Date) {
+			return writeJsonResponse(w, http.StatusConflict, "cannot record attendance for cancelled class date")
+		}
+
+		var enrollment models.ProgramClassEnrollment
+		enrollmentErr := srv.Db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
+			classId, attendances[i].UserID, models.Enrolled).
+			First(&enrollment).Error
+		if enrollmentErr != nil {
+			return writeJsonResponse(w, http.StatusBadRequest,
+				fmt.Sprintf("user %d is not enrolled in class %d", attendances[i].UserID, classId))
+		}
+
 		attendances[i].EventID = uint(eventID)
 	}
 	if err := srv.Db.LogUserAttendance(attendances); err != nil {
@@ -68,6 +89,10 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newBadRequestServiceError(err, "class ID")
+	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
@@ -76,7 +101,29 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newBadRequestServiceError(err, "user ID")
 	}
-	err = srv.Db.DeleteAttendance(eventID, userID, r.URL.Query().Get("date"))
+
+	date := r.URL.Query().Get("date")
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+
+	args := srv.getQueryContext(r)
+	overrides, err := srv.Db.GetProgramClassEventOverrides(&args, []uint{uint(eventID)}...)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if isDateCancelled(overrides, date) {
+		return writeJsonResponse(w, http.StatusConflict, "cannot delete attendance for cancelled class date")
+	}
+
+	var enrollment models.ProgramClassEnrollment
+	enrollmentErr := srv.Db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
+		classID, userID, models.Enrolled).First(&enrollment).Error
+	if enrollmentErr != nil {
+		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class")
+	}
+
+	err = srv.Db.DeleteAttendance(eventID, userID, date)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
