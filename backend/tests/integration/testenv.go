@@ -6,6 +6,7 @@ import (
 	"UnlockEdv2/src/handlers"
 	"UnlockEdv2/src/models"
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -243,4 +244,48 @@ func (env *TestEnv) GetEnrollmentTimestamps(enrollmentID uint) (enrolledAt, ende
 		return nil, nil, err
 	}
 	return enrollment.EnrolledAt, enrollment.EnrollmentEndedAt, nil
+}
+
+func (env *TestEnv) CreateTestEvent(classID uint, rrule string) (*models.ProgramClassEvent, error) {
+	if rrule == "" {
+		startDate := time.Now().AddDate(0, 0, -2) // 2 days ago
+		rrule = fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=10", startDate.Format("20060102T090000Z"))
+	}
+
+	event := &models.ProgramClassEvent{
+		ClassID:        classID,
+		Duration:       "2h",
+		RecurrenceRule: rrule,
+		Room:           "Test Room",
+	}
+
+	if err := env.DB.Create(event).Error; err != nil {
+		return nil, err
+	}
+
+	return event, nil
+}
+
+func (env *TestEnv) CreateTestEventOverride(eventID uint, date string, isCancelled bool, reason string) (*models.ProgramClassEventOverride, error) {
+	parsedDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return nil, err
+	}
+
+	rrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1", parsedDate.Format("20060102T090000Z"))
+
+	override := &models.ProgramClassEventOverride{
+		EventID:       eventID,
+		Duration:      "2h",
+		OverrideRrule: rrule,
+		IsCancelled:   isCancelled,
+		Reason:        reason,
+		Room:          "Test Room",
+	}
+
+	if err := env.DB.Create(override).Error; err != nil {
+		return nil, err
+	}
+
+	return override, nil
 }
