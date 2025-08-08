@@ -46,7 +46,6 @@ func TestCreateClassHandler(t *testing.T) {
 	t.Run("Create class at facility not offered is invalid", func(t *testing.T) {
 		runCreateClassNotOfferedFacilityTest(t, env, facility, facilityAdmin)
 	})
-
 }
 
 // successful class is created

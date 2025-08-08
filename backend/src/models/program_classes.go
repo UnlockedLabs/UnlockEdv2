@@ -257,3 +257,11 @@ func (ProgramClassesHistory) TableName() string { return "program_classes_histor
 func (pc *ProgramClass) CannotUpdateClass() bool {
 	return pc.Status == Completed || pc.Status == Cancelled || pc.ArchivedAt != nil
 }
+
+func (pc *ProgramClass) GetProgramOwnerOrEmpty() string {
+	facilityProg := pc.FacilityProg
+	if facilityProg != nil {
+		return facilityProg.ProgramOwner
+	}
+	return ""
+}
