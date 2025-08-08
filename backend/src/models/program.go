@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -228,4 +229,16 @@ func ProgramDataToCSVFormat(data []ProgramCSVData) ([][]string, error) {
 		csvData = append(csvData, row)
 	}
 	return csvData, nil
+}
+
+func (p *Program) GetUniqueCreditTypeString() string {
+	uniqueCreditTypes := make(map[string]struct{})
+	for _, ct := range p.ProgramCreditTypes {
+		uniqueCreditTypes[string(ct.CreditType)] = struct{}{}
+	}
+	keys := make([]string, 0, len(uniqueCreditTypes))
+	for k := range uniqueCreditTypes {
+		keys = append(keys, k)
+	}
+	return strings.Join(keys, ",")
 }

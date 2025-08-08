@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
-	"strings"
 )
 
 func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
@@ -185,25 +184,6 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status s
 	return nil
 }
 
-func getProgramOwnerOrEmpty(facilityProg *models.FacilitiesPrograms) string {
-	if facilityProg != nil {
-		return facilityProg.ProgramOwner
-	}
-	return ""
-}
-
-func getUniqueCreditTypeString(creditTypes []models.ProgramCreditType) string {
-	uniqueCreditTypes := make(map[string]struct{})
-	for _, ct := range creditTypes {
-		uniqueCreditTypes[string(ct.CreditType)] = struct{}{}
-	}
-	keys := make([]string, 0, len(uniqueCreditTypes))
-	for k := range uniqueCreditTypes {
-		keys = append(keys, k)
-	}
-	return strings.Join(keys, ",")
-}
-
 func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap map[string]any) error {
 	tx := db.WithContext(ctx).Begin()
 	if tx.Error != nil {
@@ -262,26 +242,26 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		return newUpdateDBError(err, "program classes")
 	}
 
-	rawUID, ok := classMap["update_user_id"]
-	if !ok {
-		tx.Rollback()
-		return newUpdateDBError(fmt.Errorf("missing update_user_id in classMap"), "program classes")
-	}
-
-	updateUserID, ok := rawUID.(uint)
-	if !ok {
-		tx.Rollback()
-		return newUpdateDBError(fmt.Errorf("update_user_id must be of type uint"), "program classes")
-	}
-
-	var admin models.User
-	if err := tx.First(&admin, "id = ?", updateUserID).Error; err != nil {
-		tx.Rollback()
-		return newNotFoundDBError(err, "admin user")
-	}
-	adminEmail = admin.Email
-
 	if len(toBeCompletedEnrollments) > 0 {
+
+		rawUID, ok := classMap["update_user_id"]
+		if !ok {
+			tx.Rollback()
+			return newUpdateDBError(fmt.Errorf("missing update_user_id in classMap"), "program classes")
+		}
+
+		updateUserID, ok := rawUID.(uint)
+		if !ok {
+			tx.Rollback()
+			return newUpdateDBError(fmt.Errorf("update_user_id must be of type uint"), "program classes")
+		}
+
+		var admin models.User
+		if err := tx.First(&admin, "id = ?", updateUserID).Error; err != nil {
+			tx.Rollback()
+			return newNotFoundDBError(err, "admin user")
+		}
+		adminEmail = admin.Email
 
 		completions := make([]models.ProgramCompletion, 0, len(toBeCompletedEnrollments))
 		for _, enrollment := range toBeCompletedEnrollments {
@@ -289,11 +269,11 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 				ProgramClassID:      enrollment.ClassID,
 				FacilityName:        enrollment.User.Facility.Name,
 				ProgramName:         enrollment.Class.Program.Name,
-				ProgramOwner:        getProgramOwnerOrEmpty(enrollment.Class.FacilityProg),
+				ProgramOwner:        enrollment.Class.GetProgramOwnerOrEmpty(),
 				ProgramID:           enrollment.Class.ProgramID,
 				AdminEmail:          adminEmail,
 				ProgramClassStartDt: enrollment.Class.StartDt,
-				CreditType:          getUniqueCreditTypeString(enrollment.Class.Program.ProgramCreditTypes),
+				CreditType:          enrollment.Class.Program.GetUniqueCreditTypeString(),
 				ProgramClassName:    enrollment.Class.Name,
 				UserID:              enrollment.UserID,
 				EnrolledOnDt:        enrollment.CreatedAt,
@@ -306,7 +286,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		}
 
 	}
-	// todo: do i log changes for program_completions as well?
 	var (
 		allChanges []models.ChangeLogEntry
 		logEntry   models.ChangeLogEntry
@@ -316,7 +295,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			if fieldName == "update_user_id" {
 				continue
 			}
-			logEntry = *models.NewChangeLogEntry("program_classes", fieldName, nil, models.StringPtr(value.(string)), uint(classID), updateUserID)
+			logEntry = *models.NewChangeLogEntry("program_classes", fieldName, nil, models.StringPtr(value.(string)), uint(classID), classMap["update_user_id"].(uint))
 			allChanges = append(allChanges, logEntry)
 		}
 	}
