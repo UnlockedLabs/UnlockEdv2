@@ -469,9 +469,6 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 		Find(&programCompletions).Error
 	require.NoError(t, err)
 
-	fmt.Println(class.ID, "class.ID!!!!!!!!!!!!!")
-	fmt.Println(len(programCompletions), "program completions", afterUpdateEnrollmentsCount, "afterUpdateEnrollmentsCount!!!!!!!!!!!!")
-
 	// Check if the same number of program completion records were created as the students enrolled (this is the expected behavior)
 	require.Len(
 		t,
