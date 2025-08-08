@@ -69,6 +69,20 @@ const ModifyClassModal = forwardRef(function (
     const { title, text } = StatusMessagesMap[action] || {};
     if (title === undefined || text === undefined) return;
 
+    const enrolled = program_class.enrolled ?? 0;
+    const defaultBody = text(program_class.status);
+
+    const body =
+        action === ClassStatusOptions.Complete
+            ? `Marking this class as Complete will also mark all currently enrolled residents (${enrolled}) as Completed and record a program completion.
+      
+Are you sure you want to complete this class?`
+            : action === ClassStatusOptions.Cancel
+              ? `Cancelling this class will also cancel all currently enrolled residents (${enrolled}). Their enrollment statuses will be updated to Cancelled.
+
+Are you sure you want to cancel this class?`
+              : defaultBody;
+
     async function onConfirm() {
         const updatedStatus = ClassStatusMap[action!];
 
@@ -94,7 +108,7 @@ const ModifyClassModal = forwardRef(function (
                 ref={ref}
                 type={TextModalType.Confirm}
                 title={title}
-                text={text(program_class.status) ?? ''}
+                text={body}
                 onSubmit={() => void onConfirm()}
                 onClose={close}
             />

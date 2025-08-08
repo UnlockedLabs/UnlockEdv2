@@ -190,8 +190,13 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
 
+	var (
+		toBeCompletedEnrollments []models.ProgramClassEnrollment
+		adminEmail               string
+	)
+
 	if status, ok := classMap["status"]; ok &&
-		status == string(models.Cancelled) || status == string(models.Completed) {
+		(status == string(models.Cancelled) || status == string(models.Completed)) {
 
 		for _, classID := range classIDs {
 			var enrollmentStatus models.ProgramEnrollmentStatus
@@ -201,6 +206,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			case string(models.Completed):
 				enrollmentStatus = models.EnrollmentCompleted
 			}
+
 			if err := tx.
 				Model(&models.ProgramClassEnrollment{}).
 				Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
@@ -212,6 +218,18 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			}
 		}
 
+		// Fetch enrollments that will used create program completions AFTER the update
+		if status == string(models.Completed) {
+			if err := tx.Model(&models.ProgramClassEnrollment{}).
+				Preload("User.Facility").
+				Preload("Class.Program.ProgramCreditTypes").
+				Preload("Class.FacilityProg").
+				Where("class_id IN (?) AND enrollment_status = ?", classIDs, models.EnrollmentCompleted).
+				Find(&toBeCompletedEnrollments).Error; err != nil {
+				tx.Rollback()
+				return newNotFoundDBError(err, "fetching updated enrollments")
+			}
+		}
 	}
 
 	if err := tx.
@@ -224,6 +242,50 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		return newUpdateDBError(err, "program classes")
 	}
 
+	if len(toBeCompletedEnrollments) > 0 {
+
+		rawUID, ok := classMap["update_user_id"]
+		if !ok {
+			tx.Rollback()
+			return newUpdateDBError(fmt.Errorf("missing update_user_id in classMap"), "program classes")
+		}
+
+		updateUserID, ok := rawUID.(uint)
+		if !ok {
+			tx.Rollback()
+			return newUpdateDBError(fmt.Errorf("update_user_id must be of type uint"), "program classes")
+		}
+
+		var admin models.User
+		if err := tx.First(&admin, "id = ?", updateUserID).Error; err != nil {
+			tx.Rollback()
+			return newNotFoundDBError(err, "admin user")
+		}
+		adminEmail = admin.Email
+
+		completions := make([]models.ProgramCompletion, 0, len(toBeCompletedEnrollments))
+		for _, enrollment := range toBeCompletedEnrollments {
+			completions = append(completions, models.ProgramCompletion{
+				ProgramClassID:      enrollment.ClassID,
+				FacilityName:        enrollment.User.Facility.Name,
+				ProgramName:         enrollment.Class.Program.Name,
+				ProgramOwner:        enrollment.Class.GetProgramOwnerOrEmpty(),
+				ProgramID:           enrollment.Class.ProgramID,
+				AdminEmail:          adminEmail,
+				ProgramClassStartDt: enrollment.Class.StartDt,
+				CreditType:          enrollment.Class.Program.GetUniqueCreditTypeString(),
+				ProgramClassName:    enrollment.Class.Name,
+				UserID:              enrollment.UserID,
+				EnrolledOnDt:        enrollment.CreatedAt,
+			})
+		}
+
+		if err := tx.Create(&completions).Error; err != nil {
+			tx.Rollback()
+			return newCreateDBError(err, "enrollment completion")
+		}
+
+	}
 	var (
 		allChanges []models.ChangeLogEntry
 		logEntry   models.ChangeLogEntry
@@ -237,7 +299,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			allChanges = append(allChanges, logEntry)
 		}
 	}
-
 	if len(allChanges) > 0 {
 		if err := tx.Create(&allChanges).Error; err != nil {
 			tx.Rollback()
