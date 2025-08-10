@@ -94,6 +94,18 @@ func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
 	return count, nil
 }
 
+func (db *DB) GetHistoricalEnrollmentCountForDate(classID int, eventDate string) (int64, error) {
+	var count int64
+	if err := db.Model(&models.ProgramClassEnrollment{}).
+		Where("class_id = ?", classID).
+		Where("enrolled_at <= ?", eventDate).
+		Where("enrollment_ended_at IS NULL OR enrollment_ended_at > ?", eventDate).
+		Count(&count).Error; err != nil {
+		return 0, NewDBError(err, "historical enrollment count")
+	}
+	return count, nil
+}
+
 func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]models.ProgramClassDetail, error) {
 	var classDetails []models.ProgramClassDetail
 	query := db.WithContext(args.Ctx).Table("program_classes ps").
