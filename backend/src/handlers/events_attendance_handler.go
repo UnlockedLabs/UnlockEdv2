@@ -17,6 +17,7 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	return []routeDef{
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
+		validatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment", srv.handleGetHistoricalEnrollmentCount, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
 	}
@@ -240,12 +241,35 @@ func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *htt
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "event ID")
 	}
-	attendanceRate, err := srv.Db.GetAttendanceRateForEvent(r.Context(), eventID, classID)
+	date := r.URL.Query().Get("date")
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+	attendanceRate, err := srv.Db.GetAttendanceRateForEvent(r.Context(), eventID, classID, date)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	response := map[string]float64{
 		"attendance_rate": attendanceRate,
+	}
+	return writeJsonResponse(w, http.StatusOK, response)
+}
+
+func (srv *Server) handleGetHistoricalEnrollmentCount(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	date := r.URL.Query().Get("date")
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+	count, err := srv.Db.GetHistoricalEnrollmentCountForDate(classID, date)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	response := map[string]int64{
+		"historical_enrollment_count": count,
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
 }

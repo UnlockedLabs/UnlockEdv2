@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import {
-    Attendance,
     Class,
     SelectedClassStatus,
     ServerResponseMany,
@@ -12,10 +11,8 @@ import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
-import {
-    ClassEventInstance,
-    ProgramClassEventAttendance
-} from '@/types/events';
+import { ClassEventInstance } from '@/types/events';
+import AttendanceCell from '@/Components/AttendanceCell';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import {
     ClipboardDocumentCheckIcon,
@@ -59,7 +56,6 @@ export default function ClassEvents() {
     );
 
     const this_program = program_class?.data;
-    const enrolled = this_program?.enrolled;
 
     const blockEdits = isCompletedCancelledOrArchived(
         this_program ?? ({} as Class)
@@ -72,12 +68,6 @@ export default function ClassEvents() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return day > today;
-    }
-
-    function getPresentCount(records: ProgramClassEventAttendance[]): number {
-        return records.filter(
-            (record) => record.attendance_status === Attendance.Present
-        ).length;
     }
 
     function handleViewEditMarkAttendance(eventId: number, date: string) {
@@ -204,9 +194,12 @@ export default function ClassEvents() {
                                             event.class_time
                                         )}
                                     </td>
-                                    <td>{`${event.attendance_records ? getPresentCount(event.attendance_records) : 0} ${
-                                        enrolled ? `/ ${enrolled}` : ''
-                                    }`}</td>
+                                    <td>
+                                        <AttendanceCell
+                                            event={event}
+                                            classId={class_id!}
+                                        />
+                                    </td>
                                     <td>
                                         {getStatus(
                                             this_program ?? undefined,
