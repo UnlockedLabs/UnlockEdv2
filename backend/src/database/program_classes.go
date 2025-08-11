@@ -94,7 +94,7 @@ func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
 	return count, nil
 }
 
-func (db *DB) GetHistoricalEnrollmentCountForDate(classID int, eventDate string) (int64, error) {
+func (db *DB) GetHistoricalEnrollmentForDate(classID int, eventDate string) (int64, error) {
 	var count int64
 	if err := db.Model(&models.ProgramClassEnrollment{}).
 		Where("class_id = ?", classID).
