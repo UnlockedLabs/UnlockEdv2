@@ -8,11 +8,9 @@ import (
 )
 
 func ReplaceOrAddUntilDate(rRule, untilDate string) string {
-	// Handle multiline RRULE format (DTSTART + RRULE)
 	lines := strings.Split(rRule, "\n")
 	for i, line := range lines {
 		if strings.Contains(line, "RRULE:") {
-			// Remove any existing UNTIL parameter first
 			parts := strings.Split(line, ";")
 			var newParts []string
 			for _, part := range parts {
@@ -20,7 +18,6 @@ func ReplaceOrAddUntilDate(rRule, untilDate string) string {
 					newParts = append(newParts, part)
 				}
 			}
-			// Add the new UNTIL parameter
 			newParts = append(newParts, "UNTIL="+untilDate)
 			lines[i] = strings.Join(newParts, ";")
 			break
