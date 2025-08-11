@@ -71,11 +71,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 			return writeJsonResponse(w, http.StatusConflict, "cannot record attendance for cancelled class date")
 		}
 
-		var enrollment models.ProgramClassEnrollment
-		enrollmentErr := srv.Db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
-			classId, attendances[i].UserID, models.Enrolled).
-			First(&enrollment).Error
-		if enrollmentErr != nil {
+		if err := srv.Db.IsUserEnrolledInClass(uint(classId), attendances[i].UserID); err != nil {
 			return writeJsonResponse(w, http.StatusBadRequest,
 				fmt.Sprintf("user %d is not enrolled in class %d", attendances[i].UserID, classId))
 		}
@@ -89,10 +85,6 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
-	if err != nil {
-		return newBadRequestServiceError(err, "class ID")
-	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
@@ -116,17 +108,15 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 		return writeJsonResponse(w, http.StatusConflict, "cannot delete attendance for cancelled class date")
 	}
 
-	var enrollment models.ProgramClassEnrollment
-	enrollmentErr := srv.Db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
-		classID, userID, models.Enrolled).First(&enrollment).Error
-	if enrollmentErr != nil {
-		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class")
-	}
-
-	err = srv.Db.DeleteAttendance(eventID, userID, date)
+	rowsAffected, err := srv.Db.DeleteAttendance(eventID, userID, date)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+
+	if rowsAffected == 0 {
+		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class or has no attendance record for this date")
+	}
+
 	return writeJsonResponse(w, http.StatusNoContent, any(nil))
 }
 
