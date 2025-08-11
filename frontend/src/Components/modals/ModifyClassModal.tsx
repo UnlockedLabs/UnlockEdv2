@@ -103,7 +103,7 @@ Are you sure you want to cancel this class?`
         onClose?.();
     }
     return (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div className="text-left" onClick={(e) => e.stopPropagation()}>
             <TextOnlyModal
                 ref={ref}
                 type={TextModalType.Confirm}
