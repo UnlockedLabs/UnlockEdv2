@@ -60,13 +60,23 @@ func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAtten
 	return nil
 }
 
-func (db *DB) DeleteAttendance(eventId, userId int, date string) error {
+func (db *DB) DeleteAttendance(eventId, userId int, date string) (int64, error) {
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
-	err := db.Where("event_id = ? AND user_id = ? AND date = ?", eventId, userId, date).Delete(&models.ProgramClassEventAttendance{}).Error
+	result := db.Where("event_id = ? AND user_id = ? AND date = ?", eventId, userId, date).Delete(&models.ProgramClassEventAttendance{})
+	if result.Error != nil {
+		return 0, newDeleteDBError(result.Error, "class_event_attendance")
+	}
+	return result.RowsAffected, nil
+}
+
+func (db *DB) IsUserEnrolledInClass(classID, userID uint) error {
+	var enrollment models.ProgramClassEnrollment
+	err := db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
+		classID, userID, models.Enrolled).First(&enrollment).Error
 	if err != nil {
-		return newDeleteDBError(err, "class_event_attendance")
+		return newGetRecordsDBError(err, "program_class_enrollments")
 	}
 	return nil
 }
