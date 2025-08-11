@@ -169,6 +169,14 @@ func TestUpdateClasses(t *testing.T) {
 	t.Run("Update Active to Paused to Active preserves original enrolled_at timestamps", func(t *testing.T) {
 		runUpdateActivePausedActiveTest(t, env, facility, facilityAdmin, program)
 	})
+
+	t.Run("Completing class updates RRULE to end on current date", func(t *testing.T) {
+		runUpdateClassCompletedRRuleTest(t, env, facility, facilityAdmin, program)
+	})
+
+	t.Run("Cancelling class updates RRULE to end on current date", func(t *testing.T) {
+		runUpdateClassCancelledRRuleTest(t, env, facility, facilityAdmin, program)
+	})
 }
 
 func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
@@ -390,6 +398,96 @@ func runUpdateActivePausedActiveTest(t *testing.T, env *TestEnv, facility *model
 	require.NoError(t, err)
 	require.Equal(t, originalEnrolledAt, enrolledAtFinal, "enrolled_at should preserve original timestamp when going Paused->Active")
 	require.Nil(t, endedAtFinal, "enrollment_ended_at should still be NULL after reactivating")
+}
+
+func runUpdateClassCompletedRRuleTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	// Create a scheduled class
+	class, err := env.CreateTestClass(program, facility, models.Scheduled)
+	require.NoError(t, err)
+
+	// Create a recurring class event without UNTIL date
+	event := &models.ProgramClassEvent{
+		ClassID:        class.ID,
+		Duration:       "1h30m0s",
+		RecurrenceRule: "DTSTART:20240701T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH", // Tuesdays and Thursdays, no UNTIL
+		Room:           "Test Room 1",
+	}
+	err = env.DB.Create(event).Error
+	require.NoError(t, err)
+
+	// Verify the original RRULE has no UNTIL date
+	require.NotContains(t, event.RecurrenceRule, "UNTIL", "Original RRULE should not have UNTIL date")
+
+	// Update class status to Completed
+	updateData := map[string]interface{}{
+		"status": string(models.Completed),
+	}
+
+	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	// Fetch the updated event and verify RRULE was modified to include UNTIL date
+	var updatedEvent models.ProgramClassEvent
+	err = env.DB.Where("id = ?", event.ID).First(&updatedEvent).Error
+	require.NoError(t, err)
+
+	// The RRULE should now contain an UNTIL date
+	require.Contains(t, updatedEvent.RecurrenceRule, "UNTIL", "Updated RRULE should contain UNTIL date")
+
+	// Verify the UNTIL date is set to current date at end of day
+	currentDate := time.Now().UTC()
+	expectedDate := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 23, 59, 59, 0, time.UTC)
+	expectedUntilDate := expectedDate.Format("20060102T150405Z")
+	require.Contains(t, updatedEvent.RecurrenceRule, expectedUntilDate, "UNTIL date should be current date at end of day")
+}
+
+func runUpdateClassCancelledRRuleTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	// Create a scheduled class
+	class, err := env.CreateTestClass(program, facility, models.Scheduled)
+	require.NoError(t, err)
+
+	// Create a recurring class event with a future end date
+	futureTime := time.Now().AddDate(0, 0, 30).UTC()
+	futureDate := time.Date(futureTime.Year(), futureTime.Month(), futureTime.Day(), 23, 59, 59, 0, time.UTC).Format("20060102T150405Z")
+	event := &models.ProgramClassEvent{
+		ClassID:        class.ID,
+		Duration:       "1h30m0s",
+		RecurrenceRule: fmt.Sprintf("DTSTART:20240701T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR;UNTIL=%s", futureDate),
+		Room:           "Test Room 2",
+	}
+	err = env.DB.Create(event).Error
+	require.NoError(t, err)
+
+	// Verify the original RRULE has a future UNTIL date
+	require.Contains(t, event.RecurrenceRule, "UNTIL", "Original RRULE should have UNTIL date")
+	require.Contains(t, event.RecurrenceRule, futureDate, "Original RRULE should have future UNTIL date")
+
+	// Update class status to Cancelled
+	updateData := map[string]interface{}{
+		"status": string(models.Cancelled),
+	}
+
+	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	// Fetch the updated event and verify RRULE was modified
+	var updatedEvent models.ProgramClassEvent
+	err = env.DB.Where("id = ?", event.ID).First(&updatedEvent).Error
+	require.NoError(t, err)
+
+	// The RRULE should still contain an UNTIL date, but it should be today's date
+	require.Contains(t, updatedEvent.RecurrenceRule, "UNTIL", "Updated RRULE should still contain UNTIL date")
+
+	// Verify the UNTIL date was changed to current date (not the future date)
+	currentDate := time.Now().UTC()
+	expectedDate := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 23, 59, 59, 0, time.UTC)
+	expectedUntilDate := expectedDate.Format("20060102T150405Z")
+	require.Contains(t, updatedEvent.RecurrenceRule, expectedUntilDate, "UNTIL date should be updated to current date at end of day")
+	require.NotContains(t, updatedEvent.RecurrenceRule, futureDate, "RRULE should no longer contain future date")
 }
 
 func TestMain(m *testing.M) {

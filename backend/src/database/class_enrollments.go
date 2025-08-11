@@ -4,6 +4,9 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"time"
+
+	"gorm.io/gorm"
 )
 
 func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
@@ -190,28 +193,42 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
 
-	if status, ok := classMap["status"]; ok &&
-		status == string(models.Cancelled) || status == string(models.Completed) {
-
-		for _, classID := range classIDs {
-			var enrollmentStatus models.ProgramEnrollmentStatus
-			switch status {
-			case string(models.Cancelled):
-				enrollmentStatus = models.EnrollmentCancelled
-			case string(models.Completed):
-				enrollmentStatus = models.EnrollmentCompleted
-			}
-			if err := tx.
-				Model(&models.ProgramClassEnrollment{}).
-				Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
-				Set("class_id", classID).
-				Update("enrollment_status", enrollmentStatus).
-				Error; err != nil {
-				tx.Rollback()
-				return newUpdateDBError(err, "class enrollment statuses")
-			}
+	if rawStatus, ok := classMap["status"]; ok {
+		var statusStr string
+		switch v := rawStatus.(type) {
+		case string:
+			statusStr = v
+		case models.ClassStatus:
+			statusStr = string(v)
+		default:
+			statusStr = fmt.Sprint(v)
 		}
 
+		if statusStr == string(models.Cancelled) || statusStr == string(models.Completed) {
+			for _, classID := range classIDs {
+				var enrollmentStatus models.ProgramEnrollmentStatus
+				switch statusStr {
+				case string(models.Cancelled):
+					enrollmentStatus = models.EnrollmentCancelled
+				case string(models.Completed):
+					enrollmentStatus = models.EnrollmentCompleted
+				}
+				if err := tx.
+					Model(&models.ProgramClassEnrollment{}).
+					Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
+					Set("class_id", classID).
+					Update("enrollment_status", enrollmentStatus).
+					Error; err != nil {
+					tx.Rollback()
+					return newUpdateDBError(err, "class enrollment statuses")
+				}
+			}
+
+			if err := db.updateRecurrenceRulesForClassCompletion(tx, classIDs); err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
 	}
 
 	if err := tx.
@@ -307,4 +324,24 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 		return 0, nil, newNotFoundDBError(err, "class event attendance")
 	}
 	return total, content, nil
+}
+
+func (db *DB) updateRecurrenceRulesForClassCompletion(tx *gorm.DB, classIDs []int) error {
+	var events []models.ProgramClassEvent
+	if err := tx.Where("class_id IN ?", classIDs).Find(&events).Error; err != nil {
+		return newGetRecordsDBError(err, "program_class_events")
+	}
+
+	currentDate := time.Now().UTC()
+	endOfDay := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 23, 59, 59, 0, time.UTC)
+	untilDate := models.FormatTimeForRRule(endOfDay)
+
+	for _, event := range events {
+		updatedRRule := models.ReplaceOrAddUntilDate(event.RecurrenceRule, untilDate)
+		if err := tx.Model(&event).Where("id = ?", event.ID).Update("recurrence_rule", updatedRRule).Error; err != nil {
+			return newUpdateDBError(err, "program_class_event recurrence_rule")
+		}
+	}
+
+	return nil
 }
