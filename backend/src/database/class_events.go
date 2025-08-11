@@ -340,6 +340,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		p.name as program_name,
 		c.instructor_name,
 		c.name as class_name,
+		c.status as class_status,
         STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
 		Joins("JOIN program_classes c ON c.id = pcev.class_id and c.archived_at IS NULL").
 		Joins("JOIN programs p ON p.id = c.program_id").
@@ -353,7 +354,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	if !args.IsAdmin {
 		tx = tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
-	tx = tx.Group("pcev.id, c.instructor_name, c.name, p.name")
+	tx = tx.Group("pcev.id, c.instructor_name, c.name, c.status, p.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -404,6 +405,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ProgramName:       event.ProgramName,
 				ClassName:         event.ClassName,
 				EnrolledUsers:     event.EnrolledUsers,
+				ClassStatus:       event.ClassStatus,
 				StartTime:         &occurrence,
 				EndTime:           &endTime,
 				Frequency:         rRule.OrigOptions.Freq.String(),
@@ -445,6 +447,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ProgramName:         event.ProgramName,
 				ClassName:           event.ClassName,
 				EnrolledUsers:       event.EnrolledUsers,
+				ClassStatus:         event.ClassStatus,
 				StartTime:           &overrideDate,
 				EndTime:             &overrideEndTime,
 				Frequency:           rRule.OrigOptions.Freq.String(),

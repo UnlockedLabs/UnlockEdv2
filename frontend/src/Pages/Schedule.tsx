@@ -1,4 +1,8 @@
-import { ClassLoaderData, ServerResponseMany } from '@/common';
+import {
+    ClassLoaderData,
+    SelectedClassStatus,
+    ServerResponseMany
+} from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
 import { FacilityProgramClassEvent } from '@/types/events';
@@ -70,10 +74,15 @@ export default function Schedule() {
     }
 
     function canUpdateEvent(): boolean {
-        if (
+        const isClassCompletedOrCancelled =
             selectedEvent &&
-            class_id &&
-            selectedEvent.class_id.toString() !== class_id
+            (selectedEvent.class_status === SelectedClassStatus.Completed ||
+                selectedEvent.class_status === SelectedClassStatus.Cancelled);
+        if (
+            (selectedEvent &&
+                class_id &&
+                selectedEvent.class_id.toString() !== class_id) ||
+            isClassCompletedOrCancelled
         ) {
             return false;
         }
