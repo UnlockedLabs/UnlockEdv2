@@ -16,7 +16,7 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	return []routeDef{
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
-		validatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment", srv.handleGetHistoricalEnrollmentCount, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment", srv.handleGetHistoricalEnrollmentCount, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
 	}
@@ -198,7 +198,7 @@ func (srv *Server) handleGetHistoricalEnrollmentCount(w http.ResponseWriter, r *
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
-	count, err := srv.Db.GetHistoricalEnrollmentCountForDate(classID, date)
+	count, err := srv.Db.GetHistoricalEnrollmentForDate(classID, date)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
