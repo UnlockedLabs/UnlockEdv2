@@ -22,6 +22,8 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	}
 }
 
+// O(N+1) query problem in this method, but it is not a performance critical endpoint
+// and the number of enrollments is usually small, so for now we're going to live with it.
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	classId, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
