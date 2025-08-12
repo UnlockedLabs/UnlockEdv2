@@ -3,44 +3,37 @@ package models
 import (
 	"strings"
 	"time"
-
-	"github.com/teambition/rrule-go"
 )
 
+// ReplaceOrAddUntilDate adds or updates the UNTIL parameter in an RRULE string
+// with the provided date string in RRULE format (YYYYMMDDTHHMMSSZ)
 func ReplaceOrAddUntilDate(rRule, untilDate string) string {
-	lines := strings.Split(rRule, "\n")
-	for i, line := range lines {
-		if strings.Contains(line, "RRULE:") {
-			parts := strings.Split(line, ";")
-			var newParts []string
-			for _, part := range parts {
-				if !strings.HasPrefix(part, "UNTIL=") {
-					newParts = append(newParts, part)
-				}
-			}
-			newParts = append(newParts, "UNTIL="+untilDate)
-			lines[i] = strings.Join(newParts, ";")
+	rRuleParts := strings.Split(rRule, ";")
+	untilExists := false
+	for i, part := range rRuleParts {
+		if strings.HasPrefix(part, "UNTIL=") {
+			rRuleParts[i] = "UNTIL=" + untilDate
+			untilExists = true
 			break
 		}
 	}
-	return strings.Join(lines, "\n")
+	if !untilExists {
+		rRuleParts = append(rRuleParts, "UNTIL="+untilDate)
+	}
+	return strings.Join(rRuleParts, ";")
 }
 
+// GetUntilDateFromRule extracts the UNTIL date from an RRULE string
 func GetUntilDateFromRule(rRule string) string {
-	opts, err := rrule.StrToROption(rRule)
-	if err == nil && !opts.Until.IsZero() {
-		return FormatTimeForRRule(opts.Until)
+	for _, rRulePart := range strings.Split(rRule, ";") {
+		if strings.HasPrefix(rRulePart, "UNTIL=") {
+			return strings.TrimPrefix(rRulePart, "UNTIL=")
+		}
 	}
 	return ""
 }
 
+// FormatTimeForRRule formats a time.Time to RRULE UNTIL format (YYYYMMDDTHHMMSSZ)
 func FormatTimeForRRule(t time.Time) string {
 	return t.UTC().Format("20060102T150405Z")
-}
-
-func ClampUntilToEndOfDay(rRule string, day time.Time) string {
-	endOfDay := time.Date(day.Year(), day.Month(), day.Day(), 23, 59, 59, 0, time.UTC)
-	endOfDay = endOfDay.Truncate(time.Second)
-	untilDate := FormatTimeForRRule(endOfDay)
-	return ReplaceOrAddUntilDate(rRule, untilDate)
 }

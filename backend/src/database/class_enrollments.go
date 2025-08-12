@@ -224,7 +224,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 				}
 			}
 
-			if err := db.updateRecurrenceRulesForClassCompletion(tx, classIDs); err != nil {
+			if err := db.updateEventRRulesForClassEnd(tx, classIDs); err != nil {
 				tx.Rollback()
 				return err
 			}
@@ -326,7 +326,7 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 	return total, content, nil
 }
 
-func (db *DB) updateRecurrenceRulesForClassCompletion(tx *gorm.DB, classIDs []int) error {
+func (db *DB) updateEventRRulesForClassEnd(tx *gorm.DB, classIDs []int) error {
 	var events []models.ProgramClassEvent
 	if err := tx.Where("class_id IN ?", classIDs).Find(&events).Error; err != nil {
 		return newGetRecordsDBError(err, "program_class_events")
