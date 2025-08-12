@@ -102,6 +102,12 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 
 	args := srv.getQueryContext(r)
 
+	class, err := srv.Db.GetClassByID(classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	includeCurrentlyEnrolled := class.Status != models.Active
+
 	overrides, err := srv.Db.GetProgramClassEventOverrides(&args, []uint{uint(eventID)}...)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -110,7 +116,7 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 		return writePaginatedResponse(w, http.StatusConflict, []models.EnrollmentAttendance{}, args.IntoMeta())
 	}
 
-	combined, err := srv.Db.GetEnrollmentsWithAttendanceForEvent(&args, classID, eventID, date)
+	combined, err := srv.Db.GetEnrollmentsWithAttendanceForEvent(&args, classID, eventID, date, includeCurrentlyEnrolled)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
