@@ -15,6 +15,7 @@ import {
     ServerResponseMany,
     FilterResidentNames,
     Class,
+    SelectedClassStatus,
     ToastState
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -25,6 +26,7 @@ import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import { useToast } from '@/Context/ToastCtx';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import WarningBanner from '@/Components/WarningBanner';
 import { CancelButton } from '@/Components/inputs';
 import AttendanceStatusToggle from '@/Components/AttendanceStatusToggle';
 import {
@@ -74,7 +76,9 @@ export default function EventAttendance() {
     } = useUrlPagination(1, 20);
     const rawClsInfo = useLoaderData() as { class?: Class };
     const clsInfo = rawClsInfo?.class;
-    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
+    const isNotActive = clsInfo?.status !== SelectedClassStatus.Active;
+    const blockEdits =
+        isCompletedCancelledOrArchived(clsInfo ?? ({} as Class)) || isNotActive;
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
         Error
@@ -287,6 +291,10 @@ export default function EventAttendance() {
             </div>
 
             {isLoading && <div>Loading...</div>}
+
+            {isNotActive && (
+                <WarningBanner text="This class is currently not active, please activate class to take attendance" />
+            )}
 
             {error && error.message === 'Conflict' ? (
                 <div className="text-error">
