@@ -10,9 +10,12 @@ import Pagination from '@/Components/Pagination';
 import { useEffect } from 'react';
 import useSWR from 'swr';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
-import { useOutletContext } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function HelpfulLinks() {
+    const { user } = useAuth();
+    const route = useLocation();
     const { activeView, searchQuery, sortQuery } = useOutletContext<{
         activeView: ViewType;
         searchQuery: string;
@@ -24,14 +27,16 @@ export default function HelpfulLinks() {
         setPage: setPageQuery,
         setPerPage
     } = useUrlPagination(1, 20);
-
+    const adminWithStudentView = (): boolean => {
+        return !route.pathname.includes('management') && isAdministrator(user);
+    };
     const {
         data: helpfulLinks,
         mutate: mutateHelpfulFavs,
         isLoading,
         error
     } = useSWR<ServerResponseOne<HelpfulLinkAndSort>, Error>(
-        `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchQuery}${sortQuery}`
+        `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchQuery}${sortQuery}&visibility=${adminWithStudentView()}`
     );
     function updateFavorites() {
         void mutateHelpfulFavs();
