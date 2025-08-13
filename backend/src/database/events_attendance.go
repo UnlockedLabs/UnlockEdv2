@@ -71,14 +71,17 @@ func (db *DB) DeleteAttendance(eventId, userId int, date string) (int64, error) 
 	return result.RowsAffected, nil
 }
 
-func (db *DB) IsUserEnrolledInClass(classID, userID uint) error {
-	var enrollment models.ProgramClassEnrollment
-	err := db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
-		classID, userID, models.Enrolled).First(&enrollment).Error
-	if err != nil {
-		return newGetRecordsDBError(err, "program_class_enrollments")
+func (db *DB) GetEnrolledUserIDsForClass(classID uint, userIDs []uint) ([]uint, error) {
+	var enrolledIDs []uint
+	tx := db.Model(&models.ProgramClassEnrollment{}).
+		Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled)
+	if len(userIDs) > 0 {
+		tx = tx.Where("user_id IN ?", userIDs)
 	}
-	return nil
+	if err := tx.Pluck("user_id", &enrolledIDs).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	return enrolledIDs, nil
 }
 
 func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, classID, eventID int, date string, includeCurrentlyEnrolled bool) ([]models.EnrollmentAttendance, error) {

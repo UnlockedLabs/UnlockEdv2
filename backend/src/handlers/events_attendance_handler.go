@@ -55,6 +55,27 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 
+	uniqueUserIDs := make(map[uint]struct{})
+	for i := range attendances {
+		if attendances[i].UserID != 0 {
+			uniqueUserIDs[attendances[i].UserID] = struct{}{}
+		}
+	}
+
+	userIDSlice := make([]uint, 0, len(uniqueUserIDs))
+	for uid := range uniqueUserIDs {
+		userIDSlice = append(userIDSlice, uid)
+	}
+
+	enrolledIDs, err := srv.Db.GetEnrolledUserIDsForClass(uint(classId), userIDSlice)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	enrolledSet := make(map[uint]struct{}, len(enrolledIDs))
+	for _, uid := range enrolledIDs {
+		enrolledSet[uid] = struct{}{}
+	}
+
 	for i := range attendances {
 		if attendances[i].Date == "" {
 			attendances[i].Date = time.Now().Format("2006-01-02")
@@ -73,7 +94,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 			return writeJsonResponse(w, http.StatusConflict, "cannot record attendance for cancelled class date")
 		}
 
-		if err := srv.Db.IsUserEnrolledInClass(uint(classId), attendances[i].UserID); err != nil {
+		if _, ok := enrolledSet[attendances[i].UserID]; !ok {
 			return writeJsonResponse(w, http.StatusBadRequest,
 				fmt.Sprintf("user %d is not enrolled in class %d", attendances[i].UserID, classId))
 		}
