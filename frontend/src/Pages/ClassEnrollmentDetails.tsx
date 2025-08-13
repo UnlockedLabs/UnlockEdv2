@@ -283,15 +283,16 @@ export default function ClassEnrollmentDetails() {
                             : undefined
                     }
                 >
-                    {selectedResidents.length > 0 && (
-                        <button
-                            disabled={blockEdits}
-                            className="button"
-                            onClick={handleOpenModalGraduate}
-                        >
-                            Graduate Selected
-                        </button>
-                    )}
+                    {selectedResidents.length > 0 &&
+                        clsInfo?.status === SelectedClassStatus.Active && (
+                            <button
+                                disabled={blockEdits}
+                                className="button"
+                                onClick={handleOpenModalGraduate}
+                            >
+                                Graduate Selected
+                            </button>
+                        )}
                     <AddButton
                         label="Add Resident"
                         disabled={blockEdits}
