@@ -193,6 +193,11 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
 
+	var (
+		toBeCompletedEnrollments []models.ProgramClassEnrollment
+		adminEmail               string
+	)
+
 	if rawStatus, ok := classMap["status"]; ok {
 		var statusStr string
 		switch v := rawStatus.(type) {
@@ -228,6 +233,19 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 				tx.Rollback()
 				return err
 			}
+
+			// Fetch enrollments that will be used to create program completions AFTER the update
+			if statusStr == string(models.Completed) {
+				if err := tx.Model(&models.ProgramClassEnrollment{}).
+					Preload("User.Facility").
+					Preload("Class.Program.ProgramCreditTypes").
+					Preload("Class.FacilityProg").
+					Where("class_id IN (?) AND enrollment_status = ?", classIDs, models.EnrollmentCompleted).
+					Find(&toBeCompletedEnrollments).Error; err != nil {
+					tx.Rollback()
+					return newNotFoundDBError(err, "fetching updated enrollments")
+				}
+			}
 		}
 	}
 
@@ -239,6 +257,58 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		Error; err != nil {
 		tx.Rollback()
 		return newUpdateDBError(err, "program classes")
+	}
+
+	if len(toBeCompletedEnrollments) > 0 {
+		rawUID, ok := classMap["update_user_id"]
+		if !ok {
+			tx.Rollback()
+			return newUpdateDBError(fmt.Errorf("missing update_user_id in classMap"), "program classes")
+		}
+
+		updateUserID, ok := rawUID.(uint)
+		if !ok {
+			tx.Rollback()
+			return newUpdateDBError(fmt.Errorf("update_user_id must be of type uint"), "program classes")
+		}
+
+		var admin models.User
+		if err := tx.First(&admin, "id = ?", updateUserID).Error; err != nil {
+			tx.Rollback()
+			return newNotFoundDBError(err, "admin user")
+		}
+		adminEmail = admin.Email
+
+		completions := make([]models.ProgramCompletion, 0, len(toBeCompletedEnrollments))
+		for _, enrollment := range toBeCompletedEnrollments {
+			creditType := ""
+			for i, ct := range enrollment.Class.Program.ProgramCreditTypes {
+				if i == len(enrollment.Class.Program.ProgramCreditTypes)-1 {
+					creditType += string(ct.CreditType)
+				} else {
+					creditType += fmt.Sprintf("%s,", ct.CreditType)
+				}
+			}
+
+			completions = append(completions, models.ProgramCompletion{
+				ProgramClassID:      enrollment.ClassID,
+				FacilityName:        enrollment.User.Facility.Name,
+				ProgramName:         enrollment.Class.Program.Name,
+				ProgramOwner:        enrollment.Class.FacilityProg.ProgramOwner,
+				ProgramID:           enrollment.Class.ProgramID,
+				AdminEmail:          adminEmail,
+				ProgramClassStartDt: enrollment.Class.StartDt,
+				CreditType:          creditType,
+				ProgramClassName:    enrollment.Class.Name,
+				UserID:              enrollment.UserID,
+				EnrolledOnDt:        enrollment.CreatedAt,
+			})
+		}
+
+		if err := tx.Create(&completions).Error; err != nil {
+			tx.Rollback()
+			return newCreateDBError(err, "enrollment completion")
+		}
 	}
 
 	var (
