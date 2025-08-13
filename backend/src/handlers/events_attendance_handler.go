@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/teambition/rrule-go"
@@ -16,7 +17,7 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	return []routeDef{
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment", srv.handleGetHistoricalEnrollmentCount, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment-batch", srv.handleGetHistoricalEnrollmentBatch, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
 	}
@@ -189,21 +190,32 @@ func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *htt
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
-func (srv *Server) handleGetHistoricalEnrollmentCount(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetHistoricalEnrollmentBatch(w http.ResponseWriter, r *http.Request, log sLog) error {
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	date := r.URL.Query().Get("date")
-	if date == "" {
-		date = time.Now().Format("2006-01-02")
+
+	datesParam := r.URL.Query().Get("dates")
+	if datesParam == "" {
+		return newBadRequestServiceError(nil, "dates parameter is required")
 	}
-	count, err := srv.Db.GetHistoricalEnrollmentForDate(classID, date)
+
+	dates := strings.Split(datesParam, ",")
+	if len(dates) == 0 {
+		return newBadRequestServiceError(nil, "at least one date must be provided")
+	}
+
+	for _, date := range dates {
+		if _, err := time.Parse("2006-01-02", strings.TrimSpace(date)); err != nil {
+			return newBadRequestServiceError(err, "invalid date format: "+date)
+		}
+	}
+
+	results, err := srv.Db.GetHistoricalEnrollmentForDates(classID, dates)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	response := map[string]int64{
-		"historical_enrollment_count": count,
-	}
-	return writeJsonResponse(w, http.StatusOK, response)
+
+	return writeJsonResponse(w, http.StatusOK, results)
 }
