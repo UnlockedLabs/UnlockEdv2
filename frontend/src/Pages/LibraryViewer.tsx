@@ -153,12 +153,12 @@ export default function LibraryViewer() {
                         setSrc(response.url);
                     }
                 } else if (response.status === 404) {
-                    navigate('/404');
+                    navigate('/404', { replace: true });
                 } else {
-                    navigate('/error');
+                    navigate('/error', { replace: true });
                 }
             } catch {
-                navigate('/404');
+                navigate('/404', { replace: true });
             } finally {
                 setIsLoading(false);
             }
