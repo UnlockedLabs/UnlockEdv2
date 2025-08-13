@@ -1,0 +1,45 @@
+diff --git a/backend/src/models/rrule_utils.go b/backend/src/models/rrule_utils.go
+new file mode 100644
+index 00000000..1d53f0e0
+--- /dev/null
++++ b/backend/src/models/rrule_utils.go
+@@ -0,0 +1,39 @@
++package models
++
++import (
++	"strings"
++	"time"
++)
++
++// ReplaceOrAddUntilDate adds or updates the UNTIL parameter in an RRULE string
++// with the provided date string in RRULE format (YYYYMMDDTHHMMSSZ)
++func ReplaceOrAddUntilDate(rRule, untilDate string) string {
++	rRuleParts := strings.Split(rRule, ";")
++	untilExists := false
++	for i, part := range rRuleParts {
++		if strings.HasPrefix(part, "UNTIL=") {
++			rRuleParts[i] = "UNTIL=" + untilDate
++			untilExists = true
++			break
++		}
++	}
++	if !untilExists {
++		rRuleParts = append(rRuleParts, "UNTIL="+untilDate)
++	}
++	return strings.Join(rRuleParts, ";")
++}
++
++// GetUntilDateFromRule extracts the UNTIL date from an RRULE string
++func GetUntilDateFromRule(rRule string) string {
++	for _, rRulePart := range strings.Split(rRule, ";") {
++		if strings.HasPrefix(rRulePart, "UNTIL=") {
++			return strings.TrimPrefix(rRulePart, "UNTIL=")
++		}
++	}
++	return ""
++}
++
++// FormatTimeForRRule formats a time.Time to RRULE UNTIL format (YYYYMMDDTHHMMSSZ)
++func FormatTimeForRRule(t time.Time) string {
++	return t.UTC().Format("20060102T150405Z")
++}

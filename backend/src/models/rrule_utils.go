@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-// ReplaceOrAddUntilDate adds or updates the UNTIL parameter in an RRULE string
-// with the provided date string in RRULE format (YYYYMMDDTHHMMSSZ)
 func ReplaceOrAddUntilDate(rRule, untilDate string) string {
 	rRuleParts := strings.Split(rRule, ";")
 	untilExists := false
@@ -23,7 +21,6 @@ func ReplaceOrAddUntilDate(rRule, untilDate string) string {
 	return strings.Join(rRuleParts, ";")
 }
 
-// GetUntilDateFromRule extracts the UNTIL date from an RRULE string
 func GetUntilDateFromRule(rRule string) string {
 	for _, rRulePart := range strings.Split(rRule, ";") {
 		if strings.HasPrefix(rRulePart, "UNTIL=") {
@@ -33,7 +30,6 @@ func GetUntilDateFromRule(rRule string) string {
 	return ""
 }
 
-// FormatTimeForRRule formats a time.Time to RRULE UNTIL format (YYYYMMDDTHHMMSSZ)
 func FormatTimeForRRule(t time.Time) string {
 	return t.UTC().Format("20060102T150405Z")
 }
