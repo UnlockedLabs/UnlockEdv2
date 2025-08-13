@@ -168,7 +168,7 @@ func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userId
 	return tx.Commit().Error
 }
 
-func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status string, changeReason *string) error {
+func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status models.ProgramEnrollmentStatus, changeReason *string) error {
 	updates := map[string]any{
 		"enrollment_status": status,
 	}

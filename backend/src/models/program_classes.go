@@ -254,9 +254,9 @@ type ProgramClassesHistory struct {
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
 
-func (pc *ProgramClass) CannotUpdateClassWithEnrollment(enrollmentStatus string) bool {
-	isScheduledAndNotCancelled := pc.Status == Scheduled && enrollmentStatus != "Cancelled"
-	isActiveAndCancelled := pc.Status == Active && enrollmentStatus == "Cancelled"
+func (pc *ProgramClass) CannotUpdateClassWithEnrollment(enrollmentStatus ProgramEnrollmentStatus) bool {
+	isScheduledAndNotCancelled := pc.Status == Scheduled && enrollmentStatus != EnrollmentCancelled
+	isActiveAndCancelled := pc.Status == Active && enrollmentStatus == EnrollmentCancelled
 	return pc.CannotUpdateClass() || isScheduledAndNotCancelled || isActiveAndCancelled
 }
 

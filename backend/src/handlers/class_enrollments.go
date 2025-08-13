@@ -115,9 +115,9 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}
 	enrollment := struct {
-		EnrollmentStatus string  `json:"enrollment_status"`
-		UserIDs          []int   `json:"user_ids"`
-		ChangeReason     *string `json:"change_reason,omitempty"`
+		EnrollmentStatus models.ProgramEnrollmentStatus `json:"enrollment_status"`
+		UserIDs          []int                          `json:"user_ids"`
+		ChangeReason     *string                        `json:"change_reason,omitempty"`
 	}{}
 	if err := json.NewDecoder(r.Body).Decode(&enrollment); err != nil {
 		return newJSONReqBodyServiceError(err)

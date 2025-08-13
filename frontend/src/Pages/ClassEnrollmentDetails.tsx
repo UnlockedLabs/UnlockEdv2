@@ -160,7 +160,7 @@ export default function ClassEnrollmentDetails() {
                 // If one or more users are selected with the check-boxes, then they are going to be
                 // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
                 // to change an individual status inline.
-                enrollment_status: changeStatusValue?.status ?? 'completed',
+                enrollment_status: changeStatusValue?.status ?? 'Completed',
                 user_ids:
                     selectedResidents.length > 0
                         ? selectedResidents
@@ -271,7 +271,7 @@ export default function ClassEnrollmentDetails() {
                                 'incomplete: failed to complete',
                             Transferred: 'incomplete: transferred',
                             Segregated: 'incomplete: segregated',
-                            Canceled: 'incomplete: cancelled'
+                            Cancelled: 'incomplete: cancelled'
                         }}
                     />
                 </div>
