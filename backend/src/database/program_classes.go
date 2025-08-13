@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
+	"strings"
 
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
@@ -94,16 +95,23 @@ func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
 	return count, nil
 }
 
-func (db *DB) GetHistoricalEnrollmentForDate(classID int, eventDate string) (int64, error) {
-	var count int64
-	if err := db.Model(&models.ProgramClassEnrollment{}).
-		Where("class_id = ?", classID).
-		Where("enrolled_at <= ?", eventDate).
-		Where("enrollment_ended_at IS NULL OR enrollment_ended_at > ?", eventDate).
-		Count(&count).Error; err != nil {
-		return 0, NewDBError(err, "historical enrollment count")
+func (db *DB) GetHistoricalEnrollmentForDates(classID int, dates []string) (map[string]int64, error) {
+	results := make(map[string]int64)
+
+	for _, date := range dates {
+		trimmedDate := strings.TrimSpace(date)
+		var count int64
+		if err := db.Model(&models.ProgramClassEnrollment{}).
+			Where("class_id = ?", classID).
+			Where("enrolled_at <= ?", trimmedDate).
+			Where("enrollment_ended_at IS NULL OR enrollment_ended_at > ?", trimmedDate).
+			Count(&count).Error; err != nil {
+			return nil, NewDBError(err, "historical enrollment count for date: "+trimmedDate)
+		}
+		results[trimmedDate] = count
 	}
-	return count, nil
+
+	return results, nil
 }
 
 func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]models.ProgramClassDetail, error) {

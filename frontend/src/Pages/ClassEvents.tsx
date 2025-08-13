@@ -51,6 +51,20 @@ export default function ClassEvents() {
         `/api/program-classes/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
     );
 
+    const events = data?.data ?? [];
+    const eventDates = events.map((event) => event.date);
+
+    const { data: historicalResponse } = useSWR<
+        { data: Record<string, number> },
+        Error
+    >(
+        eventDates.length > 0
+            ? `/api/program-classes/${class_id}/historical-enrollment-batch?dates=${eventDates.join(',')}`
+            : null
+    );
+
+    const historicalData = historicalResponse?.data;
+
     const { data: program_class } = useSWR<ServerResponseOne<Class>, Error>(
         `/api/program-classes/${class_id}`
     );
@@ -61,7 +75,6 @@ export default function ClassEvents() {
         this_program ?? ({} as Class)
     );
     const meta = data?.meta;
-    const events = data?.data ?? [];
 
     function isFutureDate(date: string): boolean {
         const day = parseLocalDay(date);
@@ -197,7 +210,9 @@ export default function ClassEvents() {
                                     <td>
                                         <AttendanceCell
                                             event={event}
-                                            classId={class_id!}
+                                            historicalEnrollment={
+                                                historicalData?.[event.date]
+                                            }
                                         />
                                     </td>
                                     <td>

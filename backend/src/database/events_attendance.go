@@ -161,7 +161,7 @@ func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classI
 			(select count(*) from program_class_enrollments e 
 			 where e.class_id = ? 
 			   and e.enrolled_at <= ?
-			   and (e.enrollment_ended_at IS NULL OR e.enrollment_ended_at > ?)),
+			   and (e.enrollment_ended_at IS NULL OR e.enrollment_ended_at >= ?)),
 			0
 		), 0
 	) as attendance_percentage
