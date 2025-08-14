@@ -303,7 +303,7 @@ export default function EventAttendance() {
             ) : (
                 error && <div className="text-error">Error loading data</div>
             )}
-            {!isLoading && !error && rows.length > 0 && (
+            {!isLoading && !error && (
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -321,80 +321,87 @@ export default function EventAttendance() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {rows.map((row) => (
-                                    <tr
-                                        key={row.user_id}
-                                        className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid p-2 gap-2"
-                                    >
-                                        <td>
-                                            {row.name_last}, {row.name_first}
-                                        </td>
-                                        <td>
-                                            {' '}
-                                            {row.doc_id == ''
-                                                ? ' '
-                                                : `${row.doc_id}`}
-                                        </td>
-                                        <td className="flex">
-                                            <AttendanceStatusToggle
-                                                value={
-                                                    row.attendance_status ??
-                                                    (row.selected
-                                                        ? Attendance.Present
-                                                        : undefined)
-                                                }
-                                                onChange={(newStatus) =>
-                                                    handleAttendanceChange(
-                                                        row.user_id,
-                                                        newStatus
-                                                    )
-                                                }
-                                                disabled={blockEdits}
-                                            />
-                                        </td>
-                                        <td className="">
-                                            <TextInput
-                                                label=""
-                                                defaultValue={row.note}
-                                                disabled={
-                                                    blockEdits ||
-                                                    !(
-                                                        row.attendance_status &&
+                                {rows.length === 0 ? (
+                                    <p className="body">
+                                        No users enrolled for class on {date}.
+                                    </p>
+                                ) : (
+                                    rows.map((row) => (
+                                        <tr
+                                            key={row.user_id}
+                                            className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid p-2 gap-2"
+                                        >
+                                            <td>
+                                                {row.name_last},{' '}
+                                                {row.name_first}
+                                            </td>
+                                            <td>
+                                                {' '}
+                                                {row.doc_id == ''
+                                                    ? ' '
+                                                    : `${row.doc_id}`}
+                                            </td>
+                                            <td className="flex">
+                                                <AttendanceStatusToggle
+                                                    value={
+                                                        row.attendance_status ??
+                                                        (row.selected
+                                                            ? Attendance.Present
+                                                            : undefined)
+                                                    }
+                                                    onChange={(newStatus) =>
+                                                        handleAttendanceChange(
+                                                            row.user_id,
+                                                            newStatus
+                                                        )
+                                                    }
+                                                    disabled={blockEdits}
+                                                />
+                                            </td>
+                                            <td className="">
+                                                <TextInput
+                                                    label=""
+                                                    defaultValue={row.note}
+                                                    disabled={
+                                                        blockEdits ||
+                                                        !(
+                                                            row.attendance_status &&
+                                                            row.attendance_status !==
+                                                                Attendance.Present
+                                                        )
+                                                    }
+                                                    inputClassName={
+                                                        blockEdits ||
+                                                        !(
+                                                            row.attendance_status &&
+                                                            row.attendance_status !==
+                                                                Attendance.Present
+                                                        )
+                                                            ? 'opacity-40'
+                                                            : ''
+                                                    }
+                                                    interfaceRef={`note_${row.user_id}`}
+                                                    required={
+                                                        !blockEdits &&
+                                                        row.selected &&
                                                         row.attendance_status !==
                                                             Attendance.Present
-                                                    )
-                                                }
-                                                inputClassName={
-                                                    blockEdits ||
-                                                    !(
-                                                        row.attendance_status &&
-                                                        row.attendance_status !==
-                                                            Attendance.Present
-                                                    )
-                                                        ? 'opacity-40'
-                                                        : ''
-                                                }
-                                                interfaceRef={`note_${row.user_id}`}
-                                                required={
-                                                    !blockEdits &&
-                                                    row.selected &&
-                                                    row.attendance_status !==
-                                                        Attendance.Present
-                                                }
-                                                length={500}
-                                                errors={errors}
-                                                register={register}
-                                                onChange={(e) =>
-                                                    handleNoteChange(
-                                                        row.user_id,
-                                                        e.target.value
-                                                    )
-                                                }
-                                                errorTextAlign="center"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    }
+                                                    length={500}
+                                                    errors={errors}
+                                                    register={register}
+                                                    onChange={(e) =>
+                                                        handleNoteChange(
+                                                            row.user_id,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    errorTextAlign="center"
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
