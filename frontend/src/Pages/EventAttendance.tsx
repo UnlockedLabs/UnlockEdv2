@@ -265,6 +265,10 @@ export default function EventAttendance() {
     const anyRowSelected = rows.some((row) => row.selected);
     return (
         <div className="p-4 space-y-4">
+            {isNotActive && (
+                <WarningBanner text="This class is not active. You can still view attendance, but cannot mark attendance." />
+            )}
+
             <div className="flex justify-between items-center">
                 <div className="flex flex-row gap-2 items-center">
                     <SearchBar
@@ -291,10 +295,6 @@ export default function EventAttendance() {
             </div>
 
             {isLoading && <div>Loading...</div>}
-
-            {isNotActive && (
-                <WarningBanner text="This class is currently not active, please activate class to take attendance" />
-            )}
 
             {error && error.message === 'Conflict' ? (
                 <div className="text-error">
