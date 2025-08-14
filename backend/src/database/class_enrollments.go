@@ -4,6 +4,9 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"time"
+	"github.com/teambition/rrule-go"
+	"gorm.io/gorm"
 )
 
 func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
@@ -215,10 +218,53 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 				Error; err != nil {
 				tx.Rollback()
 				return newUpdateDBError(err, "class enrollment statuses")
+                                                                                                                                    			}
+		}
+
+		// truncate recurrence rule and cancel future overrides
+		for _, classID := range classIDs {
+			var class models.ProgramClass
+			if err := tx.Preload("Facility").Preload("Events", func(db *gorm.DB) *gorm.DB { return db.Order("created_at desc") }).First(&class, "id = ?", classID).Error; err != nil {
+				tx.Rollback()
+				return newNotFoundDBError(err, "program classes")
+			}
+			if len(class.Events) > 0 {
+				active := class.Events[0]
+				loc, _ := time.LoadLocation(class.Facility.Timezone)
+				cutoffDate := time.Now().In(loc)
+				until := cutoffDate.Format("20060102") + "T000000Z"
+				updatedRule := models.ReplaceOrAddUntilDate(active.RecurrenceRule, until)
+				if updatedRule != active.RecurrenceRule {
+					if err := tx.Model(&models.ProgramClassEvent{}).Where("id = ?", active.ID).Update("recurrence_rule", updatedRule).Error; err != nil {
+						tx.Rollback()
+						return newUpdateDBError(err, "program_class_events")
+					}
+					cle := models.NewChangeLogEntry("program_classes", "event_rescheduled_series", models.StringPtr(active.RecurrenceRule), &updatedRule, uint(classID), classMap["update_user_id"].(uint))
+					if err := tx.Create(&cle).Error; err != nil {
+						tx.Rollback()
+						return newCreateDBError(err, "change_log_entries")
+					}
+				}
+				var overrides []models.ProgramClassEventOverride
+				if err := tx.Where("event_id = ? AND is_cancelled = false", active.ID).Find(&overrides).Error; err != nil {
+					tx.Rollback()
+					return newGetRecordsDBError(err, "program_class_event_overrides")
+				}
+				for _, ov := range overrides {
+					rr, err := rrule.StrToRRule(ov.OverrideRrule)
+					if err != nil || len(rr.All()) == 0 { continue }
+					od := rr.All()[0].In(loc)
+					if od.After(cutoffDate) {
+						if err := tx.Model(&models.ProgramClassEventOverride{}).Where("id = ?", ov.ID).Update("is_cancelled", true).Error; err != nil {
+							tx.Rollback()
+							return newUpdateDBError(err, "program_class_event_overrides")
+						}
+					}
+				}
 			}
 		}
 
-		// Fetch enrollments that will used create program completions AFTER the update
+		// Fetch enrollments that will be used to create program completions AFTER the update
 		if status == string(models.Completed) {
 			if err := tx.Model(&models.ProgramClassEnrollment{}).
 				Preload("User.Facility").
