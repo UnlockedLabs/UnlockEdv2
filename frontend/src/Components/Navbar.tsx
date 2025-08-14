@@ -64,7 +64,7 @@ export default function Navbar({
         const resp = await API.post<null, object>(`auth/demo-seed`, {});
         if (resp.success) {
             toaster(
-                `Demo data seeded for ${user.facility_name}`,
+                `Demo data seeded for ${user.facility.name}`,
                 ToastState.success
             );
             confirmSeedModal.current?.close();

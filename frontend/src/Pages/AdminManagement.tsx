@@ -196,7 +196,7 @@ export default function AdminManagement() {
                             </div>
                             <div
                                 className="tooltip tooltip-bottom"
-                                data-tip={`Add ${user!.facility_name} Admin`}
+                                data-tip={`Add ${user!.facility.name} Admin`}
                             >
                                 <AddButton
                                     label={`Add Facility Admin`}
@@ -210,7 +210,7 @@ export default function AdminManagement() {
                     ) : (
                         <div
                             className="tooltip tooltip-left"
-                            data-tip={`Add ${user!.facility_name} Admin`}
+                            data-tip={`Add ${user!.facility.name} Admin`}
                         >
                             <AddButton
                                 label={`Add Facility Admin`}

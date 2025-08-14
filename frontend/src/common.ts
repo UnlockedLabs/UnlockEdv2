@@ -33,9 +33,7 @@ export interface User {
     session_id: string;
     created_at: string;
     updated_at: string;
-    facility_id: number;
-    facility_name?: string;
-    facility?: Facility;
+    facility: Facility;
     feature_access: FeatureAccess[];
     timezone: string;
     facilities?: Facility[];

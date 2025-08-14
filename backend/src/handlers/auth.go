@@ -192,6 +192,16 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 		log.error("user viewing context for different facility. this should never happen")
 		return newUnauthorizedServiceError()
 	}
+	fac := user.Facility
+	if claims.FacilityID != user.FacilityID {
+		var alt models.Facility
+		if err := srv.Db.
+			Model(&models.Facility{}).
+			Where("id = ?", claims.FacilityID).
+			First(&alt).Error; err == nil {
+			fac = &alt
+		}
+	}
 	traits["id"] = user.ID
 	traits["session_id"] = claims.SessionID
 	traits["kratos_id"] = claims.KratosID
@@ -199,6 +209,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	traits["name_first"] = user.NameFirst
 	traits["name_last"] = user.NameLast
 	traits["timezone"] = claims.TimeZone
+	traits["facility"] = fac
 	if traits["feature_access"] == nil || len(srv.features) == 0 {
 		traits["feature_access"] = []models.FeatureAccess{}
 	}
