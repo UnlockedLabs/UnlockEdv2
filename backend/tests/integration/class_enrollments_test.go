@@ -225,9 +225,7 @@ func runUpdateToCancelledStatusTest(t *testing.T, env *TestEnv, facility *models
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusBadRequest)
-
 }
-
 func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
