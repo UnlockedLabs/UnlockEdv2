@@ -114,23 +114,23 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}
-	class, err := srv.Db.GetClassByID(classId)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	if class.CannotUpdateClass() {
-		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
-	}
 	enrollment := struct {
-		EnrollmentStatus string  `json:"enrollment_status"`
-		UserIDs          []int   `json:"user_ids"`
-		ChangeReason     *string `json:"change_reason,omitempty"`
+		EnrollmentStatus models.ProgramEnrollmentStatus `json:"enrollment_status"`
+		UserIDs          []int                          `json:"user_ids"`
+		ChangeReason     *string                        `json:"change_reason,omitempty"`
 	}{}
 	if err := json.NewDecoder(r.Body).Decode(&enrollment); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	if enrollment.EnrollmentStatus == "" {
 		return newInvalidIdServiceError(errors.New("enrollment status is required"), "enrollment status")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if class.CannotUpdateClassWithEnrollment(enrollment.EnrollmentStatus) {
+		return newBadRequestServiceError(err, "cannot perform action due to invalid class or enrollment status")
 	}
 	switch enrollment.EnrollmentStatus {
 	case "Completed":

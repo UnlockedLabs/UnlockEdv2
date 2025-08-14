@@ -11,7 +11,9 @@ import {
     EnrollmentStatus,
     FilterResidentNames,
     ProgramCompletion,
-    ServerResponseMany
+    SelectedClassStatus,
+    ServerResponseMany,
+    ToastState
 } from '@/common';
 import API from '@/api/api';
 import {
@@ -27,6 +29,7 @@ import ClassEnrollmentDetailsTable from '@/Components/ClassEnrollmentDetailsTabl
 import { AddButton } from '@/Components/inputs';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { FieldValues } from 'react-hook-form';
+import { useToast } from '@/Context/ToastCtx';
 
 interface StatusChange {
     name_full: string;
@@ -39,6 +42,7 @@ export default function ClassEnrollmentDetails() {
     const navigate = useNavigate();
     const { redirect, class: clsInfo } = useLoaderData() as ClassLoaderData;
     const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
+    const { toaster } = useToast();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
@@ -150,21 +154,33 @@ export default function ClassEnrollmentDetails() {
     const handleSubmitEnrollmentChange = async (reasonText?: string) => {
         if (!changeStatusValue) return;
         const { status, user_id } = changeStatusValue;
-        await API.patch(`program-classes/${class_id}/enrollments`, {
-            // If one or more users are selected with the check-boxes, then they are going to be
-            // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
-            // to change an individual status inline.
-            enrollment_status: changeStatusValue?.status ?? 'completed',
-            user_ids:
-                selectedResidents.length > 0 ? selectedResidents : [user_id],
-            ...(requiresReason(status) && {
-                change_reason: reasonText?.trim()
-            })
-        });
+        const resp = await API.patch(
+            `program-classes/${class_id}/enrollments`,
+            {
+                // If one or more users are selected with the check-boxes, then they are going to be
+                // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
+                // to change an individual status inline.
+                enrollment_status: changeStatusValue?.status ?? 'Completed',
+                user_ids:
+                    selectedResidents.length > 0
+                        ? selectedResidents
+                        : [user_id],
+                ...(requiresReason(status) && {
+                    change_reason: reasonText?.trim()
+                })
+            }
+        );
 
-        setSelectedResidents([]);
-        setChangeStatusValue(undefined);
-        await mutate();
+        if (resp.success) {
+            setSelectedResidents([]);
+            setChangeStatusValue(undefined);
+            await mutate();
+        } else {
+            toaster(
+                "Unable to update resident's enrollment status",
+                ToastState.error
+            );
+        }
     };
 
     const isEditable = (enrollment: ClassEnrollment) =>
@@ -193,6 +209,29 @@ export default function ClassEnrollmentDetails() {
         'Segregated - Dropped' = 'Incomplete: Segregated',
         'Failed To Complete' = 'Incomplete: Failed to Complete'
     }
+
+    const getEnrollmentStatusOptions = (): Record<string, string> => {
+        switch (
+            clsInfo?.status //displays differently per scheduled or active see asana ticket ID 394
+        ) {
+            case SelectedClassStatus.Scheduled:
+                return Object.fromEntries(
+                    Object.entries(EnrollmentStatusOptions).filter(
+                        ([value]) =>
+                            value === 'Cancelled' || value === 'Enrolled'
+                    )
+                );
+            case SelectedClassStatus.Active:
+                return Object.fromEntries(
+                    Object.entries(EnrollmentStatusOptions).filter(
+                        ([value]) => value !== 'Cancelled'
+                    )
+                );
+            default:
+                return { ...EnrollmentStatusOptions };
+        }
+    };
+
     return (
         <div className="flex flex-col gap-8">
             <div className="flex flex-row justify-between items-center">
@@ -232,7 +271,7 @@ export default function ClassEnrollmentDetails() {
                                 'incomplete: failed to complete',
                             Transferred: 'incomplete: transferred',
                             Segregated: 'incomplete: segregated',
-                            Canceled: 'incomplete: cancelled'
+                            Cancelled: 'incomplete: cancelled'
                         }}
                     />
                 </div>
@@ -244,15 +283,16 @@ export default function ClassEnrollmentDetails() {
                             : undefined
                     }
                 >
-                    {selectedResidents.length > 0 && (
-                        <button
-                            disabled={blockEdits}
-                            className="button"
-                            onClick={handleOpenModalGraduate}
-                        >
-                            Graduate Selected
-                        </button>
-                    )}
+                    {selectedResidents.length > 0 &&
+                        clsInfo?.status === SelectedClassStatus.Active && (
+                            <button
+                                disabled={blockEdits}
+                                className="button"
+                                onClick={handleOpenModalGraduate}
+                            >
+                                Graduate Selected
+                            </button>
+                        )}
                     <AddButton
                         label="Add Resident"
                         disabled={blockEdits}
@@ -267,7 +307,7 @@ export default function ClassEnrollmentDetails() {
             {!isLoading && !error && (
                 <ClassEnrollmentDetailsTable
                     enrollments={enrollments}
-                    statusOptions={EnrollmentStatusOptions}
+                    statusOptions={getEnrollmentStatusOptions()}
                     selectedResidents={selectedResidents}
                     toggleSelection={toggleSelection}
                     handleSelectAll={handleSelectAll}
