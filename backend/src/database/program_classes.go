@@ -3,7 +3,8 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
-
+	"time"
+	"github.com/teambition/rrule-go"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
@@ -54,7 +55,7 @@ func (db *DB) CreateProgramClass(content *models.ProgramClass) (*models.ProgramC
 func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramClass, id int) (*models.ProgramClass, error) {
 	var allChanges []models.ChangeLogEntry
 	existing := &models.ProgramClass{}
-	if err := db.WithContext(ctx).Preload("Events").First(existing, "id = ?", id).Error; err != nil {
+	if err := db.WithContext(ctx).Preload("Facility").Preload("Events").First(existing, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 
@@ -67,7 +68,37 @@ func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramCla
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, content.UpdateUserID, ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
+	statusChanged := (content.Status == models.Completed || content.Status == models.Cancelled) && existing.Status != content.Status
 	models.UpdateStruct(existing, content)
+	if statusChanged && len(existing.Events) > 0 {
+		var newest models.ProgramClassEvent
+		for i, ev := range existing.Events {
+			if i == 0 || ev.CreatedAt.After(newest.CreatedAt) { newest = ev }
+		}
+		loc, _ := time.LoadLocation(existing.Facility.Timezone)
+		cutoffDate := time.Now().In(loc)
+		until := cutoffDate.Format("20060102") + "T000000Z"
+		updatedRule := models.ReplaceOrAddUntilDate(newest.RecurrenceRule, until)
+		if updatedRule != newest.RecurrenceRule {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", newest.ID).Update("recurrence_rule", updatedRule).Error; err != nil {
+				trans.Rollback()
+				return nil, newUpdateDBError(err, "program_class_events")
+			}
+			cle := models.NewChangeLogEntry("program_classes", "event_rescheduled_series", models.StringPtr(newest.RecurrenceRule), &updatedRule, existing.ID, content.UpdateUserID)
+			allChanges = append(allChanges, *cle)
+		}
+		var overrides []models.ProgramClassEventOverride
+		if err := trans.Where("event_id = ? AND is_cancelled = false", newest.ID).Find(&overrides).Error; err == nil {
+			for _, ov := range overrides {
+				rr, err := rrule.StrToRRule(ov.OverrideRrule)
+				if err != nil || len(rr.All()) == 0 { continue }
+				od := rr.All()[0].In(loc)
+				if od.After(cutoffDate) {
+					_ = trans.Model(&models.ProgramClassEventOverride{}).Where("id = ?", ov.ID).Update("is_cancelled", true).Error
+				}
+			}
+		}
+	}
 	if err := trans.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
 		trans.Rollback()
 		return nil, newUpdateDBError(err, "program classes")
