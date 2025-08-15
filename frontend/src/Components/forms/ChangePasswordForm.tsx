@@ -35,7 +35,7 @@ export default function ChangePasswordForm() {
             }
             setIsFirstLogin(
                 authUser?.role === UserRole.SystemAdmin &&
-                    authUser?.facility_name === 'Default'
+                    authUser?.facility.name === 'Default'
             );
         };
         void getUser();

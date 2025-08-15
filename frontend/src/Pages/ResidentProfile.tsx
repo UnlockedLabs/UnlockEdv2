@@ -173,7 +173,7 @@ const ResidentProfile = () => {
         const response = await API.patch(`users/resident-transfer`, {
             trans_facility_id: resident?.trans_facility_id,
             user_id: resident?.user.id,
-            curr_facility_id: resident?.user.facility_id
+            curr_facility_id: resident?.user.facility.id
         });
         checkResponse(
             response.success,

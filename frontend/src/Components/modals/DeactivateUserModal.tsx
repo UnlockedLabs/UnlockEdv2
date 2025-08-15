@@ -42,7 +42,7 @@ export const DeactivateUserModal = forwardRef<
                         </p>
                         <p>
                             <strong>Current Facility:</strong>{' '}
-                            {user.facility?.name ?? 'Unknown'}
+                            {user.facility.name ?? 'Unknown'}
                         </p>
                     </div>
 

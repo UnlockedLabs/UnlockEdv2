@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -92,6 +93,21 @@ func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 /**
 * GET: /api/users/{id}
 **/
+type UserResponse struct {
+	ID            uint                 `json:"id"`
+	Username      string               `json:"username"`
+	NameFirst     string               `json:"name_first"`
+	NameLast      string               `json:"name_last"`
+	Email         string               `json:"email"`
+	Role          models.UserRole      `json:"role"`
+	DocID         string               `json:"doc_id"`
+	DeactivatedAt *time.Time           `json:"deactivated_at,omitempty"`
+	Facility      *models.Facility     `json:"facility,omitempty"`
+	LoginMetrics  *models.LoginMetrics `json:"login_metrics,omitempty"`
+	CreatedAt     time.Time            `json:"created_at"`
+	UpdatedAt     time.Time            `json:"updated_at"`
+}
+
 func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -102,7 +118,22 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 		log.add("userId", id)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, user)
+
+	resp := UserResponse{
+		ID:            user.ID,
+		Username:      user.Username,
+		NameFirst:     user.NameFirst,
+		NameLast:      user.NameLast,
+		Email:         user.Email,
+		Role:          user.Role,
+		DocID:         user.DocID,
+		DeactivatedAt: user.DeactivatedAt,
+		Facility:      user.Facility,
+		LoginMetrics:  user.LoginMetrics,
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
+	}
+	return writeJsonResponse(w, http.StatusOK, resp)
 }
 
 /**

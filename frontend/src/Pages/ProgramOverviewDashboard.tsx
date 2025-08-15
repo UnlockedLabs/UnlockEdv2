@@ -40,8 +40,7 @@ export function isCompletedCancelledOrArchived(program_class: Class): boolean {
 export default function ProgramOverviewDashboard() {
     const navigate = useNavigate();
     const { program_id } = useParams<{ program_id: string }>();
-    const user = useAuth();
-    const userFacilityId = user.user?.facility_id;
+    const { user } = useAuth();
     const revalidator = useRevalidator();
     const { program, redirect } = useLoaderData() as {
         program: ProgramOverview;
@@ -213,7 +212,7 @@ export default function ProgramOverviewDashboard() {
         return 'active';
     }
 
-    const status = getProgramStatus(program, userFacilityId);
+    const status = getProgramStatus(program, user?.facility.id);
     const canAddClass = status === 'active';
 
     function getTooltip(): string | undefined {
@@ -234,14 +233,14 @@ export default function ProgramOverviewDashboard() {
             <div className="flex flex-col gap-4">
                 {status === 'notOfferedAtFacility' && (
                     <WarningBanner
-                        text={` This program is not currently offered at ${user.user?.facility_name}.`}
+                        text={` This program is not currently offered at ${user?.facility.name}.`}
                     />
                 )}
                 <div className="grid grid-cols-5 gap-4 items-stretch">
                     <div className="card card-row-padding col-span-3">
                         <h1 className="mb-2">
                             {program?.name}
-                            {canSwitchFacility(user.user!) && (
+                            {canSwitchFacility(user!) && (
                                 <span
                                     className="font-normal"
                                     onClick={(e) => {

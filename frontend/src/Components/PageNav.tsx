@@ -72,7 +72,7 @@ export default function PageNav({
                         <summary>
                             <ULIComponent icon={BuildingOffice2Icon} />
                             <span className="font-semibold">
-                                {user?.facility_name}
+                                {user?.facility.name}
                             </span>
                         </summary>
                         <ul className="dropdown-content w-max bg-grey-2 z-[1] dark:bg-grey-1 flex flex-col">
@@ -128,7 +128,7 @@ export default function PageNav({
                         {user?.role === UserRole.DepartmentAdmin ||
                         user?.role === UserRole.SystemAdmin
                             ? 'All Facilities'
-                            : user?.facility_name}
+                            : user?.facility.name}
                     </label>
                 </div>
             )}

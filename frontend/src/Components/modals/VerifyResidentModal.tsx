@@ -46,7 +46,7 @@ export const VerifyResidentModal = forwardRef(function (
 
         if (response.success) {
             response.data.transfer_from = facilities?.find(
-                (fac) => fac.id === target?.user.facility_id
+                (fac) => fac.id === target?.user.facility.id
             )?.name;
             response.data.transfer_to = facilities?.find(
                 (fac) => fac.id === Number(facility)
@@ -86,7 +86,7 @@ export const VerifyResidentModal = forwardRef(function (
                         {facilities
                             ?.filter(
                                 (facility) =>
-                                    facility.id !== target?.user.facility_id
+                                    facility.id !== target?.user.facility.id
                             )
                             .map((facility) => (
                                 <option key={facility.id} value={facility.id}>
