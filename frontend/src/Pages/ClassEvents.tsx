@@ -182,7 +182,7 @@ export default function ClassEvents() {
                                     Date
                                 </th>
                                 <th>Class Time</th>
-                                <th>Attended</th>
+                                <th>Present / Enrolled</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>

@@ -230,10 +230,10 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
-	facility, err := env.CreateTestFacility("Test Facility")
+	facility, err := env.CreateTestFacility("Historical Test Facility")
 	require.NoError(t, err)
 
-	facilityAdmin, err := env.CreateTestUser("testadmin", models.FacilityAdmin, facility.ID, "")
+	facilityAdmin, err := env.CreateTestUser("histadmin", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
 	// Create program and make it available at facility
@@ -248,11 +248,11 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create test users
-	user1, err := env.CreateTestUser("histuser1", models.Student, facility.ID, "hist1")
+	user1, err := env.CreateTestUser("histuser1", models.Student, facility.ID, "hist1001")
 	require.NoError(t, err)
-	user2, err := env.CreateTestUser("histuser2", models.Student, facility.ID, "hist2")
+	user2, err := env.CreateTestUser("histuser2", models.Student, facility.ID, "hist1002")
 	require.NoError(t, err)
-	user3, err := env.CreateTestUser("histuser3", models.Student, facility.ID, "hist3")
+	user3, err := env.CreateTestUser("histuser3", models.Student, facility.ID, "hist1003")
 	require.NoError(t, err)
 
 	// Create enrollments with specific dates

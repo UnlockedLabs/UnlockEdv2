@@ -103,8 +103,8 @@ func (db *DB) GetHistoricalEnrollmentForDates(classID int, dates []string) (map[
 		var count int64
 		if err := db.Model(&models.ProgramClassEnrollment{}).
 			Where("class_id = ?", classID).
-			Where("enrolled_at <= ?", trimmedDate).
-			Where("enrollment_ended_at IS NULL OR enrollment_ended_at > ?", trimmedDate).
+			Where("DATE(enrolled_at) <= ?", trimmedDate).
+			Where("enrollment_ended_at IS NULL OR DATE(enrollment_ended_at) > ?", trimmedDate).
 			Count(&count).Error; err != nil {
 			return nil, NewDBError(err, "historical enrollment count for date: "+trimmedDate)
 		}
