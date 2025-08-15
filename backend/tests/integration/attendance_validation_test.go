@@ -192,7 +192,7 @@ func testDELETEAttendanceValidation(t *testing.T, env *TestEnv, admin *models.Us
 			}).
 			Do().
 			ExpectStatus(http.StatusBadRequest).
-			ExpectBodyContains("user is not enrolled in class or has no attendance record for this date")
+			ExpectBodyContains("user is not enrolled in class")
 	})
 
 	t.Run("Accept delete attendance for enrolled user on valid date", func(t *testing.T) {

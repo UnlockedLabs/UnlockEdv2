@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/teambition/rrule-go"
@@ -17,6 +18,7 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	return []routeDef{
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment-batch", srv.handleGetHistoricalEnrollmentBatch, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
 	}
@@ -75,7 +77,6 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	for _, uid := range enrolledIDs {
 		enrolledSet[uid] = struct{}{}
 	}
-
 	for i := range attendances {
 		if attendances[i].Date == "" {
 			attendances[i].Date = time.Now().Format("2006-01-02")
@@ -89,7 +90,6 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		if parsed.After(endOfToday) {
 			return writeJsonResponse(w, http.StatusUnprocessableEntity, "attempted attendance date in future")
 		}
-
 		if isDateCancelled(overrides, attendances[i].Date) {
 			return writeJsonResponse(w, http.StatusConflict, "cannot record attendance for cancelled class date")
 		}
@@ -98,7 +98,6 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 			return writeJsonResponse(w, http.StatusBadRequest,
 				fmt.Sprintf("user %d is not enrolled in class %d", attendances[i].UserID, classId))
 		}
-
 		attendances[i].EventID = uint(eventID)
 	}
 	if err := srv.Db.LogUserAttendance(attendances); err != nil {
@@ -108,6 +107,10 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newBadRequestServiceError(err, "class ID")
+	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
@@ -116,7 +119,6 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newBadRequestServiceError(err, "user ID")
 	}
-
 	date := r.URL.Query().Get("date")
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
@@ -129,6 +131,13 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 	}
 	if isDateCancelled(overrides, date) {
 		return writeJsonResponse(w, http.StatusConflict, "cannot delete attendance for cancelled class date")
+	}
+
+	var enrollment models.ProgramClassEnrollment
+	enrollmentErr := srv.Db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
+		classID, userID, models.Enrolled).First(&enrollment).Error
+	if enrollmentErr != nil {
+		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class")
 	}
 
 	rowsAffected, err := srv.Db.DeleteAttendance(eventID, userID, date)
@@ -240,7 +249,11 @@ func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *htt
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "event ID")
 	}
-	attendanceRate, err := srv.Db.GetAttendanceRateForEvent(r.Context(), eventID, classID)
+	date := r.URL.Query().Get("date")
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+	attendanceRate, err := srv.Db.GetAttendanceRateForEvent(r.Context(), eventID, classID, date)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -248,4 +261,34 @@ func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *htt
 		"attendance_rate": attendanceRate,
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
+}
+
+func (srv *Server) handleGetHistoricalEnrollmentBatch(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+
+	datesParam := r.URL.Query().Get("dates")
+	if datesParam == "" {
+		return newBadRequestServiceError(nil, "dates parameter is required")
+	}
+
+	dates := strings.Split(datesParam, ",")
+	if len(dates) == 0 {
+		return newBadRequestServiceError(nil, "at least one date must be provided")
+	}
+
+	for _, date := range dates {
+		if _, err := time.Parse("2006-01-02", strings.TrimSpace(date)); err != nil {
+			return newBadRequestServiceError(err, "invalid date format: "+date)
+		}
+	}
+
+	results, err := srv.Db.GetHistoricalEnrollmentForDates(classID, dates)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, results)
 }

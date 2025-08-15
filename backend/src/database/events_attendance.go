@@ -152,15 +152,24 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	return results, nil
 }
 
-func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classID int) (float64, error) {
+func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classID int, eventDate string) (float64, error) {
 	var attendanceRate float64
-	sql := `select coalesce(count(*) filter (where attendance_status = 'present') * 100.0 /
-		nullif(count(*) filter (where attendance_status is not null and attendance_status != ''), 0), 0) as attendance_percentage
-		from program_class_event_attendance pcea
-		inner join program_class_events pce on pce.id = pcea.event_id
-		where pcea.event_id = ?
-			and pce.id = ?`
-	if err := db.WithContext(ctx).Raw(sql, eventID, classID).Scan(&attendanceRate).Error; err != nil {
+	sql := `
+	select coalesce(
+		count(*) filter (where pcea.attendance_status = 'present') * 100.0 /
+		nullif(
+			(select count(*) from program_class_enrollments e 
+			 where e.class_id = ? 
+			   and e.enrolled_at <= ?
+			   and (e.enrollment_ended_at IS NULL OR e.enrollment_ended_at >= ?)),
+			0
+		), 0
+	) as attendance_percentage
+	from program_class_event_attendance pcea
+	inner join program_class_events pce ON pce.id = pcea.event_id
+	where pcea.event_id = ? AND pcea.date = ?`
+
+	if err := db.WithContext(ctx).Raw(sql, classID, eventDate, eventDate, eventID, eventDate).Scan(&attendanceRate).Error; err != nil {
 		return 0, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 	return attendanceRate, nil

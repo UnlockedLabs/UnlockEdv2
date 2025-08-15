@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import {
-    Attendance,
     Class,
     SelectedClassStatus,
     ServerResponseMany,
@@ -12,10 +11,8 @@ import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
-import {
-    ClassEventInstance,
-    ProgramClassEventAttendance
-} from '@/types/events';
+import { ClassEventInstance } from '@/types/events';
+import AttendanceCell from '@/Components/AttendanceCell';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import {
     ClipboardDocumentCheckIcon,
@@ -54,30 +51,36 @@ export default function ClassEvents() {
         `/api/program-classes/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
     );
 
+    const events = data?.data ?? [];
+    const eventDates = events.map((event) => event.date);
+
+    const { data: historicalResponse } = useSWR<
+        { data: Record<string, number> },
+        Error
+    >(
+        eventDates.length > 0
+            ? `/api/program-classes/${class_id}/historical-enrollment-batch?dates=${eventDates.join(',')}`
+            : null
+    );
+
+    const historicalData = historicalResponse?.data;
+
     const { data: program_class } = useSWR<ServerResponseOne<Class>, Error>(
         `/api/program-classes/${class_id}`
     );
 
     const this_program = program_class?.data;
-    const enrolled = this_program?.enrolled;
 
     const blockEdits = isCompletedCancelledOrArchived(
         this_program ?? ({} as Class)
     );
     const meta = data?.meta;
-    const events = data?.data ?? [];
 
     function isFutureDate(date: string): boolean {
         const day = parseLocalDay(date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return day > today;
-    }
-
-    function getPresentCount(records: ProgramClassEventAttendance[]): number {
-        return records.filter(
-            (record) => record.attendance_status === Attendance.Present
-        ).length;
     }
 
     function handleViewEditMarkAttendance(eventId: number, date: string) {
@@ -179,7 +182,7 @@ export default function ClassEvents() {
                                     Date
                                 </th>
                                 <th>Class Time</th>
-                                <th>Attended</th>
+                                <th>Present / Enrolled</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -204,9 +207,14 @@ export default function ClassEvents() {
                                             event.class_time
                                         )}
                                     </td>
-                                    <td>{`${event.attendance_records ? getPresentCount(event.attendance_records) : 0} ${
-                                        enrolled ? `/ ${enrolled}` : ''
-                                    }`}</td>
+                                    <td>
+                                        <AttendanceCell
+                                            event={event}
+                                            historicalEnrollment={
+                                                historicalData?.[event.date]
+                                            }
+                                        />
+                                    </td>
                                     <td>
                                         {getStatus(
                                             this_program ?? undefined,
