@@ -26,28 +26,29 @@ func (srv *Server) handleTogglePageFeatureFlag(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) toggleFeature(w http.ResponseWriter, r *http.Request, log sLog, toggleFeatureAccess func(string) error, successMessage string) error {
-    user := r.Context().Value(ClaimsKey).(*Claims)
-    if user.Role != models.SystemAdmin {
-        return newUnauthorizedServiceError()
-    }
+	user := r.Context().Value(ClaimsKey).(*Claims)
+	if user.Role != models.SystemAdmin {
+		return newUnauthorizedServiceError()
+	}
 
-    feature := r.PathValue("feature")
+	feature := r.PathValue("feature")
 	log.add("feature", feature)
-    if !models.ValidFeature(models.FeatureAccess(feature)) {
-        return newBadRequestServiceError(errors.New("feature flag invalid"), "invalid feature was requested")
-    }
 
-    if err := toggleFeatureAccess(feature); err != nil {
-        return newInternalServerServiceError(err, "unable to toggle feature")
-    }
+	if !models.ValidFeature(models.FeatureAccess(feature)) {
+		return newBadRequestServiceError(errors.New("feature flag invalid"), "invalid feature was requested")
+	}
 
-    features, err := srv.Db.GetFeatureAccess()
-    if err != nil {
-        return newInternalServerServiceError(err, "unable to fetch features")
-    }
-    srv.features = features
+	if err := toggleFeatureAccess(feature); err != nil {
+		return newInternalServerServiceError(err, "unable to toggle feature")
+	}
 
-    return writeJsonResponse(w, http.StatusOK, successMessage)
+	features, err := srv.Db.GetFeatureAccess()
+	if err != nil {
+		return newInternalServerServiceError(err, "unable to fetch features")
+	}
+	srv.features = features
+
+	return writeJsonResponse(w, http.StatusOK, successMessage)
 }
 
 func (srv *Server) handleRunDemoSeed(w http.ResponseWriter, r *http.Request, log sLog) error {

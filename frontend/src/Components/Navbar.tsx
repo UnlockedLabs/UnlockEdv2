@@ -331,7 +331,7 @@ export default function Navbar({
                         </div>
                         <ul
                             tabIndex={0}
-                            className="dropdown-content menu bg-grey-2 dark:bg-grey-1 rounded-box z-50 min-w-[15rem] p-2 shadow border-none"
+                            className="dropdown-content menu bg-grey-2 dark:bg-grey-1 rounded-box z-50 min-w-[15rem] p-2 shadow"
                         >
                             <li className="self-center">
                                 <label className="flex cursor-pointer gap-2">
