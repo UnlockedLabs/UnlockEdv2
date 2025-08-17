@@ -17,7 +17,7 @@ func (srv *Server) registerOpenContentRoutes() []routeDef {
 		featureRoute("GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, axx),
 		featureRoute("PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, axx),
 		featureRoute("GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, axx),
-		featureRoute("POST /api/open-content/request-content", srv.handleRequestOpenContent, axx),
+		featureRoute("POST /api/open-content/request-content", srv.handleRequestOpenContent, axx, models.RequestContentAccess),
 	}
 }
 

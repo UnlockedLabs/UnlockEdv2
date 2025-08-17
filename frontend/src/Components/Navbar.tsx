@@ -331,7 +331,7 @@ export default function Navbar({
                         </div>
                         <ul
                             tabIndex={0}
-                            className="dropdown-content menu bg-grey-2 dark:bg-grey-1 rounded-box z-50 w-52 p-2 shadow"
+                            className="dropdown-content menu bg-grey-2 dark:bg-grey-1 rounded-box z-50 min-w-[15rem] p-2 shadow border-none"
                         >
                             <li className="self-center">
                                 <label className="flex cursor-pointer gap-2">
@@ -365,12 +365,12 @@ export default function Navbar({
                                     <div className="self-center pt-3">
                                         <strong>Enabled Features:</strong>
                                     </div>
-                                    <li>
+                                    <div>
                                         <FeatureLevelCheckboxes
                                             features={user.feature_access ?? []}
                                             setUser={setUser}
                                         />
-                                    </li>
+                                    </div>
                                 </>
                             )}
                             <li className="self-center pt-5">

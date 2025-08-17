@@ -9,6 +9,12 @@ interface FeatureCheckboxesProps {
     features: FeatureAccess[];
     setUser: Dispatch<SetStateAction<User | undefined>>;
 }
+
+const KNOWLEDGE_BASE_PAGE_FEATURES = [
+    { kind: 'request_content', label: 'Request Content' },
+    { kind: 'helpful_links', label: 'Helpful Links' },
+    { kind: 'upload_video', label: 'Upload Video' }
+];
 export default function FeatureLevelCheckboxes({
     features,
     setUser
@@ -17,28 +23,48 @@ export default function FeatureLevelCheckboxes({
     const navigate = useNavigate();
     interface CheckboxStates {
         kind: string;
+        label: string;
         checked: boolean;
+        pageFeatures?: CheckboxStates[];
     }
     const [checkboxStates, setCheckboxStates] = useState<CheckboxStates[]>([
         {
             kind: 'open_content',
-            checked: features.includes(FeatureAccess.OpenContentAccess)
+            label: 'Knowledge Base',
+            checked: features.includes(FeatureAccess.OpenContentAccess),
+            pageFeatures: KNOWLEDGE_BASE_PAGE_FEATURES.map((pageFeature) => ({
+                ...pageFeature,
+                checked: features.includes(pageFeature.kind as FeatureAccess)
+            }))
         },
         {
             kind: 'provider_platforms',
+            label: 'Connected Learning',
             checked: features.includes(FeatureAccess.ProviderAccess)
         },
         {
             kind: 'program_management',
+            label: 'Program Hub',
             checked: features.includes(FeatureAccess.ProgramAccess)
         }
     ]);
 
-    const getCheckboxChecked = (kind: string): boolean => {
+    const getFeatureChecked = (kind: string): boolean => {
         const checkboxState = checkboxStates.find(
             (state) => state.kind === kind
         );
         return checkboxState ? checkboxState.checked : false;
+    };
+
+    const getPageFeatureChecked = (pageFeatureKind: string): boolean => {
+        const openContent = checkboxStates.find(
+            (f) => f.kind === 'open_content'
+        );
+        if (!openContent?.pageFeatures) return false;
+        const pageFeature = openContent.pageFeatures.find(
+            (s) => s.kind === pageFeatureKind
+        );
+        return pageFeature ? pageFeature.checked : false;
     };
 
     const handleFeatureToggle = async (
@@ -64,26 +90,65 @@ export default function FeatureLevelCheckboxes({
         navigate('/authcallback');
     };
 
+    const handlePageFeatureToggle = async (
+        checked: boolean,
+        pageFeatureKind: string
+    ) => {
+        const resp = await API.put<null, object>(
+            `/auth/page-features/${pageFeatureKind}`,
+            {}
+        );
+        if (!resp.success) {
+            toaster('Error toggling page feature', ToastState.error);
+            return;
+        }
+        setCheckboxStates((prev) =>
+            prev.map((feature) =>
+                feature.pageFeatures
+                    ? {
+                          ...feature,
+                          pageFeatures: feature?.pageFeatures.map((state) =>
+                              state.kind === pageFeatureKind
+                                  ? { ...state, checked }
+                                  : state
+                          )
+                      }
+                    : feature
+            )
+        );
+        toaster('Page feature toggled successfully', ToastState.success);
+        const user = await fetchUser();
+        setUser(user);
+        navigate('/authcallback');
+    };
+
     return (
         <>
-            <CheckboxGeneric
-                name="open_content"
-                label="Knowledge Base"
-                checked={getCheckboxChecked(FeatureAccess.OpenContentAccess)}
-                onChange={handleFeatureToggle}
-            />
-            <CheckboxGeneric
-                name="provider_platforms"
-                label="Connected Learning"
-                checked={getCheckboxChecked(FeatureAccess.ProviderAccess)}
-                onChange={handleFeatureToggle}
-            />
-            <CheckboxGeneric
-                name="program_management"
-                label="Program Hub"
-                checked={getCheckboxChecked(FeatureAccess.ProgramAccess)}
-                onChange={handleFeatureToggle}
-            />
+            {checkboxStates.map((feature) => (
+                <>
+                    <li>
+                        <CheckboxGeneric
+                            name={feature.kind}
+                            label={feature.label}
+                            checked={getFeatureChecked(feature.kind)}
+                            onChange={handleFeatureToggle}
+                        />
+                    </li>
+                    {feature.pageFeatures?.map((pageFeature) => (
+                        <li key={pageFeature.kind} className="pl-4">
+                            <CheckboxGeneric
+                                name={pageFeature.kind}
+                                label={pageFeature.label}
+                                checked={getPageFeatureChecked(
+                                    pageFeature.kind
+                                )}
+                                onChange={handlePageFeatureToggle}
+                                disabled={!feature.checked}
+                            />
+                        </li>
+                    ))}
+                </>
+            ))}
         </>
     );
 }

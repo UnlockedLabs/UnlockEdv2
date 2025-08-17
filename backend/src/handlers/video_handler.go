@@ -17,7 +17,7 @@ func (srv *Server) registerVideoRoutes() []routeDef {
 		featureRoute("GET /api/videos", srv.handleGetVideos, axx),
 		featureRoute("GET /api/videos/{id}", srv.handleGetVideoById, axx),
 		featureRoute("PUT /api/videos/{id}/favorite", srv.handleFavoriteVideo, axx),
-		adminFeatureRoute("POST /api/videos", srv.handlePostVideos, axx),
+		adminFeatureRoute("POST /api/videos", srv.handlePostVideos, axx, models.UploadVideoAccess),
 		adminFeatureRoute("PUT /api/videos/{id}/{action}", srv.handleVideoAction, axx),
 		adminFeatureRoute("DELETE /api/videos/{id}", srv.handleDeleteVideo, axx),
 	}
