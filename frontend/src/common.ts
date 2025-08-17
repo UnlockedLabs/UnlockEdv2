@@ -17,7 +17,10 @@ export enum ResidentAccountAction {
 export enum FeatureAccess {
     ProviderAccess = 'provider_platforms',
     OpenContentAccess = 'open_content',
-    ProgramAccess = 'program_management'
+    ProgramAccess = 'program_management',
+    RequestContentAccess = 'request_content',
+    HelpfulLinksAccess = 'helpful_links',
+    UploadVideoAccess = 'upload_video'
 }
 export const INIT_KRATOS_LOGIN_FLOW = '/self-service/login/browser';
 

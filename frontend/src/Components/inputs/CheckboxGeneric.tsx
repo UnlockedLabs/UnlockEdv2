@@ -3,13 +3,15 @@ interface CheckboxProps {
     label: string;
     checked: boolean | undefined;
     onChange: (checked: boolean, which: string) => Promise<void>;
+    disabled?: boolean;
 }
 
 export default function CheckboxGeneric({
     name,
     label,
     checked,
-    onChange
+    onChange,
+    disabled = false
 }: CheckboxProps) {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         void onChange(event.target.checked, name);
@@ -24,6 +26,7 @@ export default function CheckboxGeneric({
                     className="checkbox"
                     checked={checked}
                     onChange={handleChange}
+                    disabled={disabled}
                 />
                 {label}
             </label>

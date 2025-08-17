@@ -3,7 +3,8 @@ import {
     OpenContentTabs,
     Tab,
     Option,
-    FilterOpenContent
+    FilterOpenContent,
+    FeatureAccess
 } from '@/common';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -14,7 +15,7 @@ import {
     useLocation,
     useLoaderData
 } from 'react-router-dom';
-import { isAdministrator, useAuth } from '@/useAuth';
+import { hasFeature, isAdministrator, useAuth } from '@/useAuth';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -53,7 +54,9 @@ export default function OpenContent() {
         () => [
             { name: OpenContentTabs.KIWIX, value: 'libraries' },
             { name: OpenContentTabs.VIDEOS, value: 'videos' },
-            { name: OpenContentTabs.LINKS, value: 'helpful-links' },
+            ...(user && hasFeature(user, FeatureAccess.HelpfulLinksAccess)
+                ? [{ name: OpenContentTabs.LINKS, value: 'helpful-links' }]
+                : []),
             ...(!isManagement
                 ? [{ name: OpenContentTabs.FAVORITES, value: 'favorites' }]
                 : [])
@@ -221,13 +224,16 @@ export default function OpenContent() {
                                 ? 'Preview Student View'
                                 : 'Return to Admin View'}
                         </button>
-                    ) : (
+                    ) : user &&
+                      hasFeature(user, FeatureAccess.RequestContentAccess) ? (
                         <button
                             className="button"
                             onClick={() => showModal(requestContentModal)}
                         >
                             Request Content
                         </button>
+                    ) : (
+                        ' '
                     )}
                 </div>
             </div>

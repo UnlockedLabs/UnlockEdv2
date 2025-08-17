@@ -7,12 +7,13 @@ import {
     UserRole,
     MAX_DOWNLOAD_ATTEMPTS,
     getVideoErrorMessage,
-    ViewType
+    ViewType,
+    FeatureAccess
 } from '../common';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import VideoCard from '@/Components/VideoCard';
-import { useAuth } from '@/useAuth';
+import { hasFeature, useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
@@ -96,10 +97,12 @@ export default function VideoManagement() {
     return (
         <>
             <div className="flex justify-end items-center">
-                <AddButton
-                    label="Add Videos"
-                    onClick={() => showModal(addVideoModal)}
-                />
+                {hasFeature(user, FeatureAccess.UploadVideoAccess) && (
+                    <AddButton
+                        label="Add Videos"
+                        onClick={() => showModal(addVideoModal)}
+                    />
+                )}
             </div>
             <div
                 className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
