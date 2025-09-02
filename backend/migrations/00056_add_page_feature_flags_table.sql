@@ -15,18 +15,6 @@ CREATE TABLE public.page_feature_flags (
     FOREIGN KEY (feature_flag_id) REFERENCES public.feature_flags(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-INSERT INTO public.page_feature_flags (feature_flag_id, page_feature, enabled, created_at)
-select id, 'request_content', TRUE, now()
-from public.feature_flags WHERE name = 'open_content';
-
-INSERT INTO public.page_feature_flags (feature_flag_id, page_feature, enabled, created_at)
-select id, 'helpful_links', TRUE, now()
-from public.feature_flags WHERE name = 'open_content';
-
-INSERT INTO public.page_feature_flags (feature_flag_id, page_feature, enabled, created_at)
-select id, 'upload_video', TRUE, now()
-from public.feature_flags WHERE name = 'open_content';
-
 CREATE INDEX idx_page_feature_flags_page_feature ON public.page_feature_flags USING btree (page_feature);
 CREATE INDEX idx_page_feature_flags_deleted_at ON public.page_feature_flags USING btree (deleted_at);
 CREATE INDEX idx_page_feature_flags_feature_flag_id ON public.page_feature_flags USING btree (feature_flag_id);
