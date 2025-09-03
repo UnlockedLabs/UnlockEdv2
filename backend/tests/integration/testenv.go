@@ -266,6 +266,27 @@ func (env *TestEnv) CreateTestEvent(classID uint, rrule string) (*models.Program
 	return event, nil
 }
 
+func (env *TestEnv) GetEventRecurrenceRule(eventID uint) (string, error) {
+	var event models.ProgramClassEvent
+	if err := env.DB.First(&event, "id = ?", eventID).Error; err != nil {
+		return "", err
+	}
+	return event.RecurrenceRule, nil
+}
+
+func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string) (*models.ProgramClassEvent, error) {
+	event := &models.ProgramClassEvent{
+		ClassID:        classID,
+		Duration:       "2h",
+		RecurrenceRule: customRRule,
+		Room:           "Test Room",
+	}
+	if err := env.DB.Create(event).Error; err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 func (env *TestEnv) CreateTestEventOverride(eventID uint, date string, isCancelled bool, reason string) (*models.ProgramClassEventOverride, error) {
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
