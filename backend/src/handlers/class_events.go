@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
@@ -176,9 +176,9 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		}
 	}
 	if maxEvent != nil && maxEvent.ID != eventSeriesRequest.ClosedEventSeries.ID { //making sure of only one active rrule
-		untilDate := getUntilDateFromRule(eventSeriesRequest.ClosedEventSeries.RecurrenceRule)
+		untilDate := src.GetUntilDateFromRule(eventSeriesRequest.ClosedEventSeries.RecurrenceRule)
 		if untilDate != "" {
-			maxEvent.RecurrenceRule = replaceOrAddUntilDate(maxEvent.RecurrenceRule, untilDate)
+			maxEvent.RecurrenceRule = src.ReplaceOrAddUntilDate(maxEvent.RecurrenceRule, untilDate)
 			events = append(events, *maxEvent)
 		}
 	}
@@ -246,29 +246,4 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	}
 
 	return writePaginatedResponse(w, http.StatusOK, instances, qryCtx.IntoMeta())
-}
-
-func getUntilDateFromRule(rRule string) string {
-	for _, rRulePart := range strings.Split(rRule, ";") {
-		if strings.HasPrefix(rRulePart, "UNTIL=") {
-			return strings.TrimPrefix(rRulePart, "UNTIL=")
-		}
-	}
-	return ""
-}
-
-func replaceOrAddUntilDate(rRule, untilDate string) string {
-	rRuleParts := strings.Split(rRule, ";")
-	untilExists := false
-	for i, part := range rRuleParts {
-		if strings.HasPrefix(part, "UNTIL=") {
-			rRuleParts[i] = "UNTIL=" + untilDate
-			untilExists = true
-			break
-		}
-	}
-	if !untilExists {
-		rRuleParts = append(rRuleParts, "UNTIL="+untilDate)
-	}
-	return strings.Join(rRuleParts, ";")
 }

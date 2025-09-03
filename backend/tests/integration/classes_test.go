@@ -204,11 +204,11 @@ func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *m
 	require.Nil(t, endedAt2, "enrollment_ended_at should be NULL initially")
 
 	// Update class status to Active via API using the bulk update endpoint
-	updateData := map[string]interface{}{
+	updateData := map[string]any{
 		"status": string(models.Active),
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+	NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -230,6 +230,9 @@ func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *m
 func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	// Create an Active class
 	class, err := env.CreateTestClass(program, facility, models.Active)
+	require.NoError(t, err)
+
+	_, err = env.CreateTestEvent(class.ID, "")
 	require.NoError(t, err)
 
 	// Create test users
@@ -256,11 +259,11 @@ func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 	require.Nil(t, endedAt2, "enrollment_ended_at should be NULL initially")
 
 	// Update class status to Cancelled via API
-	updateData := map[string]interface{}{
+	updateData := map[string]any{
 		"status": string(models.Cancelled),
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+	NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -282,6 +285,9 @@ func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	// Create an Active class first
 	class, err := env.CreateTestClass(program, facility, models.Active)
+	require.NoError(t, err)
+
+	_, err = env.CreateTestEvent(class.ID, "")
 	require.NoError(t, err)
 
 	// Create test users
@@ -308,21 +314,21 @@ func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 	require.Nil(t, endedAt2, "enrollment_ended_at should be NULL initially")
 
 	// Update class status from Active to Paused via API
-	updateData := map[string]interface{}{
+	updateData := map[string]any{
 		"status": string(models.Paused),
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+	NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
 
 	// Update class status from Paused to Cancelled via API
-	updateData = map[string]interface{}{
+	updateData = map[string]any{
 		"status": string(models.Cancelled),
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+	NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -403,8 +409,15 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 	// Create program and make it available at facility
 	program, err := env.CreateTestProgram("Active Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
 	// Create an Active class
 	class, err := env.CreateTestClass(program, facility, models.Active)
+	require.NoError(t, err)
+
+	_, err = env.CreateTestEvent(class.ID, "")
 	require.NoError(t, err)
 
 	// Create test users
@@ -432,12 +445,12 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 		Count(&preUpdateEnrollmentsCount).Error
 	require.NoError(t, err)
 
-	updateData := map[string]interface{}{
+	updateData := map[string]any{
 		"status": string(models.Completed),
 	}
 
 	// Call to /api/program-classes API endpoint with updateData as the request payload
-	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
+	NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes?id=%d", class.ID), updateData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)

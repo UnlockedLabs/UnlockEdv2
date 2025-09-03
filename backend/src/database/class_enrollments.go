@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"time"
 )
 
 func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
@@ -197,7 +198,10 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 
 	if status, ok := classMap["status"]; ok &&
 		(status == string(models.Cancelled) || status == string(models.Completed)) {
-
+		completionTime := time.Now().UTC()
+		if err := db.UpdateClassEventRRuleUntilDate(classIDs, completionTime); err != nil {
+			return newUpdateDBError(err, "updating class event rrule until date")
+		}
 		for _, classID := range classIDs {
 			var enrollmentStatus models.ProgramEnrollmentStatus
 			switch status {
@@ -218,7 +222,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			}
 		}
 
-		// Fetch enrollments that will used create program completions AFTER the update
+		// Fetch enrollments that will be used create program completions AFTER the update
 		if status == string(models.Completed) {
 			if err := tx.Model(&models.ProgramClassEnrollment{}).
 				Preload("User.Facility").
@@ -243,7 +247,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 	}
 
 	if len(toBeCompletedEnrollments) > 0 {
-
 		rawUID, ok := classMap["update_user_id"]
 		if !ok {
 			tx.Rollback()

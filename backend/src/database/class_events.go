@@ -4,9 +4,11 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"cmp"
+	"errors"
 	"slices"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -866,4 +868,50 @@ func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventID
 		return nil, newGetRecordsDBError(err, "program_class_event_overrides")
 	}
 	return overrides, nil
+}
+
+func (db *DB) UpdateClassEventRRuleUntilDate(classIDs []int, completionTime time.Time) error {
+	if len(classIDs) == 0 {
+		return NewDBError(errors.New("no class IDs provided"), "no class IDs provided")
+	}
+	tx := db.Begin()
+	defer tx.Rollback()
+
+	var events []struct {
+		ID             uint   `json:"id"`
+		RecurrenceRule string `json:"recurrence_rule"`
+	}
+
+	if err := tx.Model(&models.ProgramClassEvent{}).Select("id, recurrence_rule").Where("class_id IN (?)", classIDs).Find(&events).Error; err != nil {
+		return newGetRecordsDBError(err, "program_class_events")
+	}
+
+	if len(events) == 0 {
+		return NewDBError(errors.New("no events found for the provided class IDs"), "no events found for the provided class IDs")
+	}
+
+	untilDateStr := src.FormatDateForUntil(completionTime)
+	updates := make(map[uint]string, len(events))
+	eventIDs := make([]uint, len(events))
+	for i, event := range events {
+		eventIDs[i] = event.ID
+		updates[event.ID] = src.ReplaceOrAddUntilDate(event.RecurrenceRule, untilDateStr)
+	}
+
+	caseParts := make([]string, 0, len(updates))
+	args := make([]any, 0, len(updates)*2)
+
+	for eventID, newRRule := range updates {
+		caseParts = append(caseParts, "WHEN id = ? THEN ?")
+		args = append(args, eventID, newRRule)
+	}
+
+	caseSQL := "CASE " + strings.Join(caseParts, " ") + " END"
+	if err := tx.Model(&models.ProgramClassEvent{}).Where("id IN (?)", eventIDs).Update("recurrence_rule", gorm.Expr(caseSQL, args...)).Error; err != nil {
+		return newUpdateDBError(err, "program_class_events")
+	}
+	if err := tx.Commit().Error; err != nil {
+		return newUpdateDBError(err, "commit transaction for updating RRULE until date")
+	}
+	return nil
 }
