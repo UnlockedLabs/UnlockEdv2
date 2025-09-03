@@ -51,7 +51,9 @@ func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
-		gormDb, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+		gormDb, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
+		})
 		if err != nil {
 			logrus.Fatal("Failed to connect to SQLite database:", err)
 		}
@@ -98,14 +100,16 @@ func MigrateTesting(db *gorm.DB) {
 	var TableList = []any{
 		&models.Role{},
 		&models.User{},
+		&models.Facility{},
 		&models.ProviderPlatform{},
 		&models.ProviderUserMapping{},
 		&models.HelpfulLink{},
 		&models.Course{},
 		&models.Program{},
-		&models.ProgramClass{},
 		&models.ProgramCreditType{},
 		&models.ProgramType{},
+		&models.ProgramClass{},
+		&models.FacilitiesPrograms{},
 		&models.ProgramClassEvent{},
 		&models.ProgramClassEnrollment{},
 		&models.ProgramCompletion{},
@@ -115,8 +119,6 @@ func MigrateTesting(db *gorm.DB) {
 		&models.Outcome{},
 		&models.Activity{},
 		&models.OidcClient{},
-		&models.Facility{},
-		&models.FacilitiesPrograms{},
 		&models.ChangeLogEntry{},
 		&models.OpenContentProvider{},
 		&models.OpenContentUrl{},
