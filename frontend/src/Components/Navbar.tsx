@@ -362,15 +362,15 @@ export default function Navbar({
                                             Seed Demo Data
                                         </button>
                                     </li>
-                                    <div className="self-center pt-3">
+                                    <li className="pt-3">
                                         <strong>Enabled Features:</strong>
-                                    </div>
-                                    <div>
+                                    </li>
+                                    <ul className="!pl-0 !ml-0 before:!hidden after:!hidden">
                                         <FeatureLevelCheckboxes
                                             features={user.feature_access ?? []}
                                             setUser={setUser}
                                         />
-                                    </div>
+                                    </ul>
                                 </>
                             )}
                             <li className="self-center pt-5">
