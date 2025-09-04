@@ -91,7 +91,6 @@ const (
 	GetCoursesJob    JobType = "get_courses"
 	GetActivityJob   JobType = "get_activity"
 
-	DailyProgHistoryJob    JobType   = "daily_prog_history"
 	ScrapeKiwixJob         JobType   = "scrape_kiwix"
 	RetryVideoDownloadsJob JobType   = "retry_video_downloads"
 	RetryManualDownloadJob JobType   = "retry_manual_download"
@@ -105,7 +104,7 @@ const (
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
-var AllProgramManagementJobs = []JobType{DailyProgHistoryJob}
+var AllProgramManagementJobs = []JobType{}
 
 func (jt JobType) IsVideoJob() bool {
 	switch jt {
