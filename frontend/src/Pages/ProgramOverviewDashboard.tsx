@@ -28,6 +28,7 @@ import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
 import { getClassEndDate } from '@/Components/ClassLayout';
 import WarningBanner from '@/Components/WarningBanner';
+import EmptyStateCard from '@/Components/EmptyStateCard';
 
 export function isCompletedCancelledOrArchived(program_class: Class): boolean {
     return (
@@ -71,7 +72,8 @@ export default function ProgramOverviewDashboard() {
     const {
         data: classesResp,
         error: classesError,
-        mutate: mutateClasses
+        mutate: mutateClasses,
+        isLoading
     } = useSWR<ServerResponseMany<Class>, Error>(
         `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
@@ -330,57 +332,60 @@ export default function ProgramOverviewDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4 mt-4">
-                <div className="flex flex-row gap-x-2">
-                    <SearchBar
-                        searchTerm={searchTerm}
-                        changeCallback={(newTerm) => {
-                            handleSetSearchTerm(newTerm);
-                            setPage(1);
-                        }}
-                    />
-                    <DropdownControl
-                        setState={setSortQuery}
-                        enumType={{
-                            'Enrollment Count (Most)': 'enrolled desc',
-                            'Enrollment Count (Least)': 'enrolled asc',
-                            'Start Date (Earliest)': 'ps.start_dt asc',
-                            'Start Date (Latest)': 'ps.start_dt desc'
-                        }}
-                    />
-                    <div className="flex items-center">
-                        <input
-                            type="checkbox"
-                            className="checkbox checkbox-sm mr-2"
-                            onChange={(e) => {
-                                setIncludeArchived(e.target.checked);
-                            }}
-                        />
-                        <span className="text-sm">
-                            Include Archived Classes
-                        </span>
+                {filteredClasses && filteredClasses.length > 0 && (
+                    <div>
+                        <div className="flex flex-row gap-x-2">
+                            <SearchBar
+                                searchTerm={searchTerm}
+                                changeCallback={(newTerm) => {
+                                    handleSetSearchTerm(newTerm);
+                                    setPage(1);
+                                }}
+                            />
+                            <DropdownControl
+                                setState={setSortQuery}
+                                enumType={{
+                                    'Enrollment Count (Most)': 'enrolled desc',
+                                    'Enrollment Count (Least)': 'enrolled asc',
+                                    'Start Date (Earliest)': 'ps.start_dt asc',
+                                    'Start Date (Latest)': 'ps.start_dt desc'
+                                }}
+                            />
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-sm mr-2"
+                                    onChange={(e) => {
+                                        setIncludeArchived(e.target.checked);
+                                    }}
+                                />
+                                <span className="text-sm">
+                                    Include Archived Classes
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex flex-row gap-x-2">
+                            <button
+                                className="button-outline-pale-yellow"
+                                onClick={confirmArchiveClasses}
+                            >
+                                <ArchiveBoxIcon className="w-4 h-4 mr-1" />
+                                Archive Class
+                                {selectedClasses.length > 1 ? 'es' : ''}
+                            </button>
+                            <AddButton
+                                dataTip={getTooltip()}
+                                disabled={!canAddClass}
+                                label="Add Class"
+                                onClick={() =>
+                                    navigate(
+                                        `/programs/${program_id}/classes/new`
+                                    )
+                                }
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="flex flex-row gap-x-2">
-                    {selectedClasses.length > 0 ? (
-                        <button
-                            className="button-outline-pale-yellow"
-                            onClick={confirmArchiveClasses}
-                        >
-                            <ArchiveBoxIcon className="w-4 h-4 mr-1" />
-                            Archive Class
-                            {selectedClasses.length > 1 ? 'es' : ''}
-                        </button>
-                    ) : (
-                        <AddButton
-                            dataTip={getTooltip()}
-                            disabled={!canAddClass}
-                            label="Add Class"
-                            onClick={() =>
-                                navigate(`/programs/${program_id}/classes/new`)
-                            }
-                        />
-                    )}
-                </div>
+                )}
             </div>
 
             {/* classes table */}
@@ -408,115 +413,138 @@ export default function ProgramOverviewDashboard() {
                     </thead>
 
                     <tbody className="!table-row-group text-center">
-                        {filteredClasses.map((pc) => {
-                            const isSelected = selectedClasses.includes(pc.id);
-                            return (
-                                <tr
-                                    key={pc.id}
-                                    className={`!table-row ${isArchived(pc) ? 'bg-grey-1' : ''} ${isSelected ? 'bg-background' : ''}`}
-                                >
-                                    <td
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="w-[40px] py-2"
+                        {isLoading ? (
+                            <tr className="!table-row">
+                                <td colSpan={7} className="py-8">
+                                    <div>Loading...</div>
+                                </td>
+                            </tr>
+                        ) : filteredClasses && filteredClasses.length > 0 ? (
+                            filteredClasses.map((pc) => {
+                                const isSelected = selectedClasses.includes(
+                                    pc.id
+                                );
+                                return (
+                                    <tr
+                                        key={pc.id}
+                                        className={`!table-row ${isArchived(pc) ? 'bg-grey-1' : ''} ${isSelected ? 'bg-background' : ''}`}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            className={`cursor-pointer checkbox checkbox-sm ${
-                                                isArchived(pc)
-                                                    ? 'invisible'
-                                                    : ''
-                                            }`}
-                                            checked={isSelected}
-                                            disabled={isArchived(pc)}
-                                            onChange={() =>
-                                                handleToggleRow(pc.id)
-                                            }
-                                        />
-                                    </td>
-
-                                    <td className="px-4 py-2 cursor-pointer">
-                                        <div
-                                            onClick={() =>
-                                                navigate(
-                                                    `/program-classes/${pc.id}/dashboard`
-                                                )
-                                            }
+                                        <td
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-[40px] py-2"
                                         >
-                                            <ClampedText
-                                                as="div"
-                                                lines={1}
-                                                className="hover:underline"
+                                            <input
+                                                type="checkbox"
+                                                className={`cursor-pointer checkbox checkbox-sm ${
+                                                    isArchived(pc)
+                                                        ? 'invisible'
+                                                        : ''
+                                                }`}
+                                                checked={isSelected}
+                                                disabled={isArchived(pc)}
+                                                onChange={() =>
+                                                    handleToggleRow(pc.id)
+                                                }
+                                            />
+                                        </td>
+
+                                        <td className="px-4 py-2 cursor-pointer">
+                                            <div
+                                                onClick={() =>
+                                                    navigate(
+                                                        `/program-classes/${pc.id}/dashboard`
+                                                    )
+                                                }
                                             >
-                                                {pc.name}
+                                                <ClampedText
+                                                    as="div"
+                                                    lines={1}
+                                                    className="hover:underline"
+                                                >
+                                                    {pc.name}
+                                                </ClampedText>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <ClampedText as="div" lines={1}>
+                                                {pc.instructor_name}
                                             </ClampedText>
-                                        </div>
-                                    </td>
+                                        </td>
 
-                                    <td>
-                                        <ClampedText as="div" lines={1}>
-                                            {pc.instructor_name}
-                                        </ClampedText>
-                                    </td>
+                                        <td className="px-4 py-2">
+                                            {new Date(
+                                                pc.start_dt
+                                            ).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                timeZone: 'UTC'
+                                            })}
+                                        </td>
+                                        <td className="px-4 py-2">
+                                            {(() => {
+                                                const classEndDate =
+                                                    getClassEndDate(
+                                                        pc?.events ?? []
+                                                    );
+                                                return classEndDate
+                                                    ? classEndDate.toLocaleDateString(
+                                                          'en-US',
+                                                          {
+                                                              year: 'numeric',
+                                                              month: 'long',
+                                                              day: 'numeric',
+                                                              timeZone: 'UTC'
+                                                          }
+                                                      )
+                                                    : 'No end date';
+                                            })()}
+                                        </td>
 
-                                    <td className="px-4 py-2">
-                                        {new Date(
-                                            pc.start_dt
-                                        ).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            timeZone: 'UTC'
-                                        })}
-                                    </td>
-                                    <td className="px-4 py-2">
-                                        {(() => {
-                                            const classEndDate =
-                                                getClassEndDate(
-                                                    pc?.events ?? []
-                                                );
-                                            return classEndDate
-                                                ? classEndDate.toLocaleDateString(
-                                                      'en-US',
-                                                      {
-                                                          year: 'numeric',
-                                                          month: 'long',
-                                                          day: 'numeric',
-                                                          timeZone: 'UTC'
-                                                      }
-                                                  )
-                                                : 'No end date';
-                                        })()}
-                                    </td>
+                                        <td className="px-4 py-2">
+                                            <ProgressBar
+                                                showPercentage={false}
+                                                percent={parseFloat(
+                                                    (
+                                                        (pc.enrolled /
+                                                            pc.capacity) *
+                                                        100
+                                                    ).toFixed(1)
+                                                )}
+                                                numerator={pc.enrolled}
+                                                denominator={pc.capacity}
+                                            />
+                                        </td>
 
-                                    <td className="px-4 py-2">
-                                        <ProgressBar
-                                            showPercentage={false}
-                                            percent={parseFloat(
-                                                (
-                                                    (pc.enrolled /
-                                                        pc.capacity) *
-                                                    100
-                                                ).toFixed(1)
-                                            )}
-                                            numerator={pc.enrolled}
-                                            denominator={pc.capacity}
-                                        />
-                                    </td>
-
-                                    <td className="px-4 py-2">
-                                        <ClassStatus
-                                            status={pc.status}
-                                            program_class={pc}
-                                            mutateClasses={mutateClasses}
-                                        />
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                        <td className="px-4 py-2">
+                                            <ClassStatus
+                                                status={pc.status}
+                                                program_class={pc}
+                                                mutateClasses={mutateClasses}
+                                            />
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        ) : (
+                            <td colSpan={7}>
+                                <EmptyStateCard
+                                    title="No classes exist for this program"
+                                    tooltipText="Create or schedule your first class"
+                                    onActionButtonText="Add Class"
+                                    onActionButtonClick={() =>
+                                        navigate(
+                                            `/programs/${program_id}/classes/new`
+                                        )
+                                    }
+                                />
+                            </td>
+                        )}
                     </tbody>
                 </table>
 
-                {meta && (
+                {meta && filteredClasses.length > 0 && !isLoading && (
                     <div className="flex justify-center mt-4">
                         <Pagination
                             meta={meta}
