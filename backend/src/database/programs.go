@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -331,71 +330,143 @@ func (db *DB) DeleteProgram(id int) error {
 
 func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
 	var programsFacilitiesStats models.ProgramsFacilitiesStats
+
 	var totals struct {
 		TotalPrograms    int64 `json:"total_programs"`
 		TotalEnrollments int64 `json:"total_enrollments"`
 	}
-	if err := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
-		Select("total_programs, total_enrollments").
-		Order("date DESC").
-		First(&totals).Error; err != nil {
-		// these are default initialized to zero, so we can safely ignore this error as the table may not
-		// have records in it yet.
-		logrus.Warn("daily program failicies history queried before records are inserted")
+
+	if err := db.WithContext(args.Ctx).Model(&models.Program{}).
+		Select("COUNT(*) AS total_programs").
+		Where("is_active = true AND archived_at IS NULL").
+		Scan(&totals.TotalPrograms).Error; err != nil {
+		return programsFacilitiesStats, newGetRecordsDBError(err, "total active programs")
 	}
-	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
-		Select(`
-		COALESCE(SUM(total_program_offerings) / NULLIF(SUM(total_facilities), 0), 0) AS avg_active_programs_per_facility,
-		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0), 0) * 100 AS attendance_rate,
-		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate
-	`)
+
+	if err := db.WithContext(args.Ctx).Model(&models.ProgramClassEnrollment{}).
+		Select("COUNT(*) AS total_enrollments").
+		Scan(&totals.TotalEnrollments).Error; err != nil {
+		return programsFacilitiesStats, newGetRecordsDBError(err, "total enrollments")
+	}
+
+	var rateStats struct {
+		AvgActiveProgramsPerFacility float64 `json:"avg_active_programs_per_facility"`
+		AttendanceRate               float64 `json:"attendance_rate"`
+		CompletionRate               float64 `json:"completion_rate"`
+	}
+
+	completionTimeFilter := ""
+	attendanceTimeFilter := ""
+	var timeFilterArgs []interface{}
+
 	if timeFilter > 0 {
-		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
+		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
+		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
+		attendanceTimeFilter = "AND pcev.created_at >= ?"
+		timeFilterArgs = []interface{}{cutoffDate, cutoffDate, cutoffDate}
 	}
-	if err := tx.Scan(&programsFacilitiesStats).Error; err != nil {
-		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
+
+	if err := db.WithContext(args.Ctx).Raw(`
+		SELECT 
+			COALESCE(COUNT(DISTINCT fp.id) * 1.0 / NULLIF(COUNT(DISTINCT f.id), 0), 0) AS avg_active_programs_per_facility
+		FROM facilities f
+		LEFT JOIN facilities_programs fp ON fp.facility_id = f.id
+		LEFT JOIN programs p ON p.id = fp.program_id AND p.is_active = true AND p.archived_at IS NULL
+	`).Scan(&rateStats.AvgActiveProgramsPerFacility).Error; err != nil {
+		return programsFacilitiesStats, newGetRecordsDBError(err, "avg active programs per facility")
 	}
+
+	query := fmt.Sprintf(`
+		SELECT 
+			COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' %s THEN 1 END) * 100.0 / 
+				NULLIF(COUNT(pce.id), 0), 0) AS completion_rate,
+			COALESCE(COUNT(CASE WHEN pcea.attendance_status = 'present' %s THEN 1 END) * 100.0 / 
+				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
+		FROM program_class_enrollments pce
+		LEFT JOIN program_classes pc ON pc.id = pce.class_id
+		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter)
+
+	if err := db.WithContext(args.Ctx).Raw(query, timeFilterArgs...).Scan(&rateStats).Error; err != nil {
+		return programsFacilitiesStats, newGetRecordsDBError(err, "completion and attendance rates")
+	}
+
 	programsFacilitiesStats.TotalPrograms = &totals.TotalPrograms
 	programsFacilitiesStats.TotalEnrollments = &totals.TotalEnrollments
+	programsFacilitiesStats.AvgActiveProgramsPerFacility = &rateStats.AvgActiveProgramsPerFacility
+	programsFacilitiesStats.AttendanceRate = &rateStats.AttendanceRate
+	programsFacilitiesStats.CompletionRate = &rateStats.CompletionRate
+
 	return programsFacilitiesStats, nil
 }
 
 func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
 	var programsFacilityStats models.ProgramsFacilitiesStats
-	var mostRecentDate time.Time
-	if err := db.WithContext(args.Ctx).
-		Model(&models.DailyProgramFacilityHistory{}).
-		Select("MAX(date)").
-		Where("facility_id = ?", args.FacilityID).
-		Scan(&mostRecentDate).Error; err != nil {
-		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats (max date)")
-	}
+
 	var totals struct {
 		TotalPrograms    int64 `json:"total_programs"`
 		TotalEnrollments int64 `json:"total_enrollments"`
 	}
+
 	if err := db.WithContext(args.Ctx).
-		Model(&models.DailyProgramFacilityHistory{}).
-		Select(`
-		COUNT(*) AS total_programs,
-		SUM(total_enrollments) AS total_enrollments`).
-		Where("facility_id = ? AND date = ?", args.FacilityID, mostRecentDate).
-		Scan(&totals).Error; err != nil {
-		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats (totals for most recent date)")
+		Model(&models.Program{}).
+		Select("COUNT(DISTINCT p.id) AS total_programs").
+		Joins("p").
+		Joins("JOIN facilities_programs fp ON fp.program_id = p.id").
+		Where("fp.facility_id = ? AND p.is_active = true AND p.archived_at IS NULL", args.FacilityID).
+		Scan(&totals.TotalPrograms).Error; err != nil {
+		return programsFacilityStats, newGetRecordsDBError(err, "total programs for facility")
 	}
-	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramFacilityHistory{}).
-		Select(`
-		SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0) * 100 AS attendance_rate,
-		SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0) * 100 AS completion_rate
-	`).Where("facility_id = ?", args.FacilityID)
+
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEnrollment{}).
+		Select("COUNT(pce.id) AS total_enrollments").
+		Joins("LEFT JOIN program_classes pc ON pc.id = pce.class_id").
+		Where("pc.facility_id = ?", args.FacilityID).
+		Scan(&totals.TotalEnrollments).Error; err != nil {
+		return programsFacilityStats, newGetRecordsDBError(err, "total enrollments for facility")
+	}
+
+	var rateStats struct {
+		AttendanceRate float64 `json:"attendance_rate"`
+		CompletionRate float64 `json:"completion_rate"`
+	}
+
+	completionTimeFilter := ""
+	attendanceTimeFilter := ""
+	var timeFilterArgs []interface{}
+
 	if timeFilter > 0 {
-		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
+		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
+		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
+		attendanceTimeFilter = "AND pcev.created_at >= ?"
+		timeFilterArgs = []interface{}{args.FacilityID, cutoffDate, cutoffDate}
+	} else {
+		timeFilterArgs = []interface{}{args.FacilityID}
 	}
-	if err := tx.Scan(&programsFacilityStats).Error; err != nil {
-		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' %s THEN 1 END) * 100.0 / 
+				NULLIF(COUNT(pce.id), 0), 0) AS completion_rate,
+			COALESCE(COUNT(CASE WHEN pcea.attendance_status = 'present' %s THEN 1 END) * 100.0 / 
+				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
+		FROM program_class_enrollments pce
+		LEFT JOIN program_classes pc ON pc.id = pce.class_id
+		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+		WHERE pc.facility_id = ?
+	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter)
+
+	if err := db.WithContext(args.Ctx).Raw(query, timeFilterArgs...).Scan(&rateStats).Error; err != nil {
+		return programsFacilityStats, newGetRecordsDBError(err, "facility completion and attendance rates")
 	}
+
 	programsFacilityStats.TotalPrograms = &totals.TotalPrograms
 	programsFacilityStats.TotalEnrollments = &totals.TotalEnrollments
+	programsFacilityStats.AttendanceRate = &rateStats.AttendanceRate
+	programsFacilityStats.CompletionRate = &rateStats.CompletionRate
 
 	return programsFacilityStats, nil
 }
@@ -437,89 +508,157 @@ func applyRateFilter(tx *gorm.DB, rateExpr string, val string) *gorm.DB {
 
 func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole, filters map[string]string) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
-	var tableName string
-	var totalActiveFacilitiesQuery string
-	var totalActiveFacilitiesSubQuery string
-	var facilitySubQueryFilter string
+
+	baseQuery := db.WithContext(args.Ctx).Model(&models.Program{})
+
+	var selectFields string
 	if adminRole == models.FacilityAdmin {
-		tableName = "daily_program_facility_history"
-		facilitySubQueryFilter = fmt.Sprintf("AND facility_id = %d", args.FacilityID)
-	} else {
-		tableName = "daily_program_facilities_history"
-		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
-		totalActiveFacilitiesSubQuery = "total_active_facilities,"
-	}
-	const completionRate = "(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100"
-	const attendanceRate = "(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100"
-	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
-		Select(fmt.Sprintf(`
+		selectFields = `
 			programs.id AS program_id,
 			programs.name AS program_name,
 			programs.archived_at AS archived_at,
-			%s
-			mr.total_enrollments AS total_enrollments,
-			mr.total_active_enrollments AS total_active_enrollments,
-			mr.total_classes AS total_classes,
-			%s AS completion_rate,
-			%s AS attendance_rate,
+			current_metrics.total_enrollments AS total_enrollments,
+			current_metrics.total_active_enrollments AS total_active_enrollments,
+			current_metrics.total_classes AS total_classes,
+			time_filtered_rates.completion_rate AS completion_rate,
+			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
 			pct.credit_types AS credit_types,
 			programs.funding_type AS funding_type,
-			BOOL_OR(programs.is_active) AS status
-		`, totalActiveFacilitiesQuery, completionRate, attendanceRate))
-	if timeFilter > 0 {
-		joinCondition := fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id AND dpfh.date >= ?`, tableName)
-		tx = tx.Joins(joinCondition, time.Now().AddDate(0, 0, -timeFilter))
+			programs.is_active AS status
+		`
 	} else {
-		tx = tx.Joins(fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id`, tableName))
+		selectFields = `
+			programs.id AS program_id,
+			programs.name AS program_name,
+			programs.archived_at AS archived_at,
+			current_metrics.total_active_facilities AS total_active_facilities,
+			current_metrics.total_enrollments AS total_enrollments,
+			current_metrics.total_active_enrollments AS total_active_enrollments,
+			current_metrics.total_classes AS total_classes,
+			time_filtered_rates.completion_rate AS completion_rate,
+			time_filtered_rates.attendance_rate AS attendance_rate,
+			pt.program_types AS program_types,
+			pct.credit_types AS credit_types,
+			programs.funding_type AS funding_type,
+			programs.is_active AS status
+		`
 	}
-	tx = tx.Joins(fmt.Sprintf(`
+
+	var currentMetricsSubquery string
+	if adminRole == models.FacilityAdmin {
+		currentMetricsSubquery = fmt.Sprintf(`
 			LEFT JOIN (
 				SELECT 
-					program_id,
-					%s
-					total_enrollments,
-					total_active_enrollments,
-					total_classes
-				FROM %s
-				WHERE date = (SELECT MAX(date) FROM %s)
-				%s
-			) AS mr ON mr.program_id = programs.id
-		`, totalActiveFacilitiesSubQuery, tableName, tableName, facilitySubQueryFilter))
+					p.id as program_id,
+					COUNT(DISTINCT pce.id) AS total_enrollments,
+					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.id END) AS total_active_enrollments,
+					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
+				FROM programs p
+				JOIN facilities_programs fp ON fp.program_id = p.id
+				LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = %d
+				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+				WHERE fp.facility_id = %d
+				GROUP BY p.id
+			) AS current_metrics ON current_metrics.program_id = programs.id
+		`, args.FacilityID, args.FacilityID)
+	} else {
+		currentMetricsSubquery = `
+			LEFT JOIN (
+				SELECT 
+					p.id as program_id,
+					COUNT(DISTINCT CASE WHEN p.is_active = true AND p.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
+					COUNT(DISTINCT pce.id) AS total_enrollments,
+					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.id END) AS total_active_enrollments,
+					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
+				FROM programs p
+				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
+				LEFT JOIN program_classes pc ON pc.program_id = p.id
+				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+				GROUP BY p.id
+			) AS current_metrics ON current_metrics.program_id = programs.id
+		`
+	}
 
-	tx = tx.Joins(`LEFT JOIN (
-				SELECT program_id, STRING_AGG(DISTINCT program_type::text, ',') AS program_types
-				FROM program_types
-				GROUP BY program_id
-			  ) AS pt ON pt.program_id = programs.id
-			`).Joins(`
-			  LEFT JOIN (
-				SELECT program_id, STRING_AGG(DISTINCT credit_type::text, ',') AS credit_types
-				FROM program_credit_types
-				GROUP BY program_id
-			  ) AS pct ON pct.program_id = programs.id
-			`).Group(totalActiveFacilitiesQuery + "programs.id, programs.name, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type, pt.program_types, pct.credit_types")
+	timeFilterCondition := ""
+	if timeFilter > 0 {
+		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
+		timeFilterCondition = fmt.Sprintf(`
+			AND (pce.enrollment_ended_at >= '%s' OR pcev.created_at >= '%s')
+		`, cutoffDate.Format("2006-01-02"), cutoffDate.Format("2006-01-02"))
+	}
+
+	var facilityFilterForRates string
+	if adminRole == models.FacilityAdmin {
+		facilityFilterForRates = fmt.Sprintf("AND pc.facility_id = %d", args.FacilityID)
+	}
+
+	timeFilteredRatesSubquery := fmt.Sprintf(`
+		LEFT JOIN (
+			SELECT 
+				p.id as program_id,
+				COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL %s THEN 1 END) * 100.0 / 
+					NULLIF(COUNT(pce.id), 0), 0) AS completion_rate,
+				COALESCE(COUNT(CASE WHEN pcea.attendance_status = 'present' %s THEN 1 END) * 100.0 / 
+					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
+			FROM programs p
+			LEFT JOIN program_classes pc ON pc.program_id = p.id %s
+			LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+			LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
+			LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+			WHERE 1=1 %s
+			GROUP BY p.id
+		) AS time_filtered_rates ON time_filtered_rates.program_id = programs.id
+	`, timeFilterCondition, timeFilterCondition, timeFilterCondition, facilityFilterForRates, timeFilterCondition)
+
+	tx := baseQuery.Select(selectFields).
+		Joins(currentMetricsSubquery).
+		Joins(timeFilteredRatesSubquery).
+		Joins(`LEFT JOIN (
+			SELECT program_id, STRING_AGG(DISTINCT program_type::text, ',') AS program_types
+			FROM program_types
+			GROUP BY program_id
+		) AS pt ON pt.program_id = programs.id`).
+		Joins(`LEFT JOIN (
+			SELECT program_id, STRING_AGG(DISTINCT credit_type::text, ',') AS credit_types
+			FROM program_credit_types
+			GROUP BY program_id
+		) AS pct ON pct.program_id = programs.id`)
 
 	if adminRole == models.FacilityAdmin {
 		tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", args.FacilityID)
 	}
+
 	if !includeArchived {
 		tx = tx.Where("programs.archived_at IS NULL")
 	}
+
 	if len(args.Tags) > 0 {
-		tx = tx.Where("pt.program_id IN (?)", args.Tags)
+		tx = tx.Where("programs.id IN (SELECT program_id FROM program_types WHERE program_type IN (?))", args.Tags)
 	}
+
 	for col, val := range filters {
 		switch col {
 		case "programs.name":
 			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
-		case "mr.total_enrollments", "mr.total_active_enrollments", "mr.total_classes", "mr.total_active_facilities":
+		case "mr.total_enrollments", "current_metrics.total_enrollments":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Where(fmt.Sprintf("%s %s ?", col, op), num)
+			tx = tx.Having(fmt.Sprintf("current_metrics.total_enrollments %s ?", op), num)
+		case "mr.total_active_enrollments", "current_metrics.total_active_enrollments":
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Having(fmt.Sprintf("current_metrics.total_active_enrollments %s ?", op), num)
+		case "mr.total_classes", "current_metrics.total_classes":
+			op, num := parseOperatorAndValue(val)
+			tx = tx.Having(fmt.Sprintf("current_metrics.total_classes %s ?", op), num)
+		case "mr.total_active_facilities", "current_metrics.total_active_facilities":
+			if adminRole != models.FacilityAdmin {
+				op, num := parseOperatorAndValue(val)
+				tx = tx.Having(fmt.Sprintf("current_metrics.total_active_facilities %s ?", op), num)
+			}
 		case "completion_rate":
-			tx = applyRateFilter(tx, completionRate, val)
+			tx = applyRateFilter(tx, "time_filtered_rates.completion_rate", val)
 		case "attendance_rate":
-			tx = applyRateFilter(tx, attendanceRate, val)
+			tx = applyRateFilter(tx, "time_filtered_rates.attendance_rate", val)
 		case "pt.program_types":
 			tx = tx.Where("pt.program_types ~* ?", val)
 		case "pct.credit_types":
@@ -545,22 +684,26 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			}
 		}
 	}
+
 	if args.Search != "" {
-		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
+		tx = tx.Where("LOWER(programs.name) LIKE ? OR LOWER(programs.description) LIKE ?", args.SearchQuery(), args.SearchQuery())
 	}
+
 	if err := tx.Count(&args.Total).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "programs table")
+		return nil, newGetRecordsDBError(err, "programs table count")
 	}
+
 	if args.OrderBy != "" && args.Order != "" {
 		tx = tx.Order(args.OrderBy + " " + args.Order)
 	} else {
 		tx = tx.Order(args.OrderClause("programs.created_at desc"))
 	}
+
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
 		return programsTable, newGetRecordsDBError(err, "programs table")
 	}
-	return programsTable, nil
 
+	return programsTable, nil
 }
 
 func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (models.ActivityHistoryResponse, error) {

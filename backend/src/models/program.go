@@ -101,60 +101,9 @@ type FacilitiesPrograms struct {
 
 func (FacilitiesPrograms) TableName() string { return "facilities_programs" }
 
-type DailyProgramsFacilitiesHistory struct {
-	Date                   time.Time `json:"date" gorm:"not null"`
-	TotalPrograms          int64     `json:"total_programs" gorm:"not null"`
-	TotalActivePrograms    int64     `json:"total_active_programs" gorm:"not null"`
-	TotalArchivedPrograms  int64     `json:"total_archived_programs" gorm:"not null"`
-	TotalEnrollments       int64     `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions       int64     `json:"total_completions" gorm:"not null"`
-	TotalProgramOfferings  int64     `json:"total_program_offerings" gorm:"not null"`
-	TotalFacilities        int64     `json:"total_facilities" gorm:"not null"`
-	TotalAttendancesMarked int64     `json:"total_attendances_marked" gorm:"not null"`
-	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
-}
-
-func (DailyProgramsFacilitiesHistory) TableName() string {
-	return "daily_programs_facilities_history"
-}
-
-type DailyProgramFacilitiesHistory struct {
-	Date                   time.Time `json:"date" gorm:"not null"`
-	ProgramID              uint      `json:"program_id" gorm:"not null"`
-	TotalActiveFacilities  int64     `json:"total_active_facilities" gorm:"not null"`
-	TotalEnrollments       int64     `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions       int64     `json:"total_completions" gorm:"not null"`
-	TotalActiveEnrollments int64     `json:"total_active_enrollments" gorm:"not null"`
-	TotalClasses           int64     `json:"total_classes" gorm:"not null"`
-	TotalArchivedClasses   int64     `json:"total_archived_classes" gorm:"not null"`
-	TotalAttendancesMarked int64     `json:"total_attendances_marked" gorm:"not null"`
-	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
-}
-
-func (DailyProgramFacilitiesHistory) TableName() string {
-	return "daily_program_facilities_history"
-}
-
-type DailyProgramFacilityHistory struct {
-	Date                   time.Time `json:"date" gorm:"not null"`
-	ProgramID              uint      `json:"program_id" gorm:"not null"`
-	FacilityID             uint      `json:"facility_id" gorm:"not null"`
-	TotalEnrollments       int64     `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions       int64     `json:"total_completions" gorm:"not null"`
-	TotalActiveEnrollments int64     `json:"total_active_enrollments" gorm:"not null"`
-	TotalClasses           int64     `json:"total_classes" gorm:"not null"`
-	TotalArchivedClasses   int64     `json:"total_archived_classes" gorm:"not null"`
-	TotalAttendancesMarked int64     `json:"total_attendances_marked" gorm:"not null"`
-	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
-}
-
-func (DailyProgramFacilityHistory) TableName() string {
-	return "daily_program_facility_history"
-}
-
 type ProgramsFacilitiesStats struct {
 	TotalPrograms                *int64    `json:"total_programs"`
-	AvgActiveProgramsPerFacility *int64    `json:"avg_active_programs_per_facility"`
+	AvgActiveProgramsPerFacility *float64  `json:"avg_active_programs_per_facility"`
 	TotalEnrollments             *int64    `json:"total_enrollments"`
 	AttendanceRate               *float64  `json:"attendance_rate"`
 	CompletionRate               *float64  `json:"completion_rate"`
