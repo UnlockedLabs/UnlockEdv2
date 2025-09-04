@@ -67,11 +67,6 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 		return newDatabaseServiceError(err)
 	}
 
-	runnableTask, err := srv.Db.GetRunnableTask(r.Context(), models.DailyProgHistoryJob)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	programs.LastRun = runnableTask.LastRun
 	return writeJsonResponse(w, http.StatusOK, programs)
 }
 
