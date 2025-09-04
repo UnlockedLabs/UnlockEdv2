@@ -219,7 +219,7 @@ func TestExistingUntilDateReplaced(t *testing.T) {
 
 	newUntilDate := src.GetUntilDateFromRule(updatedRule)
 	expectedNewUntilDate := src.FormatDateForUntil(completionTime)
-	
+
 	require.Equal(t, expectedNewUntilDate, newUntilDate)
 	require.NotEqual(t, existingUntilDate, newUntilDate)
 	require.NotContains(t, updatedRule, existingUntilDate)
