@@ -36,7 +36,6 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
 		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
 		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
-		{models.DailyProgHistoryJob.PubName(), sh.handleInsertDailyProgHistory},
 	}
 	for _, sub := range subscriptions {
 		timeout := CANCEL_TIMEOUT
@@ -57,20 +56,6 @@ func (sh *ServiceHandler) initSubscription() error {
 	return nil
 }
 
-func (sh *ServiceHandler) handleInsertDailyProgHistory(ctx context.Context, msg *nats.Msg) {
-	var body map[string]any
-	if err := json.Unmarshal(msg.Data, &body); err != nil {
-		logger().Errorf("failed to unmarshal message: %v", err)
-		return
-	}
-	jobId, ok := body["job_id"].(string)
-	if !ok {
-		logger().Errorf("failed to parse job_id: %v", body["job_id"])
-		return
-	}
-	success := InsertDailyProgHistory(ctx, sh.db) == nil
-	sh.cleanupJob(ctx, nil, jobId, success)
-}
 
 /**
 * GET: /api/courses
