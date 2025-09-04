@@ -134,19 +134,21 @@ export default function FeatureLevelCheckboxes({
                             onChange={handleFeatureToggle}
                         />
                     </li>
-                    {feature.pageFeatures?.map((pageFeature) => (
-                        <li key={pageFeature.kind} className="pl-4">
-                            <CheckboxGeneric
-                                name={pageFeature.kind}
-                                label={pageFeature.label}
-                                checked={getPageFeatureChecked(
-                                    pageFeature.kind
-                                )}
-                                onChange={handlePageFeatureToggle}
-                                disabled={!feature.checked}
-                            />
-                        </li>
-                    ))}
+                    <ul className="before:!hidden after:!hidden">
+                        {feature.pageFeatures?.map((pageFeature) => (
+                            <li key={pageFeature.kind}>
+                                <CheckboxGeneric
+                                    name={pageFeature.kind}
+                                    label={pageFeature.label}
+                                    checked={getPageFeatureChecked(
+                                        pageFeature.kind
+                                    )}
+                                    onChange={handlePageFeatureToggle}
+                                    disabled={!feature.checked}
+                                />
+                            </li>
+                        ))}
+                    </ul>
                 </>
             ))}
         </>
