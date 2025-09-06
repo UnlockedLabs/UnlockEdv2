@@ -11,7 +11,6 @@ DROP TABLE IF EXISTS public.daily_program_facility_history;
 
 -- +goose Down
 -- +goose StatementBegin
--- Recreate the daily program history tables with same structure as 00046_add_program_history.sql
 CREATE TABLE IF NOT EXISTS public.daily_programs_facilities_history (
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     total_programs INTEGER NOT NULL,

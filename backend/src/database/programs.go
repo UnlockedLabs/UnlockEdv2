@@ -366,14 +366,29 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		timeFilterArgs = []interface{}{cutoffDate, cutoffDate, cutoffDate}
 	}
 
+	var avgResult struct {
+		TotalAssociations int64 `json:"total_associations"`
+		TotalFacilities   int64 `json:"total_facilities"`
+	}
+
 	if err := db.WithContext(args.Ctx).Raw(`
 		SELECT 
-			COALESCE(COUNT(DISTINCT fp.id) * 1.0 / NULLIF(COUNT(DISTINCT f.id), 0), 0) AS avg_active_programs_per_facility
+			COUNT(DISTINCT fp.id) as total_associations,
+			COUNT(DISTINCT f.id) as total_facilities
 		FROM facilities f
 		LEFT JOIN facilities_programs fp ON fp.facility_id = f.id
 		LEFT JOIN programs p ON p.id = fp.program_id AND p.is_active = true AND p.archived_at IS NULL
-	`).Scan(&rateStats.AvgActiveProgramsPerFacility).Error; err != nil {
+		LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = f.id AND pc.status = 'Active'
+		LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+		WHERE pc.id IS NOT NULL AND pce.id IS NOT NULL
+	`).Scan(&avgResult).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "avg active programs per facility")
+	}
+
+	if avgResult.TotalFacilities > 0 {
+		rateStats.AvgActiveProgramsPerFacility = float64(avgResult.TotalAssociations) / float64(avgResult.TotalFacilities)
+	} else {
+		rateStats.AvgActiveProgramsPerFacility = 0
 	}
 
 	query := fmt.Sprintf(`
@@ -388,9 +403,17 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
 	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter)
 
-	if err := db.WithContext(args.Ctx).Raw(query, timeFilterArgs...).Scan(&rateStats).Error; err != nil {
+	var completionAttendanceRates struct {
+		AttendanceRate float64 `json:"attendance_rate"`
+		CompletionRate float64 `json:"completion_rate"`
+	}
+
+	if err := db.WithContext(args.Ctx).Raw(query, timeFilterArgs...).Scan(&completionAttendanceRates).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "completion and attendance rates")
 	}
+
+	rateStats.AttendanceRate = completionAttendanceRates.AttendanceRate
+	rateStats.CompletionRate = completionAttendanceRates.CompletionRate
 
 	programsFacilitiesStats.TotalPrograms = &totals.TotalPrograms
 	programsFacilitiesStats.TotalEnrollments = &totals.TotalEnrollments
@@ -409,28 +432,30 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 		TotalEnrollments int64 `json:"total_enrollments"`
 	}
 
-	if err := db.WithContext(args.Ctx).
-		Model(&models.Program{}).
-		Select("COUNT(DISTINCT p.id) AS total_programs").
-		Joins("p").
-		Joins("JOIN facilities_programs fp ON fp.program_id = p.id").
-		Where("fp.facility_id = ? AND p.is_active = true AND p.archived_at IS NULL", args.FacilityID).
-		Scan(&totals.TotalPrograms).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(`
+		SELECT COUNT(DISTINCT p.id) AS total_programs
+		FROM programs p
+		JOIN facilities_programs fp ON fp.program_id = p.id
+		JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = fp.facility_id AND pc.status = 'Active'
+		JOIN program_class_enrollments pce ON pce.class_id = pc.id
+		WHERE fp.facility_id = ? AND p.is_active = true AND p.archived_at IS NULL
+	`, args.FacilityID).Scan(&totals.TotalPrograms).Error; err != nil {
 		return programsFacilityStats, newGetRecordsDBError(err, "total programs for facility")
 	}
 
 	if err := db.WithContext(args.Ctx).
 		Model(&models.ProgramClassEnrollment{}).
-		Select("COUNT(pce.id) AS total_enrollments").
-		Joins("LEFT JOIN program_classes pc ON pc.id = pce.class_id").
+		Select("COUNT(program_class_enrollments.id) AS total_enrollments").
+		Joins("LEFT JOIN program_classes pc ON pc.id = program_class_enrollments.class_id").
 		Where("pc.facility_id = ?", args.FacilityID).
 		Scan(&totals.TotalEnrollments).Error; err != nil {
 		return programsFacilityStats, newGetRecordsDBError(err, "total enrollments for facility")
 	}
 
 	var rateStats struct {
-		AttendanceRate float64 `json:"attendance_rate"`
-		CompletionRate float64 `json:"completion_rate"`
+		AvgActiveProgramsPerFacility float64 `json:"avg_active_programs_per_facility"`
+		AttendanceRate               float64 `json:"attendance_rate"`
+		CompletionRate               float64 `json:"completion_rate"`
 	}
 
 	completionTimeFilter := ""
@@ -441,7 +466,7 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
 		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
 		attendanceTimeFilter = "AND pcev.created_at >= ?"
-		timeFilterArgs = []interface{}{args.FacilityID, cutoffDate, cutoffDate}
+		timeFilterArgs = []interface{}{cutoffDate, cutoffDate, cutoffDate, args.FacilityID}
 	} else {
 		timeFilterArgs = []interface{}{args.FacilityID}
 	}
@@ -463,8 +488,11 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 		return programsFacilityStats, newGetRecordsDBError(err, "facility completion and attendance rates")
 	}
 
+	rateStats.AvgActiveProgramsPerFacility = float64(totals.TotalPrograms)
+
 	programsFacilityStats.TotalPrograms = &totals.TotalPrograms
 	programsFacilityStats.TotalEnrollments = &totals.TotalEnrollments
+	programsFacilityStats.AvgActiveProgramsPerFacility = &rateStats.AvgActiveProgramsPerFacility
 	programsFacilityStats.AttendanceRate = &rateStats.AttendanceRate
 	programsFacilityStats.CompletionRate = &rateStats.CompletionRate
 
