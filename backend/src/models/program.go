@@ -102,12 +102,11 @@ type FacilitiesPrograms struct {
 func (FacilitiesPrograms) TableName() string { return "facilities_programs" }
 
 type ProgramsFacilitiesStats struct {
-	TotalPrograms                *int64    `json:"total_programs"`
-	AvgActiveProgramsPerFacility *float64  `json:"avg_active_programs_per_facility"`
-	TotalEnrollments             *int64    `json:"total_enrollments"`
-	AttendanceRate               *float64  `json:"attendance_rate"`
-	CompletionRate               *float64  `json:"completion_rate"`
-	LastRun                      time.Time `json:"last_run" gorm:"-"`
+	TotalPrograms                *int64   `json:"total_programs"`
+	AvgActiveProgramsPerFacility *float64 `json:"avg_active_programs_per_facility"`
+	TotalEnrollments             *int64   `json:"total_enrollments"`
+	AttendanceRate               *float64 `json:"attendance_rate"`
+	CompletionRate               *float64 `json:"completion_rate"`
 }
 
 type ProgramsOverviewTable struct {
