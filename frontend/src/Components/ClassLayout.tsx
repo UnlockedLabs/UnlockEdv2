@@ -52,6 +52,66 @@ function ClassInfoCard({
         classInfo ?? ({} as Class)
     );
 
+    function getNextOccurrenceDateAsStr(): string {
+        const now = new Date();
+        const allOccurrences: Date[] = [];
+
+        for (const event of classInfo?.events ?? []) {
+            const overrides = event.overrides ?? [];
+            const cancelledDates = new Set<string>();
+            const activeOverrideDates = new Set<string>();
+            const activeOverrideDateTimes: Date[] = [];
+
+            for (const override of overrides) {
+                const rule = RRule.fromString(override.override_rrule);
+                const date = rule.after(now, true);
+                if (!date) continue;
+
+                const dateStr = date.toISOString().slice(0, 10); //substring it
+                if (override.is_cancelled) {
+                    cancelledDates.add(dateStr);
+                } else {
+                    activeOverrideDates.add(dateStr);
+                    activeOverrideDateTimes.push(date);
+                }
+            }
+
+            if (event.recurrence_rule) {
+                const cleanRule = event.recurrence_rule.replace(
+                    /DTSTART;TZID=Local:/,
+                    'DTSTART:'
+                );
+                const rule = RRule.fromString(cleanRule);
+                const baseOccurrences = rule.between(
+                    now,
+                    new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
+                    true
+                );
+
+                for (const date of baseOccurrences) {
+                    const dateStr = date.toISOString().slice(0, 10);
+                    if (activeOverrideDates.has(dateStr)) {
+                        continue;
+                    }
+                    if (!cancelledDates.has(dateStr)) {
+                        allOccurrences.push(date);
+                    }
+                }
+            }
+            for (const overrideDate of activeOverrideDateTimes) {
+                if (overrideDate > now) {
+                    allOccurrences.push(overrideDate);
+                }
+            }
+        }
+        const nextOccurrence = allOccurrences
+            .filter((d) => d > now)
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+        return nextOccurrence
+            ? textMonthLocalDate(nextOccurrence, true)
+            : 'No upcoming class found';
+    }
+
     return (
         <div className="card card-row-padding flex flex-col h-full gap-4">
             <div className="flex gap-2">
@@ -111,6 +171,10 @@ function ClassInfoCard({
                     <p className="body-small">{classInfo.instructor_name}</p>
                 </div>
             </div>
+            <p className="body">
+                <span className="font-bold">Next scheduled class:</span>{' '}
+                {getNextOccurrenceDateAsStr()}
+            </p>
         </div>
     );
 }
@@ -145,82 +209,6 @@ export default function ClassLayout() {
             void mutateFlags();
         }
     }, [clsInfo?.status]);
-
-    // function getNextOccurrenceDateAsStr(): string {
-    //     const now = new Date();
-    //     const allOccurrences: Date[] = [];
-
-    //     for (const event of clsInfo?.events ?? []) {
-    //         const overrides = event.overrides ?? [];
-    //         const cancelledDates = new Set<string>();
-    //         const activeOverrideDates = new Set<string>();
-    //         const activeOverrideDateTimes: Date[] = [];
-
-    //         for (const override of overrides) {
-    //             const rule = RRule.fromString(override.override_rrule);
-    //             const date = rule.after(now, true);
-    //             if (!date) continue;
-
-    //             const dateStr = date.toISOString().slice(0, 10); //substring it
-    //             if (override.is_cancelled) {
-    //                 cancelledDates.add(dateStr);
-    //             } else {
-    //                 activeOverrideDates.add(dateStr);
-    //                 activeOverrideDateTimes.push(date);
-    //             }
-    //         }
-
-    //         if (event.recurrence_rule) {
-    //             const cleanRule = event.recurrence_rule.replace(
-    //                 /DTSTART;TZID=Local:/,
-    //                 'DTSTART:'
-    //             );
-    //             const rule = RRule.fromString(cleanRule);
-    //             const baseOccurrences = rule.between(
-    //                 now,
-    //                 new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
-    //                 true
-    //             );
-
-    //             for (const date of baseOccurrences) {
-    //                 const dateStr = date.toISOString().slice(0, 10);
-    //                 if (activeOverrideDates.has(dateStr)) {
-    //                     continue;
-    //                 }
-    //                 if (!cancelledDates.has(dateStr)) {
-    //                     allOccurrences.push(date);
-    //                 }
-    //             }
-    //         }
-    //         for (const overrideDate of activeOverrideDateTimes) {
-    //             if (overrideDate > now) {
-    //                 allOccurrences.push(overrideDate);
-    //             }
-    //         }
-    //     }
-    //     const nextOccurrence = allOccurrences
-    //         .filter((d) => d > now)
-    //         .sort((a, b) => a.getTime() - b.getTime())[0];
-    //     return nextOccurrence
-    //         ? formatDate(nextOccurrence)
-    //         : 'No upcoming class found';
-    // }
-
-    // function formatDate(date: Date): string {
-    //     const options: Intl.DateTimeFormatOptions = {
-    //         weekday: 'short',
-    //         month: 'short',
-    //         day: 'numeric',
-    //         hour: 'numeric',
-    //         minute: '2-digit',
-    //         hour12: true,
-    //         timeZone: user?.timezone
-    //     };
-    //     return new Intl.DateTimeFormat('en-US', options)
-    //         .format(date)
-    //         .replace(',', '')
-    //         .replace(',', ' @');
-    // }
 
     function getEnrollmentCount(): string {
         const enrolledCount =
@@ -284,7 +272,10 @@ export default function ClassLayout() {
                             />
                             <StatsCard
                                 title="Missing Attendance"
-                                number=""
+                                number={
+                                    clsLoader.missing_attendance?.toString() ??
+                                    '0'
+                                }
                                 label="Sessions"
                                 tooltip="" // get tooltip for this
                                 tooltipClassName="tooltip-left"

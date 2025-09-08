@@ -207,6 +207,7 @@ export const getClassMgmtData: LoaderFunction = async ({
     const { class_id } = params;
     let cls: Class | undefined;
     let attendanceRate: number | undefined;
+    let missingAttendance: number | undefined;
     let className = 'Class Management';
     const classResp = (await API.get(
         `program-classes/${class_id}`
@@ -219,13 +220,18 @@ export const getClassMgmtData: LoaderFunction = async ({
                 `program-classes/${class_id}/events/${cls.events[0].id}/attendance-rate`
             )) as ServerResponseOne<{ attendance_rate: number }>;
             attendanceRate = resp2.success ? resp2.data.attendance_rate : 0;
+            const resp3 = (await API.get(
+                `program-classes/${class_id}/missing-attendance`
+            )) as ServerResponseOne<number>;
+            missingAttendance = resp3.success ? resp3.data : 0;
         }
     } else {
         return redirectOnError(classResp);
     }
     return {
         title: className,
-        attendance_rate: attendanceRate
+        attendance_rate: attendanceRate,
+        missing_attendance: missingAttendance
     };
 };
 

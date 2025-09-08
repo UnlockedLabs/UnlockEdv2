@@ -232,3 +232,26 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 
 	return flags, nil
 }
+
+func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int, error) {
+	var event models.ProgramClassEvent
+	err := db.WithContext(args.Ctx).
+		Preload("Class").
+		Where("class_id = ?", classID).
+		First(&event).Error
+	if err != nil {
+		return 0, newNotFoundDBError(err, "program_class_events")
+	}
+	totalEvents := len(generateEventInstances(event, event.Class.StartDt, time.Now().AddDate(0, 0, 1))) // adds one day to today so today is included
+	var attendanceDates []string
+	err = db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEventAttendance{}).
+		Select("DISTINCT date").
+		Where("event_id = ?", event.ID).
+		Pluck("date", &attendanceDates).Error
+	if err != nil {
+		return 0, newGetRecordsDBError(err, "program_class_event_attendance")
+	}
+	missingAttendanceCount := totalEvents - len(attendanceDates)
+	return missingAttendanceCount, nil
+}
