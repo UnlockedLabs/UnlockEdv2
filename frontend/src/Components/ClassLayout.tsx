@@ -277,7 +277,7 @@ export default function ClassLayout() {
                                     '0'
                                 }
                                 label="Sessions"
-                                tooltip="" // get tooltip for this
+                                tooltip="Number of class sessions that have occurred but do not have any attendance records."
                                 tooltipClassName="tooltip-left"
                             />
                             <StatsCard
