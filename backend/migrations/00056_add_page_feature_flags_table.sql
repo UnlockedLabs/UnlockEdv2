@@ -23,4 +23,12 @@ CREATE INDEX idx_page_feature_flags_feature_flag_id ON public.page_feature_flags
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.page_feature_flags CASCADE;
+
+ALTER TYPE feature RENAME TO feature_old;
+
+CREATE TYPE feature AS ENUM ('open_content', 'provider_platforms', 'program_management');
+
+ALTER TABLE public.feature_flags ALTER COLUMN name TYPE feature USING name::text::feature;
+
+DROP TYPE feature_old;
 -- +goose StatementEnd
