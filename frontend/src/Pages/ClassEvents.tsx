@@ -42,7 +42,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setSelectedDate(new Date(value));
+        // Create date in local timezone to avoid UTC conversion issues
+        if (value) {
+            const [year, month, day] = value.split('-').map(Number);
+            setSelectedDate(new Date(year, month - 1, day)); // month is 0-indexed
+        } else {
+            setSelectedDate(null);
+        }
 
         // Call react-hook-form's onChange first to update form state
         void registerProps.onChange(e);
@@ -66,10 +72,10 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
             </label>
             <div className="relative">
                 {/* Styled display overlay */}
-                <div className="input input-bordered w-full max-w-xs flex items-center justify-between bg-white">
-                    <span className="text-gray-900">{displayValue}</span>
+                <div className="w-full max-w-xs flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2">
+                    <span className="text-gray-500">{displayValue}</span>
                     <svg
-                        className="w-5 h-5 text-gray-400"
+                        className="w-5 h-5 text-black"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -77,7 +83,7 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
                         <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            strokeWidth={2}
+                            strokeWidth={3}
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                         />
                     </svg>
@@ -85,7 +91,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
                 {/* Native date input for functionality - positioned over the styled display */}
                 <input
                     type="date"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        fontSize: '16px'
+                    }}
                     {...registerProps}
                     onChange={handleDateChange}
                 />
