@@ -37,23 +37,19 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
 }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-    // Get register function and separate onChange handling (like DateInput)
     const registerProps = register('simpleCalendarDate');
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        // Create date in local timezone to avoid UTC conversion issues
         if (value) {
             const [year, month, day] = value.split('-').map(Number);
-            setSelectedDate(new Date(year, month - 1, day)); // month is 0-indexed
+            setSelectedDate(new Date(year, month - 1, day));
         } else {
             setSelectedDate(null);
         }
 
-        // Call react-hook-form's onChange first to update form state
         void registerProps.onChange(e);
 
-        // Convert full date to month format (YYYY-MM) to match DateInput behavior
         const monthValue = value.substring(0, 7);
         setValue('selectedMonth', monthValue);
     };
@@ -71,7 +67,6 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
                 <span className="label-text">Select Month</span>
             </label>
             <div className="relative">
-                {/* Styled display overlay */}
                 <div className="w-full max-w-xs flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2">
                     <span className="text-gray-500">{displayValue}</span>
                     <svg
@@ -88,7 +83,6 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
                         />
                     </svg>
                 </div>
-                {/* Native date input for functionality - positioned over the styled display */}
                 <input
                     type="date"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
