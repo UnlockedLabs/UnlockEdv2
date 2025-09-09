@@ -65,15 +65,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
                 <span className="label-text">Select Month</span>
             </label>
             <div className="relative">
-                {/* Native date input for functionality */}
-                <input
-                    type="date"
-                    className="input input-bordered w-full max-w-xs opacity-0 absolute inset-0 cursor-pointer z-10"
-                    {...registerProps}
-                    onChange={handleDateChange}
-                />
                 {/* Styled display overlay */}
-                <div className="input input-bordered w-full max-w-xs flex items-center justify-between bg-white pointer-events-none">
+                <div className="input input-bordered w-full max-w-xs flex items-center justify-between bg-white">
                     <span className="text-gray-900">{displayValue}</span>
                     <svg
                         className="w-5 h-5 text-gray-400"
@@ -89,6 +82,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
                         />
                     </svg>
                 </div>
+                {/* Native date input for functionality - positioned over the styled display */}
+                <input
+                    type="date"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    {...registerProps}
+                    onChange={handleDateChange}
+                />
             </div>
         </div>
     );
