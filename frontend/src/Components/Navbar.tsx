@@ -331,7 +331,7 @@ export default function Navbar({
                         </div>
                         <ul
                             tabIndex={0}
-                            className="dropdown-content menu bg-grey-2 dark:bg-grey-1 rounded-box z-50 w-52 p-2 shadow"
+                            className="dropdown-content menu bg-grey-2 dark:bg-grey-1 rounded-box z-50 min-w-[15rem] p-2 shadow"
                         >
                             <li className="self-center">
                                 <label className="flex cursor-pointer gap-2">
@@ -362,15 +362,15 @@ export default function Navbar({
                                             Seed Demo Data
                                         </button>
                                     </li>
-                                    <div className="self-center pt-3">
+                                    <li className="pt-3">
                                         <strong>Enabled Features:</strong>
-                                    </div>
-                                    <li>
+                                    </li>
+                                    <ul className="!pl-0 !ml-0 before:!hidden after:!hidden">
                                         <FeatureLevelCheckboxes
                                             features={user.feature_access ?? []}
                                             setUser={setUser}
                                         />
-                                    </li>
+                                    </ul>
                                 </>
                             )}
                             <li className="self-center pt-5">
