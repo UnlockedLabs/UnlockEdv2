@@ -411,7 +411,7 @@ func (db *DB) GetTopFiveLibrariesByUserID(userID int, args *models.QueryContext)
 		Where("oca.user_id = ?", userID).
 		Group("lib.title, lib.url, lib.thumbnail_url, fvs.visibility_status, lib.open_content_provider_id, ocf.facility_id, u.facility_id, lib.id").
 		Order("8 desc").
-		Limit(5) //need to make sure this is wanted...not sure why it it returning more than 5 now?????
+		Limit(5) //need to make sure this is wanted...not sure why it was returning more than 5?
 	if err := query.Find(&libraries).Error; err != nil {
 		return nil, NewDBError(err, "error getting top 5 libraries")
 	}
