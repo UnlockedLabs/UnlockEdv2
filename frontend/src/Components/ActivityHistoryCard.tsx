@@ -14,6 +14,8 @@ export default function ActivityHistoryCard({
     classInfo?: Class;
 }) {
     const [page, setPage] = useState(1);
+    const ACCOUNT_HISTORY_DEFAULT_PER_PAGE = 5;
+
     const endpoint = residentId
         ? `/api/users/${residentId}/account-history?page=${page}&per_page=5`
         : classInfo
@@ -65,12 +67,16 @@ export default function ActivityHistoryCard({
                                 )
                             )}
                         </div>
-                        <div className="mx-auto">
-                            <Pagination
-                                meta={activityHistory?.meta}
-                                setPage={setPage}
-                            />
-                        </div>
+                        {activityHistory?.meta &&
+                            activityHistory?.meta.total >=
+                                ACCOUNT_HISTORY_DEFAULT_PER_PAGE && (
+                                <div className="mx-auto">
+                                    <Pagination
+                                        meta={activityHistory?.meta}
+                                        setPage={setPage}
+                                    />
+                                </div>
+                            )}
                     </>
                 )}
         </div>
