@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/go-pdf/fpdf"
 )
 
 func (srv *Server) registerUserRoutes() []routeDef {
@@ -37,6 +39,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		newAdminRoute("POST /api/users/bulk/upload", srv.handleBulkUpload),
 		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
 		validatedAdminRoute("POST /api/users/{id}/deactivate", srv.handleDeactivateUser, FacilityAdminResolver("users", "id")),
+		newAdminRoute("GET /api/users/{id}/usage-report", srv.handleGenerateUsageReportPDF),
 	}
 }
 
@@ -466,16 +469,7 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		return newDatabaseServiceError(err)
 	}
 	for i := range userPrograms {
-		present := userPrograms[i].PresentAttendance
-		absent := userPrograms[i].AbsentAttendance
-		total := present + absent
-
-		if total == 0 {
-			userPrograms[i].AttendancePercentage = "--"
-		} else {
-			pct := float64(present) / float64(total) * 100
-			userPrograms[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
-		}
+		userPrograms[i].CalculateAttendancePercentage()
 	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }
@@ -640,4 +634,104 @@ func (srv *Server) handleDeactivateUser(w http.ResponseWriter, r *http.Request, 
 	}
 
 	return writeJsonResponse(w, http.StatusOK, "User deactivated successfully")
+}
+
+func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	
+	queryCtx := srv.getQueryContext(r)
+	queryCtx.All = true
+	queryCtx.OrderBy, queryCtx.Order = "start_dt", "DESC"
+
+	//get user programs
+	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	//get user total time spent in unlocked
+	sessionEngagements, err := srv.Db.GetUserSessionEngagement(userID, -1)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	//get user (with loginmetrics)
+	user, err := srv.Db.GetUserByID(uint(userID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	//get user total distinct resources accessed
+	resourceCount, err := srv.Db.GetUserOpenContentAccessCount(queryCtx.Ctx, userID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	pdf := buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=transcript.pdf")
+	return pdf.Output(w)
+}
+
+func buildUsageReportPDF(user *models.User, programs []models.ResidentProgramClassInfo, engagements []models.SessionEngagement, resourceCount int64) *fpdf.Fpdf {
+	pdf := fpdf.New("P", "mm", "Letter", "")
+	pdf.AddPage()
+
+	//add title logic start
+	pdf.SetFont("Arial", "B", 24)
+	pdf.Cell(0, 10, "Resident Usage Transcript")
+	pdf.Ln(10)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.Ln(10)
+
+	//add resident information start
+	pdf.SetFont("Arial", "", 12)
+	writeLine(pdf, "Resident: " + user.NameFirst + " " + user.NameLast)
+	writeLine(pdf, "ID: " + user.DocID)
+	writeLine(pdf, "Facility: " + user.Facility.Name)
+	writeLine(pdf, "Generated Date: " + time.Now().Format("January 2, 2006"))
+	writeLine(pdf, "Date Range: All time")
+	pdf.Ln(10)
+
+	//add platform usage information start
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(0, 10, "Platform Usage")
+	pdf.Ln(10)
+	pdf.SetFont("Arial", "", 12)
+
+	duration := "none"//possible there is none
+	if len(engagements) > 0 {
+		duration = formatDurationFromMinutes(engagements[0].TotalMinutes)
+	}
+	writeLine(pdf, "Total time spent on UnlockEd: " + duration)
+
+	totalLogins := "0"//logins can be 0
+	if user.LoginMetrics != nil {
+		totalLogins = fmt.Sprintf("%d", user.LoginMetrics.Total)
+	}
+	writeLine(pdf, "Total Logins: " + totalLogins)
+	writeLine(pdf, fmt.Sprintf("Distinct resources accessed: %d", resourceCount))
+	pdf.Ln(10)
+
+	//add program participation start only if feature is turned on
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(0, 10, "Program Participation")
+	pdf.Ln(10)
+
+	headers := []string{"Program\nName", "Class\nName", "Status", "Attendance", "Start Date", "End Date"}
+	widths := []float64{40, 30, 25, 25, 30, 30}
+	var rows [][]string
+	for _, program := range programs {
+		rows = append(rows, []string{
+			program.ProgramName,
+			program.ClassName,
+			string(program.Status),
+			program.CalculateAttendancePercentage(),
+			formatDateForDisplay(program.StartDate),
+			formatDateForDisplay(program.EndDate),
+		})
+	}
+	drawDataTable(pdf, headers, rows, widths)
+	return pdf
 }
