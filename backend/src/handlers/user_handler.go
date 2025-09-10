@@ -714,7 +714,7 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 	writeLine(pdf, "Total Logins: "+totalLogins)
 	writeLine(pdf, fmt.Sprintf("Distinct resources accessed: %d", resourceCount))
 
-	if srv.hasFeatureAccess(models.ProgramAccess) {//add program participation start only if feature is turned on
+	if srv.hasFeatureAccess(models.ProgramAccess) { //add program participation start only if feature is turned on
 		pdf.Ln(10)
 		pdf.SetFont("Arial", "B", 16)
 		pdf.Cell(0, 10, "Program Participation")
