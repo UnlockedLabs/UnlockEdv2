@@ -1,3 +1,4 @@
+import React from 'react';
 import {
     FieldErrors,
     UseFormGetValues,
@@ -88,6 +89,23 @@ export function DateInput({
             Object.keys(validateRules).length > 0 ? validateRules : undefined
     };
 
+    // Get register function and separate onChange handling
+    const registerProps = register(interfaceRef, options);
+
+    // Cross-browser date change handler (inspired by SimpleCalendar)
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+
+        // Call react-hook-form's onChange first to update form state
+        // Use void to ignore the promise return value
+        void registerProps.onChange(e);
+
+        // Then call custom onChange if provided
+        if (onChange) {
+            onChange(value);
+        }
+    };
+
     const inputType = monthOnly ? 'month' : 'date';
 
     return (
@@ -99,14 +117,10 @@ export function DateInput({
                 type={inputType}
                 defaultValue={defaultValue}
                 className={`input input-bordered w-full`}
-                {...register(interfaceRef, options)}
+                {...registerProps}
                 autoFocus={isFocused}
                 disabled={disabled}
-                onChange={(e) => {
-                    if (onChange) {
-                        onChange(e.target.value);
-                    }
-                }}
+                onChange={handleDateChange}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message as string}

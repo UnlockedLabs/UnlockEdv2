@@ -9,6 +9,7 @@ import {
 } from '@/common';
 import Pagination from '@/Components/Pagination';
 import { useForm, UseFormRegister, UseFormSetValue } from 'react-hook-form';
+import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { ClassEventInstance } from '@/types/events';
 import AttendanceCell from '@/Components/AttendanceCell';
@@ -37,41 +38,65 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
 }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-    // Get register function and separate onChange handling (like DateInput)
     const registerProps = register('simpleCalendarDate');
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setSelectedDate(new Date(value));
+        if (value) {
+            const [year, month, day] = value.split('-').map(Number);
+            setSelectedDate(new Date(year, month - 1, day));
+        } else {
+            setSelectedDate(null);
+        }
 
-        // Call react-hook-form's onChange first to update form state
         void registerProps.onChange(e);
 
-        // Convert full date to month format (YYYY-MM) to match DateInput behavior
         const monthValue = value.substring(0, 7);
         setValue('selectedMonth', monthValue);
     };
+
+    const displayValue = selectedDate
+        ? selectedDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long'
+          })
+        : 'Select Month';
 
     return (
         <div className="form-control w-full max-w-xs">
             <label className="label">
                 <span className="label-text">Select Month</span>
             </label>
-            <input
-                type="date"
-                className="input input-bordered w-full max-w-xs"
-                {...registerProps}
-                onChange={handleDateChange}
-            />
-            {selectedDate && (
-                <p className="mt-2">
-                    Selected month:{' '}
-                    {selectedDate.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long'
-                    })}
-                </p>
-            )}
+            <div className="relative">
+                <div className="w-full max-w-xs flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2">
+                    <span className="text-gray-500">{displayValue}</span>
+                    <svg
+                        className="w-5 h-5 text-black"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                    </svg>
+                </div>
+                <input
+                    type="date"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        fontSize: '16px'
+                    }}
+                    {...registerProps}
+                    onChange={handleDateChange}
+                />
+            </div>
         </div>
     );
 };
@@ -98,6 +123,8 @@ export default function ClassEvents() {
         }
     });
     const selectedMonthValue = watch('selectedMonth');
+
+    const isGecko = 'MozAppearance' in document.documentElement.style;
 
     const [year, month] = selectedMonthValue.split('-');
 
@@ -215,7 +242,22 @@ export default function ClassEvents() {
     return (
         <div>
             <div className="flex mb-4 justify-start">
-                <SimpleCalendar setValue={setValue} register={register} />
+                {isGecko ? (
+                    <SimpleCalendar setValue={setValue} register={register} />
+                ) : (
+                    <DateInput
+                        label="Select Month"
+                        interfaceRef="selectedMonth"
+                        required={true}
+                        errors={{}}
+                        register={register}
+                        monthOnly={true}
+                        disabled={false}
+                        onChange={(e: string) => {
+                            setValue('selectedMonth', e);
+                        }}
+                    />
+                )}
             </div>
 
             {isLoading && <div>Loading...</div>}
