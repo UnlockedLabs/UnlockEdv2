@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"context"
 	"fmt"
 	"time"
 
@@ -409,7 +410,8 @@ func (db *DB) GetTopFiveLibrariesByUserID(userID int, args *models.QueryContext)
 			and fvs.facility_id = ?`, args.FacilityID).
 		Where("oca.user_id = ?", userID).
 		Group("lib.title, lib.url, lib.thumbnail_url, fvs.visibility_status, lib.open_content_provider_id, ocf.facility_id, u.facility_id, lib.id").
-		Order("8 desc")
+		Order("8 desc").
+		Limit(5)//need to make sure this is wanted...not sure why it it returning more than 5 now?????
 	if err := query.Find(&libraries).Error; err != nil {
 		return nil, NewDBError(err, "error getting top 5 libraries")
 	}
@@ -503,4 +505,17 @@ func (db *DB) BookmarkOpenContent(params *models.OpenContentParams) error {
 		return fmt.Errorf("invalid parameters: must provide either Name or ContentURL")
 	}
 	return nil
+}
+
+func (db *DB) GetUserOpenContentAccessCount(ctx context.Context, userID int) (*models.OpenContentAccessCount, error) {
+	var result models.OpenContentAccessCount
+	if err := db.WithContext(ctx).
+		Table("open_content_activities oca").
+		Select("COUNT(DISTINCT (oca.open_content_provider_id, oca.content_id)) AS total_resources_accessed").
+		Joins("inner join open_content_providers ocp ON ocp.id = oca.open_content_provider_id AND ocp.deleted_at IS NULL").
+		Where("oca.user_id = ?", userID).
+		Scan(&result).Error; err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
 import { User, ResidentAccountAction } from '@/common';
-import { canSwitchFacility, isUserDeactivated } from '@/useAuth';
+import {
+    canSwitchFacility,
+    isAdministrator,
+    isUserDeactivated
+} from '@/useAuth';
 
 interface UserActionsDropdownProps {
     user: User;
@@ -22,12 +26,17 @@ export default function UserActionsDropdown({
 
     const actions = [
         {
+            action: ResidentAccountAction['Download Usage Report (PDF)'],
+            label: 'Download Usage Report (PDF)',
+            show: isAdministrator(currentUser) && !isDeactivated,
+            className: 'text-teal-5'
+        },
+        {
             action: ResidentAccountAction['Transfer Resident'],
             label: 'Transfer Resident',
             show: canSwitchFacility(currentUser) && !isDeactivated,
             className: 'text-teal-5'
         },
-
         {
             action: ResidentAccountAction['Deactivate Resident'],
             label: 'Deactivate Resident',

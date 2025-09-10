@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"math/rand"
 	"slices"
 	"time"
@@ -163,6 +164,20 @@ type ResidentProgramClassInfo struct {
 	CreditTypes          string                  `json:"credit_types"`
 	UpdatedAt            string                  `json:"updated_at"`
 	ChangeReason         string                  `json:"change_reason"`
+}
+//calculates the attendance percentage, sets the feild AttendancePercentage and returns it's value
+func (rpc *ResidentProgramClassInfo) CalculateAttendancePercentage() string {
+	present := rpc.PresentAttendance
+	absent := rpc.AbsentAttendance
+	total := present + absent
+
+	if total == 0 {
+		rpc.AttendancePercentage = "--"
+	} else {
+		pct := float64(present) / float64(total) * 100
+		rpc.AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
+	}
+	return rpc.AttendancePercentage
 }
 
 type ResidentTransferProgramConflicts struct {

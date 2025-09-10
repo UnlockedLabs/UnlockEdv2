@@ -9,6 +9,7 @@ export enum UserRole {
 }
 
 export enum ResidentAccountAction {
+    'Download Usage Report (PDF)' = 'download',
     'Transfer Resident' = 'transfer',
     'Delete Resident' = 'delete',
     'Deactivate Resident' = 'deactivate'
