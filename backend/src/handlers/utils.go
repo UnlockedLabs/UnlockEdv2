@@ -304,11 +304,11 @@ func writeLine(pdf *fpdf.Fpdf, text string) {
 
 func drawDataTable(pdf *fpdf.Fpdf, headers []string, rows [][]string, colWidths []float64) {
 	pdf.SetFont("Arial", "B", 10)
-	drawTableRow(pdf, headers, colWidths, true)//draw header
+	drawTableRow(pdf, headers, colWidths, true) //draw header
 
 	pdf.SetFont("Arial", "", 10)
 	for _, row := range rows {
-		drawTableRow(pdf, row, colWidths, false)//draw row
+		drawTableRow(pdf, row, colWidths, false) //draw row
 	}
 }
 
@@ -324,7 +324,7 @@ func drawTableRow(pdf *fpdf.Fpdf, cells []string, colWidths []float64, isHeader 
 	}
 
 	maxRowHeight := 0.0
-	for i, cell := range cells {//have to calc height here
+	for i, cell := range cells { //have to calc height here
 		lines := pdf.SplitLines([]byte(cell), colWidths[i])
 		height := float64(len(lines)) * 5
 		if height > maxRowHeight {
@@ -336,7 +336,7 @@ func drawTableRow(pdf *fpdf.Fpdf, cells []string, colWidths []float64, isHeader 
 	}
 
 	x, y := pdf.GetXY()
-	for i, cell := range cells {//can build the rows
+	for i, cell := range cells { //can build the rows
 		pdf.Rect(x, y, colWidths[i], maxRowHeight, style)
 
 		lines := pdf.SplitLines([]byte(cell), colWidths[i])
@@ -352,7 +352,7 @@ func drawTableRow(pdf *fpdf.Fpdf, cells []string, colWidths []float64, isHeader 
 	pdf.Ln(maxRowHeight)
 }
 
-//takes a timestamp (time.RFC3339) returns date in the following format: MMM, D YYYY
+// takes a timestamp (time.RFC3339) returns date in the following format: MMM, D YYYY
 func formatDateForDisplay(dateStr string) string {
 	if dateStr == "" {
 		return "--"
@@ -364,30 +364,30 @@ func formatDateForDisplay(dateStr string) string {
 	return parsed.Format("Jan 2, 2006")
 }
 
-//returns the following format based upon a total of minutes: 5 hours 6 minutes
+// returns the following format based upon a total of minutes: 5 hours 6 minutes
 func formatDurationFromMinutes(totalMinutes float64) string {
-    minutes := int(totalMinutes)
-    if minutes <= 0 {
-        return "none"
-    }
+	minutes := int(totalMinutes)
+	if minutes <= 0 {
+		return "none"
+	}
 
-    hours := minutes / 60
-    mins := minutes % 60
+	hours := minutes / 60
+	mins := minutes % 60
 
-    var durations []string
-    if hours > 0 {
-        if hours == 1 {
-            durations = append(durations, fmt.Sprintf("%d hour", hours))
-        } else {
-            durations = append(durations, fmt.Sprintf("%d hours", hours))
-        }
-    }
-    if mins > 0 {
-        if mins == 1 {
-            durations = append(durations, fmt.Sprintf("%d minute", mins))
-        } else {
-            durations = append(durations, fmt.Sprintf("%d minutes", mins))
-        }
-    }
-    return strings.Join(durations, " ")
+	var durations []string
+	if hours > 0 {
+		if hours == 1 {
+			durations = append(durations, fmt.Sprintf("%d hour", hours))
+		} else {
+			durations = append(durations, fmt.Sprintf("%d hours", hours))
+		}
+	}
+	if mins > 0 {
+		if mins == 1 {
+			durations = append(durations, fmt.Sprintf("%d minute", mins))
+		} else {
+			durations = append(durations, fmt.Sprintf("%d minutes", mins))
+		}
+	}
+	return strings.Join(durations, " ")
 }
