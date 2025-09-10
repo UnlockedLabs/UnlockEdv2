@@ -30,16 +30,16 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 	var metrics models.ProgramOverviewResponse
 
 	const query = `
-		COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL THEN 1 END) AS active_enrollments,
+		COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN 1 END) AS active_enrollments,
 		COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) AS completions,
-		COUNT(*) AS total_enrollments,
-		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL THEN pce.user_id END) as active_residents,
+		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
+		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
 		CASE 
-			WHEN COUNT(*) = 0 THEN 0
-			WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL THEN 1 END) = 0
-				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(*) 
+			WHEN COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) = 0 THEN 0
+			WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN 1 END) = 0
+				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) 
 			THEN 100
-			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(*) * 100
+			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) * 100
 		END AS completion_rate
 	`
 
@@ -344,7 +344,7 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 	}
 
 	if err := db.WithContext(args.Ctx).Model(&models.ProgramClassEnrollment{}).
-		Select("COUNT(*) AS total_enrollments").
+		Select("COUNT(CASE WHEN enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments").
 		Scan(&totals.TotalEnrollments).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "total enrollments")
 	}
@@ -357,13 +357,14 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 
 	completionTimeFilter := ""
 	attendanceTimeFilter := ""
-	var timeFilterArgs []interface{}
+	var timeFilterArgs []any
 
 	if timeFilter > 0 {
 		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
 		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
 		attendanceTimeFilter = "AND pcev.created_at >= ?"
-		timeFilterArgs = []interface{}{cutoffDate, cutoffDate, cutoffDate}
+		//  cutoffDates are needed for: 1) completion filter, 2) attendance filter numerator, 3) attendance filter denominator
+		timeFilterArgs = []any{cutoffDate, cutoffDate, cutoffDate}
 	}
 
 	var avgResult struct {
@@ -380,7 +381,7 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		LEFT JOIN programs p ON p.id = fp.program_id AND p.is_active = true AND p.archived_at IS NULL
 		LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = f.id AND pc.status = 'Active'
 		LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
-		WHERE pc.id IS NOT NULL AND pce.id IS NOT NULL AND pce.enrolled_at IS NOT NULL
+		WHERE pc.id IS NOT NULL AND pce.id IS NOT NULL AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP)
 	`).Scan(&avgResult).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "avg active programs per facility")
 	}
@@ -446,7 +447,7 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 
 	if err := db.WithContext(args.Ctx).
 		Model(&models.ProgramClassEnrollment{}).
-		Select("COUNT(program_class_enrollments.id) AS total_enrollments").
+		Select("COUNT(CASE WHEN program_class_enrollments.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments").
 		Joins("LEFT JOIN program_classes pc ON pc.id = program_class_enrollments.class_id").
 		Where("pc.facility_id = ?", args.FacilityID).
 		Scan(&totals.TotalEnrollments).Error; err != nil {
@@ -467,9 +468,10 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
 		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
 		attendanceTimeFilter = "AND pcev.created_at >= ?"
-		timeFilterArgs = []interface{}{cutoffDate, cutoffDate, cutoffDate, args.FacilityID}
+		// values needed: 1) completion filter, 2) attendance filter numerator, 3) attendance filter denominator, plus facility ID
+		timeFilterArgs = []any{cutoffDate, cutoffDate, cutoffDate, args.FacilityID}
 	} else {
-		timeFilterArgs = []interface{}{args.FacilityID}
+		timeFilterArgs = []any{args.FacilityID}
 	}
 
 	query := fmt.Sprintf(`
@@ -581,7 +583,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 				SELECT 
 					p.id as program_id,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
-					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL THEN pce.id END) AS total_active_enrollments,
+					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
 				FROM programs p
 				JOIN facilities_programs fp ON fp.program_id = p.id
@@ -598,7 +600,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					p.id as program_id,
 					COUNT(DISTINCT CASE WHEN p.is_active = true AND p.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
-					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL THEN pce.id END) AS total_active_enrollments,
+					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
 				FROM programs p
 				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
