@@ -680,15 +680,11 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 	pdf.AddPage()
 
 	//add title logic start
-	imagePath := "frontend/public/ul-logo.png"
-	pdf.RegisterImage(imagePath, "")
-	// Draw image
- 	pdf.Image(imagePath, 10, 10, 20, 0, false, "", 0, "")
- 	// Set x to the right of the image
- 	pdf.SetX(35)
 	pdf.SetFont("Arial", "B", 24)
 	pdf.Cell(0, 10, "Resident Usage Transcript")
-	pdf.Ln(25)
+	pdf.Ln(10)
+	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+	pdf.Ln(10)
 
 	//add resident information start
 	pdf.SetFont("Arial", "", 12)
