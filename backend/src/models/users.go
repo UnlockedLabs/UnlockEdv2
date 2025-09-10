@@ -165,7 +165,8 @@ type ResidentProgramClassInfo struct {
 	UpdatedAt            string                  `json:"updated_at"`
 	ChangeReason         string                  `json:"change_reason"`
 }
-//calculates the attendance percentage, sets the feild AttendancePercentage and returns it's value
+
+// calculates the attendance percentage, sets the feild AttendancePercentage and returns it's value
 func (rpc *ResidentProgramClassInfo) CalculateAttendancePercentage() string {
 	present := rpc.PresentAttendance
 	absent := rpc.AbsentAttendance

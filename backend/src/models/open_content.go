@@ -106,7 +106,7 @@ func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
 
 func (OpenContentProvider) TableName() string { return "open_content_providers" }
 
-//created the below struct for the possibility of adding more feilds to it in the future
+// created the below struct for the possibility of adding more feilds to it in the future
 type OpenContentAccessCount struct {
 	TotalResourcesAccessed int64 `json:"total_resources_accessed"`
 }

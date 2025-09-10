@@ -400,29 +400,29 @@ func (db *DB) GetLoginActivity(args *models.QueryContext, days int, facilityID *
 func (db *DB) GetUserSessionEngagement(userID int, days int) ([]models.SessionEngagement, error) {
 	var (
 		sessionEngagement []models.SessionEngagement
-		query *gorm.DB
+		query             *gorm.DB
 	)
 
 	if days >= 0 {
 		//specific amount of days for calculating total time spent in Unlocked
 		daysAgo := time.Now().AddDate(0, 0, -days)
 		query = db.Table("user_session_tracking as ust").
-		Select(`ust.user_id, TO_CHAR(DATE(ust.session_start_ts), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS time_interval,
+			Select(`ust.user_id, TO_CHAR(DATE(ust.session_start_ts), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS time_interval,
 			SUM(EXTRACT(EPOCH FROM ust.session_duration) / 3600) AS total_hours,
 			SUM(EXTRACT(EPOCH FROM ust.session_duration) / 60) AS total_minutes`).
-		Joins("JOIN users u ON ust.user_id = u.id").
-		Where("ust.user_id = ? AND ust.session_start_ts >= ?", userID, daysAgo).
-		Group("ust.user_id, time_interval").
-		Order("ust.user_id, time_interval")
-	}else{
+			Joins("JOIN users u ON ust.user_id = u.id").
+			Where("ust.user_id = ? AND ust.session_start_ts >= ?", userID, daysAgo).
+			Group("ust.user_id, time_interval").
+			Order("ust.user_id, time_interval")
+	} else {
 		//wide open query for total time spent in Unlocked
 		query = db.Table("user_session_tracking as ust").
-		Select(`ust.user_id,
+			Select(`ust.user_id,
 			SUM(EXTRACT(EPOCH FROM ust.session_duration) / 3600) AS total_hours,
 			SUM(EXTRACT(EPOCH FROM ust.session_duration) / 60) AS total_minutes`).
-		Joins("JOIN users u ON ust.user_id = u.id").
-		Where("ust.user_id = ?", userID).
-		Group("ust.user_id")
+			Joins("JOIN users u ON ust.user_id = u.id").
+			Where("ust.user_id = ?", userID).
+			Group("ust.user_id")
 	}
 
 	if err := query.Find(&sessionEngagement).Error; err != nil {

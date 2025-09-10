@@ -641,7 +641,7 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 	if err != nil {
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}
-	
+
 	queryCtx := srv.getQueryContext(r)
 	queryCtx.All = true
 	queryCtx.OrderBy, queryCtx.Order = "start_dt", "DESC"
@@ -667,14 +667,15 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 		return newDatabaseServiceError(err)
 	}
 
-	pdf := buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
+	pdf := srv.buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=transcript.pdf")
+
 	return pdf.Output(w)
 }
 
-func buildUsageReportPDF(user *models.User, programs []models.ResidentProgramClassInfo, engagements []models.SessionEngagement, resourceCount int64) *fpdf.Fpdf {
+func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.ResidentProgramClassInfo, engagements []models.SessionEngagement, resourceCount int64) *fpdf.Fpdf {
 	pdf := fpdf.New("P", "mm", "Letter", "")
 	pdf.AddPage()
 
@@ -687,10 +688,10 @@ func buildUsageReportPDF(user *models.User, programs []models.ResidentProgramCla
 
 	//add resident information start
 	pdf.SetFont("Arial", "", 12)
-	writeLine(pdf, "Resident: " + user.NameFirst + " " + user.NameLast)
-	writeLine(pdf, "ID: " + user.DocID)
-	writeLine(pdf, "Facility: " + user.Facility.Name)
-	writeLine(pdf, "Generated Date: " + time.Now().Format("January 2, 2006"))
+	writeLine(pdf, "Resident: "+user.NameFirst+" "+user.NameLast)
+	writeLine(pdf, "ID: "+user.DocID)
+	writeLine(pdf, "Facility: "+user.Facility.Name)
+	writeLine(pdf, "Generated Date: "+time.Now().Format("January 2, 2006"))
 	writeLine(pdf, "Date Range: All time")
 	pdf.Ln(10)
 
@@ -700,38 +701,39 @@ func buildUsageReportPDF(user *models.User, programs []models.ResidentProgramCla
 	pdf.Ln(10)
 	pdf.SetFont("Arial", "", 12)
 
-	duration := "none"//possible there is none
+	duration := "none" //possible there is none
 	if len(engagements) > 0 {
 		duration = formatDurationFromMinutes(engagements[0].TotalMinutes)
 	}
-	writeLine(pdf, "Total time spent on UnlockEd: " + duration)
+	writeLine(pdf, "Total time spent on UnlockEd: "+duration)
 
-	totalLogins := "0"//logins can be 0
+	totalLogins := "0" //logins can be 0
 	if user.LoginMetrics != nil {
 		totalLogins = fmt.Sprintf("%d", user.LoginMetrics.Total)
 	}
-	writeLine(pdf, "Total Logins: " + totalLogins)
+	writeLine(pdf, "Total Logins: "+totalLogins)
 	writeLine(pdf, fmt.Sprintf("Distinct resources accessed: %d", resourceCount))
-	pdf.Ln(10)
-
-	//add program participation start only if feature is turned on
-	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(0, 10, "Program Participation")
-	pdf.Ln(10)
-
-	headers := []string{"Program\nName", "Class\nName", "Status", "Attendance", "Start Date", "End Date"}
-	widths := []float64{40, 30, 25, 25, 30, 30}
-	var rows [][]string
-	for _, program := range programs {
-		rows = append(rows, []string{
-			program.ProgramName,
-			program.ClassName,
-			string(program.Status),
-			program.CalculateAttendancePercentage(),
-			formatDateForDisplay(program.StartDate),
-			formatDateForDisplay(program.EndDate),
-		})
+	
+	
+	if srv.hasFeatureAccess(models.ProgramAccess) {//add program participation start only if feature is turned on
+		pdf.Ln(10)
+		pdf.SetFont("Arial", "B", 16)
+		pdf.Cell(0, 10, "Program Participation")
+		pdf.Ln(10)
+		headers := []string{"Program\nName", "Class\nName", "Status", "Attendance", "Start Date", "End Date"}
+		widths := []float64{40, 30, 25, 25, 30, 30}
+		var rows [][]string
+		for _, program := range programs {
+			rows = append(rows, []string{
+				program.ProgramName,
+				program.ClassName,
+				string(program.Status),
+				program.CalculateAttendancePercentage(),
+				formatDateForDisplay(program.StartDate),
+				formatDateForDisplay(program.EndDate),
+			})
+		}
+		drawDataTable(pdf, headers, rows, widths)
 	}
-	drawDataTable(pdf, headers, rows, widths)
 	return pdf
 }
