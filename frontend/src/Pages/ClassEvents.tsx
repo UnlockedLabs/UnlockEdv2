@@ -8,7 +8,7 @@ import {
     ServerResponseOne
 } from '@/common';
 import Pagination from '@/Components/Pagination';
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { ClassEventInstance } from '@/types/events';
@@ -20,7 +20,86 @@ import {
 } from '@heroicons/react/24/outline';
 import moment from 'moment';
 import ULIComponent from '@/Components/ULIComponent';
+import React, { useState } from 'react';
 
+interface FormData {
+    selectedMonth: string;
+    simpleCalendarDate: string;
+}
+
+interface SimpleCalendarProps {
+    setValue: UseFormSetValue<FormData>;
+    register: UseFormRegister<FormData>;
+}
+
+const SimpleCalendar: React.FC<SimpleCalendarProps> = ({
+    setValue,
+    register
+}) => {
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+    const registerProps = register('simpleCalendarDate');
+
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (value) {
+            const [year, month, day] = value.split('-').map(Number);
+            setSelectedDate(new Date(year, month - 1, day));
+        } else {
+            setSelectedDate(null);
+        }
+
+        void registerProps.onChange(e);
+
+        const monthValue = value.substring(0, 7);
+        setValue('selectedMonth', monthValue);
+    };
+
+    const displayValue = selectedDate
+        ? selectedDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long'
+          })
+        : 'Select Month';
+
+    return (
+        <div className="form-control w-full max-w-xs">
+            <label className="label">
+                <span className="label-text">Select Month</span>
+            </label>
+            <div className="relative">
+                <div className="w-full max-w-xs flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2">
+                    <span className="text-gray-500">{displayValue}</span>
+                    <svg
+                        className="w-5 h-5 text-black"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                    </svg>
+                </div>
+                <input
+                    type="date"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        fontSize: '16px'
+                    }}
+                    {...registerProps}
+                    onChange={handleDateChange}
+                />
+            </div>
+        </div>
+    );
+};
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
     return new Date(year, month - 1, day);
@@ -37,10 +116,15 @@ export default function ClassEvents() {
     } = useUrlPagination(1, 20);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const { register, watch, setValue } = useForm<{ selectedMonth: string }>({
-        defaultValues: { selectedMonth: defaultMonth }
+    const { register, watch, setValue } = useForm<FormData>({
+        defaultValues: {
+            selectedMonth: defaultMonth,
+            simpleCalendarDate: ''
+        }
     });
     const selectedMonthValue = watch('selectedMonth');
+
+    const isGecko = 'MozAppearance' in document.documentElement.style;
 
     const [year, month] = selectedMonthValue.split('-');
 
@@ -158,18 +242,22 @@ export default function ClassEvents() {
     return (
         <div>
             <div className="flex mb-4 justify-start">
-                <DateInput
-                    label="Select Month"
-                    interfaceRef="selectedMonth"
-                    required={true}
-                    errors={{}}
-                    register={register}
-                    monthOnly={true}
-                    disabled={false}
-                    onChange={(e: string) => {
-                        setValue('selectedMonth', e);
-                    }}
-                />
+                {isGecko ? (
+                    <SimpleCalendar setValue={setValue} register={register} />
+                ) : (
+                    <DateInput
+                        label="Select Month"
+                        interfaceRef="selectedMonth"
+                        required={true}
+                        errors={{}}
+                        register={register}
+                        monthOnly={true}
+                        disabled={false}
+                        onChange={(e: string) => {
+                            setValue('selectedMonth', e);
+                        }}
+                    />
+                )}
             </div>
 
             {isLoading && <div>Loading...</div>}
