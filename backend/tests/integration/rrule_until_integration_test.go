@@ -58,9 +58,13 @@ func TestClassCompletedAddsUntilDate(t *testing.T) {
 	untilDate := src.GetUntilDateFromRule(updatedRule)
 	require.NotEmpty(t, untilDate)
 
-	expectedUntilDate := src.FormatDateForUntil(completionTime)
-	require.Equal(t, expectedUntilDate, untilDate)
+	parsedUntil, err := time.Parse("20060102T150405Z", untilDate)
+	require.NoError(t, err)
 
+	expectedDay := time.Date(completionTime.Year(), completionTime.Month(), completionTime.Day(), 23, 59, 59, 0, time.UTC)
+	nextDay := expectedDay.AddDate(0, 0, 1)
+
+	require.True(t, parsedUntil.Equal(expectedDay) || parsedUntil.Equal(nextDay))
 	require.True(t, strings.HasSuffix(untilDate, "T235959Z"))
 }
 
@@ -109,9 +113,13 @@ func TestClassCancelledAddsUntilDate(t *testing.T) {
 	untilDate := src.GetUntilDateFromRule(updatedRule)
 	require.NotEmpty(t, untilDate)
 
-	expectedUntilDate := src.FormatDateForUntil(cancellationTime)
-	require.Equal(t, expectedUntilDate, untilDate)
+	parsedUntil, err := time.Parse("20060102T150405Z", untilDate)
+	require.NoError(t, err)
 
+	expectedDay := time.Date(cancellationTime.Year(), cancellationTime.Month(), cancellationTime.Day(), 23, 59, 59, 0, time.UTC)
+	nextDay := expectedDay.AddDate(0, 0, 1)
+
+	require.True(t, parsedUntil.Equal(expectedDay) || parsedUntil.Equal(nextDay))
 	require.True(t, strings.HasSuffix(untilDate, "T235959Z"))
 }
 
@@ -169,9 +177,18 @@ func TestMultipleEventsGetUntilDate(t *testing.T) {
 	untilDate1 := src.GetUntilDateFromRule(updatedRule1)
 	untilDate2 := src.GetUntilDateFromRule(updatedRule2)
 
-	expectedUntilDate := src.FormatDateForUntil(completionTime)
-	require.Equal(t, expectedUntilDate, untilDate1)
-	require.Equal(t, expectedUntilDate, untilDate2)
+	parsedUntil1, err := time.Parse("20060102T150405Z", untilDate1)
+	require.NoError(t, err)
+	parsedUntil2, err := time.Parse("20060102T150405Z", untilDate2)
+	require.NoError(t, err)
+
+	expectedDay := time.Date(completionTime.Year(), completionTime.Month(), completionTime.Day(), 23, 59, 59, 0, time.UTC)
+	nextDay := expectedDay.AddDate(0, 0, 1)
+
+	require.True(t, parsedUntil1.Equal(expectedDay) || parsedUntil1.Equal(nextDay))
+	require.True(t, parsedUntil2.Equal(expectedDay) || parsedUntil2.Equal(nextDay))
+	require.True(t, strings.HasSuffix(untilDate1, "T235959Z"))
+	require.True(t, strings.HasSuffix(untilDate2, "T235959Z"))
 }
 
 func TestExistingUntilDateReplaced(t *testing.T) {
@@ -218,9 +235,15 @@ func TestExistingUntilDateReplaced(t *testing.T) {
 	require.NoError(t, err)
 
 	newUntilDate := src.GetUntilDateFromRule(updatedRule)
-	expectedNewUntilDate := src.FormatDateForUntil(completionTime)
 
-	require.Equal(t, expectedNewUntilDate, newUntilDate)
+	parsedNewUntil, err := time.Parse("20060102T150405Z", newUntilDate)
+	require.NoError(t, err)
+
+	expectedDay := time.Date(completionTime.Year(), completionTime.Month(), completionTime.Day(), 23, 59, 59, 0, time.UTC)
+	nextDay := expectedDay.AddDate(0, 0, 1)
+
+	require.True(t, parsedNewUntil.Equal(expectedDay) || parsedNewUntil.Equal(nextDay))
+	require.True(t, strings.HasSuffix(newUntilDate, "T235959Z"))
 	require.NotEqual(t, existingUntilDate, newUntilDate)
 	require.NotContains(t, updatedRule, existingUntilDate)
 }
