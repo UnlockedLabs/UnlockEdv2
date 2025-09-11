@@ -870,12 +870,10 @@ func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventID
 	return overrides, nil
 }
 
-func (db *DB) UpdateClassEventRRuleUntilDate(classIDs []int, completionTime time.Time) error {
+func (db *DB) UpdateClassEventRRuleUntilDate(tx *gorm.DB, classIDs []int, completionTime time.Time) error {
 	if len(classIDs) == 0 {
 		return NewDBError(errors.New("no class IDs provided"), "no class IDs provided")
 	}
-	tx := db.Begin()
-	defer tx.Rollback()
 
 	var events []struct {
 		ID             uint   `json:"id"`
@@ -909,9 +907,6 @@ func (db *DB) UpdateClassEventRRuleUntilDate(classIDs []int, completionTime time
 	caseSQL := "CASE " + strings.Join(caseParts, " ") + " END"
 	if err := tx.Model(&models.ProgramClassEvent{}).Where("id IN (?)", eventIDs).Update("recurrence_rule", gorm.Expr(caseSQL, args...)).Error; err != nil {
 		return newUpdateDBError(err, "program_class_events")
-	}
-	if err := tx.Commit().Error; err != nil {
-		return newUpdateDBError(err, "commit transaction for updating RRULE until date")
 	}
 	return nil
 }

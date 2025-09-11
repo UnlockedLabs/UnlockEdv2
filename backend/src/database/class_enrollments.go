@@ -199,7 +199,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 	if status, ok := classMap["status"]; ok &&
 		(status == string(models.Cancelled) || status == string(models.Completed)) {
 		completionTime := time.Now().UTC()
-		if err := db.UpdateClassEventRRuleUntilDate(classIDs, completionTime); err != nil {
+		if err := db.UpdateClassEventRRuleUntilDate(tx, classIDs, completionTime); err != nil {
 			return newUpdateDBError(err, "updating class event rrule until date")
 		}
 		for _, classID := range classIDs {
