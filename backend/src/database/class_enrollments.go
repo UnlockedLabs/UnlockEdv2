@@ -190,6 +190,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 	if tx.Error != nil {
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
+	defer tx.Rollback()
 
 	var (
 		toBeCompletedEnrollments []models.ProgramClassEnrollment
@@ -217,7 +218,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 				Set("class_id", classID).
 				Update("enrollment_status", enrollmentStatus).
 				Error; err != nil {
-				tx.Rollback()
 				return newUpdateDBError(err, "class enrollment statuses")
 			}
 		}
@@ -230,7 +230,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 				Preload("Class.FacilityProg").
 				Where("class_id IN (?) AND enrollment_status = ?", classIDs, models.EnrollmentCompleted).
 				Find(&toBeCompletedEnrollments).Error; err != nil {
-				tx.Rollback()
 				return newNotFoundDBError(err, "fetching updated enrollments")
 			}
 		}
@@ -242,26 +241,22 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		Set("class_ids", classIDs).
 		Updates(classMap).
 		Error; err != nil {
-		tx.Rollback()
 		return newUpdateDBError(err, "program classes")
 	}
 
 	if len(toBeCompletedEnrollments) > 0 {
 		rawUID, ok := classMap["update_user_id"]
 		if !ok {
-			tx.Rollback()
 			return newUpdateDBError(fmt.Errorf("missing update_user_id in classMap"), "program classes")
 		}
 
 		updateUserID, ok := rawUID.(uint)
 		if !ok {
-			tx.Rollback()
 			return newUpdateDBError(fmt.Errorf("update_user_id must be of type uint"), "program classes")
 		}
 
 		var admin models.User
 		if err := tx.First(&admin, "id = ?", updateUserID).Error; err != nil {
-			tx.Rollback()
 			return newNotFoundDBError(err, "admin user")
 		}
 		adminEmail = admin.Email
@@ -284,7 +279,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 		}
 
 		if err := tx.Create(&completions).Error; err != nil {
-			tx.Rollback()
 			return newCreateDBError(err, "enrollment completion")
 		}
 
@@ -304,7 +298,6 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 	}
 	if len(allChanges) > 0 {
 		if err := tx.Create(&allChanges).Error; err != nil {
-			tx.Rollback()
 			return newCreateDBError(err, "change_log_entries")
 		}
 	}
