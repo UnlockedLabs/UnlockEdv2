@@ -234,24 +234,64 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 }
 
 func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int, error) {
-	var event models.ProgramClassEvent
+	var events []models.ProgramClassEvent
 	err := db.WithContext(args.Ctx).
 		Preload("Class").
 		Where("class_id = ?", classID).
-		First(&event).Error
+		Find(&events).Error
 	if err != nil {
 		return 0, newNotFoundDBError(err, "program_class_events")
 	}
-	totalEvents := len(generateEventInstances(event, event.Class.StartDt, time.Now().AddDate(0, 0, 1))) // adds one day to today so today is included
-	var attendanceDates []string
-	err = db.WithContext(args.Ctx).
-		Model(&models.ProgramClassEventAttendance{}).
-		Select("DISTINCT date").
-		Where("event_id = ?", event.ID).
-		Pluck("date", &attendanceDates).Error
-	if err != nil {
-		return 0, newGetRecordsDBError(err, "program_class_event_attendance")
+	allEventDates := make([]models.EventInstance, 20)
+	if len(events) == 1 {
+		allEventDates = generateEventInstances(events[0], events[0].Class.StartDt, time.Now().AddDate(0, 0, 1)) // adds one day to today so today is included
+	} else {
+		for _, event := range events {
+			startDate := event.Class.StartDt
+			endDate := time.Now().AddDate(0, 0, 1)                                // adds one day to today so today is included
+			if event.Class.EndDt != nil && event.Class.EndDt.Before(time.Now()) { //if it has an end date that is before today, then use that
+				endDate = *event.Class.EndDt
+			}
+			eventInstances := generateEventInstances(event, startDate, endDate)
+			allEventDates = append(allEventDates, eventInstances...)
+		}
 	}
-	missingAttendanceCount := totalEvents - len(attendanceDates)
+	totalEvents := len(allEventDates)
+
+	var students []models.ProgramClassEnrollment
+	err = db.WithContext(args.Ctx).
+		Where("class_id = ?", classID).
+		Find(&students).Error
+	if err != nil {
+		return 0, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+
+	completedAttendanceDates := 0
+	for _, eventDate := range allEventDates {
+		// count enrolled students on this specific date
+		enrolledCountOnDate := 0
+		for _, student := range students {
+			if !student.EnrolledAt.After(eventDate.StartTime) && // enrolled before or on this date
+				(student.EnrollmentEndedAt == nil || student.EnrollmentEndedAt.After(eventDate.StartTime.AddDate(0, 0, -1))) { // not ended before this date
+				enrolledCountOnDate++
+			}
+		}
+
+		// count attendance records for this date
+		var attendanceCount int64
+		dateStr := eventDate.StartTime.Format("2006-01-02")
+		err = db.WithContext(args.Ctx).
+			Model(&models.ProgramClassEventAttendance{}).
+			Where("event_id = ? AND date = ?", eventDate.EventID, dateStr).
+			Count(&attendanceCount).Error
+		if err != nil {
+			return 0, newGetRecordsDBError(err, "program_class_event_attendance")
+		}
+
+		if int(attendanceCount) == enrolledCountOnDate {
+			completedAttendanceDates++
+		}
+	}
+	missingAttendanceCount := totalEvents - completedAttendanceDates
 	return missingAttendanceCount, nil
 }
