@@ -250,15 +250,13 @@ export default function ProgramManagement() {
         avg_active_programs_per_facility,
         total_enrollments,
         attendance_rate,
-        completion_rate,
-        last_run
+        completion_rate
     } = programsFacilitiesStats?.data ?? {
         total_programs: '--',
         avg_active_programs_per_facility: '--',
         total_enrollments: '--',
         attendance_rate: '--',
-        completion_rate: '--',
-        last_run: null
+        completion_rate: '--'
     };
 
     const {
@@ -290,23 +288,6 @@ export default function ProgramManagement() {
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
         setPage(1);
-    }
-
-    function formatLastRanMessage(): string {
-        if (!last_run || last_run.toString() === '0001-01-01T00:00:00Z')
-            return 'Not updated yet.';
-        const lastRanDtTime = new Date(last_run);
-        const formattedDate = lastRanDtTime.toLocaleString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            timeZone: 'UTC'
-        });
-        const formattedTime = lastRanDtTime.toLocaleString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
-        return `Last updated ${formattedDate} at ${formattedTime}.`;
     }
 
     function downloadCSV() {
@@ -394,9 +375,10 @@ export default function ProgramManagement() {
                     <StatsCard
                         title={'Active Programs Per Facility'}
                         number={
-                            avg_active_programs_per_facility === null
+                            avg_active_programs_per_facility === null ||
+                            typeof avg_active_programs_per_facility !== 'number'
                                 ? '--'
-                                : avg_active_programs_per_facility.toString()
+                                : avg_active_programs_per_facility.toFixed(1)
                         }
                         label={'programs'}
                         tooltip="Average number of programs per facility with at least one active class and enrolled students."
@@ -547,8 +529,6 @@ export default function ProgramManagement() {
                 </table>
                 <p className="flex justify-center body italic">
                     {`Program data in table reflects the selected date range: ${tableDateRangeLabel}`}
-                    <br />
-                    {formatLastRanMessage()}
                 </p>
                 {meta && (
                     <div className="flex justify-center">
