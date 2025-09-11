@@ -261,39 +261,36 @@ export default function ClassLayout() {
                             />
                         )}
                     </div>
-                    <div className="col-span-2">
-                        <div className="grid grid-cols-2 gap-2">
-                            <StatsCard
-                                title="Active Enrollments"
-                                number={getEnrollmentCount()}
-                                label="Residents"
-                                tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
-                                tooltipClassName="tooltip-bottom"
-                            />
-                            <StatsCard
-                                title="Missing Attendance"
-                                number={
-                                    clsLoader.missing_attendance?.toString() ??
-                                    '0'
-                                }
-                                label="Sessions"
-                                tooltip="Number of class sessions that have occurred but do not have any attendance records."
-                                tooltipClassName="tooltip-left"
-                            />
-                            <StatsCard
-                                title="Attendance Rate"
-                                number={getAttendanceRate()}
-                                label="%"
-                                tooltip="Percentage of attendance records marked present for this class, calculated across all sessions where attendance is taken."
-                            />
-                            <StatsCard
-                                title="Completion Rate"
-                                number={getCompletionRate()}
-                                label="%"
-                                tooltip="Percentage of enrolled residents who completed this class over all time."
-                                tooltipClassName="tooltip-left"
-                            />
-                        </div>
+                    <div className="col-span-2 grid grid-cols-2 gap-2">
+                        <StatsCard
+                            title="Active Enrollments"
+                            number={getEnrollmentCount()}
+                            label="Residents"
+                            tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
+                            tooltipClassName="tooltip-bottom"
+                        />
+                        <StatsCard
+                            title="Missing Attendance"
+                            number={
+                                clsLoader.missing_attendance?.toString() ?? '0'
+                            }
+                            label="Sessions"
+                            tooltip="Number of class sessions that have occurred but do not have any attendance records."
+                            tooltipClassName="tooltip-left"
+                        />
+                        <StatsCard
+                            title="Attendance Rate"
+                            number={getAttendanceRate()}
+                            label="%"
+                            tooltip="Percentage of attendance records marked present for this class, calculated across all sessions where attendance is taken."
+                        />
+                        <StatsCard
+                            title="Completion Rate"
+                            number={getCompletionRate()}
+                            label="%"
+                            tooltip="Percentage of enrolled residents who completed this class over all time."
+                            tooltipClassName="tooltip-left"
+                        />
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-6 items-stretch">
