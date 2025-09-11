@@ -14,7 +14,8 @@ import {
     Class,
     ServerResponseOne,
     ClassLoaderData,
-    ProgramOverview
+    ProgramOverview,
+    SelectedClassStatus
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -215,7 +216,10 @@ export const getClassMgmtData: LoaderFunction = async ({
     if (classResp.success) {
         cls = classResp.data;
         className = cls.name;
-        if (cls.events && cls.events.length > 0) {
+        if (classResp.data.status === SelectedClassStatus.Scheduled) {
+            attendanceRate = 0;
+            missingAttendance = 0;
+        } else if (cls.events && cls.events.length > 0) {
             const resp2 = (await API.get(
                 `program-classes/${class_id}/events/${cls.events[0].id}/attendance-rate`
             )) as ServerResponseOne<{ attendance_rate: number }>;
