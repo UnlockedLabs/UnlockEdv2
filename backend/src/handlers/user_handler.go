@@ -692,7 +692,7 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 	writeLine(pdf, "ID: "+user.DocID)
 	writeLine(pdf, "Facility: "+user.Facility.Name)
 	writeLine(pdf, "Generated Date: "+time.Now().Format("January 2, 2006"))
-	writeLine(pdf, "Date Range: All time")
+	writeLine(pdf, "Date Range: " + user.CreatedAt.Format("January 2, 2006") + " - present")
 	pdf.Ln(10)
 
 	//add platform usage information start
