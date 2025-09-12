@@ -18,7 +18,6 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const user = useAuth();
     const canViewClassDetails = isAdministrator(user.user);
     const [page, setPage] = useState(1);
-    const DEFAULT_PER_PAGE = 20;
     const [perPage, setPerPage] = useState(20);
     const residentAttendanceModal = useRef(null);
     const [selectedClass, setSelectedClass] =
@@ -219,7 +218,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                         </tbody>
                     </table>
 
-                    {meta && meta.total >= DEFAULT_PER_PAGE && (
+                    {meta && (
                         <div className="flex justify-center mt-4">
                             <Pagination
                                 meta={meta}
