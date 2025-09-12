@@ -287,6 +287,9 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 		Where("event_id IN ? AND date IN ?", eventIDs, dates).
 		Group("event_id, date").
 		Scan(&attendanceCounts).Error
+	if err != nil {
+		return 0, newGetRecordsDBError(err, "program_class_event_attendance")
+	}
 
 	attendanceMap := make(map[string]int64)
 	for _, attendance := range attendanceCounts {
