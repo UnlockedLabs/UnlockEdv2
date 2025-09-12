@@ -10,6 +10,7 @@ import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { closeModal, showModal } from './modals';
+import LoadingSpinner from '@/Components/LoadingSpinner';
 
 export default function LibaryLayout({
     studentView
@@ -100,54 +101,64 @@ export default function LibaryLayout({
 
     return (
         <>
-            <div
-                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
-            >
-                {libraries?.data.map((library, index) => {
-                    if (index === 0) {
-                        return (
-                            <div
-                                id="knowledge-center-enter-library"
-                                className={
-                                    tourState.tourActive &&
-                                    tourState.target ===
-                                        '#knowledge-center-enter-library'
-                                        ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
-                                        : ''
-                                }
-                                key={library.id}
-                            >
-                                <LibraryCard
+            {librariesLoading ? (
+                <div className="flex justify-center items-center py-12">
+                    <LoadingSpinner text="Loading libraries..." />
+                </div>
+            ) : (
+                <div
+                    className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                >
+                    {libraries?.data.map((library, index) => {
+                        if (index === 0) {
+                            return (
+                                <div
+                                    id="knowledge-center-enter-library"
+                                    className={
+                                        tourState.tourActive &&
+                                        tourState.target ===
+                                            '#knowledge-center-enter-library'
+                                            ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                            : ''
+                                    }
                                     key={library.id}
-                                    library={library}
-                                    mutate={updateLibrary}
-                                    role={
-                                        adminWithStudentView()
-                                            ? UserRole.Student
-                                            : role
-                                    }
-                                    onSearchClick={() =>
-                                        setSearchModalLibrary(library)
-                                    }
-                                    view={activeView}
-                                />
-                            </div>
+                                >
+                                    <LibraryCard
+                                        key={library.id}
+                                        library={library}
+                                        mutate={updateLibrary}
+                                        role={
+                                            adminWithStudentView()
+                                                ? UserRole.Student
+                                                : role
+                                        }
+                                        onSearchClick={() =>
+                                            setSearchModalLibrary(library)
+                                        }
+                                        view={activeView}
+                                    />
+                                </div>
+                            );
+                        }
+                        return (
+                            <LibraryCard
+                                key={library.id}
+                                library={library}
+                                mutate={updateLibrary}
+                                role={
+                                    adminWithStudentView()
+                                        ? UserRole.Student
+                                        : role
+                                }
+                                onSearchClick={() =>
+                                    setSearchModalLibrary(library)
+                                }
+                                view={activeView}
+                            />
                         );
-                    }
-                    return (
-                        <LibraryCard
-                            key={library.id}
-                            library={library}
-                            mutate={updateLibrary}
-                            role={
-                                adminWithStudentView() ? UserRole.Student : role
-                            }
-                            onSearchClick={() => setSearchModalLibrary(library)}
-                            view={activeView}
-                        />
-                    );
-                })}
-            </div>
+                    })}
+                </div>
+            )}
             {!librariesLoading && !librariesError && librariesMeta && (
                 <div className="flex justify-center">
                     <Pagination
