@@ -99,20 +99,30 @@ export function parseRRuleUntilDate(rRule: string, timezone: string): string {
     return '';
 }
 
-export function textMonthLocalDate(date: string | Date) {
+export function textMonthLocalDate(date: string | Date, includeTime?: boolean) {
     if (typeof date === 'string') {
         return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
-            timeZone: 'UTC'
+            timeZone: 'UTC',
+            ...(includeTime && {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            })
         });
     } else {
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
-            timeZone: 'UTC'
+            timeZone: 'UTC',
+            ...(includeTime && {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            })
         });
     }
 }

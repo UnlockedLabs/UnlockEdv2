@@ -10,16 +10,17 @@ import {
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate, useParams } from 'react-router';
 import ClassStatus from './ClassStatus';
-import useSWR from 'swr';
+import useSWR, { KeyedMutator } from 'swr';
 import { RRule } from 'rrule';
 import ActivityHistoryCard from './ActivityHistoryCard';
 import { useEffect, useState } from 'react';
 import Pagination from './Pagination';
-import ClampedText from './ClampedText';
 import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 import { ProgramClassEvent } from '@/types/events';
+import ULIComponent from './ULIComponent';
+import { textMonthLocalDate } from './helperFunctions/formatting';
 
 export function getClassEndDate(events: ProgramClassEvent[]): Date | null {
     if (!events || events.length === 0) return null;
@@ -37,115 +38,25 @@ export function getClassEndDate(events: ProgramClassEvent[]): Date | null {
     }
 }
 
-function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
+function ClassInfoCard({
+    classInfo,
+    mutateClass
+}: {
+    classInfo: Class;
+    mutateClass: KeyedMutator<ServerResponseOne<Class>>;
+}) {
     const navigate = useNavigate();
 
-    const programDisabled = classInfo?.program.archived_at !== null;
+    const programDisabled = classInfo.program.archived_at !== null;
     const blockEdits = isCompletedCancelledOrArchived(
         classInfo ?? ({} as Class)
     );
-
-    return (
-        <div className="card card-row-padding flex flex-col h-full">
-            <h1>Class Info</h1>
-            <p className="body mb-1">Class Name: {classInfo?.name}</p>
-            <ClampedText as="p" lines={4} className="body mb-1">
-                Description: {classInfo?.description}
-            </ClampedText>
-            <p className="body mb-1">Class Status: {classInfo?.status}</p>
-            <p className="body mt-5  mb-1">
-                Instructor(s): {classInfo?.instructor_name}
-            </p>
-            <p className="body mb-1">
-                Class Dates:{' '}
-                {classInfo?.start_dt
-                    ? new Date(classInfo?.start_dt).toLocaleDateString(
-                          'en-US',
-                          {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              timeZone: 'UTC'
-                          }
-                      )
-                    : ''}{' '}
-                &ndash;{' '}
-                {(() => {
-                    const classEndDate = getClassEndDate(
-                        classInfo?.events ?? []
-                    );
-                    return classEndDate
-                        ? classEndDate.toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              timeZone: 'UTC'
-                          })
-                        : 'No end date scheduled';
-                })()}
-            </p>
-            <p className="body">Room: {classInfo?.events[0].room}</p>
-            <div
-                className={`flex flex-row gap-2 mt-6 justify-center ${blockEdits ? 'tooltip' : ''} `}
-                data-tip={
-                    blockEdits
-                        ? `This class is ${classInfo?.status.toLowerCase()} and cannot be modified.`
-                        : ''
-                }
-            >
-                <button
-                    className="button"
-                    onClick={() => {
-                        navigate(
-                            `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`
-                        );
-                    }}
-                    disabled={programDisabled || blockEdits}
-                >
-                    <PencilSquareIcon className="w-4 my-auto" />
-                    Edit Class Details
-                </button>
-            </div>
-        </div>
-    );
-}
-
-export default function ClassLayout() {
-    const { user } = useAuth();
-    if (!user) {
-        return null;
-    }
-    const navigate = useNavigate();
-    const clsLoader = useLoaderData() as ClassLoaderData;
-    if (clsLoader.redirect) {
-        navigate(clsLoader.redirect);
-    }
-    const { class_id } = useParams<{ class_id?: string }>();
-    const { data: clsData, mutate: mutateClass } = useSWR<
-        ServerResponseOne<Class>,
-        Error
-    >(`/api/program-classes/${class_id}`);
-    const clsInfo = clsData?.data;
-    const [page, setPage] = useState(1);
-    const {
-        data: flags,
-        error: flagsError,
-        mutate: mutateFlags
-    } = useSWR<ServerResponseMany<AttendanceFlag>, Error>(
-        `/api/program-classes/${class_id}/attendance-flags?page=${page}&per_page=5`
-    );
-
-    useEffect(() => {
-        if (clsInfo?.status) {
-            void mutateFlags();
-        }
-    }, [clsInfo?.status]);
 
     function getNextOccurrenceDateAsStr(): string {
         const now = new Date();
         const allOccurrences: Date[] = [];
 
-        for (const event of clsInfo?.events ?? []) {
+        for (const event of classInfo?.events ?? []) {
             const overrides = event.overrides ?? [];
             const cancelledDates = new Set<string>();
             const activeOverrideDates = new Set<string>();
@@ -197,25 +108,107 @@ export default function ClassLayout() {
             .filter((d) => d > now)
             .sort((a, b) => a.getTime() - b.getTime())[0];
         return nextOccurrence
-            ? formatDate(nextOccurrence)
+            ? textMonthLocalDate(nextOccurrence, true)
             : 'No upcoming class found';
     }
 
-    function formatDate(date: Date): string {
-        const options: Intl.DateTimeFormatOptions = {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-            timeZone: user?.timezone
-        };
-        return new Intl.DateTimeFormat('en-US', options)
-            .format(date)
-            .replace(',', '')
-            .replace(',', ' @');
+    return (
+        <div className="card card-row-padding flex flex-col h-full gap-4">
+            <div className="flex gap-2">
+                <h1>{classInfo.name}</h1>
+                <button
+                    className={`body text-teal-3 cursor-pointer flex items-center gap-1 ${blockEdits ? 'tooltip' : ''}`}
+                    onClick={() => {
+                        navigate(
+                            `/programs/${classInfo.program_id}/classes/${classInfo.id}`
+                        );
+                    }}
+                    disabled={programDisabled || blockEdits}
+                    data-tip={
+                        blockEdits
+                            ? `This class is ${classInfo.status.toLowerCase()} and cannot be modified.`
+                            : ''
+                    }
+                >
+                    <ULIComponent icon={PencilSquareIcon} />
+                    <span className="hover:underline">Edit Class</span>
+                </button>
+            </div>
+            <p className="body-small">{classInfo.description}</p>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <h3 className="body">Class Status:</h3>
+                    <div className="flex">
+                        <ClassStatus
+                            status={classInfo.status}
+                            program_class={classInfo}
+                            mutateClasses={mutateClass}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <h3 className="body">Class Dates:</h3>
+                    <p className="body-small">
+                        {classInfo.start_dt &&
+                            textMonthLocalDate(classInfo.start_dt)}{' '}
+                        &ndash;{' '}
+                        {(() => {
+                            const classEndDate = getClassEndDate(
+                                classInfo.events ?? []
+                            );
+                            return classEndDate
+                                ? textMonthLocalDate(classEndDate)
+                                : 'No end date scheduled';
+                        })()}
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <h3 className="body">Room:</h3>
+                    <p className="body-small">{classInfo.events[0].room}</p>
+                </div>
+                <div className="space-y-2">
+                    <h3 className="body">Instructor(s)</h3>
+                    <p className="body-small">{classInfo.instructor_name}</p>
+                </div>
+            </div>
+            <p className="body">
+                <span className="font-bold">Next scheduled class:</span>{' '}
+                {getNextOccurrenceDateAsStr()}
+            </p>
+        </div>
+    );
+}
+
+export default function ClassLayout() {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
     }
+    const navigate = useNavigate();
+    const clsLoader = useLoaderData() as ClassLoaderData;
+    if (clsLoader.redirect) {
+        navigate(clsLoader.redirect);
+    }
+    const { class_id } = useParams<{ class_id?: string }>();
+    const { data: clsData, mutate: mutateClass } = useSWR<
+        ServerResponseOne<Class>,
+        Error
+    >(`/api/program-classes/${class_id}`);
+    const clsInfo = clsData?.data;
+    const [page, setPage] = useState(1);
+    const {
+        data: flags,
+        error: flagsError,
+        mutate: mutateFlags
+    } = useSWR<ServerResponseMany<AttendanceFlag>, Error>(
+        `/api/program-classes/${class_id}/attendance-flags?page=${page}&per_page=5`
+    );
+
+    useEffect(() => {
+        if (clsInfo?.status) {
+            void mutateFlags();
+        }
+    }, [clsInfo?.status]);
 
     function getEnrollmentCount(): string {
         const enrolledCount =
@@ -256,83 +249,58 @@ export default function ClassLayout() {
         return rate;
     }
 
+    const enrollmentCount = getEnrollmentCount();
+
     return (
         <>
             <div className="space-y-6 overflow-x-hidden">
-                <div className="grid grid-cols-3 gap-6 items-stretch">
-                    <div className="col-span-1">
-                        <ClassInfoCard classInfo={clsInfo} />
+                <div className="grid grid-cols-5 gap-4 items-stretch">
+                    <div className="col-span-3">
+                        {clsInfo && (
+                            <ClassInfoCard
+                                classInfo={clsInfo}
+                                mutateClass={mutateClass}
+                            />
+                        )}
                     </div>
-                    <div className="col-span-2">
-                        <div className="card card-row-padding grow">
-                            <h1>Quick View</h1>
-                            <div className="grid grid-cols-3 gap-6">
-                                <div className="card bg-base-teal p-4 pb-5 flex flex-col justify-between h-full overflow-visible">
-                                    <div
-                                        className={`flex items-center gap-1 justify-start`}
-                                    >
-                                        <h3 className="text-teal-4 line-clamp-2">
-                                            Next Class:
-                                        </h3>
-                                    </div>
-                                    <div className="flex flex-1 items-center justify-center">
-                                        <p className="text-teal-3 text-lg font-bold text-center">
-                                            <span className="text-teal-4 font-bold">
-                                                {getNextOccurrenceDateAsStr()}
-                                            </span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <StatsCard
-                                    title="Enrolled"
-                                    number={getEnrollmentCount()}
-                                    label=" "
-                                    tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
-                                    tooltipClassName="tooltip-left"
-                                />
-                                <StatsCard
-                                    title="Attendance Rate"
-                                    number={getAttendanceRate()}
-                                    label="%"
-                                    tooltip="Percentage of attendance records marked present for this class, calculated across all sessions where attendance is taken."
-                                    tooltipClassName="tooltip-left"
-                                />
-                            </div>
-                            <div className="grid grid-cols-3 gap-6 mt-5">
-                                <div className="col-span-3 flex justify-center gap-6">
-                                    <div className="w-full max-w-[calc((100%-2*1.5rem)/3)]">
-                                        <div className="card bg-base-teal p-4 pb-5 flex flex-col justify-between h-full overflow-visible">
-                                            <div
-                                                className={`flex items-center gap-1 justify-start`}
-                                            >
-                                                <h3 className="text-teal-4 line-clamp-2">
-                                                    Class Status
-                                                </h3>
-                                            </div>
-                                            <div className="flex items-center gap-1 justify-center">
-                                                {clsInfo && (
-                                                    <ClassStatus
-                                                        status={clsInfo.status}
-                                                        program_class={clsInfo}
-                                                        mutateClasses={
-                                                            mutateClass
-                                                        }
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="w-full max-w-[calc((100%-2*1.5rem)/3)]">
-                                        <StatsCard
-                                            title="Completion Rate"
-                                            number={getCompletionRate()}
-                                            label="%"
-                                            tooltip="Percentage of enrolled residents who completed this class over all time."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="col-span-2 grid grid-cols-2 gap-2">
+                        <StatsCard
+                            title="Active Enrollments"
+                            number={enrollmentCount}
+                            label={
+                                enrollmentCount === '1'
+                                    ? 'Resident'
+                                    : 'Residents'
+                            }
+                            tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
+                            tooltipClassName="tooltip-bottom"
+                        />
+                        <StatsCard
+                            title="Missing Attendance"
+                            number={
+                                clsLoader.missing_attendance?.toString() ?? '0'
+                            }
+                            label={
+                                clsLoader.missing_attendance === 1
+                                    ? 'Session'
+                                    : 'Sessions'
+                            }
+                            tooltip="Number of class sessions that have occurred but do not have any attendance records."
+                            tooltipClassName="tooltip-left"
+                        />
+                        <StatsCard
+                            title="Attendance Rate"
+                            number={getAttendanceRate()}
+                            label="%"
+                            tooltip="Percentage of attendance records marked present for this class, calculated across all sessions where attendance is taken."
+                        />
+                        <StatsCard
+                            title="Completion Rate"
+                            number={getCompletionRate()}
+                            label="%"
+                            tooltip="Percentage of enrolled residents who completed this class over all time."
+                            tooltipClassName="tooltip-left"
+                        />
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-6 items-stretch">

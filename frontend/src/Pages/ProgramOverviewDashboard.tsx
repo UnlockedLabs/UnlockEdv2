@@ -237,12 +237,12 @@ export default function ProgramOverviewDashboard() {
                     />
                 )}
                 <div className="grid grid-cols-5 gap-4 items-stretch">
-                    <div className="card card-row-padding col-span-3">
-                        <h1 className="mb-2">
-                            {program?.name}
+                    <div className="card card-row-padding col-span-3 gap-4">
+                        <div className="flex gap-2">
+                            <h1>{program?.name}</h1>
                             {canSwitchFacility(user!) && (
-                                <span
-                                    className="font-normal"
+                                <button
+                                    className="body text-teal-3 cursor-pointer flex items-center gap-1"
                                     onClick={(e) => {
                                         e?.stopPropagation();
                                         navigate(
@@ -250,33 +250,26 @@ export default function ProgramOverviewDashboard() {
                                         );
                                     }}
                                 >
-                                    <ULIComponent
-                                        dataTip={'Edit Program'}
-                                        iconClassName="ml-2 mr-1"
-                                        tooltipClassName="tooltip-left cursor-pointer"
-                                        icon={PencilSquareIcon}
-                                    />
-                                    <span className="body text-teal-3 cursor-pointer relative -top-[2px] hover:underline">
+                                    <ULIComponent icon={PencilSquareIcon} />
+                                    <span className="hover:underline">
                                         Edit Program
                                     </span>
-                                </span>
+                                </button>
                             )}
-                        </h1>
-                        <p className="mb-4 body body-small">
-                            {program?.description}
-                        </p>
+                        </div>
+                        <p className="body-small">{program?.description}</p>
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <h3 className="body mb-1">Program Status</h3>
-                                <p className="mb-4 body body-small">
+                            <div className="space-y-2">
+                                <h3 className="body">Program Status</h3>
+                                <p className="body-small">
                                     {program?.is_active
                                         ? 'Available'
                                         : 'Inactive'}
                                 </p>
                             </div>
-                            <div>
-                                <h3 className="body mb-1">Credit Type</h3>
-                                <p className="mb-4 body body-small">
+                            <div className="space-y-2">
+                                <h3 className="body">Credit Type</h3>
+                                <p className="body-small">
                                     {' '}
                                     {commaSeparatedList(
                                         program?.credit_types.map(
@@ -285,9 +278,9 @@ export default function ProgramOverviewDashboard() {
                                     )}
                                 </p>
                             </div>
-                            <div>
-                                <h3 className="body mb-1">Program Type</h3>
-                                <p className="mb-4 body body-small">
+                            <div className="space-y-2">
+                                <h3 className="body">Program Type</h3>
+                                <p className="body-small">
                                     {commaSeparatedList(
                                         program?.program_types.map(
                                             (pt) => pt.program_type
@@ -295,9 +288,9 @@ export default function ProgramOverviewDashboard() {
                                     )}
                                 </p>
                             </div>
-                            <div>
-                                <h3 className="body mb-1">Funding Type</h3>
-                                <p className="mb-4 body body-small">
+                            <div className="space-y-2">
+                                <h3 className="body">Funding Type</h3>
+                                <p className="body-small">
                                     {commaSeparatedList([
                                         program?.funding_type
                                     ])}
