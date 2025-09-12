@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/go-pdf/fpdf"
 )
+
 
 func (srv *Server) registerUserRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
@@ -679,12 +681,48 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 	pdf := fpdf.New("P", "mm", "Letter", "")
 	pdf.AddPage()
 
-	//add title logic start
-	pdf.SetFont("Arial", "B", 24)
-	pdf.Cell(0, 10, "Resident Usage Transcript")
-	pdf.Ln(10)
-	pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
-	pdf.Ln(10)
+	unlockedLogo := pdf.RegisterImageOptionsReader(
+		"logo",
+		fpdf.ImageOptions{ImageType: "PNG"},
+		bytes.NewReader(src.UnlockedLogoImg),
+	)
+
+	margin := 10.0
+	if unlockedLogo != nil {//adding logo here
+		const imageHeight = 30.48//added fixed hieght
+		aspectRatio := unlockedLogo.Width() / unlockedLogo.Height()
+		imageWidth := imageHeight * aspectRatio		// Place image on the top-left
+		//this is what places the image into the PDF
+		pdf.ImageOptions(
+			"logo",
+			margin,
+			margin,
+			imageWidth,
+			imageHeight,
+			false,
+			fpdf.ImageOptions{ImageType: "PNG"},
+			0,
+			"",
+		)
+		titleCellHeight := 10.0
+		titleY := margin + (imageHeight / 2) - (titleCellHeight / 2)
+		titleX := margin + imageWidth + 5
+		pdf.SetXY(titleX, titleY)
+
+		pdf.SetFont("Arial", "B", 24)
+		pdf.Cell(0, titleCellHeight, "Resident Usage Transcript")
+
+		pdf.SetY(margin + imageHeight)
+		pdf.Ln(10)
+		pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+		pdf.Ln(10)
+	} else {//in case the image doesn't load doing this
+		pdf.SetFont("Arial", "B", 24)
+		pdf.Cell(0, 10, "Resident Usage Transcript")
+		pdf.Ln(10)
+		pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
+		pdf.Ln(10)
+	}
 
 	//add resident information start
 	pdf.SetFont("Arial", "", 12)
@@ -692,7 +730,7 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 	writeLine(pdf, "ID: "+user.DocID)
 	writeLine(pdf, "Facility: "+user.Facility.Name)
 	writeLine(pdf, "Generated Date: "+time.Now().Format("January 2, 2006"))
-	writeLine(pdf, "Date Range: " + user.CreatedAt.Format("January 2, 2006") + " - present")
+	writeLine(pdf, "Date Range: "+user.CreatedAt.Format("January 2, 2006")+" - present")
 	pdf.Ln(10)
 
 	//add platform usage information start
