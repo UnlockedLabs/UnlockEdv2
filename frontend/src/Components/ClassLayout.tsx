@@ -249,6 +249,8 @@ export default function ClassLayout() {
         return rate;
     }
 
+    const enrollmentCount = getEnrollmentCount();
+
     return (
         <>
             <div className="space-y-6 overflow-x-hidden">
@@ -264,8 +266,12 @@ export default function ClassLayout() {
                     <div className="col-span-2 grid grid-cols-2 gap-2">
                         <StatsCard
                             title="Active Enrollments"
-                            number={getEnrollmentCount()}
-                            label="Residents"
+                            number={enrollmentCount}
+                            label={
+                                enrollmentCount === '1'
+                                    ? 'Resident'
+                                    : 'Residents'
+                            }
                             tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
                             tooltipClassName="tooltip-bottom"
                         />
@@ -274,7 +280,11 @@ export default function ClassLayout() {
                             number={
                                 clsLoader.missing_attendance?.toString() ?? '0'
                             }
-                            label="Sessions"
+                            label={
+                                clsLoader.missing_attendance === 1
+                                    ? 'Session'
+                                    : 'Sessions'
+                            }
                             tooltip="Number of class sessions that have occurred but do not have any attendance records."
                             tooltipClassName="tooltip-left"
                         />

@@ -242,7 +242,7 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 	if err != nil {
 		return 0, newNotFoundDBError(err, "program_class_events")
 	}
-	allEventDates := make([]models.EventInstance, 20)
+	allEventDates := make([]models.EventInstance, 0, 20)
 	if len(events) == 1 {
 		allEventDates = generateEventInstances(events[0], events[0].Class.StartDt, time.Now().AddDate(0, 0, 1)) // adds one day to today so today is included
 	} else {
@@ -266,6 +266,34 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 		return 0, newGetRecordsDBError(err, "program_class_enrollments")
 	}
 
+	type AttendanceDateCount struct {
+		EventID int    `json:"event_id"`
+		Date    string `json:"date"`
+		Count   int64  `json:"count"`
+	}
+
+	var attendanceCounts []AttendanceDateCount
+	eventIDs := make([]uint, len(allEventDates))
+	dates := make([]string, len(allEventDates))
+
+	for i, eventDate := range allEventDates {
+		eventIDs[i] = eventDate.EventID
+		dates[i] = eventDate.StartTime.Format("2006-01-02")
+	}
+
+	err = db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEventAttendance{}).
+		Select("event_id, date, COUNT(*) as count").
+		Where("event_id IN ? AND date IN ?", eventIDs, dates).
+		Group("event_id, date").
+		Scan(&attendanceCounts).Error
+
+	attendanceMap := make(map[string]int64)
+	for _, attendance := range attendanceCounts {
+		key := fmt.Sprintf("%d_%s", attendance.EventID, attendance.Date)
+		attendanceMap[key] = attendance.Count
+	}
+
 	completedAttendanceDates := 0
 	for _, eventDate := range allEventDates {
 		// count enrolled students on this specific date
@@ -277,15 +305,10 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 			}
 		}
 
-		// count attendance records for this date
-		var attendanceCount int64
-		dateStr := eventDate.StartTime.Format("2006-01-02")
-		err = db.WithContext(args.Ctx).
-			Model(&models.ProgramClassEventAttendance{}).
-			Where("event_id = ? AND date = ?", eventDate.EventID, dateStr).
-			Count(&attendanceCount).Error
-		if err != nil {
-			return 0, newGetRecordsDBError(err, "program_class_event_attendance")
+		key := fmt.Sprintf("%d_%s", eventDate.EventID, eventDate.StartTime.Format("2006-01-02"))
+		attendanceCount, exists := attendanceMap[key]
+		if !exists {
+			attendanceCount = 0
 		}
 
 		if int(attendanceCount) == enrolledCountOnDate {
