@@ -37,7 +37,10 @@ import ResidentPrograms from '@/Components/ResidentPrograms';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { useToast } from '@/Context/ToastCtx';
 import UserActionsDropdown from '@/Components/UserActionsDropdown';
-import { textMonthLocalDate } from '@/Components/helperFunctions/formatting';
+import {
+    getTimestamp,
+    textMonthLocalDate
+} from '@/Components/helperFunctions/formatting';
 import YellowPill from '@/Components/pill-labels/YellowPill';
 
 function UserProfileInfoRow({
@@ -212,6 +215,9 @@ const ResidentProfile = () => {
         if (!metrics?.user) return;
 
         switch (action) {
+            case ResidentAccountAction['Download Usage Report (PDF)']:
+                void downloadUsageReport();
+                break;
             case ResidentAccountAction['Transfer Resident']:
                 showModal(verifyResidentModal);
                 break;
@@ -227,6 +233,48 @@ const ResidentProfile = () => {
                 break;
         }
     };
+
+    async function downloadUsageReport() {
+        try {
+            const response = await fetch(
+                `/api/users/${residentId}/usage-report`
+            );
+            if (!response.ok) {
+                toaster(
+                    'Failed to generate resident usage report',
+                    ToastState.error
+                );
+                throw new Error('Failed to generate resident usage report');
+            }
+            //need to get bytes from response
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const timestamp = getTimestamp();
+            let id = residentId;
+            if (metrics?.user) {
+                id = metrics?.user.doc_id;
+            }
+            const filename = `usage-report-${id}-${timestamp}.pdf`;
+            const anchorTag = document.createElement('a');
+            anchorTag.href = url;
+            anchorTag.download = filename;
+            document.body.appendChild(anchorTag);
+            anchorTag.click();
+            anchorTag.remove();
+
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error(
+                'Error occurred generating/downloading PDF report',
+                error
+            );
+            toaster(
+                'Failed to download resident usage report',
+                ToastState.error
+            );
+        }
+    }
 
     return (
         <div className="overflow-x-hidden px-5 pb-4">

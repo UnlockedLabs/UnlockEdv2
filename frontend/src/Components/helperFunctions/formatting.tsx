@@ -132,3 +132,16 @@ export function fromLocalDateToNumericDateFormat(date: Date, timezone: string) {
         timeZone: timezone
     });
 }
+
+//returns timestamp in YYYYmmDDhhMM used currently for naming files
+export function getTimestamp(): string {
+    const currentDate = new Date();
+    const padIt = (theNumber: number) => theNumber.toString().padStart(2, '0');
+    return (
+        currentDate.getFullYear().toString() +
+        padIt(currentDate.getMonth() + 1) +
+        padIt(currentDate.getDate()) +
+        padIt(currentDate.getHours()) +
+        padIt(currentDate.getMinutes())
+    );
+}
