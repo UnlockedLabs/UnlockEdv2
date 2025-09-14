@@ -8,8 +8,8 @@ export default function Pagination({
     meta,
     setPage,
     setPerPage,
-    specialPageSelecton,
-    forceShow
+    specialPageSelecton
+    // forceShow
 }: {
     meta: PaginationMeta;
     setPage: (page: number) => void;
@@ -17,7 +17,7 @@ export default function Pagination({
     specialPageSelecton?: boolean;
     forceShow?: boolean;
 }) {
-    if (!meta || (meta.total <= meta.per_page && !forceShow)) {
+    if (!meta || meta.total <= meta.per_page) {
         return null;
     }
 
