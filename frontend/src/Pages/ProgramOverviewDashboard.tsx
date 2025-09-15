@@ -333,7 +333,7 @@ export default function ProgramOverviewDashboard() {
 
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4 mt-4">
                 {filteredClasses && filteredClasses.length > 0 && (
-                    <div>
+                    <>
                         <div className="flex flex-row gap-x-2">
                             <SearchBar
                                 searchTerm={searchTerm}
@@ -365,14 +365,16 @@ export default function ProgramOverviewDashboard() {
                             </div>
                         </div>
                         <div className="flex flex-row gap-x-2">
-                            <button
-                                className="button-outline-pale-yellow"
-                                onClick={confirmArchiveClasses}
-                            >
-                                <ArchiveBoxIcon className="w-4 h-4 mr-1" />
-                                Archive Class
-                                {selectedClasses.length > 1 ? 'es' : ''}
-                            </button>
+                            {selectedClasses.length > 0 && (
+                                <button
+                                    className="button-outline-pale-yellow"
+                                    onClick={confirmArchiveClasses}
+                                >
+                                    <ArchiveBoxIcon className="w-4 h-4 mr-1" />
+                                    Archive Class
+                                    {selectedClasses.length > 1 ? 'es' : ''}
+                                </button>
+                            )}
                             <AddButton
                                 dataTip={getTooltip()}
                                 disabled={!canAddClass}
@@ -384,7 +386,7 @@ export default function ProgramOverviewDashboard() {
                                 }
                             />
                         </div>
-                    </div>
+                    </>
                 )}
             </div>
 
