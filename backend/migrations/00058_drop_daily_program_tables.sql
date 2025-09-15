@@ -1,9 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
 DELETE FROM public.runnable_tasks WHERE job_id IN (
-    SELECT id FROM public.cron_jobs WHERE name = 'daily_program_history'
+    SELECT id FROM public.cron_jobs WHERE name = 'daily_prog_history'
 );
-DELETE FROM public.cron_jobs WHERE name = 'daily_program_history';
+DELETE FROM public.cron_jobs WHERE name = 'daily_prog_history';
 DROP TABLE IF EXISTS public.daily_programs_facilities_history;
 DROP TABLE IF EXISTS public.daily_program_facilities_history;
 DROP TABLE IF EXISTS public.daily_program_facility_history;
@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS public.daily_program_facility_history (
 
 CREATE INDEX IF NOT EXISTS idx_daily_program_facility_history_history_date_program_id_facility_id ON public.daily_program_facility_history USING btree (date DESC, program_id, facility_id);
 
-INSERT INTO public.cron_jobs (id, name, created_at, updated_at) VALUES 
-(DEFAULT, 'daily_program_history', NOW(), NOW()) 
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO public.cron_jobs (name, schedule, category, created_at, updated_at) VALUES 
+('daily_prog_history', '0 22 * * *', 3, NOW(), NOW());
 -- +goose StatementEnd
