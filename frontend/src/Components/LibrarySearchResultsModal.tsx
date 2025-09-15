@@ -268,7 +268,7 @@ const LibrarySearchResultsModal = forwardRef<
                             onSearchClick={() => void handleSearch(1, 10)}
                             ref={searchBarRef}
                         />
-                        {searchTerm.trim() && !searchResults?.items?.length && (
+                        {searchTerm.trim() && (
                             <button
                                 type="button"
                                 onClick={() => void handleSuggestQueries()}
