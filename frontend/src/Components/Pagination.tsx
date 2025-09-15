@@ -9,12 +9,18 @@ export default function Pagination({
     setPage,
     setPerPage,
     specialPageSelecton
+    // forceShow
 }: {
     meta: PaginationMeta;
     setPage: (page: number) => void;
     setPerPage?: (perPage: number) => void;
     specialPageSelecton?: boolean;
+    forceShow?: boolean;
 }) {
+    if (!meta || meta.total <= meta.per_page) {
+        return null;
+    }
+
     const page = meta.current_page - 1;
     const perPage = meta.per_page;
     const perPageSelections = specialPageSelecton
