@@ -73,37 +73,59 @@ function StringDropdown({
 
 function FilterCategoryDropdown({
     setSelectedValue,
-    option
+    option,
+    multiSelect
 }: {
     setSelectedValue: Dispatch<SetStateAction<any>>; // eslint-disable-line
     option: FilterOptions;
+    multiSelect: boolean;
 }) {
-    if (option.categories === null) return null;
     const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-    const categoriesOptions: Option[] = option.categories.map(
-        (category, index) => ({
-            key: index,
-            value: category.replace(/_/g, ' ')
-        })
-    );
+    if (option.categories === null) return null;
+    const isOptionArray =
+        Array.isArray(option.categories) &&
+        typeof option.categories[0] === 'object';
+
+    const categoriesOptions: Option[] = isOptionArray
+        ? (option.categories as Option[])
+        : (option.categories as string[]).map((category, index) => ({
+              key: index,
+              value: category.replace(/_/g, ' ')
+          }));
+    const originalValues = isOptionArray
+        ? (option.categories as Option[]).map((opt) => opt.value)
+        : (option.categories as string[]);
+
     useEffect(() => {
-        if (selectedCategories.length === 0) setSelectedValue('');
-        const query =
-            option.categories &&
-            selectedCategories.map((i) => `${option.categories![i]}`).join('|');
+        if (selectedCategories.length === 0) {
+            setSelectedValue('');
+            return;
+        }
+        const query = selectedCategories
+            .map((index) => originalValues[index])
+            .join('|');
         setSelectedValue(query);
-    }, [selectedCategories, option.categories]);
+    }, [selectedCategories, originalValues, setSelectedValue]);
 
     return (
-        <div className="w-48">
-            <MultiSelectDropdown
-                options={categoriesOptions}
-                selectedOptions={selectedCategories}
-                onSelectionChange={setSelectedCategories}
-                onBlurSearch={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
-                small={true}
-                label={`Select ${option.key}`}
-            />
+        <div className="w-52">
+            {multiSelect ? (
+                <MultiSelectDropdown
+                    options={categoriesOptions}
+                    selectedOptions={selectedCategories}
+                    onSelectionChange={setSelectedCategories}
+                    onBlurSearch={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
+                    small={true}
+                    label={`Select ${option.key}`}
+                />
+            ) : (
+                <DropdownControl
+                    enumType={categoriesOptions}
+                    small={true}
+                    customCallback={setSelectedValue}
+                    blockedDefault={true}
+                />
+            )}
         </div>
     );
 }
@@ -111,13 +133,14 @@ function FilterCategoryDropdown({
 export enum FilterOptionType {
     string,
     number,
-    category
+    category,
+    option
 }
 export interface FilterOptions {
     key: string;
     value: string;
     type: FilterOptionType;
-    categories: string[] | null;
+    categories: string[] | Option[] | null;
 }
 
 export interface Filter {
@@ -163,6 +186,16 @@ export function FilterPillButton({
                     <FilterCategoryDropdown
                         setSelectedValue={setSelectedValue}
                         option={option}
+                        multiSelect={true}
+                    />
+                );
+            }
+            case FilterOptionType.option: {
+                return (
+                    <FilterCategoryDropdown
+                        setSelectedValue={setSelectedValue}
+                        option={option}
+                        multiSelect={false}
                     />
                 );
             }
@@ -209,6 +242,16 @@ export function FilterPillButton({
                 case FilterOptionType.category:
                     pillString = filterOption.key + ': ' + filter.value;
                     break;
+                case FilterOptionType.option: {
+                    const selectedOption = (
+                        filterOption.categories as Option[]
+                    ).find((opt) => opt.key.toString() === filter.value);
+                    const displayValue = selectedOption
+                        ? selectedOption.value
+                        : filter.value;
+                    pillString = filterOption.key + ': ' + displayValue;
+                    break;
+                }
                 default:
                     pillString = filter.value;
             }
