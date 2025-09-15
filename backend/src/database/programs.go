@@ -548,9 +548,9 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			programs.id AS program_id,
 			programs.name AS program_name,
 			programs.archived_at AS archived_at,
-			current_metrics.total_enrollments AS total_enrollments,
-			current_metrics.total_active_enrollments AS total_active_enrollments,
-			current_metrics.total_classes AS total_classes,
+			mr.total_enrollments AS total_enrollments,
+			mr.total_active_enrollments AS total_active_enrollments,
+			mr.total_classes AS total_classes,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -563,10 +563,10 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			programs.id AS program_id,
 			programs.name AS program_name,
 			programs.archived_at AS archived_at,
-			current_metrics.total_active_facilities AS total_active_facilities,
-			current_metrics.total_enrollments AS total_enrollments,
-			current_metrics.total_active_enrollments AS total_active_enrollments,
-			current_metrics.total_classes AS total_classes,
+			mr.total_active_facilities AS total_active_facilities,
+			mr.total_enrollments AS total_enrollments,
+			mr.total_active_enrollments AS total_active_enrollments,
+			mr.total_classes AS total_classes,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -591,7 +591,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
 				WHERE fp.facility_id = %d
 				GROUP BY p.id
-			) AS current_metrics ON current_metrics.program_id = programs.id
+			) AS mr ON mr.program_id = programs.id
 		`, args.FacilityID, args.FacilityID)
 	} else {
 		currentMetricsSubquery = `
@@ -607,7 +607,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 				LEFT JOIN program_classes pc ON pc.program_id = p.id
 				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
 				GROUP BY p.id
-			) AS current_metrics ON current_metrics.program_id = programs.id
+			) AS mr ON mr.program_id = programs.id
 		`
 	}
 
@@ -672,19 +672,19 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		switch col {
 		case "programs.name":
 			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
-		case "mr.total_enrollments", "current_metrics.total_enrollments":
+		case "mr.total_enrollments":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Having(fmt.Sprintf("current_metrics.total_enrollments %s ?", op), num)
-		case "mr.total_active_enrollments", "current_metrics.total_active_enrollments":
+			tx = tx.Having(fmt.Sprintf("mr.total_enrollments %s ?", op), num)
+		case "mr.total_active_enrollments":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Having(fmt.Sprintf("current_metrics.total_active_enrollments %s ?", op), num)
-		case "mr.total_classes", "current_metrics.total_classes":
+			tx = tx.Having(fmt.Sprintf("mr.total_active_enrollments %s ?", op), num)
+		case "mr.total_classes":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Having(fmt.Sprintf("current_metrics.total_classes %s ?", op), num)
-		case "mr.total_active_facilities", "current_metrics.total_active_facilities":
+			tx = tx.Having(fmt.Sprintf("mr.total_classes %s ?", op), num)
+		case "mr.total_active_facilities":
 			if adminRole != models.FacilityAdmin {
 				op, num := parseOperatorAndValue(val)
-				tx = tx.Having(fmt.Sprintf("current_metrics.total_active_facilities %s ?", op), num)
+				tx = tx.Having(fmt.Sprintf("mr.total_active_facilities %s ?", op), num)
 			}
 		case "completion_rate":
 			tx = applyRateFilter(tx, "time_filtered_rates.completion_rate", val)
