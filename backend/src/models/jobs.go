@@ -33,8 +33,6 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 		cj.Category = OpenContentJob
 	} else if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
 		cj.Category = ProviderPlatformJob
-	} else if slices.Contains(AllProgramManagementJobs, JobType(cj.Name)) {
-		cj.Category = ProgramManagementJob
 	}
 	switch cj.Name {
 	case string(RetryVideoDownloadsJob):
@@ -83,9 +81,8 @@ func (task *RunnableTask) Prepare(provId *uint) {
 func (RunnableTask) TableName() string { return "runnable_tasks" }
 
 const (
-	ProviderPlatformJob  = 1
-	OpenContentJob       = 2
-	ProgramManagementJob = 3
+	ProviderPlatformJob = 1
+	OpenContentJob      = 2
 
 	GetMilestonesJob JobType = "get_milestones"
 	GetCoursesJob    JobType = "get_courses"
@@ -104,7 +101,6 @@ const (
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
-var AllProgramManagementJobs = []JobType{}
 
 func (jt JobType) IsVideoJob() bool {
 	switch jt {
