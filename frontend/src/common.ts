@@ -960,6 +960,7 @@ export interface ClassLoaderData extends TitleHandler {
     class?: Class;
     redirect?: string;
     attendance_rate?: number;
+    missing_attendance?: number;
 }
 
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
