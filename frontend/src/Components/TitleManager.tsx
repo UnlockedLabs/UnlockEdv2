@@ -18,12 +18,21 @@ export function TitleManager() {
                         const libraryViewer = document.getElementById(
                             'library-viewer-iframe'
                         ) as HTMLIFrameElement;
-                        if (libraryViewer?.contentWindow?.document) {
-                            const iframeTitle =
-                                libraryViewer.contentWindow.document.title;
-                            if (iframeTitle) {
-                                document.title = iframeTitle + ' - UnlockEd';
+                        try {
+                            if (libraryViewer?.contentWindow?.document) {
+                                const iframeTitle =
+                                    libraryViewer.contentWindow.document.title;
+                                if (iframeTitle) {
+                                    document.title =
+                                        iframeTitle + ' - UnlockEd';
+                                }
                             }
+                        } catch (error) {
+                            console.log(
+                                'Error occurred while trying to access document, error is: ',
+                                error
+                            );
+                            clearInterval(titleInterval);
                         }
                     }, 1000);
 
