@@ -1,15 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { useState } from 'react';
 import {
     Class,
     SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
-import Pagination from '@/Components/Pagination';
-import { useForm } from 'react-hook-form';
-import { DateInput } from '@/Components/inputs/DateInput';
+import MonthNavigation from '@/Components/MonthNavigation';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { ClassEventInstance } from '@/types/events';
 import AttendanceCell from '@/Components/AttendanceCell';
@@ -29,26 +27,17 @@ function toLocalMidnight(dateOnly: string): Date {
 export default function ClassEvents() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
-    const {
-        page: pageQuery,
-        perPage,
-        setPage: setPageQuery,
-        setPerPage
-    } = useUrlPagination(1, 20);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const { register, watch, setValue } = useForm<{ selectedMonth: string }>({
-        defaultValues: { selectedMonth: defaultMonth }
-    });
-    const selectedMonthValue = watch('selectedMonth');
+    const [currentMonth, setCurrentMonth] = useState(defaultMonth);
 
-    const [year, month] = selectedMonthValue.split('-');
+    const [year, month] = currentMonth.split('-');
 
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<ClassEventInstance>,
         Error
     >(
-        `/api/program-classes/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
+        `/api/program-classes/${class_id}/events?month=${month}&year=${year}&per_page=31`
     );
 
     const events = data?.data ?? [];
@@ -74,7 +63,47 @@ export default function ClassEvents() {
     const blockEdits = isCompletedCancelledOrArchived(
         this_program ?? ({} as Class)
     );
-    const meta = data?.meta;
+
+    // Helper functions to check if adjacent months have actual events
+    const getPreviousMonth = (): string => {
+        const [year, month] = currentMonth.split('-').map(Number);
+        const prevDate = new Date(year, month - 2); // month - 2 because JS months are 0-indexed
+        return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const getNextMonth = (): string => {
+        const [year, month] = currentMonth.split('-').map(Number);
+        const nextDate = new Date(year, month); // month is already correct for next month
+        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const previousMonth = getPreviousMonth();
+    const nextMonth = getNextMonth();
+
+    const hasEarlierClasses = (): boolean => {
+        if (!this_program) return true;
+        if (!this_program.start_dt) return true;
+
+        const classStartMonth = new Date(this_program.start_dt)
+            .toISOString()
+            .substring(0, 7);
+        if (previousMonth < classStartMonth) return false;
+
+        return true;
+    };
+
+    const hasLaterClasses = (): boolean => {
+        if (!this_program) return true;
+        if (!this_program.end_dt) return true;
+
+        const classEndMonth = new Date(this_program.end_dt)
+            .toISOString()
+            .substring(0, 7);
+
+        if (nextMonth > classEndMonth) return false;
+
+        return true;
+    };
 
     function isFutureDate(date: string): boolean {
         const day = parseLocalDay(date);
@@ -157,20 +186,12 @@ export default function ClassEvents() {
 
     return (
         <div>
-            <div className="flex mb-4 justify-start">
-                <DateInput
-                    label="Select Month"
-                    interfaceRef="selectedMonth"
-                    required={true}
-                    errors={{}}
-                    register={register}
-                    monthOnly={true}
-                    disabled={false}
-                    onChange={(e: string) => {
-                        setValue('selectedMonth', e);
-                    }}
-                />
-            </div>
+            <MonthNavigation
+                currentMonth={currentMonth}
+                onMonthChange={setCurrentMonth}
+                hasEarlierClasses={hasEarlierClasses()}
+                hasLaterClasses={hasLaterClasses()}
+            />
 
             {isLoading && <div>Loading...</div>}
             {data && events.length > 0 ? (
@@ -235,15 +256,6 @@ export default function ClassEvents() {
                         No events found for this month.
                     </div>
                 )
-            )}
-            {!isLoading && !error && meta && (
-                <div className="flex justify-center">
-                    <Pagination
-                        meta={meta}
-                        setPage={setPageQuery}
-                        setPerPage={setPerPage}
-                    />
-                </div>
             )}
         </div>
     );
