@@ -64,7 +64,6 @@ export default function ClassEvents() {
         this_program ?? ({} as Class)
     );
 
-    // Helper functions to check if adjacent months have actual events
     const getPreviousMonth = (): string => {
         const [year, month] = currentMonth.split('-').map(Number);
         const prevDate = new Date(year, month - 2); // month - 2 because JS months are 0-indexed
