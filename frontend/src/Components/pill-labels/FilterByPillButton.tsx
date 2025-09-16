@@ -70,31 +70,49 @@ function StringDropdown({
         </>
     );
 }
-
-function FilterCategoryDropdown({
+function SingleSelectCategoryDropdown({
     setSelectedValue,
-    option,
-    multiSelect
+    option
 }: {
-    setSelectedValue: Dispatch<SetStateAction<any>>; // eslint-disable-line
+    setSelectedValue: Dispatch<SetStateAction<string>>;
     option: FilterOptions;
-    multiSelect: boolean;
+}) {
+    const [selectedOption, setSelectedOption] = useState<string>('');
+
+    if (!option.categories) return null;
+
+    const categoriesOptions = transformCategoriesToOptions(option.categories);
+
+    useEffect(() => {
+        setSelectedValue(selectedOption);
+    }, [selectedOption, setSelectedValue]);
+
+    return (
+        <div className="w-52">
+            <DropdownControl
+                value={selectedOption}
+                enumType={categoriesOptions}
+                small={true}
+                customCallback={setSelectedOption}
+                blockedDefault={true}
+            />
+        </div>
+    );
+}
+
+function MultiSelectCategoryDropdown({
+    setSelectedValue,
+    option
+}: {
+    setSelectedValue: Dispatch<SetStateAction<string>>;
+    option: FilterOptions;
 }) {
     const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-    if (option.categories === null) return null;
-    const isOptionArray =
-        Array.isArray(option.categories) &&
-        typeof option.categories[0] === 'object';
 
-    const categoriesOptions: Option[] = isOptionArray
-        ? (option.categories as Option[])
-        : (option.categories as string[]).map((category, index) => ({
-              key: index,
-              value: category.replace(/_/g, ' ')
-          }));
-    const originalValues = isOptionArray
-        ? (option.categories as Option[]).map((opt) => opt.value)
-        : (option.categories as string[]);
+    if (!option.categories) return null;
+
+    const categoriesOptions = transformCategoriesToOptions(option.categories);
+    const originalValues = getOriginalValues(option.categories);
 
     useEffect(() => {
         if (selectedCategories.length === 0) {
@@ -108,26 +126,40 @@ function FilterCategoryDropdown({
     }, [selectedCategories, originalValues, setSelectedValue]);
 
     return (
-        <div className="w-52">
-            {multiSelect ? (
-                <MultiSelectDropdown
-                    options={categoriesOptions}
-                    selectedOptions={selectedCategories}
-                    onSelectionChange={setSelectedCategories}
-                    onBlurSearch={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
-                    small={true}
-                    label={`Select ${option.key}`}
-                />
-            ) : (
-                <DropdownControl
-                    enumType={categoriesOptions}
-                    small={true}
-                    customCallback={setSelectedValue}
-                    blockedDefault={true}
-                />
-            )}
+        <div className="w-48">
+            <MultiSelectDropdown
+                options={categoriesOptions}
+                selectedOptions={selectedCategories}
+                onSelectionChange={setSelectedCategories}
+                onBlurSearch={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
+                small={true}
+                label={`Select ${option.key}`}
+            />
         </div>
     );
+}
+
+function transformCategoriesToOptions(
+    categories: string[] | Option[]
+): Option[] {
+    const isOptionArray =
+        Array.isArray(categories) && typeof categories[0] === 'object';
+
+    return isOptionArray
+        ? (categories as Option[])
+        : (categories as string[]).map((category, index) => ({
+              key: index,
+              value: category.replace(/_/g, ' ')
+          }));
+}
+
+function getOriginalValues(categories: string[] | Option[]): string[] {
+    const isOptionArray =
+        Array.isArray(categories) && typeof categories[0] === 'object';
+
+    return isOptionArray
+        ? (categories as Option[]).map((opt) => opt.value)
+        : (categories as string[]);
 }
 
 export enum FilterOptionType {
@@ -183,19 +215,17 @@ export function FilterPillButton({
                 return <StringDropdown setSelectedValue={setSelectedValue} />;
             case FilterOptionType.category: {
                 return (
-                    <FilterCategoryDropdown
+                    <MultiSelectCategoryDropdown
                         setSelectedValue={setSelectedValue}
                         option={option}
-                        multiSelect={true}
                     />
                 );
             }
             case FilterOptionType.option: {
                 return (
-                    <FilterCategoryDropdown
+                    <SingleSelectCategoryDropdown
                         setSelectedValue={setSelectedValue}
                         option={option}
-                        multiSelect={false}
                     />
                 );
             }
