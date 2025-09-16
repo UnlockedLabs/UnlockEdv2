@@ -674,17 +674,17 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			tx = tx.Where("programs.name ILIKE ?", "%"+val+"%")
 		case "mr.total_enrollments":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Having(fmt.Sprintf("mr.total_enrollments %s ?", op), num)
+			tx = tx.Where(fmt.Sprintf("mr.total_enrollments %s ?", op), num)
 		case "mr.total_active_enrollments":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Having(fmt.Sprintf("mr.total_active_enrollments %s ?", op), num)
+			tx = tx.Where(fmt.Sprintf("mr.total_active_enrollments %s ?", op), num)
 		case "mr.total_classes":
 			op, num := parseOperatorAndValue(val)
-			tx = tx.Having(fmt.Sprintf("mr.total_classes %s ?", op), num)
+			tx = tx.Where(fmt.Sprintf("mr.total_classes %s ?", op), num)
 		case "mr.total_active_facilities":
 			if adminRole != models.FacilityAdmin {
 				op, num := parseOperatorAndValue(val)
-				tx = tx.Having(fmt.Sprintf("mr.total_active_facilities %s ?", op), num)
+				tx = tx.Where(fmt.Sprintf("mr.total_active_facilities %s ?", op), num)
 			}
 		case "completion_rate":
 			tx = applyRateFilter(tx, "time_filtered_rates.completion_rate", val)
