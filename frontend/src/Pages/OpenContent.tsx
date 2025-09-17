@@ -206,7 +206,6 @@ export default function OpenContent() {
                         />
                         {isAdmin && isManagement && (
                             <DropdownControl
-                                key={`video-vis-${currentTabValue}`}
                                 enumType={VideoAdminVisibility}
                                 setState={setVideoVisibilityAdmin}
                             />

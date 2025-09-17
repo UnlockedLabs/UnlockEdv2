@@ -48,11 +48,9 @@ export default function VideoManagement() {
         filterVisibilityAdmin: VideoAdminVisibility;
     }>();
     const visibilitySuffix =
-        filterVisibilityAdmin === VideoAdminVisibility.Visible
-            ? '&visibility=student'
-            : filterVisibilityAdmin === VideoAdminVisibility.Hidden
-              ? '&visibility=hidden'
-              : '';
+        filterVisibilityAdmin === VideoAdminVisibility['All Videos']
+            ? ''
+            : `&visibility=${filterVisibilityAdmin}`;
 
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,

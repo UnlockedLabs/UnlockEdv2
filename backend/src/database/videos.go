@@ -87,7 +87,7 @@ func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]Vide
         and fvs.facility_id = ?`, args.FacilityID)
 
 	switch visibility {
-	case "student":
+	case "visible":
 		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", true)
 	case "hidden":
 		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", false)
