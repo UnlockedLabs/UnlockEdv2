@@ -5,6 +5,7 @@ interface EmptyStateCardProps {
     tooltipText: string;
     onActionButtonText?: string;
     onActionButtonClick?: () => void;
+    actionButtonDisabled?: boolean;
 }
 
 export default function EmptyStateCard(props: EmptyStateCardProps) {
@@ -16,7 +17,7 @@ export default function EmptyStateCard(props: EmptyStateCardProps) {
             {props.onActionButtonText && props.onActionButtonClick && (
                 <div className="tooltip tooltip-center">
                     <button
-                        disabled={false}
+                        disabled={props.actionButtonDisabled}
                         className={`button button-sm flex items-center space-x-1 p-2 ${props.tooltipText ? 'tooltip tooltip-bottom' : ''}`}
                         data-tip={props.tooltipText}
                         onClick={props.onActionButtonClick}
