@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useAuth, canSwitchFacility } from '@/useAuth';
-import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
+import {
+    Bars3Icon,
+    BuildingOffice2Icon,
+    HomeIcon
+} from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, RouteTitleHandler, TitleHandler, UserRole } from '@/common';
 import { useMatches } from 'react-router-dom';
@@ -113,10 +117,22 @@ export default function PageNav({
                         iconClassName="lg:hidden cursor-pointer"
                     />
                 )}
-                <h1>
-                    {pageTitle == 'Library Viewer'
-                        ? authLayoutPageTitle
-                        : pageTitle}
+                <h1 className="flex items-center gap-2">
+                    {pageTitle === 'Library Viewer' ? (
+                        <>
+                            <a
+                                href={`/viewer/libraries/${currentRoute.params.id}`}
+                            >
+                                <HomeIcon
+                                    className="w-10"
+                                    title={`Return to ${authLayoutPageTitle} homepage`}
+                                />
+                            </a>
+                            {authLayoutPageTitle}
+                        </>
+                    ) : (
+                        pageTitle
+                    )}
                 </h1>
             </div>
             {user && canSwitchFacility(user) && path !== '/programs' ? (
