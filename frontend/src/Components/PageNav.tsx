@@ -113,7 +113,7 @@ export default function PageNav({
                         iconClassName="lg:hidden cursor-pointer"
                     />
                 )}
-                <h1 className="flex items-center gap-2">
+                <h1>
                     {pageTitle === 'Library Viewer'
                         ? authLayoutPageTitle
                         : pageTitle}
