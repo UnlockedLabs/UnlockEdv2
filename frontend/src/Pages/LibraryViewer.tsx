@@ -9,7 +9,7 @@ import {
     WsMsg,
     WsEventType
 } from '@/common';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { StarIcon, ChevronLeftIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { LibrarySearchBar } from '@/Components/inputs';
@@ -274,7 +274,16 @@ export default function LibraryViewer() {
                     className="flex items-center gap-4 mb-4"
                     id="library-viewer-sub-page"
                 >
-                    <h1>Library Viewer</h1>
+                    <button
+                        data-tip="Return to the current library home page"
+                        className="button flex items-center tooltip tooltip-right"
+                        onClick={() => {
+                            window.location.href = `/viewer/libraries/${libraryId}`;
+                        }}
+                    >
+                        <ChevronLeftIcon className="w-4 my-auto" />
+                        <span>Library Home</span>
+                    </button>
                     {user && !isAdministrator(user) && (
                         <div
                             id="library-viewer-favorite"
