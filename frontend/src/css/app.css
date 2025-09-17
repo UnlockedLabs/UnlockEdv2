@@ -175,20 +175,24 @@
     border: 1px solid var(--grey-1);
     text-align: center;
     background-color: var(--base-teal);
+    color: var(--body-text) !important;
     transition: background-color 0.3s ease;
 }
 
 .react-calendar__tile:hover {
-    background-color: var(--grey-2);
+    background-color: var(--grey-2) !important;
+    color: var(--body-text) !important;
 }
 
 .react-calendar__tile--now {
-    background: var(--teal-3);
-    color: var(--base-teal);
+    background: var(--teal-3) !important;
+    color: var(--base-teal) !important;
     font-weight: bold;
 }
 
 .react-calendar__tile--active {
+    background-color: var(--teal-4) !important;
+    color: var(--base-teal) !important;
     border-color: var(--teal-4) !important;
 }
 

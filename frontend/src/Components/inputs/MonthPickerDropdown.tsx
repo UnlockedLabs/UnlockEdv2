@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Calendar from 'react-calendar';
 import type { Value } from 'react-calendar/dist/cjs/shared/types';
 import 'react-calendar/dist/Calendar.css';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 
 interface MonthPickerDropdownProps {
     label: string;
@@ -60,15 +61,17 @@ export function MonthPickerDropdown({
         };
     }, [isCalendarOpen]);
 
-    const onActiveStartDateChange = (date: Date | undefined) => {
-        if (date) {
-            setActiveStartDate(date);
-        }
+    const onActiveStartDateChange = () => {
+        // Prevent the calendar from changing the active date automatically
+        // This stops months from disappearing when selected
+        return;
     };
 
     const handleCalendarChange = (value: Value) => {
         if (value && value instanceof Date) {
             setSelectedDate(value);
+            // Don't change activeStartDate - let it stay on the current year view
+            // This prevents months from disappearing after selection
             const monthValue = value.toISOString().substring(0, 7);
             onChange(monthValue);
             setIsCalendarOpen(false);
@@ -115,35 +118,23 @@ export function MonthPickerDropdown({
                     }`}
                     onClick={toggleCalendar}
                 >
-                    <svg
+                    <CalendarIcon
                         className={`w-5 h-5 ${
-                            disabled ? 'text-gray-300' : 'text-gray-400'
+                            disabled ? 'text-grey-2' : 'text-grey-3'
                         }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                    </svg>
+                    />
                 </div>
                 {isCalendarOpen && !disabled && (
-                    <div className="absolute top-full left-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-grey-2 rounded-md shadow-lg z-10">
                         <Calendar
                             onChange={handleCalendarChange}
                             value={selectedDate}
                             view="year"
                             maxDetail="year"
+                            minDetail="decade"
                             activeStartDate={activeStartDate}
-                            onActiveStartDateChange={({ activeStartDate }) =>
-                                onActiveStartDateChange(
-                                    activeStartDate ?? undefined
-                                )
-                            }
+                            onActiveStartDateChange={onActiveStartDateChange}
+                            className="react-calendar-custom"
                         />
                     </div>
                 )}
