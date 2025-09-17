@@ -531,16 +531,23 @@ export default function ProgramOverviewDashboard() {
                             })
                         ) : (
                             <td colSpan={7}>
-                                <EmptyStateCard
-                                    title="No classes exist for this program"
-                                    tooltipText="Create or schedule your first class"
-                                    onActionButtonText="Add Class"
-                                    onActionButtonClick={() =>
-                                        navigate(
-                                            `/programs/${program_id}/classes/new`
-                                        )
-                                    }
-                                />
+                                {canAddClass ? (
+                                    <EmptyStateCard
+                                        title="No classes yet"
+                                        tooltipText="Create or schedule your first class"
+                                        onActionButtonText="Add Class"
+                                        onActionButtonClick={() =>
+                                            navigate(
+                                                `/programs/${program_id}/classes/new`
+                                            )
+                                        }
+                                    />
+                                ) : (
+                                    <EmptyStateCard
+                                        title="There are no active or scheduled classes for this program."
+                                        tooltipText="Create or schedule your first class"
+                                    />
+                                )}
                             </td>
                         )}
                     </tbody>
