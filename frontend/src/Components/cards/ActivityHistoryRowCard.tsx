@@ -15,6 +15,21 @@ function ActivityHistoryRowCard({
         return value.replace(/_/g, ' ');
     }
 
+    function formatAttendanceStatus(status: string): string {
+        switch (status) {
+            case 'present':
+                return 'present';
+            case 'absent_excused':
+                return 'absent (excused)';
+            case 'absent_unexcused':
+                return 'absent (unexcused)';
+            case 'deleted':
+                return 'deleted';
+            default:
+                return status;
+        }
+    }
+
     const getProgramClassesHistoryEventText = () => {
         let text;
         switch (activity.field_name) {
@@ -92,6 +107,16 @@ function ActivityHistoryRowCard({
         case 'progclass_history':
             introText = getProgramClassesHistoryEventText();
             break;
+        case 'attendance_recorded': {
+            const sessionDate = activity.session_date
+                ? new Date(activity.session_date).toLocaleDateString('en-US')
+                : '';
+            const formattedStatus = activity.attendance_status
+                ? formatAttendanceStatus(activity.attendance_status)
+                : '';
+            introText = `Resident marked ${formattedStatus} - ${activity.class_name}, ${sessionDate} by ${activity.admin_username}`;
+            break;
+        }
     }
     if (!introText) return;
     return (

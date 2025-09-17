@@ -103,6 +103,13 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	if err := srv.Db.LogUserAttendance(attendances); err != nil {
 		return newDatabaseServiceError(err)
 	}
+
+	for _, att := range attendances {
+		if err := srv.Db.CreateAttendanceAuditTrail(r.Context(), &att, &args.UserID, class.Name); err != nil {
+			log.error("failed to create attendance audit trail: " + err.Error())
+		}
+	}
+
 	return writeJsonResponse(w, http.StatusOK, "Attendance updated")
 }
 
@@ -110,6 +117,10 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "class ID")
+	}
+	class, err := srv.Db.GetClassByID(classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
 	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
@@ -147,6 +158,17 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 
 	if rowsAffected == 0 {
 		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class or has no attendance record for this date")
+	}
+
+	att := models.ProgramClassEventAttendance{
+		UserID:           uint(userID),
+		EventID:          uint(eventID),
+		Date:             date,
+		AttendanceStatus: models.Attendance("deleted"),
+	}
+
+	if err := srv.Db.CreateAttendanceAuditTrail(r.Context(), &att, &args.UserID, class.Name); err != nil {
+		log.error("failed to create attendance audit trail for deletion: " + err.Error())
 	}
 
 	return writeJsonResponse(w, http.StatusNoContent, any(nil))

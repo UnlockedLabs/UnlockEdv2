@@ -1069,6 +1069,9 @@ export interface ActivityHistoryResponse {
     field_name: string;
     new_value: string;
     old_value: string;
+    attendance_status?: string;
+    class_name?: string;
+    session_date?: Date;
 }
 
 export interface ProgramClassesHistory {
@@ -1086,7 +1089,8 @@ export type ActivityHistoryAction =
     | 'set_password'
     | 'reset_password'
     | 'progclass_history'
-    | 'user_deactivated';
+    | 'user_deactivated'
+    | 'attendance_recorded';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
 

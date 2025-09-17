@@ -321,3 +321,22 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 	missingAttendanceCount := totalEvents - completedAttendanceDates
 	return missingAttendanceCount, nil
 }
+
+func (db *DB) CreateAttendanceAuditTrail(ctx context.Context, att *models.ProgramClassEventAttendance, adminID *uint, className string) error {
+
+	sessionDateParsed, err := time.Parse("2006-01-02", att.Date)
+	if err != nil {
+		return NewDBError(err, "invalid session date format")
+	}
+
+	history := models.NewUserAccountHistory(att.UserID, models.AttendanceRecorded, adminID, nil, nil)
+	history.AttendanceStatus = att.AttendanceStatus
+	history.ClassName = &className
+	history.SessionDate = &sessionDateParsed
+
+	if err := db.WithContext(ctx).Create(history).Error; err != nil {
+		return newCreateDBError(err, "user_account_history")
+	}
+
+	return nil
+}
