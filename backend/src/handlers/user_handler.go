@@ -19,7 +19,6 @@ import (
 	"github.com/go-pdf/fpdf"
 )
 
-
 func (srv *Server) registerUserRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
@@ -688,10 +687,10 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 	)
 
 	margin := 10.0
-	if unlockedLogo != nil {//adding logo here
-		const imageHeight = 30.48//added fixed hieght
+	if unlockedLogo != nil { //adding logo here
+		const imageHeight = 30.48 //added fixed hieght
 		aspectRatio := unlockedLogo.Width() / unlockedLogo.Height()
-		imageWidth := imageHeight * aspectRatio		// Place image on the top-left
+		imageWidth := imageHeight * aspectRatio // Place image on the top-left
 		//this is what places the image into the PDF
 		pdf.ImageOptions(
 			"logo",
@@ -716,7 +715,7 @@ func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.Resi
 		pdf.Ln(10)
 		pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
 		pdf.Ln(10)
-	} else {//in case the image doesn't load doing this
+	} else { //in case the image doesn't load doing this
 		pdf.SetFont("Arial", "B", 24)
 		pdf.Cell(0, 10, "Resident Usage Transcript")
 		pdf.Ln(10)
