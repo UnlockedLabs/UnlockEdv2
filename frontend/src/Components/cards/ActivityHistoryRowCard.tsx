@@ -109,7 +109,10 @@ function ActivityHistoryRowCard({
             break;
         case 'attendance_recorded': {
             const sessionDate = activity.session_date
-                ? new Date(activity.session_date).toLocaleDateString('en-US')
+                ? new Date(
+                      new Date(activity.session_date).getTime() +
+                          12 * 60 * 60 * 1000
+                  ).toLocaleDateString('en-US')
                 : '';
             const formattedStatus = activity.attendance_status
                 ? formatAttendanceStatus(activity.attendance_status)
