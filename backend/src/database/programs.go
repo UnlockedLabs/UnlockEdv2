@@ -522,17 +522,17 @@ func applyRateFilter(tx *gorm.DB, rateExpr string, val string) *gorm.DB {
 	op, num := parseOperatorAndValue(val)
 	switch op {
 	case "!=":
-		return tx.Having("ABS("+rateExpr+" - ?) > ?", num, floatTolerance)
+		return tx.Where("ABS("+rateExpr+" - ?) > ?", num, floatTolerance)
 	case "=":
-		return tx.Having(rateExpr+" BETWEEN ? AND ?", num-floatTolerance, num+floatTolerance)
+		return tx.Where(rateExpr+" BETWEEN ? AND ?", num-floatTolerance, num+floatTolerance)
 	case ">=":
-		return tx.Having(rateExpr+" >= ?", num-floatTolerance)
+		return tx.Where(rateExpr+" >= ?", num-floatTolerance)
 	case "<=":
-		return tx.Having(rateExpr+" <= ?", num+floatTolerance)
+		return tx.Where(rateExpr+" <= ?", num+floatTolerance)
 	case ">":
-		return tx.Having(rateExpr+" > ?", num)
+		return tx.Where(rateExpr+" > ?", num)
 	case "<":
-		return tx.Having(rateExpr+" < ?", num)
+		return tx.Where(rateExpr+" < ?", num)
 	}
 	return tx
 }
