@@ -324,7 +324,7 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 
 func (db *DB) CreateAttendanceAuditTrail(ctx context.Context, att *models.ProgramClassEventAttendance, adminID *uint, className string) error {
 
-	sessionDateParsed, err := time.Parse("2006-01-02", att.Date)
+	sessionDateParsed, err := time.ParseInLocation("2006-01-02", att.Date, time.Local)
 	if err != nil {
 		return NewDBError(err, "invalid session date format")
 	}
