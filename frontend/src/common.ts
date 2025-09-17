@@ -908,6 +908,12 @@ export interface ProgramTag {
     value: number;
 }
 
+export enum VideoAdminVisibility {
+    'All Videos' = 'all',
+    'Visible' = 'visible',
+    'Hidden' = 'hidden'
+}
+
 export enum LibraryAdminVisibility {
     'All Libraries' = 'all',
     'Visible' = 'visible',
