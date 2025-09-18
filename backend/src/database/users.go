@@ -536,8 +536,23 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint, cate
 	return history, nil
 }
 
-func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, refID int) ([]models.ActivityHistoryResponse, error) {
+func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, refID int, categories []string) ([]models.ActivityHistoryResponse, error) {
 	history := make([]models.ActivityHistoryResponse, 0, args.PerPage)
+
+	programCategoryFields := map[string][]string{
+		"info":       {"name", "description", "overview"},
+		"status":     {"status"},
+		"settings":   {"capacity", "prerequisites", "outcome_types"},
+		"scheduling": {"duration", "intensity"},
+	}
+
+	classCategoryFields := map[string][]string{
+		"info":     {"name", "description"},
+		"status":   {"status"},
+		"schedule": {"start_date", "end_date", "meeting_days", "meeting_times"},
+		"settings": {"capacity", "location"},
+	}
+
 	//added criteria field_name != 'facility_id to skip these records from being a part of the result set, this may be temporary?
 	tx := db.WithContext(args.Ctx).
 		Table("change_log_entries cle").
@@ -547,6 +562,27 @@ func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, r
 				cle.*`).
 		Joins("inner join users on cle.user_id = users.id").
 		Where("cle.table_name = ? and cle.parent_ref_id = ? and field_name != 'facility_id'", tableName, refID)
+
+	if len(categories) > 0 {
+		var fields []string
+		var categoryFields map[string][]string
+
+		if tableName == "programs" {
+			categoryFields = programCategoryFields
+		} else {
+			categoryFields = classCategoryFields
+		}
+
+		for _, category := range categories {
+			if categoryFields[category] != nil {
+				fields = append(fields, categoryFields[category]...)
+			}
+		}
+		if len(fields) > 0 {
+			tx = tx.Where("cle.field_name IN ?", fields)
+		}
+	}
+
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "change_log_entries")
 	}

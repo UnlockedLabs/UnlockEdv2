@@ -2,28 +2,28 @@ import { useEffect, useState } from 'react';
 import { MultiSelectDropdown } from './inputs';
 import { Option } from '@/common';
 
-interface AccountHistoryFilterProps {
+interface ClassHistoryFilterProps {
     onFilterChange: (categoryQueryString: string) => void;
 }
 
-export default function AccountHistoryFilter({
+export default function ClassHistoryFilter({
     onFilterChange
-}: AccountHistoryFilterProps) {
+}: ClassHistoryFilterProps) {
     const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
     const filterOptions: Option[] = [
-        { key: 0, value: 'Account' },
-        { key: 1, value: 'Facility' },
-        { key: 2, value: 'Enrollment' }
-        // { key: 3, value: 'Attendance' } // TODO: Enable when attendance tracking PR is merged
+        { key: 0, value: 'Class Info' },
+        { key: 1, value: 'Status' },
+        { key: 2, value: 'Schedule' },
+        { key: 3, value: 'Settings' }
     ];
 
     useEffect(() => {
         const categoryMapping = {
-            0: 'account',
-            1: 'facility',
-            2: 'enrollment'
-            // 3: 'attendance' // TODO: Enable when attendance tracking PR is merged
+            0: 'info',
+            1: 'status',
+            2: 'schedule',
+            3: 'settings'
         };
 
         const queryString = selectedCategories
