@@ -21,6 +21,7 @@ import { FormModal } from '@/Components/modals/FormModal';
 import { FormInputTypes } from '@/Components/modals';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
+import LoadingSpinner from '@/Components/LoadingSpinner';
 interface UrlNavState {
     url?: string;
 }
@@ -371,26 +372,27 @@ export default function LibraryViewer() {
                         />
                         {iframeLoading && (
                             <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
-                                <div className="flex gap-4 justify-center items-center">
-                                    <span className="loading loading-spinner loading-lg"></span>
-                                    <p className="text-lg">
-                                        Loading library content...
-                                    </p>
-                                </div>
+                                <LoadingSpinner
+                                    size="lg"
+                                    text="Loading library content..."
+                                    overlay
+                                />
                             </div>
                         )}
                         {iframeError && (
                             <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
-                                <div className="text-center space-y-4">
+                                <div className="text-center space-y-6">
                                     <p className="text-lg text-error">
                                         Failed to load library content
                                     </p>
-                                    <button
-                                        className="button"
-                                        onClick={retryIframeLoad}
-                                    >
-                                        Try Again
-                                    </button>
+                                    <div className="flex justify-center">
+                                        <button
+                                            className="button"
+                                            onClick={retryIframeLoad}
+                                        >
+                                            Try Again
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

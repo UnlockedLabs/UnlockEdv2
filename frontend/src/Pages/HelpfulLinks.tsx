@@ -58,9 +58,7 @@ export default function HelpfulLinks() {
     return (
         <>
             {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                    <LoadingSpinner text="Loading helpful links..." />
-                </div>
+                <LoadingSpinner text="Loading helpful links..." centered />
             ) : (
                 <div
                     className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
