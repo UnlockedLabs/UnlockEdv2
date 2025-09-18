@@ -1,5 +1,5 @@
 import { useLoaderData, useParams } from 'react-router-dom';
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
@@ -80,9 +80,9 @@ export default function ProgramOverviewDashboard() {
     useEffect(() => {
         if (!program) navigate('/404');
         else if (classesError) navigate('/error');
-    }, [program, classesError]);
+    }, [program, classesError, navigate]);
 
-    const classes = classesResp?.data ?? [];
+    const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
     const meta = classesResp?.meta ?? {
         total: 0,
         per_page: 20,
