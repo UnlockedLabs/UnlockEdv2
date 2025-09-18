@@ -256,7 +256,8 @@ func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Reques
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	args := srv.getQueryContext(r)
-	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "programs", id)
+	categories := r.URL.Query()["categories"]
+	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "programs", id, categories)
 	if err != nil {
 		return err
 	}

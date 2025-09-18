@@ -307,7 +307,7 @@ export default function ProgramOverviewDashboard() {
                                 program?.active_enrollments.toString() ?? '0'
                             }
                             label={
-                                program.active_enrollments &&
+                                program?.active_enrollments &&
                                 program.active_enrollments == 1
                                     ? 'Enrollment'
                                     : 'Enrollments'

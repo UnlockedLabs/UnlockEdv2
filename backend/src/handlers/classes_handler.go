@@ -169,7 +169,8 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	args := srv.getQueryContext(r)
-	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "program_classes", id)
+	categories := r.URL.Query()["categories"]
+	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "program_classes", id, categories)
 	if err != nil {
 		return err
 	}
