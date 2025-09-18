@@ -3,6 +3,7 @@ import { ServerResponseMany, ActivityHistoryResponse, Class } from '@/common';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 import { ActivityHistoryRowCard } from './cards';
+import AccountHistoryFilter from './AccountHistoryFilter';
 
 export default function ActivityHistoryCard({
     programId,
@@ -14,8 +15,10 @@ export default function ActivityHistoryCard({
     classInfo?: Class;
 }) {
     const [page, setPage] = useState(1);
+    const [filterQuery, setFilterQuery] = useState('');
+
     const endpoint = residentId
-        ? `/api/users/${residentId}/account-history?page=${page}&per_page=5`
+        ? `/api/users/${residentId}/account-history?page=${page}&per_page=5${filterQuery ? `&${filterQuery}` : ''}`
         : classInfo
           ? `/api/program-classes/${classInfo?.id}/history?page=${page}&per_page=10` //set to 10 due to larger card
           : programId
@@ -34,6 +37,10 @@ export default function ActivityHistoryCard({
         }
     }, [classInfo?.status]);
 
+    useEffect(() => {
+        setPage(1);
+    }, [filterQuery]);
+
     return (
         <div className="card card-row-padding flex flex-col h-full gap-2">
             {classInfo ? (
@@ -41,7 +48,10 @@ export default function ActivityHistoryCard({
             ) : programId ? (
                 <h2>Program History</h2>
             ) : (
-                <h2>Account Overview</h2>
+                <div className="flex items-center justify-between">
+                    <h2>Account Overview</h2>
+                    <AccountHistoryFilter onFilterChange={setFilterQuery} />
+                </div>
             )}
             {isLoading && <div>Loading...</div>}
             {activityHistoryError && (
