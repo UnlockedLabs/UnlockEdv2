@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -168,7 +169,7 @@ func testDELETEAttendanceValidation(t *testing.T, env *TestEnv, admin *models.Us
 			Note:             "To be deleted",
 		},
 	}
-	err := env.DB.LogUserAttendance(attendanceData)
+	err := env.DB.LogUserAttendance(attendanceData, context.Background(), &admin.ID, class.Name)
 	require.NoError(t, err)
 
 	t.Run("Reject delete attendance for cancelled date", func(t *testing.T) {
