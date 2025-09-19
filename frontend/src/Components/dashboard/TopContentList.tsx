@@ -13,9 +13,13 @@ export default function TopContentList({
     items: OpenContentItem[];
     navigateToOpenContent: () => void;
 }) {
+    const defaultTooltip =
+        "Based on what you've viewed most. This list updates as you use UnlockEd more.";
     return (
         <div className="card card-row-padding flex flex-col gap-3">
-            <h2>{heading}</h2>
+            <h2 className="tooltip tooltip-top" data-tip={defaultTooltip}>
+                {heading}
+            </h2>
             {items.map((item: OpenContentItem) => {
                 return (
                     <OpenContentCard
