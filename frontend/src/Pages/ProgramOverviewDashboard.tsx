@@ -332,62 +332,57 @@ export default function ProgramOverviewDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4 mt-4">
-                {filteredClasses && filteredClasses.length > 0 && (
-                    <>
-                        <div className="flex flex-row gap-x-2">
-                            <SearchBar
-                                searchTerm={searchTerm}
-                                changeCallback={(newTerm) => {
-                                    handleSetSearchTerm(newTerm);
-                                    setPage(1);
-                                }}
-                            />
-                            <DropdownControl
-                                setState={setSortQuery}
-                                enumType={{
-                                    'Enrollment Count (Most)': 'enrolled desc',
-                                    'Enrollment Count (Least)': 'enrolled asc',
-                                    'Start Date (Earliest)': 'ps.start_dt asc',
-                                    'Start Date (Latest)': 'ps.start_dt desc'
-                                }}
-                            />
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="checkbox checkbox-sm mr-2"
-                                    onChange={(e) => {
-                                        setIncludeArchived(e.target.checked);
-                                    }}
-                                />
-                                <span className="text-sm">
-                                    Include Archived Classes
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex flex-row gap-x-2">
-                            {selectedClasses.length > 0 && (
-                                <button
-                                    className="button-outline-pale-yellow"
-                                    onClick={confirmArchiveClasses}
-                                >
-                                    <ArchiveBoxIcon className="w-4 h-4 mr-1" />
-                                    Archive Class
-                                    {selectedClasses.length > 1 ? 'es' : ''}
-                                </button>
-                            )}
-                            <AddButton
-                                dataTip={getTooltip()}
-                                disabled={!canAddClass}
-                                label="Add Class"
-                                onClick={() =>
-                                    navigate(
-                                        `/programs/${program_id}/classes/new`
-                                    )
-                                }
-                            />
-                        </div>
-                    </>
-                )}
+                <div className="flex flex-row gap-x-2">
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        changeCallback={(newTerm) => {
+                            handleSetSearchTerm(newTerm);
+                            setPage(1);
+                        }}
+                    />
+                    <DropdownControl
+                        setState={setSortQuery}
+                        enumType={{
+                            'Enrollment Count (Most)': 'enrolled desc',
+                            'Enrollment Count (Least)': 'enrolled asc',
+                            'Start Date (Earliest)': 'ps.start_dt asc',
+                            'Start Date (Latest)': 'ps.start_dt desc'
+                        }}
+                    />
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            className="checkbox checkbox-sm mr-2"
+                            onChange={(e) => {
+                                setIncludeArchived(e.target.checked);
+                            }}
+                        />
+                        <span className="text-sm">
+                            Include Archived Classes
+                        </span>
+                    </div>
+                </div>
+                <div className="flex flex-row gap-x-2">
+                    {selectedClasses.length > 0 ? (
+                        <button
+                            className="button-outline-pale-yellow"
+                            onClick={confirmArchiveClasses}
+                        >
+                            <ArchiveBoxIcon className="w-4 h-4 mr-1" />
+                            Archive Class
+                            {selectedClasses.length > 1 ? 'es' : ''}
+                        </button>
+                    ) : (
+                        <AddButton
+                            dataTip={getTooltip()}
+                            disabled={!canAddClass}
+                            label="Add Class"
+                            onClick={() =>
+                                navigate(`/programs/${program_id}/classes/new`)
+                            }
+                        />
+                    )}
+                </div>
             </div>
 
             {/* classes table */}
@@ -531,23 +526,21 @@ export default function ProgramOverviewDashboard() {
                             })
                         ) : (
                             <td colSpan={7}>
-                                {canAddClass ? (
-                                    <EmptyStateCard
-                                        title="No classes yet"
-                                        tooltipText="Create or schedule your first class"
-                                        onActionButtonText="Add Class"
-                                        onActionButtonClick={() =>
-                                            navigate(
-                                                `/programs/${program_id}/classes/new`
-                                            )
-                                        }
-                                    />
-                                ) : (
-                                    <EmptyStateCard
-                                        title="There are no active or scheduled classes for this program."
-                                        tooltipText="Create or schedule your first class"
-                                    />
-                                )}
+                                <EmptyStateCard
+                                    title="There are no active or scheduled classes for this program."
+                                    tooltipText="Create or schedule your first class"
+                                    onActionButtonText={
+                                        canAddClass ? 'Add Class' : undefined
+                                    }
+                                    onActionButtonClick={
+                                        canAddClass
+                                            ? () =>
+                                                  navigate(
+                                                      `/programs/${program_id}/classes/new`
+                                                  )
+                                            : undefined
+                                    }
+                                />
                             </td>
                         )}
                     </tbody>
