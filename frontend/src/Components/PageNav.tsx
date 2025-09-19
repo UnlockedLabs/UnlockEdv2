@@ -114,7 +114,7 @@ export default function PageNav({
                     />
                 )}
                 <h1>
-                    {pageTitle == 'Library Viewer'
+                    {pageTitle === 'Library Viewer'
                         ? authLayoutPageTitle
                         : pageTitle}
                 </h1>
