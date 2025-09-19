@@ -20,6 +20,7 @@
         "moment": "^2.30.1",
         "path": "^0.12.7",
         "postcss": "^8.4.38",
+        "posthog-js": "^1.266.0",
         "prettier": "^3.2.5",
         "react": "^18.2.0",
         "react-big-calendar": "^1.18.0",
