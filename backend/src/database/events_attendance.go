@@ -36,8 +36,8 @@ func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, 
 	return attendance, nil
 }
 
-func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAttendance) error {
-	tx := db.Begin()
+func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAttendance, ctx context.Context, adminID *uint, className string) error {
+	tx := db.Begin().WithContext(ctx)
 	if tx.Error != nil {
 		return NewDBError(tx.Error, "unable to start DB transaction")
 	}
@@ -52,6 +52,22 @@ func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAtten
 			tx.Rollback()
 			return newCreateDBError(err, "upserting attendance record")
 		}
+
+		sessionDateParsed, err := time.ParseInLocation("2006-01-02", att.Date, time.Local)
+		if err != nil {
+			tx.Rollback()
+			return NewDBError(err, "invalid session date format")
+		}
+
+		history := models.NewUserAccountHistory(att.UserID, models.AttendanceRecorded, adminID, nil, nil)
+		history.AttendanceStatus = att.AttendanceStatus
+		history.ClassName = &className
+		history.SessionDate = &sessionDateParsed
+
+		if err := tx.Create(history).Error; err != nil {
+			tx.Rollback()
+			return newCreateDBError(err, "user_account_history")
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -60,14 +76,44 @@ func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAtten
 	return nil
 }
 
-func (db *DB) DeleteAttendance(eventId, userId int, date string) (int64, error) {
+func (db *DB) DeleteAttendance(eventId, userId int, date string, ctx context.Context, adminID *uint, className string) (int64, error) {
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
-	result := db.Where("event_id = ? AND user_id = ? AND date = ?", eventId, userId, date).Delete(&models.ProgramClassEventAttendance{})
+
+	tx := db.Begin().WithContext(ctx)
+	if tx.Error != nil {
+		return 0, NewDBError(tx.Error, "unable to start DB transaction")
+	}
+
+	result := tx.Where("event_id = ? AND user_id = ? AND date = ?", eventId, userId, date).Delete(&models.ProgramClassEventAttendance{})
 	if result.Error != nil {
+		tx.Rollback()
 		return 0, newDeleteDBError(result.Error, "class_event_attendance")
 	}
+
+	if result.RowsAffected > 0 {
+		sessionDateParsed, err := time.ParseInLocation("2006-01-02", date, time.Local)
+		if err != nil {
+			tx.Rollback()
+			return 0, NewDBError(err, "invalid session date format")
+		}
+
+		history := models.NewUserAccountHistory(uint(userId), models.AttendanceRecorded, adminID, nil, nil)
+		history.AttendanceStatus = models.Attendance("deleted")
+		history.ClassName = &className
+		history.SessionDate = &sessionDateParsed
+
+		if err := tx.Create(history).Error; err != nil {
+			tx.Rollback()
+			return 0, newCreateDBError(err, "user_account_history")
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return 0, NewDBError(err, "unable to commit DB transaction")
+	}
+
 	return result.RowsAffected, nil
 }
 
