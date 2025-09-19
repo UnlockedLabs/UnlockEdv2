@@ -21,6 +21,7 @@ import { FormModal } from '@/Components/modals/FormModal';
 import { FormInputTypes } from '@/Components/modals';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
+import LoadingSpinner from '@/Components/LoadingSpinner';
 interface UrlNavState {
     url?: string;
 }
@@ -30,6 +31,8 @@ export default function LibraryViewer() {
     const { id: libraryId } = useParams();
     const [src, setSrc] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [iframeLoading, setIframeLoading] = useState<boolean>(false);
+    const [iframeError, setIframeError] = useState<boolean>(false);
     const { toaster } = useToast();
     const navigate = useNavigate();
     const [bookmarked, setBookmarked] = useState<boolean>(false);
@@ -39,6 +42,7 @@ export default function LibraryViewer() {
     const [searchTerm, setSearchTerm] = useState('');
     const modalRef = useRef<HTMLDialogElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const loadingTimeoutRef = useRef<number | null>(null);
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
@@ -71,6 +75,32 @@ export default function LibraryViewer() {
             modalRef.current.style.visibility = 'hidden';
             modalRef.current.close();
         }
+    };
+
+    const handleIframeLoad = () => {
+        setIframeError(false);
+        if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+        }
+        setTimeout(() => setIframeLoading(false), 500);
+    };
+
+    const handleIframeError = () => {
+        setIframeLoading(false);
+        setIframeError(true);
+        if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+        }
+    };
+
+    const retryIframeLoad = () => {
+        setIframeError(false);
+        setIframeLoading(true);
+        const currentSrc = src;
+        setSrc('');
+        setTimeout(() => setSrc(currentSrc), 100);
     };
 
     const handleSearch = () => {
@@ -147,6 +177,11 @@ export default function LibraryViewer() {
                     `/api/proxy/libraries/${libraryId}/`
                 );
                 if (response.ok) {
+                    setIframeLoading(true);
+                    loadingTimeoutRef.current = window.setTimeout(() => {
+                        setIframeLoading(false);
+                    }, 10000);
+
                     if (url && url !== '' && url.includes('/api/proxy/')) {
                         setSrc(url);
                     } else {
@@ -321,17 +356,47 @@ export default function LibraryViewer() {
                         <p className="my-auto text-lg">Loading...</p>
                     </div>
                 ) : src !== '' ? (
-                    <iframe
-                        ref={iframeRef}
-                        sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
-                        className="w-full h-full"
-                        id="library-viewer-iframe"
-                        src={src}
-                        style={{
-                            border: 'none',
-                            minHeight: '600px'
-                        }}
-                    />
+                    <div className="relative w-full h-full">
+                        <iframe
+                            ref={iframeRef}
+                            sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
+                            className="w-full h-full"
+                            id="library-viewer-iframe"
+                            src={src}
+                            onLoad={handleIframeLoad}
+                            onError={handleIframeError}
+                            style={{
+                                border: 'none',
+                                minHeight: '600px'
+                            }}
+                        />
+                        {iframeLoading && (
+                            <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
+                                <LoadingSpinner
+                                    size="lg"
+                                    text="Loading library content..."
+                                    overlay
+                                />
+                            </div>
+                        )}
+                        {iframeError && (
+                            <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
+                                <div className="text-center space-y-6">
+                                    <p className="text-lg text-error">
+                                        Failed to load library content
+                                    </p>
+                                    <div className="flex justify-center">
+                                        <button
+                                            className="button"
+                                            onClick={retryIframeLoad}
+                                        >
+                                            Try Again
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <div />
                 )}
