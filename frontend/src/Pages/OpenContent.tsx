@@ -4,7 +4,8 @@ import {
     Tab,
     Option,
     FilterOpenContent,
-    FeatureAccess
+    FeatureAccess,
+    VideoAdminVisibility
 } from '@/common';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -71,7 +72,13 @@ export default function OpenContent() {
         setActiveTab(
             tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]
         );
-        setFilterVisibilityAdmin(LibraryAdminVisibility['All Libraries']);
+        if (currentTabValue === 'videos') {
+            setVideoVisibilityAdmin(VideoAdminVisibility['All Videos']);
+        } else if (currentTabValue === 'libraries') {
+            setFilterLibraryVisibilityAdmin(
+                LibraryAdminVisibility['All Libraries']
+            );
+        }
         setSortQuery(FilterOpenContent['Title (A to Z)']);
         setSearchTerm('');
     }, [route.pathname, tabOptions]);
@@ -160,9 +167,12 @@ export default function OpenContent() {
     const { categories } = useLoaderData() as {
         categories: Option[];
     };
-    const [filterVisibilityAdmin, setFilterVisibilityAdmin] = useState<string>(
-        LibraryAdminVisibility['All Libraries']
-    );
+    const [filterLibraryVisibilityAdmin, setFilterLibraryVisibilityAdmin] =
+        useState<LibraryAdminVisibility>(
+            LibraryAdminVisibility['All Libraries']
+        );
+    const [filterVideoVisibilityAdmin, setVideoVisibilityAdmin] =
+        useState<VideoAdminVisibility>(VideoAdminVisibility['All Videos']);
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const [sortQuery, setSortQuery] = useState<string>(
         FilterOpenContent['Title (A to Z)']
@@ -182,7 +192,22 @@ export default function OpenContent() {
                         {isAdmin && isManagement && (
                             <DropdownControl
                                 enumType={LibraryAdminVisibility}
-                                setState={setFilterVisibilityAdmin}
+                                setState={setFilterLibraryVisibilityAdmin}
+                            />
+                        )}
+                    </>
+                );
+            } else if (currentTabValue === 'videos') {
+                return (
+                    <>
+                        <DropdownControl
+                            setState={setSortQuery}
+                            enumType={FilterOpenContent}
+                        />
+                        {isAdmin && isManagement && (
+                            <DropdownControl
+                                enumType={VideoAdminVisibility}
+                                setState={setVideoVisibilityAdmin}
                             />
                         )}
                     </>
@@ -199,9 +224,13 @@ export default function OpenContent() {
         [
             currentTabValue,
             user,
+            isAdmin,
+            isManagement,
             setCategoryQueryString,
             setSortQuery,
-            categories
+            categories,
+            filterLibraryVisibilityAdmin,
+            filterVideoVisibilityAdmin
         ]
     );
 
@@ -251,7 +280,10 @@ export default function OpenContent() {
                     context={{
                         activeView,
                         searchQuery,
-                        filterVisibilityAdmin,
+                        filterVisibilityAdmin:
+                            currentTabValue === 'videos'
+                                ? filterVideoVisibilityAdmin
+                                : filterLibraryVisibilityAdmin,
                         categoryQueryString,
                         sortQuery
                     }}

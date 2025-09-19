@@ -67,7 +67,7 @@ type VideoResponse struct {
 	IsFavorited bool `json:"is_favorited"`
 }
 
-func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]VideoResponse, error) {
+func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]VideoResponse, error) {
 	var videos []VideoResponse
 	tx := db.WithContext(args.Ctx).Model(&models.Video{}).Preload("Attempts").Select(`
 	videos.*,
@@ -86,8 +86,11 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
         and fvs.content_id = videos.id 
         and fvs.facility_id = ?`, args.FacilityID)
 
-	if onlyVisible {
-		tx = tx.Where("fvs.visibility_status = ?", true)
+	switch visibility {
+	case "visible":
+		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", true)
+	case "hidden":
+		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", false)
 	}
 	if args.Search != "" {
 		args.Search = "%" + args.Search + "%"
