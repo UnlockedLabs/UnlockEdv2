@@ -11,7 +11,11 @@ import MonthNavigation from '@/Components/MonthNavigation';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { ClassEventInstance } from '@/types/events';
 import AttendanceCell from '@/Components/AttendanceCell';
-import { parseLocalDay } from '@/Components/helperFunctions/formatting';
+import {
+    parseLocalDay,
+    getPreviousMonth,
+    getNextMonth
+} from '@/Components/helperFunctions/formatting';
 import {
     ClipboardDocumentCheckIcon,
     EyeIcon
@@ -29,7 +33,7 @@ export default function ClassEvents() {
     const navigate = useNavigate();
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const [currentMonth, setCurrentMonth] = useState(defaultMonth);
+    const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
 
     const [year, month] = currentMonth.split('-');
 
@@ -63,46 +67,6 @@ export default function ClassEvents() {
     const blockEdits = isCompletedCancelledOrArchived(
         this_program ?? ({} as Class)
     );
-
-    const getPreviousMonth = (): string => {
-        const [year, month] = currentMonth.split('-').map(Number);
-        const prevDate = new Date(year, month - 2); // month - 2 because JS months are 0-indexed
-        return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-    };
-
-    const getNextMonth = (): string => {
-        const [year, month] = currentMonth.split('-').map(Number);
-        const nextDate = new Date(year, month); // month is already correct for next month
-        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
-    };
-
-    const previousMonth = getPreviousMonth();
-    const nextMonth = getNextMonth();
-
-    const hasEarlierClasses = (): boolean => {
-        if (!this_program) return true;
-        if (!this_program.start_dt) return true;
-
-        const classStartMonth = new Date(this_program.start_dt)
-            .toISOString()
-            .substring(0, 7);
-        if (previousMonth < classStartMonth) return false;
-
-        return true;
-    };
-
-    const hasLaterClasses = (): boolean => {
-        if (!this_program) return true;
-        if (!this_program.end_dt) return true;
-
-        const classEndMonth = new Date(this_program.end_dt)
-            .toISOString()
-            .substring(0, 7);
-
-        if (nextMonth > classEndMonth) return false;
-
-        return true;
-    };
 
     function isFutureDate(date: string): boolean {
         const day = parseLocalDay(date);
@@ -182,6 +146,20 @@ export default function ClassEvents() {
             </div>
         );
     }
+
+    const hasEarlierClasses = () => {
+        if (!this_program?.start_dt) return true;
+        const classStartMonth = this_program.start_dt.substring(0, 7);
+        const previousMonth = getPreviousMonth(currentMonth);
+        return previousMonth >= classStartMonth;
+    };
+
+    const hasLaterClasses = () => {
+        if (!this_program?.end_dt) return true;
+        const classEndMonth = this_program.end_dt.substring(0, 7);
+        const nextMonth = getNextMonth(currentMonth);
+        return nextMonth <= classEndMonth;
+    };
 
     return (
         <div>
