@@ -26,24 +26,15 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		srv.errorResponse(w, http.StatusNotFound, "Library context not found")
 		return
 	}
-	// Use RawPath if present to preserve double-encoded segments
-	rawPath := r.URL.RawPath
-	if rawPath == "" {
-		rawPath = r.URL.EscapedPath()
-	}
-	assetPath := strings.TrimPrefix(rawPath, fmt.Sprintf("/api/proxy/libraries/%d", library.ID))
+	assetPath := strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/api/proxy/libraries/%d", library.ID))
 	if assetPath != "" && assetPath != "/" {
 		assetPath = strings.TrimPrefix(assetPath, library.Path)
 	}
-	// Build final encoded path manually to avoid url.JoinPath normalization
-	libPart := "/" + strings.Trim(library.Path, "/")
-	if assetPath != "" && !strings.HasPrefix(assetPath, "/") {
-		assetPath = "/" + assetPath
+	targetURL, err := url.JoinPath(library.BaseUrl, library.Path, assetPath)
+	if err != nil {
+		srv.errorResponse(w, http.StatusBadRequest, "Malformed request to build targetURL")
+		return
 	}
-	finalEncodedPath := libPart + assetPath
-	// Reconstruct full target URL string without JoinPath (to preserve encoding)
-	base := strings.TrimRight(library.BaseUrl, "/")
-	targetURL := base + finalEncodedPath
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
 		srv.errorResponse(w, http.StatusBadRequest, "Error parsing target URL")
@@ -51,30 +42,33 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 	}
 	scheme := "https"
 	if srv.dev {
-		scheme = "https"
+		scheme = "http"
 	}
 	proxy := httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			req.URL.Scheme = scheme
 			req.URL.Host = parsedURL.Host
 			req.Host = parsedURL.Host
-			decodedPath, _ := url.QueryUnescape(finalEncodedPath)
-			req.URL.Path = decodedPath
-			req.URL.RawPath = finalEncodedPath
+
+			req.URL.Path = parsedURL.Path
 			req.URL.RawQuery = r.URL.RawQuery
 			req.Header.Set("X-Real-IP", r.RemoteAddr)
 			req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-			req.Header.Set("X-Forwarded-Proto", scheme)
+			req.Header.Set("X-Forwarded-Proto", "https")
 		},
 		Transport: &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true},
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true,
+			},
 		},
 		ModifyResponse: func(res *http.Response) error {
+			//MAKE SURE TO NOT CACHE MAIN HTML CONTENT | WE MAY NEED TO ADD OTHER CONTENT TYPE TO NOT CACHE
 			contentType := res.Header.Get("Content-Type")
 			if contentType == "text/html" || contentType == "" {
 				res.Header.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
-				res.Header.Set("Pragma", "no-cache")
+				res.Header.Set("Pragma", "no-cache") //setting this in case HTTP/1.1 is not supported
 			}
 			if res.StatusCode == http.StatusFound || res.StatusCode == http.StatusSeeOther || res.StatusCode == http.StatusMovedPermanently {
 				location := res.Header.Get("Location")
@@ -83,7 +77,11 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 					if err != nil {
 						return err
 					}
-					res.Header.Set("Location", fmt.Sprintf("/api/proxy/libraries/%d%s", library.ID, parsedLocation.Path))
+					finalParsedLocation, err := url.JoinPath(fmt.Sprintf("/api/proxy/libraries/%d", library.ID), parsedLocation.Path)
+					if err != nil {
+						return err
+					}
+					res.Header.Set("Location", finalParsedLocation)
 				}
 			}
 			return nil
