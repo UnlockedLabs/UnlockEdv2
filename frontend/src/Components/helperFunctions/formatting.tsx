@@ -143,7 +143,31 @@ export function fromLocalDateToNumericDateFormat(date: Date, timezone: string) {
     });
 }
 
-//returns timestamp in YYYYmmDDhhMM used currently for naming files
+export function getPreviousMonth(currentMonth: string): string {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const prevDate = new Date(year, month - 2);
+    return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function getNextMonth(currentMonth: string): string {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const nextDate = new Date(year, month);
+    return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function formatMonthYear(monthString: string): string {
+    const [year, month] = monthString.split('-').map(Number);
+    const date = new Date(year, month - 1);
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+export function getCurrentMonth(): string {
+    return new Date().toISOString().substring(0, 7);
+}
+
 export function getTimestamp(): string {
     const currentDate = new Date();
     const padIt = (theNumber: number) => theNumber.toString().padStart(2, '0');

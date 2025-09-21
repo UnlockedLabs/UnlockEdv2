@@ -1,51 +1,36 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import {
+    getPreviousMonth,
+    getNextMonth,
+    formatMonthYear,
+    getCurrentMonth
+} from '@/Components/helperFunctions/formatting';
 
 interface MonthNavigationProps {
-    currentMonth: string; // YYYY-MM format
+    currentMonth: string;
     onMonthChange: (month: string) => void;
-    hasEarlierClasses?: boolean; // Whether earlier months have classes
-    hasLaterClasses?: boolean; // Whether later months have classes
+    showPrevious?: boolean;
+    showNext?: boolean;
 }
 
 export default function MonthNavigation({
     currentMonth,
     onMonthChange,
-    hasEarlierClasses = true, // Default to true for backward compatibility
-    hasLaterClasses = true // Default to true for backward compatibility
+    showPrevious = true,
+    showNext = true
 }: MonthNavigationProps) {
-    const [year, month] = currentMonth.split('-').map(Number);
-
-    const currentMonthYear = new Date().toISOString().substring(0, 7);
+    const currentMonthYear = getCurrentMonth();
     const isCurrentMonth = currentMonth === currentMonthYear;
 
-    const formatMonthYear = (dateStr: string): string => {
-        const [y, m] = dateStr.split('-').map(Number);
-        const date = new Date(y, m - 1);
-        return date.toLocaleDateString('en-US', {
-            month: 'long',
-            year: 'numeric'
-        });
-    };
-
-    const getPreviousMonth = (): string => {
-        const prevDate = new Date(year, month - 2); // month - 2 because JS months are 0-indexed
-        return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-    };
-
-    const getNextMonth = (): string => {
-        const nextDate = new Date(year, month); // month is already correct for next month
-        return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
-    };
-
     const goToPreviousMonth = () => {
-        if (hasEarlierClasses) {
-            onMonthChange(getPreviousMonth());
+        if (showPrevious) {
+            onMonthChange(getPreviousMonth(currentMonth));
         }
     };
 
     const goToNextMonth = () => {
-        if (hasLaterClasses) {
-            onMonthChange(getNextMonth());
+        if (showNext) {
+            onMonthChange(getNextMonth(currentMonth));
         }
     };
 
@@ -54,45 +39,43 @@ export default function MonthNavigation({
     };
 
     return (
-        <div className="flex items-center justify-between mb-6 p-4 bg-grey-1 rounded-lg">
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={goToPreviousMonth}
-                    disabled={!hasEarlierClasses}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                        hasEarlierClasses
-                            ? 'text-teal-4 hover:bg-grey-2 cursor-pointer'
-                            : 'text-grey-3 cursor-not-allowed'
-                    }`}
-                    aria-label="Previous month"
-                >
-                    <ChevronLeftIcon className="h-5 w-5" />
-                    Previous
-                </button>
+        <div className="flex items-center justify-between mb-6 py-3 px-4 border border-grey-1 rounded-lg bg-white shadow-sm">
+            <button
+                onClick={goToPreviousMonth}
+                disabled={!showPrevious}
+                className={`flex items-center gap-2 px-4 py-3 rounded-md transition-colors ${
+                    showPrevious
+                        ? 'text-teal-4 hover:bg-grey-1 cursor-pointer'
+                        : 'text-grey-3 cursor-default'
+                }`}
+                aria-label="Previous month"
+            >
+                <ChevronLeftIcon className="h-5 w-5" />
+                Previous
+            </button>
 
-                <h2 className="text-xl font-semibold text-teal-4 min-w-[200px] text-center">
-                    {formatMonthYear(currentMonth)}
-                </h2>
+            <h2 className="text-xl font-semibold text-teal-4 px-4 py-3 text-center flex-1 max-w-[300px]">
+                {formatMonthYear(currentMonth)}
+            </h2>
 
-                <button
-                    onClick={goToNextMonth}
-                    disabled={!hasLaterClasses}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                        hasLaterClasses
-                            ? 'text-teal-4 hover:bg-grey-2 cursor-pointer'
-                            : 'text-grey-3 cursor-not-allowed'
-                    }`}
-                    aria-label="Next month"
-                >
-                    Next
-                    <ChevronRightIcon className="h-5 w-5" />
-                </button>
-            </div>
+            <button
+                onClick={goToNextMonth}
+                disabled={!showNext}
+                className={`flex items-center gap-2 px-4 py-3 rounded-md transition-colors ${
+                    showNext
+                        ? 'text-teal-4 hover:bg-grey-1 cursor-pointer'
+                        : 'text-grey-3 cursor-default'
+                }`}
+                aria-label="Next month"
+            >
+                Next
+                <ChevronRightIcon className="h-5 w-5" />
+            </button>
 
             {!isCurrentMonth && (
                 <button
                     onClick={goToThisMonth}
-                    className="px-4 py-2 bg-teal-4 text-white rounded-md hover:bg-teal-5 transition-colors"
+                    className="ml-4 px-4 py-3 bg-teal-1 text-teal-4 rounded-md hover:bg-teal-2 transition-colors border border-teal-3"
                 >
                     This Month
                 </button>
