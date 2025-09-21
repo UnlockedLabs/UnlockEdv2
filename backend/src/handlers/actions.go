@@ -43,7 +43,7 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 	for _, user := range users {
-		// if this user was parsed improperly (happens randomly, unknown as to why), skip (just a comment to mark a change)
+		// if this user was parsed improperly (happens randomly, unknown as to why), skip
 		if user.Username == "" && user.Email == "" && user.NameLast == "" {
 			log.add("error", err)
 			log.debugf("received user with null values from provider: %d, skipping", provider.ID)

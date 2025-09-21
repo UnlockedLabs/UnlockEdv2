@@ -156,9 +156,9 @@ jobs:
         fi
         # this command runs the rollout.sh executable file
         COMMAND="rollout.sh $NAMESPACE $deployments"
-
+        PARAMETERS=$(jq -n --arg cmd "$COMMAND" '{"commands": [$cmd]}')
         aws ssm send-command \
           --instance-ids "$SSM_TARGET_INSTANCE_ID" \
           --document-name "AWS-RunShellScript" \
-          --parameters "{\\"commands\\":[\"$COMMAND\"]}" \
+          --parameters "$PARAMETERS" \
           --comment "Restarting deployments in $NAMESPACE"
