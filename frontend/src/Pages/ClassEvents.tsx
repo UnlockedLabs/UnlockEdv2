@@ -188,8 +188,8 @@ export default function ClassEvents() {
             <MonthNavigation
                 currentMonth={currentMonth}
                 onMonthChange={setCurrentMonth}
-                hasEarlierClasses={hasEarlierClasses()}
-                hasLaterClasses={hasLaterClasses()}
+                showPrevious={hasEarlierClasses()}
+                showNext={hasLaterClasses()}
             />
 
             {isLoading && <div>Loading...</div>}
