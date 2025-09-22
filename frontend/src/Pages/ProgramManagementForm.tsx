@@ -290,15 +290,19 @@ export default function ProgramManagementForm() {
                         </div>
                     )}
                     <div>
-                        <label className="flex items-start gap-1 font-medium mb-2 relative">
-                            <span>Program Status</span>
-                            <ULIComponent
-                                icon={InformationCircleIcon}
-                                dataTip={
-                                    "Set to 'Available' to let facility admins schedule classes. 'Inactive' programs stay hidden."
-                                }
-                                iconClassName="tooltip absolute  mt-[2px] ml-[2px]"
-                            />
+                        <label className="form-control">
+                            <div className="label">
+                                <span className="label-text flex items-center gap-1">
+                                    Program Status
+                                    <ULIComponent
+                                        icon={InformationCircleIcon}
+                                        dataTip={
+                                            "Set to 'Available' to let facility admins schedule classes. 'Inactive' programs stay hidden."
+                                        }
+                                        iconClassName="tooltip"
+                                    />
+                                </span>
+                            </div>
                         </label>
                         <div className="flex space-x-6">
                             <label className="flex items-center cursor-pointer">
