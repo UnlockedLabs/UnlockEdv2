@@ -49,9 +49,11 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		srv.errorResponse(w, http.StatusBadRequest, "Error parsing target URL")
 		return
 	}
+	// Determine upstream scheme. Default to https; allow http only in dev when explicitly configured.
 	scheme := "https"
-	if srv.dev {
-		scheme = "https"
+	if srv.dev && parsedURL.Scheme == "http" {
+		// Prefer the parsed target URL's scheme if it's http.
+		scheme = "http"
 	}
 	proxy := httputil.ReverseProxy{
 		Director: func(req *http.Request) {
