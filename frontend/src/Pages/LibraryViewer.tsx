@@ -47,6 +47,10 @@ export default function LibraryViewer() {
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const { tourState, setTourState } = useTourContext();
+    const [viewerRefreshKey, setViewerRefreshKey] = useState(0);
+
+    const forceViewerRefresh = () =>
+        setViewerRefreshKey((oldKey) => oldKey + 1);
 
     const openModal = () => {
         if (modalRef.current) {
@@ -147,7 +151,7 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId, url, setAuthLayoutPageTitle]);
+    }, [libraryId, url, setAuthLayoutPageTitle, viewerRefreshKey]);
 
     useEffect(() => {
         window.websocket?.setMsgHandler((wsmsg: Partial<WsMsg>) => {
@@ -258,7 +262,9 @@ export default function LibraryViewer() {
                         data-tip="Return to the current library home page"
                         className="button flex items-center tooltip tooltip-right"
                         onClick={() => {
-                            window.location.href = `/viewer/libraries/${libraryId}`;
+                            setSrc(`/api/proxy/libraries/${libraryId}/`);
+                            navigate('', { replace: true });
+                            forceViewerRefresh();
                         }}
                     >
                         <ChevronLeftIcon className="w-4 my-auto" />
