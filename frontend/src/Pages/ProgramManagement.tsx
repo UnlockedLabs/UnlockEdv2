@@ -227,7 +227,7 @@ export default function ProgramManagement() {
             type: FilterOptionType.category,
             categories: ['Available', 'Inactive', 'Archived']
         },
-        ...(user?.role !== UserRole.FacilityAdmin
+        ...(canSwitchFacility(user!)
             ? [
                   {
                       key: 'Facility',
@@ -388,7 +388,7 @@ export default function ProgramManagement() {
                     tooltip={`Count of unique programs offered ${user?.role === UserRole.FacilityAdmin ? 'at ' + user.facility.name : 'across all facilities'}.`}
                     useToLocaleString={false}
                 />
-                {user?.role !== UserRole.FacilityAdmin && (
+                {canSwitchFacility(user!) && (
                     <StatsCard
                         title={'Active Programs Per Facility'}
                         number={
@@ -487,7 +487,7 @@ export default function ProgramManagement() {
                     filters={filters}
                     columns={{
                         ...tableCols,
-                        ...(user?.role !== UserRole.FacilityAdmin
+                        ...(canSwitchFacility(user!)
                             ? { Facility: 'facility_id' }
                             : {})
                     }}
