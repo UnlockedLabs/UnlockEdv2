@@ -14,16 +14,14 @@ export default function ProgramHistoryFilter({
     const filterOptions: Option[] = [
         { key: 0, value: 'Program Info' },
         { key: 1, value: 'Status' },
-        { key: 2, value: 'Settings' },
-        { key: 3, value: 'Scheduling' }
+        { key: 2, value: 'Settings' }
     ];
 
     useEffect(() => {
         const categoryMapping = {
             0: 'info',
             1: 'status',
-            2: 'settings',
-            3: 'scheduling'
+            2: 'settings'
         };
 
         const queryString = selectedCategories

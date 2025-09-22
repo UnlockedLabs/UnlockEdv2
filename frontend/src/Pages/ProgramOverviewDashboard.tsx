@@ -1,4 +1,4 @@
-import { useLoaderData, useParams } from 'react-router-dom';
+import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
@@ -42,6 +42,7 @@ export default function ProgramOverviewDashboard() {
     const navigate = useNavigate();
     const { program_id } = useParams<{ program_id: string }>();
     const { user } = useAuth();
+    const revalidator = useRevalidator();
     const { program, redirect } = useLoaderData() as {
         program: ProgramOverview;
         redirect: string;
@@ -177,6 +178,7 @@ export default function ProgramOverviewDashboard() {
         );
         if (resp.success) {
             setSelectedClasses([]);
+            revalidator.revalidate();
         }
     }
     function handleCloseArchive() {
@@ -517,6 +519,9 @@ export default function ProgramOverviewDashboard() {
                                                 status={pc.status}
                                                 program_class={pc}
                                                 mutateClasses={mutateClasses}
+                                                onStatusChange={() =>
+                                                    revalidator.revalidate()
+                                                }
                                             />
                                         </td>
                                     </tr>

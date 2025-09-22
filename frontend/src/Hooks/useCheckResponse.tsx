@@ -9,11 +9,13 @@ interface UseCheckResponseProps<T> {
         | KeyedMutator<ServerResponseMany<T>>
         | KeyedMutator<ServerResponseOne<T>>;
     refModal: React.ForwardedRef<HTMLDialogElement>;
+    onSuccess?: () => void;
 }
 
 export function useCheckResponse<T>({
     mutate,
-    refModal
+    refModal,
+    onSuccess
 }: UseCheckResponseProps<T>) {
     const { toaster } = useToast();
 
@@ -25,8 +27,9 @@ export function useCheckResponse<T>({
                 toaster(successMessage, ToastState.success);
                 closeModal(refModal);
                 void mutate();
+                onSuccess?.();
             }
         },
-        [mutate, refModal, toaster]
+        [mutate, refModal, toaster, onSuccess]
     );
 }
