@@ -14,16 +14,16 @@ export default function AccountHistoryFilter({
     const filterOptions: Option[] = [
         { key: 0, value: 'Account' },
         { key: 1, value: 'Facility' },
-        { key: 2, value: 'Enrollment' }
-        // { key: 3, value: 'Attendance' } // TODO: Enable when attendance tracking PR is merged
+        { key: 2, value: 'Enrollment' },
+        { key: 3, value: 'Attendance' }
     ];
 
     useEffect(() => {
         const categoryMapping = {
             0: 'account',
             1: 'facility',
-            2: 'enrollment'
-            // 3: 'attendance' // TODO: Enable when attendance tracking PR is merged
+            2: 'enrollment',
+            3: 'attendance'
         };
 
         const queryString = selectedCategories

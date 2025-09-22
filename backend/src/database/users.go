@@ -495,7 +495,7 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint, cate
 		"account":    {"account_creation", "set_password", "reset_password", "user_deactivated"},
 		"facility":   {"facility_transfer"},
 		"enrollment": {"progclass_history"},
-		"attendance": {"marked_present", "marked_absent_excused", "marked_absent_unexcused"},
+		"attendance": {"marked_present", "marked_absent_excused", "marked_absent_unexcused", "attendance_recorded"},
 	}
 
 	tx := db.WithContext(args.Ctx).
@@ -540,17 +540,16 @@ func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, r
 	history := make([]models.ActivityHistoryResponse, 0, args.PerPage)
 
 	programCategoryFields := map[string][]string{
-		"info":       {"name", "description", "overview"},
-		"status":     {"status"},
-		"settings":   {"capacity", "prerequisites", "outcome_types"},
-		"scheduling": {"duration", "intensity"},
+		"info":     {"name", "description", "program"},
+		"status":   {"status", "is_active", "archived_at"},
+		"settings": {"credit_type", "credit_hours", "funding_type", "program_type"},
 	}
 
 	classCategoryFields := map[string][]string{
-		"info":     {"name", "description"},
-		"status":   {"status"},
-		"schedule": {"start_date", "end_date", "meeting_days", "meeting_times"},
-		"settings": {"capacity", "location"},
+		"info":     {"name", "description", "instructor_name", "class"},
+		"status":   {"status", "archived_at"},
+		"schedule": {"start_date", "end_date", "start_dt", "end_dt", "meeting_days", "meeting_times"},
+		"settings": {"capacity", "location", "credit_hours"},
 	}
 
 	//added criteria field_name != 'facility_id to skip these records from being a part of the result set, this may be temporary?
