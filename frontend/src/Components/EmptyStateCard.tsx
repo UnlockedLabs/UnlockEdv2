@@ -11,7 +11,7 @@ interface EmptyStateCardProps {
 
 export default function EmptyStateCard(props: EmptyStateCardProps) {
     return (
-        <div className="justify-items-center space-y-4 p-10">
+        <div className="flex flex-col items-center justify-center space-y-4 p-10">
             <p className="text-grey-3 text-base">{props.title}</p>
             {props.onActionButtonText && props.onActionButtonClick && (
                 <button
