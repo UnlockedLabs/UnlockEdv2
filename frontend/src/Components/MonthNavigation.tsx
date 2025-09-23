@@ -72,14 +72,17 @@ export default function MonthNavigation({
                 <ChevronRightIcon className="h-5 w-5" />
             </button>
 
-            {!isCurrentMonth && (
-                <button
-                    onClick={goToThisMonth}
-                    className="ml-4 px-4 py-3 bg-teal-1 text-teal-4 rounded-md hover:bg-teal-2 transition-colors border border-teal-3"
-                >
-                    This Month
-                </button>
-            )}
+            <button
+                onClick={goToThisMonth}
+                disabled={isCurrentMonth}
+                className={`ml-4 px-4 py-3 rounded-md transition-colors border ${
+                    isCurrentMonth
+                        ? 'bg-grey-1 text-grey-3 border-grey-2 cursor-default'
+                        : 'bg-teal-1 text-teal-4 border-teal-3 hover:bg-teal-2 cursor-pointer'
+                }`}
+            >
+                This Month
+            </button>
         </div>
     );
 }
