@@ -21,7 +21,7 @@ import { FormModal } from '@/Components/modals/FormModal';
 import { FormInputTypes } from '@/Components/modals';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
-import Loading from '@/Components/Loading';
+import LoadingSpinner from '@/Components/LoadingSpinner';
 interface UrlNavState {
     url?: string;
 }
@@ -47,11 +47,6 @@ export default function LibraryViewer() {
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const { tourState, setTourState } = useTourContext();
-
-    // Removed dynamic height syncing (ResizeObserver + content-based sizing) to
-    // allow the iframe to manage its own internal scroll. This avoids
-    // cross-origin access pitfalls and keeps layout simpler while retaining
-    // loading & error overlays.
 
     const openModal = () => {
         if (modalRef.current) {
@@ -109,8 +104,6 @@ export default function LibraryViewer() {
             );
         }
     };
-
-    // (Dynamic height sync effect removed – internal iframe scroll retained.)
 
     useEffect(() => {
         const fetchLibraryData = async () => {
@@ -324,12 +317,11 @@ export default function LibraryViewer() {
                         />
                         {iframeLoading && (
                             <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
-                                <div className="flex flex-col items-center gap-4">
-                                    <div className="loading loading-spinner loading-lg" />
-                                    <p className="text-sm text-secondary-text">
-                                        Loading library content...
-                                    </p>
-                                </div>
+                                <LoadingSpinner
+                                    size="lg"
+                                    text="Loading library content..."
+                                    overlay
+                                />
                             </div>
                         )}
                         {iframeError && (
