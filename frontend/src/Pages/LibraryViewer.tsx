@@ -48,11 +48,6 @@ export default function LibraryViewer() {
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const { tourState, setTourState } = useTourContext();
 
-    // Removed dynamic height syncing (ResizeObserver + content-based sizing) to
-    // allow the iframe to manage its own internal scroll. This avoids
-    // cross-origin access pitfalls and keeps layout simpler while retaining
-    // loading & error overlays.
-
     const openModal = () => {
         if (modalRef.current) {
             modalRef.current.style.visibility = 'visible';
@@ -109,8 +104,6 @@ export default function LibraryViewer() {
             );
         }
     };
-
-    // (Dynamic height sync effect removed – internal iframe scroll retained.)
 
     useEffect(() => {
         const fetchLibraryData = async () => {
