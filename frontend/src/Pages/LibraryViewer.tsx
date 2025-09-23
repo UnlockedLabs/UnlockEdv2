@@ -48,20 +48,10 @@ export default function LibraryViewer() {
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const { tourState, setTourState } = useTourContext();
 
-    const syncHeight = () => {
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-
-        try {
-            const doc =
-                iframe.contentDocument ?? iframe.contentWindow?.document;
-            if (doc) {
-                iframe.style.height = doc.documentElement.scrollHeight + 'px';
-            }
-        } catch {
-            // cross-origin iframe, can't access the document content
-        }
-    };
+    // Removed dynamic height syncing (ResizeObserver + content-based sizing) to
+    // allow the iframe to manage its own internal scroll. This avoids
+    // cross-origin access pitfalls and keeps layout simpler while retaining
+    // loading & error overlays.
 
     const openModal = () => {
         if (modalRef.current) {
@@ -120,45 +110,7 @@ export default function LibraryViewer() {
         }
     };
 
-    useEffect(() => {
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-
-        let resizeObserver: ResizeObserver | null = null;
-
-        const setupHeightSync = () => {
-            syncHeight();
-
-            try {
-                const doc =
-                    iframe.contentDocument ?? iframe.contentWindow?.document;
-                if (doc?.documentElement) {
-                    resizeObserver = new ResizeObserver(() => {
-                        syncHeight();
-                    });
-                    resizeObserver.observe(doc.documentElement);
-                }
-            } catch {
-                // cross-origin iframe, can't access the document content
-            }
-
-            return () => {
-                if (resizeObserver) {
-                    resizeObserver.disconnect();
-                }
-            };
-        };
-
-        // Setup height sync when iframe loads
-        iframe.addEventListener('load', setupHeightSync);
-
-        return () => {
-            iframe.removeEventListener('load', setupHeightSync);
-            if (resizeObserver) {
-                resizeObserver.disconnect();
-            }
-        };
-    }, [src]);
+    // (Dynamic height sync effect removed – internal iframe scroll retained.)
 
     useEffect(() => {
         const fetchLibraryData = async () => {
