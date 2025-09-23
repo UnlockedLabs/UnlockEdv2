@@ -12,6 +12,7 @@ import useSWR from 'swr';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { useLocation, useOutletContext } from 'react-router-dom';
 import { isAdministrator, useAuth } from '@/useAuth';
+import LoadingSpinner from '@/Components/LoadingSpinner';
 
 export default function HelpfulLinks() {
     const { user } = useAuth();
@@ -56,29 +57,35 @@ export default function HelpfulLinks() {
 
     return (
         <>
-            <div
-                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
-            >
-                {helpfulLinks?.data?.helpful_links.map((link: HelpfulLink) => (
-                    <HelpfulLinkCard
-                        key={link.id}
-                        link={link}
-                        mutate={updateFavorites}
-                        role={UserRole.Student}
-                        view={activeView}
-                    />
-                ))}
-                {error && (
-                    <span className="text-error">
-                        Failed to load helpful links.
-                    </span>
-                )}
-                {!isLoading &&
-                    !error &&
-                    helpfulLinks?.data.helpful_links.length === 0 && (
-                        <span className="text-error">No results</span>
+            {isLoading ? (
+                <LoadingSpinner text="Loading helpful links..." centered />
+            ) : (
+                <div
+                    className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                >
+                    {helpfulLinks?.data?.helpful_links.map(
+                        (link: HelpfulLink) => (
+                            <HelpfulLinkCard
+                                key={link.id}
+                                link={link}
+                                mutate={updateFavorites}
+                                role={UserRole.Student}
+                                view={activeView}
+                            />
+                        )
                     )}
-            </div>
+                    {error && (
+                        <span className="text-error">
+                            Failed to load helpful links.
+                        </span>
+                    )}
+                    {!isLoading &&
+                        !error &&
+                        helpfulLinks?.data.helpful_links.length === 0 && (
+                            <span className="text-error">No results</span>
+                        )}
+                </div>
+            )}
             {!isLoading && !error && helpfulLinksMeta && (
                 <div className="flex justify-center">
                     <Pagination

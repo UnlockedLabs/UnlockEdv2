@@ -11,6 +11,7 @@ import VideoCard from '@/Components/VideoCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation, useOutletContext } from 'react-router-dom';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import LoadingSpinner from '@/Components/LoadingSpinner';
 
 export default function VideoContent() {
     const { user } = useAuth();
@@ -49,19 +50,23 @@ export default function VideoContent() {
 
     return (
         <>
-            <div
-                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
-            >
-                {videoData.map((video) => (
-                    <VideoCard
-                        key={video.id}
-                        video={video}
-                        mutate={mutate}
-                        role={UserRole.Student}
-                        view={activeView}
-                    />
-                ))}
-            </div>
+            {isLoading ? (
+                <LoadingSpinner text="Loading videos..." centered />
+            ) : (
+                <div
+                    className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                >
+                    {videoData.map((video) => (
+                        <VideoCard
+                            key={video.id}
+                            video={video}
+                            mutate={mutate}
+                            role={UserRole.Student}
+                            view={activeView}
+                        />
+                    ))}
+                </div>
+            )}
             {!isLoading && !error && meta && videoData.length > 0 && (
                 <div className="flex justify-center">
                     <Pagination

@@ -8,7 +8,8 @@ import {
     MAX_DOWNLOAD_ATTEMPTS,
     getVideoErrorMessage,
     ViewType,
-    FeatureAccess
+    FeatureAccess,
+    VideoAdminVisibility
 } from '../common';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
@@ -41,14 +42,22 @@ export default function VideoManagement() {
     const navigate = useNavigate();
     const { toaster } = useToast();
 
-    const { activeView, sortQuery } = useOutletContext<{
+    const { activeView, sortQuery, filterVisibilityAdmin } = useOutletContext<{
         activeView: ViewType;
         sortQuery: string;
+        filterVisibilityAdmin: VideoAdminVisibility;
     }>();
+    const visibilitySuffix =
+        filterVisibilityAdmin === VideoAdminVisibility['All Videos']
+            ? ''
+            : `&visibility=${filterVisibilityAdmin}`;
+
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
         Error
-    >(`/api/videos?page=${pageQuery}&per_page=${perPage}&${sortQuery}`);
+    >(
+        `/api/videos?page=${pageQuery}&per_page=${perPage}&${sortQuery}${visibilitySuffix}`
+    );
 
     const videoData = data?.data ?? [];
     const meta = data?.meta;

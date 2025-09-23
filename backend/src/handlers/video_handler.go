@@ -25,10 +25,13 @@ func (srv *Server) registerVideoRoutes() []routeDef {
 
 func (srv *Server) handleGetVideos(w http.ResponseWriter, r *http.Request, log sLog) error {
 	user := r.Context().Value(ClaimsKey).(*Claims)
-	// cookie gets preference over query unless query specifies student
-	onlyVisible := !user.isAdmin() || r.URL.Query().Get("visibility") == "student"
+	visibility := r.URL.Query().Get("visibility")
+
+	if !user.isAdmin() {
+		visibility = "visible"
+	}
 	args := srv.getQueryContext(r)
-	videos, err := srv.Db.GetAllVideos(&args, onlyVisible)
+	videos, err := srv.Db.GetAllVideos(&args, visibility)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching videos")
 	}

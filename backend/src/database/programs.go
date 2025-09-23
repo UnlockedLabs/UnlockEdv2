@@ -713,6 +713,8 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 				whereStatement := "(" + strings.Join(conditions, " OR ") + ")"
 				tx = tx.Where(whereStatement)
 			}
+		case "facility_id":
+			tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", val)
 		}
 	}
 

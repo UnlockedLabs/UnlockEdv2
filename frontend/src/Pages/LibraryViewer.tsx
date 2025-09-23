@@ -21,6 +21,7 @@ import { FormModal } from '@/Components/modals/FormModal';
 import { FormInputTypes } from '@/Components/modals';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
+import Loading from '@/Components/Loading';
 interface UrlNavState {
     url?: string;
 }
@@ -30,6 +31,8 @@ export default function LibraryViewer() {
     const { id: libraryId } = useParams();
     const [src, setSrc] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [iframeLoading, setIframeLoading] = useState<boolean>(false);
+    const [iframeError, setIframeError] = useState<boolean>(false);
     const { toaster } = useToast();
     const navigate = useNavigate();
     const [bookmarked, setBookmarked] = useState<boolean>(false);
@@ -38,14 +41,17 @@ export default function LibraryViewer() {
     const [searchPlaceholder, setSearchPlaceholder] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const modalRef = useRef<HTMLDialogElement>(null);
-    // iframe auto-scroll management no longer needed for dynamic height; we keep ref if future messaging needed
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const loadingTimeoutRef = useRef<number | null>(null);
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const { tourState, setTourState } = useTourContext();
 
-    // Removed dynamic syncHeight logic: we now rely on an internal scroll within a fixed-height iframe viewport.
+    // Removed dynamic height syncing (ResizeObserver + content-based sizing) to
+    // allow the iframe to manage its own internal scroll. This avoids
+    // cross-origin access pitfalls and keeps layout simpler while retaining
+    // loading & error overlays.
 
     const openModal = () => {
         if (modalRef.current) {
@@ -59,6 +65,32 @@ export default function LibraryViewer() {
             modalRef.current.style.visibility = 'hidden';
             modalRef.current.close();
         }
+    };
+
+    const handleIframeLoad = () => {
+        setIframeError(false);
+        if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+        }
+        setTimeout(() => setIframeLoading(false), 500);
+    };
+
+    const handleIframeError = () => {
+        setIframeLoading(false);
+        setIframeError(true);
+        if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+        }
+    };
+
+    const retryIframeLoad = () => {
+        setIframeError(false);
+        setIframeLoading(true);
+        const currentSrc = src;
+        setSrc('');
+        setTimeout(() => setSrc(currentSrc), 100);
     };
 
     const handleSearch = () => {
@@ -78,7 +110,7 @@ export default function LibraryViewer() {
         }
     };
 
-    // Removed effect that tried to resize iframe to content height.
+    // (Dynamic height sync effect removed – internal iframe scroll retained.)
 
     useEffect(() => {
         const fetchLibraryData = async () => {
@@ -97,6 +129,11 @@ export default function LibraryViewer() {
                     `/api/proxy/libraries/${libraryId}/`
                 );
                 if (response.ok) {
+                    setIframeLoading(true);
+                    loadingTimeoutRef.current = window.setTimeout(() => {
+                        setIframeLoading(false);
+                    }, 10000);
+
                     if (url && url !== '' && url.includes('/api/proxy/')) {
                         setSrc(url);
                     } else {
@@ -218,8 +255,8 @@ export default function LibraryViewer() {
     };
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
-            <div className="px-5 pt-4 shrink-0">
+        <div className="flex flex-col h-full">
+            <div className="px-5 pt-4">
                 <div
                     className="flex items-center gap-4 mb-4"
                     id="library-viewer-sub-page"
@@ -264,22 +301,55 @@ export default function LibraryViewer() {
                     />
                 </div>
             </div>
-            <div className="flex-1 px-5 pb-4 min-h-0 overflow-hidden flex flex-col">
+            <div className="flex-1 px-5 pb-4 min-h-0">
                 {isLoading ? (
                     <div className="flex h-full gap-4 justify-center items-center">
                         <span className="my-auto loading loading-spinner loading-lg"></span>
                         <p className="my-auto text-lg">Loading...</p>
                     </div>
                 ) : src !== '' ? (
-                    <iframe
-                        ref={iframeRef}
-                        sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
-                        className="w-full h-full border-0"
-                        id="library-viewer-iframe"
-                        src={src}
-                        // Fixed-height viewport via flex container; inner document scrolls without enlarging page
-                        style={{ border: 'none' }}
-                    />
+                    <div className="relative w-full h-full">
+                        <iframe
+                            ref={iframeRef}
+                            sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
+                            className="w-full h-full"
+                            id="library-viewer-iframe"
+                            src={src}
+                            onLoad={handleIframeLoad}
+                            onError={handleIframeError}
+                            style={{
+                                border: 'none',
+                                minHeight: '600px'
+                            }}
+                        />
+                        {iframeLoading && (
+                            <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="loading loading-spinner loading-lg" />
+                                    <p className="text-sm text-secondary-text">
+                                        Loading library content...
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        {iframeError && (
+                            <div className="absolute inset-0 bg-background/90 flex items-center justify-center z-10">
+                                <div className="text-center space-y-6">
+                                    <p className="text-lg text-error">
+                                        Failed to load library content
+                                    </p>
+                                    <div className="flex justify-center">
+                                        <button
+                                            className="button"
+                                            onClick={retryIframeLoad}
+                                        >
+                                            Try Again
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <div />
                 )}

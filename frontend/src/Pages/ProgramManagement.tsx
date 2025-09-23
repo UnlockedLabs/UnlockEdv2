@@ -7,7 +7,9 @@ import {
     ServerResponseOne,
     ProgramsOverviewTable,
     ProgramsFacilitiesStats,
-    UserRole
+    UserRole,
+    Option,
+    Facility
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -149,6 +151,11 @@ export default function ProgramManagement() {
         Status: 'programs.is_active'
     };
 
+    const facilities: Option[] =
+        user?.facilities?.map((facility: Facility) => {
+            return { key: facility.id, value: facility.name };
+        }) ?? [];
+
     const filterMapping: FilterOptions[] = [
         {
             key: 'Name',
@@ -219,7 +226,17 @@ export default function ProgramManagement() {
             value: 'programs.is_active',
             type: FilterOptionType.category,
             categories: ['Available', 'Inactive', 'Archived']
-        }
+        },
+        ...(canSwitchFacility(user!)
+            ? [
+                  {
+                      key: 'Facility',
+                      value: 'facility_id',
+                      type: FilterOptionType.option,
+                      categories: facilities
+                  }
+              ]
+            : [])
     ];
 
     if (!isAdministrator(user)) {
@@ -371,7 +388,7 @@ export default function ProgramManagement() {
                     tooltip={`Count of unique programs offered ${user?.role === UserRole.FacilityAdmin ? 'at ' + user.facility.name : 'across all facilities'}.`}
                     useToLocaleString={false}
                 />
-                {user?.role !== UserRole.FacilityAdmin && (
+                {canSwitchFacility(user!) && (
                     <StatsCard
                         title={'Active Programs Per Facility'}
                         number={
@@ -468,7 +485,12 @@ export default function ProgramManagement() {
                 />
                 <FilterPillButton
                     filters={filters}
-                    columns={tableCols}
+                    columns={{
+                        ...tableCols,
+                        ...(canSwitchFacility(user!)
+                            ? { Facility: 'facility_id' }
+                            : {})
+                    }}
                     filterOptions={filterMapping}
                     onApplyFilter={onApplyFilter}
                     onRemoveFilter={onRemoveFilter}
