@@ -50,7 +50,7 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	// Determine upstream scheme. Default to https; allow http only in dev when explicitly configured.
-	scheme := "https"
+	scheme := "http"//FIXME Need to make a better solution for STL this is just temporary (rather than using load balancer we are directly communicating between ec2 instances in private subnet)
 	if srv.dev && parsedURL.Scheme == "http" {
 		// Prefer the parsed target URL's scheme if it's http.
 		scheme = "http"
