@@ -174,7 +174,7 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return err
 	}
-	pageMeta, createdByDetails, err := srv.getCreatedByForHistory(id, "program_classes", args.IntoMeta(), &args, len(historyEvents))
+	pageMeta, createdByDetails, err := srv.getCreatedByForHistory(id, "program_classes", args.IntoMeta(), &args, len(historyEvents), categories)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
