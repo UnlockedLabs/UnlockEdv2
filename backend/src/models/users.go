@@ -101,6 +101,9 @@ type UserAccountHistory struct {
 	ProgramClassesHistoryID *uint                 `json:"program_classes_history_id"`
 	FacilityID              *uint                 `json:"facility_id"`
 	CreatedAt               time.Time             `json:"created_at" gorm:"primaryKey"`
+	AttendanceStatus        Attendance            `json:"attendance_status" gorm:"size:27"`
+	ClassName               *string               `json:"class_name" gorm:"size:255"`
+	SessionDate             *time.Time            `json:"session_date" gorm:"type:date"`
 
 	User                  *User                  `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Admin                 *User                  `json:"admin,omitempty" gorm:"foreignKey:AdminID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
@@ -115,12 +118,13 @@ func (UserAccountHistory) TableName() string {
 type ActivityHistoryAction string
 
 const (
-	AccountCreation  ActivityHistoryAction = "account_creation"
-	FacilityTransfer ActivityHistoryAction = "facility_transfer"
-	SetPassword      ActivityHistoryAction = "set_password"
-	ResetPassword    ActivityHistoryAction = "reset_password"
-	ProgClassHistory ActivityHistoryAction = "progclass_history"
-	UserDeactivated  ActivityHistoryAction = "user_deactivated"
+	AccountCreation    ActivityHistoryAction = "account_creation"
+	FacilityTransfer   ActivityHistoryAction = "facility_transfer"
+	SetPassword        ActivityHistoryAction = "set_password"
+	ResetPassword      ActivityHistoryAction = "reset_password"
+	ProgClassHistory   ActivityHistoryAction = "progclass_history"
+	UserDeactivated    ActivityHistoryAction = "user_deactivated"
+	AttendanceRecorded ActivityHistoryAction = "attendance_recorded"
 )
 
 type ActivityHistoryResponse struct {
@@ -134,6 +138,9 @@ type ActivityHistoryResponse struct {
 	AdminUsername           *string               `json:"admin_username"`
 	FacilityName            *string               `json:"facility_name"`
 	ProgramClassesHistoryID *uint                 `json:"program_classes_history_id"`
+	AttendanceStatus        *string               `json:"attendance_status"`
+	ClassName               *string               `json:"class_name"`
+	SessionDate             *time.Time            `json:"session_date"`
 
 	ProgramClassesHistory *ProgramClassesHistory `json:"program_classes_history,omitempty" gorm:"foreignKey:ProgramClassesHistoryID;constraint:OnDelete:SET NULL"`
 }

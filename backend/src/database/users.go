@@ -496,6 +496,7 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 				users.username AS user_username, 
 				admins.username AS admin_username, 
 				facilities.name AS facility_name, 
+				uah.attendance_status, uah.class_name, uah.session_date,
 				psh.*`).
 		Joins("INNER JOIN users ON uah.user_id = users.id").
 		Joins("LEFT JOIN users admins ON uah.admin_id = admins.id").
