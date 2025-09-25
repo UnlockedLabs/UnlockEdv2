@@ -2,8 +2,9 @@ root = "."
 tmp_dir = "bin"
 
 [build]
-cmd = "go build -o ./bin/main backend/cmd/main.go"
+cmd = "go build -gcflags=\"all=-N -l\" -o ./bin/main backend/cmd/main.go"
 bin = "bin/main"
+full_bin = "dlv exec ./bin/main --listen=:40000 --headless=true --api-version=2 --accept-multiclient --continue"
 include_dir = ["backend"]
 include_file = []
 exclude_file = []
