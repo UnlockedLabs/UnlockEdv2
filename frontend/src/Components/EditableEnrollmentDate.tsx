@@ -51,7 +51,9 @@ export default function EditableEnrollmentDate({
             onUpdate();
             modalRef.current?.close();
         } else {
-            toaster('Failed to update enrollment date', ToastState.error);
+            const errorMessage =
+                response.message || 'Failed to update enrollment date';
+            toaster(errorMessage, ToastState.error);
         }
     };
 
@@ -62,20 +64,20 @@ export default function EditableEnrollmentDate({
         const today = toDateOnly(new Date().toISOString());
 
         if (selectedDate > today) {
-            return 'Enrollment date cannot be in the future';
+            return `Enrollment date cannot be in the future (today is ${today.toLocaleDateString()})`;
         }
 
         if (classInfo?.start_dt) {
             const classStartDate = toDateOnly(classInfo.start_dt);
             if (selectedDate < classStartDate) {
-                return 'Enrollment date cannot be before class start date';
+                return `Enrollment date cannot be before class start date (${classStartDate.toLocaleDateString()})`;
             }
         }
 
         if (classInfo?.end_dt) {
             const classEndDate = toDateOnly(classInfo.end_dt);
             if (selectedDate > classEndDate) {
-                return 'Enrollment date cannot be after class end date';
+                return `Enrollment date cannot be after class end date (${classEndDate.toLocaleDateString()})`;
             }
         }
 
@@ -90,6 +92,21 @@ export default function EditableEnrollmentDate({
         }),
         [enrollment.enrolled_at, enrollment.created_at]
     );
+
+    const dateConstraints = useMemo(() => {
+        const today = toDateOnly(new Date().toISOString())
+            .toISOString()
+            .split('T')[0];
+
+        let minDate = undefined;
+        if (classInfo?.start_dt) {
+            minDate = toDateOnly(classInfo.start_dt)
+                .toISOString()
+                .split('T')[0];
+        }
+
+        return { minDate, maxDate: today };
+    }, [classInfo?.start_dt]);
 
     return (
         <>
@@ -119,6 +136,8 @@ export default function EditableEnrollmentDate({
                         interfaceRef: 'enrolled_date',
                         required: true,
                         allowPastDate: true,
+                        minDate: dateConstraints.minDate,
+                        maxDate: dateConstraints.maxDate,
                         validate: validateEnrollmentDate
                     }
                 ]}

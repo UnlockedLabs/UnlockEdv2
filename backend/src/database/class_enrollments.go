@@ -188,7 +188,6 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status m
 func (db *DB) UpdateProgramClassEnrollmentDate(enrollmentId int, enrolledDate time.Time) error {
 	if err := db.Model(&models.ProgramClassEnrollment{}).
 		Where("id = ?", enrollmentId).
-		Set("id", enrollmentId).
 		Update("enrolled_at", enrolledDate).Error; err != nil {
 		return newUpdateDBError(err, "enrollment date")
 	}
