@@ -1,5 +1,6 @@
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { ClassEnrollment, EnrollmentStatus } from '@/common';
+import { ClassEnrollment, EnrollmentStatus, Class } from '@/common';
+import EditableEnrollmentDate from './EditableEnrollmentDate';
 
 interface EnrollmentTableProps {
     enrollments: ClassEnrollment[];
@@ -14,6 +15,8 @@ interface EnrollmentTableProps {
     handleShowCompletionDetails: (enrollment: ClassEnrollment) => Promise<void>;
     showOthers: boolean;
     setShowOthers: (show: boolean) => void;
+    classInfo?: Class;
+    onEnrollmentUpdate: () => void;
 }
 
 const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
@@ -28,7 +31,9 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
     handleChange,
     handleShowCompletionDetails,
     showOthers,
-    setShowOthers
+    setShowOthers,
+    classInfo,
+    onEnrollmentUpdate
 }) => {
     const translateEnrollmentStatus = (status: string) =>
         status.startsWith('Incomplete: ')
@@ -98,9 +103,15 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                         <td className="px-2">{enrollment.name_full}</td>
                         <td className="px-2">{enrollment.doc_id}</td>
                         <td className="px-2">
-                            {new Date(
-                                enrollment.created_at
-                            ).toLocaleDateString()}
+                            <EditableEnrollmentDate
+                                enrollment={enrollment}
+                                classInfo={classInfo}
+                                onUpdate={onEnrollmentUpdate}
+                                disabled={
+                                    enrollment.enrollment_status !==
+                                    EnrollmentStatus.Enrolled
+                                }
+                            />
                         </td>
                         <td className="text-center">
                             {enrollment.completion_dt ? (

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
@@ -16,6 +17,7 @@ func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, axx),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, axx, resolve),
 		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, axx, resolve),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments/{enrollment_id}/date", srv.handleUpdateEnrollmentDate, axx, resolve),
 		adminValidatedFeatureRoute("DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, axx, resolve),
 		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, axx, resolve),
 		validatedFeatureRoute("GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, axx, UserRoleResolver("id")),
@@ -141,6 +143,44 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	return writeJsonResponse(w, http.StatusOK, "updated")
+}
+
+func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	enrollmentId, err := strconv.Atoi(r.PathValue("enrollment_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "enrollment ID")
+	}
+	enrollmentUpdate := struct {
+		EnrolledDate string `json:"enrolled_date"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&enrollmentUpdate); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if enrollmentUpdate.EnrolledDate == "" {
+		return newInvalidIdServiceError(errors.New("enrolled date is required"), "enrolled date")
+	}
+	enrolledDate, err := time.Parse(time.RFC3339, enrollmentUpdate.EnrolledDate)
+	if err != nil {
+		return newBadRequestServiceError(err, "invalid date format")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if class.CannotUpdateClass() {
+		return newBadRequestServiceError(errors.New("cannot perform action on class that is completed cancelled or archived"), "invalid class status")
+	}
+	err = srv.Db.UpdateProgramClassEnrollmentDate(enrollmentId, enrolledDate)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	log.add("enrollment_id", enrollmentId)
+	log.info("enrollment date updated")
 	return writeJsonResponse(w, http.StatusOK, "updated")
 }
 
