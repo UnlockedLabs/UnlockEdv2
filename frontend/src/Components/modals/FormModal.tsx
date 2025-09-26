@@ -192,6 +192,8 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             getValues={input.getValues}
                                             disabled={input.disabled}
                                             allowPastDate={input.allowPastDate}
+                                            minDate={input.minDate}
+                                            maxDate={input.maxDate}
                                             monthOnly={input.monthOnly}
                                         />
                                     );
