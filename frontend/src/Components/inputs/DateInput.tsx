@@ -20,6 +20,8 @@ interface DateProps {
         | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     disabled?: boolean;
     monthOnly?: boolean;
+    minDate?: string;
+    maxDate?: string;
     defaultValue?: string;
     onChange?: (value: string) => void;
 }
