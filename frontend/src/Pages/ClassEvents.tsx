@@ -1,19 +1,21 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { useState } from 'react';
 import {
     Class,
     SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
-import Pagination from '@/Components/Pagination';
-import { useForm } from 'react-hook-form';
-import { DateInput } from '@/Components/inputs/DateInput';
+import MonthNavigation from '@/Components/MonthNavigation';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { ClassEventInstance } from '@/types/events';
 import AttendanceCell from '@/Components/AttendanceCell';
-import { parseLocalDay } from '@/Components/helperFunctions/formatting';
+import {
+    parseLocalDay,
+    getPreviousMonth,
+    getNextMonth
+} from '@/Components/helperFunctions/formatting';
 import {
     ClipboardDocumentCheckIcon,
     EyeIcon
@@ -29,26 +31,17 @@ function toLocalMidnight(dateOnly: string): Date {
 export default function ClassEvents() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
-    const {
-        page: pageQuery,
-        perPage,
-        setPage: setPageQuery,
-        setPerPage
-    } = useUrlPagination(1, 20);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const { register, watch, setValue } = useForm<{ selectedMonth: string }>({
-        defaultValues: { selectedMonth: defaultMonth }
-    });
-    const selectedMonthValue = watch('selectedMonth');
+    const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
 
-    const [year, month] = selectedMonthValue.split('-');
+    const [year, month] = currentMonth.split('-');
 
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<ClassEventInstance>,
         Error
     >(
-        `/api/program-classes/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
+        `/api/program-classes/${class_id}/events?month=${month}&year=${year}&per_page=31`
     );
 
     const events = data?.data ?? [];
@@ -74,7 +67,6 @@ export default function ClassEvents() {
     const blockEdits = isCompletedCancelledOrArchived(
         this_program ?? ({} as Class)
     );
-    const meta = data?.meta;
 
     function isFutureDate(date: string): boolean {
         const day = parseLocalDay(date);
@@ -155,22 +147,28 @@ export default function ClassEvents() {
         );
     }
 
+    const hasEarlierClasses = () => {
+        if (!this_program?.start_dt) return true;
+        const classStartMonth = this_program.start_dt.substring(0, 7);
+        const previousMonth = getPreviousMonth(currentMonth);
+        return previousMonth >= classStartMonth;
+    };
+
+    const hasLaterClasses = () => {
+        if (!this_program?.end_dt) return true;
+        const classEndMonth = this_program.end_dt.substring(0, 7);
+        const nextMonth = getNextMonth(currentMonth);
+        return nextMonth <= classEndMonth;
+    };
+
     return (
         <div>
-            <div className="flex mb-4 justify-start">
-                <DateInput
-                    label="Select Month"
-                    interfaceRef="selectedMonth"
-                    required={true}
-                    errors={{}}
-                    register={register}
-                    monthOnly={true}
-                    disabled={false}
-                    onChange={(e: string) => {
-                        setValue('selectedMonth', e);
-                    }}
-                />
-            </div>
+            <MonthNavigation
+                currentMonth={currentMonth}
+                onMonthChange={setCurrentMonth}
+                showPrevious={hasEarlierClasses()}
+                showNext={hasLaterClasses()}
+            />
 
             {isLoading && <div>Loading...</div>}
             {data && events.length > 0 ? (
@@ -235,15 +233,6 @@ export default function ClassEvents() {
                         No events found for this month.
                     </div>
                 )
-            )}
-            {!isLoading && !error && meta && (
-                <div className="flex justify-center">
-                    <Pagination
-                        meta={meta}
-                        setPage={setPageQuery}
-                        setPerPage={setPerPage}
-                    />
-                </div>
             )}
         </div>
     );
