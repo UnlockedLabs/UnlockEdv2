@@ -81,13 +81,15 @@ function SelectedClassStatusPill({
 export default function ClassStatus({
     program_class,
     status,
-    mutateClasses
+    mutateClasses,
+    onStatusChange
 }: {
     program_class: Class;
     status: SelectedClassStatus;
     mutateClasses:
         | KeyedMutator<ServerResponseOne<Class>>
         | KeyedMutator<ServerResponseMany<Class>>;
+    onStatusChange?: () => void;
 }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(status);
@@ -196,6 +198,7 @@ export default function ClassStatus({
                 program_class={program_class}
                 mutate={mutateClasses}
                 setSelectedStatus={setSelectedStatus}
+                onStatusChange={onStatusChange}
                 onClose={() => setSelectedModifyOption(undefined)}
             />
         </>

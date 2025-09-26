@@ -47,6 +47,7 @@ const ModifyClassModal = forwardRef(function (
         program_class,
         mutate,
         setSelectedStatus,
+        onStatusChange,
         onClose
     }: {
         action: ClassStatusOptions | undefined;
@@ -57,13 +58,15 @@ const ModifyClassModal = forwardRef(function (
         setSelectedStatus: React.Dispatch<
             React.SetStateAction<SelectedClassStatus>
         >;
+        onStatusChange?: () => void;
         onClose?: () => void;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     const checkResponse = useCheckResponse({
         mutate: mutate,
-        refModal: ref
+        refModal: ref,
+        onSuccess: onStatusChange
     });
     if (action === undefined) return;
     const { title, text } = StatusMessagesMap[action] || {};

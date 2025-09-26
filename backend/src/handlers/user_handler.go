@@ -369,7 +369,8 @@ func (srv *Server) handleGetUserAccountHistory(w http.ResponseWriter, r *http.Re
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	args := srv.getQueryContext(r)
-	history, err := srv.Db.GetUserAccountHistory(&args, uint(id))
+	categories := r.URL.Query()["categories"]
+	history, err := srv.Db.GetUserAccountHistory(&args, uint(id), categories)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

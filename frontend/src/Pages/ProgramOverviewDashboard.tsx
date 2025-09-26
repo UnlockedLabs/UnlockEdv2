@@ -1,5 +1,5 @@
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
@@ -81,9 +81,9 @@ export default function ProgramOverviewDashboard() {
     useEffect(() => {
         if (!program) navigate('/404');
         else if (classesError) navigate('/error');
-    }, [program, classesError]);
+    }, [program, classesError, navigate]);
 
-    const classes = classesResp?.data ?? [];
+    const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
     const meta = classesResp?.meta ?? {
         total: 0,
         per_page: 20,
@@ -121,7 +121,6 @@ export default function ProgramOverviewDashboard() {
 
         setUnableToArchiveClasses(unableToArchive);
         setAbleToArchiveClasses(ableToArchive);
-        revalidator.revalidate();
     }, [selectedClasses, classes]);
 
     if (classes === undefined) return <br />;
@@ -179,6 +178,7 @@ export default function ProgramOverviewDashboard() {
         );
         if (resp.success) {
             setSelectedClasses([]);
+            revalidator.revalidate();
         }
     }
     function handleCloseArchive() {
@@ -307,7 +307,7 @@ export default function ProgramOverviewDashboard() {
                                 program?.active_enrollments.toString() ?? '0'
                             }
                             label={
-                                program.active_enrollments &&
+                                program?.active_enrollments &&
                                 program.active_enrollments == 1
                                     ? 'Enrollment'
                                     : 'Enrollments'
@@ -519,6 +519,9 @@ export default function ProgramOverviewDashboard() {
                                                 status={pc.status}
                                                 program_class={pc}
                                                 mutateClasses={mutateClasses}
+                                                onStatusChange={() =>
+                                                    revalidator.revalidate()
+                                                }
                                             />
                                         </td>
                                     </tr>

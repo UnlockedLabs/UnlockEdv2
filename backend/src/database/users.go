@@ -488,8 +488,16 @@ func (db *DB) InsertUserAccountHistoryAction(ctx context.Context, accountHistory
 	return nil
 }
 
-func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]models.ActivityHistoryResponse, error) {
+func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint, categories []string) ([]models.ActivityHistoryResponse, error) {
 	history := make([]models.ActivityHistoryResponse, 0, args.PerPage)
+
+	categoryActions := map[string][]string{
+		"account":    {"account_creation", "set_password", "reset_password", "user_deactivated"},
+		"facility":   {"facility_transfer"},
+		"enrollment": {"progclass_history"},
+		"attendance": {"marked_present", "marked_absent_excused", "marked_absent_unexcused", "attendance_recorded"},
+	}
+
 	tx := db.WithContext(args.Ctx).
 		Table("user_account_history uah").
 		Select(`uah.action, uah.created_at, uah.user_id, 
@@ -503,6 +511,19 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 		Joins("LEFT JOIN facilities ON uah.facility_id = facilities.id").
 		Joins("LEFT JOIN program_classes_history psh ON uah.program_classes_history_id = psh.id").
 		Where("uah.user_id = ?", userID)
+
+	if len(categories) > 0 {
+		var actions []string
+		for _, category := range categories {
+			if categoryActions[category] != nil {
+				actions = append(actions, categoryActions[category]...)
+			}
+		}
+		if len(actions) > 0 {
+			tx = tx.Where("uah.action IN ?", actions)
+		}
+	}
+
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "user_account_history")
 	}
@@ -515,8 +536,22 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	return history, nil
 }
 
-func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, refID int) ([]models.ActivityHistoryResponse, error) {
+func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, refID int, categories []string) ([]models.ActivityHistoryResponse, error) {
 	history := make([]models.ActivityHistoryResponse, 0, args.PerPage)
+
+	programCategoryFields := map[string][]string{
+		"info":     {"name", "description", "program"},
+		"status":   {"status", "is_active", "archived_at"},
+		"settings": {"credit_type", "credit_hours", "funding_type", "program_type"},
+	}
+
+	classCategoryFields := map[string][]string{
+		"info":     {"name", "description", "instructor_name", "class"},
+		"status":   {"status", "archived_at"},
+		"schedule": {"start_date", "end_date", "start_dt", "end_dt", "meeting_days", "meeting_times", "event_rescheduled_series", "event_rescheduled", "event_cancelled", "event_restored"},
+		"settings": {"capacity", "location", "credit_hours"},
+	}
+
 	//added criteria field_name != 'facility_id to skip these records from being a part of the result set, this may be temporary?
 	tx := db.WithContext(args.Ctx).
 		Table("change_log_entries cle").
@@ -526,6 +561,27 @@ func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, r
 				cle.*`).
 		Joins("inner join users on cle.user_id = users.id").
 		Where("cle.table_name = ? and cle.parent_ref_id = ? and field_name != 'facility_id'", tableName, refID)
+
+	if len(categories) > 0 {
+		var fields []string
+		var categoryFields map[string][]string
+
+		if tableName == "programs" {
+			categoryFields = programCategoryFields
+		} else {
+			categoryFields = classCategoryFields
+		}
+
+		for _, category := range categories {
+			if categoryFields[category] != nil {
+				fields = append(fields, categoryFields[category]...)
+			}
+		}
+		if len(fields) > 0 {
+			tx = tx.Where("cle.field_name IN ?", fields)
+		}
+	}
+
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "change_log_entries")
 	}
