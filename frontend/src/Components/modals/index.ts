@@ -61,8 +61,6 @@ export interface Input {
     disabled?: boolean;
     allowPastDate?: boolean;
     monthOnly?: boolean;
-    minDate?: string;
-    maxDate?: string;
     getValues?: UseFormGetValues<any>; // eslint-disable-line
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onChangeSelection?: (event: React.ChangeEvent<HTMLSelectElement>) => void;

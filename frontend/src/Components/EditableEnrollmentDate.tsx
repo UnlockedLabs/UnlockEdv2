@@ -29,7 +29,8 @@ export default function EditableEnrollmentDate({
 
     const displayDate = enrollment.enrolled_at ?? enrollment.created_at;
 
-    const handleDateClick = () => {
+    const handleDateClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
         if (!disabled) {
             modalRef.current?.showModal();
         }
@@ -93,21 +94,6 @@ export default function EditableEnrollmentDate({
         [enrollment.enrolled_at, enrollment.created_at]
     );
 
-    const dateConstraints = useMemo(() => {
-        const today = toDateOnly(new Date().toISOString())
-            .toISOString()
-            .split('T')[0];
-
-        let minDate = undefined;
-        if (classInfo?.start_dt) {
-            minDate = toDateOnly(classInfo.start_dt)
-                .toISOString()
-                .split('T')[0];
-        }
-
-        return { minDate, maxDate: today };
-    }, [classInfo?.start_dt]);
-
     return (
         <>
             <span
@@ -136,8 +122,6 @@ export default function EditableEnrollmentDate({
                         interfaceRef: 'enrolled_date',
                         required: true,
                         allowPastDate: true,
-                        minDate: dateConstraints.minDate,
-                        maxDate: dateConstraints.maxDate,
                         validate: validateEnrollmentDate
                     }
                 ]}

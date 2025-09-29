@@ -162,7 +162,7 @@ func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Req
 		return newJSONReqBodyServiceError(err)
 	}
 	if enrollmentUpdate.EnrolledDate == "" {
-		return newInvalidIdServiceError(errors.New("enrolled date is required"), "enrolled date")
+		return newBadRequestServiceError(errors.New("enrolled date is required"), "enrolled date")
 	}
 	enrolledDate, err := time.Parse(time.RFC3339, enrollmentUpdate.EnrolledDate)
 	if err != nil {
@@ -175,7 +175,7 @@ func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Req
 	if class.CannotUpdateClass() {
 		return newBadRequestServiceError(errors.New("cannot perform action on class that is completed cancelled or archived"), "invalid class status")
 	}
-	err = srv.Db.UpdateProgramClassEnrollmentDate(enrollmentId, enrolledDate)
+	err = srv.Db.UpdateProgramClassEnrollmentDate(r.Context(), enrollmentId, enrolledDate)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
