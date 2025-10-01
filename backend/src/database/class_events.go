@@ -129,6 +129,11 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		trans.Rollback()
 		return newDeleteDBError(err, "program class event override")
 	}
+	// Sync class date boundaries after deleting override
+	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
+		trans.Rollback()
+		return err
+	}
 
 	changeLogEntry = models.NewChangeLogEntry("program_classes", "event_restored", &override.OverrideRrule, models.StringPtr(""), uint(classID), args.UserID)
 	if err := trans.Create(&changeLogEntry).Error; err != nil {
@@ -214,10 +219,124 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		return newCreateDBError(err, "change_log_entries")
 	}
 
+	// Sync class date boundaries after creating overrides
+	if len(overrideEvents) > 0 {
+		if err := db.syncClassDateBoundaries(trans, overrideEvents[0].ClassID); err != nil {
+			trans.Rollback()
+			return err
+		}
+	}
+
 	//end transaction
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
 	}
+	return nil
+}
+
+func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
+
+	var event models.ProgramClassEvent
+	if err := trans.Preload("Overrides").Where("class_id = ?", classID).First(&event).Error; err != nil {
+		return newGetRecordsDBError(err, "program_class_events")
+	}
+
+	var class models.ProgramClass
+	if err := trans.First(&class, "id = ?", classID).Error; err != nil {
+		return newGetRecordsDBError(err, "program_classes")
+	}
+
+	rRule, err := event.GetRRule()
+	if err != nil {
+		return err
+	}
+
+	startBoundary := class.StartDt
+	var endBoundary time.Time
+	if class.EndDt != nil {
+		endBoundary = *class.EndDt
+		endBoundary = endBoundary.AddDate(0, 3, 0)
+	} else {
+		endBoundary = startBoundary.AddDate(5, 0, 0)
+	}
+
+	ruleUntil := rRule.GetUntil()
+
+	baseEventOccurrences := rRule.Between(startBoundary, endBoundary, true)
+
+	if len(baseEventOccurrences) == 0 {
+		return nil
+	}
+
+	cancelledDates := make(map[string]bool)
+	rescheduledDates := make([]time.Time, 0)
+
+	for _, override := range event.Overrides {
+		overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil {
+			logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
+			continue
+		}
+		if len(overrideRule.All()) == 0 {
+			continue
+		}
+
+		overrideDate := overrideRule.All()[0]
+
+		if override.IsCancelled {
+			cancelledDates[overrideDate.Format("2006-01-02")] = true
+		} else {
+			rescheduledDates = append(rescheduledDates, overrideDate)
+		}
+	}
+
+	allDates := make([]time.Time, 0)
+
+	for _, occurrence := range baseEventOccurrences {
+		if !cancelledDates[occurrence.Format("2006-01-02")] {
+			allDates = append(allDates, occurrence)
+		}
+	}
+
+	allDates = append(allDates, rescheduledDates...)
+
+	if len(allDates) == 0 {
+		return nil
+	}
+
+	sort.Slice(allDates, func(i, j int) bool {
+		return allDates[i].Before(allDates[j])
+	})
+
+	computedStart := allDates[0]
+	computedEnd := allDates[len(allDates)-1]
+
+	updates := make(map[string]interface{})
+
+	if !computedStart.Equal(class.StartDt) {
+		updates["start_dt"] = computedStart
+	}
+
+	hasOverrides := len(event.Overrides) > 0
+
+	if class.EndDt == nil || !computedEnd.Equal(*class.EndDt) {
+		if (!hasOverrides && !ruleUntil.IsZero()) || (!ruleUntil.IsZero() && ruleUntil.After(computedEnd)) {
+			updates["end_dt"] = ruleUntil
+		} else {
+			updates["end_dt"] = computedEnd
+		}
+	} else {
+		if (!hasOverrides && !ruleUntil.IsZero() && !ruleUntil.Equal(*class.EndDt)) || (!ruleUntil.IsZero() && ruleUntil.After(*class.EndDt)) {
+			updates["end_dt"] = ruleUntil
+		}
+	}
+
+	if len(updates) > 0 {
+		if err := trans.Model(&models.ProgramClass{}).Where("id = ?", classID).Updates(updates).Error; err != nil {
+			return newUpdateDBError(err, "program_classes")
+		}
+	}
+
 	return nil
 }
 
@@ -382,7 +501,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		if err != nil {
 			return nil, err
 		}
-		occurrences := rRule.Between(dtRng.Start.In(dtRng.Tzone), dtRng.End.In(dtRng.Tzone), true)
+		occurrences := rRule.Between(dtRng.Start, dtRng.End, true)
 		duration, err := time.ParseDuration(event.Duration)
 		if err != nil {
 			return nil, err

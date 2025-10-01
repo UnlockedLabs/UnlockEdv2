@@ -26,7 +26,6 @@ import { useNavigate } from 'react-router-dom';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
-import { getClassEndDate } from '@/Components/ClassLayout';
 import WarningBanner from '@/Components/WarningBanner';
 import EmptyStateCard from '@/Components/EmptyStateCard';
 
@@ -480,23 +479,19 @@ export default function ProgramOverviewDashboard() {
                                             })}
                                         </td>
                                         <td className="px-4 py-2">
-                                            {(() => {
-                                                const classEndDate =
-                                                    getClassEndDate(
-                                                        pc?.events ?? []
-                                                    );
-                                                return classEndDate
-                                                    ? classEndDate.toLocaleDateString(
-                                                          'en-US',
-                                                          {
-                                                              year: 'numeric',
-                                                              month: 'long',
-                                                              day: 'numeric',
-                                                              timeZone: 'UTC'
-                                                          }
-                                                      )
-                                                    : 'No end date';
-                                            })()}
+                                            {pc.end_dt
+                                                ? new Date(
+                                                      pc.end_dt
+                                                  ).toLocaleDateString(
+                                                      'en-US',
+                                                      {
+                                                          year: 'numeric',
+                                                          month: 'long',
+                                                          day: 'numeric',
+                                                          timeZone: 'UTC'
+                                                      }
+                                                  )
+                                                : 'No end date'}
                                         </td>
 
                                         <td className="px-4 py-2">
