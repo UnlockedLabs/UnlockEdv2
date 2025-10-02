@@ -326,6 +326,23 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		}
 	}
 
+	// Update the RRULE UNTIL parameter to match the computed end date.
+	// This ensures the frontend can read the updated end date from the RRULE string
+	// in addition to the class.end_dt field, maintaining consistency across the system.
+	if len(updates) > 0 && updates["end_dt"] != nil {
+		newOptions := rRule.OrigOptions
+		newOptions.Until = computedEnd
+
+		newRule, err := rrule.NewRRule(newOptions)
+		if err == nil {
+			if err := trans.Model(&models.ProgramClassEvent{}).
+				Where("id = ?", event.ID).
+				Update("recurrence_rule", newRule.String()).Error; err != nil {
+				return newUpdateDBError(err, "program_class_events")
+			}
+		}
+	}
+
 	return nil
 }
 
