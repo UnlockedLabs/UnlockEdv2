@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -490,6 +491,239 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 		len(programCompletions),
 		preUpdateEnrollmentsCount,
 	)
+}
+
+func TestRescheduleLaterExtendsEndDate(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facility, err := env.CreateTestFacility("Test Facility")
+	require.NoError(t, err)
+
+	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	require.NoError(t, err)
+
+	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
+	// Create class: Nov 1 - Nov 30
+	startDt := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
+	endDt := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	class := &models.ProgramClass{
+		ProgramID:      program.ID,
+		FacilityID:     facility.ID,
+		Name:           "Thanksgiving Test Class",
+		InstructorName: "Test Instructor",
+		Description:    "Test reschedule later",
+		Capacity:       20,
+		StartDt:        startDt,
+		EndDt:          &endDt,
+		Status:         models.Active,
+		CreateUserID:   facilityAdmin.ID,
+	}
+	err = env.DB.Create(class).Error
+	require.NoError(t, err)
+
+	// Create Tuesday/Thursday event
+	tueThuRRule := "DTSTART:20251101T180200Z\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU,TH;UNTIL=20251130T000000Z"
+	event, err := env.CreateTestEventWithRRule(class.ID, tueThuRRule)
+	require.NoError(t, err)
+
+	// Reschedule Nov 28 to Dec 2
+	nov28 := time.Date(2025, 11, 28, 18, 2, 0, 0, time.UTC)
+	dec2 := time.Date(2025, 12, 2, 18, 2, 0, 0, time.UTC)
+
+	cancelOverride := &models.ProgramClassEventOverride{
+		EventID:       event.ID,
+		ClassID:       class.ID,
+		Duration:      "0h43m0s",
+		OverrideRrule: "DTSTART:" + nov28.Format("20060102T150405Z") + "\nRRULE:FREQ=DAILY;COUNT=1",
+		IsCancelled:   true,
+		Reason:        "rescheduled",
+	}
+
+	rescheduleOverride := &models.ProgramClassEventOverride{
+		EventID:       event.ID,
+		ClassID:       class.ID,
+		Duration:      "0h43m0s",
+		OverrideRrule: "DTSTART:" + dec2.Format("20060102T150405Z") + "\nRRULE:FREQ=DAILY;COUNT=1",
+		IsCancelled:   false,
+		Reason:        "rescheduled",
+	}
+
+	ctx := &models.QueryContext{Ctx: context.Background(), UserID: facilityAdmin.ID}
+	err = env.DB.CreateOverrideEvents(ctx, []*models.ProgramClassEventOverride{cancelOverride, rescheduleOverride})
+	require.NoError(t, err)
+
+	// Verify end_dt updated to December
+	var updatedClass models.ProgramClass
+	err = env.DB.First(&updatedClass, class.ID).Error
+	require.NoError(t, err)
+	require.NotNil(t, updatedClass.EndDt, "end_dt should not be nil")
+	require.Equal(t, time.Month(12), updatedClass.EndDt.Month(), "end_dt should be in December")
+	require.Equal(t, 2, updatedClass.EndDt.Day(), "end_dt should be Dec 2")
+
+	// Verify RRULE UNTIL also updated
+	var updatedEvent models.ProgramClassEvent
+	err = env.DB.First(&updatedEvent, event.ID).Error
+	require.NoError(t, err)
+	require.Contains(t, updatedEvent.RecurrenceRule, "UNTIL=202512", "RRULE should contain December UNTIL")
+}
+
+func TestCancelAndRestoreFirstEvent(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facility, err := env.CreateTestFacility("Test Facility")
+	require.NoError(t, err)
+
+	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	require.NoError(t, err)
+
+	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
+	// Create class: Nov 1 - Nov 30
+	startDt := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
+	endDt := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	class := &models.ProgramClass{
+		ProgramID:      program.ID,
+		FacilityID:     facility.ID,
+		Name:           "Cancel Restore Test",
+		InstructorName: "Test Instructor",
+		Description:    "Test cancel and restore",
+		Capacity:       20,
+		StartDt:        startDt,
+		EndDt:          &endDt,
+		Status:         models.Active,
+		CreateUserID:   facilityAdmin.ID,
+	}
+	err = env.DB.Create(class).Error
+	require.NoError(t, err)
+
+	// Create Tuesday/Thursday event
+	tueThuRRule := "DTSTART:20251101T180200Z\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU,TH;UNTIL=20251130T000000Z"
+	event, err := env.CreateTestEventWithRRule(class.ID, tueThuRRule)
+	require.NoError(t, err)
+
+	// First Tuesday is Nov 4
+	nov4 := time.Date(2025, 11, 4, 18, 2, 0, 0, time.UTC)
+
+	// Step 1: Cancel first event (Nov 4)
+	cancelOverride := &models.ProgramClassEventOverride{
+		EventID:       event.ID,
+		ClassID:       class.ID,
+		Duration:      "0h43m0s",
+		OverrideRrule: "DTSTART:" + nov4.Format("20060102T150405Z") + "\nRRULE:FREQ=DAILY;COUNT=1",
+		IsCancelled:   true,
+		Reason:        "cancelled",
+	}
+
+	ctx := &models.QueryContext{Ctx: context.Background(), UserID: facilityAdmin.ID}
+	err = env.DB.CreateOverrideEvents(ctx, []*models.ProgramClassEventOverride{cancelOverride})
+	require.NoError(t, err)
+
+	// Verify start_dt moved forward to Nov 6 (first Thursday)
+	var afterCancelClass models.ProgramClass
+	err = env.DB.First(&afterCancelClass, class.ID).Error
+	require.NoError(t, err)
+	require.Equal(t, 6, afterCancelClass.StartDt.Day(), "start_dt should move to Nov 6 after cancelling Nov 4")
+
+	// Step 2: Restore first event (delete the override)
+	err = env.DB.DeleteOverrideEvent(ctx, int(cancelOverride.ID), int(class.ID))
+	require.NoError(t, err)
+
+	// Verify start_dt moved back to Nov 4
+	var afterRestoreClass models.ProgramClass
+	err = env.DB.First(&afterRestoreClass, class.ID).Error
+	require.NoError(t, err)
+	require.Equal(t, 4, afterRestoreClass.StartDt.Day(), "start_dt should move back to Nov 4 after restore")
+	require.Equal(t, time.Month(11), afterRestoreClass.StartDt.Month())
+}
+
+// TestMultipleEventSeriesAggregation tests CK's aggregation scenario
+func TestMultipleEventSeriesAggregation(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facility, err := env.CreateTestFacility("Test Facility")
+	require.NoError(t, err)
+
+	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	require.NoError(t, err)
+
+	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
+	// Create class: Sept 1 - Sept 30
+	startDt := time.Date(2025, 9, 1, 0, 0, 0, 0, time.UTC)
+	endDt := time.Date(2025, 9, 30, 0, 0, 0, 0, time.UTC)
+	class := &models.ProgramClass{
+		ProgramID:      program.ID,
+		FacilityID:     facility.ID,
+		Name:           "Multi Event Test",
+		InstructorName: "Test Instructor",
+		Description:    "Test multiple event series",
+		Capacity:       20,
+		StartDt:        startDt,
+		EndDt:          &endDt,
+		Status:         models.Active,
+		CreateUserID:   facilityAdmin.ID,
+	}
+	err = env.DB.Create(class).Error
+	require.NoError(t, err)
+
+	// Event 1: Monday classes
+	mondayRRule := "DTSTART:20250901T100000Z\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20250930T000000Z"
+	_, err = env.CreateTestEventWithRRule(class.ID, mondayRRule)
+	require.NoError(t, err)
+
+	// Event 2: Friday labs
+	fridayRRule := "DTSTART:20250905T140000Z\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=FR;UNTIL=20250930T000000Z"
+	event2, err := env.CreateTestEventWithRRule(class.ID, fridayRRule)
+	require.NoError(t, err)
+
+	// Reschedule last Friday (Sept 26) to Oct 3
+	sept26 := time.Date(2025, 9, 26, 14, 0, 0, 0, time.UTC)
+	oct3 := time.Date(2025, 10, 3, 14, 0, 0, 0, time.UTC)
+
+	cancelOverride := &models.ProgramClassEventOverride{
+		EventID:       event2.ID,
+		ClassID:       class.ID,
+		Duration:      "1h0m0s",
+		OverrideRrule: "DTSTART:" + sept26.Format("20060102T150405Z") + "\nRRULE:FREQ=DAILY;COUNT=1",
+		IsCancelled:   true,
+		Reason:        "rescheduled",
+	}
+
+	rescheduleOverride := &models.ProgramClassEventOverride{
+		EventID:       event2.ID,
+		ClassID:       class.ID,
+		Duration:      "1h0m0s",
+		OverrideRrule: "DTSTART:" + oct3.Format("20060102T150405Z") + "\nRRULE:FREQ=DAILY;COUNT=1",
+		IsCancelled:   false,
+		Reason:        "rescheduled",
+	}
+
+	ctx := &models.QueryContext{Ctx: context.Background(), UserID: facilityAdmin.ID}
+	err = env.DB.CreateOverrideEvents(ctx, []*models.ProgramClassEventOverride{cancelOverride, rescheduleOverride})
+	require.NoError(t, err)
+
+	// Verify end_dt updated to October (aggregating across both event series)
+	var updatedClass models.ProgramClass
+	err = env.DB.First(&updatedClass, class.ID).Error
+	require.NoError(t, err)
+	require.Equal(t, time.Month(10), updatedClass.EndDt.Month(), "end_dt should be in October from event2")
+	require.Equal(t, 3, updatedClass.EndDt.Day(), "end_dt should be Oct 3")
 }
 
 func TestMain(m *testing.M) {
