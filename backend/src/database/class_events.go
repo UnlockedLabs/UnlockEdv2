@@ -129,7 +129,7 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		trans.Rollback()
 		return newDeleteDBError(err, "program class event override")
 	}
-	// Sync class date boundaries after deleting override
+
 	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
 		trans.Rollback()
 		return err
@@ -218,8 +218,6 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		trans.Rollback()
 		return newCreateDBError(err, "change_log_entries")
 	}
-
-	// Sync class date boundaries after creating overrides
 	if len(overrideEvents) > 0 {
 		if err := db.syncClassDateBoundaries(trans, overrideEvents[0].ClassID); err != nil {
 			trans.Rollback()
@@ -227,7 +225,6 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		}
 	}
 
-	//end transaction
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
 	}
@@ -235,10 +232,13 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 }
 
 func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
-
-	var event models.ProgramClassEvent
-	if err := trans.Preload("Overrides").Where("class_id = ?", classID).First(&event).Error; err != nil {
+	var events []models.ProgramClassEvent
+	if err := trans.Preload("Overrides").Where("class_id = ?", classID).Find(&events).Error; err != nil {
 		return newGetRecordsDBError(err, "program_class_events")
+	}
+
+	if len(events) == 0 {
+		return nil
 	}
 
 	var class models.ProgramClass
@@ -246,58 +246,53 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		return newGetRecordsDBError(err, "program_classes")
 	}
 
-	rRule, err := event.GetRRule()
-	if err != nil {
-		return err
-	}
-
-	// Set boundaries for RRULE calculation to avoid performance issues.
-	// If no end_dt exists, we cap at 5 years to prevent infinite patterns from hanging.
-	// When end_dt exists, we add a 3-month buffer so overrides can extend slightly
-	// beyond the original range (like rescheduling Thanksgiving into December).
-	startBoundary := class.StartDt
-	endBoundary := time.Now().AddDate(5, 0, 0) // Default: 5 years from now
-	if class.EndDt != nil {
-		endBoundary = class.EndDt.AddDate(0, 3, 0) // Add 3 months buffer for overrides
-	}
-
-	baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
-
-	if len(baseOccurrences) == 0 {
-		return nil // No occurrences to sync
-	}
-
-	cancelledDates := make(map[string]bool)
-	rescheduledDates := make([]time.Time, 0)
-
-	for _, override := range event.Overrides {
-		overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
-		if err != nil {
-			logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
-			continue
-		}
-		if len(overrideRule.All()) == 0 {
-			continue
-		}
-
-		overrideDate := overrideRule.All()[0]
-
-		if override.IsCancelled {
-			cancelledDates[overrideDate.Format("2006-01-02")] = true
-		} else {
-			rescheduledDates = append(rescheduledDates, overrideDate)
-		}
-	}
-
 	allDates := make([]time.Time, 0)
 
-	for _, occurrence := range baseOccurrences {
-		if !cancelledDates[occurrence.Format("2006-01-02")] {
-			allDates = append(allDates, occurrence)
+	for _, event := range events {
+		rRule, err := event.GetRRule()
+		if err != nil {
+			logrus.Warnf("unable to parse rrule for event %d: %v", event.ID, err)
+			continue
 		}
-	}
 
-	allDates = append(allDates, rescheduledDates...)
+		startBoundary := rRule.OrigOptions.Dtstart
+		endBoundary := time.Now().AddDate(5, 0, 0)
+		if class.EndDt != nil {
+			endBoundary = class.EndDt.AddDate(0, 3, 0)
+		}
+
+		baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
+
+		cancelledDates := make(map[string]bool)
+		rescheduledDates := make([]time.Time, 0)
+
+		for _, override := range event.Overrides {
+			overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
+			if err != nil {
+				logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
+				continue
+			}
+			if len(overrideRule.All()) == 0 {
+				continue
+			}
+
+			overrideDate := overrideRule.All()[0]
+
+			if override.IsCancelled {
+				cancelledDates[overrideDate.Format("2006-01-02")] = true
+			} else {
+				rescheduledDates = append(rescheduledDates, overrideDate)
+			}
+		}
+
+		for _, occurrence := range baseOccurrences {
+			if !cancelledDates[occurrence.Format("2006-01-02")] {
+				allDates = append(allDates, occurrence)
+			}
+		}
+
+		allDates = append(allDates, rescheduledDates...)
+	}
 
 	if len(allDates) == 0 {
 		return nil
@@ -326,19 +321,24 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		}
 	}
 
-	// Update the RRULE UNTIL parameter to match the computed end date.
-	// This ensures the frontend can read the updated end date from the RRULE string
-	// in addition to the class.end_dt field, maintaining consistency across the system.
 	if len(updates) > 0 && updates["end_dt"] != nil {
-		newOptions := rRule.OrigOptions
-		newOptions.Until = computedEnd
+		for _, event := range events {
+			rRule, err := event.GetRRule()
+			if err != nil {
+				logrus.Warnf("unable to get rrule for event %d: %v", event.ID, err)
+				continue
+			}
 
-		newRule, err := rrule.NewRRule(newOptions)
-		if err == nil {
-			if err := trans.Model(&models.ProgramClassEvent{}).
-				Where("id = ?", event.ID).
-				Update("recurrence_rule", newRule.String()).Error; err != nil {
-				return newUpdateDBError(err, "program_class_events")
+			newOptions := rRule.OrigOptions
+			newOptions.Until = computedEnd
+
+			newRule, err := rrule.NewRRule(newOptions)
+			if err == nil {
+				if err := trans.Model(&models.ProgramClassEvent{}).
+					Where("id = ?", event.ID).
+					Update("recurrence_rule", newRule.String()).Error; err != nil {
+					return newUpdateDBError(err, "program_class_events")
+				}
 			}
 		}
 	}
