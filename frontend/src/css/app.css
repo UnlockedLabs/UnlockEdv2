@@ -340,3 +340,18 @@ html[data-theme='dark'] .rbc-off-range-bg {
 html[data-theme='dark'] .rbc-today {
     background-color: var(--teal-1);
 }
+
+/* added these for toggling the logo images between dark and light themes */
+[data-theme='light'] .logo-dark {
+    display: none;
+}
+[data-theme='light'] .logo-light {
+    display: block;
+}
+
+[data-theme='dark'] .logo-light {
+    display: none;
+}
+[data-theme='dark'] .logo-dark {
+    display: block;
+}

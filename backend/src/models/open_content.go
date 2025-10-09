@@ -87,7 +87,7 @@ const (
 	YoutubeApi              string = "https://www.googleapis.com/youtube/v3/videos"
 	YoutubeDescription      string = "Hand pick videos to be available to students from youtube URL's"
 	HelpfulLinks            string = "HelpfulLinks"
-	HelpfulLinksThumbnail   string = "/ul-logo.png"
+	HelpfulLinksThumbnail   string = "/ul-logo-d.svg"
 	HelpfulLinksUrl         string = ""
 	HelpfulLinksDescription string = "Hand picked helpful links for users"
 )

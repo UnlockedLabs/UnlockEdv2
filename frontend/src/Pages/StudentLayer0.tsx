@@ -7,9 +7,14 @@ export default function StudentLayer0() {
             <h1 className="text-2xl"> Hi, {user?.name_first ?? 'Student'}! </h1>
             <h2 className="text-xl"> Welcome to UnlockEd</h2>
             <img
-                src="/ul-logo.png"
+                src="/ul-logo-w.svg"
                 alt="UnlockEd Logo"
-                className="w-125px h-125px"
+                className="w-125px h-125px logo-dark"
+            />
+            <img
+                src="/ul-logo-d.svg"
+                alt="UnlockEd Logo"
+                className="w-125px h-125px logo-light"
             />
             <div title="Error" />
             <div className="text-center">
