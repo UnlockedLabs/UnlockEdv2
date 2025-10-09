@@ -26,7 +26,7 @@ export default function OpenContentCardRow({
             case 'video':
                 return `/api/photos/${oc.external_id}.jpg`;
             default:
-                return oc.thumbnail_url ?? '/ul-logo.png';
+                return oc.thumbnail_url ?? '/ul-logo-d.svg';
         }
     }
     return (
