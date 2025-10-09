@@ -8,7 +8,7 @@ import Timeline from '@/Components/Timeline';
 
 export default function Welcome() {
     const [authUser, setAuthUser] = useState<User | undefined>();
-    const [imgSrc, setImgSrc] = useState('unlockedv2DkSm.webp');
+    const [imgSrc, setImgSrc] = useState('unlockedv2Dk.png');
 
     useEffect(() => {
         const theme = document.documentElement.getAttribute('data-theme');

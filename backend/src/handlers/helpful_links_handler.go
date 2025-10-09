@@ -167,7 +167,7 @@ func (srv *Server) getFavicon(link string) string {
 	logrus.Printf("Getting favicon for link %s", link)
 	parsed, err := url.Parse(link)
 	if err != nil || parsed.Hostname() == "" {
-		return "/ul-logo.png"
+		return "/ul-logo-d.svg"
 	}
 	domain := parsed.Hostname()
 	return fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=64", domain)
