@@ -163,3 +163,35 @@
     position: relative;
     z-index: 10;
 }
+
+@media (prefers-color-scheme: dark) {
+    .logo-light {
+        display: none;
+    }
+    .logo-dark {
+        display: block;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .logo-dark {
+        display: none;
+    }
+    .logo-light {
+        display: block;
+    }
+}
+
+[data-theme='light'] .logo-dark {
+    display: none;
+}
+[data-theme='light'] .logo-light {
+    display: block;
+}
+
+[data-theme='dark'] .logo-light {
+    display: none;
+}
+[data-theme='dark'] .logo-dark {
+    display: block;
+}

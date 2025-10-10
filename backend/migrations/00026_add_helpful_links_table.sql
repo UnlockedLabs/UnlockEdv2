@@ -33,7 +33,7 @@ updated_at
 VALUES (
 'HelpfulLinks',
 'helpful_links',
-'/ul-logo.png',
+'/ul-logo-d.svg',
     true,
 'Helpful links for users!',
     NOW(),
