@@ -341,7 +341,6 @@ html[data-theme='dark'] .rbc-today {
     background-color: var(--teal-1);
 }
 
-/* fixes issue with double logo added this logic to mimic ThemeContext.tsx */
 @media (prefers-color-scheme: dark) {
     .logo-light {
         display: none;
@@ -360,7 +359,6 @@ html[data-theme='dark'] .rbc-today {
     }
 }
 
-/* Override default display when a theme is actively set */
 [data-theme='light'] .logo-dark {
     display: none;
 }
