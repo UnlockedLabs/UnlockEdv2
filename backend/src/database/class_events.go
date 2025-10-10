@@ -22,6 +22,11 @@ Everything stored in database will ALWAYS be in UTC
 and converted when returning to the client
 */
 
+const (
+	MaxYearsForInfiniteRRule = 5
+	ClassEndDateBufferMonths = 3
+)
+
 func (db *DB) GetClassEvents(args *models.QueryContext, classId int) ([]models.ProgramClassEvent, error) {
 	events := []models.ProgramClassEvent{}
 	tx := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id = ?", classId)
@@ -231,6 +236,7 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 	return nil
 }
 
+// TODO: Come back to Refactor
 func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 	var events []models.ProgramClassEvent
 	if err := trans.Preload("Overrides").Where("class_id = ?", classID).Find(&events).Error; err != nil {
@@ -256,9 +262,9 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		}
 
 		startBoundary := rRule.OrigOptions.Dtstart
-		endBoundary := time.Now().AddDate(5, 0, 0)
+		endBoundary := time.Now().UTC().AddDate(MaxYearsForInfiniteRRule, 0, 0)
 		if class.EndDt != nil {
-			endBoundary = class.EndDt.AddDate(0, 3, 0)
+			endBoundary = class.EndDt.AddDate(0, ClassEndDateBufferMonths, 0)
 		}
 
 		baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
