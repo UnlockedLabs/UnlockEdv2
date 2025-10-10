@@ -9,12 +9,12 @@ export default function StudentLayer0() {
             <img
                 src="/ul-logo-w.svg"
                 alt="UnlockEd Logo"
-                className="w-125px h-125px logo-dark"
+                className="w-32 h-32 logo-dark"
             />
             <img
                 src="/ul-logo-d.svg"
                 alt="UnlockEd Logo"
-                className="w-125px h-125px logo-light"
+                className="w-32 h-32 logo-light"
             />
             <div title="Error" />
             <div className="text-center">
