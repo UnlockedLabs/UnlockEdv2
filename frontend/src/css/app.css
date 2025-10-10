@@ -164,6 +164,25 @@
     z-index: 10;
 }
 
+/* fixes issue with double logo added this logic to mimic ThemeContext.tsx */
+@media (prefers-color-scheme: dark) {
+    .logo-light {
+        display: none;
+    }
+    .logo-dark {
+        display: block;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .logo-dark {
+        display: none;
+    }
+    .logo-light {
+        display: block;
+    }
+}
+
 /* added these for toggling the logo images between dark and light themes */
 [data-theme='light'] .logo-dark {
     display: none;
