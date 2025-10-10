@@ -75,7 +75,7 @@ export default function Welcome() {
 
                     <div className="flex flex-col">
                         <img
-                            src={imgSrc}
+                            src={`${imgSrc}?v=1.0`}
                             className="mb-2 w-full h-auto"
                             loading="lazy"
                         />
