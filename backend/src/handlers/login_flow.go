@@ -185,7 +185,7 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 			Name:     cookie.Name,
 			Value:    cookie.Value,
 			Expires:  time.Now().Add(SessionTimeout),
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteLaxMode,
 			HttpOnly: true,
 			Secure:   true,
 			Path:     "/",
