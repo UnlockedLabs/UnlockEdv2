@@ -7,6 +7,11 @@ class API {
         'Content-Type': 'application/json'
     };
 
+    private static getCSRFToken(): string {
+        const match = /csrf_token=([^;]+)/.exec(document.cookie);
+        return match ? match[1] : '';
+    }
+
     private static async fetchWithHandling<T>(
         method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
         url: string,
@@ -15,9 +20,15 @@ class API {
         try {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
+            const headers: Record<string, string> = {
+                ...(API.defaultHeaders as Record<string, string>)
+            };
+            if (method !== 'GET') {
+                headers['X-CSRF-Token'] = API.getCSRFToken();
+            }
             const resp = await fetch('/api/' + url, {
                 method,
-                headers: API.defaultHeaders,
+                headers,
                 credentials: 'include',
                 body: body ? JSON.stringify(body) : undefined,
                 signal: controller.signal

@@ -4,6 +4,9 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -39,7 +42,7 @@ func (srv *Server) applyAdminMiddleware(h HttpFunc, resolver RouteResolver, acce
 func (srv *Server) applyStandardMiddleware(next http.Handler, resolver RouteResolver) http.Handler {
 	return srv.prometheusMiddleware(
 		srv.authMiddleware(
-			next, resolver))
+			srv.csrfMiddleware(next), resolver))
 }
 
 func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
@@ -158,6 +161,60 @@ func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel .
 			srv.errorResponse(w, http.StatusUnauthorized, "Feature not enabled")
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func generateCSRFToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+func (srv *Server) ensureCSRFToken(w http.ResponseWriter, r *http.Request) error {
+	if _, err := r.Cookie("csrf_token"); err == nil {
+		return nil
+	}
+
+	token, err := generateCSRFToken()
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: false,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   43200,
+	})
+	return nil
+}
+
+func (srv *Server) csrfMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		headerToken := r.Header.Get("X-CSRF-Token")
+		cookie, err := r.Cookie("csrf_token")
+
+		if err != nil || headerToken == "" {
+			srv.errorResponse(w, http.StatusForbidden, "CSRF token missing")
+			return
+		}
+
+		if subtle.ConstantTimeCompare([]byte(headerToken), []byte(cookie.Value)) != 1 {
+			srv.errorResponse(w, http.StatusForbidden, "CSRF token invalid")
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

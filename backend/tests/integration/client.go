@@ -68,6 +68,17 @@ func (r *Request[T]) WithTestClaims(claims any) *Request[T] {
 	require.NoError(r.t, err, "failed to marshal test claims")
 	r.req.Header.Set("X-Test-Claims", string(b))
 	r.req.Header.Set("test_claims", string(b))
+
+	if r.req.Method != http.MethodGet && r.req.Method != http.MethodHead && r.req.Method != http.MethodOptions {
+		token := "test-csrf-token-12345678901234567890123456789012"
+		r.req.Header.Set("X-CSRF-Token", token)
+		existingCookie := r.req.Header.Get("Cookie")
+		if existingCookie != "" {
+			r.req.Header.Set("Cookie", existingCookie+"; csrf_token="+token)
+		} else {
+			r.req.Header.Set("Cookie", "csrf_token="+token)
+		}
+	}
 	return r
 }
 
