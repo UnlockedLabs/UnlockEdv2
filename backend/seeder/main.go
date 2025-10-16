@@ -3,6 +3,7 @@ package main
 import (
 	"UnlockEdv2/src/handlers"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/config"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -48,8 +49,20 @@ func main() {
 }
 
 func seedTestData(db *gorm.DB) {
+	// Load configuration for the seeder
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Printf("Warning: Failed to load config: %v. Some features may not work.", err)
+		// Create a minimal config for seeder
+		cfg = &config.Config{
+			KratosAdminURL: os.Getenv("KRATOS_ADMIN_URL"),
+			KratosPublicURL: os.Getenv("KRATOS_PUBLIC_URL"),
+			OryToken:       os.Getenv("ORY_TOKEN"),
+		}
+	}
+
 	// isTesting is false because this needs to seed real users w/ kratos
-	testServer := handlers.NewServer(false, context.Background())
+	testServer := handlers.NewServer(false, context.Background(), cfg)
 	facilities := []models.Facility{
 		{
 			Name:     "BCF",
@@ -97,7 +110,7 @@ func seedTestData(db *gorm.DB) {
 	}
 
 	facilities = []models.Facility{}
-	err := db.Find(&facilities).Error
+	err = db.Find(&facilities).Error
 	if err != nil {
 		log.Printf("Failed to get facilities: %v", err)
 	}

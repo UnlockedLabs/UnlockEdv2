@@ -1,11 +1,11 @@
 package database
 
 import (
+	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"unicode"
 
@@ -47,7 +47,7 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
-func InitDB(isTesting bool) *DB {
+func InitDB(cfg *config.Config, isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
@@ -60,11 +60,14 @@ func InitDB(isTesting bool) *DB {
 		logrus.Println("Connected to the SQLite database in memory")
 		MigrateTesting(gormDb)
 	} else {
-		dsn := os.Getenv("APP_DSN")
+		// Use DSN if provided, otherwise build from parts
+		dsn := cfg.APP_DSN
+
 		if dsn == "" {
 			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
-				os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+				cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 		}
+
 		db, err := sql.Open("pgx", dsn)
 		if err != nil {
 			logrus.Fatalf("Failed to open database connection: %v", err)
@@ -73,13 +76,11 @@ func InitDB(isTesting bool) *DB {
 			logrus.Fatalf("Failed to ping database: %v", err)
 		}
 		logrus.Println("Running up migrations...")
-		migrationDir := os.Getenv("MIGRATION_DIR")
-		if migrationDir == "" {
-			migrationDir = "migrations"
-		}
-		if err := goose.Up(db, migrationDir); err != nil {
+
+		if err := goose.Up(db, cfg.MigrationDir); err != nil {
 			logrus.Fatalf("Migration failed: %v", err)
 		}
+
 		gormDb, err = gorm.Open(postgres.New(postgres.Config{
 			Conn: db,
 		}), &gorm.Config{
