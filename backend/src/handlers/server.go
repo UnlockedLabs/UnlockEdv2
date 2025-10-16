@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/config"
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/tasks"
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"reflect"
 	"runtime"
 	"slices"
@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/nats-io/nats.go"
@@ -26,6 +26,7 @@ import (
 )
 
 type Server struct {
+	config      *config.Config
 	sesClient   *sesv2.Client
 	port        string
 	Db          *database.DB
@@ -147,28 +148,28 @@ func (srv *Server) Shutdown() {
 	srv.nats.Close()
 }
 
-func NewServer(isTesting bool, ctx context.Context) *Server {
+func NewServer(isTesting bool, ctx context.Context, cfg *config.Config) *Server {
 	if isTesting {
-		return newTestingServer()
+		return newTestingServer() // config ignored for testing
 	}
-	return newServer(ctx)
+	if cfg == nil {
+		log.Fatal("❌ Config is required for production server")
+	}
+	return newServer(ctx, cfg)
 }
 
-func newServer(ctx context.Context) *Server {
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8080"
-	}
-	conn, err := setupNats()
+func newServer(ctx context.Context, cfg *config.Config) *Server {
+	conn, err := setupNats(cfg)
 	if err != nil {
 		log.Errorf("Failed to connect to NATS: %v", err)
 	}
-	dev := os.Getenv("APP_ENV") == "dev"
+	dev := cfg.AppEnv == "dev"
 	server := Server{
-		port:      port,
-		Db:        database.InitDB(false),
+		config:    cfg,
+		port:      cfg.AppPort,
+		Db:        database.InitDB(cfg, false),
 		Mux:       http.NewServeMux(),
-		OryClient: ory.NewAPIClient(oryConfig()),
+		OryClient: ory.NewAPIClient(oryConfig(cfg)),
 		Client:    &http.Client{},
 		nats:      conn,
 		dev:       dev,
@@ -193,21 +194,21 @@ func newServer(ctx context.Context) *Server {
 }
 
 func (srv *Server) initAwsConfig(ctx context.Context) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	srv.sesClient = sesv2.NewFromConfig(cfg)
-	bucket := os.Getenv("S3_BUCKET_NAME")
+	srv.sesClient = sesv2.NewFromConfig(awsCfg)
+	bucket := srv.config.S3BucketName
 	if bucket != "" {
-		srv.s3 = s3.NewFromConfig(cfg)
+		srv.s3 = s3.NewFromConfig(awsCfg)
 		srv.presigner = s3.NewPresignClient(srv.s3)
 		srv.s3Bucket = bucket
 	}
 }
 
 func newTestingServer() *Server {
-	db := database.InitDB(true)
+	db := database.InitDB(nil, true)
 	features := models.AllFeatures
 	return &Server{
 		Db:          db,
@@ -219,11 +220,11 @@ func newTestingServer() *Server {
 	}
 }
 
-func setupNats() (*nats.Conn, error) {
+func setupNats(cfg *config.Config) (*nats.Conn, error) {
 	options := nats.GetDefaultOptions()
-	options.Url = os.Getenv("NATS_URL")
-	options.User = os.Getenv("NATS_USER")
-	options.Password = os.Getenv("NATS_PASSWORD")
+	options.Url = cfg.NATSURL
+	options.User = cfg.NATSUser
+	options.Password = cfg.NATSPassword
 	conn, err := options.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
@@ -231,17 +232,17 @@ func setupNats() (*nats.Conn, error) {
 	return conn, nil
 }
 
-func oryConfig() *ory.Configuration {
+func oryConfig(cfg *config.Config) *ory.Configuration {
 	return &ory.Configuration{
 		Servers: ory.ServerConfigurations{
 			{
-				URL: os.Getenv("KRATOS_ADMIN_URL"),
+				URL: cfg.KratosAdminURL,
 			},
 			{
-				URL: os.Getenv("KRATOS_PUBLIC_URL"),
+				URL: cfg.KratosPublicURL,
 			},
 		},
-		DefaultHeader: map[string]string{"Authorization": "Bearer " + os.Getenv("KRATOS_TOKEN")},
+		DefaultHeader: map[string]string{"Authorization": "Bearer " + cfg.OryToken},
 	}
 }
 
@@ -326,7 +327,7 @@ func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {
 
 func (srv *Server) generateKolibriOidcClient() error {
 	fields := log.Fields{"func": "generateKolibriOidcClient"}
-	if os.Getenv("KOLIBRI_URL") == "" {
+	if srv.config.KolibriURL == "" {
 		log.Println("no KOLIBRI_URL set, not registering new OIDC client")
 		// there is no kolibri deployment registered
 		return nil
@@ -336,8 +337,8 @@ func (srv *Server) generateKolibriOidcClient() error {
 		provider = &models.ProviderPlatform{
 			Name:      string(models.Kolibri),
 			Type:      models.Kolibri,
-			BaseUrl:   os.Getenv("KOLIBRI_URL"),
-			AccessKey: os.Getenv("KOLIBRI_USERNAME") + ":" + os.Getenv("KOLIBRI_PASSWORD"),
+			BaseUrl:   srv.config.KolibriURL,
+			AccessKey: srv.config.KolibriUsername + ":" + srv.config.KolibriPassword,
 			AccountID: "TODO", // kolibri wont be running yet. This will be updated the first time a user is added
 			State:     models.Enabled,
 		}
