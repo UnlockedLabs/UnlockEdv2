@@ -98,7 +98,20 @@ jobs:
             case $path in
               "frontend/")
                 echo "Building frontend image"
-                docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
+
+                  # Set environment-specific secrets
+                  if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
+                    POSTHOG_KEY=${{ secrets.POSTHOG_KEY_MAINE }}
+                    POSTHOG_HOST=${{ secrets.POSTHOG_KEY_MAINE }}
+                  elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+                    POSTHOG_KEY=${{ secrets.POSTHOG_KEY_DEMO }}
+                    POSTHOG_HOST=${{ secrets.POSTHOG_KEY_DEMO }}
+                  else
+                    POSTHOG_KEY=${{ secrets.POSTHOG_KEY_STAGING }}
+                    POSTHOG_HOST=${{ secrets.POSTHOG_HOST_STAGING }}
+                  fi
+
+                docker buildx build --platform linux/amd64 --build-arg VITE_PUBLIC_POSTHOG_KEY="$POSTHOG_KEY" --build-arg VITE_PUBLIC_POSTHOG_HOST="$POSTHOG_HOST" -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
                 deployments+=("frontend")
                 ;;
               "backend/")
