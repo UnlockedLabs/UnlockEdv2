@@ -22,6 +22,11 @@ Everything stored in database will ALWAYS be in UTC
 and converted when returning to the client
 */
 
+const (
+	MaxYearsForInfiniteRRule = 5
+	ClassEndDateBufferMonths = 3
+)
+
 func (db *DB) GetClassEvents(args *models.QueryContext, classId int) ([]models.ProgramClassEvent, error) {
 	events := []models.ProgramClassEvent{}
 	tx := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id = ?", classId)
@@ -130,6 +135,11 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		return newDeleteDBError(err, "program class event override")
 	}
 
+	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
+		trans.Rollback()
+		return err
+	}
+
 	changeLogEntry = models.NewChangeLogEntry("program_classes", "event_restored", &override.OverrideRrule, models.StringPtr(""), uint(classID), args.UserID)
 	if err := trans.Create(&changeLogEntry).Error; err != nil {
 		trans.Rollback()
@@ -213,11 +223,132 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		trans.Rollback()
 		return newCreateDBError(err, "change_log_entries")
 	}
+	if len(overrideEvents) > 0 {
+		if err := db.syncClassDateBoundaries(trans, overrideEvents[0].ClassID); err != nil {
+			trans.Rollback()
+			return err
+		}
+	}
 
-	//end transaction
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
 	}
+	return nil
+}
+
+// TODO: Come back to Refactor
+func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
+	var events []models.ProgramClassEvent
+	if err := trans.Preload("Overrides").Where("class_id = ?", classID).Find(&events).Error; err != nil {
+		return newGetRecordsDBError(err, "program_class_events")
+	}
+
+	if len(events) == 0 {
+		return nil
+	}
+
+	var class models.ProgramClass
+	if err := trans.First(&class, "id = ?", classID).Error; err != nil {
+		return newGetRecordsDBError(err, "program_classes")
+	}
+
+	allDates := make([]time.Time, 0)
+
+	for _, event := range events {
+		rRule, err := event.GetRRule()
+		if err != nil {
+			logrus.Warnf("unable to parse rrule for event %d: %v", event.ID, err)
+			continue
+		}
+
+		startBoundary := rRule.OrigOptions.Dtstart
+		endBoundary := time.Now().UTC().AddDate(MaxYearsForInfiniteRRule, 0, 0)
+		if class.EndDt != nil {
+			endBoundary = class.EndDt.AddDate(0, ClassEndDateBufferMonths, 0)
+		}
+
+		baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
+
+		cancelledDates := make(map[string]bool)
+		rescheduledDates := make([]time.Time, 0)
+
+		for _, override := range event.Overrides {
+			overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
+			if err != nil {
+				logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
+				continue
+			}
+			if len(overrideRule.All()) == 0 {
+				continue
+			}
+
+			overrideDate := overrideRule.All()[0]
+
+			if override.IsCancelled {
+				cancelledDates[overrideDate.Format("2006-01-02")] = true
+			} else {
+				rescheduledDates = append(rescheduledDates, overrideDate)
+			}
+		}
+
+		for _, occurrence := range baseOccurrences {
+			if !cancelledDates[occurrence.Format("2006-01-02")] {
+				allDates = append(allDates, occurrence)
+			}
+		}
+
+		allDates = append(allDates, rescheduledDates...)
+	}
+
+	if len(allDates) == 0 {
+		return nil
+	}
+
+	sort.Slice(allDates, func(i, j int) bool {
+		return allDates[i].Before(allDates[j])
+	})
+
+	computedStart := allDates[0]
+	computedEnd := allDates[len(allDates)-1]
+
+	updates := make(map[string]interface{})
+
+	if !computedStart.Equal(class.StartDt) {
+		updates["start_dt"] = computedStart
+	}
+
+	if class.EndDt == nil || !computedEnd.Equal(*class.EndDt) {
+		updates["end_dt"] = computedEnd
+	}
+
+	if len(updates) > 0 {
+		if err := trans.Model(&models.ProgramClass{}).Where("id = ?", classID).Updates(updates).Error; err != nil {
+			return newUpdateDBError(err, "program_classes")
+		}
+	}
+
+	if len(updates) > 0 && updates["end_dt"] != nil {
+		for _, event := range events {
+			rRule, err := event.GetRRule()
+			if err != nil {
+				logrus.Warnf("unable to get rrule for event %d: %v", event.ID, err)
+				continue
+			}
+
+			newOptions := rRule.OrigOptions
+			newOptions.Until = computedEnd
+
+			newRule, err := rrule.NewRRule(newOptions)
+			if err == nil {
+				if err := trans.Model(&models.ProgramClassEvent{}).
+					Where("id = ?", event.ID).
+					Update("recurrence_rule", newRule.String()).Error; err != nil {
+					return newUpdateDBError(err, "program_class_events")
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
