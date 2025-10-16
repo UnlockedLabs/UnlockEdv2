@@ -28,7 +28,7 @@ type TestEnv struct {
 func SetupTestEnv(t *testing.T) *TestEnv {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	server := handlers.NewServer(true, ctx)
+	server := handlers.NewServer(true, ctx, nil) // nil config for testing
 	if server == nil {
 		t.Fatal("Failed to create test server")
 	}
