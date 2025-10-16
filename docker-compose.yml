@@ -87,6 +87,7 @@ services:
       - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
       - KIWIX_SERVER_URL=http://kiwix:8080
+      - CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
     depends_on:
       kratos:
         condition: service_started
@@ -198,7 +199,7 @@ services:
     image: oryd/hydra:v2.2.0
     environment:
       - DSN=postgres://hydra:ChangeMe!@postgres:5432/hydra?sslmode=prefer&max_conns=20&max_idle_conns=4
-      - LOG_LEVEL=info 
+      - LOG_LEVEL=info
     command: migrate -c /etc/config/hydra/hydra.yml sql -e --yes
     volumes:
       - type: bind
