@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -53,11 +54,11 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 		var video models.Video
 
 		tx := srv.Db.Model(&models.Video{}).
-			Select(`videos.*, 
+			Select(`videos.*,
             (CASE WHEN fvs.visibility_status IS NULL THEN false ELSE fvs.visibility_status END) AS visibility_status`).
-			Joins(`LEFT OUTER JOIN facility_visibility_statuses fvs 
-            ON fvs.open_content_provider_id = videos.open_content_provider_id 
-            AND fvs.content_id = videos.id 
+			Joins(`LEFT OUTER JOIN facility_visibility_statuses fvs
+            ON fvs.open_content_provider_id = videos.open_content_provider_id
+            AND fvs.content_id = videos.id
             AND fvs.facility_id = ?`, user.FacilityID).
 			Where("videos.id = ?", resourceID)
 		if user.isAdmin() {
@@ -137,19 +138,46 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 func corsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
+
+		if origin != "" {
+			allowedOrigins := getAllowedOrigins()
+			if isOriginAllowed(origin, allowedOrigins) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
+				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
+				w.Header().Set("Vary", "Origin")
+			}else{
+				log.Warnf("origin is not allowed, origin is: %v", origin)
+			}
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 		}
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(r.Context()))
+		next.ServeHTTP(w, r)
 	}
+}
+
+func getAllowedOrigins() []string {
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if corsOrigins == "" {
+		return []string{}
+	}
+	origins := strings.Split(corsOrigins, ",")
+	for i, origin := range origins {
+		origins[i] = strings.TrimSpace(origin)
+	}
+	return origins
+}
+
+func isOriginAllowed(origin string, allowedOrigins []string) bool {
+	for _, allowed := range allowedOrigins {
+		if origin == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel ...models.FeatureAccess) http.Handler {
