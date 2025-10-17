@@ -70,7 +70,7 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		},
 		Transport: &http.Transport{
 			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: false},
 		},
 		ModifyResponse: func(res *http.Response) error {
 			contentType := res.Header.Get("Content-Type")
