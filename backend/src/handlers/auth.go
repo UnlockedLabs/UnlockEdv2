@@ -109,6 +109,10 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 
 		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 
+		if err := s.ensureCSRFToken(w, r.WithContext(ctx)); err != nil {
+			log.Error("Failed to set CSRF token: ", err)
+		}
+
 		if claims.PasswordReset && !isAuthRoute(r) {
 			http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 			return
