@@ -1,7 +1,9 @@
-package handlers
+package integration
 
 import (
 	"testing"
+
+	"UnlockEdv2/src/handlers"
 )
 
 func TestSanitizeFilename(t *testing.T) {
@@ -111,7 +113,7 @@ func TestSanitizeFilename(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := sanitizeFilename(tt.filename)
+			got, err := handlers.SanitizeFilename(tt.filename)
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("sanitizeFilename() expected error but got none for input: %q", tt.filename)
@@ -157,7 +159,7 @@ func TestValidatePathContainment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := validatePathContainment(tt.basePath, tt.filename)
+			got, err := handlers.ValidatePathContainment(tt.basePath, tt.filename)
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("validatePathContainment() expected error but got none for basePath=%q, filename=%q", tt.basePath, tt.filename)
@@ -177,13 +179,13 @@ func TestValidatePathContainment(t *testing.T) {
 func TestAllowedExtensions(t *testing.T) {
 	expectedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
-	if len(allowedExtensions) != len(expectedExtensions) {
-		t.Errorf("allowedExtensions has %d entries, expected %d", len(allowedExtensions), len(expectedExtensions))
+	if len(handlers.AllowedExtensions) != len(expectedExtensions) {
+		t.Errorf("AllowedExtensions has %d entries, expected %d", len(handlers.AllowedExtensions), len(expectedExtensions))
 	}
 
 	for _, ext := range expectedExtensions {
-		if !allowedExtensions[ext] {
-			t.Errorf("Expected extension %q to be allowed but it's not in allowedExtensions map", ext)
+		if !handlers.AllowedExtensions[ext] {
+			t.Errorf("Expected extension %q to be allowed but it's not in AllowedExtensions map", ext)
 		}
 	}
 }
