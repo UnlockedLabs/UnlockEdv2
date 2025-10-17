@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var allowedExtensions = map[string]bool{
+var AllowedExtensions = map[string]bool{
 	".jpg":  true,
 	".jpeg": true,
 	".png":  true,
@@ -19,28 +19,7 @@ var allowedExtensions = map[string]bool{
 	".webp": true,
 }
 
-func sanitizeFilename(filename string) (string, error) {
-	if filename == "" {
-		return "", errors.New("filename cannot be empty")
-	}
-	if len(filename) > 255 {
-		return "", errors.New("filename exceeds maximum length of 255 characters")
-	}
-	if strings.Contains(filename, "\x00") {
-		return "", errors.New("filename contains null byte")
-	}
-	base := filepath.Base(filepath.Clean(filename))
-	if base == "." || base == ".." || base == "/" {
-		return "", errors.New("invalid filename")
-	}
-	ext := strings.ToLower(filepath.Ext(base))
-	if !allowedExtensions[ext] {
-		return "", fmt.Errorf("file extension %s not allowed, must be jpg, jpeg, png, gif, or webp", ext)
-	}
-	return base, nil
-}
-
-func validatePathContainment(basePath, filename string) (string, error) {
+func ValidatePathContainment(basePath, filename string) (string, error) {
 	fullPath := filepath.Join(basePath, filename)
 	absBase, err := filepath.Abs(basePath)
 	if err != nil {
@@ -62,6 +41,27 @@ func (srv *Server) registerImageRoutes() {
 	srv.Mux.Handle("GET /api/photos/{id}", srv.handleError(srv.handleHostPhotos))
 }
 
+func SanitizeFilename(filename string) (string, error) {
+	if filename == "" {
+		return "", errors.New("filename cannot be empty")
+	}
+	if len(filename) > 255 {
+		return "", errors.New("filename exceeds maximum length of 255 characters")
+	}
+	if strings.Contains(filename, "\x00") {
+		return "", errors.New("filename contains null byte")
+	}
+	base := filepath.Base(filepath.Clean(filename))
+	if base == "." || base == ".." || base == "/" {
+		return "", errors.New("invalid filename")
+	}
+	ext := strings.ToLower(filepath.Ext(base))
+	if !AllowedExtensions[ext] {
+		return "", fmt.Errorf("file extension %s not allowed, must be jpg, jpeg, png, gif, or webp", ext)
+	}
+	return base, nil
+}
+
 func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, log sLog) error {
 	log.info("Uploading file")
 	file, header, err := r.FormFile("file")
@@ -75,12 +75,12 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 			log.error("Failed to close file")
 		}
 	}()
-	sanitizedFilename, err := sanitizeFilename(header.Filename)
+	sanitizedFilename, err := SanitizeFilename(header.Filename)
 	if err != nil {
 		return newBadRequestServiceError(err, "Invalid filename")
 	}
 	basePath := os.Getenv("IMG_FILEPATH")
-	path, err := validatePathContainment(basePath, sanitizedFilename)
+	path, err := ValidatePathContainment(basePath, sanitizedFilename)
 	if err != nil {
 		return newBadRequestServiceError(err, "Invalid file path")
 	}
@@ -103,12 +103,12 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 
 func getImagePath(r *http.Request) (string, error) {
 	img := r.PathValue("id")
-	sanitizedFilename, err := sanitizeFilename(img)
+	sanitizedFilename, err := SanitizeFilename(img)
 	if err != nil {
 		return "", err
 	}
 	basePath := os.Getenv("IMG_FILEPATH")
-	return validatePathContainment(basePath, sanitizedFilename)
+	return ValidatePathContainment(basePath, sanitizedFilename)
 }
 
 func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, log sLog) error {
