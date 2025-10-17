@@ -318,6 +318,8 @@ export default function ClassEnrollmentDetails() {
                     handleShowCompletionDetails={handleShowCompletionDetails}
                     showOthers={showOthers}
                     setShowOthers={setShowOthers}
+                    classInfo={clsInfo}
+                    onEnrollmentUpdate={() => void mutate()}
                 />
             )}
             <div className="flex justify-center m-2">

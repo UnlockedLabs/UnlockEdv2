@@ -185,6 +185,15 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status m
 	return nil
 }
 
+func (db *DB) UpdateProgramClassEnrollmentDate(ctx context.Context, enrollmentId int, enrolledDate time.Time) error {
+	if err := db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
+		Where("id = ?", enrollmentId).
+		Update("enrolled_at", enrolledDate).Error; err != nil {
+		return newUpdateDBError(err, "enrollment date")
+	}
+	return nil
+}
+
 func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap map[string]any) error {
 	tx := db.WithContext(ctx).Begin()
 	if tx.Error != nil {

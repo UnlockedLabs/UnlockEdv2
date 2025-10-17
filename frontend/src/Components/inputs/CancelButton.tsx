@@ -5,14 +5,19 @@ export function CancelButton({
 }: {
     label?: string;
     disabled?: boolean;
-    onClick: () => void;
+    onClick: (e: React.MouseEvent) => void;
 }) {
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onClick(e);
+    };
+
     return (
         <input
             disabled={disabled}
             type="button"
             className="button-grey"
-            onClick={onClick}
+            onClick={handleClick}
             value={label}
         />
     );
