@@ -22,7 +22,21 @@ const (
 )
 
 // regular expression used below for filtering open_content_urls
-var resourceRegExpression = regexp.MustCompile(`\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|ttf|map|webp|otf|vtt|webm|json|woff2|pdf)(\?|%3F|$)`)
+var (
+	resourceRegExpression = regexp.MustCompile(`\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|ttf|map|webp|otf|vtt|webm|json|woff2|pdf)(\?|%3F|$)`)
+	allowedOrigins []string
+)
+func init() {
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if corsOrigins == "" {
+		allowedOrigins = []string{}
+	}
+	origins := strings.Split(corsOrigins, ",")
+	for i, origin := range origins {
+		origins[i] = strings.TrimSpace(origin)
+	}
+	allowedOrigins = origins
+}
 
 func (srv *Server) applyMiddleware(h HttpFunc, resolver RouteResolver, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
@@ -138,10 +152,8 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 func corsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-
 		if origin != "" {
-			allowedOrigins := getAllowedOrigins()
-			if isOriginAllowed(origin, allowedOrigins) {
+			if isOriginAllowed(origin) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
@@ -159,19 +171,7 @@ func corsMiddleware(next http.Handler) http.HandlerFunc {
 	}
 }
 
-func getAllowedOrigins() []string {
-	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
-	if corsOrigins == "" {
-		return []string{}
-	}
-	origins := strings.Split(corsOrigins, ",")
-	for i, origin := range origins {
-		origins[i] = strings.TrimSpace(origin)
-	}
-	return origins
-}
-
-func isOriginAllowed(origin string, allowedOrigins []string) bool {
+func isOriginAllowed(origin string) bool {
 	for _, allowed := range allowedOrigins {
 		if origin == allowed {
 			return true
