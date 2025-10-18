@@ -24,8 +24,9 @@ const (
 // regular expression used below for filtering open_content_urls
 var (
 	resourceRegExpression = regexp.MustCompile(`\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|ttf|map|webp|otf|vtt|webm|json|woff2|pdf)(\?|%3F|$)`)
-	allowedOrigins []string
+	allowedOrigins        []string
 )
+
 func init() {
 	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 	if corsOrigins == "" {
@@ -159,8 +160,8 @@ func corsMiddleware(next http.Handler) http.HandlerFunc {
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
 				w.Header().Set("Vary", "Origin")
-			}else{
-				log.Warnf("origin is not allowed, origin is: %v", origin)
+			} else {
+				log.Warnf("origin is not allowed, origin is: %s", origin)
 			}
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
