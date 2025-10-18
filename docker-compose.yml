@@ -62,6 +62,7 @@ services:
       dockerfile: backend/dev.Dockerfile
     ports:
       - 8080:8080
+      - 40000:40000
     networks:
       - intranet
     volumes:
