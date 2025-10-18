@@ -11,7 +11,13 @@
       "host": "127.0.0.1",
       "showLog": true,
       "apiVersion": 2,
-      "trace": "verbose"
+      "trace": "verbose",
+      "substitutePath": [
+        {
+          "from": "${workspaceFolder}",
+          "to": "/app"
+        }
+      ]
     }
   ]
 }
