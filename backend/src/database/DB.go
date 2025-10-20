@@ -61,7 +61,7 @@ func InitDB(cfg *config.Config, isTesting bool) *DB {
 		MigrateTesting(gormDb)
 	} else {
 		// Use DSN if provided, otherwise build from parts
-		dsn := cfg.APP_DSN
+		dsn := cfg.AppDSN
 
 		if dsn == "" {
 			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",

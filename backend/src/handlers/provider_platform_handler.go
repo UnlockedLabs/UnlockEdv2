@@ -129,7 +129,7 @@ func (srv *Server) handleOAuthProviderCallback(w http.ResponseWriter, r *http.Re
 		log.errorf("unable to delete entry in bucket, error is %s", err) //error
 	}
 	code := r.FormValue("code")
-	config := provider.GetOAuth2Config()
+	config := provider.GetOAuth2Config(srv.config.AppURL)
 	token, err := config.Exchange(context.Background(), code) // Exchange the authorization code for an access token
 	if err != nil {
 		log.errorf("unable to make oauth token exchange with provider platform, error is %s", err) //error
@@ -236,7 +236,7 @@ func (srv *Server) handleDeleteProvider(w http.ResponseWriter, r *http.Request, 
 
 func (srv *Server) getOAuthUrl(platform *models.ProviderPlatform) (string, error) {
 	var (
-		brightspaceConfig = platform.GetOAuth2Config()
+		brightspaceConfig = platform.GetOAuth2Config(srv.config.AppURL)
 		oauthState        = models.CreateOAuth2UrlState()
 		oauthURL          string
 	)

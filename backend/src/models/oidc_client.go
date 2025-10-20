@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -38,12 +37,12 @@ func (OidcClient) TableName() string {
 	return "oidc_clients"
 }
 
-func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *http.Client) (*OidcClient, string, error) {
+func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *http.Client, appURL, oryToken, hydraPublicURL, hydraAdminURL string) (*OidcClient, string, error) {
 	externalId := ""
 	redirectURI := prov.GetDefaultRedirectURI()
 	headers := map[string]string{}
-	headers["Authorization"] = "Bearer " + os.Getenv("ORY_TOKEN")
-	headers["Origin"] = os.Getenv("APP_URL")
+	headers["Authorization"] = "Bearer " + oryToken
+	headers["Origin"] = appURL
 	body := map[string]interface{}{}
 	body["client_name"] = prov.Name
 	body["client_uri"] = prov.BaseUrl
@@ -51,10 +50,10 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	body["scope"] = DefaultScopes
 	body["acces_token_strategy"] = "opaque"
 	body["metadata"] = map[string]interface{}{
-		"Origin": os.Getenv("APP_URL"),
+		"Origin": appURL,
 	}
 	body["response_types"] = []string{"code", "id_token", "token"}
-	body["allowed_cors_origins"] = []string{os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL"), "http://127.0.0.1"}
+	body["allowed_cors_origins"] = []string{appURL, prov.BaseUrl, hydraPublicURL, "http://127.0.0.1"}
 	body["grant_types"] = []string{"authorization_code", "refresh_token"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
 	body["authorization_code_grant_id_token_lifespan"] = "3h"
@@ -73,7 +72,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	if err != nil {
 		return nil, externalId, err
 	}
-	req, err := http.NewRequest("POST", os.Getenv("HYDRA_ADMIN_URL")+"/admin/clients", bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("POST", hydraAdminURL+"/admin/clients", bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, externalId, err
 	}
@@ -108,7 +107,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 		Scopes:             clientData["scope"].(string),
 	}
 	if autoRegister && (prov.Type == CanvasCloud || prov.Type == CanvasOSS) {
-		externalId, err = autoRegisterCanvas(prov, oidcClient)
+		externalId, err = autoRegisterCanvas(prov, oidcClient, appURL)
 		if err != nil {
 			log.Error("Error auto registering provider as client: ", err)
 		}
@@ -116,7 +115,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	return oidcClient, externalId, nil
 }
 
-func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string, error) {
+func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient, appURL string) (string, error) {
 	client := http.Client{}
 	externalId := ""
 	// register the login client with canvas
@@ -126,9 +125,9 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 	form.Add("auth_type", "openid_connect")
 	form.Add("client_id", oidcClient.ClientID)
 	form.Add("client_secret", oidcClient.ClientSecret)
-	form.Add("authorize_url", os.Getenv("APP_URL")+"/oauth2/auth")
-	form.Add("token_url", os.Getenv("APP_URL")+"/oauth2/token")
-	form.Add("userinfo_endpoint", os.Getenv("APP_URL")+"/userinfo")
+	form.Add("authorize_url", appURL+"/oauth2/auth")
+	form.Add("token_url", appURL+"/oauth2/token")
+	form.Add("userinfo_endpoint", appURL+"/userinfo")
 	form.Add("login_attribute", "preferred_username")
 	request, err := http.NewRequest("POST", baseURL, bytes.NewBufferString(form.Encode()))
 	if err != nil {

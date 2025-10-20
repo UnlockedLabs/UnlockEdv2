@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -77,7 +76,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return newMarshallingBodyServiceError(err)
 	}
-	url := os.Getenv("KRATOS_PUBLIC_URL") + LoginEndpoint + "?flow=" + form.FlowID
+	url := s.config.KratosPublicURL + LoginEndpoint + "?flow=" + form.FlowID
 	log.add("url", url)
 	if form.Challenge != "" {
 		// if there was an oauth2 code challenge, we append it to the kratos url
@@ -209,12 +208,12 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, log s
 	}
 	consentChallenge := "?consent_challenge=" + decoded["consent_challenge"].(string)
 	// build the consent body to send to hydra with info about the oauth2 identity token
-	jsonBody, err := buildConsentBody(user)
+	jsonBody, err := buildConsentBody(user, s.config.AppURL)
 	if err != nil {
 		return newMarshallingBodyServiceError(err)
 	}
 	// send the consent request to hydra
-	req, err := http.NewRequest(http.MethodPut, os.Getenv("HYDRA_ADMIN_URL")+ConsentPutEndpoint+consentChallenge, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest(http.MethodPut, s.config.HydraAdminURL+ConsentPutEndpoint+consentChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
 		return newCreateRequestServiceError(err)
 	}
@@ -233,10 +232,10 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, log s
 	return writeJsonResponse(w, http.StatusOK, respBody)
 }
 
-func buildConsentBody(user *models.User) ([]byte, error) {
+func buildConsentBody(user *models.User, appURL string) ([]byte, error) {
 	body := make(map[string]interface{})
 	body["remember"] = true
-	body["grant_access_token_audience"] = []string{os.Getenv("APP_URL")}
+	body["grant_access_token_audience"] = []string{appURL}
 	body["remember_for"] = 3600 * 24
 	body["grant_scope"] = []string{"openid", "offline", "profile", "email"}
 	body["session"] = map[string]interface{}{
@@ -258,7 +257,7 @@ func buildConsentBody(user *models.User) ([]byte, error) {
 func (srv *Server) sendAndDecodeOryRequest(client, req *http.Request) (map[string]interface{}, error) {
 	req.Header.Add("Cookie", client.Header.Get("Cookie"))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
+	req.Header.Set("Authorization", "Bearer "+srv.config.OryToken)
 	resp, err := srv.Client.Do(req)
 	if err != nil {
 		log.Errorln("Error sending request to ory", err)
@@ -297,7 +296,7 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newMarshallingBodyServiceError(err)
 	}
-	url, err := acceptLoginEndpoint(form)
+	url, err := acceptLoginEndpoint(form, srv.config.HydraAdminURL)
 	if err != nil {
 		return NewServiceError(err, http.StatusBadRequest, "invalid request, must include challenge")
 	}
@@ -319,12 +318,12 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log
 	})
 }
 
-func acceptLoginEndpoint(form map[string]interface{}) (*string, error) {
+func acceptLoginEndpoint(form map[string]interface{}, hydraAdminURL string) (*string, error) {
 	challenge, ok := form["challenge"].(string)
 	if !ok {
 		return nil, errors.New("login refresh not sent with challenge, must revalidate password")
 	}
 	challenge = "?login_challenge=" + challenge
-	endpoint := os.Getenv("HYDRA_ADMIN_URL") + AcceptLoginEndpoint + challenge
+	endpoint := hydraAdminURL + AcceptLoginEndpoint + challenge
 	return &endpoint, nil
 }

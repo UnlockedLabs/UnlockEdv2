@@ -153,7 +153,7 @@ func NewServer(isTesting bool, ctx context.Context, cfg *config.Config) *Server 
 		return newTestingServer() // config ignored for testing
 	}
 	if cfg == nil {
-		log.Fatal("❌ Config is required for production server")
+		log.Fatal("Config is required for production server")
 	}
 	return newServer(ctx, cfg)
 }
@@ -349,7 +349,7 @@ func (srv *Server) generateKolibriOidcClient() error {
 			return err
 		}
 	}
-	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client)
+	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client, srv.config.AppURL, srv.config.OryToken, srv.config.HydraPublicURL, srv.config.HydraAdminURL)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Errorln("error creating kolibri auth client")
@@ -453,6 +453,10 @@ func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 		intPerPage = 10
 	}
 	return intPage, intPerPage
+}
+
+func (srv *Server) IsTestingMode() bool {
+	return srv.testingMode
 }
 
 type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error

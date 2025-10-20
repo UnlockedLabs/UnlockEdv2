@@ -292,11 +292,11 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Single date with varying enrollment levels", func(t *testing.T) {
-		runSingleDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility, user1, user2, user3)
+		runSingleDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility)
 	})
 
 	t.Run("Batch multiple dates with varying enrollment levels", func(t *testing.T) {
-		runBatchDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility, user1, user2, user3)
+		runBatchDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility)
 	})
 
 	t.Run("Edge cases and validation", func(t *testing.T) {
@@ -304,7 +304,10 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	})
 }
 
-func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility, user1, user2, user3 *models.User) {
+// Note: Removed unused parameters user1, user2, user3 - these were created in parent test
+// but not needed in this function since it relies on database data set up by TestGetHistoricalEnrollmentBatch
+// facility parameter is kept as it's used for FacilityID in test claims
+func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
 	// Test single date queries
 	testCases := []struct {
 		date     string
@@ -332,7 +335,10 @@ func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeCla
 	}
 }
 
-func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility, user1, user2, user3 *models.User) {
+// Note: Removed unused parameters user1, user2, user3 - these were created in parent test
+// but not needed in this function since it relies on database data set up by TestGetHistoricalEnrollmentBatch
+// facility parameter is kept as it's used for FacilityID in test claims
+func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
 	// Test batch query with multiple dates
 	dates := "2025-08-12,2025-08-13,2025-08-14,2025-08-15,2025-08-16"
 	resp := NewRequest[map[string]int64](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, dates), nil).

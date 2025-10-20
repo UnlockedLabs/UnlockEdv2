@@ -144,7 +144,7 @@ func (prov *ProviderPlatform) GetDefaultCronJobs() []JobType {
 }
 
 // oauth2 config is currently only for the Brightspace provider, implemented a switch for other oauth2 providers to be added in the future
-func (provider *ProviderPlatform) GetOAuth2Config() *oauth2.Config {
+func (provider *ProviderPlatform) GetOAuth2Config(appURL string) *oauth2.Config {
 	var (
 		config oauth2.Config
 		secret string
@@ -159,7 +159,7 @@ func (provider *ProviderPlatform) GetOAuth2Config() *oauth2.Config {
 		config = oauth2.Config{
 			ClientID:     provider.AccountID,
 			ClientSecret: secret,
-			RedirectURL:  os.Getenv("APP_URL") + BrightspaceRedirectEndpointURL,
+			RedirectURL:  appURL + BrightspaceRedirectEndpointURL,
 			Scopes:       []string{BrightspaceScopes},
 			Endpoint: oauth2.Endpoint{
 				AuthURL:   BrightspaceAuthorizationURL,

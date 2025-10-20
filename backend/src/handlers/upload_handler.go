@@ -27,7 +27,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 			log.error("Failed to close file")
 		}
 	}()
-	path := filepath.Join(os.Getenv("IMG_FILEPATH"), header.Filename)
+	path := filepath.Join(srv.config.ImgFilepath, header.Filename)
 	log.add("filename", header.Filename)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
@@ -45,9 +45,9 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusOK, map[string]string{"url": imgUrl})
 }
 
-func getImagePath(r *http.Request) string {
+func (srv *Server) getImagePath(r *http.Request) string {
 	img := r.PathValue("id")
-	return filepath.Join(os.Getenv("IMG_FILEPATH"), img)
+	return filepath.Join(srv.config.ImgFilepath, img)
 }
 
 func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -56,6 +56,6 @@ func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, log 
 
 	expires := time.Now().AddDate(1, 0, 0).Format(http.TimeFormat)
 	w.Header().Set("Expires", expires)
-	http.ServeFile(w, r, getImagePath(r))
+	http.ServeFile(w, r, srv.getImagePath(r))
 	return nil
 }
