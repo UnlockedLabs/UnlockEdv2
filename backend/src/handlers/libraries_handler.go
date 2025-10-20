@@ -153,7 +153,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		}
 		queryParams.Add("format", "xml")
 		queryParams.Add("pattern", search)
-		kiwixSearchURL := fmt.Sprintf("%s/search?start=%d&pageLength=%d&%s", models.KiwixLibraryUrl, nextPage, perPage, queryParams.Encode())
+		kiwixSearchURL := fmt.Sprintf("%s/search?start=%d&pageLength=%d&%s", models.KiwixLibraryURL(), nextPage, perPage, queryParams.Encode())
 		request, err := http.NewRequest(http.MethodGet, kiwixSearchURL, nil)
 		log.add("kiwix_search_url", kiwixSearchURL)
 		if err != nil {

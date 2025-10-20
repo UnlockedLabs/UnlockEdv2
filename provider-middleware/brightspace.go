@@ -1,6 +1,7 @@
 package main
 
 import (
+	appconfig "UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
@@ -22,8 +23,6 @@ const (
 	DataDownloadEnpoint = "https://unlocked.brightspacedemo.com/d2l/api/lp/%s/dataExport/bds/download/%s"
 )
 
-var CsvDownloadPath = os.Getenv("BRIGHTSPACE_TEMP_DIR")
-
 type BrightspaceService struct {
 	ProviderPlatformID uint
 	Client             *http.Client
@@ -37,15 +36,18 @@ type BrightspaceService struct {
 	JobParams          map[string]any
 	IsDownloaded       bool //flag to let process know that bulk data has been downloaded
 	CsvFileMap         map[string]string
+	CsvDownloadPath    string
+	AppURL             string
 }
 
-func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, params map[string]any) (*BrightspaceService, error) {
+func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, params map[string]any, cfg *appconfig.Config) (*BrightspaceService, error) {
 	keysSplit := strings.Split(provider.AccessKey, ";")
 	if len(keysSplit) < 2 {
 		return nil, errors.New("unable to find refresh token, unable to intialize BrightspaceService")
 	}
-	if _, err := os.Stat(CsvDownloadPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("unable to find csv download directory path %s, unable to intialize BrightspaceService", CsvDownloadPath)
+	csvDownloadPath := cfg.BrightspaceTempDir
+	if _, err := os.Stat(csvDownloadPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("unable to find csv download directory path %s, unable to intialize BrightspaceService", csvDownloadPath)
 	}
 	brightspaceService := BrightspaceService{
 		ProviderPlatformID: provider.ID,
@@ -56,6 +58,8 @@ func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 		RefreshToken:       keysSplit[1],
 		Scope:              models.BrightspaceScopes,
 		JobParams:          params,
+		CsvDownloadPath:    csvDownloadPath,
+		AppURL:             cfg.AppURL,
 	}
 	data := url.Values{}
 	data.Add("grant_type", "refresh_token")
@@ -237,7 +241,7 @@ func (srv *BrightspaceService) ImportMilestones(course map[string]interface{}, u
 		usersMap: usersMap,
 	}
 	if !srv.IsDownloaded {
-		cleanUpCsvFiles("milestones")
+		srv.cleanUpCsvFiles("milestones")
 	}
 	err := importBSEnrollmentMilestones(srv, paramObj, db)
 	if err != nil {
@@ -471,7 +475,7 @@ func addQuizMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsQuiz Brig
 
 func (srv *BrightspaceService) ImportActivityForCourse(course map[string]any, db *gorm.DB) error {
 	if !srv.IsDownloaded {
-		cleanUpCsvFiles("activities")
+		srv.cleanUpCsvFiles("activities")
 	}
 	var (
 		contentObjCsvFile   string

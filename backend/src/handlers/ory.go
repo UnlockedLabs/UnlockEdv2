@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 
 	client "github.com/ory/kratos-client-go"
 
@@ -178,12 +177,12 @@ func (srv *Server) handleUpdatePasswordKratos(claims *Claims, password string, r
 		log.Errorf("Error updating identity with user password: %v", err)
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPut, os.Getenv("KRATOS_ADMIN_URL")+"/admin/identities/"+identity.GetId(), bytes.NewBuffer(byte))
+	req, err := http.NewRequest(http.MethodPut, srv.config.KratosAdminURL+"/admin/identities/"+identity.GetId(), bytes.NewBuffer(byte))
 	if err != nil {
 		log.Errorf("Error creating identity request to kratos: %v", err)
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
+	req.Header.Set("Authorization", "Bearer "+srv.config.OryToken)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err = srv.Client.Do(req)
 	if err != nil {

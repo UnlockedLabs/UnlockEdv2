@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"reflect"
 	"runtime"
 	"slices"
@@ -153,12 +154,14 @@ func NewServer(isTesting bool, ctx context.Context, cfg *config.Config) *Server 
 		return newTestingServer() // config ignored for testing
 	}
 	if cfg == nil {
-		log.Fatal("❌ Config is required for production server")
+		log.Fatal("Config is required for production server")
 	}
 	return newServer(ctx, cfg)
 }
 
 func newServer(ctx context.Context, cfg *config.Config) *Server {
+	models.SetAppKey(cfg.AppKey)
+	models.SetKiwixLibraryURL(cfg.KiwixServerURL)
 	conn, err := setupNats(cfg)
 	if err != nil {
 		log.Errorf("Failed to connect to NATS: %v", err)
@@ -189,7 +192,7 @@ func newServer(ctx context.Context, cfg *config.Config) *Server {
 		log.Fatal("Error setting up default admin in Kratos")
 	}
 	server.wsClient = newClientManager()
-	server.scheduler = tasks.InitScheduling(dev, server.nats, server.Db.DB)
+	server.scheduler = tasks.InitScheduling(dev, server.nats, server.Db.DB, cfg)
 	return &server
 }
 
@@ -208,6 +211,12 @@ func (srv *Server) initAwsConfig(ctx context.Context) {
 }
 
 func newTestingServer() *Server {
+	key := os.Getenv("APP_KEY")
+	if key == "" {
+		key = "test-key"
+	}
+	models.SetAppKey(key)
+	models.SetKiwixLibraryURL(os.Getenv("KIWIX_SERVER_URL"))
 	db := database.InitDB(nil, true)
 	features := models.AllFeatures
 	return &Server{
@@ -349,7 +358,7 @@ func (srv *Server) generateKolibriOidcClient() error {
 			return err
 		}
 	}
-	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client)
+	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client, srv.config.AppURL, srv.config.OryToken, srv.config.HydraPublicURL, srv.config.HydraAdminURL)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Errorln("error creating kolibri auth client")
@@ -453,6 +462,10 @@ func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 		intPerPage = 10
 	}
 	return intPage, intPerPage
+}
+
+func (srv *Server) IsTestingMode() bool {
+	return srv.testingMode
 }
 
 type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error

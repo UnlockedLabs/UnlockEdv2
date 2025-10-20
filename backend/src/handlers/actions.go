@@ -193,5 +193,5 @@ func (srv *Server) getService(r *http.Request) (*src.ProviderService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return src.GetProviderService(provider, srv.Client)
+	return src.GetProviderService(provider, srv.Client, srv.config.ProviderServiceURL)
 }

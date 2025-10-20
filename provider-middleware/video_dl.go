@@ -1,6 +1,7 @@
 package main
 
 import (
+	appconfig "UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"bytes"
 	"context"
@@ -16,7 +17,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/wader/goutubedl"
 	"gorm.io/gorm"
@@ -36,18 +37,23 @@ type VideoService struct {
 	db                    *gorm.DB
 	bucketName            string
 	s3Svc                 *s3.Client
+	appURL                string
 }
 
-func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[string]any) *VideoService {
-	bucketName := os.Getenv("S3_BUCKET_NAME")
+func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[string]any, cfg *appconfig.Config) *VideoService {
+	bucketName := cfg.S3BucketName
 	var svc *s3.Client = nil
 	if bucketName != "" {
 		logger().Info("s3 bucket found, creating client")
-		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(os.Getenv("AWS_REGION")))
+		loadOpts := []func(*awsconfig.LoadOptions) error{}
+		if cfg.AWSRegion != "" {
+			loadOpts = append(loadOpts, awsconfig.WithRegion(cfg.AWSRegion))
+		}
+		awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), loadOpts...)
 		if err != nil {
 			logger().Fatal(err)
 		}
-		svc = s3.NewFromConfig(cfg)
+		svc = s3.NewFromConfig(awsCfg)
 	}
 	return &VideoService{
 		BaseUrl:               prov.Url,
@@ -57,6 +63,7 @@ func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[str
 		db:                    db,
 		bucketName:            bucketName,
 		s3Svc:                 svc,
+		appURL:                cfg.AppURL,
 	}
 }
 
@@ -225,7 +232,7 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 		logger().Errorf("error closing writer: %v", err)
 		return "", err
 	}
-	req, err = http.NewRequest(http.MethodPost, os.Getenv("APP_URL")+"/upload", body)
+	req, err = http.NewRequest(http.MethodPost, yt.appURL+"/upload", body)
 	if err != nil {
 		logger().Errorf("error creating upload request: %v", err)
 		return "", err

@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"fmt"
 
@@ -14,15 +15,16 @@ type Scheduler struct {
 	gocron.Scheduler
 	nats *nats.Conn
 	db   *gorm.DB
+	cfg  *config.Config
 }
 
-func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
+func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB, cfg *config.Config) *Scheduler {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
 		return nil
 	}
-	runner := Scheduler{scheduler, nats, db}
+	runner := Scheduler{scheduler, nats, db, cfg}
 	tasks, err := runner.generateTasks()
 	if err != nil {
 		log.Fatalf("failed to generate tasks: %v", err)

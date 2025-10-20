@@ -17,6 +17,7 @@ jar
 /migrations/migrations
 /provider-middleware/providers.db
 /backend/server
+/backend/test-backend
 /provider-middleware/middleware
 /provider-middleware/bin
 /backend/bin

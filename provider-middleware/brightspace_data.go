@@ -180,7 +180,7 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		if err != nil {
 			imgPath = "/brightspace.jpg"
 		} else {
-			imgPath, err = UploadBrightspaceImage(imgBytes, id)
+			imgPath, err = srv.uploadBrightspaceImage(imgBytes, id)
 			if err != nil {
 				log.Errorf("error during upload of Brightspace image to UnlockEd, id used was: %v error is %v", id, err)
 				imgPath = "/brightspace.jpg"
@@ -238,7 +238,7 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 	return &course
 }
 
-func UploadBrightspaceImage(imgBytes []byte, bsCourseId string) (string, error) {
+func (srv *BrightspaceService) uploadBrightspaceImage(imgBytes []byte, bsCourseId string) (string, error) {
 	filename := "image_brightspace" + "/" + bsCourseId + ".jpg"
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -256,7 +256,7 @@ func UploadBrightspaceImage(imgBytes []byte, bsCourseId string) (string, error) 
 		log.Errorf("error closing file, error is %v", err)
 		return "", err
 	}
-	uploadEndpointUrl := os.Getenv("APP_URL") + "/upload"
+	uploadEndpointUrl := srv.AppURL + "/upload"
 	request, err := http.NewRequest(http.MethodPost, uploadEndpointUrl, body)
 	if err != nil {
 		log.Errorf("error creating new POST request to url %v and error is: %v", uploadEndpointUrl, err)
@@ -350,7 +350,7 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 	}
 	if resp.StatusCode == http.StatusOK {
 		log.Infof("succesful request to url %v for downloading file %v", endpointUrl, targetFileName)
-		zipFilePath := filepath.Join(CsvDownloadPath, targetFileName)
+		zipFilePath := filepath.Join(srv.CsvDownloadPath, targetFileName)
 		targetDownloadDirectory := filepath.Dir(zipFilePath)
 		err := os.MkdirAll(targetDownloadDirectory, os.ModePerm)
 		if err != nil {
@@ -424,8 +424,8 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 	return destPath, err
 }
 
-func cleanUpCsvFiles(subDirectory string) {
-	dirPath := filepath.Join(CsvDownloadPath, subDirectory)
+func (srv *BrightspaceService) cleanUpCsvFiles(subDirectory string) {
+	dirPath := filepath.Join(srv.CsvDownloadPath, subDirectory)
 	csvs, err := filepath.Glob(dirPath + "/*.csv")
 	if err != nil {
 		log.Errorln("error retrieving list of csv file paths, error is ", err)

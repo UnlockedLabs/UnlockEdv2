@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 )
 
 func (srv *Server) registerOidcRoutes() []routeDef {
@@ -31,12 +30,12 @@ type RegisterClientRequest struct {
 	AutoRegister       bool   `json:"auto_register"`
 }
 
-func clientToResponse(client *models.OidcClient) *models.ClientResponse {
+func clientToResponse(client *models.OidcClient, appURL string) *models.ClientResponse {
 	return &models.ClientResponse{
 		ClientID:      client.ClientID,
 		ClientSecret:  client.ClientSecret,
-		AuthEndpoint:  os.Getenv("APP_URL") + "/oauth2/auth",
-		TokenEndpoint: os.Getenv("APP_URL") + "/oauth2/token",
+		AuthEndpoint:  appURL + "/oauth2/auth",
+		TokenEndpoint: appURL + "/oauth2/token",
 		Scopes:        client.Scopes,
 	}
 }
@@ -48,7 +47,7 @@ func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, *clientToResponse(client))
+	return writeJsonResponse(w, http.StatusOK, *clientToResponse(client, srv.config.AppURL))
 }
 
 func (srv *Server) handleRegisterClient(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -64,7 +63,7 @@ func (srv *Server) handleRegisterClient(w http.ResponseWriter, r *http.Request, 
 	if provider.OidcID != 0 || provider.ExternalAuthProviderId != "" {
 		return newBadRequestServiceError(errors.New("client already registered"), "Client already registered")
 	}
-	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister, srv.Client)
+	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister, srv.Client, srv.config.AppURL, srv.config.OryToken, srv.config.HydraPublicURL, srv.config.HydraAdminURL)
 	if err != nil {
 		return newInternalServerServiceError(err, err.Error())
 	}
@@ -77,5 +76,5 @@ func (srv *Server) handleRegisterClient(w http.ResponseWriter, r *http.Request, 
 		log.add("clientId", client.ID)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusCreated, *clientToResponse(client))
+	return writeJsonResponse(w, http.StatusCreated, *clientToResponse(client, srv.config.AppURL))
 }

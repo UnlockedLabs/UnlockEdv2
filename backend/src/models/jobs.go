@@ -1,7 +1,6 @@
 package models
 
 import (
-	"os"
 	"slices"
 	"time"
 
@@ -34,15 +33,8 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 	} else if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
 		cj.Category = ProviderPlatformJob
 	}
-	switch cj.Name {
-	case string(RetryVideoDownloadsJob):
-		schedule := os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
-		if schedule == "" {
-			schedule = EveryDaytimeHour
-		}
-		cj.Schedule = schedule
-	default:
-		cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
+	if len(cj.Schedule) == 0 && cj.Name == string(RetryVideoDownloadsJob) {
+		cj.Schedule = EveryDaytimeHour
 	}
 	return nil
 }

@@ -66,7 +66,7 @@ func (s *Scheduler) generateOpenContentProviderTasks() ([]models.RunnableTask, e
 			if libProvider == -1 {
 				continue
 			}
-			job := models.CronJob{Name: string(jobType)}
+			job := models.CronJob{Name: string(jobType), Schedule: s.scheduleForJobType(jobType)}
 			task, err := s.handleCreateOCProviderTask(&job, providers[libProvider].ID)
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
@@ -77,7 +77,7 @@ func (s *Scheduler) generateOpenContentProviderTasks() ([]models.RunnableTask, e
 			if vidProvider == -1 {
 				continue
 			}
-			job := models.CronJob{Name: string(jobType)}
+			job := models.CronJob{Name: string(jobType), Schedule: s.scheduleForJobType(jobType)}
 			task, err := s.handleCreateOCProviderTask(&job, providers[vidProvider].ID)
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
@@ -142,17 +142,28 @@ func (s *Scheduler) intoTask(cj *models.CronJob, provId *uint, task *models.Runn
 }
 
 func (s *Scheduler) createIfNotExists(cj models.JobType) (*models.CronJob, error) {
+	schedule := s.scheduleForJobType(cj)
 	job := models.CronJob{Name: string(cj)}
-	if err := s.db.Model(&models.CronJob{}).Where("name = ?", cj).FirstOrCreate(&job).Error; err != nil {
+	if err := s.db.Model(&models.CronJob{}).
+		Where("name = ?", cj).
+		Assign(models.CronJob{Schedule: schedule}).
+		FirstOrCreate(&job).Error; err != nil {
 		log.Errorf("failed to find or create job: %v", err)
 		return nil, err
 	}
+	job.Schedule = schedule
 	log.Infof("CronJob %s has ID: %s", job.Name, job.ID)
 	return &job, nil
 }
 
 func (s *Scheduler) handleCreateOCProviderTask(job *models.CronJob, providerId uint) (*models.RunnableTask, error) {
-	if err := s.db.Model(&models.CronJob{}).Preload("Tasks").Where("name = ?", string(job.Name)).FirstOrCreate(&job).Error; err != nil {
+	schedule := s.scheduleForJobType(models.JobType(job.Name))
+	job.Schedule = schedule
+	if err := s.db.Model(&models.CronJob{}).
+		Preload("Tasks").
+		Where("name = ?", string(job.Name)).
+		Assign(models.CronJob{Schedule: schedule}).
+		FirstOrCreate(&job).Error; err != nil {
 		log.Errorf("failed to create job: %v", err)
 		return nil, err
 	}
@@ -168,4 +179,22 @@ func (s *Scheduler) handleCreateOCProviderTask(job *models.CronJob, providerId u
 		return nil, err
 	}
 	return &task, nil
+}
+
+func (s *Scheduler) scheduleForJobType(jobType models.JobType) string {
+	if s.cfg == nil {
+		if jobType == models.RetryVideoDownloadsJob {
+			return models.EveryDaytimeHour
+		}
+		return ""
+	}
+	switch jobType {
+	case models.RetryVideoDownloadsJob:
+		if s.cfg.RetryVideoCronSchedule != "" {
+			return s.cfg.RetryVideoCronSchedule
+		}
+		return models.EveryDaytimeHour
+	default:
+		return s.cfg.MiddlewareCronSchedule
+	}
 }

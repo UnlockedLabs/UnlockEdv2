@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -28,8 +27,8 @@ type ProviderService struct {
 	ServiceURL         string       `json:"-"`
 }
 
-func GetProviderService(prov *models.ProviderPlatform, client *http.Client) (*ProviderService, error) {
-	serviceUrl := os.Getenv("PROVIDER_SERVICE_URL")
+func GetProviderService(prov *models.ProviderPlatform, client *http.Client, providerServiceURL string) (*ProviderService, error) {
+	serviceUrl := providerServiceURL
 	// If the provider is Kolibri, we need to split the key into username and password
 	// In the future, we will need to have similar fields for Oauth2 retrieval from canvas
 	username, password := "", ""

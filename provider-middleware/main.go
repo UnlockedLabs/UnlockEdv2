@@ -1,11 +1,11 @@
 package main
 
 import (
+	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -41,15 +41,16 @@ type ServiceHandler struct {
 	db     *gorm.DB
 	cancel context.CancelFunc
 	ctx    context.Context
+	cfg    *config.Config
 }
 
 var logger = sync.OnceValue(func() *log.Logger { return initLogging() })
 
-func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
+func newServiceHandler(cfg *config.Config, db *gorm.DB) *ServiceHandler {
 	options := nats.GetDefaultOptions()
-	options.Url = os.Getenv("NATS_URL")
-	options.User = os.Getenv("NATS_USER")
-	options.Password = os.Getenv("NATS_PASSWORD")
+	options.Url = cfg.NATSURL
+	options.User = cfg.NATSUser
+	options.Password = cfg.NATSPassword
 	if options.Url == "" {
 		options.Url = "nats://nats:4222"
 	}
@@ -60,12 +61,13 @@ func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 	log.Println("Connected to NATS at ", options.Url)
 	ctx, cancel := context.WithCancel(context.Background())
 	return &ServiceHandler{
-		token:  token,
+		token:  cfg.ProviderServiceKey,
 		db:     db,
 		nats:   conn,
 		Mux:    http.NewServeMux(),
 		cancel: cancel,
 		ctx:    ctx,
+		cfg:    cfg,
 	}
 }
 
@@ -73,11 +75,14 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to load .env file, using default env variables")
 	}
-	dsn := os.Getenv("APP_DSN")
-	if dsn == "" {
-		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
-			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Configuration error: %v", err)
 	}
+	models.SetAppKey(cfg.AppKey)
+	models.SetKiwixLibraryURL(cfg.KiwixServerURL)
+
+	dsn := buildDSN(cfg)
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: dsn,
 	}), &gorm.Config{})
@@ -85,8 +90,7 @@ func main() {
 		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
 
-	token := os.Getenv("PROVIDER_SERVICE_KEY")
-	handler := newServiceHandler(token, db)
+	handler := newServiceHandler(cfg, db)
 	log.Println("Server started on :8081")
 	handler.registerRoutes()
 	err = handler.initSubscription()
@@ -106,4 +110,12 @@ func initLogging() *log.Logger {
 	logger.SetFormatter(&log.JSONFormatter{})
 	logger.SetLevel(log.InfoLevel)
 	return logger
+}
+
+func buildDSN(cfg *config.Config) string {
+	if cfg.AppDSN != "" {
+		return cfg.AppDSN
+	}
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 }

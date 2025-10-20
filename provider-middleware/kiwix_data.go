@@ -11,7 +11,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -159,7 +158,7 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 		return "", err
 	}
 
-	uploadURL := os.Getenv("APP_URL") + "/upload"
+	uploadURL := ks.appURL + "/upload"
 	req, err = http.NewRequest(http.MethodPost, uploadURL, body)
 	if err != nil {
 		logger().Errorf("error creating upload request: %v", err)
@@ -200,7 +199,7 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 }
 
 func (ks *KiwixService) thumbnailExists(lib string) bool {
-	thumbnailURL := os.Getenv("APP_URL") + "/api/photos/" + lib + ".png"
+	thumbnailURL := ks.appURL + "/api/photos/" + lib + ".png"
 	req, err := http.NewRequest(http.MethodHead, thumbnailURL, nil)
 	if err != nil {
 		logger().Errorf("error creating request: %v", err)
