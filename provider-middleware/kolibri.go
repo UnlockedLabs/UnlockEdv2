@@ -1,10 +1,10 @@
 package main
 
 import (
+	appconfig "UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +25,7 @@ type KolibriService struct {
 	AccountID          string
 	db                 *gorm.DB
 	JobParams          map[string]any
+	appURL             string
 }
 
 /**
@@ -32,10 +33,10 @@ type KolibriService struct {
 * Pulls the login info from ENV variables. In production, these should be set
 * in /etc/environment
 **/
-func NewKolibriService(provider *models.ProviderPlatform, params map[string]any) *KolibriService {
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	password := os.Getenv("KOLIBRI_DB_PASSWORD")
+func NewKolibriService(provider *models.ProviderPlatform, params map[string]any, cfg *appconfig.Config) *KolibriService {
+	host := cfg.DBHost
+	port := cfg.DBPort
+	password := cfg.KolibriDBPassword
 	dsn := fmt.Sprintf("host=%s user=kolibri password=%s dbname=kolibri port=%s sslmode=prefer TimeZone=UTC", host, password, port)
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -49,6 +50,7 @@ func NewKolibriService(provider *models.ProviderPlatform, params map[string]any)
 		db:                 conn,
 		BaseURL:            provider.BaseUrl,
 		JobParams:          params,
+		appURL:             cfg.AppURL,
 	}
 }
 

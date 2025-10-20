@@ -1,7 +1,9 @@
 package main
 
 import (
+	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/database"
+	"UnlockEdv2/src/models"
 	"context"
 	"database/sql"
 	"errors"
@@ -27,8 +29,14 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Failed to load .env file: %v", err)
 	}
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	models.SetAppKey(cfg.AppKey)
+	models.SetKiwixLibraryURL(cfg.KiwixServerURL)
+
+	dsn := buildDSN(cfg)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatalf("Failed to open database connection: %v", err)
@@ -54,27 +62,27 @@ func main() {
 		log.Fatalf("Migration failed: %v", err)
 	}
 	if *fresh {
-		MigrateFresh(db)
+		MigrateFresh(db, cfg)
 	}
 	log.Println("Migrations completed successfully")
 	os.Exit(0)
 }
 
-func MigrateFresh(db *sql.DB) {
+func MigrateFresh(db *sql.DB, cfg *config.Config) {
 	options := nats.GetDefaultOptions()
-	url := os.Getenv("NATS_URL")
+	url := cfg.NATSURL
 	if url == "" {
 		url = "nats://localhost:4222"
 	}
 	options.Url = url
-	options.User = os.Getenv("NATS_USER")
-	options.Password = os.Getenv("NATS_PASSWORD")
+	options.User = cfg.NATSUser
+	options.Password = cfg.NATSPassword
 	conn, err := options.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	if err := syncOryKratos(); err != nil {
+	if err := syncOryKratos(cfg); err != nil {
 		log.Fatal("unable to delete identities from kratos instance")
 	}
 	gormDb, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
@@ -89,14 +97,14 @@ func MigrateFresh(db *sql.DB) {
 	log.Println("\033[31mIf the server is running, you MUST restart it\033[0m")
 }
 
-func syncOryKratos() error {
+func syncOryKratos(cfg *config.Config) error {
 	config := client.Configuration{
 		Servers: client.ServerConfigurations{
 			{
-				URL: os.Getenv("KRATOS_ADMIN_URL"),
+				URL: cfg.KratosAdminURL,
 			},
 			{
-				URL: os.Getenv("KRATOS_PUBLIC_URL"),
+				URL: cfg.KratosPublicURL,
 			},
 		},
 	}
@@ -146,4 +154,12 @@ func flushNats(conn *nats.Conn) {
 			log.Println("error deleting stream", err)
 		}
 	}
+}
+
+func buildDSN(cfg *config.Config) string {
+	if cfg.AppDSN != "" {
+		return cfg.AppDSN
+	}
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 }

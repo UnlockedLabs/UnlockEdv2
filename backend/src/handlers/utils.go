@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -284,9 +283,9 @@ func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML st
 			},
 		},
 		Destination: &types.Destination{
-			ToAddresses: []string{os.Getenv("TO_EMAIL")},
+			ToAddresses: []string{srv.config.TOEmail},
 		},
-		FromEmailAddress: aws.String(os.Getenv("FROM_EMAIL")),
+		FromEmailAddress: aws.String(srv.config.FROMEmail),
 	}
 
 	_, err := srv.sesClient.SendEmail(ctx, input)

@@ -20,11 +20,6 @@ import (
 
 type DB struct{ *gorm.DB }
 
-var (
-	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
-		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
-)
-
 func NewDB(db *gorm.DB) *DB {
 	return &DB{db}
 }
@@ -61,7 +56,7 @@ func InitDB(cfg *config.Config, isTesting bool) *DB {
 		MigrateTesting(gormDb)
 	} else {
 		// Use DSN if provided, otherwise build from parts
-		dsn := cfg.APP_DSN
+		dsn := cfg.AppDSN
 
 		if dsn == "" {
 			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
@@ -192,8 +187,12 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
-		for idx := range defaultOpenContentProviders {
-			if err := db.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
+		defaultProviders := []models.OpenContentProvider{
+			{Title: models.Kiwix, Url: models.KiwixLibraryURL(), CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+			{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription},
+		}
+		for idx := range defaultProviders {
+			if err := db.Create(&defaultProviders[idx]).Error; err != nil {
 				logrus.Fatalf("Failed to create default open content providers: %v", err)
 			}
 		}

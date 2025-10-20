@@ -1,15 +1,14 @@
 package main
 
 import (
+	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/handlers"
 	"UnlockEdv2/src/models"
-	"UnlockEdv2/src/config"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -33,34 +32,28 @@ var (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Printf("Error loading .env file: %v", err)
 	}
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	models.SetAppKey(cfg.AppKey)
+	models.SetKiwixLibraryURL(cfg.KiwixServerURL)
+
+	dsn := buildDSN(cfg)
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: dsn,
 	}), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to the PostgreSQL database: %v", err)
 	}
-	seedTestData(db)
+	seedTestData(db, cfg)
 }
 
-func seedTestData(db *gorm.DB) {
-	// Load configuration for the seeder
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Printf("Warning: Failed to load config: %v. Some features may not work.", err)
-		// Create a minimal config for seeder
-		cfg = &config.Config{
-			KratosAdminURL: os.Getenv("KRATOS_ADMIN_URL"),
-			KratosPublicURL: os.Getenv("KRATOS_PUBLIC_URL"),
-			OryToken:       os.Getenv("ORY_TOKEN"),
-		}
-	}
-
+func seedTestData(db *gorm.DB, cfg *config.Config) {
+	var err error
 	// isTesting is false because this needs to seed real users w/ kratos
 	testServer := handlers.NewServer(false, context.Background(), cfg)
 	facilities := []models.Facility{
@@ -326,6 +319,14 @@ func seedTestData(db *gorm.DB) {
 		}
 	}
 	createUserSessionActivity(db, users)
+}
+
+func buildDSN(cfg *config.Config) string {
+	if cfg.AppDSN != "" {
+		return cfg.AppDSN
+	}
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 }
 
 func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {

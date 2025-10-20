@@ -56,7 +56,6 @@ func (sh *ServiceHandler) initSubscription() error {
 	return nil
 }
 
-
 /**
 * GET: /api/courses
 * This handler will be responsible for importing courses from Providers
@@ -82,7 +81,7 @@ func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.M
 		return
 	}
 	jobId := body["job_id"].(string)
-	kiwixService := NewKiwixService(provider, body)
+	kiwixService := NewKiwixService(provider, body, sh.cfg)
 	success := kiwixService.ImportLibraries(ctx, sh.db) == nil
 	providerIdPtr := int(provider.ID)
 	sh.cleanupJob(ctx, &providerIdPtr, jobId, success)
@@ -202,7 +201,7 @@ func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, body)
+	ytService := NewVideoService(provider, sh.db, body, sh.cfg)
 	err = ytService.addVideos(ctx)
 	if err != nil {
 		logger().Errorf("error adding videos: %v", err)
@@ -218,7 +217,7 @@ func (sh *ServiceHandler) handleManualRetryDownload(ctx context.Context, msg *na
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, body)
+	ytService := NewVideoService(provider, sh.db, body, sh.cfg)
 	videoId, ok := body["video_id"].(float64)
 	if ok {
 		err = ytService.retrySingleVideo(ctx, int(videoId))
@@ -238,7 +237,7 @@ func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, body)
+	ytService := NewVideoService(provider, sh.db, body, sh.cfg)
 	err = ytService.retryFailedVideos(ctx)
 	if err != nil {
 		logger().Errorf("error retrying failed videos: %v", err)
@@ -256,7 +255,7 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, body)
+	ytService := NewVideoService(provider, sh.db, body, sh.cfg)
 	err = ytService.syncVideoMetadata(ctx)
 	if err != nil {
 		logger().Errorf("error syncing video metadata: %v", err)
