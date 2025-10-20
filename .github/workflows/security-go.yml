@@ -1,0 +1,120 @@
+name: PR Security Check - Go Vulnerabilities Scan
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "backend/go.mod"
+      - "backend/go.sum"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  govulncheck:
+    name: Scan Go Dependencies for Vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: backend/go.mod
+
+      - name: Install govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Run vulnerability scan
+        id: vuln-scan
+        working-directory: backend
+        timeout-minutes: 5
+        run: |
+          echo "🔍 Running govulncheck on backend dependencies..."
+
+          # Run govulncheck and capture output
+          if govulncheck -v ./... > vuln_output.txt 2>&1; then
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+            echo "No vulnerabilities found in Go dependencies"
+          else
+            echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+            echo "Security vulnerabilities detected - this PR cannot be merged"
+            exit 1
+          fi
+
+      - name: Send Slack notification
+        if: failure() && steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        run: |
+          # Read vulnerability output and format for Slack
+          VULN_OUTPUT=$(cat backend/vuln_output.txt 2>/dev/null || echo "Unable to read vulnerability output")
+
+          # Escape special characters for JSON and limit length to avoid Slack limits
+          VULN_ESCAPED=$(echo "$VULN_OUTPUT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n' | head -c 2000)
+          if [ ${#VULN_OUTPUT} -gt 2000 ]; then
+            VULN_ESCAPED="$VULN_ESCAPED... (truncated, see full output in workflow logs)"
+          fi
+
+          # Prepare Slack message with vulnerability details
+          SLACK_MESSAGE=$(cat <<EOF
+          🚨 **SECURITY VULNERABILITIES DETECTED** 🚨
+
+          **Repository**: ${{ github.repository }}
+          **PR**: #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}
+          **Author**: ${{ github.event.pull_request.user.login }}
+          **Branch**: ${{ github.event.pull_request.head.ref }}
+
+          This PR contains Go security vulnerabilities and has been blocked from merging.
+
+          *Vulnerability Details:*
+          \`\`\`
+          $VULN_ESCAPED
+          \`\`\`
+
+          **🔧 Actions needed:**
+          1. Update affected dependencies: \`go get -u <package>@<safe-version>\`
+          2. Push updates to the PR
+
+          **PR Link**: ${{ github.event.pull_request.html_url }}
+          EOF
+          )
+
+          # Send to Slack with error handling and timeout
+          if ! curl -X POST -H 'Content-type: application/json' \
+               --max-time 10 \
+               --silent \
+               --fail \
+               --data "{\"channel\":\"#unlockedv2-chat\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
+               "${{ secrets.SLACK_WEBHOOK_URL }}"; then
+            echo "Warning: Failed to send Slack notification"
+          else
+            echo "Slack notification sent successfully to #unlockedv2-chat"
+          fi
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Security check summary
+        if: always()
+        run: |
+          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
+            echo ""
+            echo "SECURITY CHECK FAILED"
+            echo "This PR CANNOT be merged due to security vulnerabilities."
+            echo ""
+            echo "To fix these vulnerabilities:"
+            echo "  1. cd backend"
+            echo "  2. go get -u <package>@<safe-version>"
+            echo "  3. Push updates to your PR"
+            echo ""
+            echo "📱 Slack notification sent to #unlockedv2-chat"
+            echo ""
+          else
+            echo "SECURITY CHECK PASSED - No vulnerabilities found in Go dependencies"
+          fi
