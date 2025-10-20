@@ -102,7 +102,10 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                         </td>
                         <td className="px-2">{enrollment.name_full}</td>
                         <td className="px-2">{enrollment.doc_id}</td>
-                        <td className="px-2">
+                        <td
+                            className="px-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <EditableEnrollmentDate
                                 enrollment={enrollment}
                                 classInfo={classInfo}

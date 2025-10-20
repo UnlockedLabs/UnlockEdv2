@@ -1,10 +1,14 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useCallback } from 'react';
 import { ClassEnrollment, Class, ToastState } from '@/common';
 import { FormModal, FormInputTypes } from '@/Components/modals';
 import { FieldValues } from 'react-hook-form';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
-import { PencilSquareIcon } from '@heroicons/react/24/outline';
+import {
+    PencilSquareIcon,
+    InformationCircleIcon
+} from '@heroicons/react/24/outline';
+import ULIComponent from './ULIComponent';
 
 interface EditableEnrollmentDateProps {
     enrollment: ClassEnrollment;
@@ -29,12 +33,25 @@ export default function EditableEnrollmentDate({
 
     const displayDate = enrollment.enrolled_at ?? enrollment.created_at;
 
-    const handleDateClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!disabled) {
-            modalRef.current?.showModal();
-        }
+    const classHasStarted = () => {
+        if (!classInfo?.start_dt) return true;
+
+        const today = toDateOnly(new Date().toISOString());
+        const classStartDate = toDateOnly(classInfo.start_dt);
+        return classStartDate <= today;
     };
+
+    const canEditDate = !disabled && classHasStarted();
+
+    const handleDateClick = useCallback(
+        (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (canEditDate) {
+                modalRef.current?.showModal();
+            }
+        },
+        [canEditDate]
+    );
 
     const handleDateUpdate = async (formData: FieldValues) => {
         const newDate = formData.enrolled_date as string;
@@ -96,19 +113,30 @@ export default function EditableEnrollmentDate({
 
     return (
         <>
-            <span
-                className={`group flex items-center gap-1 cursor-pointer hover:text-primary hover:underline ${
-                    disabled ? 'cursor-not-allowed opacity-50' : ''
-                }`}
-                onClick={handleDateClick}
-                title={
-                    disabled
-                        ? 'Cannot edit date'
-                        : 'Click to edit enrollment date'
-                }
-            >
-                {new Date(displayDate).toLocaleDateString()}
-                <PencilSquareIcon className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="flex items-center gap-1">
+                {canEditDate ? (
+                    <span
+                        className="group flex items-center gap-1 cursor-pointer hover:text-primary hover:underline"
+                        onClick={handleDateClick}
+                        title="Click to edit enrollment date"
+                    >
+                        {new Date(displayDate).toLocaleDateString()}
+                        <PencilSquareIcon className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </span>
+                ) : (
+                    <span className="flex items-center gap-1">
+                        {new Date(displayDate).toLocaleDateString()}
+                        <ULIComponent
+                            icon={InformationCircleIcon}
+                            dataTip={
+                                disabled
+                                    ? 'Cannot edit enrollment date for non-enrolled students'
+                                    : 'Cannot edit enrollment date until class starts'
+                            }
+                            iconClassName="cursor-help"
+                        />
+                    </span>
+                )}
             </span>
 
             <FormModal
