@@ -39,8 +39,6 @@ jobs:
         timeout-minutes: 5
         run: |
           echo "🔍 Running govulncheck on backend dependencies..."
-
-          # Run govulncheck and capture output
           if govulncheck -v ./... > vuln_output.txt 2>&1; then
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
             echo "No vulnerabilities found in Go dependencies"
@@ -53,16 +51,14 @@ jobs:
       - name: Send Slack notification
         if: failure() && steps.vuln-scan.outputs.vulnerabilities_found == 'true'
         run: |
-          # Read vulnerability output and format for Slack
           VULN_OUTPUT=$(cat backend/vuln_output.txt 2>/dev/null || echo "Unable to read vulnerability output")
 
-          # Escape special characters for JSON and limit length to avoid Slack limits
+          # have to escape the special characters for json and limit the length to avoid any possible slack limits
           VULN_ESCAPED=$(echo "$VULN_OUTPUT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n' | head -c 2000)
           if [ ${#VULN_OUTPUT} -gt 2000 ]; then
             VULN_ESCAPED="$VULN_ESCAPED... (truncated, see full output in workflow logs)"
           fi
 
-          # Prepare Slack message with vulnerability details
           SLACK_MESSAGE=$(cat <<EOF
           🚨 **SECURITY VULNERABILITIES DETECTED** 🚨
 
@@ -86,7 +82,6 @@ jobs:
           EOF
           )
 
-          # Send to Slack with error handling and timeout
           if ! curl -X POST -H 'Content-type: application/json' \
                --max-time 10 \
                --silent \
