@@ -1,8 +1,9 @@
 package models
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"slices"
 	"time"
 
@@ -72,14 +73,24 @@ func (usr *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+const (
+	passwordLength       = 8
+	unambiguousLowercase = "abcdefghijkmnpqrstuvwxyz" // Removes: l (looks like 1), o (looks like 0)
+)
 
-func (user *User) CreateTempPassword() string {
-	b := make([]byte, 8)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+func (user *User) CreateTempPassword() (string, error) {
+	charset := unambiguousLowercase
+	password := make([]byte, passwordLength)
+
+	for i := range password {
+		randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", err
+		}
+		password[i] = charset[randomIndex.Int64()]
 	}
-	return string(b)
+
+	return string(password), nil
 }
 
 func (user *User) GetTraits() map[string]any {

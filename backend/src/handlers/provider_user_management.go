@@ -133,7 +133,13 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			toReturn = append(toReturn, userResponse)
 			continue
 		}
-		tempPw := newUser.CreateTempPassword()
+		tempPw, err := newUser.CreateTempPassword()
+		if err != nil {
+			log.error("Error creating temp password for user in import-provider-users", err)
+			userResponse.Error = "error creating temp password for user"
+			toReturn = append(toReturn, userResponse)
+			continue
+		}
 		userResponse.TempPassword = tempPw
 		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
 			if err = srv.Db.DeleteUser(int(newUser.ID)); err != nil {

@@ -188,7 +188,10 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			log.error("Error creating provider user account for provider: ", provider.Name)
 		}
 	}
-	tempPw := reqForm.User.CreateTempPassword()
+	tempPw, err := reqForm.User.CreateTempPassword()
+	if err != nil {
+		return newInternalServerServiceError(err, "Error creating temporary password")
+	}
 	response := struct {
 		TempPassword string      `json:"temp_password"`
 		User         models.User `json:"user"`
@@ -316,7 +319,10 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 			return newDatabaseServiceError(err)
 		}
 	}
-	newPass := user.CreateTempPassword()
+	newPass, err := user.CreateTempPassword()
+	if err != nil {
+		return newInternalServerServiceError(err, "Error creating temporary password")
+	}
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
 	if user.KratosID == "" {
