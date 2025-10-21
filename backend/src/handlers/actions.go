@@ -60,7 +60,11 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 			log.error("Error creating user:" + err.Error())
 			continue
 		}
-		tempPw := newUser.CreateTempPassword()
+		tempPw, err := newUser.CreateTempPassword()
+		if err != nil {
+			log.add("error", err.Error())
+			log.errorf("Error creating temp password: %v", err)
+		}
 		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
 			log.add("error", err.Error())
 			log.errorf("Error creating user in kratos: %v", err)
