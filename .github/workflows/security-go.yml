@@ -6,6 +6,9 @@ on:
       - "backend/**"
       - "backend/go.mod"
       - "backend/go.sum"
+      - "provider-middleware/**"
+      - "provider-middleware/go.mod"
+      - "provider-middleware/go.sum"
       - ".github/workflows/security-go.yml"
 
 permissions:
@@ -27,7 +30,9 @@ jobs:
         with:
           go-version: "1.23"
           cache: true
-          cache-dependency-path: backend/go.mod
+          cache-dependency-path: |
+            backend/go.mod
+            provider-middleware/go.mod
 
       - name: Install govulncheck
         run: |
@@ -36,25 +41,51 @@ jobs:
 
       - name: Run vulnerability scan
         id: vuln-scan
-        working-directory: backend
         timeout-minutes: 5
         run: |
-          echo "Running govulncheck on backend dependencies..."
-          if govulncheck ./... > vuln_output.txt 2>&1; then
-            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
-            echo "No vulnerabilities found in Go dependencies"
+          echo "Running govulncheck on both Go modules..."
+
+          backend_vuln=false
+          middleware_vuln=false
+
+          echo "Scanning backend module..."
+          cd backend
+          if govulncheck ./... > ../backend_vuln_output.txt 2>&1; then
+            echo "No vulnerabilities found in backend"
           else
+            backend_vuln=true
+            echo "Vulnerabilities found in backend"
+          fi
+          cd ..
+
+          echo "Scanning provider-middleware module..."
+          cd provider-middleware
+          if govulncheck ./... > ../middleware_vuln_output.txt 2>&1; then
+            echo "No vulnerabilities found in provider-middleware"
+          else
+            middleware_vuln=true
+            echo "Vulnerabilities found in provider-middleware"
+          fi
+          cd ..
+
+          if [ "$backend_vuln" = true ] || [ "$middleware_vuln" = true ]; then
             echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
             echo "Security vulnerabilities detected - this PR cannot be merged"
             exit 1
+          else
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+            echo "No vulnerabilities found in any Go modules"
           fi
 
       - name: Send Slack notification
         if: failure() && steps.vuln-scan.outputs.vulnerabilities_found == 'true'
         run: |
-          VULN_OUTPUT=$(cat backend/vuln_output.txt 2>/dev/null || echo "Unable to read vulnerability output")
+          # Collect vulnerability output from both modules
+          BACKEND_VULN=$(cat backend_vuln_output.txt 2>/dev/null || echo "No backend vulnerabilities output")
+          MIDDLEWARE_VULN=$(cat middleware_vuln_output.txt 2>/dev/null || echo "No provider-middleware vulnerabilities output")
 
-          # have to escape the special characters for json and limit the length to avoid any possible slack limits
+          VULN_OUTPUT="=== BACKEND VULNERABILITIES ==="$'\n'"$BACKEND_VULN"$'\n'"$'\n'"=== PROVIDER-MIDDLEWARE VULNERABILITIES ==="$'\n'"$MIDDLEWARE_VULN"
+
           VULN_ESCAPED=$(echo "$VULN_OUTPUT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n' | head -c 2000)
           if [ ${#VULN_OUTPUT} -gt 2000 ]; then
             VULN_ESCAPED="$VULN_ESCAPED... (truncated, see full output in workflow logs)"
@@ -103,12 +134,18 @@ jobs:
             echo "This PR CANNOT be merged due to security vulnerabilities."
             echo ""
             echo "To fix these vulnerabilities:"
-            echo "  1. cd backend"
-            echo "  2. go get -u <package>@<safe-version>"
-            echo "  3. Push updates to your PR"
+            echo "  For backend module:"
+            echo "    1. cd backend"
+            echo "    2. go get -u <package>@<safe-version>"
+            echo "    3. Push updates to your PR"
+            echo ""
+            echo "  For provider-middleware module:"
+            echo "    1. cd provider-middleware"
+            echo "    2. go get -u <package>@<safe-version>"
+            echo "    3. Push updates to your PR"
             echo ""
             echo "Slack notification sent to #unlockedv2-chat"
             echo ""
           else
-            echo "SECURITY CHECK PASSED - No vulnerabilities found in Go dependencies"
+            echo "SECURITY CHECK PASSED - No vulnerabilities found in any Go modules"
           fi
