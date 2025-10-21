@@ -39,7 +39,7 @@ jobs:
         working-directory: backend
         timeout-minutes: 5
         run: |
-          echo "🔍 Running govulncheck on backend dependencies..."
+          echo "Running govulncheck on backend dependencies..."
           if govulncheck ./... > vuln_output.txt 2>&1; then
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
             echo "No vulnerabilities found in Go dependencies"
@@ -107,7 +107,7 @@ jobs:
             echo "  2. go get -u <package>@<safe-version>"
             echo "  3. Push updates to your PR"
             echo ""
-            echo "📱 Slack notification sent to #unlockedv2-chat"
+            echo "Slack notification sent to #unlockedv2-chat"
             echo ""
           else
             echo "SECURITY CHECK PASSED - No vulnerabilities found in Go dependencies"
