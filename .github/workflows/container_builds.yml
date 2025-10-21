@@ -2,9 +2,9 @@ name: Container ECR build + deploy
 on:
   push:
     branches:
-    - main
-    - demo
-    - beta
+      - main
+      - demo
+      - beta
 
 permissions:
   id-token: write
@@ -18,35 +18,35 @@ jobs:
       changes: ${{ steps.check-changes.outputs.changes }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 3
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 3
 
-    - id: check-changes
-      run: |
-        BASE="${{ github.event.before }}"
-        echo "$BASE"
-        git fetch origin "$BASE"
-        paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
-        changes=""
-        for path in "${paths[@]}"; do
-          count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
-          changes+="${path}:${count},"
-        done
-        changes="${changes%,}"
-        echo "changes=${changes}" >> $GITHUB_OUTPUT
+      - id: check-changes
+        run: |
+          BASE="${{ github.event.before }}"
+          echo "$BASE"
+          git fetch origin "$BASE"
+          paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
+          changes=""
+          for path in "${paths[@]}"; do
+            count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
+            changes+="${path}:${count},"
+          done
+          changes="${changes%,}"
+          echo "changes=${changes}" >> $GITHUB_OUTPUT
 
-    - name: Check duplicate migration files
-      run: |
-        DUPLICATE_MIGRATIONS=$(ls -1 backend/migrations | grep '.*\.sql' | cut -c1-5 | sort | uniq -d)
-        if [ -z "$DUPLICATE_MIGRATIONS" ]; then
-          echo "no invalid migrations found"
-        else
-          echo "🚨 Duplicate migration files found 🚨"
-          echo "Migration number: $DUPLICATE_MIGRATIONS is a duplicate\n and needs to be renamed"
-          exit 1
-        fi
+      - name: Check duplicate migration files
+        run: |
+          DUPLICATE_MIGRATIONS=$(ls -1 backend/migrations | grep '.*\.sql' | cut -c1-5 | sort | uniq -d)
+          if [ -z "$DUPLICATE_MIGRATIONS" ]; then
+            echo "no invalid migrations found"
+          else
+            echo "🚨 Duplicate migration files found 🚨"
+            echo "Migration number: $DUPLICATE_MIGRATIONS is a duplicate\n and needs to be renamed"
+            exit 1
+          fi
 
   build-and-push:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
@@ -58,82 +58,82 @@ jobs:
       CHANGES: ${{ needs.setup-env.outputs.changes }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set Image Version
-      run: |
-        if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
-          echo "IMAGE_VERSION=beta" >> $GITHUB_ENV
-        else
-          echo "IMAGE_VERSION=latest" >> $GITHUB_ENV
-        fi
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
-        aws-region: us-west-2
-        mask-aws-account-id: true
-
-    - name: Log in to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - id: build-images
-      run: |
-        echo "CHANGES: $CHANGES"
-        deployments=()
-        IFS=',' read -ra entries <<< "$CHANGES"
-        for entry in "${entries[@]}"; do
-          if [ -z "$entry" ]; then
-            continue
+      - name: Set Image Version
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
+            echo "IMAGE_VERSION=beta" >> $GITHUB_ENV
+          else
+            echo "IMAGE_VERSION=latest" >> $GITHUB_ENV
           fi
-          path=$(echo "$entry" | cut -d':' -f1)
-          count=$(echo "$entry" | cut -d':' -f2)
-          if [[ $count -ne 0 ]]; then
-            case $path in
-              "frontend/")
-                echo "Building frontend image"
-                POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
-                POSTHOG_HOST=${{ secrets.POSTHOG_KEY }}
-                VITE_DEPLOYMENT=production
-                # Set environment-specific secrets
-                if [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
-                  VITE_STATE=maine
-                elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
-                  VITE_DEPLOYMENT=development
-                  VITE_STATE=demo
-                else
-                  VITE_DEPLOYMENT=development
-                  VITE_STATE=staging
-                fi
 
-                docker buildx build --platform linux/amd64 --build-arg VITE_PUBLIC_POSTHOG_KEY="$POSTHOG_KEY" --build-arg VITE_PUBLIC_POSTHOG_HOST="$POSTHOG_HOST" --build-arg VITE_DEPLOYMENT="$VITE_DEPLOYMENT" --build-arg VITE_STATE="$VITE_STATE" -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
-                deployments+=("frontend")
-                ;;
-              "backend/")
-                echo "Building backend image"
-                docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION} --push -f backend/Dockerfile .
-                deployments+=("server")
-                ;;
-              "provider-middleware/")
-                echo "Building middleware image"
-                docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
-                deployments+=("provider-service")
-                ;;
-              "backend/tasks")
-                echo "Building scheduler image"
-                docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:${IMAGE_VERSION} --push -f backend/tasks/Dockerfile .
-                deployments+=("cron-tasks")
-                ;;
-            esac
-          fi
-        done
-        echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: us-west-2
+          mask-aws-account-id: true
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - id: build-images
+        run: |
+          echo "CHANGES: $CHANGES"
+          deployments=()
+          IFS=',' read -ra entries <<< "$CHANGES"
+          for entry in "${entries[@]}"; do
+            if [ -z "$entry" ]; then
+              continue
+            fi
+            path=$(echo "$entry" | cut -d':' -f1)
+            count=$(echo "$entry" | cut -d':' -f2)
+            if [[ $count -ne 0 ]]; then
+              case $path in
+                "frontend/")
+                  echo "Building frontend image"
+                  POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
+                  POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
+                  VITE_DEPLOYMENT=production
+                  # Set environment-specific secrets
+                  if [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
+                    VITE_STATE=maine
+                  elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+                    VITE_DEPLOYMENT=development
+                    VITE_STATE=demo
+                  else
+                    VITE_DEPLOYMENT=development
+                    VITE_STATE=staging
+                  fi
+
+                  docker buildx build --platform linux/amd64 --build-arg VITE_PUBLIC_POSTHOG_KEY="$POSTHOG_KEY" --build-arg VITE_PUBLIC_POSTHOG_HOST="$POSTHOG_HOST" --build-arg VITE_DEPLOYMENT="$VITE_DEPLOYMENT" --build-arg VITE_STATE="$VITE_STATE" -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
+                  deployments+=("frontend")
+                  ;;
+                "backend/")
+                  echo "Building backend image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION} --push -f backend/Dockerfile .
+                  deployments+=("server")
+                  ;;
+                "provider-middleware/")
+                  echo "Building middleware image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
+                  deployments+=("provider-service")
+                  ;;
+                "backend/tasks")
+                  echo "Building scheduler image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:${IMAGE_VERSION} --push -f backend/tasks/Dockerfile .
+                  deployments+=("cron-tasks")
+                  ;;
+              esac
+            fi
+          done
+          echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
 
   restart-deployments:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
@@ -141,38 +141,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
-        aws-region: us-west-2
-        mask-aws-account-id: true
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: us-west-2
+          mask-aws-account-id: true
 
-    - name: Restart Deployments via SSM
-      env:
-        SSM_TARGET_INSTANCE_ID: ${{ secrets.SSM_TARGET_INSTANCE_ID }}
-      run: |
-        deployments="${{ needs.build-and-push.outputs.deployments }}"
-        if [[ -z "$deployments" ]]; then
-          echo "No deployments need restarting."
-          exit 0
-        fi
-        if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
-          echo "Skipping deployment restarts for branch ${GITHUB_REF}"
-          exit 0
-        elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
-          NAMESPACE="demo"
-        elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-          NAMESPACE="staging"
-        else
-          echo "Unknown branch: ${GITHUB_REF}. No deployments restarted."
-          exit 1
-        fi
-        # this command runs the rollout.sh executable file
-        COMMAND="rollout.sh $NAMESPACE $deployments"
-        PARAMETERS=$(jq -n --arg cmd "$COMMAND" '{"commands": [$cmd]}')
-        aws ssm send-command \
-          --instance-ids "$SSM_TARGET_INSTANCE_ID" \
-          --document-name "AWS-RunShellScript" \
-          --parameters "$PARAMETERS" \
-          --comment "Restarting deployments in $NAMESPACE"
+      - name: Restart Deployments via SSM
+        env:
+          SSM_TARGET_INSTANCE_ID: ${{ secrets.SSM_TARGET_INSTANCE_ID }}
+        run: |
+          deployments="${{ needs.build-and-push.outputs.deployments }}"
+          if [[ -z "$deployments" ]]; then
+            echo "No deployments need restarting."
+            exit 0
+          fi
+          if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
+            echo "Skipping deployment restarts for branch ${GITHUB_REF}"
+            exit 0
+          elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+            NAMESPACE="demo"
+          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            NAMESPACE="staging"
+          else
+            echo "Unknown branch: ${GITHUB_REF}. No deployments restarted."
+            exit 1
+          fi
+          # this command runs the rollout.sh executable file
+          COMMAND="rollout.sh $NAMESPACE $deployments"
+          PARAMETERS=$(jq -n --arg cmd "$COMMAND" '{"commands": [$cmd]}')
+          aws ssm send-command \
+            --instance-ids "$SSM_TARGET_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "$PARAMETERS" \
+            --comment "Restarting deployments in $NAMESPACE"

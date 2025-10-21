@@ -2,6 +2,7 @@ FROM node:21-alpine3.19 as builder
 WORKDIR /app/
 COPY . .
 
+# VITE args and envrionment variables
 ARG VITE_PUBLIC_POSTHOG_KEY
 ARG VITE_PUBLIC_POSTHOG_HOST
 ARG VITE_DEPLOYMENT
