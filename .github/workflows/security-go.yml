@@ -26,8 +26,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.23"
-          cache: true
-          cache-dependency-path: backend/go.mod
 
       - name: Install govulncheck
         run: |
@@ -40,7 +38,7 @@ jobs:
         timeout-minutes: 5
         run: |
           echo "🔍 Running govulncheck on backend dependencies..."
-          if govulncheck -show verbose ./... > vuln_output.txt 2>&1; then
+          if govulncheck ./... > vuln_output.txt 2>&1; then
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
             echo "No vulnerabilities found in Go dependencies"
           else
