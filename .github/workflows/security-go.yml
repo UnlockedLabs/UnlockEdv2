@@ -40,7 +40,7 @@ jobs:
         timeout-minutes: 5
         run: |
           echo "🔍 Running govulncheck on backend dependencies..."
-          if govulncheck -v ./... > vuln_output.txt 2>&1; then
+          if govulncheck -show verbose ./... > vuln_output.txt 2>&1; then
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
             echo "No vulnerabilities found in Go dependencies"
           else
@@ -61,12 +61,12 @@ jobs:
           fi
 
           SLACK_MESSAGE=$(cat <<EOF
-          🚨 **SECURITY VULNERABILITIES DETECTED** 🚨
+          🚨 *SECURITY VULNERABILITIES DETECTED* 🚨
 
-          **Repository**: ${{ github.repository }}
-          **PR**: #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}
-          **Author**: ${{ github.event.pull_request.user.login }}
-          **Branch**: ${{ github.event.pull_request.head.ref }}
+          Repository: ${{ github.repository }}
+          PR: #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}
+          Author: ${{ github.event.pull_request.user.login }}
+          Branch: ${{ github.event.pull_request.head.ref }}
 
           This PR contains Go security vulnerabilities and has been blocked from merging.
 
@@ -75,11 +75,11 @@ jobs:
           $VULN_ESCAPED
           \`\`\`
 
-          **🔧 Actions needed:**
+          🔧 *Actions needed:*
           1. Update affected dependencies: \`go get -u <package>@<safe-version>\`
           2. Push updates to the PR
 
-          **PR Link**: ${{ github.event.pull_request.html_url }}
+          *PR Link:* ${{ github.event.pull_request.html_url }}
           EOF
           )
 
