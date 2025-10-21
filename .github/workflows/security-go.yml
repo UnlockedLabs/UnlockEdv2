@@ -6,6 +6,7 @@ on:
       - "backend/**"
       - "backend/go.mod"
       - "backend/go.sum"
+      - ".github/workflows/security-go.yml"
 
 permissions:
   contents: read
