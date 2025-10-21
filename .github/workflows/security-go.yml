@@ -66,12 +66,10 @@ jobs:
           Author: ${{ github.event.pull_request.user.login }}
           Branch: ${{ github.event.pull_request.head.ref }}
 
-          This PR contains Go security vulnerabilities and has been blocked from merging.
+          This PR contains Go security vulnerabilities and has been blocked from merging until fixed.
 
           *Vulnerability Details:*
-          \`\`\`
           $VULN_ESCAPED
-          \`\`\`
 
           🔧 *Actions needed:*
           1. Update affected dependencies: \`go get -u <package>@<safe-version>\`
