@@ -3,8 +3,11 @@ on:
   push:
     branches:
       - main
-      - demo
-      - beta
+      - demov2
+      - stlouis
+      - maine
+      - alaska
+      - mocode
 
 permissions:
   id-token: write
@@ -63,8 +66,16 @@ jobs:
 
       - name: Set Image Version
         run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
-            echo "IMAGE_VERSION=beta" >> $GITHUB_ENV
+          if [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
+            echo "IMAGE_VERSION=demo" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == "refs/heads/stlouis" ]]; then
+            echo "IMAGE_VERSION=stlouis" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
+            echo "IMAGE_VERSION=maine" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == "refs/heads/alaska" ]]; then
+            echo "IMAGE_VERSION=alaska" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == "refs/heads/mocode" ]]; then
+            echo "IMAGE_VERSION=mocode" >> $GITHUB_ENV
           else
             echo "IMAGE_VERSION=latest" >> $GITHUB_ENV
           fi
@@ -98,16 +109,24 @@ jobs:
               case $path in
                 "frontend/")
                   echo "Building frontend image"
-                  POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
-                  POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
+                  POSTHOG_KEY=placeholder_for_other_deployments
+                  POSTHOG_HOST=placeholder_for_other_deployments
                   VITE_DEPLOYMENT=production
                   # Set environment-specific secrets
-                  if [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
+                  if [[ "${GITHUB_REF}" == "refs/heads/stlouis" ]]; then
+                    VITE_STATE=stlouis
+                  elif [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
                     VITE_STATE=maine
-                  elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+                  elif [[ "${GITHUB_REF}" == "refs/heads/alaska" ]]; then
+                    VITE_STATE=alaska
+                  elif [[ "${GITHUB_REF}" == "refs/heads/mocode" ]]; then
+                    VITE_STATE=mocode
+                  elif [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
                     VITE_DEPLOYMENT=development
                     VITE_STATE=demo
                   else
+                    POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
+                    POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
                     VITE_DEPLOYMENT=development
                     VITE_STATE=staging
                   fi
@@ -157,16 +176,14 @@ jobs:
             echo "No deployments need restarting."
             exit 0
           fi
-          if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
+
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            NAMESPACE="staging"
+          elif [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
+            NAMESPACE="demo"
+          else
             echo "Skipping deployment restarts for branch ${GITHUB_REF}"
             exit 0
-          elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
-            NAMESPACE="demo"
-          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            NAMESPACE="staging"
-          else
-            echo "Unknown branch: ${GITHUB_REF}. No deployments restarted."
-            exit 1
           fi
           # this command runs the rollout.sh executable file
           COMMAND="rollout.sh $NAMESPACE $deployments"
