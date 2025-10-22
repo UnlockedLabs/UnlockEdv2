@@ -28,8 +28,8 @@ services:
     networks:
       - intranet
     environment:
-            - VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
-            - VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
+      - VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
+      - VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
 
   kiwix:
     image: jamescherti/kiwix-serve:latest
@@ -88,6 +88,7 @@ services:
       - MIGRATION_DIR=backend/migrations
       - KIWIX_SERVER_URL=http://kiwix:8080
       - CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
+      - PROXY_SCHEME_OVERRIDE=false
     depends_on:
       kratos:
         condition: service_started

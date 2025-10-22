@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -53,6 +54,11 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 	scheme := "https"
 	if srv.dev && parsedURL.Scheme == "http" {
 		// Prefer the parsed target URL's scheme if it's http.
+		scheme = "http"
+	}
+	//we have a special deploy currently in stlouis deployment which is why this is need
+	//if we ever have any other deployments that need this we have an easy switch value to use
+	if os.Getenv("PROXY_SCHEME_OVERRIDE") == "true" {
 		scheme = "http"
 	}
 	proxy := httputil.ReverseProxy{
