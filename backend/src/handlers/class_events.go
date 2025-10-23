@@ -132,6 +132,7 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	event.ClassID = uint(classID)
 	_, err = srv.Db.CreateNewEvent(classID, event)
 	if err != nil {
 		return newDatabaseServiceError(err)
