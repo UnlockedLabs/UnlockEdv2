@@ -20,7 +20,7 @@ const (
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
-	ClassID        uint   `json:"class_id" gorm:"not null" validate:"required"`
+	ClassID        uint   `json:"class_id" gorm:"not null"`
 	Duration       string `json:"duration" gorm:"not null" validate:"required"`
 	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" validate:"required"`
 	Room           string `json:"room" gorm:"not null;default:TBD"`
