@@ -19,6 +19,7 @@ import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 import ULIComponent from './ULIComponent';
 import { textMonthLocalDate } from './helperFunctions/formatting';
+import { RRule } from 'rrule';
 
 function ClassInfoCard({
     classInfo,
@@ -33,24 +34,66 @@ function ClassInfoCard({
     const blockEdits = isCompletedCancelledOrArchived(
         classInfo ?? ({} as Class)
     );
-
+    // This function works fine on class reschedule, but ater a restore when calculation takes place, it does its calculation off of the
+    // original rrule
     function getNextOccurrenceDateAsStr(): string {
-        if (!classInfo.start_dt) return 'No upcoming class found';
-
         const now = new Date();
-        const startDate = new Date(classInfo.start_dt);
+        const allOccurrences: Date[] = [];
 
-        // If class hasn't started yet, show start date as next occurrence
-        if (startDate > now) {
-            return textMonthLocalDate(startDate, true);
+        for (const event of classInfo?.events ?? []) {
+            const overrides = event.overrides ?? [];
+            const cancelledDates = new Set<string>();
+            const activeOverrideDates = new Set<string>();
+            const activeOverrideDateTimes: Date[] = [];
+
+            for (const override of overrides) {
+                const rule = RRule.fromString(override.override_rrule);
+                const date = rule.after(now, true);
+                if (!date) continue;
+
+                const dateStr = date.toISOString().slice(0, 10); //substring it
+                if (override.is_cancelled) {
+                    cancelledDates.add(dateStr);
+                } else {
+                    activeOverrideDates.add(dateStr);
+                    activeOverrideDateTimes.push(date);
+                }
+            }
+
+            if (event.recurrence_rule) {
+                const cleanRule = event.recurrence_rule.replace(
+                    /DTSTART;TZID=Local:/,
+                    'DTSTART:'
+                );
+                const rule = RRule.fromString(cleanRule);
+                const baseOccurrences = rule.between(
+                    now,
+                    new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
+                    true
+                );
+
+                for (const date of baseOccurrences) {
+                    const dateStr = date.toISOString().slice(0, 10);
+                    if (activeOverrideDates.has(dateStr)) {
+                        continue;
+                    }
+                    if (!cancelledDates.has(dateStr)) {
+                        allOccurrences.push(date);
+                    }
+                }
+            }
+            for (const overrideDate of activeOverrideDateTimes) {
+                if (overrideDate > now) {
+                    allOccurrences.push(overrideDate);
+                }
+            }
         }
-
-        // If class has an end date and it's in the past, no upcoming classes
-        if (classInfo.end_dt && new Date(classInfo.end_dt) <= now) {
-            return 'No upcoming class found';
-        }
-
-        return 'Class is ongoing';
+        const nextOccurrence = allOccurrences
+            .filter((d) => d > now)
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+        return nextOccurrence
+            ? textMonthLocalDate(nextOccurrence, true)
+            : 'No upcoming class found';
     }
 
     return (
@@ -90,8 +133,9 @@ function ClassInfoCard({
                 <div className="space-y-2">
                     <h3 className="body">Class Dates:</h3>
                     <p className="body-small">
-                        {classInfo.start_dt &&
-                            textMonthLocalDate(classInfo.start_dt)}{' '}
+                        {classInfo.start_dt > getNextOccurrenceDateAsStr()
+                            ? classInfo.start_dt
+                            : textMonthLocalDate(getNextOccurrenceDateAsStr())}
                         &ndash;{' '}
                         {classInfo.end_dt
                             ? textMonthLocalDate(classInfo.end_dt)
