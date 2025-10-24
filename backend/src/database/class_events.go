@@ -235,7 +235,6 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 }
 
 func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
-
 	var event models.ProgramClassEvent
 	if err := trans.Preload("Overrides").Where("class_id = ?", classID).First(&event).Error; err != nil {
 		return newGetRecordsDBError(err, "program_class_events")
@@ -325,10 +324,8 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		} else {
 			updates["end_dt"] = computedEnd
 		}
-	} else {
-		if (!hasOverrides && !ruleUntil.IsZero() && !ruleUntil.Equal(*class.EndDt)) || (!ruleUntil.IsZero() && ruleUntil.After(*class.EndDt)) {
-			updates["end_dt"] = ruleUntil
-		}
+	} else if (!hasOverrides && !ruleUntil.IsZero() && !ruleUntil.Equal(*class.EndDt)) || (!ruleUntil.IsZero() && ruleUntil.After(*class.EndDt)) {
+		updates["end_dt"] = ruleUntil
 	}
 
 	if len(updates) > 0 {
