@@ -1,0 +1,191 @@
+name: Go Security Scan
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'backend/**/*.go'
+      - 'provider-middleware/**/*.go'
+      - 'backend/go.mod'
+      - 'backend/go.sum'
+      - 'provider-middleware/go.mod'
+      - 'provider-middleware/go.sum'
+      - 'go.work'
+      - 'go.work.sum'
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Scan backend for vulnerabilities
+        id: scan-backend
+        run: |
+          echo "Scanning backend module..."
+          cd backend
+          govulncheck ./... -json > backend-vulns.json || true
+          
+          if [ -s backend-vulns.json ]; then
+            VULNS=$(jq '. | length' backend-vulns.json)
+            echo "Found $VULNS vulnerabilities in backend"
+            echo "vulnerabilities=$VULNS" >> $GITHUB_OUTPUT
+            
+            # Check for high/critical vulnerabilities
+            HIGH_VULNS=$(jq '[.[] | select(.severity == "HIGH" or .severity == "CRITICAL")] | length' backend-vulns.json)
+            echo "High/Critical vulnerabilities in backend: $HIGH_VULNS"
+            echo "high_critical=$HIGH_VULNS" >> $GITHUB_OUTPUT
+            
+            if [ "$HIGH_VULNS" -gt 0 ]; then
+              echo "::error::Found $HIGH_VULNS high/critical vulnerabilities in backend"
+              exit 1
+            fi
+          else
+            echo "vulnerabilities=0" >> $GITHUB_OUTPUT
+            echo "high_critical=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Scan provider-middleware for vulnerabilities
+        id: scan-provider
+        run: |
+          echo "Scanning provider-middleware module..."
+          cd provider-middleware
+          govulncheck ./... -json > provider-vulns.json || true
+          
+          if [ -s provider-vulns.json ]; then
+            VULNS=$(jq '. | length' provider-vulns.json)
+            echo "Found $VULNS vulnerabilities in provider-middleware"
+            echo "vulnerabilities=$VULNS" >> $GITHUB_OUTPUT
+            
+            # Check for high/critical vulnerabilities
+            HIGH_VULNS=$(jq '[.[] | select(.severity == "HIGH" or .severity == "CRITICAL")] | length' provider-vulns.json)
+            echo "High/Critical vulnerabilities in provider-middleware: $HIGH_VULNS"
+            echo "high_critical=$HIGH_VULNS" >> $GITHUB_OUTPUT
+            
+            if [ "$HIGH_VULNS" -gt 0 ]; then
+              echo "::error::Found $HIGH_VULNS high/critical vulnerabilities in provider-middleware"
+              exit 1
+            fi
+          else
+            echo "vulnerabilities=0" >> $GITHUB_OUTPUT
+            echo "high_critical=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate total vulnerabilities
+        id: total
+        run: |
+          BACKEND_VULNS=${{ steps.scan-backend.outputs.vulnerabilities }}
+          PROVIDER_VULNS=${{ steps.scan-provider.outputs.vulnerabilities }}
+          BACKEND_HIGH=${{ steps.scan-backend.outputs.high_critical }}
+          PROVIDER_HIGH=${{ steps.scan-provider.outputs.high_critical }}
+          
+          TOTAL_VULNS=$((BACKEND_VULNS + PROVIDER_VULNS))
+          TOTAL_HIGH=$((BACKEND_HIGH + PROVIDER_HIGH))
+          
+          echo "Total vulnerabilities: $TOTAL_VULNS"
+          echo "Total high/critical: $TOTAL_HIGH"
+          echo "total_vulnerabilities=$TOTAL_VULNS" >> $GITHUB_OUTPUT
+          echo "total_high_critical=$TOTAL_HIGH" >> $GITHUB_OUTPUT
+
+      - name: Upload vulnerability reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: vulnerability-reports
+          path: |
+            backend/backend-vulns.json
+            provider-middleware/provider-vulns.json
+          retention-days: 30
+
+      - name: Send Slack notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_CHANNEL: "#unlockedv2-chat"
+          SLACK_USERNAME: "UnlockEdv2 Security Bot"
+          SLACK_ICON: "https://github.com/UnlockedLabs/UnlockEdv2/raw/main/frontend/public/ul-logo-w.svg"
+          MSG_MINIMAL: true
+        with:
+          status: ${{ job.status }}
+          text: |
+            *Go Security Scan Results*
+            
+            *Repository:* ${{ github.repository }}
+            *PR:* #${{ github.event.number }} - ${{ github.event.pull_request.title }}
+            *Branch:* ${{ github.head_ref }}
+            *Status:* ${{ job.status }}
+            
+            *Total Vulnerabilities:* ${{ steps.total.outputs.total_vulnerabilities }}
+            *High/Critical:* ${{ steps.total.outputs.total_high_critical }}
+            *Backend:* ${{ steps.scan-backend.outputs.vulnerabilities }} vulns
+            *Provider-Middleware:* ${{ steps.scan-provider.outputs.vulnerabilities }} vulns
+            
+            *Scan Details:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Create PR comment with results
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const totalVulns = '${{ steps.total.outputs.total_vulnerabilities }}';
+            const totalHigh = '${{ steps.total.outputs.total_high_critical }}';
+            const status = '${{ job.status }}';
+            
+            let message = `## 🔒 Go Security Scan Results\n\n`;
+            message += `**Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}\n\n`;
+            message += `**Total Vulnerabilities:** ${totalVulns}\n`;
+            message += `**High/Critical:** ${totalHigh}\n\n`;
+            
+            message += `### Module Results\n`;
+            message += `- **Backend:** ${{ steps.scan-backend.outputs.vulnerabilities }} vulnerabilities (${{ steps.scan-backend.outputs.high_critical }} high/critical)\n`;
+            message += `- **Provider-Middleware:** ${{ steps.scan-provider.outputs.vulnerabilities }} vulnerabilities (${{ steps.scan-provider.outputs.high_critical }} high/critical)\n\n`;
+            
+            if (totalHigh > 0) {
+              message += `⚠️ **MERGE BLOCKED** - Please address high/critical vulnerabilities before merging\n\n`;
+            } else {
+              message += `✅ **Safe to merge** - No high/critical vulnerabilities detected\n\n`;
+            }
+            
+            message += `*Scan Details:* [View full results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+      - name: Block merge on high/critical vulnerabilities
+        if: steps.total.outputs.total_high_critical != '0'
+        run: |
+          echo "::error::Merge blocked due to high/critical vulnerabilities"
+          echo "Please address the following vulnerabilities before merging:"
+          echo "Backend: ${{ steps.scan-backend.outputs.vulnerabilities }} vulnerabilities"
+          echo "Provider-Middleware: ${{ steps.scan-provider.outputs.vulnerabilities }} vulnerabilities"
+          exit 1
