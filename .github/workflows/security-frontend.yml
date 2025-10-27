@@ -54,9 +54,9 @@ jobs:
 
           # Parse audit results - count from individual advisory objects
           if [ -f "frontend_audit_output.json" ]; then
-            # Count vulnerabilities from advisory objects (only high and critical with --audit-level=high)
-            critical_count=$(jq '[.data.advisories[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            high_count=$(jq '[.data.advisories[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            # Count vulnerabilities from auditAdvisory objects (only high and critical with --audit-level=high)
+            critical_count=$(jq 'select(.type == "auditAdvisory") | .data.advisory | select(.severity == "critical") | 1' frontend_audit_output.json 2>/dev/null | wc -l || echo "0")
+            high_count=$(jq 'select(.type == "auditAdvisory") | .data.advisory | select(.severity == "high") | 1' frontend_audit_output.json 2>/dev/null | wc -l || echo "0")
             moderate_count=0  # Won't exist with --audit-level=high
             low_count=0        # Won't exist with --audit-level=high
             info_count=0        # Won't exist with --audit-level=high
@@ -89,13 +89,12 @@ jobs:
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
-            VULN_DETAILS=$(jq -r '[.data.advisories[] | select(.severity == "critical" or .severity == "high") | 
+            VULN_DETAILS=$(jq -r 'select(.type == "auditAdvisory") | .data.advisory | select(.severity == "critical" or .severity == "high") |
               "• \(.resolution.path): \(.severity | ascii_upcase) - \(.overview)",
               "  Severity: \(.severity | ascii_upcase)",
               "  Patched in: \(.patched_versions // "No patch available")",
               "  URL: \(.url)",
-              "" | 
-              join("\n")' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
+              ""' frontend_audit_output.json 2>/dev/null | tr -d '\n' || echo "No vulnerability details available")
             
             # Truncate if too long for Slack
             if [ ${#VULN_DETAILS} -gt 1500 ]; then
