@@ -43,8 +43,8 @@ jobs:
 
           cd frontend
           
-          # Run audit and capture output
-          yarn audit --json > ../frontend_audit_output.json 2>/dev/null
+          # Run audit and capture output (force JSON creation even with vulnerabilities)
+          yarn audit --json || true > ../frontend_audit_output.json 2>/dev/null
           echo "Audit completed"
           cd ..
 
