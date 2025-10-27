@@ -8,9 +8,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+      
+      - name: Install dependencies
+        run: |
          cd frontend && \
          corepack install -g yarn && \
-         yarn && \
-         yarn lint-staged && \
+         yarn
+      
+      - name: Run security audit
+        run: |
+         cd frontend && \
+         yarn audit --audit-level=moderate
+      
+      - name: Run linting
+        run: |
+         cd frontend && \
+         yarn lint-staged
+      
+      - name: Build frontend
+        run: |
+         cd frontend && \
          yarn build
+      
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-audit-report
+          path: frontend/yarn-audit-report.json
+          retention-days: 30
