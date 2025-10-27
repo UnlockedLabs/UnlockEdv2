@@ -56,13 +56,14 @@ jobs:
             # Check if there are any critical or high vulnerabilities
             critical_count=$(jq '[.data.vulnerabilities[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
             high_count=$(jq '[.data.vulnerabilities[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            moderate_count=$(jq '[.data.vulnerabilities[] | select(.severity == "moderate")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
             
-            total_vuln=$((critical_count + high_count))
+            total_vuln=$((critical_count + high_count + moderate_count))
             
             if [ "$total_vuln" -gt 0 ]; then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
               echo "Security vulnerabilities detected - this PR cannot be merged"
-              echo "Critical: $critical_count, High: $high_count, Total: $total_vuln"
+              echo "Critical: $critical_count, High: $high_count, Moderate: $moderate_count, Total: $total_vuln"
             else
               echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
               echo "No critical or high vulnerabilities found in frontend dependencies"
@@ -77,7 +78,7 @@ jobs:
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
-            VULN_DETAILS=$(jq -r '[.data.vulnerabilities[] | select(.severity == "critical" or .severity == "high")] | 
+            VULN_DETAILS=$(jq -r '[.data.vulnerabilities[] | select(.severity == "critical" or .severity == "high" or .severity == "moderate")] | 
               "• \(.module_name): \(.severity | ascii_upcase) - \(.title)",
               "  Severity: \(.severity | ascii_upcase)",
               "  Patched in: \(.patched_versions // "No patch available")",
