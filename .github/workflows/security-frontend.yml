@@ -44,7 +44,7 @@ jobs:
           cd frontend
           
           # Run audit and capture output
-          if yarn audit --json --audit-level=high > ../frontend_audit_output.json 2>/dev/null; then
+          if yarn audit --json --audit-level=moderate > ../frontend_audit_output.json 2>/dev/null; then
             echo "Audit completed successfully"
           else
             echo "Audit completed with vulnerabilities"
