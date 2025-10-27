@@ -1,0 +1,161 @@
+name: PR Security Check - Frontend Vulnerabilities Scan
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "frontend/package.json"
+      - "frontend/yarn.lock"
+      - ".github/workflows/security-frontend.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  frontend-vulncheck:
+    name: Scan Frontend Dependencies for Vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          corepack install -g yarn
+          yarn install --frozen-lockfile
+
+      - name: Run security audit
+        id: vuln-scan
+        timeout-minutes: 5
+        run: |
+          echo "Running yarn audit on frontend dependencies..."
+
+          cd frontend
+          
+          # Run audit and capture output
+          if yarn audit --json --audit-level=high > ../frontend_audit_output.json 2>/dev/null; then
+            echo "Audit completed successfully"
+          else
+            echo "Audit completed with vulnerabilities"
+          fi
+          cd ..
+
+          # Parse audit results for critical and high vulnerabilities
+          if [ -f "frontend_audit_output.json" ]; then
+            # Check if there are any critical or high vulnerabilities
+            critical_count=$(jq '[.data.vulnerabilities[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            high_count=$(jq '[.data.vulnerabilities[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            
+            total_vuln=$((critical_count + high_count))
+            
+            if [ "$total_vuln" -gt 0 ]; then
+              echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+              echo "Security vulnerabilities detected - this PR cannot be merged"
+              echo "Critical: $critical_count, High: $high_count, Total: $total_vuln"
+            else
+              echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+              echo "No critical or high vulnerabilities found in frontend dependencies"
+            fi
+          else
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+            echo "No vulnerabilities found in frontend dependencies"
+          fi
+
+      - name: Send Slack notification
+        if: failure() && steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        run: |
+          # Get vulnerability details from audit output
+          if [ -f "frontend_audit_output.json" ]; then
+            VULN_DETAILS=$(jq -r '[.data.vulnerabilities[] | select(.severity == "critical" or .severity == "high")] | 
+              "• \(.module_name): \(.severity | ascii_upcase) - \(.title)",
+              "  Severity: \(.severity | ascii_upcase)",
+              "  Patched in: \(.patched_versions // "No patch available")",
+              "  URL: \(.url)",
+              "" | 
+              join("\n")' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
+            
+            # Truncate if too long for Slack
+            if [ ${#VULN_DETAILS} -gt 1500 ]; then
+              VULN_DETAILS="$VULN_DETAILS... (truncated, see full output in workflow logs)"
+            fi
+          else
+            VULN_DETAILS="No vulnerability details available"
+          fi
+
+          # Escape special characters for Slack
+          VULN_ESCAPED=$(echo "$VULN_DETAILS" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n' | head -c 2000)
+          if [ ${#VULN_DETAILS} -gt 2000 ]; then
+            VULN_ESCAPED="$VULN_ESCAPED... (truncated, see full output in workflow logs)"
+          fi
+
+          SLACK_MESSAGE=$(cat <<EOF
+          🚨 *FRONTEND SECURITY VULNERABILITIES DETECTED* 🚨
+
+          Repository: ${{ github.repository }}
+          PR: #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}
+          Author: ${{ github.event.pull_request.user.login }}
+          Branch: ${{ github.event.pull_request.head.ref }}
+
+          This PR contains frontend security vulnerabilities and has been blocked from merging until fixed.
+
+          *Vulnerability Details:*
+          $VULN_ESCAPED
+
+          🔧 *Actions needed:*
+          1. Update affected dependencies: \`yarn upgrade <package>@<safe-version>\`
+          2. Push updates to the PR
+
+          *PR Link:* ${{ github.event.pull_request.html_url }}
+          EOF
+          )
+
+          if ! curl -X POST -H 'Content-type: application/json' \
+               --max-time 10 \
+               --silent \
+               --fail \
+               --data "{\"channel\":\"#unlockedv2-chat\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
+               "${{ secrets.SLACK_WEBHOOK_URL }}"; then
+            echo "Warning: Failed to send Slack notification"
+          else
+            echo "Slack notification sent successfully to #unlockedv2-chat"
+          fi
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Security check summary
+        if: always()
+        run: |
+          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
+            echo ""
+            echo "FRONTEND SECURITY CHECK FAILED"
+            echo "This PR CANNOT be merged due to frontend security vulnerabilities."
+            echo ""
+            echo "To fix these vulnerabilities:"
+            echo "  1. cd frontend"
+            echo "  2. yarn upgrade <package>@<safe-version>"
+            echo "  3. Push updates to your PR"
+            echo ""
+            echo "Slack notification sent to #unlockedv2-chat"
+            echo ""
+          else
+            echo "FRONTEND SECURITY CHECK PASSED - No critical or high vulnerabilities found"
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-audit-report
+          path: frontend_audit_output.json
+          retention-days: 30

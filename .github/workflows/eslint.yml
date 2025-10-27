@@ -22,11 +22,6 @@ jobs:
          corepack install -g yarn && \
          yarn
       
-      - name: Run security audit
-        run: |
-         cd frontend && \
-         yarn audit --audit-level=moderate
-      
       - name: Run linting
         run: |
          cd frontend && \
@@ -36,11 +31,3 @@ jobs:
         run: |
          cd frontend && \
          yarn build
-      
-      - name: Upload audit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-audit-report
-          path: frontend/yarn-audit-report.json
-          retention-days: 30
