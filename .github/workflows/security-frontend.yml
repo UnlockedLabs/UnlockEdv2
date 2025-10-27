@@ -48,7 +48,7 @@ jobs:
           cd frontend
           
           # Run audit and capture output (force JSON creation even with vulnerabilities)
-          yarn audit --json --audit-level=high || true > ../frontend_audit_output.json 2>/dev/null
+          yarn audit --json || true > ../frontend_audit_output.json 2>/dev/null
           echo "Audit completed"
           cd ..
 
@@ -75,9 +75,17 @@ jobs:
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
             echo "No vulnerabilities found in frontend dependencies"
           fi
+          
+          # Fail the workflow if vulnerabilities were found
+          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
+            echo ""
+            echo "WORKFLOW FAILED: Frontend security vulnerabilities detected!"
+            echo "This PR cannot be merged until vulnerabilities are resolved."
+            exit 1
+          fi
 
       - name: Send Slack notification
-        if: failure() && steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
