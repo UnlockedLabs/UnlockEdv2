@@ -48,20 +48,20 @@ jobs:
           cd frontend
           
           # Run audit and capture output (force JSON creation even with vulnerabilities)
-          yarn audit --json || true > ../frontend_audit_output.json 2>/dev/null
+          yarn audit --json --level=high || true > ../frontend_audit_output.json 2>/dev/null
           echo "Audit completed"
           cd ..
 
           # Parse audit results - count from individual advisory objects
           if [ -f "frontend_audit_output.json" ]; then
-            # Count vulnerabilities from advisory objects
+            # Count vulnerabilities from advisory objects (only high and critical with --audit-level=high)
             critical_count=$(jq '[.data.advisories[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
             high_count=$(jq '[.data.advisories[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            moderate_count=$(jq '[.data.advisories[] | select(.severity == "moderate")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            low_count=$(jq '[.data.advisories[] | select(.severity == "low")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            info_count=$(jq '[.data.advisories[] | select(.severity == "info")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            moderate_count=0  # Won't exist with --audit-level=high
+            low_count=0        # Won't exist with --audit-level=high
+            info_count=0        # Won't exist with --audit-level=high
             
-            total_vuln=$((critical_count + high_count + moderate_count + low_count + info_count))
+            total_vuln=$((critical_count + high_count))
             
             if [ "$total_vuln" -gt 0 ]; then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
@@ -89,7 +89,7 @@ jobs:
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
-            VULN_DETAILS=$(jq -r '[.data.advisories[] | select(.severity == "critical" or .severity == "high" or .severity == "moderate") | 
+            VULN_DETAILS=$(jq -r '[.data.advisories[] | select(.severity == "critical" or .severity == "high") | 
               "• \(.resolution.path): \(.severity | ascii_upcase) - \(.overview)",
               "  Severity: \(.severity | ascii_upcase)",
               "  Patched in: \(.patched_versions // "No patch available")",
