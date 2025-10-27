@@ -22,6 +22,6 @@ jar
 /bin/*
 /tmp
 /csvs/zims/*.zim
-.claude
+.claude/*
 AGENTS.md
 Claude.md
