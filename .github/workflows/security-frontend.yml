@@ -48,14 +48,31 @@ jobs:
           echo "Audit completed"
           cd ..
 
-          # Parse audit results for all vulnerabilities
+          # Parse audit results - handle different output formats
           if [ -f "frontend_audit_output.json" ]; then
-            # Check if there are any vulnerabilities at any level
-            critical_count=$(jq '[.data.vulnerabilities[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            high_count=$(jq '[.data.vulnerabilities[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            moderate_count=$(jq '[.data.vulnerabilities[] | select(.severity == "moderate")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            low_count=$(jq '[.data.vulnerabilities[] | select(.severity == "low")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            info_count=$(jq '[.data.vulnerabilities[] | select(.severity == "info")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            # Check if JSON contains vulnerabilities array or advisory objects
+            if jq -e '.data.vulnerabilities' frontend_audit_output.json >/dev/null 2>&1; then
+              # New format - vulnerabilities in .data.vulnerabilities array
+              critical_count=$(jq '[.data.vulnerabilities[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              high_count=$(jq '[.data.vulnerabilities[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              moderate_count=$(jq '[.data.vulnerabilities[] | select(.severity == "moderate")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              low_count=$(jq '[.data.vulnerabilities[] | select(.severity == "low")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              info_count=$(jq '[.data.vulnerabilities[] | select(.severity == "info")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            elif jq -e '.data.advisories' frontend_audit_output.json >/dev/null 2>&1; then
+              # Advisory format - count from advisory objects
+              critical_count=$(jq '[.data.advisories[] | select(.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              high_count=$(jq '[.data.advisories[] | select(.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              moderate_count=$(jq '[.data.advisories[] | select(.severity == "moderate")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              low_count=$(jq '[.data.advisories[] | select(.severity == "low")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+              info_count=$(jq '[.data.advisories[] | select(.severity == "info")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            else
+              # Fallback - try to parse as summary if structured formats fail
+              critical_count=$(jq '.auditSummary.vulnerabilities.critical // 0' frontend_audit_output.json 2>/dev/null || echo "0")
+              high_count=$(jq '.auditSummary.vulnerabilities.high // 0' frontend_audit_output.json 2>/dev/null || echo "0")
+              moderate_count=$(jq '.auditSummary.vulnerabilities.moderate // 0' frontend_audit_output.json 2>/dev/null || echo "0")
+              low_count=$(jq '.auditSummary.vulnerabilities.low // 0' frontend_audit_output.json 2>/dev/null || echo "0")
+              info_count=$(jq '.auditSummary.vulnerabilities.info // 0' frontend_audit_output.json 2>/dev/null || echo "0")
+            fi
             
             total_vuln=$((critical_count + high_count + moderate_count + low_count + info_count))
             
@@ -67,21 +84,17 @@ jobs:
               echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
               echo "No vulnerabilities found in frontend dependencies"
             fi
-          else
-            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
-            echo "No vulnerabilities found in frontend dependencies"
-          fi
 
       - name: Send Slack notification
         if: failure() && steps.vuln-scan.outputs.vulnerabilities_found == 'true'
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
-            VULN_DETAILS=$(jq -r '[.data.vulnerabilities[]] | 
-              "• \(.module_name): \(.severity | ascii_upcase) - \(.title)",
+            VULN_DETAILS=$(jq -r '[.data.vulnerabilities[]]? | . + [.data.advisories[]]? | 
+              "• \(.module_name // .resolution.path): \(.severity | ascii_upcase) - \(.title // .overview)",
               "  Severity: \(.severity | ascii_upcase)",
               "  Patched in: \(.patched_versions // "No patch available")",
-              "  URL: \(.url)",
+              "  URL: \(.url // "")",
               "" | 
               join("\n")' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
             
