@@ -73,22 +73,25 @@ jobs:
                 echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
                 if [ ! -z "$audit_summary_line" ]; then
-                  # Use Python for more reliable JSON parsing (always available on GitHub Actions)
+                  # Use a simpler approach - extract the entire auditSummary JSON object and parse it
+                  echo "$audit_summary_line" > /tmp/audit_summary.json
+
+                  # Use Python to parse the JSON file directly
                   critical_count=$(python3 -c "
-import json, sys
+import json
 try:
-    line = '$audit_summary_line'
-    data = json.loads(line)
+    with open('/tmp/audit_summary.json', 'r') as f:
+        data = json.load(f)
     print(data.get('data', {}).get('vulnerabilities', {}).get('critical', 0))
 except:
     print(0)
 " 2>/dev/null || echo "0")
 
                   high_count=$(python3 -c "
-import json, sys
+import json
 try:
-    line = '$audit_summary_line'
-    data = json.loads(line)
+    with open('/tmp/audit_summary.json', 'r') as f:
+        data = json.load(f)
     print(data.get('data', {}).get('vulnerabilities', {}).get('high', 0))
 except:
     print(0)
