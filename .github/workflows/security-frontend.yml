@@ -89,7 +89,7 @@ jobs:
               echo "PR BLOCKED: This PR cannot be merged until vulnerabilities are resolved."
 
               # Save audit output for Slack notification and artifact upload
-              echo "$audit_output" > ../frontend_audit_output.json
+              echo "$audit_output" > frontend_audit_output.json
             else
               echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
               echo "No vulnerabilities found in frontend dependencies"
