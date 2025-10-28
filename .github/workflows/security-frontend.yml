@@ -85,6 +85,8 @@ jobs:
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
               echo "Security vulnerabilities detected - this PR cannot be merged"
               echo "Critical: $critical_count, High: $high_count, Moderate: $moderate_count, Low: $low_count, Info: $info_count, Total: $total_vuln"
+              echo ""
+              echo "PR BLOCKED: This PR cannot be merged until vulnerabilities are resolved."
             else
               echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
               echo "No vulnerabilities found in frontend dependencies"
@@ -93,14 +95,12 @@ jobs:
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
             echo "No vulnerabilities found in frontend dependencies"
           fi
-          
-          # Fail the workflow if vulnerabilities were found
-          if [ "$total_vuln" -gt 0 ]; then
-            echo ""
-            echo "WORKFLOW FAILED: Frontend security vulnerabilities detected!"
-            echo "This PR cannot be merged until vulnerabilities are resolved."
-            exit 1
-          fi
+
+      - name: Block PR from merging
+        if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        run: |
+          echo "::error::Frontend security vulnerabilities detected - PR blocked from merging"
+          exit 1
 
       - name: Send Slack notification
         if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
