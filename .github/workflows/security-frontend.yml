@@ -77,25 +77,8 @@ jobs:
                   echo "$audit_summary_line" > /tmp/audit_summary.json
 
                   # Use Python to parse the JSON file directly
-                  critical_count=$(python3 -c "
-import json
-try:
-    with open('/tmp/audit_summary.json', 'r') as f:
-        data = json.load(f)
-    print(data.get('data', {}).get('vulnerabilities', {}).get('critical', 0))
-except:
-    print(0)
-" 2>/dev/null || echo "0")
-
-                  high_count=$(python3 -c "
-import json
-try:
-    with open('/tmp/audit_summary.json', 'r') as f:
-        data = json.load(f)
-    print(data.get('data', {}).get('vulnerabilities', {}).get('high', 0))
-except:
-    print(0)
-" 2>/dev/null || echo "0")
+                  critical_count=$(python3 -c "import json; data=json.load(open('/tmp/audit_summary.json')); print(data.get('data', {}).get('vulnerabilities', {}).get('critical', 0))" 2>/dev/null || echo "0")
+                  high_count=$(python3 -c "import json; data=json.load(open('/tmp/audit_summary.json')); print(data.get('data', {}).get('vulnerabilities', {}).get('high', 0))" 2>/dev/null || echo "0")
 
                   # Ensure we have numbers, default to 0 if empty
                   if [ -z "$critical_count" ]; then critical_count=0; fi
