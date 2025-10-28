@@ -91,9 +91,12 @@ jobs:
               echo "=== END FALLBACK DEBUG ==="
             fi
 
-            total_vuln=$((critical_count + high_count))
+            # Ensure variables are treated as integers
+          critical_count=$((critical_count + 0))
+          high_count=$((high_count + 0))
+          total_vuln=$((critical_count + high_count))
             echo "=== FINAL: Total high+critical vulnerabilities: $total_vuln ==="
-            
+
             if [ "$total_vuln" -gt 0 ]; then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
               echo "Security vulnerabilities detected - this PR cannot be merged"
