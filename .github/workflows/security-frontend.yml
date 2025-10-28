@@ -63,21 +63,25 @@ jobs:
             low_count=0        # Won't exist with --level=high
             info_count=0        # Won't exist with --level=high
             
-            # Fallback counting if jq fails (using grep)
+            # Fallback counting if jq fails - parse auditSummary directly
             if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
-              echo "=== DEBUG: jq failed, trying fallback grep counting ==="
-              echo "=== DEBUG: Looking for severity patterns in audit advisories ==="
-              # Look for severity in individual advisory objects, not in the summary
-              critical_count=$(grep -o '"severity":"critical"' frontend_audit_output.json | wc -l || echo "0")
-              high_count=$(grep -o '"severity":"high"' frontend_audit_output.json | wc -l || echo "0")
-              echo "=== DEBUG: Found critical_count=$critical_count, high_count=$high_count ==="
+              echo "=== DEBUG: jq failed, parsing auditSummary directly ==="
+              # Extract the auditSummary line and parse it with sed
+              audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json)
+              echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
-              # If still 0, try alternative patterns
-              if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
-                echo "=== DEBUG: Trying alternative patterns ==="
-                critical_count=$(grep '"critical":1' frontend_audit_output.json | wc -l || echo "0")
-                high_count=$(grep '"high":[1-9]' frontend_audit_output.json | wc -l || echo "0")
-                echo "=== DEBUG: Alternative - critical_count=$critical_count, high_count=$high_count ==="
+              if [ ! -z "$audit_summary_line" ]; then
+                # Extract counts from the vulnerabilities object in auditSummary
+                critical_count=$(echo "$audit_summary_line" | sed -n 's/.*"vulnerabilities":{"[^}]*"critical":\([0-9]*\).*/\1/p')
+                high_count=$(echo "$audit_summary_line" | sed -n 's/.*"vulnerabilities":{"[^}]*"high":\([0-9]*\).*/\1/p')
+                echo "=== DEBUG: Parsed from auditSummary - critical_count=$critical_count, high_count=$high_count ==="
+
+                # If sed didn't work, try simpler grep with cut
+                if [ -z "$critical_count" ] || [ "$critical_count" = "0" ]; then
+                  critical_count=$(echo "$audit_summary_line" | grep -o '"critical":[0-9]*' | cut -d':' -f2)
+                  high_count=$(echo "$audit_summary_line" | grep -o '"high":[0-9]*' | cut -d':' -f2)
+                  echo "=== DEBUG: Grepped from auditSummary - critical_count=$critical_count, high_count=$high_count ==="
+                fi
               fi
             fi
             
