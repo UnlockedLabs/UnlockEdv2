@@ -66,19 +66,23 @@ jobs:
             # Fallback counting if jq fails - parse auditSummary directly
             if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
               echo "=== DEBUG: jq failed, parsing auditSummary directly ==="
-              # Extract the auditSummary line and parse it with sed
-              audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json)
-              echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
-              if [ ! -z "$audit_summary_line" ]; then
-                # Extract counts from the vulnerabilities object in auditSummary using simple grep+cut
-                critical_count=$(echo "$audit_summary_line" | grep -o '"critical":[0-9]*' | cut -d':' -f2 | head -1)
-                high_count=$(echo "$audit_summary_line" | grep -o '"high":[0-9]*' | cut -d':' -f2 | head -1)
-                echo "=== DEBUG: Parsed from auditSummary - critical_count=$critical_count, high_count=$high_count ==="
+              # Extract the auditSummary line safely
+              if [ -f "frontend_audit_output.json" ]; then
+                audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json || echo "")
+                echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
-                # Ensure we have numbers, default to 0 if empty
-                if [ -z "$critical_count" ]; then critical_count=0; fi
-                if [ -z "$high_count" ]; then high_count=0; fi
+                if [ ! -z "$audit_summary_line" ]; then
+                  # Extract counts using simple commands
+                  critical_count=$(echo "$audit_summary_line" | grep -o '"critical":[0-9]*' | cut -d':' -f2)
+                  high_count=$(echo "$audit_summary_line" | grep -o '"high":[0-9]*' | cut -d':' -f2)
+
+                  # Ensure we have numbers, default to 0 if empty
+                  if [ -z "$critical_count" ]; then critical_count=0; fi
+                  if [ -z "$high_count" ]; then high_count=0; fi
+
+                  echo "=== DEBUG: Final counts - critical_count=$critical_count, high_count=$high_count ==="
+                fi
               fi
             fi
             
