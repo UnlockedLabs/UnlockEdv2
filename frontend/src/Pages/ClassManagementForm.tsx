@@ -123,7 +123,7 @@ export default function ClassManagementForm() {
         if (!response.success) {
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')
-                    ? 'Cannot update class until unenrolling residents'
+                    ? 'Cannot update clas s until unenrolling residents'
                     : response.message.includes('inactive')
                       ? 'Cannot create class for an inactive program'
                       : class_id
