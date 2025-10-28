@@ -52,65 +52,27 @@ jobs:
           echo "Audit completed"
           cd ..
 
-          # Parse audit results - count from individual advisory objects
+          # Parse audit results - directly extract from auditSummary
           if [ -f "frontend_audit_output.json" ]; then
-            echo "=== DEBUG: Analyzing audit output file ==="
-            echo "File size: $(wc -c < frontend_audit_output.json) bytes"
-            echo "First few lines of audit output:"
-            head -10 frontend_audit_output.json | cat -n
-            echo "=== END DEBUG ==="
+            # Get auditSummary line directly from the file
+            audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json || echo "")
 
-            # Count vulnerabilities from individual advisory objects (only high and critical with --level=high)
-            # Handle multiple JSON objects in the file (each vulnerability is a separate JSON object)
-            # Use jq -s (slurp) to properly handle multiple JSON objects
-            critical_count=$(jq -s '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            high_count=$(jq -s '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            if [ ! -z "$audit_summary_line" ]; then
+              # Direct extraction using jq on the auditSummary line
+              critical_count=$(echo "$audit_summary_line" | jq -r '.data.vulnerabilities.critical // 0')
+              high_count=$(echo "$audit_summary_line" | jq -r '.data.vulnerabilities.high // 0')
+
+              # Ensure we have numbers, default to 0 if empty
+              if [ -z "$critical_count" ] || [ "$critical_count" = "null" ]; then critical_count=0; fi
+              if [ -z "$high_count" ] || [ "$high_count" = "null" ]; then high_count=0; fi
+            else
+              critical_count=0
+              high_count=0
+            fi
+
             moderate_count=0  # Won't exist with --level=high
             low_count=0        # Won't exist with --level=high
             info_count=0        # Won't exist with --level=high
-
-            echo "=== DEBUG: Initial jq results ==="
-            echo "critical_count: $critical_count"
-            echo "high_count: $high_count"
-            echo "=== END DEBUG ==="
-            
-            # Fallback counting if jq fails - parse auditSummary directly
-            if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
-              echo "=== DEBUG: jq failed, parsing auditSummary directly ==="
-
-              # Extract the auditSummary line safely
-              if [ -f "frontend_audit_output.json" ]; then
-                audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json || echo "")
-                echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
-
-                if [ ! -z "$audit_summary_line" ]; then
-                  # Use a simpler approach - extract the entire auditSummary JSON object and parse it
-                  echo "$audit_summary_line" > /tmp/audit_summary.json
-                  echo "=== DEBUG: auditSummary.json content ==="
-                  cat /tmp/audit_summary.json
-                  echo "=== END DEBUG ==="
-
-                  # Use Python to parse the JSON file directly
-                  critical_count=$(python3 -c "import json; data=json.load(open('/tmp/audit_summary.json')); print(data.get('data', {}).get('vulnerabilities', {}).get('critical', 0))" 2>/dev/null || echo "0")
-                  high_count=$(python3 -c "import json; data=json.load(open('/tmp/audit_summary.json')); print(data.get('data', {}).get('vulnerabilities', {}).get('high', 0))" 2>/dev/null || echo "0")
-
-                  echo "=== DEBUG: Python parsing results ==="
-                  echo "critical_count from Python: $critical_count"
-                  echo "high_count from Python: $high_count"
-                  echo "=== END DEBUG ==="
-
-                  # Ensure we have numbers, default to 0 if empty
-                  if [ -z "$critical_count" ]; then critical_count=0; fi
-                  if [ -z "$high_count" ]; then high_count=0; fi
-
-                  echo "=== DEBUG: Final counts - critical_count=$critical_count, high_count=$high_count ==="
-                else
-                  echo "=== DEBUG: No auditSummary line found ==="
-                fi
-              else
-                echo "=== DEBUG: frontend_audit_output.json file not found ==="
-              fi
-            fi
             
             # Ensure variables are treated as integers
             critical_count=$((critical_count + 0))
