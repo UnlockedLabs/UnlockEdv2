@@ -85,7 +85,7 @@ jobs:
           fi
           
           # Fail the workflow if vulnerabilities were found
-          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
+          if [ "$total_vuln" -gt 0 ]; then
             echo ""
             echo "WORKFLOW FAILED: Frontend security vulnerabilities detected!"
             echo "This PR cannot be merged until vulnerabilities are resolved."
