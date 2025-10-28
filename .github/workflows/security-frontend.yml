@@ -71,10 +71,14 @@ jobs:
               echo "=== DEBUG: After fallback - critical_count=$critical_count, high_count=$high_count ==="
             fi
             
+            # Ensure variables are treated as integers
+            critical_count=$((critical_count + 0))
+            high_count=$((high_count + 0))
             total_vuln=$((critical_count + high_count))
             echo "=== DEBUG: critical_count=$critical_count, high_count=$high_count, total_vuln=$total_vuln ==="
 
-            if [ "$total_vuln" -gt 0 ]; then
+            # Test the condition explicitly
+            if (( total_vuln > 0 )); then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
               echo "Security vulnerabilities detected - this PR cannot be merged"
               echo "Critical: $critical_count, High: $high_count, Moderate: $moderate_count, Low: $low_count, Info: $info_count, Total: $total_vuln"
