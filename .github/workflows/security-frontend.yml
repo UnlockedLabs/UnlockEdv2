@@ -56,16 +56,25 @@ jobs:
           if [ -f "frontend_audit_output.json" ]; then
             # Get auditSummary line directly from the file
             audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json || echo "")
+            echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
             if [ ! -z "$audit_summary_line" ]; then
               # Direct extraction using jq on the auditSummary line
+              echo "=== DEBUG: Extracting critical count ==="
               critical_count=$(echo "$audit_summary_line" | jq -r '.data.vulnerabilities.critical // 0')
+              echo "Raw critical_count output: '$critical_count'"
+
+              echo "=== DEBUG: Extracting high count ==="
               high_count=$(echo "$audit_summary_line" | jq -r '.data.vulnerabilities.high // 0')
+              echo "Raw high_count output: '$high_count'"
 
               # Ensure we have numbers, default to 0 if empty
               if [ -z "$critical_count" ] || [ "$critical_count" = "null" ]; then critical_count=0; fi
               if [ -z "$high_count" ] || [ "$high_count" = "null" ]; then high_count=0; fi
+
+              echo "=== DEBUG: After null checks - critical_count=$critical_count, high_count=$high_count ==="
             else
+              echo "=== DEBUG: No auditSummary line found ==="
               critical_count=0
               high_count=0
             fi
