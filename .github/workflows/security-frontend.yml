@@ -47,8 +47,8 @@ jobs:
 
           cd frontend
           
-          # Run audit and capture output (force JSON creation even with vulnerabilities)
-          yarn audit --json --level=high || true > ../frontend_audit_output.json 2>/dev/null
+          # Run audit and capture output (get all vulnerabilities, will filter high+critical later)
+          yarn audit --json || true > ../frontend_audit_output.json 2>/dev/null
           echo "Audit completed"
           cd ..
 
@@ -61,15 +61,28 @@ jobs:
 
             # Extract vulnerability counts directly from auditSummary
             echo "=== DEBUG: Testing jq parsing ==="
-            critical_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.critical' frontend_audit_output.json 2>/dev/null || echo "0")
+            echo "Looking for auditSummary line..."
+            audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json)
+            echo "Found auditSummary: $audit_summary_line"
+
+            # Test jq directly on the auditSummary line
+            if [ ! -z "$audit_summary_line" ]; then
+              critical_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.critical' 2>/dev/null || echo "0")
+              high_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.high' 2>/dev/null || echo "0")
+              moderate_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.moderate' 2>/dev/null || echo "0")
+              low_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.low' 2>/dev/null || echo "0")
+              info_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.info' 2>/dev/null || echo "0")
+            else
+              critical_count=0
+              high_count=0
+              moderate_count=0
+              low_count=0
+              info_count=0
+            fi
             echo "Critical count parsed: $critical_count"
-            high_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.high' frontend_audit_output.json 2>/dev/null || echo "0")
             echo "High count parsed: $high_count"
-            moderate_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.moderate' frontend_audit_output.json 2>/dev/null || echo "0")
             echo "Moderate count parsed: $moderate_count"
-            low_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.low' frontend_audit_output.json 2>/dev/null || echo "0")
             echo "Low count parsed: $low_count"
-            info_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.info' frontend_audit_output.json 2>/dev/null || echo "0")
             echo "Info count parsed: $info_count"
             echo "=== END DEBUG ==="
 
