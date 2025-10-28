@@ -104,6 +104,19 @@ jobs:
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
+            echo "=== DEBUG: Checking audit file for vulnerability details ==="
+            echo "File size: $(wc -c < frontend_audit_output.json) bytes"
+            echo "Total lines in file: $(wc -l < frontend_audit_output.json)"
+
+            # Check if we have auditAdvisory entries
+            advisory_count=$(grep -c '"type":"auditAdvisory"' frontend_audit_output.json || echo "0")
+            echo "Found $advisory_count auditAdvisory entries"
+
+            # Show first few lines of audit output
+            echo "First few lines:"
+            head -5 frontend_audit_output.json | cat -n
+            echo "=== END DEBUG ==="
+
             VULN_DETAILS=$(jq -r '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical" or .data.advisory.severity == "high") |
               "• \(.resolution.path): \(.severity | ascii_upcase) - \(.overview)",
               "  Severity: \(.severity | ascii_upcase)",
@@ -112,11 +125,14 @@ jobs:
               "" |
               join("\n")' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
 
+            echo "=== DEBUG: VULN_DETAILS result: '$VULN_DETAILS' ==="
+
             # Truncate if too long for Slack
             if [ ${#VULN_DETAILS} -gt 1500 ]; then
               VULN_DETAILS="$VULN_DETAILS... (truncated, see full output in workflow logs)"
             fi
           else
+            echo "=== DEBUG: frontend_audit_output.json file not found ==="
             VULN_DETAILS="No vulnerability details available"
           fi
 
