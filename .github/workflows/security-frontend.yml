@@ -65,12 +65,15 @@ jobs:
             
             # Fallback counting if jq fails (using grep)
             if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
+              echo "=== DEBUG: jq failed, trying fallback grep counting ==="
               critical_count=$(grep -o '"severity":"critical"' frontend_audit_output.json | wc -l || echo "0")
               high_count=$(grep -o '"severity":"high"' frontend_audit_output.json | wc -l || echo "0")
+              echo "=== DEBUG: After fallback - critical_count=$critical_count, high_count=$high_count ==="
             fi
             
             total_vuln=$((critical_count + high_count))
-            
+            echo "=== DEBUG: critical_count=$critical_count, high_count=$high_count, total_vuln=$total_vuln ==="
+
             if [ "$total_vuln" -gt 0 ]; then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
               echo "Security vulnerabilities detected - this PR cannot be merged"
