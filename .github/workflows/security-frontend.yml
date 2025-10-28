@@ -56,8 +56,9 @@ jobs:
           if [ -f "frontend_audit_output.json" ]; then
             # Count vulnerabilities from individual advisory objects (only high and critical with --level=high)
             # Handle multiple JSON objects in the file (each vulnerability is a separate JSON object)
-            critical_count=$(jq '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
-            high_count=$(jq '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            # Use jq -s (slurp) to properly handle multiple JSON objects
+            critical_count=$(jq -s '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            high_count=$(jq -s '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
             moderate_count=0  # Won't exist with --level=high
             low_count=0        # Won't exist with --level=high
             info_count=0        # Won't exist with --level=high
