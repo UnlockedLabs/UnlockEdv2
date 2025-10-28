@@ -87,6 +87,9 @@ jobs:
               echo "Critical: $critical_count, High: $high_count, Moderate: $moderate_count, Low: $low_count, Info: $info_count, Total: $total_vuln"
               echo ""
               echo "PR BLOCKED: This PR cannot be merged until vulnerabilities are resolved."
+
+              # Save audit output for Slack notification and artifact upload
+              echo "$audit_output" > ../frontend_audit_output.json
             else
               echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
               echo "No vulnerabilities found in frontend dependencies"
@@ -96,25 +99,19 @@ jobs:
             echo "No vulnerabilities found in frontend dependencies"
           fi
 
-      - name: Block PR from merging
-        if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
-        run: |
-          echo "::error::Frontend security vulnerabilities detected - PR blocked from merging"
-          exit 1
-
       - name: Send Slack notification
         if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
-            VULN_DETAILS=$(jq -r '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical" or .data.advisory.severity == "high") | 
+            VULN_DETAILS=$(jq -r '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical" or .data.advisory.severity == "high") |
               "• \(.resolution.path): \(.severity | ascii_upcase) - \(.overview)",
               "  Severity: \(.severity | ascii_upcase)",
               "  Patched in: \(.patched_versions // "No patch available")",
               "  URL: \(.url)",
-              "" | 
+              "" |
               join("\n")' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
-            
+
             # Truncate if too long for Slack
             if [ ${#VULN_DETAILS} -gt 1500 ]; then
               VULN_DETAILS="$VULN_DETAILS... (truncated, see full output in workflow logs)"
@@ -162,6 +159,12 @@ jobs:
           fi
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Block PR from merging
+        if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        run: |
+          echo "::error::Frontend security vulnerabilities detected - PR blocked from merging"
+          exit 1
 
       - name: Security check summary
         if: always()
