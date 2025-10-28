@@ -66,9 +66,19 @@ jobs:
             # Fallback counting if jq fails (using grep)
             if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
               echo "=== DEBUG: jq failed, trying fallback grep counting ==="
+              echo "=== DEBUG: Looking for severity patterns in audit advisories ==="
+              # Look for severity in individual advisory objects, not in the summary
               critical_count=$(grep -o '"severity":"critical"' frontend_audit_output.json | wc -l || echo "0")
               high_count=$(grep -o '"severity":"high"' frontend_audit_output.json | wc -l || echo "0")
-              echo "=== DEBUG: After fallback - critical_count=$critical_count, high_count=$high_count ==="
+              echo "=== DEBUG: Found critical_count=$critical_count, high_count=$high_count ==="
+
+              # If still 0, try alternative patterns
+              if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
+                echo "=== DEBUG: Trying alternative patterns ==="
+                critical_count=$(grep '"critical":1' frontend_audit_output.json | wc -l || echo "0")
+                high_count=$(grep '"high":[1-9]' frontend_audit_output.json | wc -l || echo "0")
+                echo "=== DEBUG: Alternative - critical_count=$critical_count, high_count=$high_count ==="
+              fi
             fi
             
             # Ensure variables are treated as integers
