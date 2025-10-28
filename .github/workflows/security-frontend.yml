@@ -47,15 +47,16 @@ jobs:
 
           cd frontend
           
-          # Run audit and capture output (force JSON creation even with vulnerabilities)
-          yarn audit --json --level=high 2>&1 || tee ../frontend_audit_output.json
+          # Run audit and capture output directly
+          echo "=== DEBUG: Running yarn audit and capturing output ==="
+          audit_output=$(yarn audit --json --level=high 2>&1 || true)
           echo "Audit completed"
           cd ..
 
-          # Parse audit results - directly extract from auditSummary
-          if [ -f "frontend_audit_output.json" ]; then
-            # Get auditSummary line directly from the file
-            audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json || echo "")
+          # Parse audit results - directly extract from audit output
+          if [ ! -z "$audit_output" ]; then
+            # Get auditSummary line directly from the output
+            audit_summary_line=$(echo "$audit_output" | grep '"type":"auditSummary"' || echo "")
             echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
             if [ ! -z "$audit_summary_line" ]; then
