@@ -54,14 +54,45 @@ jobs:
 
           # Parse audit results - use the convenient auditSummary object
           if [ -f "frontend_audit_output.json" ]; then
+            # Debug: Show raw audit output structure
+            echo "=== DEBUG: Raw audit output structure ==="
+            head -10 frontend_audit_output.json
+            echo "=== END DEBUG ==="
+
             # Extract vulnerability counts directly from auditSummary
+            echo "=== DEBUG: Testing jq parsing ==="
             critical_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.critical' frontend_audit_output.json 2>/dev/null || echo "0")
+            echo "Critical count parsed: $critical_count"
             high_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.high' frontend_audit_output.json 2>/dev/null || echo "0")
+            echo "High count parsed: $high_count"
             moderate_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.moderate' frontend_audit_output.json 2>/dev/null || echo "0")
+            echo "Moderate count parsed: $moderate_count"
             low_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.low' frontend_audit_output.json 2>/dev/null || echo "0")
+            echo "Low count parsed: $low_count"
             info_count=$(jq 'select(.type == "auditSummary") | .data.vulnerabilities.info' frontend_audit_output.json 2>/dev/null || echo "0")
-            
+            echo "Info count parsed: $info_count"
+            echo "=== END DEBUG ==="
+
+            # If jq parsing failed (all zeros), try fallback method
+            if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ] && [ "$moderate_count" = "0" ]; then
+              echo "=== DEBUG: Trying fallback parsing method ==="
+              # Extract from auditSummary line using grep and sed
+              audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json)
+              echo "Found auditSummary line: $audit_summary_line"
+
+              if [ ! -z "$audit_summary_line" ]; then
+                critical_count=$(echo "$audit_summary_line" | sed 's/.*"critical":\([0-9]*\).*/\1/')
+                high_count=$(echo "$audit_summary_line" | sed 's/.*"high":\([0-9]*\).*/\1/')
+                moderate_count=$(echo "$audit_summary_line" | sed 's/.*"moderate":\([0-9]*\).*/\1/')
+                low_count=$(echo "$audit_summary_line" | sed 's/.*"low":\([0-9]*\).*/\1/')
+                info_count=$(echo "$audit_summary_line" | sed 's/.*"info":\([0-9]*\).*/\1/')
+                echo "Fallback parsing - Critical: $critical_count, High: $high_count, Moderate: $moderate_count, Low: $low_count, Info: $info_count"
+              fi
+              echo "=== END FALLBACK DEBUG ==="
+            fi
+
             total_vuln=$((critical_count + high_count))
+            echo "=== FINAL: Total high+critical vulnerabilities: $total_vuln ==="
             
             if [ "$total_vuln" -gt 0 ]; then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
@@ -77,7 +108,7 @@ jobs:
           fi
           
           # Fail the workflow if vulnerabilities were found
-          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
+          if [ "$total_vuln" -gt 0 ]; then
             echo ""
             echo "WORKFLOW FAILED: Frontend security vulnerabilities detected!"
             echo "This PR cannot be merged until vulnerabilities are resolved."
