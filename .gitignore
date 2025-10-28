@@ -1,5 +1,8 @@
 *.env
 .vscode
+.claude/*
+Claude.md
+AGENTS.md
 .idea
 .github/workflows/test.yml
 /frontend/.husky/staged-files
