@@ -54,6 +54,12 @@ jobs:
 
           # Parse audit results - count from individual advisory objects
           if [ -f "frontend_audit_output.json" ]; then
+            echo "=== DEBUG: Analyzing audit output file ==="
+            echo "File size: $(wc -c < frontend_audit_output.json) bytes"
+            echo "First few lines of audit output:"
+            head -10 frontend_audit_output.json | cat -n
+            echo "=== END DEBUG ==="
+
             # Count vulnerabilities from individual advisory objects (only high and critical with --level=high)
             # Handle multiple JSON objects in the file (each vulnerability is a separate JSON object)
             # Use jq -s (slurp) to properly handle multiple JSON objects
@@ -62,6 +68,11 @@ jobs:
             moderate_count=0  # Won't exist with --level=high
             low_count=0        # Won't exist with --level=high
             info_count=0        # Won't exist with --level=high
+
+            echo "=== DEBUG: Initial jq results ==="
+            echo "critical_count: $critical_count"
+            echo "high_count: $high_count"
+            echo "=== END DEBUG ==="
             
             # Fallback counting if jq fails - parse auditSummary directly
             if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
@@ -75,17 +86,29 @@ jobs:
                 if [ ! -z "$audit_summary_line" ]; then
                   # Use a simpler approach - extract the entire auditSummary JSON object and parse it
                   echo "$audit_summary_line" > /tmp/audit_summary.json
+                  echo "=== DEBUG: auditSummary.json content ==="
+                  cat /tmp/audit_summary.json
+                  echo "=== END DEBUG ==="
 
                   # Use Python to parse the JSON file directly
                   critical_count=$(python3 -c "import json; data=json.load(open('/tmp/audit_summary.json')); print(data.get('data', {}).get('vulnerabilities', {}).get('critical', 0))" 2>/dev/null || echo "0")
                   high_count=$(python3 -c "import json; data=json.load(open('/tmp/audit_summary.json')); print(data.get('data', {}).get('vulnerabilities', {}).get('high', 0))" 2>/dev/null || echo "0")
+
+                  echo "=== DEBUG: Python parsing results ==="
+                  echo "critical_count from Python: $critical_count"
+                  echo "high_count from Python: $high_count"
+                  echo "=== END DEBUG ==="
 
                   # Ensure we have numbers, default to 0 if empty
                   if [ -z "$critical_count" ]; then critical_count=0; fi
                   if [ -z "$high_count" ]; then high_count=0; fi
 
                   echo "=== DEBUG: Final counts - critical_count=$critical_count, high_count=$high_count ==="
+                else
+                  echo "=== DEBUG: No auditSummary line found ==="
                 fi
+              else
+                echo "=== DEBUG: frontend_audit_output.json file not found ==="
               fi
             fi
             
