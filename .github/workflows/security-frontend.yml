@@ -73,9 +73,26 @@ jobs:
                 echo "=== DEBUG: Found auditSummary line: $audit_summary_line ==="
 
                 if [ ! -z "$audit_summary_line" ]; then
-                  # Extract counts using simple commands
-                  critical_count=$(echo "$audit_summary_line" | grep -o '"critical":[0-9]*' | cut -d':' -f2)
-                  high_count=$(echo "$audit_summary_line" | grep -o '"high":[0-9]*' | cut -d':' -f2)
+                  # Use Python for more reliable JSON parsing (always available on GitHub Actions)
+                  critical_count=$(python3 -c "
+import json, sys
+try:
+    line = '$audit_summary_line'
+    data = json.loads(line)
+    print(data.get('data', {}).get('vulnerabilities', {}).get('critical', 0))
+except:
+    print(0)
+" 2>/dev/null || echo "0")
+
+                  high_count=$(python3 -c "
+import json, sys
+try:
+    line = '$audit_summary_line'
+    data = json.loads(line)
+    print(data.get('data', {}).get('vulnerabilities', {}).get('high', 0))
+except:
+    print(0)
+" 2>/dev/null || echo "0")
 
                   # Ensure we have numbers, default to 0 if empty
                   if [ -z "$critical_count" ]; then critical_count=0; fi
