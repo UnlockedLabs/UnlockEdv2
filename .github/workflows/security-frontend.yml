@@ -47,69 +47,29 @@ jobs:
 
           cd frontend
           
-          # Run audit and capture output (get all vulnerabilities, will filter high+critical later)
-          yarn audit --json || true > ../frontend_audit_output.json 2>/dev/null
+          # Run audit and capture output (force JSON creation even with vulnerabilities)
+          yarn audit --json --level=high || true > ../frontend_audit_output.json 2>/dev/null
           echo "Audit completed"
           cd ..
 
-          # Parse audit results - use the convenient auditSummary object
+          # Parse audit results - count from individual advisory objects
           if [ -f "frontend_audit_output.json" ]; then
-            # Debug: Show raw audit output structure
-            echo "=== DEBUG: Raw audit output structure ==="
-            head -10 frontend_audit_output.json
-            echo "=== END DEBUG ==="
-
-            # Extract vulnerability counts directly from auditSummary
-            echo "=== DEBUG: Testing jq parsing ==="
-            echo "Looking for auditSummary line..."
-            audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json)
-            echo "Found auditSummary: $audit_summary_line"
-
-            # Test jq directly on the auditSummary line
-            if [ ! -z "$audit_summary_line" ]; then
-              critical_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.critical' 2>/dev/null || echo "0")
-              high_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.high' 2>/dev/null || echo "0")
-              moderate_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.moderate' 2>/dev/null || echo "0")
-              low_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.low' 2>/dev/null || echo "0")
-              info_count=$(echo "$audit_summary_line" | jq '.data.vulnerabilities.info' 2>/dev/null || echo "0")
-            else
-              critical_count=0
-              high_count=0
-              moderate_count=0
-              low_count=0
-              info_count=0
+            # Count vulnerabilities from individual advisory objects (only high and critical with --level=high)
+            # Handle multiple JSON objects in the file (each vulnerability is a separate JSON object)
+            critical_count=$(jq '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            high_count=$(jq '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "high")] | length' frontend_audit_output.json 2>/dev/null || echo "0")
+            moderate_count=0  # Won't exist with --level=high
+            low_count=0        # Won't exist with --level=high
+            info_count=0        # Won't exist with --level=high
+            
+            # Fallback counting if jq fails (using grep)
+            if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ]; then
+              critical_count=$(grep -o '"severity":"critical"' frontend_audit_output.json | wc -l || echo "0")
+              high_count=$(grep -o '"severity":"high"' frontend_audit_output.json | wc -l || echo "0")
             fi
-            echo "Critical count parsed: $critical_count"
-            echo "High count parsed: $high_count"
-            echo "Moderate count parsed: $moderate_count"
-            echo "Low count parsed: $low_count"
-            echo "Info count parsed: $info_count"
-            echo "=== END DEBUG ==="
-
-            # If jq parsing failed (all zeros), try fallback method
-            if [ "$critical_count" = "0" ] && [ "$high_count" = "0" ] && [ "$moderate_count" = "0" ]; then
-              echo "=== DEBUG: Trying fallback parsing method ==="
-              # Extract from auditSummary line using grep and sed
-              audit_summary_line=$(grep '"type":"auditSummary"' frontend_audit_output.json)
-              echo "Found auditSummary line: $audit_summary_line"
-
-              if [ ! -z "$audit_summary_line" ]; then
-                critical_count=$(echo "$audit_summary_line" | sed 's/.*"critical":\([0-9]*\).*/\1/')
-                high_count=$(echo "$audit_summary_line" | sed 's/.*"high":\([0-9]*\).*/\1/')
-                moderate_count=$(echo "$audit_summary_line" | sed 's/.*"moderate":\([0-9]*\).*/\1/')
-                low_count=$(echo "$audit_summary_line" | sed 's/.*"low":\([0-9]*\).*/\1/')
-                info_count=$(echo "$audit_summary_line" | sed 's/.*"info":\([0-9]*\).*/\1/')
-                echo "Fallback parsing - Critical: $critical_count, High: $high_count, Moderate: $moderate_count, Low: $low_count, Info: $info_count"
-              fi
-              echo "=== END FALLBACK DEBUG ==="
-            fi
-
-            # Ensure variables are treated as integers
-          critical_count=$((critical_count + 0))
-          high_count=$((high_count + 0))
-          total_vuln=$((critical_count + high_count))
-            echo "=== FINAL: Total high+critical vulnerabilities: $total_vuln ==="
-
+            
+            total_vuln=$((critical_count + high_count))
+            
             if [ "$total_vuln" -gt 0 ]; then
               echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
               echo "Security vulnerabilities detected - this PR cannot be merged"
@@ -124,7 +84,7 @@ jobs:
           fi
           
           # Fail the workflow if vulnerabilities were found
-          if [ "$total_vuln" -gt 0 ]; then
+          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
             echo ""
             echo "WORKFLOW FAILED: Frontend security vulnerabilities detected!"
             echo "This PR cannot be merged until vulnerabilities are resolved."
@@ -136,13 +96,13 @@ jobs:
         run: |
           # Get vulnerability details from audit output
           if [ -f "frontend_audit_output.json" ]; then
-            VULN_DETAILS=$(jq -s -r '[.[] | select(.type == "auditAdvisory") | .data.advisory | select(.severity == "critical" or .severity == "high")] |
-              .[] |
+            VULN_DETAILS=$(jq -r '[.[] | select(.type == "auditAdvisory" and .data.advisory.severity == "critical" or .data.advisory.severity == "high") | 
               "• \(.resolution.path): \(.severity | ascii_upcase) - \(.overview)",
               "  Severity: \(.severity | ascii_upcase)",
               "  Patched in: \(.patched_versions // "No patch available")",
               "  URL: \(.url)",
-              ""' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
+              "" | 
+              join("\n")' frontend_audit_output.json 2>/dev/null || echo "No vulnerability details available")
             
             # Truncate if too long for Slack
             if [ ${#VULN_DETAILS} -gt 1500 ]; then
