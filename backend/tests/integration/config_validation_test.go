@@ -48,7 +48,7 @@ func TestServerFailsFastWithMissingDBHost(t *testing.T) {
 	unsetTestEnv(t, "DB_HOST")
 
 	// Test that LoadConfig fails with clear error message
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadBackendConfig()
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "DB_HOST is required but not set")
@@ -81,7 +81,7 @@ func TestServerFailsFastWithMissingAppURL(t *testing.T) {
 	unsetTestEnv(t, "APP_URL")
 
 	// Test that LoadConfig fails with clear error message
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadBackendConfig()
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "APP_URL is required but not set")
@@ -123,7 +123,7 @@ func TestServerFailsFastWithMissingOryToken(t *testing.T) {
 	unsetTestEnv(t, "ORY_TOKEN")
 
 	// Test that LoadConfig fails with clear error message
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadBackendConfig()
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "ORY_TOKEN is required but not set")
@@ -165,7 +165,7 @@ func TestServerStartsWithValidConfiguration(t *testing.T) {
 	setTestEnv(t, "PROVIDER_SERVICE_URL", "http://localhost:8081")
 
 	// Test that LoadConfig succeeds
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadBackendConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
@@ -198,7 +198,7 @@ func TestConfigurationDefaults(t *testing.T) {
 	setMinimalRequiredVars(t)
 
 	// Test that LoadConfig applies defaults
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadBackendConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 

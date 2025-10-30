@@ -54,7 +54,7 @@ type Config struct {
 	BrightspaceTempDir     string
 }
 
-func LoadConfig() (*Config, error) {
+func LoadBackendConfig() (*Config, error) {
 	cfg := &Config{}
 
 	cfg.AppDSN = os.Getenv("APP_DSN")
@@ -190,9 +190,81 @@ func LoadConfig() (*Config, error) {
 	return cfg, nil
 }
 
+// LoadMiddlewareConfig loads configuration for the provider-middleware service (minimal validation)
+func LoadMiddlewareConfig() (*Config, error) {
+	cfg := &Config{}
+
+	cfg.AppDSN = os.Getenv("APP_DSN")
+
+	cfg.DBHost = os.Getenv("DB_HOST")
+	if cfg.DBHost == "" && cfg.AppDSN == "" {
+		return nil, fmt.Errorf("DB_HOST is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBPort = os.Getenv("DB_PORT")
+	if cfg.DBPort == "" && cfg.AppDSN == "" {
+		return nil, fmt.Errorf("DB_PORT is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBUser = os.Getenv("DB_USER")
+	if cfg.DBUser == "" && cfg.AppDSN == "" {
+		return nil, fmt.Errorf("DB_USER is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBPassword = os.Getenv("DB_PASSWORD")
+	if cfg.DBPassword == "" && cfg.AppDSN == "" {
+		return nil, fmt.Errorf("DB_PASSWORD is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBName = os.Getenv("DB_NAME")
+	if cfg.DBName == "" && cfg.AppDSN == "" {
+		return nil, fmt.Errorf("DB_NAME is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.AppKey = os.Getenv("APP_KEY")
+	if cfg.AppKey == "" {
+		return nil, fmt.Errorf("APP_KEY is required but not set")
+	}
+
+	cfg.NATSURL = os.Getenv("NATS_URL")
+	if cfg.NATSURL == "" {
+		return nil, fmt.Errorf("NATS_URL is required but not set")
+	}
+
+	cfg.NATSUser = os.Getenv("NATS_USER")
+	if cfg.NATSUser == "" {
+		return nil, fmt.Errorf("NATS_USER is required but not set")
+	}
+
+	cfg.NATSPassword = os.Getenv("NATS_PASSWORD")
+	if cfg.NATSPassword == "" {
+		return nil, fmt.Errorf("NATS_PASSWORD is required but not set")
+	}
+
+	cfg.ProviderServiceKey = os.Getenv("PROVIDER_SERVICE_KEY")
+	if cfg.ProviderServiceKey == "" {
+		return nil, fmt.Errorf("PROVIDER_SERVICE_KEY is required but not set")
+	}
+
+	cfg.KiwixServerURL = os.Getenv("KIWIX_SERVER_URL")
+
+	// Optional with defaults
+	cfg.AppEnv = os.Getenv("APP_ENV")
+	if cfg.AppEnv == "" {
+		cfg.AppEnv = "dev"
+	}
+
+	cfg.LogLevel = os.Getenv("LOG_LEVEL")
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
+	}
+
+	return cfg, nil
+}
+
 // MustLoad panics on config error (use only in main)
 func MustLoad() *Config {
-	cfg, err := LoadConfig()
+	cfg, err := LoadBackendConfig()
 	if err != nil {
 		panic(err)
 	}
