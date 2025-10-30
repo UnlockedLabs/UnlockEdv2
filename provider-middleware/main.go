@@ -75,7 +75,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to load .env file, using default env variables")
 	}
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadMiddlewareConfig()
 	if err != nil {
 		log.Fatalf("Configuration error: %v", err)
 	}

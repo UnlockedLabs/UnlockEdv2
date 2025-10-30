@@ -13,18 +13,18 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load("../../.env"); err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Info("no .env file found, using default env variables")
 	}
 
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadBackendConfig()
 	if err != nil {
 		log.Fatalf("Configuration error:\n%v\n", err)
 	}
 
 	initLogging(cfg.LogLevel)
 
-	log.Printf("Starting server on %s (environment: %s)\n", cfg.AppURL, cfg.AppEnv)
+	log.Printf("Starting server on %s (environment: %s)", cfg.AppURL, cfg.AppEnv)
 
 	testing := (cfg.AppEnv == "testing")
 	ctx, cancel := context.WithCancel(context.Background())
