@@ -1,15 +1,14 @@
 package main
 
 import (
+	appconfig "UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
-	"sync"
 
 	"gorm.io/gorm"
 )
@@ -18,14 +17,6 @@ const (
 	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=0&count="
 )
 
-var maxLibraries = sync.OnceValue(func() int {
-	if os.Getenv("APP_ENV") == "dev" {
-		return 10
-	} else {
-		return 1000
-	}
-})
-
 type KiwixService struct {
 	OpenContentProviderId uint
 	Url                   string
@@ -33,10 +24,15 @@ type KiwixService struct {
 	Client                *http.Client
 	JobID                 string
 	params                map[string]any
+	appURL                string
 }
 
-func NewKiwixService(openContentProvider *models.OpenContentProvider, params map[string]any) *KiwixService {
-	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, maxLibraries())
+func NewKiwixService(openContentProvider *models.OpenContentProvider, params map[string]any, cfg *appconfig.Config) *KiwixService {
+	limit := 1000
+	if cfg.AppEnv == "dev" {
+		limit = 10
+	}
+	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, limit)
 	client := http.Client{}
 	jobID := params["job_id"].(string)
 	return &KiwixService{
@@ -46,6 +42,7 @@ func NewKiwixService(openContentProvider *models.OpenContentProvider, params map
 		params:                params,
 		Client:                &client,
 		JobID:                 jobID,
+		appURL:                cfg.AppURL,
 	}
 }
 

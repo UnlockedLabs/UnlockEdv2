@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -91,8 +90,6 @@ const (
 	HelpfulLinksUrl         string = ""
 	HelpfulLinksDescription string = "Hand picked helpful links for users"
 )
-
-var KiwixLibraryUrl string = os.Getenv("KIWIX_SERVER_URL")
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
 	if cp.Title == Youtube && cp.Url == "" {

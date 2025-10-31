@@ -79,8 +79,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newBadRequestServiceError(err, "Invalid filename")
 	}
-	basePath := os.Getenv("IMG_FILEPATH")
-	path, err := ValidatePathContainment(basePath, sanitizedFilename)
+	path, err := ValidatePathContainment(srv.config.ImgFilepath, sanitizedFilename)
 	if err != nil {
 		return newBadRequestServiceError(err, "Invalid file path")
 	}
@@ -101,18 +100,17 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusOK, map[string]string{"url": imgUrl})
 }
 
-func getImagePath(r *http.Request) (string, error) {
+func (srv *Server) getImagePath(r *http.Request) (string, error) {
 	img := r.PathValue("id")
 	sanitizedFilename, err := SanitizeFilename(img)
 	if err != nil {
 		return "", err
 	}
-	basePath := os.Getenv("IMG_FILEPATH")
-	return ValidatePathContainment(basePath, sanitizedFilename)
+	return ValidatePathContainment(srv.config.ImgFilepath, sanitizedFilename)
 }
 
 func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, log sLog) error {
-	imagePath, err := getImagePath(r)
+	imagePath, err := srv.getImagePath(r)
 	if err != nil {
 		return newBadRequestServiceError(err, "Invalid image path")
 	}

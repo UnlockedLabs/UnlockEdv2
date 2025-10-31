@@ -1,11 +1,11 @@
 package database
 
 import (
+	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/models"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"unicode"
 
@@ -19,11 +19,6 @@ import (
 )
 
 type DB struct{ *gorm.DB }
-
-var (
-	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
-		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
-)
 
 func NewDB(db *gorm.DB) *DB {
 	return &DB{db}
@@ -47,7 +42,7 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
-func InitDB(isTesting bool) *DB {
+func InitDB(cfg *config.Config, isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
@@ -60,11 +55,14 @@ func InitDB(isTesting bool) *DB {
 		logrus.Println("Connected to the SQLite database in memory")
 		MigrateTesting(gormDb)
 	} else {
-		dsn := os.Getenv("APP_DSN")
+		// Use DSN if provided, otherwise build from parts
+		dsn := cfg.AppDSN
+
 		if dsn == "" {
 			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
-				os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+				cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 		}
+
 		db, err := sql.Open("pgx", dsn)
 		if err != nil {
 			logrus.Fatalf("Failed to open database connection: %v", err)
@@ -73,13 +71,11 @@ func InitDB(isTesting bool) *DB {
 			logrus.Fatalf("Failed to ping database: %v", err)
 		}
 		logrus.Println("Running up migrations...")
-		migrationDir := os.Getenv("MIGRATION_DIR")
-		if migrationDir == "" {
-			migrationDir = "migrations"
-		}
-		if err := goose.Up(db, migrationDir); err != nil {
+
+		if err := goose.Up(db, cfg.MigrationDir); err != nil {
 			logrus.Fatalf("Migration failed: %v", err)
 		}
+
 		gormDb, err = gorm.Open(postgres.New(postgres.Config{
 			Conn: db,
 		}), &gorm.Config{
@@ -191,8 +187,12 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
-		for idx := range defaultOpenContentProviders {
-			if err := db.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
+		defaultProviders := []models.OpenContentProvider{
+			{Title: models.Kiwix, Url: models.KiwixLibraryURL(), CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+			{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription},
+		}
+		for idx := range defaultProviders {
+			if err := db.Create(&defaultProviders[idx]).Error; err != nil {
 				logrus.Fatalf("Failed to create default open content providers: %v", err)
 			}
 		}

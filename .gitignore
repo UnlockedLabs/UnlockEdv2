@@ -1,6 +1,8 @@
 *.env
 .vscode
 .idea
+/.claude
+Claude.md
 .github/workflows/test.yml
 /frontend/.husky/staged-files
 jar
@@ -14,6 +16,7 @@ jar
 /migrations/migrations
 /provider-middleware/providers.db
 /backend/server
+/backend/test-backend
 /provider-middleware/middleware
 /provider-middleware/bin
 /backend/bin

@@ -17,13 +17,13 @@ func TestClassCompletedAddsUntilDate(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
-	facility, err := env.CreateTestFacility("Test Facility")
+	facility, err := env.CreateTestFacility("Test Facility Completed")
 	require.NoError(t, err)
 
-	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	facilityAdmin, err := env.CreateTestUser("admincompleted", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
-	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	program, err := env.CreateTestProgram("Test Program Completed", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
 
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
@@ -72,13 +72,13 @@ func TestClassCancelledAddsUntilDate(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
-	facility, err := env.CreateTestFacility("Test Facility")
+	facility, err := env.CreateTestFacility("Test Facility Cancelled")
 	require.NoError(t, err)
 
-	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	facilityAdmin, err := env.CreateTestUser("admincancelled", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
-	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	program, err := env.CreateTestProgram("Test Program Cancelled", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
 
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
@@ -127,13 +127,13 @@ func TestMultipleEventsGetUntilDate(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
-	facility, err := env.CreateTestFacility("Test Facility")
+	facility, err := env.CreateTestFacility("Test Facility Multiple")
 	require.NoError(t, err)
 
-	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	facilityAdmin, err := env.CreateTestUser("adminmultiple", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
-	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	program, err := env.CreateTestProgram("Test Program Multiple", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
 
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
@@ -195,13 +195,13 @@ func TestExistingUntilDateReplaced(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
-	facility, err := env.CreateTestFacility("Test Facility")
+	facility, err := env.CreateTestFacility("Test Facility Replaced")
 	require.NoError(t, err)
 
-	facilityAdmin, err := env.CreateTestUser("admin", models.FacilityAdmin, facility.ID, "")
+	facilityAdmin, err := env.CreateTestUser("adminreplaced", models.FacilityAdmin, facility.ID, "")
 	require.NoError(t, err)
 
-	program, err := env.CreateTestProgram("Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	program, err := env.CreateTestProgram("Test Program Replaced", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
 
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
