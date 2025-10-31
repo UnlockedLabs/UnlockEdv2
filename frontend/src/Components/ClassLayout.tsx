@@ -11,32 +11,15 @@ import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate, useParams } from 'react-router';
 import ClassStatus from './ClassStatus';
 import useSWR, { KeyedMutator } from 'swr';
-import { RRule } from 'rrule';
 import ActivityHistoryCard from './ActivityHistoryCard';
 import { useEffect, useState } from 'react';
 import Pagination from './Pagination';
 import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
-import { ProgramClassEvent } from '@/types/events';
 import ULIComponent from './ULIComponent';
 import { textMonthLocalDate } from './helperFunctions/formatting';
-
-export function getClassEndDate(events: ProgramClassEvent[]): Date | null {
-    if (!events || events.length === 0) return null;
-    const latestEvent = events.reduce(
-        (maxEvent, event) => (event.id > maxEvent.id ? event : maxEvent),
-        events[0]
-    );
-    const ruleString = latestEvent.recurrence_rule;
-    try {
-        const rule = RRule.fromString(ruleString);
-        return rule.options.until ?? null;
-    } catch (error) {
-        console.error('error parsing the rrule, error is: ', error);
-        return null;
-    }
-}
+import { RRule } from 'rrule';
 
 function ClassInfoCard({
     classInfo,
@@ -51,7 +34,8 @@ function ClassInfoCard({
     const blockEdits = isCompletedCancelledOrArchived(
         classInfo ?? ({} as Class)
     );
-
+    // This function works fine on class reschedule, but ater a restore when calculation takes place, it does its calculation off of the
+    // original rrule
     function getNextOccurrenceDateAsStr(): string {
         const now = new Date();
         const allOccurrences: Date[] = [];
@@ -149,17 +133,13 @@ function ClassInfoCard({
                 <div className="space-y-2">
                     <h3 className="body">Class Dates:</h3>
                     <p className="body-small">
-                        {classInfo.start_dt &&
-                            textMonthLocalDate(classInfo.start_dt)}{' '}
+                        {classInfo.start_dt > getNextOccurrenceDateAsStr()
+                            ? classInfo.start_dt
+                            : textMonthLocalDate(getNextOccurrenceDateAsStr())}
                         &ndash;{' '}
-                        {(() => {
-                            const classEndDate = getClassEndDate(
-                                classInfo.events ?? []
-                            );
-                            return classEndDate
-                                ? textMonthLocalDate(classEndDate)
-                                : 'No end date scheduled';
-                        })()}
+                        {classInfo.end_dt
+                            ? textMonthLocalDate(classInfo.end_dt)
+                            : 'No end date scheduled'}
                     </p>
                 </div>
                 <div className="space-y-2">

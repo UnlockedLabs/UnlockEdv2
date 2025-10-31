@@ -81,6 +81,7 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 	}
 	for i, j := 0, len(overrides); i < j; i++ {
 		overrides[i].EventID = uint(eventId)
+		overrides[i].ClassID = uint(classID)
 	}
 	ctx := srv.getQueryContext(r)
 	if err := srv.Db.CreateOverrideEvents(&ctx, overrides); err != nil {
@@ -131,6 +132,7 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	event.ClassID = uint(classID)
 	_, err = srv.Db.CreateNewEvent(classID, event)
 	if err != nil {
 		return newDatabaseServiceError(err)

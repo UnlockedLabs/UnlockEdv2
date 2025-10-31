@@ -58,7 +58,7 @@ export default function Schedule() {
               return {
                   ...event,
                   start: toZonedTime(event.start, user?.timezone),
-                  end: toZonedTime(new Date(event.end), user?.timezone)
+                  end: toZonedTime(event.end, user?.timezone)
               };
           })
         : [];
