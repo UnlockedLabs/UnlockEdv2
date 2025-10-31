@@ -143,7 +143,7 @@ type ProgramCSVData struct {
 	UnlockEdID           uint       `json:"unlock_ed_id" gorm:"column:unlock_ed_id"`
 	NameFirst            string     `json:"name_first" gorm:"column:name_first"`
 	NameLast             string     `json:"name_last" gorm:"column:name_last"`
-	ResidentID           uint       `json:"resident_id" gorm:"column:resident_id"`
+	ResidentID           string     `json:"resident_id" gorm:"column:resident_id"`
 	EnrollmentDate       time.Time  `json:"enrollment_date" gorm:"column:enrollment_date"`
 	EndDate              *time.Time `json:"end_date" gorm:"column:end_date"`
 	EndStatus            string     `json:"end_status" gorm:"column:end_status"`
@@ -167,7 +167,7 @@ func ProgramDataToCSVFormat(data []ProgramCSVData) ([][]string, error) {
 			record.InstructorName,
 			record.NameLast,
 			record.NameFirst,
-			strconv.Itoa(int(record.ResidentID)),
+			record.ResidentID,
 			strconv.Itoa(int(record.UnlockEdID)),
 			record.EnrollmentDate.Format("2006-01-02"),
 			endDateStr,
