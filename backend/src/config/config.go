@@ -178,13 +178,12 @@ func LoadBackendConfig() (*Config, error) {
 	cfg.FROMEmail = os.Getenv("FROM_EMAIL")
 	cfg.ImgFilepath = os.Getenv("IMG_FILEPATH")
 	if cfg.ImgFilepath == "" {
-		cfg.ImgFilepath = "/imgs"
+		return nil, fmt.Errorf("IMG_FILEPATH is required but not set")
 	}
 
 	return cfg, nil
 }
 
-// LoadMiddlewareConfig loads configuration for the provider-middleware service (minimal validation)
 func LoadMiddlewareConfig() (*Config, error) {
 	cfg := &Config{}
 
@@ -241,6 +240,8 @@ func LoadMiddlewareConfig() (*Config, error) {
 	}
 
 	cfg.KiwixServerURL = os.Getenv("KIWIX_SERVER_URL")
+
+	cfg.ImgFilepath = os.Getenv("IMG_FILEPATH")
 
 	// Optional with defaults
 	cfg.AppEnv = os.Getenv("APP_ENV")
