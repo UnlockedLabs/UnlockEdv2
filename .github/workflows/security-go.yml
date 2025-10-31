@@ -28,7 +28,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24.9"
           cache: true
           cache-dependency-path: |
             backend/go.mod
@@ -84,7 +84,7 @@ jobs:
           BACKEND_VULN=$(cat backend_vuln_output.txt 2>/dev/null || echo "No backend vulnerabilities output")
           MIDDLEWARE_VULN=$(cat middleware_vuln_output.txt 2>/dev/null || echo "No provider-middleware vulnerabilities output")
 
-          VULN_OUTPUT="=== BACKEND VULNERABILITIES ==="$'\n'"$BACKEND_VULN"$'\n'"$'\n'"=== PROVIDER-MIDDLEWARE VULNERABILITIES ==="$'\n'"$MIDDLEWARE_VULN"
+          VULN_OUTPUT=$(printf "=== BACKEND VULNERABILITIES ===\n%s\n\n=== PROVIDER-MIDDLEWARE VULNERABILITIES ===\n%s" "$BACKEND_VULN" "$MIDDLEWARE_VULN")
 
           VULN_ESCAPED=$(echo "$VULN_OUTPUT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n' | head -c 2000)
           if [ ${#VULN_OUTPUT} -gt 2000 ]; then
@@ -116,11 +116,11 @@ jobs:
                --max-time 10 \
                --silent \
                --fail \
-               --data "{\"channel\":\"#unlockedv2-chat\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
+               --data "{\"channel\":\"#unlockedv2-alerts\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
                "${{ secrets.SLACK_WEBHOOK_URL }}"; then
             echo "Warning: Failed to send Slack notification"
           else
-            echo "Slack notification sent successfully to #unlockedv2-chat"
+            echo "Slack notification sent successfully to #unlockedv2-alerts"
           fi
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -144,7 +144,7 @@ jobs:
             echo "    2. go get -u <package>@<safe-version>"
             echo "    3. Push updates to your PR"
             echo ""
-            echo "Slack notification sent to #unlockedv2-chat"
+            echo "Slack notification sent to #unlockedv2-alerts"
             echo ""
           else
             echo "SECURITY CHECK PASSED - No vulnerabilities found in any Go modules"
