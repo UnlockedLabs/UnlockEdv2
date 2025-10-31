@@ -3,7 +3,6 @@ package main
 import (
 	"UnlockEdv2/src/config"
 	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"context"
 	"database/sql"
 	"errors"
@@ -33,9 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
-	models.SetAppKey(cfg.AppKey)
-	models.SetKiwixLibraryURL(cfg.KiwixServerURL)
-
 	dsn := buildDSN(cfg)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -92,7 +88,7 @@ func MigrateFresh(db *sql.DB, cfg *config.Config) {
 
 	flushNats(conn)
 	DB := database.NewDB(gormDb)
-	DB.SeedDefaultData(false)
+	DB.SeedDefaultData(false, cfg.KiwixServerURL)
 	log.Println("Database successfully migrated from fresh state.")
 	log.Println("\033[31mIf the server is running, you MUST restart it\033[0m")
 }

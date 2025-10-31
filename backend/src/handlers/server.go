@@ -400,7 +400,7 @@ func (srv *Server) syncKratosAdminDB(ctx context.Context) error {
 func (srv *Server) setupDefaultAdminInKratos(ctx context.Context) error {
 	user, err := srv.Db.GetSystemAdmin(ctx)
 	if err != nil {
-		srv.Db.SeedDefaultData(false)
+		srv.Db.SeedDefaultData(false, srv.config.KiwixServerURL)
 		return srv.setupDefaultAdminInKratos(ctx)
 		// rerun after seeding the default user
 	}

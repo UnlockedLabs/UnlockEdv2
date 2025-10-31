@@ -87,7 +87,11 @@ func InitDB(cfg *config.Config, isTesting bool) *DB {
 		logrus.Println("Connected to the PostgreSQL database via GORM")
 	}
 	DB := &DB{gormDb}
-	DB.SeedDefaultData(isTesting)
+	var kiwixURL string
+	if cfg != nil {
+		kiwixURL = cfg.KiwixServerURL
+	}
+	DB.SeedDefaultData(isTesting, kiwixURL)
 
 	return DB
 }
@@ -141,7 +145,7 @@ func MigrateTesting(db *gorm.DB) {
 
 }
 
-func (db *DB) SeedDefaultData(isTesting bool) {
+func (db *DB) SeedDefaultData(isTesting bool, kiwixURL string) {
 	var count int64
 	if err := db.Model(models.User{}).Where("id = ?", 1).Count(&count).Error; err != nil {
 		logrus.Fatal("db transaction failed getting admin user")
@@ -188,7 +192,7 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
 		defaultProviders := []models.OpenContentProvider{
-			{Title: models.Kiwix, Url: models.KiwixLibraryURL(), CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+			{Title: models.Kiwix, Url: kiwixURL, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
 			{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription},
 		}
 		for idx := range defaultProviders {
