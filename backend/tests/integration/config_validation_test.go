@@ -179,7 +179,7 @@ func TestServerStartsWithValidConfiguration(t *testing.T) {
 
 func TestConfigurationDefaults(t *testing.T) {
 	// Save original values
-	optionalVars := []string{"APP_ENV", "APP_PORT", "LOG_LEVEL", "MIGRATION_DIR", "SECRETS_SYSTEM"}
+	optionalVars := []string{"APP_ENV", "APP_PORT", "LOG_LEVEL", "MIGRATION_DIR"}
 
 	originalValues := make(map[string]string)
 	for _, varName := range optionalVars {
@@ -207,7 +207,6 @@ func TestConfigurationDefaults(t *testing.T) {
 	assert.Equal(t, "8080", cfg.AppPort)
 	assert.Equal(t, "info", cfg.LogLevel)
 	assert.Equal(t, "backend/migrations", cfg.MigrationDir)
-	assert.Equal(t, "local", cfg.SecretsSystem)
 }
 
 func TestConfigFieldAccessInHandlers(t *testing.T) {

@@ -18,7 +18,6 @@ type Config struct {
 	AppPort       string
 	LogLevel      string
 	MigrationDir  string
-	SecretsSystem string
 	AppKey        string
 
 	HydraAdminURL   string
@@ -157,11 +156,6 @@ func LoadBackendConfig() (*Config, error) {
 	cfg.MigrationDir = os.Getenv("MIGRATION_DIR")
 	if cfg.MigrationDir == "" {
 		cfg.MigrationDir = "backend/migrations"
-	}
-
-	cfg.SecretsSystem = os.Getenv("SECRETS_SYSTEM")
-	if cfg.SecretsSystem == "" {
-		cfg.SecretsSystem = "local"
 	}
 
 	cfg.HydraAdminToken = os.Getenv("HYDRA_ADMIN_TOKEN")
