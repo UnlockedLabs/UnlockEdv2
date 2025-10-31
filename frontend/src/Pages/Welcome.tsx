@@ -13,7 +13,7 @@ export default function Welcome() {
     useEffect(() => {
         const theme = document.documentElement.getAttribute('data-theme');
         const imgPath =
-            theme === 'light' ? 'unlockedv2Dk.png' : 'unlockedv2Lt.png';
+            theme === 'light' ? 'unlockedv2Lt.png' : 'unlockedv2Dk.png';
 
         const img = new Image();
         img.src = imgPath;
