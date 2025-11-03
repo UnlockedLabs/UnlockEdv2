@@ -21,3 +21,4 @@ jar
 /bin/*
 /tmp
 /csvs/zims/*.zim
+/.claude
