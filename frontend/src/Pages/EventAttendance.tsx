@@ -259,7 +259,9 @@ export default function EventAttendance() {
         }
         await submitAttendanceForRows(rows);
         void mutate();
-        navigate(`/program-classes/${class_id}/attendance`);
+        navigate(
+            `/program-classes/${class_id}/attendance?year=${yyyy}&month=${mm}`
+        );
     }
     const tooltip = blockEdits ? 'tooltip tooltip-left' : '';
     const anyRowSelected = rows.some((row) => row.selected);
