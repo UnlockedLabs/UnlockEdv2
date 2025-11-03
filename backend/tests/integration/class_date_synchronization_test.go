@@ -427,7 +427,8 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 		ExpectStatus(http.StatusOK)
 
 	updatedClass := updatedClassResp.GetData()
-	require.Equal(t, classStartDate, updatedClass.StartDt, "Class start date should remain at the original kickoff when earlier sessions are only cancelled")
+	expectedStartDate := time.Date(2025, 12, 20, 18, 0, 0, 0, time.UTC) // Original RRULE start date
+	require.Equal(t, expectedStartDate, updatedClass.StartDt, "Class start date should sync with original RRULE start date when rescheduled events exist")
 }
 
 func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {

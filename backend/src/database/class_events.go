@@ -249,25 +249,23 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		return err
 	}
 
-	startBoundary := class.StartDt
-	var endBoundary time.Time
-	if class.EndDt != nil {
-		endBoundary = *class.EndDt
-		endBoundary = endBoundary.AddDate(0, 3, 0)
-	} else {
-		endBoundary = startBoundary.AddDate(5, 0, 0)
-	}
-
+	originalBaseStart := rRule.OrigOptions.Dtstart.In(time.UTC)
 	ruleUntil := rRule.GetUntil()
 
-	baseEventOccurrences := rRule.Between(startBoundary, endBoundary, true)
+	startBoundary := class.StartDt
+	endBoundary := startBoundary.AddDate(5, 0, 0)
+	if class.EndDt != nil {
+		endBoundary = class.EndDt.AddDate(0, 3, 0)
+	}
 
-	if len(baseEventOccurrences) == 0 {
+	baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
+	if len(baseOccurrences) == 0 {
 		return nil
 	}
 
 	cancelledDates := make(map[string]bool)
 	rescheduledDates := make([]time.Time, 0)
+	var earliestReschedule time.Time
 
 	for _, override := range event.Overrides {
 		overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
@@ -275,27 +273,29 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 			logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
 			continue
 		}
-		if len(overrideRule.All()) == 0 {
+		occurrences := overrideRule.All()
+		if len(occurrences) == 0 {
 			continue
 		}
 
-		overrideDate := overrideRule.All()[0]
-
+		overrideDate := occurrences[0].In(time.UTC)
 		if override.IsCancelled {
 			cancelledDates[overrideDate.Format("2006-01-02")] = true
-		} else {
-			rescheduledDates = append(rescheduledDates, overrideDate)
+			continue
+		}
+
+		rescheduledDates = append(rescheduledDates, overrideDate)
+		if earliestReschedule.IsZero() || overrideDate.Before(earliestReschedule) {
+			earliestReschedule = overrideDate
 		}
 	}
 
-	allDates := make([]time.Time, 0)
-
-	for _, occurrence := range baseEventOccurrences {
+	allDates := make([]time.Time, 0, len(baseOccurrences)+len(rescheduledDates))
+	for _, occurrence := range baseOccurrences {
 		if !cancelledDates[occurrence.Format("2006-01-02")] {
 			allDates = append(allDates, occurrence)
 		}
 	}
-
 	allDates = append(allDates, rescheduledDates...)
 
 	if len(allDates) == 0 {
@@ -306,13 +306,16 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		return allDates[i].Before(allDates[j])
 	})
 
-	computedStart := allDates[0]
 	computedEnd := allDates[len(allDates)-1]
 
 	updates := make(map[string]interface{})
 
-	if computedStart.Before(class.StartDt) {
-		updates["start_dt"] = computedStart
+	targetStart := originalBaseStart
+	if !earliestReschedule.IsZero() && earliestReschedule.Before(originalBaseStart) {
+		targetStart = earliestReschedule
+	}
+	if !targetStart.Equal(class.StartDt) {
+		updates["start_dt"] = targetStart
 	}
 
 	hasOverrides := len(event.Overrides) > 0
@@ -327,10 +330,12 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		updates["end_dt"] = ruleUntil
 	}
 
-	if len(updates) > 0 {
-		if err := trans.Model(&models.ProgramClass{}).Where("id = ?", classID).Updates(updates).Error; err != nil {
-			return newUpdateDBError(err, "program_classes")
-		}
+	if len(updates) == 0 {
+		return nil
+	}
+
+	if err := trans.Model(&models.ProgramClass{}).Where("id = ?", classID).Updates(updates).Error; err != nil {
+		return newUpdateDBError(err, "program_classes")
 	}
 
 	return nil
