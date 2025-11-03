@@ -34,10 +34,6 @@ func TestClassDateSynchronization(t *testing.T) {
 		runTestOverrideCreationExtendsEndDate(t, env, facility, facilityAdmin, program)
 	})
 
-	// t.Run("Event deletion restores class boundaries correctly", func(t *testing.T) {
-	// 	runTestEventDeletionRestoresBoundaries(t, env, facility, facilityAdmin, program)
-	// })
-
 	t.Run("Event rescheduling extends class across multiple months", func(t *testing.T) {
 		runTestEventReschedulingExtendsMultipleMonths(t, env, facility, facilityAdmin, program)
 	})
@@ -59,9 +55,7 @@ func TestClassDateSynchronization(t *testing.T) {
 	})
 }
 
-// Test that creating event overrides properly extends the class end date
 func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-	// Create a class with initial schedule through November
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)  // November 1, 2025
 	initialEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC) // November 30, 2025
 	creditHours := int64(3)
@@ -79,7 +73,6 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		CreditHours:    &creditHours,
 	}
 
-	// Create the class
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
@@ -88,7 +81,6 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 	createdClass := classResp.GetData()
 	require.Equal(t, initialEndDate, *createdClass.EndDt, "Initial end date should be November 30")
 
-	// Create initial event that ends November 30 (Friday before Thanksgiving)
 	eventPayload := map[string]interface{}{
 		"duration":        "2h",
 		"room":            "Test Room 101",
@@ -99,13 +91,6 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do()
 
-	// Debug the actual response
-	t.Logf("=== handleCreateEvent Response Debug ===")
-	t.Logf("Status Code: %d", resp.resp.StatusCode)
-	t.Logf("Headers: %+v", resp.resp.Header)
-	t.Logf("Raw Body: %s", resp.rawBody)
-
-	// Try to get the created event ID from DB to confirm it was created
 	var createdEvent models.ProgramClassEvent
 	err := env.DB.Where("class_id = ?", createdClass.ID).First(&createdEvent).Error
 	if err == nil {
@@ -114,7 +99,6 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		t.Logf("No event found in DB: %v", err)
 	}
 
-	// Check if API returned success
 	if resp.resp.StatusCode == http.StatusCreated || resp.resp.StatusCode == http.StatusOK {
 		t.Logf("Event creation API successful")
 		if err == nil {
@@ -126,10 +110,8 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		t.Errorf("Event creation failed - Status: %d", resp.resp.StatusCode)
 	}
 
-	// Create event for the rest of the test
 	event := &createdEvent
 
-	// Create an override that moves the last Thursday (Nov 27) to December 4
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
@@ -151,13 +133,11 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		},
 	}
 
-	// Create the overrides
 	NewRequest[any](env.Client, t, http.MethodPut, fmt.Sprintf("/api/program-classes/%d/events/%d", createdClass.ID, event.ID), overridePayload).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	// Verify class end_dt was extended to December 2
 	updatedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
@@ -169,114 +149,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 	require.True(t, updatedClass.EndDt.After(*createdClass.EndDt), "End date should be later than original November 30")
 }
 
-// // Test that deleting event overrides properly restores class boundaries
-// func runTestEventDeletionRestoresBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-// 	// Create class with extended schedule through December
-// 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
-// 	initialEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
-// 	creditHours := int64(2)
-
-// 	class := models.ProgramClass{
-// 		ProgramID:      program.ID,
-// 		FacilityID:     facility.ID,
-// 		Capacity:       12,
-// 		Name:           "Boundary Restoration Test Class",
-// 		InstructorName: "Test Instructor",
-// 		Description:    "Testing that deletion restores boundaries",
-// 		StartDt:        classStartDate,
-// 		EndDt:          &initialEndDate,
-// 		Status:         models.Scheduled,
-// 		CreditHours:    &creditHours,
-// 	}
-
-// 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-// 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-// 		Do().
-// 		ExpectStatus(http.StatusCreated)
-
-// 	createdClass := classResp.GetData()
-
-// 	// Create event through November 30
-// 	eventPayload := map[string]interface{}{
-// 		"duration":        "1h30m",
-// 		"room":            "Test Room",
-// 		"recurrence_rule": "DTSTART:20251101T140000Z\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU,TH;UNTIL=20251130T000000Z",
-// 	}
-
-// 	eventResp := NewRequest[*models.ProgramClassEvent](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
-// 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-// 		Do().
-// 		ExpectStatus(http.StatusCreated)
-
-// 	event := eventResp.GetData()
-
-// 	// Create override to extend to December 15
-// 	// Note: We need to track what we're creating since the API doesn't return the override
-// 	overridePayload := []map[string]interface{}{
-// 		{
-// 			"event_id":       event.ID,
-// 			"class_id":       createdClass.ID,
-// 			"override_rrule": "DTSTART:20251215T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
-// 			"duration":       "1h30m",
-// 			"room":           "Extension Room",
-// 			"is_cancelled":   false,
-// 			"reason":         "Schedule extension",
-// 		},
-// 	}
-
-// 	// Create the override
-// 	NewRequest[any](env.Client, t, http.MethodPut, fmt.Sprintf("/api/program-classes/%d/events/%d", createdClass.ID, event.ID), overridePayload).
-// 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-// 		Do().
-// 		ExpectStatus(http.StatusOK)
-
-// 	// Get the override ID from the database by matching the unique characteristics
-// 	var createdOverride models.ProgramClassEventOverride
-// 	err := env.DB.Where("event_id = ? AND override_rrule LIKE ?", event.ID, "%20251215T140000Z%").
-// 		First(&createdOverride).Error
-// 	require.NoError(t, err, "Should be able to find the created override with DTSTART 20251215T140000Z")
-
-// 	t.Logf("Created override ID: %d for event ID: %d", createdOverride.ID, event.ID)
-
-// 	// Verify class end date was extended to December 15
-// 	extendedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
-// 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-// 		Do().
-// 		ExpectStatus(http.StatusOK)
-
-// 	extendedClass := extendedClassResp.GetData()
-
-// 	// Expected: Class end should be Dec 15 at 2:00 PM (start time of override)
-// 	expectedExtendedEnd := time.Date(2025, 12, 15, 14, 0, 0, 0, time.UTC)
-// 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should be extended to December 15 at 2 PM")
-// 	require.True(t, extendedClass.EndDt.After(initialEndDate), "Class end should be after original November 30")
-
-// 	// Delete the override
-// 	NewRequest[any](env.Client, t, http.MethodDelete, fmt.Sprintf("/api/program-classes/%d/events/%d", createdClass.ID, createdOverride.ID), nil).
-// 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-// 		Do().
-// 		ExpectStatus(http.StatusNoContent)
-
-// 	t.Logf("Successfully deleted override ID: %d", createdOverride.ID)
-
-// 	// Verify class end date reverted to the base event UNTIL
-// 	restoredClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
-// 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-// 		Do().
-// 		ExpectStatus(http.StatusOK)
-
-// 	restoredClass := restoredClassResp.GetData()
-
-// 	// Expected: Class end should revert to the UNTIL date from the base event RRULE
-// 	// The base event UNTIL=20251130T000000Z gets normalized to 23:59:59 by GetRRule()
-// 	expectedRestoredEnd := time.Date(2025, 11, 30, 23, 59, 59, 0, time.UTC)
-// 	require.Equal(t, expectedRestoredEnd, *restoredClass.EndDt, "Class end date should revert to November 30 at 23:59:59 (base event UNTIL)")
-// 	require.True(t, restoredClass.EndDt.Before(*extendedClass.EndDt), "Restored end should be before the extended end")
-// }
-
-// Test that event rescheduling can extend class across multiple months
 func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-	// Create class ending in November
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(4)
@@ -301,7 +174,6 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 
 	createdClass := classResp.GetData()
 
-	// Create initial event schedule
 	eventPayload := map[string]interface{}{
 		"duration":        "2h",
 		"room":            "Conference Room A",
@@ -315,7 +187,6 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 
 	event := eventResp.GetData()
 
-	// Reschedule to February next year (multi-month extension)
 	reschedulePayload := map[string]interface{}{
 		"event_series": map[string]interface{}{
 			"id":              event.ID,
@@ -331,13 +202,11 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 		},
 	}
 
-	// Reschedule the event series
 	NewRequest[any](env.Client, t, http.MethodPut, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), reschedulePayload).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 
-	// Verify class end date was extended to February
 	extendedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
@@ -348,9 +217,7 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should remain at original November 30")
 }
 
-// Test that multiple overrides properly extend class end date
 func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-	// Create class ending in December
 	classStartDate := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 12, 20, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(3)
@@ -375,7 +242,6 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 
 	createdClass := classResp.GetData()
 
-	// Create base event
 	eventPayload := map[string]interface{}{
 		"duration":        "1h",
 		"room":            "Main Room",
@@ -389,7 +255,6 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 
 	event := eventResp.GetData()
 
-	// Create multiple overrides that extend class progressively
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
@@ -420,34 +285,29 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 		},
 	}
 
-	// Create all overrides at once
 	NewRequest[any](env.Client, t, http.MethodPut, fmt.Sprintf("/api/program-classes/%d/events/%d", createdClass.ID, event.ID), overridePayload).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	// Verify class end date was extended to March (latest override)
 	extendedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
 
 	extendedClass := extendedClassResp.GetData()
-	expectedExtendedEnd := time.Date(2025, 12, 20, 23, 59, 59, 0, time.UTC) // December 20, 2025 at 23:59:59 UTC (base event UNTIL date)
+	expectedExtendedEnd := time.Date(2025, 12, 20, 23, 59, 59, 0, time.UTC)
 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should reflect base event UNTIL date")
 }
 
-// Test that events cannot be modified for completed classes
 func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-	// Create class and mark it as completed
+
 	class, err := env.CreateTestClass(program, facility, models.Scheduled)
 	require.NoError(t, err)
 
-	// Create initial event to ensure it has some schedule
 	_, err = env.CreateTestEvent(class.ID, "")
 	require.NoError(t, err)
 
-	// Mark class as completed
 	updateData := map[string]interface{}{
 		"status": string(models.Completed),
 	}
@@ -456,7 +316,6 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	// Try to create an event for the completed class
 	eventPayload := map[string]interface{}{
 		"duration":        "1h",
 		"room":            "Test Room",
@@ -468,7 +327,6 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		Do().
 		ExpectStatus(http.StatusBadRequest)
 
-	// Try to create overrides for the completed class
 	overridePayload := map[string]interface{}{
 		"override_rrule": "DTSTART:20241201T100000Z\nRRULE:FREQ=DAILY;COUNT=1",
 		"duration":       "1h",
@@ -482,7 +340,6 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		Do().
 		ExpectStatus(http.StatusBadRequest)
 
-	// Try to reschedule events for the completed class
 	reschedulePayload := map[string]interface{}{
 		"event_series": map[string]interface{}{
 			"id":              1,
@@ -508,9 +365,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		ExpectStatus(http.StatusBadRequest)
 }
 
-// Test that class start date updates when event is moved earlier
 func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-	// Create class starting December 15
 	classStartDate := time.Date(2025, 12, 15, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
@@ -536,7 +391,6 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 	createdClass := classResp.GetData()
 	require.Equal(t, classStartDate, createdClass.StartDt, "Initial start date should be December 15")
 
-	// Create event that starts on December 20 (later than class start)
 	eventPayload := map[string]interface{}{
 		"duration":        "1h30m",
 		"room":            "Test Room",
@@ -550,7 +404,6 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 
 	event := eventResp.GetData()
 
-	// Create override that moves first event to December 10 (earlier than class start)
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
@@ -568,20 +421,16 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	// Verify class start date was updated to December 10
 	updatedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
 
 	updatedClass := updatedClassResp.GetData()
-	expectedNewStartDate := time.Date(2025, 12, 23, 18, 0, 0, 0, time.UTC) // December 23, 2025 at 6 PM UTC (base event start time)
-	require.Equal(t, expectedNewStartDate, updatedClass.StartDt, "Class start date should reflect base event start time")
+	require.Equal(t, classStartDate, updatedClass.StartDt, "Class start date should remain at the original kickoff when earlier sessions are only cancelled")
 }
 
-// Test that event cancellation affects class boundaries
 func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
-	// Create class ending January 31
 	classStartDate := time.Date(2026, 1, 6, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
@@ -606,7 +455,6 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 
 	createdClass := classResp.GetData()
 
-	// Create event with occurrences through February
 	eventPayload := map[string]interface{}{
 		"duration":        "1h",
 		"room":            "Test Room",
@@ -620,7 +468,6 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 
 	event := eventResp.GetData()
 
-	// Create override that cancels February events (last month)
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
@@ -638,13 +485,12 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	// Verify class end date was updated to reflect February cancellation
 	updatedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
 
 	updatedClass := updatedClassResp.GetData()
-	expectedNewEndDt := time.Date(2026, 2, 28, 23, 59, 59, 0, time.UTC) // February 28, 2026 at 23:59:59 UTC (base event UNTIL date)
+	expectedNewEndDt := time.Date(2026, 2, 28, 23, 59, 59, 0, time.UTC)
 	require.Equal(t, expectedNewEndDt, *updatedClass.EndDt, "Class end date should reflect base event UNTIL date")
 }
