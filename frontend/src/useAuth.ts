@@ -200,6 +200,9 @@ const getResidentLink = (user: User): string => {
     if (user.feature_access.includes(FeatureAccess.ProviderAccess)) {
         return '/learning-path';
     }
+    if (user.feature_access.includes(FeatureAccess.ProgramAccess)) {
+        return '/resident-programs';
+    }
     return '/temp-home';
 };
 
