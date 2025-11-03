@@ -312,7 +312,7 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 
 	updates := make(map[string]interface{})
 
-	if !computedStart.Equal(class.StartDt) {
+	if computedStart.Before(class.StartDt) {
 		updates["start_dt"] = computedStart
 	}
 
