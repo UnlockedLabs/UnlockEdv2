@@ -133,9 +133,7 @@ function ClassInfoCard({
                 <div className="space-y-2">
                     <h3 className="body">Class Dates:</h3>
                     <p className="body-small">
-                        {classInfo.start_dt > getNextOccurrenceDateAsStr()
-                            ? classInfo.start_dt
-                            : textMonthLocalDate(getNextOccurrenceDateAsStr())}
+                        {classInfo.start_dt && textMonthLocalDate(classInfo.start_dt)}{' '}
                         &ndash;{' '}
                         {classInfo.end_dt
                             ? textMonthLocalDate(classInfo.end_dt)
