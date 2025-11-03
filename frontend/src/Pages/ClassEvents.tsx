@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { useState } from 'react';
 import {
@@ -31,9 +31,14 @@ function toLocalMidnight(dateOnly: string): Date {
 export default function ClassEvents() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
-    const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
+    const yearParam = searchParams.get('year');
+    const monthParam = searchParams.get('month');
+    const initialMonth =
+        yearParam && monthParam ? `${yearParam}-${monthParam}` : defaultMonth;
+    const [currentMonth, setCurrentMonth] = useState<string>(initialMonth);
 
     const [year, month] = currentMonth.split('-');
 
