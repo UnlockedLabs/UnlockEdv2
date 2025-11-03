@@ -1,0 +1,152 @@
+# Frontend security vulnerability scanning workflow
+# Scans for high and critical severity vulnerabilities in frontend dependencies
+# Blocks PR merges when vulnerabilities are detected and sends Slack notifications
+name: PR Security Check - Frontend Vulnerabilities Scan
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "frontend/package.json"
+      - "frontend/yarn.lock"
+      - ".github/workflows/security-frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  frontend-vulncheck:
+    name: Scan Frontend Dependencies for Vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          corepack install -g yarn
+          yarn install --frozen-lockfile
+
+      - name: Run security audit
+        id: vuln-scan
+        timeout-minutes: 5
+        run: |
+          echo "Running yarn audit on frontend dependencies..."
+
+          cd frontend
+
+          # Run audit and capture output
+          audit_output=$(yarn audit --level=high 2>&1 || true)
+          echo "Audit completed"
+
+          # Count vulnerabilities using grep
+          critical_count=$(echo "$audit_output" | grep -o 'Critical: [0-9]*' | cut -d' ' -f2 || echo "0")
+          high_count=$(echo "$audit_output" | grep -o 'High: [0-9]*' | cut -d' ' -f2 || echo "0")
+
+          # Ensure we have numbers
+          critical_count=${critical_count:-0}
+          high_count=${high_count:-0}
+          total_vuln=$((critical_count + high_count))
+
+          echo "Critical: $critical_count, High: $high_count, Total: $total_vuln"
+
+          # Save audit output for upload
+          echo "$audit_output" > ../frontend_audit_output.txt
+
+          # Set outputs
+          echo "critical_count=$critical_count" >> $GITHUB_OUTPUT
+          echo "high_count=$high_count" >> $GITHUB_OUTPUT
+          echo "total_vuln=$total_vuln" >> $GITHUB_OUTPUT
+
+          if (( total_vuln > 0 )); then
+            echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+            echo "Security vulnerabilities detected - this PR cannot be merged"
+            echo "CRITICAL_COUNT=$critical_count" >> $GITHUB_ENV
+            echo "HIGH_COUNT=$high_count" >> $GITHUB_ENV
+            echo "TOTAL_VULN=$total_vuln" >> $GITHUB_ENV
+          else
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+            echo "No vulnerabilities found in frontend dependencies"
+          fi
+
+      - name: Send Slack notification
+        if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        run: |
+          SLACK_MESSAGE=$(cat <<EOF
+          FRONTEND SECURITY VULNERABILITIES DETECTED
+
+          SUMMARY: ${{ env.CRITICAL_COUNT }} Critical, ${{ env.HIGH_COUNT }} High Severity Vulnerabilities Found
+
+          Repository: ${{ github.repository }}
+          PR: #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}
+          Author: ${{ github.event.pull_request.user.login }}
+          Branch: ${{ github.event.pull_request.head.ref }}
+
+          This PR contains frontend security vulnerabilities and has been blocked from merging until fixed.
+
+          TOTAL: Found ${{ env.TOTAL_VULN }} total vulnerabilities affecting frontend dependencies
+
+          Actions needed:
+          1. Update each vulnerable package using: \`yarn upgrade <package>@<safe-version>\`
+          2. Or update all dependencies: \`yarn upgrade\`
+          3. Run \`yarn audit\` to verify fixes
+          4. Push updates to PR
+
+          PR Link: ${{ github.event.pull_request.html_url }}
+          EOF
+          )
+
+          if ! curl -X POST -H 'Content-type: application/json' \
+               --max-time 10 \
+               --silent \
+               --fail \
+               --data "{\"channel\":\"#unlockedv2-chat\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
+               "${{ secrets.SLACK_WEBHOOK_URL }}"; then
+            echo "Warning: Failed to send Slack notification"
+          else
+            echo "Slack notification sent successfully to #unlockedv2-chat"
+          fi
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Block PR from merging
+        if: steps.vuln-scan.outputs.vulnerabilities_found == 'true'
+        run: |
+          echo "::error::Frontend security vulnerabilities detected - PR blocked from merging"
+          exit 1
+
+      - name: Security check summary
+        if: always()
+        run: |
+          if [ "${{ steps.vuln-scan.outputs.vulnerabilities_found }}" == 'true' ]; then
+            echo ""
+            echo "FRONTEND SECURITY CHECK FAILED"
+            echo "This PR CANNOT be merged due to frontend security vulnerabilities."
+            echo ""
+            echo "Found ${{ steps.vuln-scan.outputs.critical_count }} Critical and ${{ steps.vuln-scan.outputs.high_count }} High vulnerabilities"
+            echo ""
+            echo "Slack notification sent to #unlockedv2-chat"
+            echo ""
+          else
+            echo "FRONTEND SECURITY CHECK PASSED - No vulnerabilities found"
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-audit-report
+          path: frontend_audit_output.txt
+          retention-days: 30

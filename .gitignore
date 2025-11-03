@@ -2,6 +2,9 @@
 .vscode
 .claude
 .idea
+.claude/*
+Claude.md
+AGENTS.md
 .github/workflows/test.yml
 /frontend/.husky/staged-files
 jar
