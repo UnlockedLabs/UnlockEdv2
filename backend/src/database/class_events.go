@@ -129,7 +129,7 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		trans.Rollback()
 		return newDeleteDBError(err, "program class event override")
 	}
-	// Sync class date boundaries after deleting override
+	
 	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
 		trans.Rollback()
 		return err
@@ -219,7 +219,6 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		return newCreateDBError(err, "change_log_entries")
 	}
 
-	// Sync class date boundaries after creating overrides
 	if len(overrideEvents) > 0 {
 		if err := db.syncClassDateBoundaries(trans, overrideEvents[0].ClassID); err != nil {
 			trans.Rollback()
