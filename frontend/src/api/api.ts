@@ -18,10 +18,16 @@ class API {
         body?: unknown
     ): Promise<ServerResponse<T>> {
         try {
+            const isFormData = body instanceof FormData;
+            const timeoutMs = isFormData ? 30000 : 10000;
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
             const headers: Record<string, string> = {
-                ...(API.defaultHeaders as Record<string, string>)
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(!isFormData && {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json'
+                })
             };
             if (method !== 'GET') {
                 headers['X-CSRF-Token'] = API.getCSRFToken();
@@ -30,7 +36,11 @@ class API {
                 method,
                 headers,
                 credentials: 'include',
-                body: body ? JSON.stringify(body) : undefined,
+                body: body
+                    ? isFormData
+                        ? body
+                        : JSON.stringify(body)
+                    : undefined,
                 signal: controller.signal
             });
             clearTimeout(timeout);

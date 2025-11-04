@@ -67,27 +67,21 @@ export const BulkUploadModal = forwardRef<
             const formData = new FormData();
             formData.append('file', selectedFile);
 
-            const response = await fetch('/api/users/bulk/upload', {
-                method: 'POST',
-                credentials: 'include',
-                body: formData
-            });
+            const response = (await API.post(
+                'users/bulk/upload',
+                formData
+            )) as ServerResponseOne<BulkUploadResponse>;
 
-            const data = (await response.json()) as {
-                message: string;
-                data: BulkUploadResponse;
-            };
-
-            if (response.ok && data.data) {
-                setUploadResponse(data.data);
+            if (response.success && response.data) {
+                setUploadResponse(response.data);
                 setErrorData({
-                    errorCount: data.data.error_count,
-                    errorCsvData: data.data.error_csv_data
+                    errorCount: response.data.error_count,
+                    errorCsvData: response.data.error_csv_data
                 });
                 setModalStep('validation');
             } else {
                 toaster(
-                    `${data.message || 'Failed to upload file.'}`,
+                    `${response.message || 'Failed to upload file.'}`,
                     ToastState.error
                 );
             }
