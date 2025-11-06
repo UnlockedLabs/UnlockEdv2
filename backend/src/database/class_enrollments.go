@@ -336,7 +336,11 @@ func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, cl
 		Joins("LEFT JOIN program_completions pc ON pc.user_id = pse.user_id AND pc.program_class_id = ?", classId).
 		Where("pse.class_id = ?", classId)
 	if status != "" {
-		tx = tx.Where("pse.enrollment_status ILIKE ?", status)
+		if status == "not_enrolled" {
+			tx = tx.Where("pse.enrollment_status != ?", "Enrolled")
+		} else {
+			tx = tx.Where("pse.enrollment_status ILIKE ?", status)
+		}
 	}
 	if search != "" {
 		tx = tx.Where("u.name_last ILIKE ? OR u.name_first ILIKE ? OR u.doc_id ILIKE ?", search, search, search)

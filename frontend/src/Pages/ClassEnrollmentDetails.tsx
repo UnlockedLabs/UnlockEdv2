@@ -48,6 +48,7 @@ export default function ClassEnrollmentDetails() {
     const [sortQuery, setSortQuery] = useState<string>(
         FilterResidentNames['Resident Name (A-Z)']
     );
+    const [viewMode, setViewMode] = useState<'enrolled' | 'other'>('enrolled');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
@@ -58,7 +59,6 @@ export default function ClassEnrollmentDetails() {
     const confirmStateChangeModal = useRef<HTMLDialogElement>(null);
     const completionDetailsModal = useRef<HTMLDialogElement>(null);
     const reasonModalRef = useRef<HTMLDialogElement>(null);
-    const [showOthers, setShowOthers] = useState(false);
     const requiresReason = (status?: string) =>
         [
             'incomplete: withdrawn',
@@ -66,11 +66,30 @@ export default function ClassEnrollmentDetails() {
             'incomplete: failed to complete'
         ].includes(status?.toLowerCase() ?? '');
 
+    const getStatusParam = () => {
+        if (viewMode === 'enrolled') {
+            return 'enrolled';
+        }
+        if (filterStatus === 'all' || filterStatus === '') {
+            return 'not_enrolled';
+        }
+        return filterStatus;
+    };
+
+    const status = getStatusParam();
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>,
         Error
     >(
-        `/api/program-classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
+        `/api/program-classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${status}`
+    );
+
+    const otherStatus = viewMode === 'enrolled' ? 'not_enrolled' : 'enrolled';
+    const { data: otherData } = useSWR<
+        ServerResponseMany<ClassEnrollment>,
+        Error
+    >(
+        `/api/program-classes/${class_id}/enrollments?per_page=1&status=${otherStatus}`
     );
     if (error || redirect) {
         navigate(
@@ -84,6 +103,22 @@ export default function ClassEnrollmentDetails() {
     };
     const enrollments = data?.data ?? [];
     const meta = data?.meta;
+
+    const enrolledCount =
+        viewMode === 'enrolled'
+            ? meta?.total ?? 0
+            : otherData?.meta?.total ?? 0;
+    const otherCount =
+        viewMode === 'enrolled'
+            ? otherData?.meta?.total ?? 0
+            : meta?.total ?? 0;
+
+    const handleViewModeChange = (mode: 'enrolled' | 'other') => {
+        setViewMode(mode);
+        setPage(1);
+        setSelectedResidents([]);
+        setFilterStatus('all');
+    };
 
     const handleChange = (value: string, enrollment: ClassEnrollment) => {
         setSelectedResidents([]);
@@ -236,6 +271,28 @@ export default function ClassEnrollmentDetails() {
         <div className="flex flex-col gap-8">
             <div className="flex flex-row justify-between items-center">
                 <div className="flex flex-row gap-2 items-center">
+                    <div className="inline-flex rounded-md border border-grey-2 h-12">
+                        <button
+                            onClick={() => handleViewModeChange('enrolled')}
+                            className={`px-4 text-sm font-medium transition-colors ${
+                                viewMode === 'enrolled'
+                                    ? 'bg-teal-3 text-white hover:bg-teal-4'
+                                    : 'bg-transparent text-body-text hover:bg-teal-1'
+                            } rounded-l-md`}
+                        >
+                            Enrolled ({enrolledCount})
+                        </button>
+                        <button
+                            onClick={() => handleViewModeChange('other')}
+                            className={`px-4 text-sm font-medium transition-colors border-l border-grey-2 ${
+                                viewMode === 'other'
+                                    ? 'bg-teal-3 text-white hover:bg-teal-4'
+                                    : 'bg-transparent text-body-text hover:bg-teal-1'
+                            } rounded-r-md`}
+                        >
+                            Graduated/Other ({otherCount})
+                        </button>
+                    </div>
                     <SearchBar
                         searchTerm={searchTerm}
                         changeCallback={(term) => {
@@ -256,24 +313,25 @@ export default function ClassEnrollmentDetails() {
                             'Enrollment Date (Desc)': 'start_dt desc'
                         }}
                     />
-                    <DropdownControl
-                        customCallback={(value) => {
-                            setFilterStatus(value);
-                            setPage(1);
-                        }}
-                        enumType={{
-                            All: 'all',
-                            Enrolled: 'enrolled',
-                            Completed: 'completed',
-                            Withdrawn: 'incomplete: withdrawn',
-                            Dropped: 'incomplete: dropped',
-                            'Failed To Complete':
-                                'incomplete: failed to complete',
-                            Transferred: 'incomplete: transferred',
-                            Segregated: 'incomplete: segregated',
-                            Cancelled: 'incomplete: cancelled'
-                        }}
-                    />
+                    {viewMode === 'other' && (
+                        <DropdownControl
+                            customCallback={(value) => {
+                                setFilterStatus(value);
+                                setPage(1);
+                            }}
+                            enumType={{
+                                All: 'all',
+                                Completed: 'completed',
+                                Withdrawn: 'incomplete: withdrawn',
+                                Dropped: 'incomplete: dropped',
+                                'Failed To Complete':
+                                    'incomplete: failed to complete',
+                                Transferred: 'incomplete: transferred',
+                                Segregated: 'incomplete: segregated',
+                                Cancelled: 'cancelled'
+                            }}
+                        />
+                    )}
                 </div>
                 <div
                     className={`flex gap-2 ${blockEdits ? 'tooltip tooltip-left' : ''}`}
@@ -316,8 +374,7 @@ export default function ClassEnrollmentDetails() {
                     isEditable={isEditable}
                     handleChange={handleChange}
                     handleShowCompletionDetails={handleShowCompletionDetails}
-                    showOthers={showOthers}
-                    setShowOthers={setShowOthers}
+                    viewMode={viewMode}
                     classInfo={clsInfo}
                     onEnrollmentUpdate={() => void mutate()}
                 />
