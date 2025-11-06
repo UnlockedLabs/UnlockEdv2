@@ -411,7 +411,7 @@ export default function EventAttendance() {
                         <CancelButton
                             onClick={() =>
                                 navigate(
-                                    `/program-classes/${class_id}/attendance`
+                                    `/program-classes/${class_id}/attendance?year=${yyyy}&month=${mm}`
                                 )
                             }
                         />
