@@ -3,6 +3,7 @@ package handlers
 import (
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services/jasper"
 	"UnlockEdv2/src/tasks"
 	"context"
 	"encoding/json"
@@ -26,22 +27,23 @@ import (
 )
 
 type Server struct {
-	sesClient   *sesv2.Client
-	port        string
-	Db          *database.DB
-	Mux         *http.ServeMux
-	OryClient   *ory.APIClient
-	Client      *http.Client
-	nats        *nats.Conn
-	dev         bool
-	buckets     map[string]nats.KeyValue
-	features    []models.FeatureAccess
-	testingMode bool
-	s3          *s3.Client
-	presigner   *s3.PresignClient
-	s3Bucket    string
-	wsClient    *ClientManager
-	scheduler   *tasks.Scheduler
+	sesClient     *sesv2.Client
+	port          string
+	Db            *database.DB
+	Mux           *http.ServeMux
+	OryClient     *ory.APIClient
+	Client        *http.Client
+	nats          *nats.Conn
+	dev           bool
+	buckets       map[string]nats.KeyValue
+	features      []models.FeatureAccess
+	testingMode   bool
+	s3            *s3.Client
+	presigner     *s3.PresignClient
+	s3Bucket      string
+	wsClient      *ClientManager
+	scheduler     *tasks.Scheduler
+	JasperService *jasper.Service
 }
 
 type routeDef struct {
@@ -164,14 +166,20 @@ func newServer(ctx context.Context) *Server {
 		log.Errorf("Failed to connect to NATS: %v", err)
 	}
 	dev := os.Getenv("APP_ENV") == "dev"
+	jasperURL := "http://jasper-service:8082"
+	if dev {
+		jasperURL = "http://localhost:8082"
+	}
+
 	server := Server{
-		port:      port,
-		Db:        database.InitDB(false),
-		Mux:       http.NewServeMux(),
-		OryClient: ory.NewAPIClient(oryConfig()),
-		Client:    &http.Client{},
-		nats:      conn,
-		dev:       dev,
+		port:          port,
+		Db:            database.InitDB(false),
+		Mux:           http.NewServeMux(),
+		OryClient:     ory.NewAPIClient(oryConfig()),
+		Client:        &http.Client{},
+		nats:          conn,
+		dev:           dev,
+		JasperService: jasper.NewService(jasperURL),
 	}
 	features, err := server.Db.GetFeatureAccess()
 	if err != nil {
@@ -210,12 +218,13 @@ func newTestingServer() *Server {
 	db := database.InitDB(true)
 	features := models.AllFeatures
 	return &Server{
-		Db:          db,
-		Mux:         http.NewServeMux(),
-		OryClient:   nil,
-		Client:      nil,
-		features:    features,
-		testingMode: true,
+		Db:            db,
+		Mux:           http.NewServeMux(),
+		OryClient:     nil,
+		Client:        nil,
+		features:      features,
+		testingMode:   true,
+		JasperService: jasper.NewService("http://localhost:8082"),
 	}
 }
 

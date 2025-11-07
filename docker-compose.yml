@@ -95,6 +95,19 @@ services:
       postgres:
         condition: service_healthy
 
+  # JasperReports service
+  jasper-service:
+    build:
+      context: backend/jasper
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    networks:
+      - intranet
+    environment:
+      - JAVA_OPTS=-Xmx512m
+    restart: unless-stopped
+
   # Provider middleware
   provider-service:
     build:

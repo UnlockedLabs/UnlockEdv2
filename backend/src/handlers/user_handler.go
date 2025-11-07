@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -675,12 +676,36 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 		return newDatabaseServiceError(err)
 	}
 
-	pdf := srv.buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
+	useJasper := os.Getenv("USE_JASPER_REPORTS") == "true"
+
+	var pdfBytes []byte
+	var pdfErr error
+
+	if useJasper && srv.JasperService != nil {
+		pdfBytes, pdfErr = srv.JasperService.GenerateUsageReportPDF(r.Context(), user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
+		if pdfErr != nil {
+			log.errorf("Failed to generate PDF with JasperService, falling back to fpdf: %v", pdfErr)
+			useJasper = false
+		}
+	}
+
+	if !useJasper {
+		pdf := srv.buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", "attachment; filename=transcript.pdf")
+		return pdf.Output(w)
+	}
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=transcript.pdf")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(pdfBytes)))
 
-	return pdf.Output(w)
+	_, err = w.Write(pdfBytes)
+	if err != nil {
+		return newInternalServerServiceError(err, "failed to write PDF response")
+	}
+
+	return nil
 }
 
 func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.ResidentProgramClassInfo, engagements []models.SessionEngagement, resourceCount int64) *fpdf.Fpdf {

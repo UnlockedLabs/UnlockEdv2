@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="UsageReport" pageWidth="612" pageHeight="792" orientation="Portrait" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="residentName" class="java.lang.String"/>
+    <parameter name="residentId" class="java.lang.String"/>
+    <parameter name="facilityName" class="java.lang.String"/>
+    <parameter name="generatedDate" class="java.lang.String"/>
+    <parameter name="dateRange" class="java.lang.String"/>
+    <parameter name="totalTime" class="java.lang.String"/>
+    <parameter name="totalLogins" class="java.lang.String"/>
+    <parameter name="totalResources" class="java.lang.String"/>
+    <parameter name="showPrograms" class="java.lang.Boolean"/>
+    <field name="programName" class="java.lang.String"/>
+    <field name="className" class="java.lang.String"/>
+    <field name="status" class="java.lang.String"/>
+    <field name="attendancePercentage" class="java.lang.String"/>
+    <field name="startDate" class="java.lang.String"/>
+    <field name="endDate" class="java.lang.String"/>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="120" splitType="Stretch">
+            <image scaleImage="RetainShape" hAlign="Left">
+                <reportElement x="10" y="10" width="80" height="60" uuid="b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"/>
+                <imageExpression><![CDATA["classpath:logo.png"]]></imageExpression>
+            </image>
+            <staticText>
+                <reportElement x="100" y="25" width="400" height="30" uuid="c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"/>
+                <textElement>
+                    <font fontName="Arial" size="24" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Resident Usage Transcript]]></text>
+            </staticText>
+            <line>
+                <reportElement x="10" y="90" width="555" height="1" uuid="d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"/>
+            </line>
+        </band>
+    </title>
+    <pageHeader>
+        <band height="80" splitType="Stretch">
+            <staticText>
+                <reportElement x="10" y="10" width="60" height="15" uuid="e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Resident:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="70" y="10" width="200" height="15" uuid="f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{residentName}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="10" y="25" width="60" height="15" uuid="a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[ID:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="70" y="25" width="200" height="15" uuid="b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{residentId}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="10" y="40" width="60" height="15" uuid="c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Facility:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="70" y="40" width="200" height="15" uuid="d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{facilityName}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="280" y="10" width="80" height="15" uuid="e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Generated Date:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="360" y="10" width="150" height="15" uuid="f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{generatedDate}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="280" y="25" width="80" height="15" uuid="a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Date Range:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="360" y="25" width="150" height="15" uuid="b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{dateRange}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageHeader>
+    <columnHeader>
+        <band height="30" splitType="Stretch">
+            <staticText>
+                <reportElement x="10" y="10" width="120" height="20" uuid="c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f"/>
+                <textElement>
+                    <font fontName="Arial" size="16" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Platform Usage]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="60" splitType="Stretch">
+            <staticText>
+                <reportElement x="10" y="10" width="150" height="15" uuid="d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Total time spent on UnlockEd:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="160" y="10" width="100" height="15" uuid="e7f8a9b0-c1d2-4f3a-4b5c-6d7e8f9a0b1c"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{totalTime}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="10" y="25" width="150" height="15" uuid="f8a9b0c1-d2e3-4a4b-5c6d-7e8f9a0b1c2d"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Total Logins:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="160" y="25" width="100" height="15" uuid="a9b0c1d2-e3f4-4b5c-6d7e-8f9a0b1c2d3e"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{totalLogins}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="10" y="40" width="150" height="15" uuid="b0c1d2e3-f4a3-4c5d-6e7f-8a9b0c1d2e3f"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <text><![CDATA[Distinct resources accessed:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="160" y="40" width="100" height="15" uuid="c1d2e3f4-a3b4-4c5d-6e7f-8a9b0c1d2e3f"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{totalResources}]]></textFieldExpression>
+            </textField>
+        </band>
+        <band height="50">
+            <printWhenExpression><![CDATA[$P{showPrograms}]]></printWhenExpression>
+            <staticText>
+                <reportElement x="10" y="10" width="150" height="20" uuid="d2e3f4a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a"/>
+                <textElement>
+                    <font fontName="Arial" size="16" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Program Participation]]></text>
+            </staticText>
+        </band>
+        <band height="20">
+            <printWhenExpression><![CDATA[$P{showPrograms}]]></printWhenExpression>
+            <staticText>
+                <reportElement x="10" y="5" width="50" height="12" uuid="e3f4a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b"/>
+                <textElement>
+                    <font fontName="Arial" size="10"/>
+                </textElement>
+                <text><![CDATA[Program Name]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="60" y="5" width="40" height="12" uuid="f4a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c"/>
+                <textElement>
+                    <font fontName="Arial" size="10"/>
+                </textElement>
+                <text><![CDATA[Class Name]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="100" y="5" width="35" height="12" uuid="a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d"/>
+                <textElement>
+                    <font fontName="Arial" size="10"/>
+                </textElement>
+                <text><![CDATA[Status]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="135" y="5" width="35" height="12" uuid="b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e"/>
+                <textElement>
+                    <font fontName="Arial" size="10"/>
+                </textElement>
+                <text><![CDATA[Attendance]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="170" y="5" width="35" height="12" uuid="c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f"/>
+                <textElement>
+                    <font fontName="Arial" size="10"/>
+                </textElement>
+                <text><![CDATA[Start Date]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="205" y="5" width="35" height="12" uuid="d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a"/>
+                <textElement>
+                    <font fontName="Arial" size="10"/>
+                </textElement>
+                <text><![CDATA[End Date]]></text>
+            </staticText>
+        </band>
+        <band height="15">
+            <printWhenExpression><![CDATA[$P{showPrograms}]]></printWhenExpression>
+            <textField>
+                <reportElement x="10" y="2" width="50" height="12" uuid="e7f8a9b0-c1d2-4f3a-4b5c-6d7e8f9a0b1c"/>
+                <textElement>
+                    <font fontName="Arial" size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{programName}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="60" y="2" width="40" height="12" uuid="f8a9b0c1-d2e3-4a4b-5c6d-7e8f9a0b1c2d"/>
+                <textElement>
+                    <font fontName="Arial" size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{className}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="100" y="2" width="35" height="12" uuid="a9b0c1d2-e3f4-4b5c-6d7e-8f9a0b1c2d3e"/>
+                <textElement>
+                    <font fontName="Arial" size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="135" y="2" width="35" height="12" uuid="b0c1d2e3-f4a3-4c5d-6e7f-8a9b0c1d2e3f"/>
+                <textElement>
+                    <font fontName="Arial" size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{attendancePercentage}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="170" y="2" width="35" height="12" uuid="c1d2e3f4-a3b4-4c5d-6e7f-8a9b0c1d2e3f"/>
+                <textElement>
+                    <font fontName="Arial" size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{startDate}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="205" y="2" width="35" height="12" uuid="d2e3f4a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a"/>
+                <textElement>
+                    <font fontName="Arial" size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{endDate}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="20" splitType="Stretch">
+            <staticText>
+                <reportElement x="10" y="5" width="200" height="12" uuid="f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c"/>
+                <textElement>
+                    <font fontName="Arial" size="8" isItalic="true"/>
+                </textElement>
+                <text><![CDATA[Generated by UnlockEd Transcript System]]></text>
+            </staticText>
+        </band>
+    </pageFooter>
+</jasperReport>
