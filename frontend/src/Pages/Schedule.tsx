@@ -5,9 +5,9 @@ import {
 } from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
+import { getUTCTime } from '@/Components/helperFunctions/formatting';
 import { FacilityProgramClassEvent } from '@/types/events';
 import { useAuth } from '@/useAuth';
-import { toZonedTime } from 'date-fns-tz';
 import { useMemo, useState } from 'react';
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
@@ -55,10 +55,15 @@ export default function Schedule() {
 
     const formattedEvents = events
         ? events.map((event) => {
+              const displayDate = getUTCTime(event.start, user?.timezone);
               return {
                   ...event,
-                  start: toZonedTime(event.start, user?.timezone),
-                  end: toZonedTime(event.end, user?.timezone)
+                  start: displayDate,
+                  end: new Date(
+                      displayDate.getTime() +
+                          (new Date(event.end).getTime() -
+                              new Date(event.start).getTime())
+                  )
               };
           })
         : [];
