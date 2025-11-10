@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import Brand from '../Components/Brand';
 import { INIT_KRATOS_LOGIN_FLOW, ServerResponse, User } from '@/common';
 import API from '@/api/api';
 import { Link } from 'react-router-dom';
 import { AUTHCALLBACK } from '@/useAuth';
 import Timeline from '@/Components/Timeline';
+import { ThemeContext } from '@/Context/ThemeContext';
 
 export default function Welcome() {
     const [authUser, setAuthUser] = useState<User | undefined>();
     const [imgSrc, setImgSrc] = useState('unlockedv2Dk.png');
+    const { theme } = useContext(ThemeContext);
 
     useEffect(() => {
-        const theme = document.documentElement.getAttribute('data-theme');
         const imgPath =
-            theme === 'light' ? 'unlockedv2Lt.png' : 'unlockedv2Dk.png';
+            theme === 'light' ? 'unlockedv2Dk.png' : 'unlockedv2Lt.png';
 
         const img = new Image();
         img.src = imgPath;
@@ -29,7 +30,7 @@ export default function Welcome() {
             .catch(() => {
                 return;
             });
-    }, []);
+    }, [theme]);
 
     return (
         <div className="min-h-screen font-lato">
