@@ -87,6 +87,8 @@ services:
       - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
       - KIWIX_SERVER_URL=http://kiwix:8080
+      - TO_EMAIL=dev@example.com
+      - FROM_EMAIL=noreply@example.com
       - CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
       - PROXY_SCHEME_OVERRIDE=false
     depends_on:

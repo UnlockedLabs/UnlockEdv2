@@ -145,7 +145,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		return newDatabaseServiceError(err)
 	}
 	channels := make([]*models.OpenContentSearchResult, 0, 1) //only ever going to be one
-	if len(libraries) > 0 {
+	if len(libraries) > 0 && models.KiwixLibraryURL() != "" {
 		nextPage := (page-1)*perPage + 1
 		queryParams := url.Values{}
 		for _, library := range libraries {
@@ -153,7 +153,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		}
 		queryParams.Add("format", "xml")
 		queryParams.Add("pattern", search)
-		kiwixSearchURL := fmt.Sprintf("%s/search?start=%d&pageLength=%d&%s", models.KiwixLibraryUrl, nextPage, perPage, queryParams.Encode())
+		kiwixSearchURL := fmt.Sprintf("%s/search?start=%d&pageLength=%d&%s", models.KiwixLibraryURL(), nextPage, perPage, queryParams.Encode())
 		request, err := http.NewRequest(http.MethodGet, kiwixSearchURL, nil)
 		log.add("kiwix_search_url", kiwixSearchURL)
 		if err != nil {

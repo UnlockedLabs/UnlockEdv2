@@ -11,7 +11,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -101,7 +100,7 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 	}
 
 	if courseType == "channel" {
-		imgUrl, err := UploadImage(thumbnail, root, id)
+		imgUrl, err := kc.uploadImage(thumbnail, root, id)
 		if err != nil {
 			log.Printf("Failed to upload image %v", err)
 			imgUrl = ""
@@ -131,7 +130,7 @@ func decodeImg(thumbnail string) []byte {
 	return nil
 }
 
-func UploadImage(thumbnail, root, id string) (string, error) {
+func (ks *KolibriService) uploadImage(thumbnail, root, id string) (string, error) {
 	log.Println("Uploading image")
 	imgData := decodeImg(thumbnail)
 	if imgData == nil {
@@ -151,7 +150,7 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	request, err := http.NewRequest("POST", os.Getenv("APP_URL")+"/upload", body)
+	request, err := http.NewRequest("POST", ks.appURL+"/upload", body)
 	if err != nil {
 		return "", err
 	}

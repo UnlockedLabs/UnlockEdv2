@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -223,7 +222,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 // we pull the ory session cookie, and send request to kratos to validate the user session
 func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 	fields := log.Fields{"handler": "validateOrySession"}
-	request, err := http.NewRequest("GET", os.Getenv("KRATOS_PUBLIC_URL")+"/sessions/whoami", nil)
+	request, err := http.NewRequest("GET", srv.config.KratosPublicURL+"/sessions/whoami", nil)
 	if err != nil {
 		log.WithFields(fields).Error("Error creating request to ory: ", err)
 		return nil, false, err
