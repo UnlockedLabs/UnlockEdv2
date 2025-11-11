@@ -145,7 +145,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		return newDatabaseServiceError(err)
 	}
 	channels := make([]*models.OpenContentSearchResult, 0, 1) //only ever going to be one
-	if len(libraries) > 0 {
+	if len(libraries) > 0 && models.KiwixLibraryURL() != "" {
 		nextPage := (page-1)*perPage + 1
 		queryParams := url.Values{}
 		for _, library := range libraries {

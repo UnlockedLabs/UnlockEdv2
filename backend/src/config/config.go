@@ -13,12 +13,12 @@ type Config struct {
 	DBName     string
 	AppDSN     string
 
-	AppURL        string
-	AppEnv        string
-	AppPort       string
-	LogLevel      string
-	MigrationDir  string
-	AppKey        string
+	AppURL       string
+	AppEnv       string
+	AppPort      string
+	LogLevel     string
+	MigrationDir string
+	AppKey       string
 
 	HydraAdminURL   string
 	HydraPublicURL  string
@@ -58,29 +58,8 @@ func LoadBackendConfig() (*Config, error) {
 
 	cfg.AppDSN = os.Getenv("APP_DSN")
 
-	cfg.DBHost = os.Getenv("DB_HOST")
-	if cfg.DBHost == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_HOST is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBPort = os.Getenv("DB_PORT")
-	if cfg.DBPort == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_PORT is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBUser = os.Getenv("DB_USER")
-	if cfg.DBUser == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_USER is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBPassword = os.Getenv("DB_PASSWORD")
-	if cfg.DBPassword == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_PASSWORD is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBName = os.Getenv("DB_NAME")
-	if cfg.DBName == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_NAME is required but not set (or provide APP_DSN)")
+	if err := validateDatabaseConfig(cfg); err != nil {
+		return nil, err
 	}
 
 	cfg.AppURL = os.Getenv("APP_URL")
@@ -139,43 +118,33 @@ func LoadBackendConfig() (*Config, error) {
 	}
 
 	cfg.AppEnv = os.Getenv("APP_ENV")
-	if cfg.AppEnv == "" {
-		cfg.AppEnv = "dev"
-	}
-
 	cfg.AppPort = os.Getenv("APP_PORT")
-	if cfg.AppPort == "" {
-		cfg.AppPort = "8080"
-	}
-
 	cfg.LogLevel = os.Getenv("LOG_LEVEL")
-	if cfg.LogLevel == "" {
-		cfg.LogLevel = "info"
-	}
-
 	cfg.MigrationDir = os.Getenv("MIGRATION_DIR")
-	if cfg.MigrationDir == "" {
-		cfg.MigrationDir = "backend/migrations"
-	}
 
-	cfg.HydraAdminToken = os.Getenv("HYDRA_ADMIN_TOKEN")
-	cfg.ProviderServiceKey = os.Getenv("PROVIDER_SERVICE_KEY")
+	setConfigDefaults(cfg)
+
 	cfg.KolibriURL = os.Getenv("KOLIBRI_URL")
 	cfg.KolibriUsername = os.Getenv("KOLIBRI_USERNAME")
 	cfg.KolibriPassword = os.Getenv("KOLIBRI_PASSWORD")
 	cfg.KolibriDBPassword = os.Getenv("KOLIBRI_DB_PASSWORD")
+
 	cfg.KiwixServerURL = os.Getenv("KIWIX_SERVER_URL")
 	cfg.MiddlewareCronSchedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
-	cfg.RetryVideoCronSchedule = os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
 	cfg.BrightspaceTempDir = os.Getenv("BRIGHTSPACE_TEMP_DIR")
 
 	cfg.AWSRegion = os.Getenv("AWS_REGION")
 	cfg.S3BucketName = os.Getenv("S3_BUCKET_NAME")
 	cfg.AWSAccountID = os.Getenv("AWS_ACCOUNT_ID")
-	cfg.AWSAccessKeyID = os.Getenv("AWS_ACCESS_KEY_ID")
-	cfg.AWSSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+
 	cfg.TOEmail = os.Getenv("TO_EMAIL")
+	if cfg.TOEmail == "" {
+		return nil, fmt.Errorf("TO_EMAIL is required but not set")
+	}
 	cfg.FROMEmail = os.Getenv("FROM_EMAIL")
+	if cfg.FROMEmail == "" {
+		return nil, fmt.Errorf("FROM_EMAIL is required but not set")
+	}
 	cfg.ImgFilepath = os.Getenv("IMG_FILEPATH")
 	if cfg.ImgFilepath == "" {
 		return nil, fmt.Errorf("IMG_FILEPATH is required but not set")
@@ -189,29 +158,8 @@ func LoadMiddlewareConfig() (*Config, error) {
 
 	cfg.AppDSN = os.Getenv("APP_DSN")
 
-	cfg.DBHost = os.Getenv("DB_HOST")
-	if cfg.DBHost == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_HOST is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBPort = os.Getenv("DB_PORT")
-	if cfg.DBPort == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_PORT is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBUser = os.Getenv("DB_USER")
-	if cfg.DBUser == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_USER is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBPassword = os.Getenv("DB_PASSWORD")
-	if cfg.DBPassword == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_PASSWORD is required but not set (or provide APP_DSN)")
-	}
-
-	cfg.DBName = os.Getenv("DB_NAME")
-	if cfg.DBName == "" && cfg.AppDSN == "" {
-		return nil, fmt.Errorf("DB_NAME is required but not set (or provide APP_DSN)")
+	if err := validateDatabaseConfig(cfg); err != nil {
+		return nil, err
 	}
 
 	cfg.AppKey = os.Getenv("APP_KEY")
@@ -243,18 +191,55 @@ func LoadMiddlewareConfig() (*Config, error) {
 
 	cfg.ImgFilepath = os.Getenv("IMG_FILEPATH")
 
-	// Optional with defaults
 	cfg.AppEnv = os.Getenv("APP_ENV")
+	cfg.LogLevel = os.Getenv("LOG_LEVEL")
+
+	setConfigDefaults(cfg)
+
+	return cfg, nil
+}
+
+func validateDatabaseConfig(cfg *Config) error {
+	cfg.DBHost = os.Getenv("DB_HOST")
+	if cfg.DBHost == "" && cfg.AppDSN == "" {
+		return fmt.Errorf("DB_HOST is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBPort = os.Getenv("DB_PORT")
+	if cfg.DBPort == "" && cfg.AppDSN == "" {
+		return fmt.Errorf("DB_PORT is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBUser = os.Getenv("DB_USER")
+	if cfg.DBUser == "" && cfg.AppDSN == "" {
+		return fmt.Errorf("DB_USER is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBPassword = os.Getenv("DB_PASSWORD")
+	if cfg.DBPassword == "" && cfg.AppDSN == "" {
+		return fmt.Errorf("DB_PASSWORD is required but not set (or provide APP_DSN)")
+	}
+
+	cfg.DBName = os.Getenv("DB_NAME")
+	if cfg.DBName == "" && cfg.AppDSN == "" {
+		return fmt.Errorf("DB_NAME is required but not set (or provide APP_DSN)")
+	}
+	return nil
+}
+
+func setConfigDefaults(cfg *Config) {
 	if cfg.AppEnv == "" {
 		cfg.AppEnv = "dev"
 	}
-
-	cfg.LogLevel = os.Getenv("LOG_LEVEL")
+	if cfg.AppPort == "" {
+		cfg.AppPort = "8080"
+	}
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = "info"
 	}
-
-	return cfg, nil
+	if cfg.MigrationDir == "" {
+		cfg.MigrationDir = "backend/migrations"
+	}
 }
 
 // MustLoad panics on config error (use only in main)

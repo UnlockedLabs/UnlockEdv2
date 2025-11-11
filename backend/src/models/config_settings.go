@@ -24,16 +24,10 @@ func getAppKey() string {
 	return appKey
 }
 
-// SetKiwixLibraryURL stores the configured Kiwix server URL for shared access.
 func SetKiwixLibraryURL(url string) {
-	configMu.Lock()
-	defer configMu.Unlock()
 	kiwixLibraryURL = url
 }
 
-// KiwixLibraryURL returns the configured Kiwix server URL.
 func KiwixLibraryURL() string {
-	configMu.RLock()
-	defer configMu.RUnlock()
 	return kiwixLibraryURL
 }

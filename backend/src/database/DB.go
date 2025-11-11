@@ -192,8 +192,13 @@ func (db *DB) SeedDefaultData(isTesting bool, kiwixURL string) {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
 		defaultProviders := []models.OpenContentProvider{
-			{Title: models.Kiwix, Url: kiwixURL, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
 			{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription},
+		}
+		// Only add Kiwix provider if URL is configured
+		if kiwixURL != "" {
+			defaultProviders = append([]models.OpenContentProvider{
+				{Title: models.Kiwix, Url: kiwixURL, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+			}, defaultProviders...)
 		}
 		for idx := range defaultProviders {
 			if err := db.Create(&defaultProviders[idx]).Error; err != nil {

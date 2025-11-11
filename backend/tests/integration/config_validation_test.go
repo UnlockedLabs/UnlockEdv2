@@ -136,6 +136,7 @@ func TestServerStartsWithValidConfiguration(t *testing.T) {
 		"APP_URL", "APP_KEY", "HYDRA_ADMIN_URL", "HYDRA_PUBLIC_URL",
 		"KRATOS_ADMIN_URL", "KRATOS_PUBLIC_URL", "ORY_TOKEN",
 		"NATS_URL", "NATS_USER", "NATS_PASSWORD", "PROVIDER_SERVICE_URL", "IMG_FILEPATH",
+		"TO_EMAIL", "FROM_EMAIL",
 	}
 
 	originalValues := make(map[string]string)
@@ -164,6 +165,8 @@ func TestServerStartsWithValidConfiguration(t *testing.T) {
 	setTestEnv(t, "NATS_PASSWORD", "test")
 	setTestEnv(t, "PROVIDER_SERVICE_URL", "http://localhost:8081")
 	setTestEnv(t, "IMG_FILEPATH", "/imgs")
+	setTestEnv(t, "TO_EMAIL", "test@example.com")
+	setTestEnv(t, "FROM_EMAIL", "noreply@example.com")
 
 	// Test that LoadConfig succeeds
 	cfg, err := config.LoadBackendConfig()
@@ -257,4 +260,6 @@ func setMinimalRequiredVars(t *testing.T) {
 	setTestEnv(t, "NATS_PASSWORD", "test")
 	setTestEnv(t, "PROVIDER_SERVICE_URL", "http://localhost:8081")
 	setTestEnv(t, "IMG_FILEPATH", "/imgs")
+	setTestEnv(t, "TO_EMAIL", "test@example.com")
+	setTestEnv(t, "FROM_EMAIL", "noreply@example.com")
 }
