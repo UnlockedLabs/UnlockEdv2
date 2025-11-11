@@ -112,11 +112,11 @@ jobs:
                --max-time 10 \
                --silent \
                --fail \
-               --data "{\"channel\":\"#unlockedv2-chat\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
+               --data "{\"channel\":\"#unlockedv2-alerts\",\"username\":\"Security Bot\",\"icon_emoji\":\":warning:\",\"text\":\"$SLACK_MESSAGE\"}" \
                "${{ secrets.SLACK_WEBHOOK_URL }}"; then
             echo "Warning: Failed to send Slack notification"
           else
-            echo "Slack notification sent successfully to #unlockedv2-chat"
+            echo "Slack notification sent successfully to #unlockedv2-alerts"
           fi
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -137,7 +137,7 @@ jobs:
             echo ""
             echo "Found ${{ steps.vuln-scan.outputs.critical_count }} Critical and ${{ steps.vuln-scan.outputs.high_count }} High vulnerabilities"
             echo ""
-            echo "Slack notification sent to #unlockedv2-chat"
+            echo "Slack notification sent to #unlockedv2-alerts"
             echo ""
           else
             echo "FRONTEND SECURITY CHECK PASSED - No vulnerabilities found"
