@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/database"
+	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
@@ -650,37 +651,18 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}
 
-	queryCtx := srv.getQueryContext(r)
-	queryCtx.All = true
-	queryCtx.OrderBy, queryCtx.Order = "start_dt", "DESC"
-
-	//get user programs
-	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userID)
+	jasperService := jasper.NewJasperService(srv.Db, srv.testingMode)
+	pdfBytes, err := jasperService.GenerateUsageReportPDF(userID)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		log.errorf("jasper service error: %v", err)
+		return newInternalServerServiceError(err, "failed to generate PDF report")
 	}
-	//get user total time spent in unlocked
-	sessionEngagements, err := srv.Db.GetUserSessionEngagement(userID, -1)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	//get user (with loginmetrics)
-	user, err := srv.Db.GetUserByID(uint(userID))
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	//get user total distinct resources accessed
-	resourceCount, err := srv.Db.GetUserOpenContentAccessCount(queryCtx.Ctx, userID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-
-	pdf := srv.buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=transcript.pdf")
 
-	return pdf.Output(w)
+	_, err = w.Write(pdfBytes)
+	return err
 }
 
 func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.ResidentProgramClassInfo, engagements []models.SessionEngagement, resourceCount int64) *fpdf.Fpdf {
