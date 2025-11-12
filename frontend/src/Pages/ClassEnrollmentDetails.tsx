@@ -85,7 +85,7 @@ export default function ClassEnrollmentDetails() {
     );
 
     const otherStatus = viewMode === 'enrolled' ? 'not_enrolled' : 'enrolled';
-    const { data: otherData } = useSWR<
+    const { data: otherData, mutate: mutateOther } = useSWR<
         ServerResponseMany<ClassEnrollment>,
         Error
     >(
@@ -112,6 +112,10 @@ export default function ClassEnrollmentDetails() {
         viewMode === 'enrolled'
             ? otherData?.meta?.total ?? 0
             : meta?.total ?? 0;
+
+    const refreshEnrollmentData = async () => {
+        await Promise.all([mutate(), mutateOther()]);
+    };
 
     const handleViewModeChange = (mode: 'enrolled' | 'other') => {
         setViewMode(mode);
@@ -209,7 +213,7 @@ export default function ClassEnrollmentDetails() {
         if (resp.success) {
             setSelectedResidents([]);
             setChangeStatusValue(undefined);
-            await mutate();
+            await refreshEnrollmentData();
         } else {
             toaster(
                 "Unable to update resident's enrollment status",
@@ -376,7 +380,7 @@ export default function ClassEnrollmentDetails() {
                     handleShowCompletionDetails={handleShowCompletionDetails}
                     viewMode={viewMode}
                     classInfo={clsInfo}
-                    onEnrollmentUpdate={() => void mutate()}
+                    onEnrollmentUpdate={() => void refreshEnrollmentData()}
                 />
             )}
             <div className="flex justify-center m-2">
