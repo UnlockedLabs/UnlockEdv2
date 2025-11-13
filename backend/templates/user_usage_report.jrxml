@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="UserUsageReport" pageWidth="595" pageHeight="842" whenNoDataType="All" columnCount="5" printOrder="Horizontal" orientation="Portrait">
+  +++++++ REPLACE
+  +++++++ REPLACE
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	
+	<style name="Arial_Normal" isDefault="true" fontName="Arial" fontSize="10" isBold="false" isItalic="false"/>
+	<style name="Arial_Bold" isDefault="false" fontName="Arial" fontSize="10" isBold="true" isItalic="false"/>
+	<style name="Arial_Title" isDefault="false" fontName="Arial" fontSize="24" isBold="true" isItalic="false"/>
+	<style name="Arial_Header" isDefault="false" fontName="Arial" fontSize="16" isBold="true" isItalic="false"/>
+	<style name="Arial_Normal_12" isDefault="false" fontName="Arial" fontSize="12" isBold="false" isItalic="false"/>
+	
+	<parameter name="LogoImage" class="java.lang.String"/>
+	<parameter name="ResidentName" class="java.lang.String"/>
+	<parameter name="ResidentID" class="java.lang.String"/>
+	<parameter name="FacilityName" class="java.lang.String"/>
+	<parameter name="GeneratedDate" class="java.lang.String"/>
+	<parameter name="DateRange" class="java.lang.String"/>
+	<parameter name="TotalTimeSpent" class="java.lang.String"/>
+	<parameter name="TotalLogins" class="java.lang.String"/>
+	<parameter name="TotalResourcesAccessed" class="java.lang.String"/>
+	<parameter name="HasProgramAccess" class="java.lang.Boolean"/>
+	<parameter name="Programs" class="java.util.List"/>
+	
+	<field name="LogoImage" class="java.awt.Image"/>
+	<field name="ResidentName" class="java.lang.String"/>
+	<field name="ResidentID" class="java.lang.String"/>
+	<field name="FacilityName" class="java.lang.String"/>
+	<field name="GeneratedDate" class="java.lang.String"/>
+	<field name="DateRange" class="java.lang.String"/>
+	<field name="TotalTimeSpent" class="java.lang.String"/>
+	<field name="TotalLogins" class="java.lang.String"/>
+	<field name="TotalResourcesAccessed" class="java.lang.String"/>
+	<field name="HasProgramAccess" class="java.lang.Boolean"/>
+	
+	<background>
+		<band height="80">
+			<image scaleImage="true" hAlign="Left" vAlign="Top">
+				<reportElement x="10" y="10" width="60" height="30" uuid="LogoImage"/>
+			</image>
+			<staticText>
+				<reportElement x="75" y="25" style="Arial_Title">
+					<text><![CDATA[Resident Usage Transcript]]></text>
+				</reportElement>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="10" y="45" width="585">
+					<graphicElement>
+						<pen lineWidth="1.0" lineColor="#000000"/>
+					</graphicElement>
+				</reportElement>
+			</line>
+		</band>
+	</background>
+	
+	<pageHeader>
+		<band height="60">
+			<staticText>
+				<reportElement x="10" y="10" style="Arial_Normal">
+					<text><![CDATA[Resident: $P{ResidentName}]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="20" style="Arial_Normal">
+					<text><![CDATA[ID: $P{ResidentID}]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="30" style="Arial_Normal">
+					<text><![CDATA[Facility: $P{FacilityName}]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="40" style="Arial_Normal">
+					<text><![CDATA[Generated Date: $P{GeneratedDate}]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="50" style="Arial_Normal">
+					<text><![CDATA[Date Range: $P{DateRange}]]></text>
+				</reportElement>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="10" y="60" width="585">
+					<graphicElement>
+						<pen lineWidth="1.0" lineColor="#000000"/>
+					</graphicElement>
+				</reportElement>
+			</line>
+		</band>
+	</pageHeader>
+	
+	<detail>
+		<band height="30">
+			<staticText>
+				<reportElement x="10" y="10" style="Arial_Header">
+					<text><![CDATA[Platform Usage]]></text>
+				</reportElement>
+			</staticText>
+		</band>
+		<band height="20">
+			<staticText>
+				<reportElement x="10" y="5" style="Arial_Normal_12">
+					<text><![CDATA[Total time spent on UnlockEd: $P{TotalTimeSpent}]]></text>
+				</reportElement>
+			</staticText>
+		</band>
+		<band height="20">
+			<staticText>
+				<reportElement x="10" y="5" style="Arial_Normal_12">
+					<text><![CDATA[Total Logins: $P{TotalLogins}]]></text>
+				</reportElement>
+			</staticText>
+		</band>
+		<band height="20">
+			<staticText>
+				<reportElement x="10" y="5" style="Arial_Normal_12">
+					<text><![CDATA[Distinct resources accessed: $P{TotalResourcesAccessed}]]></text>
+				</reportElement>
+			</staticText>
+		</band>
+		
+		<band height="40">
+			<printWhenExpression>
+				<![CDATA[$P{HasProgramAccess}]]>
+			</printWhenExpression>
+			<staticText>
+				<reportElement x="10" y="10" style="Arial_Header">
+					<text><![CDATA[Program Participation]]></text>
+				</reportElement>
+			</staticText>
+		</band>
+		
+		<band height="60">
+			<printWhenExpression>
+				<![CDATA[$P{HasProgramAccess}]]>
+			</printWhenExpression>
+			<rectangle>
+				<reportElement x="10" y="10" width="585" height="50">
+					<graphicElement>
+						<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+					</graphicElement>
+				</reportElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="15" y="20" style="Arial_Bold">
+					<text><![CDATA[Program Name]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="155" y="20" style="Arial_Bold">
+					<text><![CDATA[Class Name]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="185" y="20" style="Arial_Bold">
+					<text><![CDATA[Status]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="235" y="20" style="Arial_Bold">
+					<text><![CDATA[Attendance]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="285" y="20" style="Arial_Bold">
+					<text><![CDATA[Start Date]]></text>
+				</reportElement>
+			</staticText>
+			<staticText>
+				<reportElement x="335" y="20" style="Arial_Bold">
+					<text><![CDATA[End Date]]></text>
+				</reportElement>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="10" y="60" width="585">
+					<graphicElement>
+						<pen lineWidth="1.0" lineColor="#000000"/>
+					</graphicElement>
+				</reportElement>
+			</line>
+		</band>
+		
+		<band height="20">
+			<printWhenExpression>
+				<![CDATA[$P{HasProgramAccess}]]>
+			</printWhenExpression>
+			<subDataset>
+				<datasetRun subDataset="Programs"/>
+			</subDataset>
+		</band>
+	</detail>
+</jasperReport>
