@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -49,7 +50,6 @@ func NewJasperService(db *database.DB, testingMode bool) *JasperService {
 	}
 }
 
-// NewJasperServiceWithContext creates a new JasperService instance with custom QueryContext
 func NewJasperServiceWithContext(db *database.DB, queryCtx *models.QueryContext, testingMode bool) *JasperService {
 	return &JasperService{
 		Db:          db,
@@ -99,10 +99,29 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 	}
 
 	dataFile := filepath.Join(os.TempDir(), "user_usage_report_data.json")
+
+	//TODO: DONT FORGET TO REMOVE!
+	jsonPreview := string(jsonData)
+	if len(jsonPreview) > 500 {
+		jsonPreview = jsonPreview[:500] + "..."
+	}
+	logrus.WithFields(logrus.Fields{
+		"user_id":          userID,
+		"json_data_length": len(jsonData),
+		"json_preview":     jsonPreview,
+		"data_file_path":   dataFile,
+	}).Info("DEBUG: JSON data being sent to JasperReports")
 	if err := os.WriteFile(dataFile, jsonData, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write data file: %w", err)
 	}
-	defer os.Remove(dataFile) // Cleanup
+	defer func() {
+		if err := os.Remove(dataFile); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"data_file": dataFile,
+				"error":     err,
+			}).Warn("Failed to remove temporary data file")
+		}
+	}()
 
 	// Create jdbc directory for JasperStarter
 	jdbcDir := "/tmp/jdbc"
@@ -127,22 +146,26 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		"-o", outputPath,
 	)
 
-	// Set working directory
 	cmd.Dir = "/app"
 
-	// Execute command
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("jasperstarter command failed: %w\nOutput: %s", err, output)
 	}
 
-	// Read generated PDF
 	pdfBytes, err := os.ReadFile(outputPath + ".pdf")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read generated PDF: %w", err)
 	}
 
-	defer os.Remove(outputPath + ".pdf") // Cleanup
+	defer func() {
+		if err := os.Remove(outputPath + ".pdf"); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"output_file": outputPath + ".pdf",
+				"error":       err,
+			}).Warn("Failed to remove generated PDF file")
+		}
+	}()
 
 	return pdfBytes, nil
 }
