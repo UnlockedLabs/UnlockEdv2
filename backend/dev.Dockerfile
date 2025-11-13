@@ -51,12 +51,12 @@ ENV PATH="/opt/jasperstarter:/usr/local/go/bin:${GOPATH}/bin:${PATH}"
 
 WORKDIR /app
 
-# Copy the built application
+# Copy built application
 COPY --from=builder /app/backend /app/backend
 # Copy template from backend/src/templates
 COPY backend/src/templates/user_usage_report.jrxml /templates/user_usage_report.jrxml
 COPY backend/go.mod backend/go.sum ./
-COPY backend/.air.toml ./
+COPY ../.air.toml ./
 
 EXPOSE 8080
 CMD ["air", "-c", ".air.toml"]

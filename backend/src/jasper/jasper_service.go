@@ -131,18 +131,17 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 
 	outputPath := filepath.Join(os.TempDir(), "user_usage_report")
 
+	// Correct JasperStarter command with proper template path and arguments
 	cmd := exec.Command("java",
 		"-Djava.awt.headless=true",
 		"-Dfile.encoding=UTF-8",
 		"-Dsun.java2d.fontconfig=true",
 		"-cp", "/opt/jasperstarter/jasperstarter.jar:/opt/jasperstarter/lib/*",
 		"de.cenote.jasperstarter.App",
-		"process",
-		"/templates/user_usage_report.jrxml",
+		"pr",
+		"-t", "/app/src/templates/user_usage_report.jrxml",
 		"-f", "pdf",
-		"-t", "json",
 		"--data-file", dataFile,
-		"--jdbc-dir", "/tmp/jdbc",
 		"-o", outputPath,
 	)
 
