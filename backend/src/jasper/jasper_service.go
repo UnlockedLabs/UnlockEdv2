@@ -139,10 +139,12 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		"-cp", "/opt/jasperstarter/jasperstarter.jar:/opt/jasperstarter/lib/*",
 		"de.cenote.jasperstarter.App",
 		"pr",
-		"-t", "/app/src/templates/user_usage_report.jrxml",
+		"-t", "json",
 		"-f", "pdf",
 		"--data-file", dataFile,
+		"--jdbc-dir", jdbcDir,
 		"-o", outputPath,
+		"/templates/user_usage_report.jrxml",
 	)
 
 	cmd.Dir = "/app"
