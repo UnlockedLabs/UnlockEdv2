@@ -13,8 +13,7 @@ interface EnrollmentTableProps {
     isEditable: (enrollment: ClassEnrollment) => boolean;
     handleChange: (value: string, enrollment: ClassEnrollment) => void;
     handleShowCompletionDetails: (enrollment: ClassEnrollment) => Promise<void>;
-    showOthers: boolean;
-    setShowOthers: (show: boolean) => void;
+    viewMode: 'enrolled' | 'other';
     classInfo?: Class;
     onEnrollmentUpdate: () => void;
 }
@@ -30,8 +29,7 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
     isEditable,
     handleChange,
     handleShowCompletionDetails,
-    showOthers,
-    setShowOthers,
+    viewMode,
     classInfo,
     onEnrollmentUpdate
 }) => {
@@ -40,17 +38,12 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
             ? status.replace('Incomplete: ', '')
             : status;
 
-    const enrolledStudents = enrollments.filter(
-        (e) => e.enrollment_status === EnrollmentStatus.Enrolled
-    );
-    const otherStatusStudents = enrollments.filter(
-        (e) => e.enrollment_status !== EnrollmentStatus.Enrolled
-    );
+    const isEnrolledView = viewMode === 'enrolled';
 
-    const renderTableHeader = (enrolled: boolean) => (
+    const renderTableHeader = () => (
         <tr className="grid grid-cols-6 justify-items-start pb-4">
             <th className="justify-self-start pl-4">
-                {enrolled && (
+                {isEnrolledView && (
                     <input
                         className="checkbox"
                         type="checkbox"
@@ -67,10 +60,10 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
         </tr>
     );
 
-    const renderTableBody = (rows: ClassEnrollment[], enrolled: boolean) => (
+    const renderTableBody = () => (
         <>
-            {rows.length > 0 ? (
-                rows.map((enrollment) => (
+            {enrollments.length > 0 ? (
+                enrollments.map((enrollment) => (
                     <tr
                         key={enrollment.id}
                         className={`card h-16 w-full grid-cols-6 justify-items-start cursor-pointer ${
@@ -83,7 +76,7 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                         }}
                     >
                         <td className="justify-self-start pl-4">
-                            {enrolled && (
+                            {isEnrolledView && (
                                 <input
                                     className="checkbox justify-self-start"
                                     type="checkbox"
@@ -178,34 +171,15 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
 
     return (
         <div className="relative w-full" style={{ overflowX: 'clip' }}>
-            <h2 className="text-xl font-bold mb-2">Enrolled Students</h2>
+            <h2 className="text-xl font-bold mb-2">
+                {isEnrolledView
+                    ? 'Enrolled Students'
+                    : 'Graduated/Incomplete Status Students'}
+            </h2>
             <table className="table-2 mb-4">
-                <thead>{renderTableHeader(true)}</thead>
-                <tbody>{renderTableBody(enrolledStudents, true)}</tbody>
+                <thead>{renderTableHeader()}</thead>
+                <tbody>{renderTableBody()}</tbody>
             </table>
-            {otherStatusStudents.length > 0 && (
-                <button
-                    type="button"
-                    className="button-outline mb-2"
-                    onClick={() => setShowOthers(!showOthers)}
-                >
-                    {showOthers ? 'Hide Other' : 'Show Other'}
-                </button>
-            )}
-
-            {showOthers && (
-                <>
-                    <h2 className="text-xl font-bold my-2">
-                        Graduated/Incomplete Status Students
-                    </h2>
-                    <table className="table-2 mb-4">
-                        <thead>{renderTableHeader(false)}</thead>
-                        <tbody>
-                            {renderTableBody(otherStatusStudents, false)}
-                        </tbody>
-                    </table>
-                </>
-            )}
         </div>
     );
 };
