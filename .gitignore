@@ -3,7 +3,7 @@
 .claude
 .idea
 .claude/*
-Claude.md
+CLAUDE.md
 AGENTS.md
 .github/workflows/test.yml
 /frontend/.husky/staged-files
@@ -26,3 +26,6 @@ jar
 /csvs/zims/*.zim
 /.claude
 /jasperstarter
+CLAUDE.md
+Review.md
+/agent-os

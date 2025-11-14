@@ -3,6 +3,7 @@ package jasper
 import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -120,6 +121,20 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 				"data_file": dataFile,
 				"error":     err,
 			}).Warn("Failed to remove temporary data file")
+		}
+	}()
+
+	// Write logo image to temporary file for JasperReports
+	logoFile := "/tmp/unlocked-logo.png"
+	if err := os.WriteFile(logoFile, src.UnlockedLogoImg, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write logo file: %w", err)
+	}
+	defer func() {
+		if err := os.Remove(logoFile); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"logo_file": logoFile,
+				"error":     err,
+			}).Warn("Failed to remove temporary logo file")
 		}
 	}()
 
