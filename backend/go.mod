@@ -27,8 +27,6 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-require github.com/go-pdf/fpdf v0.9.0
-
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.7 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.48 // indirect
