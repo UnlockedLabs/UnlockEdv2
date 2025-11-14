@@ -18,7 +18,7 @@ import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 import ULIComponent from './ULIComponent';
-import { textMonthLocalDate } from './helperFunctions/formatting';
+import { getUTCTime, textMonthLocalDate } from './helperFunctions/formatting';
 import { RRule } from 'rrule';
 
 function ClassInfoCard({
@@ -28,6 +28,11 @@ function ClassInfoCard({
     classInfo: Class;
     mutateClass: KeyedMutator<ServerResponseOne<Class>>;
 }) {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
+
     const navigate = useNavigate();
 
     const programDisabled = classInfo.program.archived_at !== null;
@@ -91,9 +96,16 @@ function ClassInfoCard({
         const nextOccurrence = allOccurrences
             .filter((d) => d > now)
             .sort((a, b) => a.getTime() - b.getTime())[0];
-        return nextOccurrence
-            ? textMonthLocalDate(nextOccurrence, true)
-            : 'No upcoming class found';
+        let formattedOccurence;
+        if (nextOccurrence && user) {
+            formattedOccurence = textMonthLocalDate(
+                getUTCTime(nextOccurrence, user?.timezone),
+                true
+            );
+        } else {
+            formattedOccurence = 'No upcoming class found';
+        }
+        return formattedOccurence;
     }
 
     return (
@@ -133,7 +145,8 @@ function ClassInfoCard({
                 <div className="space-y-2">
                     <h3 className="body">Class Dates:</h3>
                     <p className="body-small">
-                        {classInfo.start_dt && textMonthLocalDate(classInfo.start_dt)}{' '}
+                        {classInfo.start_dt &&
+                            textMonthLocalDate(classInfo.start_dt)}{' '}
                         &ndash;{' '}
                         {classInfo.end_dt
                             ? textMonthLocalDate(classInfo.end_dt)
