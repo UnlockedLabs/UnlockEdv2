@@ -179,3 +179,38 @@ export function getTimestamp(): string {
         padIt(currentDate.getMinutes())
     );
 }
+
+export function getUTCTime(date: Date, timezone: string): Date {
+    const utcDate = new Date(date);
+    const utcHour = utcDate.getUTCHours();
+    const utcMinutes = utcDate.getUTCMinutes();
+
+    const userOffset = getTimezoneOffset(timezone);
+
+    let localHour = utcHour + userOffset;
+    if (localHour < 0) localHour += 24;
+    if (localHour >= 24) localHour -= 24;
+
+    const displayDate = new Date(utcDate);
+    displayDate.setHours(localHour, utcMinutes, 0, 0);
+
+    return displayDate;
+}
+
+function getTimezoneOffset(timezone?: string): number {
+    if (!timezone) return 0;
+
+    const timezoneOffsets: Record<string, number> = {
+        'America/New_York': -4,
+        'America/Chicago': -5,
+        'America/Denver': -6,
+        'America/Los_Angeles': -7,
+        'America/Phoenix': -7,
+        'Europe/London': 1,
+        'Europe/Paris': 2,
+        'Asia/Tokyo': 9,
+        'Australia/Sydney': 11
+    };
+
+    return timezoneOffsets[timezone] || 0;
+}
