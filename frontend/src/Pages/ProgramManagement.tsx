@@ -1,5 +1,5 @@
 import { canSwitchFacility, isAdministrator, useAuth } from '@/useAuth';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     ServerResponseMany,
@@ -9,10 +9,14 @@ import {
     ProgramsFacilitiesStats,
     UserRole,
     Option,
-    Facility
+    Facility,
+    ReportType
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
-import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import {
+    InformationCircleIcon,
+    ArrowDownTrayIcon
+} from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -34,6 +38,7 @@ import {
     FilterOptionType,
     FilterPillButton
 } from '@/Components/pill-labels/FilterByPillButton';
+import { ReportExportModal } from '@/Components/modals/ReportExportModal';
 
 export function ProgramRow({
     program,
@@ -124,6 +129,7 @@ export function ProgramRow({
 
 export default function ProgramManagement() {
     const { user } = useAuth();
+    const reportModalRef = useRef<HTMLDialogElement>(null);
     const { funding_types, credit_types, program_types } = useLoaderData() as {
         funding_types: string[];
         credit_types: string[];
@@ -464,6 +470,15 @@ export default function ProgramManagement() {
                             downloadCSV();
                         }}
                     />
+                    {canSwitchFacility(user!) && (
+                        <button
+                            onClick={() => reportModalRef.current?.showModal()}
+                            className="button flex items-center gap-2"
+                        >
+                            <ArrowDownTrayIcon className="h-5 w-5" />
+                            Export Facility Comparison
+                        </button>
+                    )}
                 </div>
             </div>
             <div className="flex flex-row gap-2">
@@ -562,6 +577,18 @@ export default function ProgramManagement() {
                     </div>
                 )}
             </div>
+
+            {user && canSwitchFacility(user) && (
+                <ReportExportModal
+                    ref={reportModalRef}
+                    reportType={ReportType.FACILITY_COMPARISON}
+                    contextData={{
+                        reportType: ReportType.FACILITY_COMPARISON,
+                        facilityIds: user.facilities?.map((f) => f.id) ?? []
+                    }}
+                    user={user}
+                />
+            )}
         </div>
     );
 }
