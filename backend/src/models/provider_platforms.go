@@ -97,6 +97,7 @@ func DecryptAccessKey(axxKey string) (string, error) {
 	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
+	//nolint:staticcheck // CFB mode preserved for backward compatibility with existing encrypted data
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
 	return string(ciphertext), nil
@@ -114,6 +115,7 @@ func EncryptAccessKey(apiKey string) (string, error) {
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", err
 	}
+	//nolint:staticcheck // CFB mode preserved for backward compatibility with existing encrypted data
 	stream := cipher.NewCFBEncrypter(block, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(apiKey))
 	encoded := base64.StdEncoding.EncodeToString(ciphertext)
