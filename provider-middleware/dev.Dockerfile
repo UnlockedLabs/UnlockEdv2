@@ -1,5 +1,5 @@
 ARG FFMPEG_VERSION=7.1
-ARG GOLANG_VERSION=1.23.2
+ARG GOLANG_VERSION=1.25
 
 FROM mwader/static-ffmpeg:$FFMPEG_VERSION AS ffmpeg
 
@@ -12,7 +12,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o provider-service provider-middleware/. 
 
 
-FROM golang:$GOLANG_VERSION-alpine3.20 as final
+FROM golang:$GOLANG_VERSION-alpine as final
 WORKDIR /app
 RUN go install github.com/air-verse/air@v1.61.0 && \
 	apk add --no-cache ca-certificates python3 py3-pip && \

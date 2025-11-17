@@ -1,11 +1,12 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
     Class,
     SelectedClassStatus,
     ServerResponseMany,
-    ServerResponseOne
+    ServerResponseOne,
+    ReportType
 } from '@/common';
 import MonthNavigation from '@/Components/MonthNavigation';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
@@ -18,10 +19,13 @@ import {
 } from '@/Components/helperFunctions/formatting';
 import {
     ClipboardDocumentCheckIcon,
-    EyeIcon
+    EyeIcon,
+    ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import moment from 'moment';
 import ULIComponent from '@/Components/ULIComponent';
+import { ReportExportModal } from '@/Components/modals/ReportExportModal';
+import { useAuth } from '@/useAuth';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
@@ -32,6 +36,8 @@ export default function ClassEvents() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { user } = useAuth();
+    const reportModalRef = useRef<HTMLDialogElement>(null);
 
     const defaultMonth = new Date().toISOString().substring(0, 7);
     const yearParam = searchParams.get('year');
@@ -168,6 +174,16 @@ export default function ClassEvents() {
 
     return (
         <div>
+            <div className="flex justify-end mb-4">
+                <button
+                    onClick={() => reportModalRef.current?.showModal()}
+                    className="button flex items-center gap-2"
+                >
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    Export Attendance
+                </button>
+            </div>
+
             <MonthNavigation
                 currentMonth={currentMonth}
                 onMonthChange={setCurrentMonth}
@@ -238,6 +254,20 @@ export default function ClassEvents() {
                         No events found for this month.
                     </div>
                 )
+            )}
+
+            {user && this_program && user.facility && (
+                <ReportExportModal
+                    ref={reportModalRef}
+                    reportType={ReportType.ATTENDANCE}
+                    contextData={{
+                        reportType: ReportType.ATTENDANCE,
+                        facilityId: user.facility.id,
+                        programId: this_program.program_id,
+                        classId: parseInt(class_id ?? '0')
+                    }}
+                    user={user}
+                />
             )}
         </div>
     );
