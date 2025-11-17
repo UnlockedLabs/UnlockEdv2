@@ -333,11 +333,11 @@ func (env *TestEnv) SetClassCreditHours(classID uint, creditHours int64) error {
 
 func (env *TestEnv) CreateTestEnrollmentWithDates(classID, userID uint, status models.ProgramEnrollmentStatus, enrolledAt time.Time, endedAt *time.Time) (*models.ProgramClassEnrollment, error) {
 	enrollment := &models.ProgramClassEnrollment{
-		ClassID:            classID,
-		UserID:             userID,
-		EnrollmentStatus:   status,
-		EnrolledAt:         &enrolledAt,
-		EnrollmentEndedAt:  endedAt,
+		ClassID:           classID,
+		UserID:            userID,
+		EnrollmentStatus:  status,
+		EnrolledAt:        &enrolledAt,
+		EnrollmentEndedAt: endedAt,
 	}
 
 	if err := env.DB.Create(enrollment).Error; err != nil {
