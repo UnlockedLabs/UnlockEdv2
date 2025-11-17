@@ -1,7 +1,11 @@
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import {
+    ArchiveBoxIcon,
+    PencilSquareIcon,
+    ArrowDownTrayIcon
+} from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -10,7 +14,8 @@ import {
     SelectedClassStatus,
     ServerResponseMany,
     ProgramOverview,
-    ProgramClassOutcomes
+    ProgramClassOutcomes,
+    ReportType
 } from '@/common';
 import ClampedText from '@/Components/ClampedText';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
@@ -28,6 +33,7 @@ import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
 import WarningBanner from '@/Components/WarningBanner';
 import EmptyStateCard from '@/Components/EmptyStateCard';
+import { ReportExportModal } from '@/Components/modals/ReportExportModal';
 
 export function isCompletedCancelledOrArchived(program_class: Class): boolean {
     return (
@@ -41,6 +47,7 @@ export default function ProgramOverviewDashboard() {
     const navigate = useNavigate();
     const { program_id } = useParams<{ program_id: string }>();
     const { user } = useAuth();
+    const reportModalRef = useRef<HTMLDialogElement>(null);
     const revalidator = useRevalidator();
     const { program, redirect } = useLoaderData() as {
         program: ProgramOverview;
@@ -237,6 +244,17 @@ export default function ProgramOverviewDashboard() {
                         text={` This program is not currently offered at ${user?.facility.name}.`}
                     />
                 )}
+
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => reportModalRef.current?.showModal()}
+                        className="button flex items-center gap-2"
+                    >
+                        <ArrowDownTrayIcon className="h-5 w-5" />
+                        Export Program Report
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-5 gap-4 items-stretch">
                     <div className="card card-row-padding col-span-3 gap-4">
                         <div className="flex gap-2">
@@ -635,6 +653,19 @@ export default function ProgramOverviewDashboard() {
                 onSubmit={() => void archiveClass()}
                 onClose={handleCloseArchive}
             ></TextOnlyModal>
+
+            {user && program && (
+                <ReportExportModal
+                    ref={reportModalRef}
+                    reportType={ReportType.PROGRAM_OUTCOMES}
+                    contextData={{
+                        reportType: ReportType.PROGRAM_OUTCOMES,
+                        facilityId: user.facility.id,
+                        programId: program.id
+                    }}
+                    user={user}
+                />
+            )}
         </div>
     );
 }
