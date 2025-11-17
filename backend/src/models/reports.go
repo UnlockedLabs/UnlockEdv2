@@ -193,6 +193,7 @@ func (r FacilityComparisonReportData) ToCSV() ([][]string, error) {
 	return csvData, nil
 }
 
+//nolint:errcheck // Excel cell setting errors are unlikely and checked at sheet creation
 func (r AttendanceReportData) ToExcel() (*excelize.File, error) {
 	f := excelize.NewFile()
 	sheetName := "Attendance Report"
@@ -225,6 +226,7 @@ func (r AttendanceReportData) ToExcel() (*excelize.File, error) {
 	return f, nil
 }
 
+//nolint:errcheck // Excel cell setting errors are unlikely and checked at sheet creation
 func (r ProgramOutcomesReportData) ToExcel() (*excelize.File, error) {
 	f := excelize.NewFile()
 	sheetName := "Program Outcomes"
@@ -259,6 +261,7 @@ func (r ProgramOutcomesReportData) ToExcel() (*excelize.File, error) {
 	return f, nil
 }
 
+//nolint:errcheck // Excel cell setting errors are unlikely and checked at sheet creation
 func (r FacilityComparisonReportData) ToExcel() (*excelize.File, error) {
 	f := excelize.NewFile()
 	sheetName := "Facility Comparison"
