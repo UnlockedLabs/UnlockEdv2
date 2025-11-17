@@ -204,7 +204,7 @@ func (srv *Server) handleAttendanceReport(w http.ResponseWriter, r *http.Request
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 
-	rows, err := srv.Db.GenerateAttendanceReport(ctx, req, claims.FacilityID)
+	rows, err := srv.Db.GenerateAttendanceReport(ctx, req)
 	if err != nil {
 		srv.logReportFailure(claims.UserID, "attendance", req, startTime, 0)
 		return newDatabaseServiceError(err)
@@ -227,7 +227,7 @@ func (srv *Server) handleProgramOutcomesReport(w http.ResponseWriter, r *http.Re
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 
-	rows, err := srv.Db.GenerateProgramOutcomesReport(ctx, req, claims.FacilityID)
+	rows, err := srv.Db.GenerateProgramOutcomesReport(ctx, req)
 	if err != nil {
 		srv.logReportFailure(claims.UserID, "program_outcomes", req, startTime, 0)
 		return newDatabaseServiceError(err)

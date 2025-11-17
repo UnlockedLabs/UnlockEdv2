@@ -5,7 +5,7 @@ import (
 	"context"
 )
 
-func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGenerateRequest, facilityID uint) ([]models.AttendanceReportRow, error) {
+func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGenerateRequest) ([]models.AttendanceReportRow, error) {
 	var rows []models.AttendanceReportRow
 
 	tx := db.WithContext(ctx).Table("program_class_event_attendance pcea").
@@ -31,8 +31,6 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 
 	if req.FacilityID != nil {
 		tx = tx.Where("f.id = ?", *req.FacilityID)
-	} else if facilityID > 0 {
-		tx = tx.Where("f.id = ?", facilityID)
 	}
 
 	if req.ProgramID != nil {
@@ -54,7 +52,7 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 	return rows, nil
 }
 
-func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.ReportGenerateRequest, facilityID uint) ([]models.ProgramOutcomesReportRow, error) {
+func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.ReportGenerateRequest) ([]models.ProgramOutcomesReportRow, error) {
 	var rows []models.ProgramOutcomesReportRow
 
 	aggFunc := "STRING_AGG(DISTINCT CAST(pt.program_type AS TEXT), ',')"
@@ -81,7 +79,7 @@ func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.Rep
 				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END), 0),
 				0
 			) AS attendance_rate,
-			COALESCE(SUM(DISTINCT pc.credit_hours), 0) AS total_credit_hours,
+			COALESCE((SELECT SUM(credit_hours) FROM program_classes WHERE program_id = p.id), 0) AS total_credit_hours,
 			0 AS certificates_earned
 		`
 
@@ -138,7 +136,7 @@ func (db *DB) GenerateFacilityComparisonReport(ctx context.Context, req *models.
 		Select(`
 			f.name AS facility_name,
 			COUNT(DISTINCT fp.program_id) AS total_programs,
-			COUNT(DISTINCT CASE WHEN p.deleted_at IS NULL THEN fp.program_id END) AS active_programs,
+			COUNT(DISTINCT CASE WHEN p.deleted_at IS NULL AND pce.id IS NOT NULL THEN fp.program_id END) AS active_programs,
 			COUNT(DISTINCT CASE WHEN pce.enrolled_at IS NOT NULL THEN pce.id END) AS total_enrollments,
 			COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.id END) AS active_enrollments,
 			CASE
@@ -161,7 +159,7 @@ func (db *DB) GenerateFacilityComparisonReport(ctx context.Context, req *models.
 				 ORDER BY COUNT(*) DESC
 				 LIMIT 1),
 				'N/A') AS top_program_type,
-			COALESCE(SUM(DISTINCT pc.credit_hours), 0) AS total_credit_hours,
+			COALESCE((SELECT SUM(credit_hours) FROM program_classes WHERE facility_id = f.id), 0) AS total_credit_hours,
 			0 AS certificates_earned,
 			MAX(pcea.created_at) AS last_activity_date
 		`).
@@ -174,8 +172,7 @@ func (db *DB) GenerateFacilityComparisonReport(ctx context.Context, req *models.
 		Where("f.id IN ?", facilityIDs)
 
 	if len(req.ProgramTypes) > 0 {
-		tx = tx.Joins("LEFT JOIN program_types pt ON pt.program_id = p.id").
-			Where("pt.program_type IN ?", req.ProgramTypes)
+		tx = tx.Where("EXISTS (SELECT 1 FROM program_types pt WHERE pt.program_id = p.id AND pt.program_type IN ?)", req.ProgramTypes)
 	}
 
 	if len(req.FundingTypes) > 0 {

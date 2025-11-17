@@ -310,3 +310,39 @@ func (env *TestEnv) CreateTestEventOverride(eventID uint, date string, isCancell
 
 	return override, nil
 }
+
+func (env *TestEnv) CreateTestAttendance(eventID, userID uint, date time.Time, status models.Attendance, reason string) (*models.ProgramClassEventAttendance, error) {
+	attendance := &models.ProgramClassEventAttendance{
+		EventID:          eventID,
+		UserID:           userID,
+		Date:             date.Format("2006-01-02"),
+		AttendanceStatus: status,
+		Note:             reason,
+	}
+
+	if err := env.DB.Create(attendance).Error; err != nil {
+		return nil, err
+	}
+
+	return attendance, nil
+}
+
+func (env *TestEnv) SetClassCreditHours(classID uint, creditHours int64) error {
+	return env.DB.Model(&models.ProgramClass{}).Where("id = ?", classID).Update("credit_hours", creditHours).Error
+}
+
+func (env *TestEnv) CreateTestEnrollmentWithDates(classID, userID uint, status models.ProgramEnrollmentStatus, enrolledAt time.Time, endedAt *time.Time) (*models.ProgramClassEnrollment, error) {
+	enrollment := &models.ProgramClassEnrollment{
+		ClassID:            classID,
+		UserID:             userID,
+		EnrollmentStatus:   status,
+		EnrolledAt:         &enrolledAt,
+		EnrollmentEndedAt:  endedAt,
+	}
+
+	if err := env.DB.Create(enrollment).Error; err != nil {
+		return nil, err
+	}
+
+	return enrollment, nil
+}
