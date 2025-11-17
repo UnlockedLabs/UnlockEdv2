@@ -32,17 +32,10 @@ export function DropdownInput({
                     required: {
                         value: required,
                         message: `${label} is required`
-                    }
+                    },
+                    onChange: onChange
                 })}
                 disabled={disabled}
-                onChange={(e) => {
-                    if (onChange) {
-                        void register(interfaceRef).onChange(e);
-                        if (typeof onChange === 'function') {
-                            onChange(e);
-                        }
-                    }
-                }}
             >
                 {Object.entries(enumType).map(([key, value]) => (
                     <option key={key} value={value}>
