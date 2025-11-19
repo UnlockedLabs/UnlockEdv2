@@ -6,7 +6,7 @@ import {
     ServerResponseMany,
     User
 } from '@/common';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import API from '@/api/api';
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -21,6 +21,9 @@ import {
     UserGroupIcon,
     UserPlusIcon
 } from '@heroicons/react/24/outline';
+import { ConflictDetail } from '@/common';
+import { SchedulingConflictModal } from '@/Components/modals/SchedulingConflictModal';
+import { useRef } from 'react';
 
 export default function AddClassEnrollments() {
     const navigate = useNavigate();
@@ -36,6 +39,15 @@ export default function AddClassEnrollments() {
         FilterResidentNames['Resident Name (A-Z)']
     );
     const encodedSearchQuery = encodeURIComponent(searchQuery);
+
+    const [conflicts, setConflicts] = useState<ConflictDetail[]>([]);
+    const conflictModalRef = useRef<HTMLDialogElement>(null);
+
+    useEffect(() => {
+        if (conflicts.length > 0) {
+            conflictModalRef.current?.showModal();
+        }
+    }, [conflicts]);
 
     const { data, error, isLoading } = useSWR<ServerResponseMany<User>, Error>(
         `/api/users?search=${encodedSearchQuery}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
@@ -84,6 +96,38 @@ export default function AddClassEnrollments() {
                 : [...prev, userId]
         );
     }
+
+    const submitEnrollment = async (confirm = false) => {
+        setErrorMessage('');
+        interface EnrollmentResponse {
+            conflicts?: ConflictDetail[];
+        }
+
+        const response = await API.post<
+            EnrollmentResponse,
+            { user_ids: number[]; confirm: boolean }
+        >(`program-classes/${class_id}/enrollments`, {
+            user_ids: selectedUsers,
+            confirm: confirm
+        });
+
+        if (!response.success) {
+            const responseData = response.data as EnrollmentResponse;
+            if (response.status === 409 && responseData?.conflicts) {
+                setConflicts(responseData.conflicts);
+            } else {
+                setErrorMessage(
+                    response.message ||
+                        'Failed to enroll users. Please try again.'
+                );
+            }
+            return;
+        }
+
+        setSelectedUsers([]);
+        navigate(`/program-classes/${class_id}/enrollments`);
+    };
+
     const handleSubmit = async () => {
         if (
             classInfo?.status === SelectedClassStatus.Completed ||
@@ -100,12 +144,12 @@ export default function AddClassEnrollments() {
             return;
         }
 
-        setErrorMessage('');
-        await API.post(`program-classes/${class_id}/enrollments`, {
-            user_ids: selectedUsers
-        });
-        setSelectedUsers([]);
-        navigate(`/program-classes/${class_id}/enrollments`);
+        await submitEnrollment(false);
+    };
+
+    const handleConfirmConflict = async () => {
+        conflictModalRef.current?.close();
+        await submitEnrollment(true);
     };
 
     const allAreSelected =
@@ -150,6 +194,12 @@ export default function AddClassEnrollments() {
 
     return (
         <div className="px-5 pb-4 flex flex-col gap-8">
+            <SchedulingConflictModal
+                ref={conflictModalRef}
+                conflicts={conflicts}
+                onConfirm={() => void handleConfirmConflict()}
+                onClose={() => conflictModalRef.current?.close()}
+            />
             <div className="card p-4 gap-2">
                 <h1>{classInfo?.name}</h1>
                 <div className="grid grid-cols-3">

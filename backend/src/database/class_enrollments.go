@@ -378,3 +378,92 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 	}
 	return total, content, nil
 }
+
+func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.ConflictDetail, error) {
+	var conflicts []models.ConflictDetail
+	targetEvents, err := db.GetClassEvents(&models.QueryContext{All: true}, classID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(targetEvents) == 0 {
+		return nil, nil
+	}
+
+	for _, userID := range userIDs {
+		var existingEnrollments []models.ProgramClassEnrollment
+		if err := db.Model(&models.ProgramClassEnrollment{}).
+			Preload("Class").
+			Where("user_id = ? AND enrollment_status = ?", userID, models.Enrolled).
+			Find(&existingEnrollments).Error; err != nil {
+			return nil, err
+		}
+
+		if len(existingEnrollments) == 0 {
+			continue
+		}
+
+		for _, enrollment := range existingEnrollments {
+			if int(enrollment.ClassID) == classID {
+				continue
+			}
+
+			existingClassEvents, err := db.GetClassEvents(&models.QueryContext{All: true}, int(enrollment.ClassID))
+			if err != nil {
+				return nil, err
+			}
+
+			if hasOverlap, start, end := checkEventsOverlap(targetEvents, existingClassEvents); hasOverlap {
+				var user models.User
+				if err := db.First(&user, userID).Error; err != nil {
+					return nil, err
+				}
+
+				conflicts = append(conflicts, models.ConflictDetail{
+					UserID:           uint(userID),
+					UserName:         user.NameLast + ", " + user.NameFirst,
+					ConflictingClass: enrollment.Class.Name,
+					ConflictStart:    start,
+					ConflictEnd:      end,
+					Reason:           fmt.Sprintf("Conflict with class: %s", enrollment.Class.Name),
+				})
+				break
+			}
+		}
+	}
+
+	return conflicts, nil
+}
+
+func checkEventsOverlap(newEvents, existingEvents []models.ProgramClassEvent) (bool, time.Time, time.Time) {
+	startWindow := time.Now().UTC()
+	endWindow := startWindow.AddDate(0, 6, 0)
+
+	var newInstances []models.EventInstance
+	for _, evt := range newEvents {
+		insts := generateEventInstances(evt, startWindow, endWindow)
+		newInstances = append(newInstances, insts...)
+	}
+
+	var existingInstances []models.EventInstance
+	for _, evt := range existingEvents {
+		insts := generateEventInstances(evt, startWindow, endWindow)
+		existingInstances = append(existingInstances, insts...)
+	}
+
+	for _, newInst := range newInstances {
+		newStart := newInst.StartTime
+		newEnd := newStart.Add(newInst.Duration)
+
+		for _, exInst := range existingInstances {
+			exStart := exInst.StartTime
+			exEnd := exStart.Add(exInst.Duration)
+
+			if newStart.Before(exEnd) && newEnd.After(exStart) {
+				return true, newStart, newEnd
+			}
+		}
+	}
+
+	return false, time.Time{}, time.Time{}
+}
