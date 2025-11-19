@@ -101,7 +101,7 @@ function ClassInfoCard({
             <div className="flex gap-2">
                 <h1>{classInfo.name}</h1>
                 <button
-                    className={`body text-teal-3 cursor-pointer flex items-center gap-1 ${blockEdits ? 'tooltip' : ''}`}
+                    className={`body text-teal-3 cursor-pointer flex items-center gap-1 tooltip-bottom ${blockEdits ? 'tooltip' : ''}`}
                     onClick={() => {
                         navigate(
                             `/programs/${classInfo.program_id}/classes/${classInfo.id}`
@@ -133,7 +133,8 @@ function ClassInfoCard({
                 <div className="space-y-2">
                     <h3 className="body">Class Dates:</h3>
                     <p className="body-small">
-                        {classInfo.start_dt && textMonthLocalDate(classInfo.start_dt)}{' '}
+                        {classInfo.start_dt &&
+                            textMonthLocalDate(classInfo.start_dt)}{' '}
                         &ndash;{' '}
                         {classInfo.end_dt
                             ? textMonthLocalDate(classInfo.end_dt)
