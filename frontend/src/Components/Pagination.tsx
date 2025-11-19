@@ -30,6 +30,7 @@ export default function Pagination({
         <div className="flex items-center justify-center flex-wrap">
             <div className="join">
                 <button
+                    type="button"
                     data-tip="First Page"
                     disabled={page == 0}
                     className={`join-item button-grey-sm rounded-l ${page > 0 ? 'tooltip tooltip-left' : ''}`}
@@ -43,6 +44,7 @@ export default function Pagination({
                     .map((i) => {
                         return (
                             <button
+                                type="button"
                                 className={`join-item ${
                                     i == meta.current_page - 1
                                         ? 'button-grey-sm-active'
@@ -57,6 +59,7 @@ export default function Pagination({
                     })}
 
                 <button
+                    type="button"
                     data-tip="Last Page"
                     disabled={page == meta.last_page - 1}
                     className={`join-item button-grey-sm ${page != meta.last_page - 1 ? 'tooltip tooltip-right' : ''} ${page >= meta.last_page - 3 ? 'rounded-r' : ''}`}
