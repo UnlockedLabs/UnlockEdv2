@@ -98,12 +98,12 @@ class API {
                 }
 
                 const error = new Error(message) as Error & {
-                    response: ServerResponse<null>;
+                    response: ServerResponse<unknown>;
                 };
                 error.response = {
                     type: 'one',
                     success: false,
-                    data: null,
+                    data: data?.data,
                     message,
                     status: resp.status,
                     headers: responseHeaders
@@ -114,14 +114,14 @@ class API {
             return API.getReturnData<T>(data, resp.status);
         } catch (err) {
             const error = err as Error & {
-                response?: ServerResponse<null>;
+                response?: ServerResponse<unknown>;
             };
             const errCode = error.response?.status;
             return {
                 type: 'one',
                 success: false,
                 message: error.message || 'An error occurred',
-                data: {} as T,
+                data: (error.response?.data ?? {}) as T,
                 status: errCode ?? 0,
                 headers: error.response?.headers ?? {}
             };
