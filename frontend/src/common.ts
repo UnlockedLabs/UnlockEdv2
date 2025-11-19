@@ -1179,3 +1179,12 @@ export interface BulkUploadResponse {
     invalid_rows: InvalidUserRow[];
     error_csv_data?: string; // Base64 encoded CSV data from []byte
 }
+
+export interface ConflictDetail {
+    user_id: number;
+    user_name: string;
+    conflicting_class: string;
+    conflict_start: string;
+    conflict_end: string;
+    reason: string;
+}

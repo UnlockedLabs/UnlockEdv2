@@ -71,6 +71,7 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	}
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
+		Confirm bool  `json:"confirm"` // Check for explicit confirmation
 	}{}
 	err = json.NewDecoder(r.Body).Decode(&enrollment)
 	if err != nil {
@@ -84,6 +85,20 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	if deactivatedUsers {
 		return newBadRequestServiceError(errors.New("cannot enroll deactivated user"), "deactivated user")
 	}
+
+	if !enrollment.Confirm {
+		conflicts, err := srv.Db.CheckSchedulingConflicts(classID, enrollment.UserIDs)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeJsonResponse(w, http.StatusConflict, map[string]any{
+				"message":   "Scheduling conflicts detected",
+				"conflicts": conflicts,
+			})
+		}
+	}
+
 	skipped, err := srv.Db.CreateProgramClassEnrollments(classID, enrollment.UserIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
