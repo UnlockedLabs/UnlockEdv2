@@ -1,189 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="UserUsageReport" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" orientation="Portrait">
-	<property name="ireport.zoom" value="1.0"/>
-	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="0"/>
-
-	<style name="Arial_Normal" isDefault="true" fontName="DejaVu Sans" fontSize="10" isBold="false" isItalic="false"/>
-	<style name="Arial_Bold" isDefault="false" fontName="DejaVu Sans" fontSize="10" isBold="true" isItalic="false"/>
-	<style name="Arial_Title" isDefault="false" fontName="DejaVu Sans" fontSize="24" isBold="true" isItalic="false"/>
-	<style name="Arial_Header" isDefault="false" fontName="DejaVu Sans" fontSize="16" isBold="true" isItalic="false"/>
-	<style name="Arial_Normal_12" isDefault="false" fontName="DejaVu Sans" fontSize="12" isBold="false" isItalic="false"/>
-
-	<queryString language="json">
-		<![CDATA[]]>
-	</queryString>
-
-	<!-- Fields mapped from JSON data -->
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="my_usage_report" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7aea187e-0779-4cc3-84d2-442323e067c5">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<style name="Title" fontName="Times New Roman" fontSize="50" isBold="true"/>
+	<style name="SubTitle" forecolor="#736343" fontName="Arial" fontSize="18"/>
+	<style name="Column header" forecolor="#666666" fontName="Arial" fontSize="12" isBold="true"/>
+	<style name="Detail" fontName="Arial" fontSize="12"/>
+	<style name="Row" mode="Transparent" backcolor="#E6DAC3"/>
 	<field name="resident_name" class="java.lang.String"/>
-	<field name="resident_id" class="java.lang.String"/>
-	<field name="facility_name" class="java.lang.String"/>
-	<field name="generated_date" class="java.lang.String"/>
-	<field name="date_range" class="java.lang.String"/>
-	<field name="total_time_spent" class="java.lang.String"/>
-	<field name="total_logins" class="java.lang.String"/>
-	<field name="total_resources_accessed" class="java.lang.String"/>
-	<field name="has_program_access" class="java.lang.Boolean"/>
-	<field name="logo_image" class="java.lang.String"/>
-
-	<background>
-		<band height="80">
+	<title>
+		<band height="122" splitType="Stretch">
 			<image>
-				<reportElement x="20" y="15" width="60" height="60"/>
+				<reportElement x="2" y="10" width="120" height="80" uuid="64dbc959-41bb-4d3a-978e-ed7c8243b103"/>
 				<imageExpression><![CDATA["/tmp/unlocked-logo.png"]]></imageExpression>
 			</image>
-			<staticText>
-				<reportElement x="90" y="25" width="480" height="30"/>
-				<textElement textAlignment="Center">
-					<font size="24" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Resident Usage Transcript]]></text>
-			</staticText>
-			<line direction="BottomUp">
-				<reportElement x="10" y="75" width="592" height="1"/>
+			<line>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="98" width="555" height="1" uuid="1b98c8a9-0090-4ed8-9040-5f2d1ee3614d"/>
 				<graphicElement>
-					<pen lineWidth="1.0" lineColor="#000000"/>
+					<pen lineWidth="1.5" lineColor="#999999"/>
 				</graphicElement>
 			</line>
-		</band>
-	</background>
-
-	<pageHeader>
-		<band height="110">
 			<staticText>
-				<reportElement x="10" y="10" width="60" height="15" style="Arial_Normal"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="10"/>
+				<reportElement x="91" y="34" width="383" height="42" uuid="9335d79c-032a-48ab-9ab3-e0e347102c6c"/>
+				<textElement textAlignment="Center">
+					<font fontName="DejaVu Sans" size="22" isBold="false"/>
 				</textElement>
+				<text><![CDATA[Resident Usage Transcript
+]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="50" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="42" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="-61" width="100" height="30" uuid="c65f27ed-88eb-4876-a852-79a3c1134fc0"/>
 				<text><![CDATA[Resident:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="70" y="10" width="200" height="15" style="Arial_Normal"/>
+				<reportElement x="50" y="-61" width="100" height="30" uuid="2db2946b-cee8-4d74-bdba-21155a1777b8"/>
+				<textElement textAlignment="Left"/>
 				<textFieldExpression><![CDATA[$F{resident_name}]]></textFieldExpression>
-			</textField>
-
-			<staticText>
-				<reportElement x="10" y="25" width="60" height="15" style="Arial_Normal"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="10"/>
-				</textElement>
-				<text><![CDATA[ID:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="70" y="25" width="200" height="15" style="Arial_Normal"/>
-				<textFieldExpression><![CDATA[$F{resident_id}]]></textFieldExpression>
-			</textField>
-
-			<staticText>
-				<reportElement x="10" y="40" width="60" height="15" style="Arial_Normal"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="10"/>
-				</textElement>
-				<text><![CDATA[Facility:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="70" y="40" width="200" height="15" style="Arial_Normal"/>
-				<textFieldExpression><![CDATA[$F{facility_name}]]></textFieldExpression>
-			</textField>
-
-			<staticText>
-				<reportElement x="10" y="55" width="100" height="15" style="Arial_Normal"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="10"/>
-				</textElement>
-				<text><![CDATA[Generated Date:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="110" y="55" width="200" height="15" style="Arial_Normal"/>
-				<textFieldExpression><![CDATA[$F{generated_date}]]></textFieldExpression>
-			</textField>
-
-			<staticText>
-				<reportElement x="10" y="70" width="80" height="15" style="Arial_Normal"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="10"/>
-				</textElement>
-				<text><![CDATA[Date Range:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="80" y="70" width="200" height="15" style="Arial_Normal"/>
-				<textFieldExpression><![CDATA[$F{date_range}]]></textFieldExpression>
-			</textField>
-
-			<line direction="BottomUp">
-				<reportElement x="10" y="100" width="585" height="1"/>
-				<graphicElement>
-					<pen lineWidth="1.0" lineColor="#000000"/>
-				</graphicElement>
-			</line>
-		</band>
-	</pageHeader>
-
-	<detail>
-		<!-- Platform Usage Section -->
-		<band height="80">
-			<staticText>
-				<reportElement x="10" y="10" width="450" height="20" style="Arial_Header"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="16" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Platform Usage]]></text>
-			</staticText>
-
-			<staticText>
-				<reportElement x="10" y="35" width="160" height="15" style="Arial_Normal_12"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="12"/>
-				</textElement>
-				<text><![CDATA[Total time spent on UnlockEd:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="160" y="35" width="200" height="15" style="Arial_Normal_12"/>
-				<textFieldExpression><![CDATA[$F{total_time_spent}]]></textFieldExpression>
-			</textField>
-
-			<staticText>
-				<reportElement x="10" y="50" width="80" height="15" style="Arial_Normal_12"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="12"/>
-				</textElement>
-				<text><![CDATA[Total Logins:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="90" y="50" width="200" height="15" style="Arial_Normal_12"/>
-				<textFieldExpression><![CDATA[$F{total_logins}]]></textFieldExpression>
-			</textField>
-
-			<staticText>
-				<reportElement x="10" y="65" width="160" height="15" style="Arial_Normal_12"/>
-				<textElement>
-					<font fontName="DejaVu Sans" size="12"/>
-				</textElement>
-				<text><![CDATA[Distinct resources accessed:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="160" y="65" width="200" height="15" style="Arial_Normal_12"/>
-				<textFieldExpression><![CDATA[$F{total_resources_accessed}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
-
+	<columnFooter>
+		<band height="45" splitType="Stretch"/>
+	</columnFooter>
 	<pageFooter>
-		<band height="30">
-			<line direction="TopDown">
-				<reportElement x="10" y="0" width="585" height="1"/>
-				<graphicElement>
-					<pen lineWidth="1.0" lineColor="#000000"/>
-				</graphicElement>
-			</line>
-			<textField>
-				<reportElement x="10" y="10" width="100" height="13" style="Arial_Normal_12"/>
-				<textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER} + " of " + $V{PAGE_COUNT}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="485" y="10" width="100" height="13" style="Arial_Normal_12"/>
-				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
-			</textField>
-		</band>
+		<band height="25" splitType="Stretch"/>
 	</pageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
 </jasperReport>

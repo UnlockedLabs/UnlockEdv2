@@ -1,20 +1,19 @@
 package jasper
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
-
-	//"UnlockEdv2/src"
 	"context"
-	//"encoding/json"
+	"encoding/json"
 	"fmt"
-	//"github.com/sirupsen/logrus"
 	"os"
-	//"os/exec"
-	///"path/filepath"
-	//"time"
+	"path/filepath"
+	"time"
 
 	"github.com/evertonvps/go-jasper"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type JasperService struct {
@@ -63,162 +62,150 @@ func NewJasperServiceWithContext(db *database.DB, queryCtx *models.QueryContext,
 }
 
 func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
-	// user, err := js.Db.GetUserByID(uint(userID))
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get user: %w", err)
-	// }
-
-	// userPrograms, err := js.Db.GetUserProgramInfo(js.queryCtx, userID)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get user programs: %w", err)
-	// }
-
-	// sessionEngagements, err := js.Db.GetUserSessionEngagement(userID, -1)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get user engagements: %w", err)
-	// }
-
-	// resourceCount, err := js.Db.GetUserOpenContentAccessCount(context.TODO(), userID)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get resource count: %w", err)
-	// }
-
-	// reportData := JasperReportData{
-	// 	ResidentName:           fmt.Sprintf("%s %s", user.NameFirst, user.NameLast),
-	// 	ResidentID:             user.DocID,
-	// 	FacilityName:           user.Facility.Name,
-	// 	GeneratedDate:          time.Now().Format("January 2, 2006"),
-	// 	DateRange:              fmt.Sprintf("%s - present", user.CreatedAt.Format("January 2, 2006")),
-	// 	TotalTimeSpent:         js.calculateTotalTime(sessionEngagements),
-	// 	TotalLogins:            js.calculateTotalLogins(user),
-	// 	TotalResourcesAccessed: fmt.Sprintf("%d", resourceCount.TotalResourcesAccessed),
-	// 	HasProgramAccess:       js.hasFeatureAccess(models.ProgramAccess),
-	// 	Programs:               userPrograms, // Use original programs data
-	// 	LogoImage:              "logo",       // Reference to logo image in JRXML
-	// }
-
-	// jsonData, err := json.Marshal(reportData)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to marshal report data: %w", err)
-	// }
-
-	// dataFile := filepath.Join(os.TempDir(), "user_usage_report_data.json")
-
-	// //TODO: DONT FORGET TO REMOVE!
-	// jsonPreview := string(jsonData)
-	// if len(jsonPreview) > 500 {
-	// 	jsonPreview = jsonPreview[:500] + "..."
-	// }
-	// logrus.WithFields(logrus.Fields{
-	// 	"user_id":          userID,
-	// 	"json_data_length": len(jsonData),
-	// 	"json_preview":     jsonPreview,
-	// 	"data_file_path":   dataFile,
-	// }).Info("DEBUG: JSON data being sent to JasperReports")
-	// if err := os.WriteFile(dataFile, jsonData, 0644); err != nil {
-	// 	return nil, fmt.Errorf("failed to write data file: %w", err)
-	// }
-	// defer func() {
-	// 	if err := os.Remove(dataFile); err != nil {
-	// 		logrus.WithFields(logrus.Fields{
-	// 			"data_file": dataFile,
-	// 			"error":     err,
-	// 		}).Warn("Failed to remove temporary data file")
-	// 	}
-	// }()
-
-	// // Write logo image to temporary file for JasperReports
-	// logoFile := "/tmp/unlocked-logo.png"
-	// if err := os.WriteFile(logoFile, src.UnlockedLogoImg, 0644); err != nil {
-	// 	return nil, fmt.Errorf("failed to write logo file: %w", err)
-	// }
-	// defer func() {
-	// 	if err := os.Remove(logoFile); err != nil {
-	// 		logrus.WithFields(logrus.Fields{
-	// 			"logo_file": logoFile,
-	// 			"error":     err,
-	// 		}).Warn("Failed to remove temporary logo file")
-	// 	}
-	// }()
-
-	// // Create jdbc directory for JasperStarter
-	// jdbcDir := "/tmp/jdbc"
-	// if err := os.MkdirAll(jdbcDir, 0755); err != nil {
-	// 	return nil, fmt.Errorf("failed to create jdbc directory: %w", err)
-	// }
-
-	// outputPath := filepath.Join(os.TempDir(), "user_usage_report")
-
-	// // Correct JasperStarter command with proper template path and arguments
-	// cmd := exec.Command("java",
-	// 	"-Djava.awt.headless=true",
-	// 	"-Dfile.encoding=UTF-8",
-	// 	"-Dsun.java2d.fontconfig=true",
-	// 	"-cp", "/opt/jasperstarter/jasperstarter.jar:/opt/jasperstarter/lib/*",
-	// 	"de.cenote.jasperstarter.App",
-	// 	"pr",
-	// 	"-t", "json",
-	// 	"-f", "pdf",
-	// 	"--data-file", dataFile,
-	// 	"--jdbc-dir", jdbcDir,
-	// 	"-o", outputPath,
-	// 	"/templates/user_usage_report.jrxml",
-	// )
-
-	// cmd.Dir = "/app"
-
-	// output, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("jasperstarter command failed: %w\nOutput: %s", err, output)
-	// }
-
-	// pdfBytes, err := os.ReadFile(outputPath + ".pdf")
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to read generated PDF: %w", err)
-	// }
-
-	// defer func() {
-	// 	if err := os.Remove(outputPath + ".pdf"); err != nil {
-	// 		logrus.WithFields(logrus.Fields{
-	// 			"output_file": outputPath + ".pdf",
-	// 			"error":       err,
-	// 		}).Warn("Failed to remove generated PDF file")
-	// 	}
-	// }()
-
-	// return pdfBytes, nil
-
-	// Test implementation for go-jasper integration
-	outputFile := "/app/backend/src/templates/report"
-	jsonData := `[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]`
-	jsonFile := "data.json"
-
-	err := os.WriteFile(jsonFile, []byte(jsonData), 0644)
+	user, err := js.Db.GetUserByID(uint(userID))
 	if err != nil {
-		fmt.Println("error while processing: ", err)
-	}
-	defer os.Remove(jsonFile) // Clean up the dummy file
-
-
-	gjr := jasper.NewGoJasperJsonData(jsonFile, "", nil, "pdf", outputFile)
-
-	// Set the path to the jasperstarter executable
-	//gjr.Executable = "./jasperstarter/bin/jasperstarter"
-	//FIXME can remove this
-	err = gjr.Compile("/app/backend/src/templates/report.jrxml")
-	if err != nil {
-		fmt.Println("error while compiling: ", err)
-		//log.Fatalf("Error compiling report: %v", err)
+		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	// 6. Process the report to generate the output.
-	pdfBytes, err := gjr.Process("/app/backend/src/templates/report.jasper")
+	userPrograms, err := js.Db.GetUserProgramInfo(js.queryCtx, userID)
 	if err != nil {
-		fmt.Println("error while processing jasper: ", err)
-		//log.Fatalf("Error processing report: %v", err)
+		return nil, fmt.Errorf("failed to get user programs: %w", err)
 	}
 
-	fmt.Println(string(pdfBytes))
+	sessionEngagements, err := js.Db.GetUserSessionEngagement(userID, -1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user engagements: %w", err)
+	}
+
+	resourceCount, err := js.Db.GetUserOpenContentAccessCount(context.TODO(), userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resource count: %w", err)
+	}
+
+	reportData := JasperReportData{
+		ResidentName:           fmt.Sprintf("%s %s", user.NameFirst, user.NameLast),
+		ResidentID:             user.DocID,
+		FacilityName:           user.Facility.Name,
+		GeneratedDate:          time.Now().Format("January 2, 2006"),
+		DateRange:              fmt.Sprintf("%s - present", user.CreatedAt.Format("January 2, 2006")),
+		TotalTimeSpent:         js.calculateTotalTime(sessionEngagements),
+		TotalLogins:            js.calculateTotalLogins(user),
+		TotalResourcesAccessed: fmt.Sprintf("%d", resourceCount.TotalResourcesAccessed),
+		HasProgramAccess:       js.hasFeatureAccess(models.ProgramAccess),
+		Programs:               userPrograms, // Use original programs data
+		LogoImage:              "logo",       // Reference to logo image in JRXML
+	}
+
+	// Marshal report data to JSON
+	jsonData, err := json.Marshal(reportData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal report data: %w", err)
+	}
+
+	fmt.Println(string(jsonData))
+	// Create temporary JSON file with unique name
+	tempDir := "/tmp" // Use /tmp for jasperstarter accessibility
+	jsonFileName := fmt.Sprintf("jasper_report_%s.json", uuid.New().String())
+	jsonFilePath := filepath.Join(tempDir, jsonFileName)
+
+	logrus.WithFields(logrus.Fields{
+		"user_id":          userID,
+		"json_data_length": len(jsonData),
+		"json_file_path":   jsonFilePath,
+	}).Info("Creating temporary JSON file for JasperReports")
+
+	// Write JSON data to temporary file
+	if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write temporary data file: %w", err)
+	}
+	defer func() {
+		if err := os.Remove(jsonFilePath); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"json_file": jsonFilePath,
+				"error":     err,
+			}).Warn("Failed to remove temporary JSON file")
+		} else {
+			logrus.WithField("json_file", jsonFilePath).Info("Successfully removed temporary JSON file")
+		}
+	}()
+
+	// Write logo image to temporary file for JasperReports with fixed name that template expects
+	logoFilePath := filepath.Join(tempDir, "unlocked-logo.png")
+
+	if err := os.WriteFile(logoFilePath, src.UnlockedLogoImg, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write temporary logo file: %w", err)
+	}
+	defer func() {
+		if err := os.Remove(logoFilePath); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"logo_file": logoFilePath,
+				"error":     err,
+			}).Warn("Failed to remove temporary logo file")
+		} else {
+			logrus.WithField("logo_file", logoFilePath).Info("Successfully removed temporary logo file")
+		}
+	}()
+
+	// Create jdbc directory for JasperStarter
+	jdbcDir := "/tmp/jdbc"
+	if err := os.MkdirAll(jdbcDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create jdbc directory: %w", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(jdbcDir); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"jdbc_dir": jdbcDir,
+				"error":    err,
+			}).Warn("Failed to remove jdbc directory")
+		}
+	}()
+
+	// Prepare output path for Jasper report
+	outputFile := filepath.Join(tempDir, fmt.Sprintf("jasper_report_%s", uuid.New().String()))
+
+	logrus.WithFields(logrus.Fields{
+		"json_file":     jsonFilePath,
+		"logo_file":     logoFilePath,
+		"jdbc_dir":      jdbcDir,
+		"output_path":   outputFile,
+		"template_path": "/app/backend/src/templates/user_usage_report.jrxml",
+	}).Info("Processing Jasper report with temporary files")
+
+	// Initialize go-jasper with proper file path
+	gjr := jasper.NewGoJasperJsonData(jsonFilePath, "", nil, "pdf", outputFile)
+
+	// Compile Jasper template
+	compiledTemplatePath := "/app/backend/src/templates/user_usage_report.jasper"
+	templatePath := "/app/backend/src/templates/user_usage_report.jrxml"
+
+	// Always compile to ensure we have the latest version
+	logrus.Info("Compiling Jasper template from JRXML")
+	err = gjr.Compile(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile Jasper template: %w", err)
+	}
+
+	// Process the report to generate PDF
+	// Try to use the compiled template, fallback to JRXML if compilation failed
+	pdfBytes, err := gjr.Process(compiledTemplatePath)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"template_path": compiledTemplatePath,
+			"error":         err,
+		}).Warn("Failed to process compiled template, falling back to JRXML")
+
+		// Fallback: Try processing with JRXML directly
+		pdfBytes, err = gjr.Process(templatePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process Jasper report with both compiled and JRXML template: %w", err)
+		}
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"user_id":    userID,
+		"pdf_length": len(pdfBytes),
+	}).Info("Successfully generated Jasper PDF report")
+
 	return pdfBytes, nil
 }
 
