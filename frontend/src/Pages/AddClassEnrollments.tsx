@@ -71,13 +71,14 @@ export default function AddClassEnrollments() {
         getEnrollmentCount() -
         selectedUsers.length;
 
-    if (remainingCapacity < 0) {
-        setErrorMessage('Class is full');
-        setSelectedUsers(selectedUsers.slice(0, remainingCapacity));
-    }
-    if (remainingCapacity > 0 && errorMessage === 'Class is full') {
-        setErrorMessage('');
-    }
+    useEffect(() => {
+        if (remainingCapacity < 0) {
+            setErrorMessage('Class is full');
+            setSelectedUsers((prev) => prev.slice(0, remainingCapacity));
+        } else if (remainingCapacity > 0 && errorMessage === 'Class is full') {
+            setErrorMessage('');
+        }
+    }, [remainingCapacity, errorMessage]);
 
     const handleSetPerPage = (perPage: number) => {
         setPerPage(perPage);
