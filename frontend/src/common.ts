@@ -800,8 +800,20 @@ export interface EnrollmentAttendance {
     doc_id: string;
     name_first: string;
     name_last: string;
-    attendance_status: Attendance;
-    note: string;
+    attendance_id?: number;
+    event_id?: number;
+    date?: string;
+    attendance_status?: Attendance;
+    note?: string;
+    reason_category?: string;
+}
+
+export enum AttendanceReason {
+    Lockdown = 'Lockdown',
+    Medical = 'Medical',
+    Transfer = 'Transfer',
+    Disciplinary = 'Disciplinary',
+    Other = 'Other'
 }
 
 export enum Attendance {
