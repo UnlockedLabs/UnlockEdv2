@@ -129,7 +129,7 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		trans.Rollback()
 		return newDeleteDBError(err, "program class event override")
 	}
-	
+
 	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
 		trans.Rollback()
 		return err
@@ -820,30 +820,36 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	}
 
 	occurrences := rRule.Between(startTime, untilTime, true)
-	if len(occurrences) == 0 {
-		qryCtx.Total = 0
-		return []models.ClassEventInstance{}, nil
+
+	// occurrences can be empty if there are no base rule occurrences in the window
+	// but we still need to check for overrides and fetch attendance
+	var classTime string
+	if len(occurrences) > 0 {
+		duration, err := time.ParseDuration(event.Duration)
+		if err != nil {
+			logrus.Errorf("error parsing duration for event: %v", err)
+		}
+		firstOcc := occurrences[0]
+		occInLoc := firstOcc.In(loc)
+		startTimeStr := occInLoc.Format("15:04")
+		endTimeStr := occInLoc.Add(duration).Format("15:04")
+		classTime = startTimeStr + "-" + endTimeStr
 	}
 
-	duration, err := time.ParseDuration(event.Duration)
-	if err != nil {
-		logrus.Errorf("error parsing duration for event: %v", err)
-	}
-	firstOcc := occurrences[0]
-	lastOcc := occurrences[len(occurrences)-1]
-	occInLoc := firstOcc.In(loc)
-	occDateStr := occInLoc.Format("2006-01-02")
-	lastOccInLoc := lastOcc.In(loc)
-	lastOccDateStr := lastOccInLoc.Format("2006-01-02")
-	startTimeStr := occInLoc.Format("15:04")
-	endTimeStr := occInLoc.Add(duration).Format("15:04")
-	//FIXME: when overrides are applied, this will likely have to be in the loop
-	classTime := startTimeStr + "-" + endTimeStr
 	var attendances []models.ProgramClassEventAttendance
+
+	startDateStr := startTime.Format("2006-01-02")
+	endDateStr := untilTime.Format("2006-01-02")
+
+	// Fetch all event IDs for this class to ensure we get attendance even if it's linked to an older event rule
+	var classEventIDs []uint
+	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEvent{}).Where("class_id = ?", classId).Pluck("id", &classEventIDs).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
 
 	tx := db.WithContext(qryCtx.Ctx).
 		Model(&models.ProgramClassEventAttendance{}).
-		Where("event_id = ? AND date BETWEEN SYMMETRIC ? AND ?", event.ID, occDateStr, lastOccDateStr)
+		Where("event_id IN (?) AND date >= ? AND date < ?", classEventIDs, startDateStr, endDateStr)
 	if userId != nil {
 		tx = tx.Where("user_id = ?", *userId)
 	}
