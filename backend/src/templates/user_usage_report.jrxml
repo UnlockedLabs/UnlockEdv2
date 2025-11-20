@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="my_usage_report" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7aea187e-0779-4cc3-84d2-442323e067c5">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<style name="Title" fontName="Times New Roman" fontSize="50" isBold="true"/>
+	<style name="SubTitle" forecolor="#736343" fontName="Arial" fontSize="18"/>
+	<style name="Column header" forecolor="#666666" fontName="Arial" fontSize="12" isBold="true"/>
+	<style name="Detail" fontName="Arial" fontSize="12"/>
+	<style name="Row" mode="Transparent" backcolor="#E6DAC3"/>
+	<field name="resident_name" class="java.lang.String"/>
+	<field name="facility_name" class="java.lang.String"/>
+	<field name="date_range" class="java.lang.String"/>
+	<field name="generated_date" class="java.lang.String"/>
+	<field name="total_time_spent" class="java.lang.String"/>
+	<field name="total_logins" class="java.lang.String"/>
+	<field name="total_resources_accessed" class="java.lang.String"/>
+	<field name="has_program_access" class="java.lang.Boolean"/>
+	<field name="resident_id" class="java.lang.String"/>
+	<title>
+		<band height="122" splitType="Stretch">
+			<image>
+				<reportElement x="0" y="10" width="90" height="76" uuid="aaaaaaaa-aaaa-aaaa-aaaa-bbbbbbbbbbbb">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA["/tmp/unlocked-logo.png"]]></imageExpression>
+			</image>
+			<line>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="98" width="555" height="1" uuid="1b98c8a9-0090-4ed8-9040-5f2d1ee3614d"/>
+				<graphicElement>
+					<pen lineWidth="1.5" lineColor="#999999"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="91" y="34" width="449" height="42" uuid="9335d79c-032a-48ab-9ab3-e0e347102c6c"/>
+				<textElement textAlignment="Center">
+					<font fontName="DejaVu Sans" size="29" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Resident Usage Transcript
+]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="261" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="10" width="100" height="20" uuid="c65f27ed-88eb-4876-a852-79a3c1134fc0"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Resident:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="47" y="10" width="200" height="20" uuid="2db2946b-cee8-4d74-bdba-21155a1777b8"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{resident_name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="22" width="100" height="20" uuid="9b8c7d6e-5f4e-3d2c-1b0a-987654321fed"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[ID:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="18" y="22" width="200" height="20" uuid="a1b2c3d4-e5f6-7890-1234-567890abcdef"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{resident_id}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="35" width="100" height="20" uuid="c3d4e5f6-7890-abcd-ef12-345678901234"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Facility:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="38" y="35" width="200" height="20" uuid="d4e5f6a7-8901-bcde-f234-567890123456"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{facility_name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="126" width="176" height="20" uuid="e1f2a3b4-c5d6-e7f8-9012-34567890abcd"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Total Time Spent on UnlockED:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="146" y="126" width="100" height="20" uuid="f3e4d5c6-b7a8-9012-3456-7890abcdef12"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{total_time_spent}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="47" width="100" height="20" uuid="e2d54217-fa6e-4c16-9a57-1546bbbcc50c"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Generated Date: ]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="80" y="47" width="200" height="20" uuid="987425a4-add6-4c43-b0d0-2110e3235a2c"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{generated_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1" y="60" width="150" height="20" uuid="f1e10b1f-08e1-4dcd-8b2a-fab4022eb047"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Date Range:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="61" y="60" width="100" height="20" uuid="ce65374b-bcea-4bfe-879a-9ea8433019c9"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{date_range}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="85" width="200" height="20" uuid="e1f2a3b4-c5d6-e7f8-a901-234567890bcd"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Distinct Resources accessed:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="136" y="85" width="100" height="20" uuid="e474d019-02e5-48f4-8c03-ded22fc30cc3"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{total_resources_accessed}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="99" width="200" height="30" uuid="0e8a47db-a2c9-4ce5-8416-764ade41b9e3"/>
+				<box leftPadding="2"/>
+				<textElement>
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Platform Usage]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="140" width="68" height="20" uuid="a4b5c6d7-e8f9-0123-4567-890123456789"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Total Logins:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="63" y="140" width="100" height="20" uuid="e474d019-02e5-48f4-8c03-ded22fc30cc4"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{total_logins}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="186" width="238" height="30" uuid="c1d2e3f4-a5b6-c7d8-e9f0-123456789012"/>
+				<box leftPadding="2"/>
+				<textElement>
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Program Participation]]></text>
+			</staticText>
+		</band>
+		<band height="200">
+			<subreport>
+				<reportElement x="0" y="-44" width="555" height="200" uuid="f1e2d3c4-b5a6-7890-1234-567890abcdef">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<dataSourceExpression><![CDATA[((net.sf.jasperreports.engine.data.JsonDataSource)$P{REPORT_DATA_SOURCE}).subDataSource("programs")]]></dataSourceExpression>
+				<subreportExpression><![CDATA["/app/backend/src/templates/user_usage_programs_subreport.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="25" splitType="Stretch"/>
+	</pageFooter>
+</jasperReport>
