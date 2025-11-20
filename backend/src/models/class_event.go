@@ -157,6 +157,7 @@ type ProgramClassEventAttendance struct {
 	Date             string     `json:"date" gorm:"not null; uniqueIndex:idx_event_user_date" validate:"required,datetime"`
 	AttendanceStatus Attendance `json:"attendance_status" gorm:"column:attendance_status"`
 	Note             string     `json:"note" gorm:"column:note"`
+	ReasonCategory   string     `json:"reason_category" gorm:"column:reason_category"`
 
 	/* Foreign Keys */
 	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
@@ -186,6 +187,7 @@ type EnrollmentAttendance struct {
 	EventDate        *string `json:"date"`
 	AttendanceStatus *string `json:"attendance_status"`
 	Note             *string `json:"note"`
+	ReasonCategory   *string `json:"reason_category"`
 }
 
 type AttendanceFlagType string

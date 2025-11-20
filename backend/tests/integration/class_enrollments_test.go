@@ -50,11 +50,11 @@ func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Fac
 	require.NoError(t, err)
 
 	// Enroll users via API endpoint
-	enrollmentData := map[string]interface{}{
+	enrollmentData := map[string]any{
 		"user_ids": []int{int(user1.ID), int(user2.ID)},
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/enrollments", activeClass.ID), enrollmentData).
+	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/enrollments", activeClass.ID), enrollmentData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -85,11 +85,11 @@ func runEnrollInScheduledClassTest(t *testing.T, env *TestEnv, facility *models.
 	require.NoError(t, err)
 
 	// Enroll users via API endpoint
-	enrollmentData := map[string]interface{}{
+	enrollmentData := map[string]any{
 		"user_ids": []int{int(user1.ID), int(user2.ID)},
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/enrollments", scheduledClass.ID), enrollmentData).
+	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/enrollments", scheduledClass.ID), enrollmentData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -166,12 +166,12 @@ func runUpdateToTerminalStatusTest(t *testing.T, env *TestEnv, facility *models.
 			require.Nil(t, endedAt, "enrollment_ended_at should be NULL initially")
 
 			// Update enrollment status to terminal state via API
-			updateData := map[string]interface{}{
+			updateData := map[string]any{
 				"enrollment_status": string(status),
 				"user_ids":          []int{int(user.ID)},
 			}
 
-			NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes/%d/enrollments", activeClass.ID), updateData).
+			NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes/%d/enrollments", activeClass.ID), updateData).
 				WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 				Do().
 				ExpectStatus(http.StatusOK)
@@ -216,12 +216,12 @@ func runUpdateToCancelledStatusTest(t *testing.T, env *TestEnv, facility *models
 	require.Nil(t, endedAt, "enrollment_ended_at should be NULL initially")
 
 	// Update enrollment status to terminal state via API
-	updateData := map[string]interface{}{
+	updateData := map[string]any{
 		"enrollment_status": string(cancelledStatus),
 		"user_ids":          []int{int(user.ID)},
 	}
 
-	NewRequest[interface{}](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes/%d/enrollments", activeClass.ID), updateData).
+	NewRequest[any](env.Client, t, http.MethodPatch, fmt.Sprintf("/api/program-classes/%d/enrollments", activeClass.ID), updateData).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusBadRequest)
@@ -292,11 +292,11 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Single date with varying enrollment levels", func(t *testing.T) {
-		runSingleDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility, user1, user2, user3)
+		runSingleDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility)
 	})
 
 	t.Run("Batch multiple dates with varying enrollment levels", func(t *testing.T) {
-		runBatchDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility, user1, user2, user3)
+		runBatchDateHistoricalEnrollmentTest(t, env, activeClass, facilityAdmin, facility)
 	})
 
 	t.Run("Edge cases and validation", func(t *testing.T) {
@@ -304,7 +304,7 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	})
 }
 
-func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility, user1, user2, user3 *models.User) {
+func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
 	// Test single date queries
 	testCases := []struct {
 		date     string
@@ -332,7 +332,7 @@ func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeCla
 	}
 }
 
-func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility, user1, user2, user3 *models.User) {
+func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
 	// Test batch query with multiple dates
 	dates := "2025-08-12,2025-08-13,2025-08-14,2025-08-15,2025-08-16"
 	resp := NewRequest[map[string]int64](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, dates), nil).
@@ -365,7 +365,7 @@ func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClas
 func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
 	// Test case 1: Missing dates parameter
 	t.Run("Missing dates parameter", func(t *testing.T) {
-		NewRequest[interface{}](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch", activeClass.ID), nil).
+		NewRequest[any](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch", activeClass.ID), nil).
 			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 			Do().
 			ExpectStatus(http.StatusBadRequest)
@@ -373,7 +373,7 @@ func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClas
 
 	// Test case 2: Empty dates parameter
 	t.Run("Empty dates parameter", func(t *testing.T) {
-		NewRequest[interface{}](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=", activeClass.ID), nil).
+		NewRequest[any](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=", activeClass.ID), nil).
 			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 			Do().
 			ExpectStatus(http.StatusBadRequest)
@@ -391,7 +391,7 @@ func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClas
 
 		for _, invalidDate := range invalidDates {
 			t.Run(fmt.Sprintf("date_%s", invalidDate), func(t *testing.T) {
-				NewRequest[interface{}](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, invalidDate), nil).
+				NewRequest[any](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, invalidDate), nil).
 					WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 					Do().
 					ExpectStatus(http.StatusBadRequest)
@@ -402,7 +402,7 @@ func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClas
 	// Test case 4: Mixed valid and invalid dates
 	t.Run("Mixed valid and invalid dates", func(t *testing.T) {
 		dates := "2025-08-13,invalid-date,2025-08-14"
-		NewRequest[interface{}](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, dates), nil).
+		NewRequest[any](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, dates), nil).
 			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 			Do().
 			ExpectStatus(http.StatusBadRequest)

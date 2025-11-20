@@ -46,7 +46,7 @@ func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAtten
 		if err := tx.
 			Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},
-				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note"}),
+				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note", "reason_category"}),
 			}).
 			Create(&att).Error; err != nil {
 			tx.Rollback()
@@ -179,7 +179,8 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 			a.event_id AS event_id,
 			a.date AS date,
 			a.attendance_status AS attendance_status,
-			a.note AS note`
+			a.note AS note,
+			a.reason_category AS reason_category`
 	finalQuery := selectClause + baseQuery
 	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
 		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause("e.created_at DESC"))
