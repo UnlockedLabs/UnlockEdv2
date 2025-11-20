@@ -59,7 +59,7 @@
 				<text><![CDATA[ID:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="16" y="22" width="200" height="20" uuid="a1b2c3d4-e5f6-7890-1234-567890abcdef"/>
+				<reportElement x="18" y="22" width="200" height="20" uuid="a1b2c3d4-e5f6-7890-1234-567890abcdef"/>
 				<textElement textAlignment="Left"/>
 				<textFieldExpression><![CDATA[$F{resident_id}]]></textFieldExpression>
 			</textField>
@@ -101,7 +101,17 @@
 			<textField>
 				<reportElement x="61" y="60" width="100" height="20" uuid="ce65374b-bcea-4bfe-879a-9ea8433019c9"/>
 				<textElement textAlignment="Left"/>
-				<textFieldExpression><![CDATA[$F{total_time_spent}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{date_range}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="85" width="200" height="20" uuid="e1f2a3b4-c5d6-e7f8-a901-234567890bcd"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Distinct Resources accessed:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="136" y="85" width="100" height="20" uuid="e474d019-02e5-48f4-8c03-ded22fc30cc3"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{total_resources_accessed}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="0" y="99" width="200" height="30" uuid="0e8a47db-a2c9-4ce5-8416-764ade41b9e3"/>
@@ -111,8 +121,13 @@
 				</textElement>
 				<text><![CDATA[Platform Usage]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="0" y="140" width="68" height="20" uuid="a4b5c6d7-e8f9-0123-4567-890123456789"/>
+				<box leftPadding="2"/>
+				<text><![CDATA[Total Logins:]]></text>
+			</staticText>
 			<textField>
-				<reportElement x="61" y="140" width="100" height="20" uuid="b5c6d7e8-f9a0-1234-5678-901234567890"/>
+				<reportElement x="63" y="140" width="100" height="20" uuid="e474d019-02e5-48f4-8c03-ded22fc30cc4"/>
 				<textElement textAlignment="Left"/>
 				<textFieldExpression><![CDATA[$F{total_logins}]]></textFieldExpression>
 			</textField>
@@ -125,102 +140,15 @@
 				<text><![CDATA[Program Participation]]></text>
 			</staticText>
 		</band>
-		<band height="50">
-			<staticText>
-				<reportElement x="0" y="-121" width="68" height="20" uuid="a4b5c6d7-e8f9-0123-4567-890123456789"/>
-				<box leftPadding="2"/>
-				<text><![CDATA[Total Logins:]]></text>
-			</staticText>
-		</band>
-		<band height="176">
-			<staticText>
-				<reportElement x="1" y="-157" width="150" height="20" uuid="764200cc-a2b2-4582-8127-0cf5f2cce786"/>
-				<box leftPadding="2"/>
-				<text><![CDATA[Distinct Resources accessed:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="136" y="-157" width="100" height="20" uuid="e474d019-02e5-48f4-8c03-ded22fc30cc3"/>
-				<textElement textAlignment="Left"/>
-				<textFieldExpression><![CDATA[$F{total_resources_accessed}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="0" y="-97" width="68" height="50" uuid="d1e2f3a4-b5c6-d7e8-f9a0-1234567890ab"/>
-				<box leftPadding="2">
-					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Center">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[Program Name]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="136" y="-97" width="100" height="50" uuid="f1a2b3c4-d5e6-f7a8-b901-345678901234"/>
-				<box>
-					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Center">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[Status]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="338" y="-97" width="100" height="50" uuid="b3c4d5e6-f7a8-b9c0-d123-567890123456"/>
-				<box>
-					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Center">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[State Date]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="237" y="-97" width="100" height="50" uuid="a2b3c4d5-e6f7-a8b9-c012-456789012345"/>
-				<box>
-					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Center">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[Attendance]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="69" y="-97" width="67" height="50" uuid="e1f2a3b4-c5d6-e7f8-a901-234567890bcd"/>
-				<box>
-					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Center">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[Class Name]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="438" y="-97" width="100" height="50" uuid="22bf17d2-23f7-4b88-9cbd-2ead2f0ac614"/>
-				<box>
-					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Center">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[End Date]]></text>
-			</staticText>
+		<band height="200">
+			<subreport>
+				<reportElement x="0" y="-44" width="555" height="200" uuid="f1e2d3c4-b5a6-7890-1234-567890abcdef">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<dataSourceExpression><![CDATA[((net.sf.jasperreports.engine.data.JsonDataSource)$P{REPORT_DATA_SOURCE}).subDataSource("programs")]]></dataSourceExpression>
+				<subreportExpression><![CDATA["/app/backend/src/templates/user_usage_programs_subreport.jasper"]]></subreportExpression>
+			</subreport>
 		</band>
 	</detail>
 	<pageFooter>

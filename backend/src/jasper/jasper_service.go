@@ -72,6 +72,11 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get user programs: %w", err)
 	}
 
+	// Calculate attendance percentage for each program
+	for i := range userPrograms {
+		userPrograms[i].CalculateAttendancePercentage()
+	}
+
 	sessionEngagements, err := js.Db.GetUserSessionEngagement(userID, -1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user engagements: %w", err)
