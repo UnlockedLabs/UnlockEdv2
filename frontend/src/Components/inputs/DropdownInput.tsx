@@ -9,6 +9,7 @@ interface DropdownProps {
     enumType: Record<string, string>;
     disabled?: boolean;
     onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+    selectClassName?: string;
 }
 
 export function DropdownInput({
@@ -19,15 +20,18 @@ export function DropdownInput({
     register,
     enumType,
     disabled = false,
-    onChange
+    onChange,
+    selectClassName
 }: DropdownProps) {
     return (
         <label className="form-control w-full">
-            <div className="label">
-                <span className="label-text">{label}</span>
-            </div>
+            {label && (
+                <div className="label">
+                    <span className="label-text">{label}</span>
+                </div>
+            )}
             <select
-                className="select select-bordered"
+                className={`select select-bordered ${selectClassName}`}
                 {...register(interfaceRef, {
                     required: {
                         value: required,

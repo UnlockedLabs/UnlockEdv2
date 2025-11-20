@@ -5,7 +5,7 @@ import {
     Navigate,
     useLoaderData
 } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { mutate as mutateGlobal } from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
@@ -16,12 +16,14 @@ import {
     FilterResidentNames,
     Class,
     SelectedClassStatus,
-    ToastState
+    ToastState,
+    AttendanceReason
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
+import { DropdownInput } from '@/Components/inputs/DropdownInput';
 import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 import { useToast } from '@/Context/ToastCtx';
@@ -45,6 +47,7 @@ interface LocalRowData {
     name_first: string;
     attendance_status?: Attendance;
     note: string;
+    reason_category?: string;
 }
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
@@ -115,7 +118,8 @@ export default function EventAttendance() {
                           name_last: item.name_last,
                           name_first: item.name_first,
                           attendance_status: item.attendance_status,
-                          note: item.note ?? ''
+                          note: item.note ?? '',
+                          reason_category: item.reason_category
                       };
             });
             setRows(mergedRows);
@@ -191,6 +195,8 @@ export default function EventAttendance() {
         if (newStatus === Attendance.Present) {
             setValue(`note_${user_id}`, '');
             clearErrors(`note_${user_id}`);
+            setValue(`reason_${user_id}`, '');
+            clearErrors(`reason_${user_id}`);
         }
         const currentRow = rows.find((r) => r.user_id === user_id) ?? {
             selected: false,
@@ -208,7 +214,32 @@ export default function EventAttendance() {
                 selected: true,
                 attendance_status: newStatus,
                 note:
-                    newStatus === Attendance.Present ? '' : prev[user_id]?.note
+                    newStatus === Attendance.Present ? '' : prev[user_id]?.note,
+                reason_category:
+                    newStatus === Attendance.Present
+                        ? ''
+                        : prev[user_id]?.reason_category
+            }
+        }));
+    }
+
+    function handleReasonChange(user_id: number, newReason: string) {
+        if ((newReason as AttendanceReason) !== AttendanceReason.Other) {
+            setValue(`note_${user_id}`, '');
+            clearErrors(`note_${user_id}`);
+        }
+        const currentRow = rows.find((r) => r.user_id === user_id);
+        setModifiedRows((prev) => ({
+            ...prev,
+            [user_id]: {
+                ...(currentRow ?? {}),
+                ...(prev[user_id] ?? {}),
+                selected: true,
+                reason_category: newReason,
+                note:
+                    (newReason as AttendanceReason) !== AttendanceReason.Other
+                        ? ''
+                        : prev[user_id]?.note ?? ''
             }
         }));
     }
@@ -222,7 +253,8 @@ export default function EventAttendance() {
                 event_id: Number(event_id),
                 date: date,
                 attendance_status: row?.attendance_status,
-                note: notes[`note_${row.user_id}`] ?? ''
+                note: notes[`note_${row.user_id}`] ?? '',
+                reason_category: notes[`reason_${row.user_id}`] ?? ''
             }));
         if (payload.length > 0) {
             await API.post(
@@ -259,6 +291,14 @@ export default function EventAttendance() {
         }
         await submitAttendanceForRows(rows);
         void mutate();
+        // Invalidate all cache related to this class (events, details, historical enrollment)
+        await mutateGlobal(
+            (key: string | undefined) =>
+                typeof key === 'string' &&
+                key.startsWith(`/api/program-classes/${class_id}`),
+            undefined,
+            { revalidate: true }
+        );
         navigate(
             `/program-classes/${class_id}/attendance?year=${yyyy}&month=${mm}`
         );
@@ -315,10 +355,11 @@ export default function EventAttendance() {
                     <div className="relative w-full">
                         <table className="table-2 mb-5">
                             <thead>
-                                <tr className="grid-cols-[1fr_1fr_350px_1fr] grid gap-2 px-2">
+                                <tr className="grid-cols-[1fr_1fr_350px_200px_1fr] grid gap-2 px-2">
                                     <th>Name</th>
                                     <th>Resident ID</th>
                                     <th className="">Status</th>
+                                    <th className="">Reason</th>
                                     <th className="">Note</th>
                                 </tr>
                             </thead>
@@ -331,7 +372,7 @@ export default function EventAttendance() {
                                     rows.map((row) => (
                                         <tr
                                             key={row.user_id}
-                                            className="card w-full justify-items-center grid-cols-[1fr_1fr_350px_1fr] grid p-2 gap-2"
+                                            className="card w-full justify-items-center items-center grid-cols-[1fr_1fr_350px_200px_1fr] grid p-2 gap-2"
                                         >
                                             <td>
                                                 {row.name_last},{' '}
@@ -361,33 +402,68 @@ export default function EventAttendance() {
                                                 />
                                             </td>
                                             <td className="">
-                                                <TextInput
+                                                <DropdownInput
                                                     label=""
-                                                    defaultValue={row.note}
-                                                    disabled={
-                                                        blockEdits ||
-                                                        !(
-                                                            row.attendance_status &&
-                                                            row.attendance_status !==
-                                                                Attendance.Present
-                                                        )
-                                                    }
-                                                    inputClassName={
-                                                        blockEdits ||
-                                                        !(
-                                                            row.attendance_status &&
-                                                            row.attendance_status !==
-                                                                Attendance.Present
-                                                        )
-                                                            ? 'opacity-40'
-                                                            : ''
-                                                    }
-                                                    interfaceRef={`note_${row.user_id}`}
+                                                    interfaceRef={`reason_${row.user_id}`}
                                                     required={
                                                         !blockEdits &&
                                                         row.selected &&
                                                         row.attendance_status !==
                                                             Attendance.Present
+                                                    }
+                                                    errors={errors}
+                                                    register={register}
+                                                    enumType={AttendanceReason}
+                                                    disabled={
+                                                        blockEdits ||
+                                                        !row.attendance_status ||
+                                                        row.attendance_status ===
+                                                            Attendance.Present
+                                                    }
+                                                    selectClassName={`h-10 min-h-[2.5rem] text-base ${
+                                                        blockEdits ||
+                                                        !row.attendance_status ||
+                                                        row.attendance_status ===
+                                                            Attendance.Present
+                                                            ? 'opacity-40'
+                                                            : ''
+                                                    }`}
+                                                    onChange={(e) =>
+                                                        handleReasonChange(
+                                                            row.user_id,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </td>
+                                            <td className="">
+                                                <TextInput
+                                                    label=""
+                                                    defaultValue={row.note}
+                                                    disabled={
+                                                        blockEdits ||
+                                                        !row.attendance_status ||
+                                                        row.attendance_status ===
+                                                            Attendance.Present ||
+                                                        row.reason_category !==
+                                                            AttendanceReason.Other
+                                                    }
+                                                    inputClassName={`h-10 min-h-[2.5rem] text-base ${
+                                                        blockEdits ||
+                                                        !row.attendance_status ||
+                                                        row.attendance_status ===
+                                                            Attendance.Present ||
+                                                        row.reason_category !==
+                                                            AttendanceReason.Other
+                                                            ? 'opacity-40'
+                                                            : ''
+                                                    }`}
+                                                    interfaceRef={`note_${row.user_id}`}
+                                                    required={
+                                                        !blockEdits &&
+                                                        row.selected &&
+                                                        row.reason_category ===
+                                                            AttendanceReason.Other
                                                     }
                                                     length={500}
                                                     errors={errors}
