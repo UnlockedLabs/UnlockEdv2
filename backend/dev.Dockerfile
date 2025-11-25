@@ -1,4 +1,4 @@
-FROM carddev81/golang-jasper:1.23-3.6.2
+FROM carddev81/golang-jasper:1.25-3.6.2
 
 WORKDIR /app
 
