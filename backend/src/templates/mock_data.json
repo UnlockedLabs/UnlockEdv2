@@ -1,0 +1,46 @@
+{
+  "resident_name": "John Doe",
+  "resident_id": "R-10293",
+  "facility_name": "Evergreen Wellness Center",
+  "generated_date": "November 25, 2025",
+  "date_range": "January 1, 2025 - Present",
+  "total_time_spent": "45 hours",
+  "total_logins": "32",
+  "total_resources_accessed": "28",
+  "has_program_access": true,
+  "programs": [
+    {
+      "program_name": "Yoga Basics",
+      "class_name": "Morning Flow",
+      "status": "Active",
+      "enrollment_status": "Enrolled",
+      "start_date": "2025-01-01",
+      "end_date": "2025-03-31",
+      "attendance_percentage": "95%",
+      "class_id": 101,
+      "program_id": 201,
+      "present_attendance": 19,
+      "absent_attendance": 1,
+      "credit_types": "Wellness",
+      "updated_at": "2025-03-20",
+      "change_reason": "Updated attendance data"
+    },
+    {
+      "program_name": "Art Therapy",
+      "class_name": "Creative Expression",
+      "status": "Completed",
+      "enrollment_status": "Completed",
+      "start_date": "2024-09-01",
+      "end_date": "2024-12-15",
+      "attendance_percentage": "100%",
+      "class_id": 102,
+      "program_id": 202,
+      "present_attendance": 16,
+      "absent_attendance": 0,
+      "credit_types": "Art & Wellness",
+      "updated_at": "2024-12-16",
+      "change_reason": "Class completed successfully"
+    }
+  ],
+  "logo_image": "logo"
+}

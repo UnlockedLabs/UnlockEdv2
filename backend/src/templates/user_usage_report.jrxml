@@ -1,12 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="my_usage_report" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7aea187e-0779-4cc3-84d2-442323e067c5">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="user_usage_report" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7aea187e-0779-4cc3-84d2-442323e067c5">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<style name="Title" fontName="Times New Roman" fontSize="50" isBold="true"/>
 	<style name="SubTitle" forecolor="#736343" fontName="Arial" fontSize="18"/>
 	<style name="Column header" forecolor="#666666" fontName="Arial" fontSize="12" isBold="true"/>
 	<style name="Detail" fontName="Arial" fontSize="12"/>
 	<style name="Row" mode="Transparent" backcolor="#E6DAC3"/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="ProgramDataset" uuid="cc18e778-988e-4203-bcaa-e000df5f2b7f">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="mock_data"/>
+		<queryString language="json">
+			<![CDATA[]]>
+		</queryString>
+		<field name="program_name" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="program_name"/>
+			<fieldDescription><![CDATA[program_name]]></fieldDescription>
+		</field>
+		<field name="class_name" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="class_name"/>
+			<fieldDescription><![CDATA[class_name]]></fieldDescription>
+		</field>
+		<field name="status" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="status"/>
+			<fieldDescription><![CDATA[status]]></fieldDescription>
+		</field>
+		<field name="enrollment_status" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="enrollment_status"/>
+			<fieldDescription><![CDATA[enrollment_status]]></fieldDescription>
+		</field>
+		<field name="start_date" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="start_date"/>
+		</field>
+		<field name="end_date" class="java.lang.String">
+    		<property name="net.sf.jasperreports.json.field.expression" value="end_date"/>
+		</field>
+		<field name="attendance_percentage" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="attendance_percentage"/>
+			<fieldDescription><![CDATA[attendance_percentage]]></fieldDescription>
+		</field>
+		<field name="class_id" class="java.lang.Integer">
+			<property name="net.sf.jasperreports.json.field.expression" value="class_id"/>
+			<fieldDescription><![CDATA[class_id]]></fieldDescription>
+		</field>
+		<field name="program_id" class="java.lang.Integer">
+			<property name="net.sf.jasperreports.json.field.expression" value="program_id"/>
+			<fieldDescription><![CDATA[program_id]]></fieldDescription>
+		</field>
+		<field name="present_attendance" class="java.lang.Integer">
+			<property name="net.sf.jasperreports.json.field.expression" value="present_attendance"/>
+			<fieldDescription><![CDATA[present_attendance]]></fieldDescription>
+		</field>
+		<field name="absent_attendance" class="java.lang.Integer">
+			<property name="net.sf.jasperreports.json.field.expression" value="absent_attendance"/>
+			<fieldDescription><![CDATA[absent_attendance]]></fieldDescription>
+		</field>
+		<field name="credit_types" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="credit_types"/>
+			<fieldDescription><![CDATA[credit_types]]></fieldDescription>
+		</field>
+		<field name="change_reason" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="change_reason"/>
+			<fieldDescription><![CDATA[change_reason]]></fieldDescription>
+		</field>
+	</subDataset>
+	<queryString language="JSON">
+		<![CDATA[]]>
+	</queryString>
 	<field name="resident_name" class="java.lang.String"/>
 	<field name="facility_name" class="java.lang.String"/>
 	<field name="date_range" class="java.lang.String"/>
@@ -16,6 +102,12 @@
 	<field name="total_resources_accessed" class="java.lang.String"/>
 	<field name="has_program_access" class="java.lang.Boolean"/>
 	<field name="resident_id" class="java.lang.String"/>
+	<field name="program_name" class="java.lang.String"/>
+	<field name="class_name" class="java.lang.String"/>
+	<field name="status" class="java.lang.String"/>
+	<field name="start_date" class="java.lang.String"/>
+	<field name="end_date" class="java.lang.String"/>
+	<field name="logo_image" class="java.lang.String"/>
 	<title>
 		<band height="122" splitType="Stretch">
 			<image>
@@ -23,7 +115,9 @@
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
-				<imageExpression><![CDATA["/tmp/unlocked-logo.png"]]></imageExpression>
+				<imageExpression><![CDATA[new java.io.ByteArrayInputStream(
+    org.apache.commons.codec.binary.Base64.decodeBase64($F{logo_image})
+)]]></imageExpression>
 			</image>
 			<line>
 				<reportElement positionType="FixRelativeToBottom" x="0" y="98" width="555" height="1" uuid="1b98c8a9-0090-4ed8-9040-5f2d1ee3614d"/>
@@ -42,22 +136,7 @@
 		</band>
 	</title>
 	<detail>
-		<band height="261" splitType="Stretch">
-			<staticText>
-				<reportElement x="0" y="10" width="100" height="20" uuid="c65f27ed-88eb-4876-a852-79a3c1134fc0"/>
-				<box leftPadding="2"/>
-				<text><![CDATA[Resident:]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="47" y="10" width="200" height="20" uuid="2db2946b-cee8-4d74-bdba-21155a1777b8"/>
-				<textElement textAlignment="Left"/>
-				<textFieldExpression><![CDATA[$F{resident_name}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="0" y="22" width="100" height="20" uuid="9b8c7d6e-5f4e-3d2c-1b0a-987654321fed"/>
-				<box leftPadding="2"/>
-				<text><![CDATA[ID:]]></text>
-			</staticText>
+		<band height="290" splitType="Stretch">
 			<textField>
 				<reportElement x="18" y="22" width="200" height="20" uuid="a1b2c3d4-e5f6-7890-1234-567890abcdef"/>
 				<textElement textAlignment="Left"/>
@@ -140,15 +219,122 @@
 				<text><![CDATA[Program Participation]]></text>
 			</staticText>
 		</band>
-		<band height="200">
-			<subreport>
-				<reportElement x="0" y="-44" width="555" height="200" uuid="f1e2d3c4-b5a6-7890-1234-567890abcdef">
-					<property name="com.jaspersoft.studio.unit.width" value="px"/>
-					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+		<band height="282">
+			<staticText>
+				<reportElement x="0" y="0" width="74" height="20" uuid="b53d0913-ad63-4908-a1bd-59bb947bfc57"/>
+				<text><![CDATA[Class Name:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="80" y="0" width="100" height="20" uuid="a1b534b2-b3a2-47b1-b651-90ff2ac84bd8"/>
+				<textFieldExpression><![CDATA[$F{class_name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="180" y="0" width="80" height="20" uuid="986ff766-f5e4-4ff0-91f0-86f252e189a9"/>
+				<text><![CDATA[Program Name: ]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="260" y="0" width="100" height="20" uuid="9e260d71-9084-4112-b0a0-028c1841a710"/>
+				<textFieldExpression><![CDATA[$F{program_name}]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement x="0" y="20" width="520" height="200" uuid="d15f2180-e194-4a19-a4fd-856808a4a882">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
 				</reportElement>
-				<dataSourceExpression><![CDATA[((net.sf.jasperreports.engine.data.JsonDataSource)$P{REPORT_DATA_SOURCE}).subDataSource("programs")]]></dataSourceExpression>
-				<subreportExpression><![CDATA["/app/backend/src/templates/user_usage_programs_subreport.jasper"]]></subreportExpression>
-			</subreport>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="ProgramDataset" uuid="891cb6b0-bc93-4900-bcdd-d18cb9bfb836">
+						<dataSourceExpression><![CDATA[((net.sf.jasperreports.engine.data.JsonDataSource)$P{REPORT_DATA_SOURCE})
+        .subDataSource("programs")]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="40" uuid="fcb492e2-4f69-48d6-94fe-e671a0226d61">
+						<jr:tableHeader style="Table_TH" height="30"/>
+						<jr:tableFooter style="Table_TH" height="30"/>
+						<jr:columnHeader style="Table_CH" height="30">
+							<staticText>
+								<reportElement x="0" y="0" width="40" height="30" uuid="c8dccb36-b097-4c3b-a7ff-4a269a39b0b8"/>
+								<text><![CDATA[Program Name]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:columnFooter style="Table_CH" height="30"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="40" height="30" uuid="b7630ed9-d730-4d0d-8856-3f8de856c697"/>
+								<textFieldExpression><![CDATA[$F{program_name}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="40" uuid="ee6decec-bfe9-4f94-b865-c65dd6ad650b">
+						<jr:tableHeader style="Table_TH" height="30"/>
+						<jr:tableFooter style="Table_TH" height="30"/>
+						<jr:columnHeader style="Table_CH" height="30">
+							<staticText>
+								<reportElement x="0" y="0" width="40" height="30" uuid="95c8c186-8745-4f90-8a83-c08df83b3a65"/>
+								<text><![CDATA[Class Name]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:columnFooter style="Table_CH" height="30"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="40" height="30" uuid="9d6abe36-7e76-411f-90d0-e5cd7335abeb"/>
+								<textFieldExpression><![CDATA[$F{class_name}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="40" uuid="29a1b7f4-560a-4e05-8737-f7316a8d92eb">
+						<jr:tableHeader style="Table_TH" height="30"/>
+						<jr:tableFooter style="Table_TH" height="30"/>
+						<jr:columnHeader style="Table_CH" height="30">
+							<staticText>
+								<reportElement x="0" y="0" width="40" height="30" uuid="a4b2b08a-ed8e-49ed-a592-fb4733d4ff27"/>
+								<text><![CDATA[Status]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:columnFooter style="Table_CH" height="30"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="40" height="30" uuid="0aaad86b-4c5b-4924-9f11-c5e21cccaeb8"/>
+								<textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="40" uuid="79ab6188-54e2-4ea0-92d6-c2ed212759cf">
+						<jr:tableHeader style="Table_TH" height="30"/>
+						<jr:tableFooter style="Table_TH" height="30"/>
+						<jr:columnHeader style="Table_CH" height="30">
+							<staticText>
+								<reportElement x="0" y="0" width="40" height="30" uuid="de91e81b-1ac4-48ac-9365-8720199b789b"/>
+								<text><![CDATA[Start Date]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:columnFooter style="Table_CH" height="30"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="40" height="30" uuid="4f848779-3ed0-4339-995c-81e56a0c44b1"/>
+								<textFieldExpression><![CDATA[$F{start_date}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="40" uuid="a17ffee3-36ee-4747-8fe4-4edf98eebb21">
+						<jr:tableHeader style="Table_TH" height="30"/>
+						<jr:tableFooter style="Table_TH" height="30"/>
+						<jr:columnHeader style="Table_CH" height="30">
+							<staticText>
+								<reportElement x="0" y="0" width="40" height="30" uuid="22367c31-30b5-4b6d-bacb-5d3c41059dff"/>
+								<text><![CDATA[End Date]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:columnFooter style="Table_CH" height="30"/>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement x="0" y="0" width="40" height="30" uuid="14edeb36-9ef8-49f2-9905-7baeec6c7a12"/>
+								<textFieldExpression><![CDATA[$F{end_date}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
 		</band>
 	</detail>
 	<pageFooter>

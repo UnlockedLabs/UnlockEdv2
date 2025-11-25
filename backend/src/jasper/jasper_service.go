@@ -5,9 +5,11 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -97,8 +99,8 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		TotalLogins:            js.calculateTotalLogins(user),
 		TotalResourcesAccessed: fmt.Sprintf("%d", resourceCount.TotalResourcesAccessed),
 		HasProgramAccess:       js.hasFeatureAccess(models.ProgramAccess),
-		Programs:               userPrograms, // Use original programs data
-		LogoImage:              "logo",       // Reference to logo image in JRXML
+		Programs:               userPrograms,
+		LogoImage:              base64.StdEncoding.EncodeToString(src.UnlockedLogoImg),
 	}
 
 	// Marshal report data to JSON
@@ -135,49 +137,40 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 	}()
 
 	// Write logo image to temporary file for JasperReports with fixed name that template expects
-	logoFilePath := filepath.Join(tempDir, "unlocked-logo.png")
+	// logoFilePath := filepath.Join(tempDir, "unlocked-logo.png")
 
-	if err := os.WriteFile(logoFilePath, src.UnlockedLogoImg, 0644); err != nil {
-		return nil, fmt.Errorf("failed to write temporary logo file: %w", err)
-	}
-	defer func() {
-		if err := os.Remove(logoFilePath); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"logo_file": logoFilePath,
-				"error":     err,
-			}).Warn("Failed to remove temporary logo file")
-		} else {
-			logrus.WithField("logo_file", logoFilePath).Info("Successfully removed temporary logo file")
-		}
-	}()
-
-	// Create jdbc directory for JasperStarter
-	jdbcDir := "/tmp/jdbc"
-	if err := os.MkdirAll(jdbcDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create jdbc directory: %w", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(jdbcDir); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"jdbc_dir": jdbcDir,
-				"error":    err,
-			}).Warn("Failed to remove jdbc directory")
-		}
-	}()
+	// if err := os.WriteFile(logoFilePath, src.UnlockedLogoImg, 0644); err != nil {
+	// 	return nil, fmt.Errorf("failed to write temporary logo file: %w", err)
+	// }
+	// defer func() {
+	// 	if err := os.Remove(logoFilePath); err != nil {
+	// 		logrus.WithFields(logrus.Fields{
+	// 			"logo_file": logoFilePath,
+	// 			"error":     err,
+	// 		}).Warn("Failed to remove temporary logo file")
+	// 	} else {
+	// 		logrus.WithField("logo_file", logoFilePath).Info("Successfully removed temporary logo file")
+	// 	}
+	// }()
 
 	// Prepare output path for Jasper report
-	outputFile := filepath.Join(tempDir, fmt.Sprintf("jasper_report_%s", uuid.New().String()))
+	outputFile := "/app/backend/src/templates/user_usage_report"
 
 	logrus.WithFields(logrus.Fields{
-		"json_file":     jsonFilePath,
-		"logo_file":     logoFilePath,
-		"jdbc_dir":      jdbcDir,
+		"json_file": jsonFilePath,
+		//"logo_file":     logoFilePath,
 		"output_path":   outputFile,
 		"template_path": "/app/backend/src/templates/user_usage_report.jrxml",
 	}).Info("Processing Jasper report with temporary files")
 
 	// Initialize go-jasper with proper file path
 	gjr := jasper.NewGoJasperJsonData(jsonFilePath, "", nil, "pdf", outputFile)
+	if path, err := exec.LookPath("jasperstarter"); err == nil {
+		gjr.Executable = path
+	} else {
+		logrus.Println("jasperstarter not found in PATH, falling back to default path")
+		gjr.Executable = "/opt/jasperstarter/bin/jasperstarter"
+	}
 
 	// Compile Jasper template
 	compiledTemplatePath := "/app/backend/src/templates/user_usage_report.jasper"
