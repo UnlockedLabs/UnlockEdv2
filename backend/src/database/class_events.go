@@ -616,6 +616,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	return facilityEvents, nil
 }
 
+// returns the hour and minute from the first occurrence within the slice of time.Time instances
 func getCanonicalHourAndMinute(occurrences []time.Time, timezone string) (int, int) {
 	var canonicalHour, canonicalMinute int
 	if len(occurrences) > 0 {
