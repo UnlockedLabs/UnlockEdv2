@@ -5,7 +5,7 @@ import {
 } from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
-import { getUTCTime } from '@/Components/helperFunctions/formatting';
+import { getDateObj } from '@/Components/helperFunctions/formatting';
 import { FacilityProgramClassEvent } from '@/types/events';
 import { useAuth } from '@/useAuth';
 import { useMemo, useState } from 'react';
@@ -55,7 +55,7 @@ export default function Schedule() {
 
     const formattedEvents = events
         ? events.map((event) => {
-              const displayDate = getUTCTime(event.start, user?.timezone);
+              const displayDate = getDateObj(event.start);
               return {
                   ...event,
                   start: displayDate,

@@ -129,7 +129,7 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		trans.Rollback()
 		return newDeleteDBError(err, "program class event override")
 	}
-	
+
 	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
 		trans.Rollback()
 		return err
@@ -508,19 +508,33 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			return nil, err
 		}
 
+		//daylight saving time fix (VIP) prevents the time shift
+		canonicalHour, canonicalMinute := getCanonicalHourAndMinute(occurrences, args.Timezone)
 		overrides := overrideEventMap[event.ID]
 		var (
 			isCancelled, isRescheduled bool
 			overrideID                 uint
 		)
+		userLocation, _ := time.LoadLocation(args.Timezone)
 		for _, occurrence := range occurrences {
-			isCancelled, isRescheduled, overrideID = checkEventCancelledAndRescheduled(occurrence, overrides)
+			//day light savings time issue
+			consistentOccurrence := time.Date(
+				occurrence.Year(),
+				occurrence.Month(),
+				occurrence.Day(),
+				canonicalHour,
+				canonicalMinute,
+				0,
+				0,
+				userLocation,
+			)
+			isCancelled, isRescheduled, overrideID = checkEventCancelledAndRescheduled(consistentOccurrence, overrides, args.Timezone)
 
 			if isCancelled && isRescheduled {
 				continue
 			}
 
-			endTime := occurrence.Add(duration)
+			endTime := consistentOccurrence.Add(duration)
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent: event.ProgramClassEvent,
 				InstructorName:    event.InstructorName,
@@ -528,7 +542,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ClassName:         event.ClassName,
 				EnrolledUsers:     event.EnrolledUsers,
 				ClassStatus:       event.ClassStatus,
-				StartTime:         &occurrence,
+				StartTime:         &consistentOccurrence,
 				EndTime:           &endTime,
 				Frequency:         rRule.OrigOptions.Freq.String(),
 				IsCancelled:       isCancelled,
@@ -557,8 +571,22 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			if err != nil {
 				logrus.Errorf("error parsing duration for event: %v", err)
 			}
-			overrideEndTime := overrideDate.Add(duration)
 
+			userLocation, _ := time.LoadLocation(args.Timezone)
+			localOverrideTime := overrideDate.In(userLocation)
+			canonicalHour := localOverrideTime.Hour()
+			canonicalMinute := localOverrideTime.Minute()
+			consistentOverrideDate := time.Date(
+				overrideDate.Year(),
+				overrideDate.Month(),
+				overrideDate.Day(),
+				canonicalHour,
+				canonicalMinute,
+				0,
+				0,
+				userLocation,
+			)
+			overrideEndTime := consistentOverrideDate.Add(duration)
 			var linkedOverrideEvent *models.FacilityProgramClassEvent
 			if override.LinkedOverrideEventID != nil {
 				linkedOverrideEvent = linkedOverridesMap[*override.LinkedOverrideEventID]
@@ -570,7 +598,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ClassName:           event.ClassName,
 				EnrolledUsers:       event.EnrolledUsers,
 				ClassStatus:         event.ClassStatus,
-				StartTime:           &overrideDate,
+				StartTime:           &consistentOverrideDate,
 				EndTime:             &overrideEndTime,
 				Frequency:           rRule.OrigOptions.Freq.String(),
 				IsOverride:          true,
@@ -586,6 +614,23 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	})
 
 	return facilityEvents, nil
+}
+
+func getCanonicalHourAndMinute(occurrences []time.Time, timezone string) (int, int) {
+	var canonicalHour, canonicalMinute int
+	if len(occurrences) > 0 {
+		firstOccurrence := occurrences[0]
+		userLocation, err := time.LoadLocation(timezone)
+		if err == nil {
+			localTime := firstOccurrence.In(userLocation)
+			canonicalHour = localTime.Hour()
+			canonicalMinute = localTime.Minute()
+		} else {
+			canonicalHour = firstOccurrence.Hour()
+			canonicalMinute = firstOccurrence.Minute()
+		}
+	}
+	return canonicalHour, canonicalMinute
 }
 
 func getLinkedOverrideEventMap(event models.FacilityProgramClassEvent, overrides []models.ProgramClassEventOverride) map[uint]*models.FacilityProgramClassEvent {
@@ -634,7 +679,7 @@ func getLinkedOverrideEventMap(event models.FacilityProgramClassEvent, overrides
 	return overrideEventMap
 }
 
-func checkEventCancelledAndRescheduled(occurrence time.Time, overrides []models.ProgramClassEventOverride) (bool, bool, uint) {
+func checkEventCancelledAndRescheduled(occurrence time.Time, overrides []models.ProgramClassEventOverride, timezone string) (bool, bool, uint) {
 	var (
 		isCancelled   = false
 		isRescheduled = false
@@ -654,7 +699,24 @@ func checkEventCancelledAndRescheduled(occurrence time.Time, overrides []models.
 			logrus.Warnf("cancelled override rule does not contain a date instance, rule is: %s", override.OverrideRrule)
 			continue
 		}
-		if rRule.All()[0].Equal(occurrence) {
+		overrideDate := rRule.All()[0]
+
+		//START day light savings time fix here
+		userLocation, _ := time.LoadLocation(timezone)
+		localOverrideTime := overrideDate.In(userLocation)
+		canonicalOverrideHour := localOverrideTime.Hour()
+		canonicalOverrideMinute := localOverrideTime.Minute()
+		consistentOverrideDate := time.Date(
+			overrideDate.Year(),
+			overrideDate.Month(),
+			overrideDate.Day(),
+			canonicalOverrideHour,
+			canonicalOverrideMinute,
+			0, 0,
+			userLocation,
+		)
+		//END day light savings time fix here
+		if consistentOverrideDate.Equal(occurrence) {
 			isRescheduled = override.Reason == "rescheduled"
 			isCancelled = true
 			overrideID = override.ID
@@ -829,14 +891,33 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	if err != nil {
 		logrus.Errorf("error parsing duration for event: %v", err)
 	}
+
+	startTime = rRule.GetDTStart()
+	userLocation, _ := time.LoadLocation(loc.String())
+	localStartTime := startTime.In(userLocation)
+	canonicalHour := localStartTime.Hour()
+	canonicalMinute := localStartTime.Minute()
+
 	firstOcc := occurrences[0]
+	//day light savings time issue
+	consistentOccurrence := time.Date(
+		firstOcc.Year(),
+		firstOcc.Month(),
+		firstOcc.Day(),
+		canonicalHour,
+		canonicalMinute,
+		0,
+		0,
+		loc,
+	)
+
 	lastOcc := occurrences[len(occurrences)-1]
 	occInLoc := firstOcc.In(loc)
 	occDateStr := occInLoc.Format("2006-01-02")
 	lastOccInLoc := lastOcc.In(loc)
 	lastOccDateStr := lastOccInLoc.Format("2006-01-02")
-	startTimeStr := occInLoc.Format("15:04")
-	endTimeStr := occInLoc.Add(duration).Format("15:04")
+	startTimeStr := consistentOccurrence.Format("15:04")
+	endTimeStr := consistentOccurrence.Add(duration).Format("15:04")
 	//FIXME: when overrides are applied, this will likely have to be in the loop
 	classTime := startTimeStr + "-" + endTimeStr
 	var attendances []models.ProgramClassEventAttendance
@@ -853,7 +934,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, newGetRecordsDBError(err, "program_class_event_attendances")
 	}
 
-	eventInstances := createEventInstances(event, occurrences, loc, classTime, attendances)
+	eventInstances := createEventInstances(event, occurrences, loc, classTime, attendances, canonicalHour, canonicalMinute)
 
 	qryCtx.Total = int64(len(eventInstances))
 	offset := qryCtx.CalcOffset()
@@ -869,13 +950,23 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	return eventInstances, nil
 }
 
-func createEventInstances(event models.ProgramClassEvent, occurrences []time.Time, loc *time.Location, classTime string, attendances []models.ProgramClassEventAttendance) []models.ClassEventInstance {
+func createEventInstances(event models.ProgramClassEvent, occurrences []time.Time, loc *time.Location, classTime string, attendances []models.ProgramClassEventAttendance, canonicalHour, canonicalMinute int) []models.ClassEventInstance {
 	var eventInstances []models.ClassEventInstance
+	//daylight saving time fix (VIP) prevents the time shift
 	for _, occ := range occurrences {
 		occInLoc := occ.In(loc)
 		occDateStr := occInLoc.Format("2006-01-02")
-
-		isCancelled, isRescheduled, _ := checkEventCancelledAndRescheduled(occ, event.Overrides)
+		consistentOccurrence := time.Date(
+			occ.Year(),
+			occ.Month(),
+			occ.Day(),
+			canonicalHour,
+			canonicalMinute,
+			0,
+			0,
+			loc,
+		)
+		isCancelled, isRescheduled, _ := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
 
 		if isCancelled && isRescheduled { //skip occurrence
 			continue
