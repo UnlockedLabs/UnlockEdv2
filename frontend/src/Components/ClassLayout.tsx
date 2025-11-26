@@ -18,7 +18,7 @@ import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 import ULIComponent from './ULIComponent';
-import { getUTCTime, textMonthLocalDate } from './helperFunctions/formatting';
+import { getDateObj, textMonthLocalDate } from './helperFunctions/formatting';
 import { RRule } from 'rrule';
 
 function ClassInfoCard({
@@ -99,7 +99,7 @@ function ClassInfoCard({
         let formattedOccurence;
         if (nextOccurrence && user) {
             formattedOccurence = textMonthLocalDate(
-                getUTCTime(nextOccurrence, user?.timezone),
+                getDateObj(nextOccurrence),
                 true
             );
         } else {
