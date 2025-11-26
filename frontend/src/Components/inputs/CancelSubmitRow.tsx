@@ -2,6 +2,7 @@ import { TextModalType } from '../modals';
 import { CancelButton } from './CancelButton';
 import { ConfirmButton } from './ConfirmButton';
 import { DeleteButton } from './DeleteButton';
+import { WarningButton } from './WarningButton';
 
 export function CancelSubmitRow({
     type,
@@ -21,6 +22,11 @@ export function CancelSubmitRow({
                 <DeleteButton onClick={onSubmit} />
             ) : type === TextModalType.Confirm ? (
                 <ConfirmButton
+                    onClick={onSubmit}
+                    action={action ?? 'Confirm'}
+                />
+            ) : type === TextModalType.Warning ? (
+                <WarningButton
                     onClick={onSubmit}
                     action={action ?? 'Confirm'}
                 />

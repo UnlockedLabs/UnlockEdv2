@@ -14,7 +14,8 @@ import { AdminRoles } from '@/useAuth';
 export enum TextModalType {
     Confirm,
     Delete,
-    Information
+    Information,
+    Warning
 }
 
 export { TextOnlyModal } from './TextOnlyModal';
