@@ -20,6 +20,7 @@ interface TextModalProps {
      * Allowed: "max-w-lg" | "max-w-xl" | "max-w-2xl" | "max-w-3xl" | "max-w-4xl"
      */
     width?: ModalWidth;
+    action?: string;
 }
 export const TextOnlyModal = forwardRef(function TextModal(
     {
@@ -29,7 +30,8 @@ export const TextOnlyModal = forwardRef(function TextModal(
         onSubmit,
         onClose,
         children,
-        width
+        width,
+        action
     }: TextModalProps & { children?: ReactNode },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -59,7 +61,7 @@ export const TextOnlyModal = forwardRef(function TextModal(
                             type={type}
                             onCancel={onClose}
                             onSubmit={onSubmit}
-                            action={title}
+                            action={action ?? title}
                         />
                     )}
                 </div>

@@ -9,6 +9,7 @@ export { MultiSelectDropdownInput } from './MultiSelectDropdownInput';
 export { CancelButton } from './CancelButton';
 export { DeleteButton } from './DeleteButton';
 export { ConfirmButton } from './ConfirmButton';
+export { WarningButton } from './WarningButton';
 export { CancelSubmitRow } from './CancelSubmitRow';
 export { CheckboxInput } from './CheckboxInput';
 export { CheckboxGroupInput } from './CheckboxGroupInput';

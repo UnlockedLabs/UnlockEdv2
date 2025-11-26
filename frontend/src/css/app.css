@@ -98,6 +98,10 @@
         @apply button bg-red-3 hover:bg-red-4;
     }
 
+    .button-warning {
+        @apply button bg-warning hover:brightness-90;
+    }
+
     .button-grey {
         @apply button bg-grey-2 text-body-text hover:bg-grey-3 disabled:hover:bg-grey-2;
     }
