@@ -55,13 +55,31 @@ function ClassInfoCard({
                 const rule = RRule.fromString(override.override_rrule);
                 const date = rule.after(now, true);
                 if (!date) continue;
+                const localOverrideDate = new Date(
+                    date.toLocaleString('en-US', { timeZone: user?.timezone })
+                );
+                const canonicalOverrideHour = localOverrideDate.getHours();
+                const canonicalOverrideMinute = localOverrideDate.getMinutes();
 
-                const dateStr = date.toISOString().slice(0, 10); //substring it
+                // Create consistent override date with local time
+                const consistentOverrideDate = new Date(
+                    date.getFullYear(),
+                    date.getMonth(),
+                    date.getDate(),
+                    canonicalOverrideHour,
+                    canonicalOverrideMinute,
+                    0,
+                    0
+                );
+
+                const dateStr = consistentOverrideDate
+                    .toISOString()
+                    .slice(0, 10); //substring it
                 if (override.is_cancelled) {
                     cancelledDates.add(dateStr);
                 } else {
                     activeOverrideDates.add(dateStr);
-                    activeOverrideDateTimes.push(date);
+                    activeOverrideDateTimes.push(consistentOverrideDate);
                 }
             }
 
@@ -71,6 +89,14 @@ function ClassInfoCard({
                     'DTSTART:'
                 );
                 const rule = RRule.fromString(cleanRule);
+                const dtStart = rule.options.dtstart;
+                const localDtStart = new Date(
+                    dtStart.toLocaleString('en-US', {
+                        timeZone: user?.timezone
+                    })
+                );
+                const canonicalHour = localDtStart.getHours();
+                const canonicalMinute = localDtStart.getMinutes();
                 const baseOccurrences = rule.between(
                     now,
                     new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
@@ -78,12 +104,22 @@ function ClassInfoCard({
                 );
 
                 for (const date of baseOccurrences) {
-                    const dateStr = date.toISOString().slice(0, 10);
+                    const consistentDate = new Date(
+                        date.getFullYear(),
+                        date.getMonth(),
+                        date.getDate(),
+                        canonicalHour,
+                        canonicalMinute,
+                        0,
+                        0
+                    );
+
+                    const dateStr = consistentDate.toISOString().slice(0, 10);
                     if (activeOverrideDates.has(dateStr)) {
                         continue;
                     }
                     if (!cancelledDates.has(dateStr)) {
-                        allOccurrences.push(date);
+                        allOccurrences.push(consistentDate);
                     }
                 }
             }
@@ -100,7 +136,8 @@ function ClassInfoCard({
         if (nextOccurrence && user) {
             formattedOccurence = textMonthLocalDate(
                 getDateObj(nextOccurrence),
-                true
+                true,
+                user?.timezone
             );
         } else {
             formattedOccurence = 'No upcoming class found';

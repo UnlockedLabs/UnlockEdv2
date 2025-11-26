@@ -99,13 +99,20 @@ export function parseRRuleUntilDate(rRule: string, timezone: string): string {
     return '';
 }
 
-export function textMonthLocalDate(date: string | Date, includeTime?: boolean) {
+export function textMonthLocalDate(
+    date: string | Date,
+    includeTime?: boolean,
+    timezone?: string
+) {
+    // Use provided timezone or default to UTC
+    const timeZone = timezone ?? 'UTC';
+
     if (typeof date === 'string') {
         return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
-            timeZone: 'UTC',
+            timeZone: timeZone,
             ...(includeTime && {
                 hour: 'numeric',
                 minute: '2-digit',
@@ -117,7 +124,7 @@ export function textMonthLocalDate(date: string | Date, includeTime?: boolean) {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
-            timeZone: 'UTC',
+            timeZone: timeZone,
             ...(includeTime && {
                 hour: 'numeric',
                 minute: '2-digit',
