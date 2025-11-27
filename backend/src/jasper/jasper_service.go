@@ -74,7 +74,6 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get user programs: %w", err)
 	}
 
-	// Calculate attendance percentage for each program
 	for i := range userPrograms {
 		userPrograms[i].CalculateAttendancePercentage()
 	}
@@ -103,15 +102,12 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		LogoImage:              base64.StdEncoding.EncodeToString(src.UnlockedLogoImg),
 	}
 
-	// Marshal report data to JSON
 	jsonData, err := json.Marshal(reportData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal report data: %w", err)
 	}
 
-	fmt.Println(string(jsonData))
-	// Create temporary JSON file with unique name
-	tempDir := "/tmp" // Use /tmp for jasperstarter accessibility
+	tempDir := "/tmp"
 	jsonFileName := fmt.Sprintf("jasper_report_%s.json", uuid.New().String())
 	jsonFilePath := filepath.Join(tempDir, jsonFileName)
 
@@ -121,7 +117,6 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		"json_file_path":   jsonFilePath,
 	}).Info("Creating temporary JSON file for JasperReports")
 
-	// Write JSON data to temporary file
 	if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write temporary data file: %w", err)
 	}
@@ -136,34 +131,14 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		}
 	}()
 
-	// Write logo image to temporary file for JasperReports with fixed name that template expects
-	// logoFilePath := filepath.Join(tempDir, "unlocked-logo.png")
-
-	// if err := os.WriteFile(logoFilePath, src.UnlockedLogoImg, 0644); err != nil {
-	// 	return nil, fmt.Errorf("failed to write temporary logo file: %w", err)
-	// }
-	// defer func() {
-	// 	if err := os.Remove(logoFilePath); err != nil {
-	// 		logrus.WithFields(logrus.Fields{
-	// 			"logo_file": logoFilePath,
-	// 			"error":     err,
-	// 		}).Warn("Failed to remove temporary logo file")
-	// 	} else {
-	// 		logrus.WithField("logo_file", logoFilePath).Info("Successfully removed temporary logo file")
-	// 	}
-	// }()
-
-	// Prepare output path for Jasper report
 	outputFile := "/app/backend/src/templates/user_usage_report"
 
 	logrus.WithFields(logrus.Fields{
-		"json_file": jsonFilePath,
-		//"logo_file":     logoFilePath,
+		"json_file":     jsonFilePath,
 		"output_path":   outputFile,
 		"template_path": "/app/backend/src/templates/user_usage_report.jrxml",
 	}).Info("Processing Jasper report with temporary files")
 
-	// Initialize go-jasper with proper file path
 	gjr := jasper.NewGoJasperJsonData(jsonFilePath, "", nil, "pdf", outputFile)
 	if path, err := exec.LookPath("jasperstarter"); err == nil {
 		gjr.Executable = path
@@ -172,19 +147,15 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 		gjr.Executable = "/opt/jasperstarter/bin/jasperstarter"
 	}
 
-	// Compile Jasper template
 	compiledTemplatePath := "/app/backend/src/templates/user_usage_report.jasper"
 	templatePath := "/app/backend/src/templates/user_usage_report.jrxml"
 
-	// Always compile to ensure we have the latest version
 	logrus.Info("Compiling Jasper template from JRXML")
 	err = gjr.Compile(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile Jasper template: %w", err)
 	}
 
-	// Process the report to generate PDF
-	// Try to use the compiled template, fallback to JRXML if compilation failed
 	pdfBytes, err := gjr.Process(compiledTemplatePath)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -192,7 +163,6 @@ func (js *JasperService) GenerateUsageReportPDF(userID int) ([]byte, error) {
 			"error":         err,
 		}).Warn("Failed to process compiled template, falling back to JRXML")
 
-		// Fallback: Try processing with JRXML directly
 		pdfBytes, err = gjr.Process(templatePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to process Jasper report with both compiled and JRXML template: %w", err)
