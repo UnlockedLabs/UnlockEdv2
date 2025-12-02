@@ -381,7 +381,8 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 
 func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.ConflictDetail, error) {
 	var conflicts []models.ConflictDetail
-	targetEvents, err := db.GetClassEvents(&models.QueryContext{All: true}, classID)
+	allEventsQuery := &models.QueryContext{All: true}
+	targetEvents, err := db.GetClassEvents(allEventsQuery, classID)
 	if err != nil {
 		return nil, err
 	}
@@ -390,15 +391,22 @@ func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.Con
 		return nil, nil
 	}
 
-	for _, userID := range userIDs {
-		var existingEnrollments []models.ProgramClassEnrollment
-		if err := db.Model(&models.ProgramClassEnrollment{}).
-			Preload("Class").
-			Where("user_id = ? AND enrollment_status = ?", userID, models.Enrolled).
-			Find(&existingEnrollments).Error; err != nil {
-			return nil, err
-		}
+	var allEnrollments []models.ProgramClassEnrollment
+	if err := db.Model(&models.ProgramClassEnrollment{}).
+		Preload("Class").
+		Where("user_id IN (?) AND enrollment_status = ?", userIDs, models.Enrolled).
+		Find(&allEnrollments).Error; err != nil {
+		return nil, err
+	}
 
+	enrollmentsByUser := make(map[int][]models.ProgramClassEnrollment)
+	for _, enrollment := range allEnrollments {
+		uid := int(enrollment.UserID)
+		enrollmentsByUser[uid] = append(enrollmentsByUser[uid], enrollment)
+	}
+
+	for _, userID := range userIDs {
+		existingEnrollments := enrollmentsByUser[userID]
 		if len(existingEnrollments) == 0 {
 			continue
 		}
@@ -408,7 +416,7 @@ func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.Con
 				continue
 			}
 
-			existingClassEvents, err := db.GetClassEvents(&models.QueryContext{All: true}, int(enrollment.ClassID))
+			existingClassEvents, err := db.GetClassEvents(allEventsQuery, int(enrollment.ClassID))
 			if err != nil {
 				return nil, err
 			}
