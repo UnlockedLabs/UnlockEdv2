@@ -17,6 +17,19 @@ const (
 	Absent_Unexcused Attendance = "absent_unexcused"
 )
 
+func (a Attendance) HumanReadable() string {
+	switch a {
+	case Present:
+		return "Present"
+	case Absent_Excused:
+		return "Absent Excused"
+	case Absent_Unexcused:
+		return "Absent Unexcused"
+	default:
+		return string(a)
+	}
+}
+
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
