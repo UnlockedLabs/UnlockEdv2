@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-pdf/fpdf"
@@ -77,6 +80,72 @@ func renderPDFTable(config *PDFTableConfig) {
 		}
 		config.PDF.Ln(-1)
 	}
+}
+
+func renderPDFHeader(pdf *fpdf.Fpdf, title string, filterSummary []models.PDFFilterLine) {
+	pdf.RegisterImageOptionsReader("logo", fpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(src.UnlockedLogoImg))
+	pdf.ImageOptions("logo", 10, 10, 25, 0, false, fpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+
+	pdf.SetFont("Arial", "B", 16)
+	pdf.SetXY(40, 12)
+	pdf.Cell(0, 8, title+" Report")
+
+	pdf.SetFont("Arial", "", 9)
+	pdf.SetXY(40, 21)
+	pdf.Cell(0, 5, "Generated: "+time.Now().Format("January 2, 2006 at 3:04 PM"))
+
+	if len(filterSummary) > 0 {
+		pdf.SetXY(10, 38)
+		pdf.SetFont("Arial", "B", 10)
+		pdf.Cell(0, 5, "Report Filters:")
+		pdf.Ln(6)
+
+		pdf.SetFont("Arial", "", 9)
+		for _, filter := range filterSummary {
+			pdf.SetX(15)
+			pdf.Cell(30, 5, filter.Label+":")
+			pdf.Cell(0, 5, filter.Value)
+			pdf.Ln(5)
+		}
+		pdf.Ln(5)
+	} else {
+		pdf.Ln(30)
+	}
+}
+
+func buildFilterSummary(req *models.ReportGenerateRequest, facilityName string) []models.PDFFilterLine {
+	var filters []models.PDFFilterLine
+
+	dateRange := fmt.Sprintf("%s - %s",
+		req.StartDate.Format("January 2, 2006"),
+		req.EndDate.Format("January 2, 2006"))
+	filters = append(filters, models.PDFFilterLine{Label: "Date Range", Value: dateRange})
+
+	if facilityName != "" {
+		filters = append(filters, models.PDFFilterLine{Label: "Facility", Value: facilityName})
+	}
+
+	if req.ClassStatus != nil && *req.ClassStatus != "" && *req.ClassStatus != "All" {
+		filters = append(filters, models.PDFFilterLine{Label: "Class Status", Value: *req.ClassStatus})
+	}
+
+	if len(req.ProgramTypes) > 0 {
+		var types []string
+		for _, pt := range req.ProgramTypes {
+			types = append(types, pt.HumanReadable())
+		}
+		filters = append(filters, models.PDFFilterLine{Label: "Program Types", Value: strings.Join(types, ", ")})
+	}
+
+	if len(req.FundingTypes) > 0 {
+		var types []string
+		for _, ft := range req.FundingTypes {
+			types = append(types, ft.HumanReadable())
+		}
+		filters = append(filters, models.PDFFilterLine{Label: "Funding Types", Value: strings.Join(types, ", ")})
+	}
+
+	return filters
 }
 
 func isValidReportType(rt models.ReportType) bool {
@@ -212,7 +281,14 @@ func (srv *Server) handleAttendanceReport(w http.ResponseWriter, r *http.Request
 
 	report := models.AttendanceReportData{Data: rows}
 
-	if err := srv.exportReport(w, report, req.Format); err != nil {
+	facilityName := ""
+	if req.FacilityID != nil {
+		if facility, err := srv.Db.GetFacilityByID(int(*req.FacilityID)); err == nil && facility != nil {
+			facilityName = facility.Name
+		}
+	}
+
+	if err := srv.exportReport(w, report, req.Format, req, facilityName); err != nil {
 		srv.logReportFailure(claims.UserID, "attendance", req, startTime, report.Len())
 		return err
 	}
@@ -235,7 +311,14 @@ func (srv *Server) handleProgramOutcomesReport(w http.ResponseWriter, r *http.Re
 
 	report := models.ProgramOutcomesReportData{Data: rows}
 
-	if err := srv.exportReport(w, report, req.Format); err != nil {
+	facilityName := ""
+	if req.FacilityID != nil {
+		if facility, err := srv.Db.GetFacilityByID(int(*req.FacilityID)); err == nil && facility != nil {
+			facilityName = facility.Name
+		}
+	}
+
+	if err := srv.exportReport(w, report, req.Format, req, facilityName); err != nil {
 		srv.logReportFailure(claims.UserID, "program_outcomes", req, startTime, report.Len())
 		return err
 	}
@@ -258,7 +341,7 @@ func (srv *Server) handleFacilityComparisonReport(w http.ResponseWriter, r *http
 
 	report := models.FacilityComparisonReportData{Data: rows}
 
-	if err := srv.exportReport(w, report, req.Format); err != nil {
+	if err := srv.exportReport(w, report, req.Format, req, "Multiple Facilities"); err != nil {
 		srv.logReportFailure(claims.UserID, "facility_comparison", req, startTime, report.Len())
 		return err
 	}
@@ -267,7 +350,7 @@ func (srv *Server) handleFacilityComparisonReport(w http.ResponseWriter, r *http
 	return nil
 }
 
-func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, format models.ReportFormat) error {
+func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, format models.ReportFormat, req *models.ReportGenerateRequest, facilityName string) error {
 	switch format {
 	case models.FormatCSV:
 		csvData, err := report.ToCSV()
@@ -316,8 +399,13 @@ func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, fo
 			return newInternalServerServiceError(err, "failed to generate PDF config")
 		}
 
+		filterSummary := buildFilterSummary(req, facilityName)
+
 		pdf := fpdf.New("L", "mm", "A4", "")
 		pdf.AddPage()
+
+		renderPDFHeader(pdf, config.Title, filterSummary)
+
 		pdf.SetFont("Arial", "", config.DataFontSize)
 
 		colWidths := calculateOptimalColumnWidths(&ColumnWidthConfig{

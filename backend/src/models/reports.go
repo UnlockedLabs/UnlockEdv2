@@ -48,6 +48,12 @@ type PDFConfig struct {
 	Alignments     []string
 	HeaderFontSize float64
 	DataFontSize   float64
+	FilterSummary  []PDFFilterLine
+}
+
+type PDFFilterLine struct {
+	Label string
+	Value string
 }
 
 type AttendanceReportRow struct {
@@ -122,7 +128,7 @@ func (r AttendanceReportData) ToCSV() ([][]string, error) {
 			row.StudentLastName,
 			row.StudentFirstName,
 			row.DocID,
-			string(row.AttendanceStatus),
+			row.AttendanceStatus.HumanReadable(),
 			FormatNullableInt(row.SeatTimeMinutes),
 			FormatNullableString(row.AbsenceReason),
 		})
@@ -144,8 +150,8 @@ func (r ProgramOutcomesReportData) ToCSV() ([][]string, error) {
 		csvData = append(csvData, []string{
 			row.FacilityName,
 			row.ProgramName,
-			row.ProgramType,
-			row.FundingType,
+			HumanReadableProgType(row.ProgramType),
+			HumanReadableFundingType(row.FundingType),
 			strconv.Itoa(row.TotalEnrollments),
 			strconv.Itoa(row.ActiveEnrollments),
 			strconv.Itoa(row.CompletedEnrollments),
@@ -183,7 +189,7 @@ func (r FacilityComparisonReportData) ToCSV() ([][]string, error) {
 			strconv.Itoa(row.ActiveEnrollments),
 			strconv.FormatFloat(row.CompletionRate, 'f', 2, 64),
 			strconv.FormatFloat(row.AttendanceRate, 'f', 2, 64),
-			row.TopProgramType,
+			HumanReadableProgType(row.TopProgramType),
 			strconv.FormatFloat(row.TotalCreditHours, 'f', 2, 64),
 			strconv.Itoa(row.CertificatesEarned),
 			lastActivity,
@@ -218,7 +224,7 @@ func (r AttendanceReportData) ToExcel() (*excelize.File, error) {
 		f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), row.StudentLastName)
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), row.StudentFirstName)
 		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), row.DocID)
-		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), string(row.AttendanceStatus))
+		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), row.AttendanceStatus.HumanReadable())
 		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), FormatNullableInt(row.SeatTimeMinutes))
 		f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), FormatNullableString(row.AbsenceReason))
 	}
@@ -246,8 +252,8 @@ func (r ProgramOutcomesReportData) ToExcel() (*excelize.File, error) {
 		rowNum := i + 2
 		f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), row.FacilityName)
 		f.SetCellValue(sheetName, fmt.Sprintf("B%d", rowNum), row.ProgramName)
-		f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), row.ProgramType)
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), row.FundingType)
+		f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), HumanReadableProgType(row.ProgramType))
+		f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), HumanReadableFundingType(row.FundingType))
 		f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), row.TotalEnrollments)
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), row.ActiveEnrollments)
 		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), row.CompletedEnrollments)
@@ -291,7 +297,7 @@ func (r FacilityComparisonReportData) ToExcel() (*excelize.File, error) {
 		f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), row.ActiveEnrollments)
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), fmt.Sprintf("%.2f", row.CompletionRate))
 		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), fmt.Sprintf("%.2f", row.AttendanceRate))
-		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), row.TopProgramType)
+		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), HumanReadableProgType(row.TopProgramType))
 		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), fmt.Sprintf("%.2f", row.TotalCreditHours))
 		f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), row.CertificatesEarned)
 		f.SetCellValue(sheetName, fmt.Sprintf("K%d", rowNum), lastActivity)
@@ -311,7 +317,7 @@ func (r AttendanceReportData) ToPDF() (PDFConfig, error) {
 			row.StudentLastName,
 			row.StudentFirstName,
 			row.DocID,
-			string(row.AttendanceStatus),
+			row.AttendanceStatus.HumanReadable(),
 			FormatNullableInt(row.SeatTimeMinutes),
 			FormatNullableString(row.AbsenceReason),
 		}
@@ -319,12 +325,12 @@ func (r AttendanceReportData) ToPDF() (PDFConfig, error) {
 
 	return PDFConfig{
 		Title:          "Attendance",
-		Headers:        []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Absence Reason"},
+		Headers:        []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time", "Reason"},
 		Data:           tableData,
-		MinWidths:      []float64{20, 30, 25, 20, 25, 25, 15, 25, 15, 30},
+		MinWidths:      []float64{25, 30, 25, 22, 22, 22, 18, 20, 20, 25},
 		Alignments:     []string{"L", "L", "L", "C", "L", "L", "C", "C", "C", "L"},
-		HeaderFontSize: 10,
-		DataFontSize:   9,
+		HeaderFontSize: 9,
+		DataFontSize:   8,
 	}, nil
 }
 
@@ -334,8 +340,8 @@ func (r ProgramOutcomesReportData) ToPDF() (PDFConfig, error) {
 		tableData[i] = []string{
 			row.FacilityName,
 			row.ProgramName,
-			row.ProgramType,
-			row.FundingType,
+			HumanReadableProgType(row.ProgramType),
+			HumanReadableFundingType(row.FundingType),
 			fmt.Sprintf("%d", row.TotalEnrollments),
 			fmt.Sprintf("%d", row.ActiveEnrollments),
 			fmt.Sprintf("%d", row.CompletedEnrollments),
@@ -373,7 +379,7 @@ func (r FacilityComparisonReportData) ToPDF() (PDFConfig, error) {
 			fmt.Sprintf("%d", row.ActiveEnrollments),
 			fmt.Sprintf("%.1f", row.CompletionRate),
 			fmt.Sprintf("%.1f", row.AttendanceRate),
-			row.TopProgramType,
+			HumanReadableProgType(row.TopProgramType),
 			fmt.Sprintf("%.1f", row.TotalCreditHours),
 			fmt.Sprintf("%d", row.CertificatesEarned),
 			lastActivity,
@@ -412,4 +418,12 @@ func excelColumnName(col int) string {
 		col = col/26 - 1
 	}
 	return name
+}
+
+func HumanReadableProgType(s string) string {
+	return ProgType(s).HumanReadable()
+}
+
+func HumanReadableFundingType(s string) string {
+	return FundingType(s).HumanReadable()
 }

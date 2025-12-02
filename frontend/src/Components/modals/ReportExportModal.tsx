@@ -12,6 +12,28 @@ import {
     CancelButton
 } from '../inputs';
 
+const PROGRAM_TYPE_OPTIONS = [
+    { id: ProgramType.EDUCATIONAL, name: 'Educational' },
+    { id: ProgramType.LIFE_SKILLS, name: 'Life Skills' },
+    { id: ProgramType.MENTAL_HEALTH, name: 'Mental Health/Behavioral' },
+    { id: ProgramType.RELIGIOUS, name: 'Religious/Faith-Based' },
+    { id: ProgramType.RE_ENTRY, name: 'Re-Entry' },
+    { id: ProgramType.THERAPEUTIC, name: 'Therapeutic' },
+    { id: ProgramType.VOCATIONAL, name: 'Vocational' }
+];
+
+const FUNDING_TYPE_OPTIONS = [
+    { id: FundingType.EDUCATIONAL_GRANTS, name: 'Educational Grants' },
+    { id: FundingType.FEDERAL_GRANTS, name: 'Federal Grants' },
+    { id: FundingType.INMATE_WELFARE, name: 'Inmate Welfare Funds' },
+    {
+        id: FundingType.NON_PROFIT_ORGANIZATION,
+        name: 'Nonprofit Organizations'
+    },
+    { id: FundingType.STATE_GRANTS, name: 'State Grants' },
+    { id: FundingType.OTHER, name: 'Other' }
+];
+
 interface ReportExportModalProps {
     reportType: ReportType;
     contextData: ReportContextData;
@@ -216,33 +238,7 @@ export const ReportExportModal = forwardRef<
                             required={false}
                             control={control}
                             errors={errors}
-                            options={[
-                                {
-                                    id: ProgramType.EDUCATIONAL,
-                                    name: 'Educational'
-                                },
-                                {
-                                    id: ProgramType.LIFE_SKILLS,
-                                    name: 'Life Skills'
-                                },
-                                {
-                                    id: ProgramType.MENTAL_HEALTH,
-                                    name: 'Mental Health/Behavioral'
-                                },
-                                {
-                                    id: ProgramType.RELIGIOUS,
-                                    name: 'Religious/Faith-Based'
-                                },
-                                { id: ProgramType.RE_ENTRY, name: 'Re-Entry' },
-                                {
-                                    id: ProgramType.THERAPEUTIC,
-                                    name: 'Therapeutic'
-                                },
-                                {
-                                    id: ProgramType.VOCATIONAL,
-                                    name: 'Vocational'
-                                }
-                            ]}
+                            options={PROGRAM_TYPE_OPTIONS}
                             disabled={isGenerating}
                             columns={2}
                         />
@@ -255,29 +251,7 @@ export const ReportExportModal = forwardRef<
                             required={false}
                             control={control}
                             errors={errors}
-                            options={[
-                                {
-                                    id: FundingType.EDUCATIONAL_GRANTS,
-                                    name: 'Educational Grants'
-                                },
-                                {
-                                    id: FundingType.FEDERAL_GRANTS,
-                                    name: 'Federal Grants'
-                                },
-                                {
-                                    id: FundingType.INMATE_WELFARE,
-                                    name: 'Inmate Welfare Funds'
-                                },
-                                {
-                                    id: FundingType.NON_PROFIT_ORGANIZATION,
-                                    name: 'Nonprofit Organizations'
-                                },
-                                {
-                                    id: FundingType.STATE_GRANTS,
-                                    name: 'State Grants'
-                                },
-                                { id: FundingType.OTHER, name: 'Other' }
-                            ]}
+                            options={FUNDING_TYPE_OPTIONS}
                             disabled={isGenerating}
                             columns={2}
                         />

@@ -34,6 +34,46 @@ const (
 	Education     CreditType = "Education"
 )
 
+func (p ProgType) HumanReadable() string {
+	switch p {
+	case Educational:
+		return "Educational"
+	case Vocational:
+		return "Vocational"
+	case MentalHealth:
+		return "Mental Health/Behavioral"
+	case Religious:
+		return "Religious/Faith-Based"
+	case ReEntry:
+		return "Re-Entry"
+	case Therapeutic:
+		return "Therapeutic"
+	case LifeSkills:
+		return "Life Skills"
+	default:
+		return string(p)
+	}
+}
+
+func (f FundingType) HumanReadable() string {
+	switch f {
+	case FederalGrants:
+		return "Federal Grants"
+	case StateGrants:
+		return "State Grants"
+	case NonProfitOrgs:
+		return "Nonprofit Organizations"
+	case EduGrants:
+		return "Educational Grants"
+	case InmateWelfare:
+		return "Inmate Welfare Funds"
+	case Other:
+		return "Other"
+	default:
+		return string(f)
+	}
+}
+
 var AllFundingTypes = []FundingType{
 	FederalGrants, StateGrants, NonProfitOrgs, EduGrants, InmateWelfare, Other,
 }

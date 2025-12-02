@@ -180,7 +180,7 @@ export default function ClassEvents() {
                     className="button flex items-center gap-2"
                 >
                     <ArrowDownTrayIcon className="h-5 w-5" />
-                    Export Attendance
+                    Export Attendance Report
                 </button>
             </div>
 
