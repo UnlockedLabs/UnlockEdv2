@@ -129,7 +129,7 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		trans.Rollback()
 		return newDeleteDBError(err, "program class event override")
 	}
-	
+
 	if err := db.syncClassDateBoundaries(trans, uint(classID)); err != nil {
 		trans.Rollback()
 		return err

@@ -29,6 +29,8 @@ type ProgramClass struct {
 	FacilityID     uint        `json:"facility_id" gorm:"not null"`
 	Capacity       int64       `json:"capacity" gorm:"not null"`
 	Name           string      `json:"name" gorm:"size:255" validate:"required,max=255"`
+	InstructorID   *uint       `json:"instructor_id"`
+	Instructor     *User       `json:"instructor" gorm:"foreignKey:InstructorID;references:ID"`
 	InstructorName string      `json:"instructor_name" gorm:"size:255" validate:"required,max=255"`
 	Description    string      `json:"description" gorm:"not null" validate:"required,max=255"`
 	ArchivedAt     *time.Time  `json:"archived_at"`
