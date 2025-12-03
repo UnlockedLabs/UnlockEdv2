@@ -32,6 +32,12 @@ export default function UserActionsDropdown({
             className: 'text-teal-5'
         },
         {
+            action: ResidentAccountAction['Export Attendance'],
+            label: 'Export Attendance',
+            show: isAdministrator(currentUser),
+            className: 'text-teal-5'
+        },
+        {
             action: ResidentAccountAction['Transfer Resident'],
             label: 'Transfer Resident',
             show: canSwitchFacility(currentUser) && !isDeactivated,
