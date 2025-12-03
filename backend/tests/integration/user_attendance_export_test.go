@@ -223,11 +223,11 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		endDate := time.Now().AddDate(0, 0, -2)
 
 		enrollment2 := models.ProgramClassEnrollment{
-			ClassID:            class2.ID,
-			UserID:             studentEnrollmentDates.ID,
-			EnrollmentStatus:   models.Enrolled,
-			EnrolledAt:         &enrollDate,
-			EnrollmentEndedAt:  &endDate,
+			ClassID:           class2.ID,
+			UserID:            studentEnrollmentDates.ID,
+			EnrollmentStatus:  models.Enrolled,
+			EnrolledAt:        &enrollDate,
+			EnrollmentEndedAt: &endDate,
 		}
 		require.NoError(t, env.DB.Create(&enrollment2).Error)
 
