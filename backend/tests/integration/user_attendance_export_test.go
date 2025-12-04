@@ -219,8 +219,8 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		event2, err := env.CreateTestEvent(class2.ID, "")
 		require.NoError(t, err)
 
-		enrollDate := time.Now().UTC().Truncate(24 * time.Hour).AddDate(0, 0, -10)
-		endDate := time.Now().UTC().Truncate(24 * time.Hour).AddDate(0, 0, -2)
+		enrollDate := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -10)
+		endDate := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -2)
 
 		enrollment2 := models.ProgramClassEnrollment{
 			ClassID:           class2.ID,

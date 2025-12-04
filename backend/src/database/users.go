@@ -858,8 +858,8 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 		JOIN program_class_enrollments e ON e.class_id = pc.id AND e.user_id = pcea.user_id
 		JOIN users u ON u.id = pcea.user_id
 		WHERE pcea.user_id = ?
-			AND DATE(e.enrolled_at) <= pcea.date
-			AND (e.enrollment_ended_at IS NULL OR DATE(e.enrollment_ended_at) >= pcea.date)
+			AND CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date
+			AND (e.enrollment_ended_at IS NULL OR CAST(DATE(e.enrollment_ended_at) AS TEXT) >= pcea.date)
 	`
 
 	args := []any{userID}
