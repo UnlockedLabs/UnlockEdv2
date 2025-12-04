@@ -716,9 +716,8 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusOK)
 
 	writer := csv.NewWriter(w)
-	writeErr := writer.WriteAll(toCSV)
-	if writeErr != nil {
-		return newInternalServerServiceError(writeErr, "Failed to write CSV data")
+	if err := writer.WriteAll(toCSV); err != nil {
+		return newInternalServerServiceError(err, "Failed to write CSV data")
 	}
 
 	log.add("user_id", userID)

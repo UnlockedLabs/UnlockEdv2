@@ -862,7 +862,7 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 			AND (e.enrollment_ended_at IS NULL OR DATE(e.enrollment_ended_at) >= pcea.date)
 	`
 
-	args := []interface{}{userID}
+	args := []any{userID}
 
 	if !all {
 		query += " AND u.facility_id = ?"

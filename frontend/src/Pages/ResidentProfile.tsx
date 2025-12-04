@@ -279,58 +279,33 @@ const ResidentProfile = () => {
         }
     }
 
-    async function downloadAttendanceExport() {
-        try {
-            const response = await fetch(
-                `/api/users/${residentId}/attendance-export`,
-                {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }
-            );
+    function downloadAttendanceExport() {
+        API.downloadFile(`users/${residentId}/attendance-export`)
+            .then(({ blob, headers }) => {
+                const disposition = headers.get('Content-Disposition') ?? '';
+                const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(
+                    disposition
+                );
+                const filename =
+                    match?.[1]?.replace(/['"]/g, '') ??
+                    `Attendance-${residentId}-${getTimestamp()}.csv`;
 
-            if (!response.ok) {
+                const url = window.URL.createObjectURL(blob);
+                const anchorTag = document.createElement('a');
+                anchorTag.href = url;
+                anchorTag.download = filename;
+                document.body.appendChild(anchorTag);
+                anchorTag.click();
+                anchorTag.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch((error) => {
+                console.error('Error downloading attendance export', error);
                 toaster(
-                    'Failed to generate attendance export',
+                    'Failed to download attendance export',
                     ToastState.error
                 );
-                throw new Error('Failed to generate attendance export');
-            }
-
-            const blob = await response.blob();
-
-            if (blob.size < 100) {
-                toaster(
-                    'No attendance records found for this resident',
-                    ToastState.null
-                );
-                return;
-            }
-
-            const disposition =
-                response.headers.get('Content-Disposition') ?? '';
-            const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(
-                disposition
-            );
-            const filename =
-                match?.[1]?.replace(/['"]/g, '') ??
-                `Attendance-${residentId}-${getTimestamp()}.csv`;
-
-            const url = window.URL.createObjectURL(blob);
-            const anchorTag = document.createElement('a');
-            anchorTag.href = url;
-            anchorTag.download = filename;
-            document.body.appendChild(anchorTag);
-            anchorTag.click();
-            anchorTag.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Error downloading attendance export', error);
-            toaster('Failed to download attendance export', ToastState.error);
-        }
+            });
     }
 
     return (
