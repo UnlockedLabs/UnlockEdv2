@@ -1,5 +1,7 @@
 FROM golang:1.23.0-alpine as builder
 
+# Test commit - verify ci/cd pipeline functionality
+
 WORKDIR /app
 COPY ./backend/go.mod ./backend/go.sum ./
 RUN go mod download
