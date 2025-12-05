@@ -65,3 +65,56 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     credit_types: string;
     class_status: SelectedClassStatus;
 }
+
+// Instructor represents a user who can teach classes
+export interface Instructor {
+    id: number;
+    username: string;
+    name_first: string;
+    name_last: string;
+    email: string;
+}
+
+// Bulk cancellation preview data
+export interface BulkCancelSessionsPreview {
+    sessionCount: number;
+    classCount: number;
+    studentCount: number;
+    classes: AffectedClass[];
+}
+
+// Individual class affected by bulk cancellation
+export interface AffectedClass {
+    classId: number;
+    className: string;
+    upcomingSessions: number;
+    cancelledSessions: number;
+    studentCount: number;
+}
+
+// Bulk cancellation request payload
+export interface BulkCancelSessionsRequest {
+    instructorId: number;
+    startDate: string;
+    endDate: string;
+    reason: string;
+}
+
+// Instructor class data response from API
+export interface InstructorClassData {
+    id: number;
+    name: string;
+    sessionCount: number;
+    enrolledCount: number;
+    upcomingSessions: number;
+    cancelledSessions: number;
+}
+
+// Bulk cancellation response
+export interface BulkCancelSessionsResponse {
+    success: boolean;
+    sessionCount: number;
+    classCount: number;
+    studentCount: number;
+    classes: AffectedClass[];
+}

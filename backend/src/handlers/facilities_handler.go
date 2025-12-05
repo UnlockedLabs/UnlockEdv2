@@ -15,6 +15,8 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 		newSystemAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
 		newSystemAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
 		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
+		// Facility instructors route
+		featureRoute("GET /api/facilities/{facilityId}/instructors", srv.handleGetFacilityInstructors, models.ProgramAccess),
 	}
 }
 
@@ -117,4 +119,21 @@ func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "facility deleted successfully")
+}
+
+/**
+* GET: /api/facilities/{facilityId}/instructors
+ */
+func (srv *Server) handleGetFacilityInstructors(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityId, err := strconv.Atoi(r.PathValue("facilityId"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+
+	instructors, err := srv.Db.GetFacilityInstructors(facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, instructors)
 }

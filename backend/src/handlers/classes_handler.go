@@ -33,6 +33,12 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		featureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, axx),
 		/* admin */
 		adminValidatedFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx, validateFacility("is_active = true AND archived_at IS NULL AND")),
+		// Bulk cancellation endpoints - more specific patterns first
+		adminValidatedFeatureRoute("GET /api/instructors/{id}/classes",
+			srv.handleGetClassesByInstructor, axx, FacilityAdminResolver("users", "id")),
+		adminValidatedFeatureRoute("POST /api/program-classes/bulk-cancel",
+			srv.handleBulkCancelSessions, axx, resolver),
+		// Existing routes - more general patterns later
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
@@ -219,4 +225,72 @@ func (srv *Server) handleGetMissingAttendance(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, totalMissing)
+}
+
+// Bulk cancellation handlers
+
+func (srv *Server) handleGetClassesByInstructor(w http.ResponseWriter, r *http.Request, log sLog) error {
+	instructorId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "instructor ID")
+	}
+
+	// Get query parameters
+	startDate := r.URL.Query().Get("start_date")
+	endDate := r.URL.Query().Get("end_date")
+	facilityIdStr := r.URL.Query().Get("facility_id")
+
+	if startDate == "" || endDate == "" || facilityIdStr == "" {
+		return newBadRequestServiceError(nil, "start_date, end_date, and facility_id are required")
+	}
+
+	facilityId, err := strconv.Atoi(facilityIdStr)
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+
+	classes, err := srv.Db.GetClassesByInstructor(instructorId, facilityId, startDate, endDate)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, classes)
+}
+
+func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Request, log sLog) error {
+	var req models.BulkCancelSessionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+
+	// Create a claims adapter that implements the BulkCancelClaims interface
+	claimsAdapter := &BulkCancelClaimsAdapter{Claims: claims}
+
+	response, err := srv.Db.BulkCancelSessions(req.InstructorID, int(claims.FacilityID), req.StartDate, req.EndDate, req.Reason, claimsAdapter)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	log.add("instructor_id", req.InstructorID)
+	log.add("start_date", req.StartDate)
+	log.add("end_date", req.EndDate)
+	log.add("session_count", response.SessionCount)
+	log.add("class_count", response.ClassCount)
+
+	return writeJsonResponse(w, http.StatusOK, response)
+}
+
+// BulkCancelClaimsAdapter adapts the Claims struct to implement BulkCancelClaims interface
+type BulkCancelClaimsAdapter struct {
+	*Claims
+}
+
+func (c *BulkCancelClaimsAdapter) GetUserID() uint {
+	return c.UserID
+}
+
+func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
+	return c.FacilityID
 }

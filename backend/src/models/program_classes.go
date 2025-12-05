@@ -273,3 +273,44 @@ func (pc *ProgramClass) GetProgramOwnerOrEmpty() string {
 	}
 	return ""
 }
+
+// Bulk cancellation request/response models
+type BulkCancelSessionsRequest struct {
+	InstructorID int    `json:"instructorId" validate:"required,min=1"`
+	StartDate    string `json:"startDate" validate:"required"`
+	EndDate      string `json:"endDate" validate:"required"`
+	Reason       string `json:"reason" validate:"required,min=10,max=255"`
+}
+
+type BulkCancelSessionsResponse struct {
+	Success      bool            `json:"success"`
+	SessionCount int             `json:"sessionCount"`
+	ClassCount   int             `json:"classCount"`
+	StudentCount int             `json:"studentCount"`
+	Classes      []AffectedClass `json:"classes"`
+}
+
+type AffectedClass struct {
+	ClassID           int    `json:"classId"`
+	ClassName         string `json:"className"`
+	UpcomingSessions  int    `json:"upcomingSessions"`
+	CancelledSessions int    `json:"cancelledSessions"`
+	StudentCount      int    `json:"studentCount"`
+}
+
+type Instructor struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	NameFirst string `json:"name_first"`
+	NameLast  string `json:"name_last"`
+	Email     string `json:"email"`
+}
+
+type InstructorClassData struct {
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	SessionCount      int    `json:"sessionCount"`
+	EnrolledCount     int    `json:"enrolledCount"`
+	UpcomingSessions  int    `json:"upcomingSessions"`
+	CancelledSessions int    `json:"cancelledSessions"`
+}
