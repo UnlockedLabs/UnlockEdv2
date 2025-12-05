@@ -627,6 +627,7 @@ func getCanonicalHourAndMinute(occurrences []time.Time, timezone string) (int, i
 			canonicalHour = localTime.Hour()
 			canonicalMinute = localTime.Minute()
 		} else {
+			logrus.Warnf("unable to load the user's timezone while trying to get the canonical hour and minute. Error is: %v", err)
 			canonicalHour = firstOccurrence.Hour()
 			canonicalMinute = firstOccurrence.Minute()
 		}
