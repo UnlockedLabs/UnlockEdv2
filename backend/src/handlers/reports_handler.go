@@ -113,7 +113,7 @@ func renderPDFHeader(pdf *fpdf.Fpdf, title string, filterSummary []models.PDFFil
 	}
 }
 
-func buildFilterSummary(req *models.ReportGenerateRequest, facilityName string) []models.PDFFilterLine {
+func buildFilterSummary(req *models.ReportGenerateRequest, facilityName, residentName string) []models.PDFFilterLine {
 	var filters []models.PDFFilterLine
 
 	dateRange := fmt.Sprintf("%s - %s",
@@ -123,6 +123,10 @@ func buildFilterSummary(req *models.ReportGenerateRequest, facilityName string) 
 
 	if facilityName != "" {
 		filters = append(filters, models.PDFFilterLine{Label: "Facility", Value: facilityName})
+	}
+
+	if residentName != "" {
+		filters = append(filters, models.PDFFilterLine{Label: "Resident", Value: residentName})
 	}
 
 	if req.ClassStatus != nil && *req.ClassStatus != "" && *req.ClassStatus != "All" {
@@ -288,7 +292,14 @@ func (srv *Server) handleAttendanceReport(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if err := srv.exportReport(w, report, req.Format, req, facilityName); err != nil {
+	residentName := ""
+	if req.UserID != nil {
+		if user, err := srv.Db.GetUserByID(*req.UserID); err == nil && user != nil {
+			residentName = fmt.Sprintf("%s, %s", user.NameLast, user.NameFirst)
+		}
+	}
+
+	if err := srv.exportReport(w, report, req.Format, req, facilityName, residentName); err != nil {
 		srv.logReportFailure(claims.UserID, "attendance", req, startTime, report.Len())
 		return err
 	}
@@ -318,7 +329,7 @@ func (srv *Server) handleProgramOutcomesReport(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	if err := srv.exportReport(w, report, req.Format, req, facilityName); err != nil {
+	if err := srv.exportReport(w, report, req.Format, req, facilityName, ""); err != nil {
 		srv.logReportFailure(claims.UserID, "program_outcomes", req, startTime, report.Len())
 		return err
 	}
@@ -341,7 +352,7 @@ func (srv *Server) handleFacilityComparisonReport(w http.ResponseWriter, r *http
 
 	report := models.FacilityComparisonReportData{Data: rows}
 
-	if err := srv.exportReport(w, report, req.Format, req, "Multiple Facilities"); err != nil {
+	if err := srv.exportReport(w, report, req.Format, req, "Multiple Facilities", ""); err != nil {
 		srv.logReportFailure(claims.UserID, "facility_comparison", req, startTime, report.Len())
 		return err
 	}
@@ -350,7 +361,7 @@ func (srv *Server) handleFacilityComparisonReport(w http.ResponseWriter, r *http
 	return nil
 }
 
-func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, format models.ReportFormat, req *models.ReportGenerateRequest, facilityName string) error {
+func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, format models.ReportFormat, req *models.ReportGenerateRequest, facilityName, residentName string) error {
 	switch format {
 	case models.FormatCSV:
 		csvData, err := report.ToCSV()
@@ -399,7 +410,7 @@ func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, fo
 			return newInternalServerServiceError(err, "failed to generate PDF config")
 		}
 
-		filterSummary := buildFilterSummary(req, facilityName)
+		filterSummary := buildFilterSummary(req, facilityName, residentName)
 
 		pdf := fpdf.New("L", "mm", "A4", "")
 		pdf.AddPage()

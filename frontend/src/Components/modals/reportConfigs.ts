@@ -11,7 +11,8 @@ export type ReportFieldType =
     | 'date'
     | 'dropdown'
     | 'multi-select'
-    | 'facility-select';
+    | 'facility-select'
+    | 'resident-select';
 
 export interface ReportField {
     name: string;
@@ -29,6 +30,7 @@ export interface ReportContextData {
     programId?: number;
     classId?: number;
     facilityIds?: number[];
+    userId?: number;
 }
 
 export interface ReportConfig {
@@ -70,6 +72,13 @@ export const ATTENDANCE_CONFIG: ReportConfig = {
             required: true
         },
         {
+            name: 'user_id',
+            type: 'resident-select',
+            label: 'Resident (Optional)',
+            required: false,
+            placeholder: 'All Residents'
+        },
+        {
             name: 'format',
             type: 'dropdown',
             label: 'Format',
@@ -88,7 +97,8 @@ export const ATTENDANCE_CONFIG: ReportConfig = {
         format: ReportFormat.CSV,
         facility_id: context.facilityId,
         program_id: context.programId,
-        class_id: context.classId
+        class_id: context.classId,
+        user_id: context.userId
     }),
     buildRequest: (
         formValues: Record<string, unknown>,
@@ -100,7 +110,8 @@ export const ATTENDANCE_CONFIG: ReportConfig = {
         end_date: `${formValues.end_date as string}T23:59:59Z`,
         facility_id: context.facilityId,
         program_id: context.programId,
-        class_id: context.classId
+        class_id: context.classId,
+        user_id: formValues.user_id ? Number(formValues.user_id) : undefined
     })
 };
 

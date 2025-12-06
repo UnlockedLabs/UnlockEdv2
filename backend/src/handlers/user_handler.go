@@ -66,6 +66,17 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			log.add("search", args.Search)
 			return newDatabaseServiceError(err)
 		}
+	case slices.Contains(include, "only_enrolled"):
+		classID, err := strconv.Atoi(r.URL.Query().Get("class_id"))
+		if err != nil {
+			return newInvalidIdServiceError(err, "class ID")
+		}
+		users, err = srv.Db.GetEnrolledResidentsForClass(&args, classID)
+		if err != nil {
+			log.add("facility_id", args.FacilityID)
+			log.add("search", args.Search)
+			return newDatabaseServiceError(err)
+		}
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 		if err != nil {

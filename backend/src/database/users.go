@@ -144,6 +144,29 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 	return users, nil
 }
 
+func (db *DB) GetEnrolledResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).
+		Joins("JOIN program_class_enrollments pce ON users.id = pce.user_id AND pce.class_id = ?", classId).
+		Where("pce.enrollment_status = 'Enrolled'").
+		Where("users.role = 'student'")
+
+	if args.SearchQuery() != "" {
+		tx = fuzzySearchUsers(tx, args)
+	}
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	users := make([]models.User, 0, args.PerPage)
+	if err := tx.Order(adjustUserOrderBy(args.OrderClause("users.name_last asc"))).
+		Offset(args.CalcOffset()).
+		Limit(args.PerPage).
+		Find(&users).
+		Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	return users, nil
+}
+
 // This function takes an existing transaction and applies proper searching through first, last, username + doc_id
 func fuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) *gorm.DB {
 	likeSearch := ctx.SearchQuery()

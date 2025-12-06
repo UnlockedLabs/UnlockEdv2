@@ -1,6 +1,14 @@
 import { forwardRef, useState, useMemo } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { ReportType, Facility, User, ProgramType, FundingType } from '@/common';
+import useSWR from 'swr';
+import {
+    ReportType,
+    Facility,
+    User,
+    ProgramType,
+    FundingType,
+    ServerResponseMany
+} from '@/common';
 import { getReportConfig, ReportContextData } from './reportConfigs';
 import { generateReport } from '@/api/api';
 import {
@@ -48,6 +56,7 @@ interface ReportFormData {
     facility_ids?: number[];
     program_types?: string[];
     funding_types?: string[];
+    user_id?: string;
 }
 
 export const ReportExportModal = forwardRef<
@@ -57,6 +66,17 @@ export const ReportExportModal = forwardRef<
     const config = useMemo(() => getReportConfig(reportType), [reportType]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [residentSearch, setResidentSearch] = useState('');
+    const [selectedResident, setSelectedResident] = useState<User | null>(null);
+    const [showResidentDropdown, setShowResidentDropdown] = useState(false);
+
+    const { data: residentsData } = useSWR<ServerResponseMany<User>>(
+        reportType === ReportType.ATTENDANCE && residentSearch.length >= 2
+            ? `/api/users?role=student&per_page=20&search=${encodeURIComponent(residentSearch)}${contextData.classId ? `&class_id=${contextData.classId}&include=only_enrolled` : ''}`
+            : null
+    );
+    const searchResults = residentsData?.data ?? [];
 
     const {
         register,
@@ -97,8 +117,12 @@ export const ReportExportModal = forwardRef<
         setIsGenerating(true);
 
         try {
+            const formWithResident = {
+                ...formValues,
+                user_id: selectedResident?.id?.toString()
+            };
             const request = config.buildRequest(
-                formValues as unknown as Record<string, unknown>,
+                formWithResident as unknown as Record<string, unknown>,
                 contextData
             );
             const { blob, filename } = await generateReport(request);
@@ -134,6 +158,9 @@ export const ReportExportModal = forwardRef<
     const handleClose = () => {
         if (!isGenerating) {
             setError(null);
+            setResidentSearch('');
+            setSelectedResident(null);
+            setShowResidentDropdown(false);
             reset();
             if (ref && typeof ref !== 'function' && ref.current) {
                 ref.current.close();
@@ -182,6 +209,91 @@ export const ReportExportModal = forwardRef<
                             }
                         }}
                     />
+
+                    {reportType === ReportType.ATTENDANCE && (
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className="label-text">
+                                    Resident (Optional)
+                                </span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search by name or DOC ID..."
+                                    className="input input-bordered w-full"
+                                    value={
+                                        selectedResident
+                                            ? `${selectedResident.name_last}, ${selectedResident.name_first} (${selectedResident.doc_id ?? 'N/A'})`
+                                            : residentSearch
+                                    }
+                                    onChange={(e) => {
+                                        setResidentSearch(e.target.value);
+                                        setSelectedResident(null);
+                                        setShowResidentDropdown(true);
+                                    }}
+                                    onFocus={() =>
+                                        setShowResidentDropdown(true)
+                                    }
+                                    disabled={isGenerating}
+                                />
+                                {selectedResident && (
+                                    <button
+                                        type="button"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs"
+                                        onClick={() => {
+                                            setSelectedResident(null);
+                                            setResidentSearch('');
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                                {showResidentDropdown &&
+                                    residentSearch.length >= 2 &&
+                                    searchResults.length > 0 && (
+                                        <ul className="absolute z-10 w-full bg-base-100 border border-base-300 rounded-box mt-1 max-h-48 overflow-y-auto shadow-lg">
+                                            {searchResults.map((resident) => (
+                                                <li key={resident.id}>
+                                                    <button
+                                                        type="button"
+                                                        className="w-full px-4 py-2 text-left hover:bg-base-200"
+                                                        onClick={() => {
+                                                            setSelectedResident(
+                                                                resident
+                                                            );
+                                                            setResidentSearch(
+                                                                ''
+                                                            );
+                                                            setShowResidentDropdown(
+                                                                false
+                                                            );
+                                                        }}
+                                                    >
+                                                        {resident.name_last},{' '}
+                                                        {resident.name_first} (
+                                                        {resident.doc_id ??
+                                                            'N/A'}
+                                                        )
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                {showResidentDropdown &&
+                                    residentSearch.length >= 2 &&
+                                    searchResults.length === 0 && (
+                                        <div className="absolute z-10 w-full bg-base-100 border border-base-300 rounded-box mt-1 px-4 py-2 text-sm text-gray-500">
+                                            No residents found
+                                        </div>
+                                    )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Type at least 2 characters to search. Leave
+                                empty for all residents.
+                            </p>
+                        </div>
+                    )}
 
                     <DropdownInput
                         label="Format"
