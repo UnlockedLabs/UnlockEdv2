@@ -888,45 +888,36 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	// occurrences can be empty if there are no base rule occurrences in the window
 	// but we still need to check for overrides and fetch attendance
 	var classTime string
+	var canonicalHour, canonicalMinute int
 	if len(occurrences) > 0 {
 		duration, err := time.ParseDuration(event.Duration)
 		if err != nil {
 			logrus.Errorf("error parsing duration for event: %v", err)
 		}
+
+		startTime = rRule.GetDTStart()
+		userLocation, _ := time.LoadLocation(loc.String())
+		localStartTime := startTime.In(userLocation)
+		canonicalHour = localStartTime.Hour()
+		canonicalMinute = localStartTime.Minute()
+
 		firstOcc := occurrences[0]
-		occInLoc := firstOcc.In(loc)
-		startTimeStr := occInLoc.Format("15:04")
-		endTimeStr := occInLoc.Add(duration).Format("15:04")
+		//day light savings time issue
+		consistentOccurrence := time.Date(
+			firstOcc.Year(),
+			firstOcc.Month(),
+			firstOcc.Day(),
+			canonicalHour,
+			canonicalMinute,
+			0,
+			0,
+			loc,
+		)
+
+		startTimeStr := consistentOccurrence.Format("15:04")
+		endTimeStr := consistentOccurrence.Add(duration).Format("15:04")
 		classTime = startTimeStr + "-" + endTimeStr
 	}
-
-	duration, err := time.ParseDuration(event.Duration)
-	if err != nil {
-		logrus.Errorf("error parsing duration for event: %v", err)
-	}
-
-	startTime = rRule.GetDTStart()
-	userLocation, _ := time.LoadLocation(loc.String())
-	localStartTime := startTime.In(userLocation)
-	canonicalHour := localStartTime.Hour()
-	canonicalMinute := localStartTime.Minute()
-
-	firstOcc := occurrences[0]
-	//day light savings time issue
-	consistentOccurrence := time.Date(
-		firstOcc.Year(),
-		firstOcc.Month(),
-		firstOcc.Day(),
-		canonicalHour,
-		canonicalMinute,
-		0,
-		0,
-		loc,
-	)
-
-	startTimeStr := consistentOccurrence.Format("15:04")
-	endTimeStr := consistentOccurrence.Add(duration).Format("15:04")
-	classTime = startTimeStr + "-" + endTimeStr
 	var attendances []models.ProgramClassEventAttendance
 
 	startDateStr := startTime.Format("2006-01-02")

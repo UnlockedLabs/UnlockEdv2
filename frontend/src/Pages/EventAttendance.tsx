@@ -197,6 +197,8 @@ export default function EventAttendance() {
             clearErrors(`note_${user_id}`);
             setValue(`reason_${user_id}`, '');
             clearErrors(`reason_${user_id}`);
+        } else {
+            setValue(`reason_${user_id}`, AttendanceReason.Lockdown);
         }
         const currentRow = rows.find((r) => r.user_id === user_id) ?? {
             selected: false,
@@ -218,7 +220,8 @@ export default function EventAttendance() {
                 reason_category:
                     newStatus === Attendance.Present
                         ? ''
-                        : prev[user_id]?.reason_category
+                        : prev[user_id]?.reason_category ??
+                          AttendanceReason.Lockdown
             }
         }));
     }
