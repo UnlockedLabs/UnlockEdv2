@@ -67,6 +67,7 @@ type AttendanceReportRow struct {
 	AttendanceStatus Attendance
 	SeatTimeMinutes  *int
 	AbsenceReason    *string
+	RecordedBy       *string
 }
 
 type ProgramOutcomesReportRow struct {
@@ -116,7 +117,7 @@ func (r AttendanceReportData) Len() int {
 
 func (r AttendanceReportData) ToCSV() ([][]string, error) {
 	csvData := [][]string{
-		{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Absence Reason"},
+		{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Recorded By", "Absence Reason"},
 	}
 
 	for _, row := range r.Data {
@@ -130,6 +131,7 @@ func (r AttendanceReportData) ToCSV() ([][]string, error) {
 			row.DocID,
 			row.AttendanceStatus.HumanReadable(),
 			FormatNullableInt(row.SeatTimeMinutes),
+			FormatNullableString(row.RecordedBy),
 			FormatNullableString(row.AbsenceReason),
 		})
 	}
@@ -209,7 +211,7 @@ func (r AttendanceReportData) ToExcel() (*excelize.File, error) {
 	}
 	f.SetActiveSheet(index)
 
-	headers := []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Absence Reason"}
+	headers := []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Recorded By", "Absence Reason"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%s1", excelColumnName(i))
 		f.SetCellValue(sheetName, cell, header)
@@ -226,7 +228,8 @@ func (r AttendanceReportData) ToExcel() (*excelize.File, error) {
 		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), row.DocID)
 		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), row.AttendanceStatus.HumanReadable())
 		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), FormatNullableInt(row.SeatTimeMinutes))
-		f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), FormatNullableString(row.AbsenceReason))
+		f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), FormatNullableString(row.RecordedBy))
+		f.SetCellValue(sheetName, fmt.Sprintf("K%d", rowNum), FormatNullableString(row.AbsenceReason))
 	}
 
 	return f, nil
@@ -319,18 +322,19 @@ func (r AttendanceReportData) ToPDF() (PDFConfig, error) {
 			row.DocID,
 			row.AttendanceStatus.HumanReadable(),
 			FormatNullableInt(row.SeatTimeMinutes),
+			FormatNullableString(row.RecordedBy),
 			FormatNullableString(row.AbsenceReason),
 		}
 	}
 
 	return PDFConfig{
 		Title:          "Attendance",
-		Headers:        []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time", "Reason"},
+		Headers:        []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time", "Recorded By", "Reason"},
 		Data:           tableData,
-		MinWidths:      []float64{25, 30, 25, 22, 22, 22, 18, 20, 20, 25},
-		Alignments:     []string{"L", "L", "L", "C", "L", "L", "C", "C", "C", "L"},
-		HeaderFontSize: 9,
-		DataFontSize:   8,
+		MinWidths:      []float64{23, 26, 23, 20, 20, 20, 16, 18, 18, 22, 23},
+		Alignments:     []string{"L", "L", "L", "C", "L", "L", "C", "C", "C", "L", "L"},
+		HeaderFontSize: 8,
+		DataFontSize:   7,
 	}, nil
 }
 
