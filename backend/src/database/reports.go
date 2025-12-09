@@ -19,6 +19,18 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 			u.doc_id,
 			pcea.attendance_status,
 			NULL AS seat_time_minutes,
+			(
+				SELECT CONCAT(admin.name_first, ' ', admin.name_last)
+				FROM user_account_history uah
+				JOIN users admin ON admin.id = uah.admin_id
+				WHERE uah.user_id = pcea.user_id
+				  AND uah.action = 'attendance_recorded'
+				  AND uah.session_date = DATE(pcea.date)
+				  AND uah.class_name = pc.name
+				  AND uah.attendance_status = pcea.attendance_status
+				ORDER BY uah.created_at DESC
+				LIMIT 1
+			) AS recorded_by,
 			pcea.note AS absence_reason
 		`).
 		Joins("JOIN program_class_events pce ON pce.id = pcea.event_id").

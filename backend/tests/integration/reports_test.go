@@ -9,6 +9,7 @@ import (
 func TestAttendanceReportToCSV(t *testing.T) {
 	seatTime := 90
 	absenceReason := "Medical appointment"
+	recordedBy := "Jane Admin"
 
 	data := []models.AttendanceReportRow{
 		{
@@ -21,6 +22,7 @@ func TestAttendanceReportToCSV(t *testing.T) {
 			DocID:            "12345",
 			AttendanceStatus: models.Present,
 			SeatTimeMinutes:  &seatTime,
+			RecordedBy:       &recordedBy,
 			AbsenceReason:    nil,
 		},
 		{
@@ -33,6 +35,7 @@ func TestAttendanceReportToCSV(t *testing.T) {
 			DocID:            "67890",
 			AttendanceStatus: models.Absent_Excused,
 			SeatTimeMinutes:  nil,
+			RecordedBy:       nil,
 			AbsenceReason:    &absenceReason,
 		},
 	}
@@ -48,7 +51,7 @@ func TestAttendanceReportToCSV(t *testing.T) {
 	}
 
 	headerRow := csv[0]
-	expectedHeaders := []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Absence Reason"}
+	expectedHeaders := []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Recorded By", "Absence Reason"}
 	for i, expected := range expectedHeaders {
 		if headerRow[i] != expected {
 			t.Errorf("Header column %d: expected '%s', got '%s'", i, expected, headerRow[i])
@@ -65,16 +68,22 @@ func TestAttendanceReportToCSV(t *testing.T) {
 	if firstDataRow[8] != "90" {
 		t.Errorf("Expected seat time '90', got '%s'", firstDataRow[8])
 	}
-	if firstDataRow[9] != "" {
-		t.Errorf("Expected empty absence reason, got '%s'", firstDataRow[9])
+	if firstDataRow[9] != "Jane Admin" {
+		t.Errorf("Expected recorded by 'Jane Admin', got '%s'", firstDataRow[9])
+	}
+	if firstDataRow[10] != "" {
+		t.Errorf("Expected empty absence reason, got '%s'", firstDataRow[10])
 	}
 
 	secondDataRow := csv[2]
 	if secondDataRow[8] != "" {
 		t.Errorf("Expected empty seat time, got '%s'", secondDataRow[8])
 	}
-	if secondDataRow[9] != "Medical appointment" {
-		t.Errorf("Expected absence reason 'Medical appointment', got '%s'", secondDataRow[9])
+	if secondDataRow[9] != "" {
+		t.Errorf("Expected empty recorded by, got '%s'", secondDataRow[9])
+	}
+	if secondDataRow[10] != "Medical appointment" {
+		t.Errorf("Expected absence reason 'Medical appointment', got '%s'", secondDataRow[10])
 	}
 }
 
