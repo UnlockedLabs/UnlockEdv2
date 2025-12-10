@@ -109,6 +109,12 @@ export default function EventAttendance() {
     useEffect(() => {
         if (data?.data) {
             const mergedRows = data.data.map((item) => {
+                if (!modifiedRows[item.user_id] && item.reason_category) {
+                    setValue(`reason_${item.user_id}`, item.reason_category);
+                }
+                if (!modifiedRows[item.user_id] && item.note) {
+                    setValue(`note_${item.user_id}`, item.note);
+                }
                 return modifiedRows[item.user_id]
                     ? { ...item, ...modifiedRows[item.user_id] }
                     : {
@@ -124,7 +130,7 @@ export default function EventAttendance() {
             });
             setRows(mergedRows);
         }
-    }, [data, modifiedRows]);
+    }, [data, modifiedRows, setValue]);
 
     const dateList = Array.isArray(dates?.data) ? dates.data : [];
     const scheduled = dateList.some(
@@ -417,6 +423,9 @@ export default function EventAttendance() {
                                                     errors={errors}
                                                     register={register}
                                                     enumType={AttendanceReason}
+                                                    defaultValue={
+                                                        row.reason_category
+                                                    }
                                                     disabled={
                                                         blockEdits ||
                                                         !row.attendance_status ||
