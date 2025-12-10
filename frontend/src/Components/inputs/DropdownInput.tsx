@@ -10,6 +10,7 @@ interface DropdownProps {
     disabled?: boolean;
     onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
     selectClassName?: string;
+    defaultValue?: string;
 }
 
 export function DropdownInput({
@@ -21,7 +22,8 @@ export function DropdownInput({
     enumType,
     disabled = false,
     onChange,
-    selectClassName
+    selectClassName,
+    defaultValue
 }: DropdownProps) {
     return (
         <label className="form-control w-full">
@@ -32,6 +34,7 @@ export function DropdownInput({
             )}
             <select
                 className={`select select-bordered ${selectClassName}`}
+                defaultValue={defaultValue}
                 {...register(interfaceRef, {
                     required: {
                         value: required,
