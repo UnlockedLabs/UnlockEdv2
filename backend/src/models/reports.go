@@ -358,7 +358,7 @@ func (r ProgramOutcomesReportData) ToPDF() (PDFConfig, error) {
 	}
 
 	return PDFConfig{
-		Title:          "Program-Outcomes",
+		Title:          "Program Outcomes",
 		Headers:        []string{"Facility", "Program", "Type", "Funding", "Total", "Active", "Completed", "Dropped", "Comp%", "Attend%", "Credit Hours", "Certificates"},
 		Data:           tableData,
 		MinWidths:      []float64{30, 30, 20, 20, 15, 15, 18, 16, 15, 15, 18, 15},
@@ -391,7 +391,7 @@ func (r FacilityComparisonReportData) ToPDF() (PDFConfig, error) {
 	}
 
 	return PDFConfig{
-		Title:          "Facility-Comparison",
+		Title:          "Facility Comparison",
 		Headers:        []string{"Facility", "Programs", "Active", "Enrollments", "Active", "Comp%", "Attend%", "Top Type", "Credit Hours", "Certificates", "Last Activity"},
 		Data:           tableData,
 		MinWidths:      []float64{35, 18, 16, 22, 16, 15, 15, 25, 18, 15, 20},
