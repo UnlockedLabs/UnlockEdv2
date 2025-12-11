@@ -612,12 +612,20 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 
             -- count present attendance status
             COALESCE(SUM(
-              CASE WHEN pcea.attendance_status = 'present' THEN 1 ELSE 0 END
+              CASE 
+                WHEN pcea.attendance_status = 'present' THEN 1
+                WHEN pcea.attendance_status = 'partial' THEN LEAST(
+					COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric /
+					NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0),
+					1
+				)
+                ELSE 0 
+              END
             ), 0) AS present_attendance,
 
             -- count everything else as absent
             COALESCE(SUM(
-              CASE WHEN pcea.attendance_status <> 'present' THEN 1 ELSE 0 END
+              CASE WHEN pcea.attendance_status NOT IN ('present','partial') THEN 1 ELSE 0 END
             ), 0)  AS absent_attendance, pce.change_reason
         `).
 		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").

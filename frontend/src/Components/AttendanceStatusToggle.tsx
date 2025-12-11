@@ -61,8 +61,13 @@ export default function AttendanceStatusToggle({
         }
     ];
 
+    const isPresentVariant =
+        value === Attendance.Present || value === Attendance.Partial;
+
     const getButtonClassName = (config: ButtonConfig): string => {
-        const isSelected = value === config.value;
+        const isSelected =
+            value === config.value ||
+            (config.value === Attendance.Present && isPresentVariant);
 
         if (isSelected) {
             return disabled

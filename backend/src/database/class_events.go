@@ -1069,14 +1069,71 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 
 	occs := rule.Between(start, until, true)
 
-	out := make([]models.EventDates, len(occs))
-	for i, occ := range occs {
-		d := occ.In(loc).Format("2006-01-02")
-		out[i] = models.EventDates{
-			EventID: event.ID,
-			Date:    d,
+	duration, err := time.ParseDuration(event.Duration)
+	if err != nil {
+		logrus.Errorf("error parsing duration for event: %v", err)
+		duration = time.Hour
+	}
+
+	var canonicalHour, canonicalMinute int
+	if len(occs) > 0 {
+		localStart := rule.GetDTStart().In(loc)
+		canonicalHour = localStart.Hour()
+		canonicalMinute = localStart.Minute()
+	}
+
+	out := make([]models.EventDates, 0, len(occs))
+	for _, occ := range occs {
+		isCancelled, _, _ := checkEventCancelledAndRescheduled(occ, event.Overrides, timezone)
+		if isCancelled {
+			continue
+		}
+		occInLoc := occ.In(loc)
+		// lock the hour/minute to the canonical values to avoid DST shift :(
+		consistentStart := time.Date(
+			occInLoc.Year(),
+			occInLoc.Month(),
+			occInLoc.Day(),
+			canonicalHour,
+			canonicalMinute,
+			0,
+			0,
+			loc,
+		)
+		startStr := consistentStart.Format("15:04")
+		endStr := consistentStart.Add(duration).Format("15:04")
+		out = append(out, models.EventDates{
+			EventID:   event.ID,
+			Date:      consistentStart.Format("2006-01-02"),
+			ClassTime: startStr + "-" + endStr,
+		})
+	}
+
+	//checking the overrides for other dates if existing
+	for _, override := range event.Overrides {
+		if override.IsCancelled { // only reschedules are marked cancelled with reason
+			rRule, err := rrule.StrToRRule(override.OverrideRrule)
+			if err != nil || len(rRule.All()) == 0 {
+				continue
+			}
+			overrideDate := rRule.All()[0].In(loc)
+			if overrideDate.Before(start) || !overrideDate.Before(until) {
+				continue
+			}
+			dur, err := time.ParseDuration(override.Duration)
+			if err != nil {
+				logrus.Errorf("error parsing override duration for event: %v", err)
+				dur = duration
+			}
+			classTime := overrideDate.Format("15:04") + "-" + overrideDate.Add(dur).Format("15:04")
+			out = append(out, models.EventDates{
+				EventID:   event.ID,
+				Date:      overrideDate.Format("2006-01-02"),
+				ClassTime: classTime,
+			})
 		}
 	}
+
 	return out, nil
 }
 

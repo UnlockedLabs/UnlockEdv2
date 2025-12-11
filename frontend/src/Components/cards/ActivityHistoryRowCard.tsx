@@ -19,6 +19,8 @@ function ActivityHistoryRowCard({
         switch (status) {
             case 'present':
                 return 'present';
+            case 'partial':
+                return 'partial';
             case 'absent_excused':
                 return 'absent (excused)';
             case 'absent_unexcused':

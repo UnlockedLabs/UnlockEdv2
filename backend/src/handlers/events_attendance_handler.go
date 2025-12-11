@@ -77,6 +77,10 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	for _, uid := range enrolledIDs {
 		enrolledSet[uid] = struct{}{}
 	}
+	event, err := srv.Db.GetEventById(eventID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
 	for i := range attendances {
 		if attendances[i].Date == "" {
 			attendances[i].Date = time.Now().Format("2006-01-02")
@@ -99,6 +103,11 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 				fmt.Sprintf("user %d is not enrolled in class %d", attendances[i].UserID, classId))
 		}
 		attendances[i].EventID = uint(eventID)
+		overrideForDate := findOverrideForDate(overrides, attendances[i].Date)
+		scheduledMinutes := deriveScheduledMinutes(event, overrideForDate)
+		if err := applyTimeTracking(&attendances[i], scheduledMinutes); err != nil {
+			return err
+		}
 	}
 	if err := srv.Db.LogUserAttendance(attendances, r.Context(), &args.UserID, class.Name); err != nil {
 		return newDatabaseServiceError(err)
@@ -243,6 +252,130 @@ func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate str
 		return true
 	}
 	return false
+}
+
+func findOverrideForDate(overrides []models.ProgramClassEventOverride, eventDate string) *models.ProgramClassEventOverride {
+	for i := range overrides {
+		rRule, err := rrule.StrToRRule(overrides[i].OverrideRrule)
+		if err != nil || len(rRule.All()) == 0 {
+			continue
+		}
+		if rRule.All()[0].Format("2006-01-02") == eventDate {
+			return &overrides[i]
+		}
+	}
+	return nil
+}
+
+func deriveScheduledMinutes(event *models.ProgramClassEvent, override *models.ProgramClassEventOverride) int {
+	getMinutes := func(durationStr string) int {
+		duration, err := time.ParseDuration(durationStr)
+		if err != nil || duration <= 0 {
+			return 0
+		}
+		return int(duration.Minutes())
+	}
+	if override != nil && override.Duration != "" {
+		if mins := getMinutes(override.Duration); mins > 0 {
+			return mins
+		}
+	}
+	return getMinutes(event.Duration)
+}
+
+func normalizeTimeValue(val *string) string {
+	if val == nil {
+		return ""
+	}
+	return strings.TrimSpace(*val)
+}
+
+func applyTimeTracking(attendance *models.ProgramClassEventAttendance, scheduledMinutes int) error {
+	checkIn := normalizeTimeValue(attendance.CheckInAt)
+	checkOut := normalizeTimeValue(attendance.CheckOutAt)
+
+	const timeLayout = "15:04"
+	var minutesAttended *int
+
+	if checkIn == "" && checkOut == "" {
+		if attendance.AttendanceStatus == models.Present || attendance.AttendanceStatus == models.Partial {
+			mins := scheduledMinutes
+			minutesAttended = &mins
+		}
+	} else if checkIn != "" && checkOut == "" {
+		// need to allow saving an in-progress attendance with only a check-in time
+		attendance.CheckInAt = &checkIn
+	} else {
+		if checkIn == "" || checkOut == "" {
+			return newBadRequestServiceError(fmt.Errorf("invalid time range"), "check-in and check-out times are both required for time-based attendance")
+		}
+		parsedIn, err := time.Parse(timeLayout, checkIn)
+		if err != nil {
+			return newBadRequestServiceError(err, "check_in_at must be in HH:MM format")
+		}
+		parsedOut, err := time.Parse(timeLayout, checkOut)
+		if err != nil {
+			return newBadRequestServiceError(err, "check_out_at must be in HH:MM format")
+		}
+		diff := int(parsedOut.Sub(parsedIn).Minutes())
+		if diff <= 0 {
+			return newBadRequestServiceError(fmt.Errorf("negative duration"), "check_out_at must be after check_in_at")
+		}
+		minutesAttended = &diff
+		if scheduledMinutes <= 0 {
+			scheduledMinutes = *minutesAttended
+		}
+		if *minutesAttended > scheduledMinutes {
+			minutes := scheduledMinutes
+			minutesAttended = &minutes
+		}
+		attendance.CheckInAt = &checkIn
+		attendance.CheckOutAt = &checkOut
+	}
+
+	if minutesAttended != nil {
+		attendance.MinutesAttended = minutesAttended
+	} else {
+		attendance.MinutesAttended = nil
+	}
+	attendance.ScheduledMinutes = &scheduledMinutes
+
+	if minutesAttended == nil {
+		if attendance.AttendanceStatus == "" {
+			if checkIn != "" {
+				attendance.AttendanceStatus = models.Present
+			} else {
+				attendance.AttendanceStatus = models.Absent_Unexcused
+			}
+		}
+		if attendance.AttendanceStatus == models.Partial {
+			return newBadRequestServiceError(fmt.Errorf("missing minutes for partial attendance"), "partial attendance requires check-in and check-out times")
+		}
+		return nil
+	}
+
+	minutes := *minutesAttended
+
+	if attendance.AttendanceStatus == "" {
+		switch {
+		case minutes == 0:
+			attendance.AttendanceStatus = models.Absent_Unexcused
+		case scheduledMinutes > 0 && minutes < scheduledMinutes:
+			attendance.AttendanceStatus = models.Partial
+		default:
+			attendance.AttendanceStatus = models.Present
+		}
+	}
+
+	if attendance.AttendanceStatus == models.Present && scheduledMinutes > 0 && minutes > 0 && minutes < scheduledMinutes {
+		attendance.AttendanceStatus = models.Partial
+	}
+
+	if attendance.AttendanceStatus == models.Partial && minutes == 0 {
+		return newBadRequestServiceError(fmt.Errorf("missing minutes for partial attendance"), "partial attendance requires check-in and check-out times")
+	}
+
+	return nil
 }
 
 func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
