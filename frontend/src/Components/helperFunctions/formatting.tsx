@@ -191,3 +191,13 @@ export function getDateObj(date: Date | string): Date {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     return dateObj;
 }
+
+export function formatTimeHM(date: Date): string {
+    return date
+        .toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        .trim();
+}

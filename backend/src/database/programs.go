@@ -357,15 +357,18 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 
 	completionTimeFilter := ""
 	attendanceTimeFilter := ""
-	var timeFilterArgs []any
-
 	if timeFilter > 0 {
-		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
-		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
-		attendanceTimeFilter = "AND pcev.created_at >= ?"
-		//  cutoffDates are needed for: 1) completion filter, 2) attendance filter numerator, 3) attendance filter denominator
-		timeFilterArgs = []any{cutoffDate, cutoffDate, cutoffDate}
+		cutoffDate := time.Now().AddDate(0, 0, -timeFilter).Format("2006-01-02")
+		completionTimeFilter = fmt.Sprintf("AND (pce.enrollment_ended_at >= '%s' OR pcev.created_at >= '%s')", cutoffDate, cutoffDate)
+		attendanceTimeFilter = completionTimeFilter
 	}
+
+	castMinutes := "COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric"
+	if db.Name() == "sqlite" {
+		castMinutes = "CAST(COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0) AS REAL)"
+	}
+	ratioExpr := fmt.Sprintf("%s / NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0)", castMinutes)
+	ratioCapped := fmt.Sprintf("CASE WHEN %s < 1 THEN %s ELSE 1 END", ratioExpr, ratioExpr)
 
 	var avgResult struct {
 		TotalAssociations int64 `json:"total_associations"`
@@ -396,21 +399,27 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		SELECT 
 			COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrolled_at IS NOT NULL %s THEN 1 END) * 100.0 / 
 				NULLIF(COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END), 0), 0) AS completion_rate,
-			COALESCE(COUNT(CASE WHEN pcea.attendance_status = 'present' %s THEN 1 END) * 100.0 / 
-				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
+			COALESCE(SUM(
+				CASE
+					WHEN pcea.attendance_status = 'present' %s THEN 1
+					WHEN pcea.attendance_status = 'partial' %s THEN %s
+					ELSE 0
+					END
+				) * 100.0 /
+					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
 		FROM program_class_enrollments pce
 		LEFT JOIN program_classes pc ON pc.id = pce.class_id
 		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
 		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
-		WHERE pce.enrolled_at IS NOT NULL
-	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter)
+		WHERE pce.enrolled_at IS NOT NULL %s
+	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter, ratioCapped, attendanceTimeFilter, completionTimeFilter)
 
 	var completionAttendanceRates struct {
 		AttendanceRate float64 `json:"attendance_rate"`
 		CompletionRate float64 `json:"completion_rate"`
 	}
 
-	if err := db.WithContext(args.Ctx).Raw(query, timeFilterArgs...).Scan(&completionAttendanceRates).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(query).Scan(&completionAttendanceRates).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "completion and attendance rates")
 	}
 
@@ -462,32 +471,39 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 
 	completionTimeFilter := ""
 	attendanceTimeFilter := ""
-	var timeFilterArgs []interface{}
-
 	if timeFilter > 0 {
-		cutoffDate := time.Now().AddDate(0, 0, -timeFilter)
-		completionTimeFilter = "AND pce.enrollment_ended_at >= ?"
-		attendanceTimeFilter = "AND pcev.created_at >= ?"
-		// values needed: 1) completion filter, 2) attendance filter numerator, 3) attendance filter denominator, plus facility ID
-		timeFilterArgs = []any{cutoffDate, cutoffDate, cutoffDate, args.FacilityID}
-	} else {
-		timeFilterArgs = []any{args.FacilityID}
+		cutoffDate := time.Now().AddDate(0, 0, -timeFilter).Format("2006-01-02")
+		completionTimeFilter = fmt.Sprintf("AND (pce.enrollment_ended_at >= '%s' OR pcev.created_at >= '%s')", cutoffDate, cutoffDate)
+		attendanceTimeFilter = completionTimeFilter
 	}
+
+	castMinutes := "COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric"
+	if db.Name() == "sqlite" {
+		castMinutes = "CAST(COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0) AS REAL)"
+	}
+	ratioExpr := fmt.Sprintf("%s / NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0)", castMinutes)
+	ratioCapped := fmt.Sprintf("CASE WHEN %s < 1 THEN %s ELSE 1 END", ratioExpr, ratioExpr)
 
 	query := fmt.Sprintf(`
 		SELECT 
 			COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrolled_at IS NOT NULL %s THEN 1 END) * 100.0 / 
 				NULLIF(COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END), 0), 0) AS completion_rate,
-			COALESCE(COUNT(CASE WHEN pcea.attendance_status = 'present' %s THEN 1 END) * 100.0 / 
-				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
+			COALESCE(SUM(
+				CASE
+					WHEN pcea.attendance_status = 'present' %s THEN 1
+					WHEN pcea.attendance_status = 'partial' %s THEN %s
+					ELSE 0
+					END
+				) * 100.0 /
+					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
 		FROM program_class_enrollments pce
 		LEFT JOIN program_classes pc ON pc.id = pce.class_id
 		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
 		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
-		WHERE pc.facility_id = ? AND pce.enrolled_at IS NOT NULL
-	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter)
+		WHERE pc.facility_id = ? AND pce.enrolled_at IS NOT NULL %s
+	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter, ratioCapped, attendanceTimeFilter, completionTimeFilter)
 
-	if err := db.WithContext(args.Ctx).Raw(query, timeFilterArgs...).Scan(&rateStats).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(query, args.FacilityID).Scan(&rateStats).Error; err != nil {
 		return programsFacilityStats, newGetRecordsDBError(err, "facility completion and attendance rates")
 	}
 
@@ -624,23 +640,36 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		facilityFilterForRates = fmt.Sprintf("AND pc.facility_id = %d", args.FacilityID)
 	}
 
-	timeFilteredRatesSubquery := fmt.Sprintf(`
+	rateCast := "COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric"
+	if db.Name() == "sqlite" {
+		rateCast = "CAST(COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0) AS REAL)"
+	}
+	rateRatio := fmt.Sprintf("%s / NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0)", rateCast)
+	rateCapped := fmt.Sprintf("CASE WHEN %s < 1 THEN %s ELSE 1 END", rateRatio, rateRatio)
+
+	timeFilteredRatesSubquery := `
 		LEFT JOIN (
-			SELECT 
+			SELECT
 				p.id as program_id,
-				COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL %s THEN 1 END) * 100.0 / 
+				COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' AND pce.enrollment_ended_at IS NOT NULL ` + timeFilterCondition + ` THEN 1 END) * 100.0 /
 					NULLIF(COUNT(pce.id), 0), 0) AS completion_rate,
-				COALESCE(COUNT(CASE WHEN pcea.attendance_status = 'present' %s THEN 1 END) * 100.0 / 
-					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' %s THEN 1 END), 0), 0) AS attendance_rate
+				COALESCE(SUM(
+					CASE
+						WHEN pcea.attendance_status = 'present' ` + timeFilterCondition + ` THEN 1
+						WHEN pcea.attendance_status = 'partial' ` + timeFilterCondition + ` THEN ` + rateCapped + `
+						ELSE 0
+					END
+				) * 100.0 /
+					NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' ` + timeFilterCondition + ` THEN 1 END), 0), 0) AS attendance_rate
 			FROM programs p
-			LEFT JOIN program_classes pc ON pc.program_id = p.id %s
+			LEFT JOIN program_classes pc ON pc.program_id = p.id ` + facilityFilterForRates + `
 			LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
 			LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
 			LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
-			WHERE 1=1 %s
+			WHERE 1=1 ` + timeFilterCondition + `
 			GROUP BY p.id
 		) AS time_filtered_rates ON time_filtered_rates.program_id = programs.id
-	`, timeFilterCondition, timeFilterCondition, timeFilterCondition, facilityFilterForRates, timeFilterCondition)
+	`
 
 	tx := baseQuery.Select(selectFields).
 		Joins(currentMetricsSubquery).
@@ -760,6 +789,14 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 		models.EnrollmentIncompleteFailedToComplete,
 		models.EnrollmentIncompleteTransfered,
 	}
+
+	csvRateCast := "COALESCE(pca.minutes_attended, pca.scheduled_minutes, 0)::numeric"
+	if db.Name() == "sqlite" {
+		csvRateCast = "CAST(COALESCE(pca.minutes_attended, pca.scheduled_minutes, 0) AS REAL)"
+	}
+	csvRateRatio := fmt.Sprintf("%s / NULLIF(COALESCE(pca.scheduled_minutes, pca.minutes_attended, 0), 0)", csvRateCast)
+	csvRateCapped := fmt.Sprintf("CASE WHEN %s < 1 THEN %s ELSE 1 END", csvRateRatio, csvRateRatio)
+
 	tx := db.WithContext(args.Ctx).Table("programs p").
 		Joins("JOIN program_classes pc ON pc.program_id = p.id").
 		Joins("JOIN program_class_enrollments pe ON pe.class_id = pc.id").
@@ -790,7 +827,13 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 	               WHEN COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END) = 0 THEN 0
 	               ELSE 
 	                   COALESCE(
-	                       SUM(CASE WHEN pca.attendance_status = 'present' THEN 1 ELSE 0 END) * 100.0 / 
+	                       SUM(
+							   CASE
+								   WHEN pca.attendance_status = 'present' THEN 1
+								   WHEN pca.attendance_status = 'partial' THEN `+csvRateCapped+`
+								   ELSE 0
+							   END
+						   ) * 100.0 /
 	                       NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
 	                       0
 	                   )

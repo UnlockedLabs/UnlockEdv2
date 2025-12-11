@@ -15,7 +15,9 @@ export default function AttendanceCell({
 }: AttendanceCellProps) {
     function getPresentCount(records: ProgramClassEventAttendance[]): number {
         return records.filter(
-            (record) => record.attendance_status === Attendance.Present
+            (record) =>
+                record.attendance_status === Attendance.Present ||
+                record.attendance_status === Attendance.Partial
         ).length;
     }
 

@@ -8,5 +8,6 @@ export {
     parseRRuleUntilDate,
     fromLocalDateToTime,
     fromLocalDateToNumericDateFormat,
-    getTimestamp
+    getTimestamp,
+    formatTimeHM
 } from './formatting';

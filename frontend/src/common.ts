@@ -833,6 +833,10 @@ export interface EnrollmentAttendance {
     attendance_status?: Attendance;
     note?: string;
     reason_category?: string;
+    check_in_at?: string;
+    check_out_at?: string;
+    minutes_attended?: number;
+    scheduled_minutes?: number;
 }
 
 export enum AttendanceReason {
@@ -845,6 +849,7 @@ export enum AttendanceReason {
 
 export enum Attendance {
     Present = 'present',
+    Partial = 'partial',
     Absent_Excused = 'absent_excused',
     Absent_Unexcused = 'absent_unexcused'
 }
@@ -852,6 +857,7 @@ export enum Attendance {
 export const attendanceLabelMap: Record<Attendance, string> = {
     [Attendance.Absent_Excused]: 'Excused Absence',
     [Attendance.Absent_Unexcused]: 'Unexcused Absence',
+    [Attendance.Partial]: 'Partial',
     [Attendance.Present]: 'Present'
 };
 

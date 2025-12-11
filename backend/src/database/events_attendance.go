@@ -46,7 +46,7 @@ func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAtten
 		if err := tx.
 			Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},
-				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note", "reason_category"}),
+				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note", "reason_category", "check_in_at", "check_out_at", "minutes_attended", "scheduled_minutes"}),
 			}).
 			Create(&att).Error; err != nil {
 			tx.Rollback()
@@ -180,7 +180,11 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 			a.date AS date,
 			a.attendance_status AS attendance_status,
 			a.note AS note,
-			a.reason_category AS reason_category`
+			a.reason_category AS reason_category,
+			a.check_in_at AS check_in_at,
+			a.check_out_at AS check_out_at,
+			a.minutes_attended AS minutes_attended,
+			a.scheduled_minutes AS scheduled_minutes`
 	finalQuery := selectClause + baseQuery
 	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
 		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause("e.created_at DESC"))
@@ -203,7 +207,17 @@ func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classI
 	var attendanceRate float64
 	sql := `
 	select coalesce(
-		count(*) filter (where pcea.attendance_status = 'present') * 100.0 /
+		sum(
+			case
+				when pcea.attendance_status = 'present' then 1
+				when pcea.attendance_status = 'partial' then least(
+					coalesce(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric /
+					nullif(coalesce(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0),
+					1
+				)
+				else 0
+			end
+		) * 100.0 /
 		nullif(
 			(select count(*) from program_class_enrollments e 
 			 where e.class_id = ? 
@@ -239,13 +253,13 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 			inner join program_class_event_attendance att on att.event_id = evt.id
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
-					and att.attendance_status = 'present'
+					and att.attendance_status in ('present','partial')
 		)`
 	multiAbsencesSQL := `and exists (select 1 from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
-					and att.attendance_status = 'present'
+					and att.attendance_status in ('present','partial')
 		)
 		and (select count(*) from program_class_events evt
 				inner join program_class_event_attendance att on att.event_id = evt.id

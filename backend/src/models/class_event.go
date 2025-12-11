@@ -13,6 +13,7 @@ type Attendance string
 
 const (
 	Present          Attendance = "present"
+	Partial          Attendance = "partial"
 	Absent_Excused   Attendance = "absent_excused"
 	Absent_Unexcused Attendance = "absent_unexcused"
 )
@@ -171,6 +172,10 @@ type ProgramClassEventAttendance struct {
 	AttendanceStatus Attendance `json:"attendance_status" gorm:"column:attendance_status"`
 	Note             string     `json:"note" gorm:"column:note"`
 	ReasonCategory   string     `json:"reason_category" gorm:"column:reason_category"`
+	CheckInAt        *string    `json:"check_in_at" gorm:"column:check_in_at"`
+	CheckOutAt       *string    `json:"check_out_at" gorm:"column:check_out_at"`
+	MinutesAttended  *int       `json:"minutes_attended" gorm:"column:minutes_attended"`
+	ScheduledMinutes *int       `json:"scheduled_minutes" gorm:"column:scheduled_minutes"`
 
 	/* Foreign Keys */
 	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
@@ -201,6 +206,10 @@ type EnrollmentAttendance struct {
 	AttendanceStatus *string `json:"attendance_status"`
 	Note             *string `json:"note"`
 	ReasonCategory   *string `json:"reason_category"`
+	CheckInAt        *string `json:"check_in_at"`
+	CheckOutAt       *string `json:"check_out_at"`
+	MinutesAttended  *int    `json:"minutes_attended"`
+	ScheduledMinutes *int    `json:"scheduled_minutes"`
 }
 
 type AttendanceFlagType string
@@ -218,8 +227,9 @@ type AttendanceFlag struct {
 }
 
 type EventDates struct {
-	EventID uint   `json:"event_id"`
-	Date    string `json:"date"`
+	EventID   uint   `json:"event_id"`
+	Date      string `json:"date"`
+	ClassTime string `json:"class_time"` // e.g. "12:00-14:00"
 }
 
 type FacilityProgramClassEvent struct {
