@@ -76,6 +76,18 @@ const diffMinutes = (start?: string, end?: string) => {
     return diff > 0 ? diff : undefined;
 };
 
+const isEnrollmentAttendance = (
+    value: unknown
+): value is EnrollmentAttendance => {
+    if (!value || typeof value !== 'object') return false;
+    const obj = value as EnrollmentAttendance;
+    return (
+        typeof obj.user_id === 'number' &&
+        typeof obj.name_first === 'string' &&
+        typeof obj.name_last === 'string'
+    );
+};
+
 export default function EventAttendance() {
     const { class_id, event_id, date } = useParams<{
         event_id: string;
@@ -169,14 +181,36 @@ export default function EventAttendance() {
     };
 
     useEffect(() => {
-        if (!data?.data) {
+        if (!Array.isArray(data?.data)) {
             return;
         }
-        const items = data.data;
+        const items: EnrollmentAttendance[] = Array.isArray(data.data)
+            ? data.data.filter((raw): raw is EnrollmentAttendance =>
+                  isEnrollmentAttendance(raw)
+              )
+            : [];
         const mergedRows: LocalRowData[] = items.map((item) => {
             const reasonValue = isPresentLike(item.attendance_status)
                 ? ''
                 : item.reason_category ?? '';
+            const checkInAt =
+                typeof item.check_in_at === 'string'
+                    ? (item.check_in_at)
+                    : undefined;
+            const checkOutAt =
+                typeof item.check_out_at === 'string'
+                    ? (item.check_out_at)
+                    : undefined;
+            const minutesAttended: number | undefined = Number.isFinite(
+                item.minutes_attended
+            )
+                ? (item.minutes_attended!)
+                : undefined;
+            const scheduledMinutes: number | undefined = Number.isFinite(
+                item.scheduled_minutes
+            )
+                ? (item.scheduled_minutes!)
+                : undefined;
             if (!modifiedRows[item.user_id]) {
                 setValue(`reason_${item.user_id}`, reasonValue);
             }
@@ -192,14 +226,10 @@ export default function EventAttendance() {
                 attendance_status: item.attendance_status,
                 note: item.note ?? '',
                 reason_category: reasonValue,
-                 
-                check_in_at: item.check_in_at ?? undefined,
-                 
-                check_out_at: item.check_out_at ?? undefined,
-                 
-                minutes_attended: item.minutes_attended,
-                 
-                scheduled_minutes: item.scheduled_minutes
+                check_in_at: checkInAt,
+                check_out_at: checkOutAt,
+                minutes_attended: minutesAttended,
+                scheduled_minutes: scheduledMinutes
             };
             return modifiedRows[item.user_id]
                 ? { ...baseRow, ...modifiedRows[item.user_id] }
@@ -484,15 +514,6 @@ export default function EventAttendance() {
 
         await submitAttendanceForRows(mergedRowsForSubmit);
         void mutate();
-
-        // Invalidate all cache related to this class (events, details, historical enrollment)
-        //await mutateGlobal(
-        //    (key: string | undefined) =>
-        //        typeof key === 'string' &&
-        //        key.startsWith(`/api/program-classes/${class_id}`),
-        //    undefined,
-        //  { revalidate: true }
-        //);
         navigate(
             `/program-classes/${class_id}/attendance?year=${yyyy}&month=${mm}`
         );
@@ -590,48 +611,34 @@ export default function EventAttendance() {
                 >
                     <div className="relative w-full overflow-x-auto">
                         <table
-                            className="table-2 table-fixed w-full min-w-[960px] mb-5 border-separate border-spacing-0"
+                            className="table-2 table-fixed w-full min-w-[1500px] mb-5 border-separate border-spacing-0"
                             style={{ display: 'table' }}
                         >
                             <colgroup>
                                 <col className="w-[10%]" />
                                 <col className="w-[8%]" />
-                                <col className="w-[24%]" />
+                                <col className="w-[26%]" />
+                                <col className="w-[15%]" />
+                                <col className="w-[11%]" />
+                                <col className="w-[11%]" />
+                                <col className="w-[7%]" />
                                 <col className="w-[12%]" />
-                                <col className="w-[12%]" />
-                                <col className="w-[12%]" />
-                                <col className="w-[8%]" />
-                                <col className="w-[14%]" />
                             </colgroup>
                             <thead style={{ display: 'table-header-group' }}>
                                 <tr
                                     className="text-left table-row border-b border-grey-2"
                                     style={{ display: 'table-row' }}
                                 >
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
-                                        Name
-                                    </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
-                                        Resident ID
-                                    </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium min-w-[180px]">
-                                        Status
-                                    </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
-                                        Reason
-                                    </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
-                                        Check-in
-                                    </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
-                                        Check-out
-                                    </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
+                                    <th className="px-3">Name</th>
+                                    <th className="px-3">Resident ID</th>
+                                    <th className="px-3">Status</th>
+                                    <th className="px-3">Reason</th>
+                                    <th className="px-3">Check-in</th>
+                                    <th className="px-3">Check-out</th>
+                                    <th className="px-3">
                                         Time in class (minutes)
                                     </th>
-                                    <th className="px-3 py-2 body text-grey-4 font-medium">
-                                        Note
-                                    </th>
+                                    <th className="px-3">Note</th>
                                 </tr>
                             </thead>
                             <tbody
@@ -672,7 +679,7 @@ export default function EventAttendance() {
                                                         ? ' '
                                                         : `${row.doc_id}`}
                                                 </td>
-                                                <td className="px-3 py-2 min-w-[180px]">
+                                                <td className="px-3 py-2 min-w-[200px]">
                                                     <AttendanceStatusToggle
                                                         value={
                                                             row.attendance_status ??
@@ -689,7 +696,7 @@ export default function EventAttendance() {
                                                         disabled={blockEdits}
                                                     />
                                                 </td>
-                                                <td className="px-3 py-2">
+                                                <td className="px-3 py-2 min-w-[150px]">
                                                     <DropdownInput
                                                         label=""
                                                         interfaceRef={`reason_${row.user_id}`}
