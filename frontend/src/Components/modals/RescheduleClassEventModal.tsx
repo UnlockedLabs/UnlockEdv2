@@ -87,7 +87,7 @@ export const RescheduleClassEventModal = forwardRef(function (
             class_id: calendarEvent.class_id,
             override_rrule: rescheduledRule,
             duration: duration,
-            room: data.room as string,
+            room_id: calendarEvent.room_id,
             is_cancelled: false
         };
 
@@ -123,6 +123,9 @@ export const RescheduleClassEventModal = forwardRef(function (
                         made here will apply <b>only to this occurrence</b> and
                         will not affect the rest of the schedule.
                     </p>
+                    <p className="text-sm text-grey-3 mb-4">
+                        Room: {calendarEvent?.room ?? 'TBD'}
+                    </p>
                 </>
             )
         },
@@ -146,12 +149,6 @@ export const RescheduleClassEventModal = forwardRef(function (
             interfaceRef: 'end_time',
             required: true,
             getValues: formDataRef?.getValues
-        },
-        {
-            type: FormInputTypes.Text,
-            label: 'Room',
-            interfaceRef: 'room',
-            required: true
         }
     ];
 
