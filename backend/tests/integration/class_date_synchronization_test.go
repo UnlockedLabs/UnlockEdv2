@@ -30,30 +30,39 @@ func TestClassDateSynchronization(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	room := &models.Room{FacilityID: facility.ID, Name: "Test Room"}
-	require.NoError(t, env.DB.Create(room).Error)
-
 	t.Run("Event override creation extends class end date", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 1"}
+		require.NoError(t, env.DB.Create(room).Error)
 		runTestOverrideCreationExtendsEndDate(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Event rescheduling extends class across multiple months", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 2"}
+		require.NoError(t, env.DB.Create(room).Error)
 		runTestEventReschedulingExtendsMultipleMonths(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Multiple overrides extend class end date appropriately", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 3"}
+		require.NoError(t, env.DB.Create(room).Error)
 		runTestMultipleOverridesExtendEndDate(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Cannot modify events for completed classes", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 4"}
+		require.NoError(t, env.DB.Create(room).Error)
 		runTestCannotModifyEventsForCompletedClasses(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Class start date updates when event moved earlier", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 5"}
+		require.NoError(t, env.DB.Create(room).Error)
 		runTestStartDateUpdatesWhenEventMovedEarlier(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Event cancellation affects class boundaries", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 6"}
+		require.NoError(t, env.DB.Create(room).Error)
 		runTestEventCancellationAffectsBoundaries(t, env, facility, facilityAdmin, program, room.ID)
 	})
 }
