@@ -19,3 +19,4 @@ export { DateInput } from './DateInput';
 export { AddButton } from './AddButton';
 export { TimeInput } from './TimeInput';
 export { DragDropFileInput } from './DragDropFileInput';
+export { RoomSelector } from './RoomSelector';

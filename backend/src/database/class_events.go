@@ -174,7 +174,7 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		isOverrideUpdate = overrideEvent.ID > 0
 		if err := trans.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room", "reason", "linked_override_event_id"}),
+			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room_id", "reason", "linked_override_event_id"}),
 		}).Create(&overrideEvent).Error; err != nil {
 			trans.Rollback()
 			return newCreateDBError(err, "program_class_event_overrides")
@@ -356,8 +356,8 @@ func (db *DB) NewEventOverride(eventId int, form *models.OverrideForm) (*models.
 	override := models.ProgramClassEventOverride{
 		EventID: uint(eventId),
 	}
-	if form.Room != "" {
-		override.Room = form.Room
+	if form.RoomID != nil {
+		override.RoomID = form.RoomID
 	}
 	if form.Duration != "" {
 		override.Duration = form.Duration
@@ -458,7 +458,8 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	events := make([]models.FacilityProgramClassEvent, 0, 10)
 	// TO DO: finish adding overrides as is_cancelled (so it renders in the frontend)
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
-		Select(`pcev.*,
+		Select(`pcev.id, pcev.created_at, pcev.updated_at, pcev.deleted_at, pcev.class_id, pcev.duration, pcev.recurrence_rule, pcev.room_id,
+		r.name as room,
 		p.name as program_name,
 		c.instructor_name,
 		c.name as class_name,
@@ -466,6 +467,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
         STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
 		Joins("JOIN program_classes c ON c.id = pcev.class_id and c.archived_at IS NULL").
 		Joins("JOIN programs p ON p.id = c.program_id").
+		Joins("LEFT JOIN rooms r ON r.id = pcev.room_id").
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID)
@@ -476,7 +478,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	if !args.IsAdmin {
 		tx = tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
-	tx = tx.Group("pcev.id, c.instructor_name, c.name, c.status, p.name")
+	tx = tx.Group("pcev.id, c.instructor_name, c.name, c.status, p.name, r.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -772,13 +774,14 @@ func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []mode
 			}
 		} else {
 			for _, occ := range overrideOccurrences {
+				roomName := getRoomName(event.RoomRef)
 				rDateInstance := models.EventInstance{
 					EventID:     event.ID,
 					ClassID:     event.ClassID,
 					Duration:    duration,
 					StartTime:   occ.UTC(),
 					IsCancelled: false,
-					Room:        event.Room,
+					Room:        roomName,
 				}
 				if override.Duration != "" {
 					newDuration, err := time.ParseDuration(override.Duration)
@@ -786,8 +789,8 @@ func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []mode
 						rDateInstance.Duration = newDuration
 					}
 				}
-				if override.Room != "" {
-					rDateInstance.Room = override.Room
+				if override.RoomRef != nil {
+					rDateInstance.Room = override.RoomRef.Name
 				}
 				rDates = append(rDates, rDateInstance)
 				mainSet.ExDate(occ.UTC())
@@ -796,6 +799,7 @@ func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []mode
 	}
 	occurrences := mainSet.Between(start.UTC(), end.UTC(), true)
 
+	roomName := getRoomName(event.RoomRef)
 	for _, occ := range occurrences {
 		instance := models.EventInstance{
 			EventID:     event.ID,
@@ -803,7 +807,7 @@ func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []mode
 			StartTime:   occ.UTC(),
 			Duration:    duration,
 			IsCancelled: false,
-			Room:        event.Room,
+			Room:        roomName,
 		}
 		instances = append(instances, instance)
 	}
@@ -1184,4 +1188,11 @@ func (db *DB) UpdateClassEventRRuleUntilDate(tx *gorm.DB, classIDs []int, comple
 		return newUpdateDBError(err, "program_class_events")
 	}
 	return nil
+}
+
+func getRoomName(roomRef *models.Room) string {
+	if roomRef != nil {
+		return roomRef.Name
+	}
+	return "TBD"
 }

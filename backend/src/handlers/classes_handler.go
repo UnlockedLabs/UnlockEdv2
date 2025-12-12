@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -102,6 +103,20 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.FacilityID = claims.FacilityID
 	class.ProgramID = uint(id)
+	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     claims.FacilityID,
+			RoomID:         *class.Events[0].RoomID,
+			RecurrenceRule: class.Events[0].RecurrenceRule,
+			Duration:       class.Events[0].Duration,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+		}
+	}
 	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
 	if err != nil {
 		return newDatabaseServiceError(err)

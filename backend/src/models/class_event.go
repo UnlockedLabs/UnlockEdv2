@@ -37,10 +37,11 @@ type ProgramClassEvent struct {
 	ClassID        uint   `json:"class_id" gorm:"not null" validate:"required"`
 	Duration       string `json:"duration" gorm:"not null" validate:"required"`
 	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" validate:"required"`
-	Room           string `json:"room" gorm:"not null;default:TBD"`
+	RoomID         *uint  `json:"room_id" gorm:"not null"`
 
 	/* Foreign keys */
 	Class     *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
+	RoomRef   *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
 	Attendees []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
 	Overrides []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
 }
@@ -121,12 +122,13 @@ type ProgramClassEventOverride struct {
 	OverrideRrule         string `json:"override_rrule" gorm:"not null"`
 	ClassID               uint   `json:"class_id" gorm:"->" `
 	IsCancelled           bool   `json:"is_cancelled"`
-	Room                  string `json:"room"`
+	RoomID                *uint  `json:"room_id"`
 	Reason                string `json:"reason"`
 	LinkedOverrideEventID *uint  `json:"linked_override_event_id"`
 
 	/* Foreign keys */
-	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	Event   *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	RoomRef *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
 }
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
@@ -165,7 +167,12 @@ func (pce *ProgramClassEventOverride) GetRescheduleSummary(timezone string) (*st
 	startTime := startDate.Format("3:04PM")
 	endTime := end.Format("3:04PM")
 
-	rescheduleSummary := date + " " + startTime + " - " + endTime + " (" + pce.Room + ")"
+	roomName := "TBD"
+	if pce.RoomRef != nil {
+		roomName = pce.RoomRef.Name
+	}
+
+	rescheduleSummary := date + " " + startTime + " - " + endTime + " (" + roomName + ")"
 	return &rescheduleSummary, nil
 }
 
@@ -247,6 +254,7 @@ type EventDates struct {
 
 type FacilityProgramClassEvent struct {
 	ProgramClassEvent
+	Room                string                     `json:"room" gorm:"->"` // read-only, populated from joined rooms table
 	InstructorName      string                     `json:"instructor_name"`
 	ProgramName         string                     `json:"program_name"`
 	ClassName           string                     `json:"title"`

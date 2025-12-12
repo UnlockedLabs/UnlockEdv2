@@ -6,9 +6,16 @@ import {
     TextAreaInput,
     TextInput,
     CancelButton,
-    CloseX
+    CloseX,
+    RoomSelector
 } from '@/Components/inputs';
-import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
+import {
+    ProgClassStatus,
+    Class,
+    ToastState,
+    ClassLoaderData,
+    Room
+} from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -32,6 +39,7 @@ export default function ClassManagementForm() {
         return null;
     }
     const clsLoader = useLoaderData() as ClassLoaderData;
+    const [rooms, setRooms] = useState<Room[]>(clsLoader.rooms ?? []);
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
     const [events, setEvents] = useState<ShortCalendarEvent[]>([]);
@@ -48,10 +56,11 @@ export default function ClassManagementForm() {
         getValues,
         watch,
         reset,
+        control,
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
-            events: [{ room: '', recurrence_rule: '', duration: '' }]
+            events: [{ room_id: undefined, recurrence_rule: '', duration: '' }]
         }
     });
     useEffect(() => {
@@ -86,16 +95,16 @@ export default function ClassManagementForm() {
                           ...(class_id && { id: Number(data?.events[0].id) }),
                           ...(class_id && { class_id: Number(class_id) }),
                           recurrence_rule: rruleString?.rule,
-                          room: data.events[0].room,
+                          room_id: data.events[0].room_id,
                           duration: rruleString?.duration
                       }
                   ]
                 : [
                       {
                           ...clsLoader.class!.events[0],
-                          room:
-                              data.events?.[0]?.room ??
-                              clsLoader.class!.events[0].room
+                          room_id:
+                              data.events?.[0]?.room_id ??
+                              clsLoader.class!.events[0].room_id
                       },
                       ...clsLoader.class!.events.slice(1)
                   ]
@@ -122,13 +131,16 @@ export default function ClassManagementForm() {
 
         if (!response.success) {
             const toasterMsg =
-                class_id && response.message.includes('unenrolling')
-                    ? 'Cannot update class until unenrolling residents'
-                    : response.message.includes('inactive')
-                      ? 'Cannot create class for an inactive program'
-                      : class_id
-                        ? 'Failed to update class'
-                        : 'Failed to create class';
+                response.message.includes('room conflict') ||
+                response.message.includes('already booked')
+                    ? 'Room is already booked during this time'
+                    : class_id && response.message.includes('unenrolling')
+                      ? 'Cannot update class until unenrolling residents'
+                      : response.message.includes('inactive')
+                        ? 'Cannot create class for an inactive program'
+                        : class_id
+                          ? 'Failed to update class'
+                          : 'Failed to create class';
             toaster(toasterMsg, ToastState.error);
             console.error(
                 `error occurred while trying to create/update class, error message: ${response.message}`
@@ -260,13 +272,15 @@ export default function ClassManagementForm() {
                             required
                             errors={errors}
                         />
-                        <TextInput
+                        <RoomSelector
+                            name="events.0.room_id"
                             label="Room"
-                            register={register}
-                            interfaceRef="events.0.room"
+                            control={control}
+                            rooms={rooms}
+                            onRoomCreated={(room) =>
+                                setRooms((prev) => [...prev, room])
+                            }
                             required
-                            length={255}
-                            errors={errors}
                         />
 
                         <NumberInput
