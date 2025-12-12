@@ -8,6 +8,7 @@ import (
 )
 
 func (srv *Server) registerFacilitiesRoutes() []routeDef {
+	axx := models.ProgramAccess
 	return []routeDef{
 		newAdminRoute("GET /api/facilities", srv.handleIndexFacilities),
 		newAdminRoute("GET /api/facilities/{id}", srv.handleShowFacility),
@@ -15,6 +16,8 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 		newSystemAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
 		newSystemAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
 		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
+		adminFeatureRoute("GET /api/rooms", srv.handleGetRooms, axx),
+		adminFeatureRoute("POST /api/rooms", srv.handleCreateRoom, axx),
 	}
 }
 
@@ -117,4 +120,30 @@ func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "facility deleted successfully")
+}
+
+func (srv *Server) handleGetRooms(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityID := srv.getFacilityID(r)
+	log.add("facility_id", facilityID)
+	rooms, err := srv.Db.GetRoomsForFacility(facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, rooms)
+}
+
+func (srv *Server) handleCreateRoom(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityID := srv.getFacilityID(r)
+	var room models.Room
+	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	room.FacilityID = facilityID
+	log.add("facility_id", facilityID)
+	log.add("room_name", room.Name)
+	created, err := srv.Db.CreateRoom(&room)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, created)
 }

@@ -15,7 +15,8 @@ import {
     ServerResponseOne,
     ClassLoaderData,
     ProgramOverview,
-    SelectedClassStatus
+    SelectedClassStatus,
+    Room
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -158,6 +159,11 @@ export const getProgramTitle: LoaderFunction = async ({
     const { id, class_id } = params;
     let cls: Class | undefined;
     let programName = 'Class Details';
+    let rooms: Room[] = [];
+    const roomsResp = await API.get('rooms');
+    if (roomsResp.success) {
+        rooms = roomsResp.data as Room[];
+    }
     if (id) {
         const resp = await API.get(`programs/${id}`);
         if (resp.success) {
@@ -181,7 +187,8 @@ export const getProgramTitle: LoaderFunction = async ({
     }
     return {
         title: programName,
-        class: cls
+        class: cls,
+        rooms: rooms
     };
 };
 
