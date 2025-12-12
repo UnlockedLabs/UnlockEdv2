@@ -30,7 +30,7 @@ export function createCancelledEvent(
         class_id: calendarEvent.class_id,
         override_rrule: overrideRule,
         duration: calendarEvent.duration,
-        location: calendarEvent.room,
+        room_id: calendarEvent.room_id,
         is_cancelled: true,
         reason: reason
     };

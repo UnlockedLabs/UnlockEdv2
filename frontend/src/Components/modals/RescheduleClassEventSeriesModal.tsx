@@ -67,7 +67,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
             id: 0,
             class_id: calendarEvent.class_id,
             duration: rruleObj?.duration,
-            room: data.room as string,
+            room_id: calendarEvent.room_id,
             recurrence_rule: rruleObj?.rule
         };
 
@@ -117,6 +117,9 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                         Changes will apply to this session and{' '}
                         <b>all future occurrences.</b>
                     </p>
+                    <p className="text-sm text-grey-3 mb-4">
+                        Room: {calendarEvent?.room ?? 'TBD'}
+                    </p>
                 </>
             )
         },
@@ -156,14 +159,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                       )
                   }
               ]
-            : []),
-        {
-            type: FormInputTypes.Text,
-            label: 'Room',
-            interfaceRef: 'room',
-            required: true,
-            defaultValue: calendarEvent?.room
-        }
+            : [])
     ];
 
     function verify(): boolean {
