@@ -1,4 +1,4 @@
-import { Attendance, SelectedClassStatus } from '@/common';
+import { Attendance, Room, SelectedClassStatus } from '@/common';
 
 // ClassEventInstance represents a single scheduled class event with attendance records
 export interface ClassEventInstance extends ProgramClassEvent {
@@ -33,7 +33,8 @@ export interface ProgramClassEvent {
     id: number;
     class_id: number;
     duration: string;
-    room: string;
+    room_id: number;
+    room_ref?: Room;
     recurrence_rule: string;
     is_cancelled: boolean;
     overrides: ProgramClassEventOverride[];
@@ -45,13 +46,15 @@ export interface ProgramClassEventOverride {
     event_id: number;
     override_rrule: string;
     duration: string;
-    room: string;
+    room_id?: number;
+    room_ref?: Room;
     is_cancelled: boolean;
     reason: string;
 }
 
 // FacilityProgramClassEvent represents a detailed scheduled class event at a facility, including instructor, program, calendar, and override info.
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
+    room: string; // populated from joined rooms table in calendar query
     instructor_name: string;
     program_name: string;
     title: string;

@@ -83,6 +83,29 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		overrides[i].EventID = uint(eventId)
 		overrides[i].ClassID = uint(classID)
 	}
+	for _, override := range overrides {
+		if override.IsCancelled || override.RoomID == nil {
+			continue
+		}
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		eventIDUint := uint(eventId)
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     class.FacilityID,
+			RoomID:         *override.RoomID,
+			RecurrenceRule: override.OverrideRrule,
+			Duration:       override.Duration,
+			ExcludeEventID: &eventIDUint,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+		}
+	}
 	ctx := srv.getQueryContext(r)
 	if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, overrides); err != nil {
 		return newDatabaseServiceError(err)
@@ -133,6 +156,24 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	event.ClassID = uint(classID)
+	if event.RoomID != nil {
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     class.FacilityID,
+			RoomID:         *event.RoomID,
+			RecurrenceRule: event.RecurrenceRule,
+			Duration:       event.Duration,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+		}
+	}
 	_, err = srv.WithUserContext(r).CreateNewEvent(classID, event)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -158,6 +199,29 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	}
 	if err := json.NewDecoder(r.Body).Decode(&eventSeriesRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
+	}
+	if eventSeriesRequest.EventSeries.RoomID != nil {
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		var excludeEventID *uint
+		if eventSeriesRequest.EventSeries.ID > 0 {
+			excludeEventID = &eventSeriesRequest.EventSeries.ID
+		}
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     class.FacilityID,
+			RoomID:         *eventSeriesRequest.EventSeries.RoomID,
+			RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
+			Duration:       eventSeriesRequest.EventSeries.Duration,
+			ExcludeEventID: excludeEventID,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+		}
 	}
 	args := srv.getQueryContext(r)
 	args.All = true

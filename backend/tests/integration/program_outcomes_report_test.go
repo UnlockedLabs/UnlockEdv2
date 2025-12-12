@@ -386,7 +386,6 @@ func (suite *ProgramOutcomesReportTestSuite) createEvent(classID uint, eventDate
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
-		Room:           "Test Room",
 	}
 	suite.env.DB.Create(event)
 	return event

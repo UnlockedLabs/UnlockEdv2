@@ -342,6 +342,22 @@ export interface Facility {
     timezone: string;
 }
 
+export interface Room {
+    id: number;
+    facility_id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface RoomConflict {
+    conflicting_event_id: number;
+    conflicting_class_id: number;
+    class_name: string;
+    start_time: string;
+    end_time: string;
+}
+
 export interface ProviderUser {
     username: string;
     name_last: string;
@@ -1015,6 +1031,7 @@ export interface ClassLoaderData extends TitleHandler {
     redirect?: string;
     attendance_rate?: number;
     missing_attendance?: number;
+    rooms?: Room[];
 }
 
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
