@@ -76,18 +76,6 @@ const diffMinutes = (start?: string, end?: string) => {
     return diff > 0 ? diff : undefined;
 };
 
-const isEnrollmentAttendance = (
-    value: unknown
-): value is EnrollmentAttendance => {
-    if (!value || typeof value !== 'object') return false;
-    const obj = value as EnrollmentAttendance;
-    return (
-        typeof obj.user_id === 'number' &&
-        typeof obj.name_first === 'string' &&
-        typeof obj.name_last === 'string'
-    );
-};
-
 export default function EventAttendance() {
     const { class_id, event_id, date } = useParams<{
         event_id: string;
@@ -181,36 +169,14 @@ export default function EventAttendance() {
     };
 
     useEffect(() => {
-        if (!Array.isArray(data?.data)) {
+        if (!data?.data) {
             return;
         }
-        const items: EnrollmentAttendance[] = Array.isArray(data.data)
-            ? data.data.filter((raw): raw is EnrollmentAttendance =>
-                  isEnrollmentAttendance(raw)
-              )
-            : [];
+        const items = data.data;
         const mergedRows: LocalRowData[] = items.map((item) => {
             const reasonValue = isPresentLike(item.attendance_status)
                 ? ''
                 : item.reason_category ?? '';
-            const checkInAt =
-                typeof item.check_in_at === 'string'
-                    ? (item.check_in_at)
-                    : undefined;
-            const checkOutAt =
-                typeof item.check_out_at === 'string'
-                    ? (item.check_out_at)
-                    : undefined;
-            const minutesAttended: number | undefined = Number.isFinite(
-                item.minutes_attended
-            )
-                ? (item.minutes_attended!)
-                : undefined;
-            const scheduledMinutes: number | undefined = Number.isFinite(
-                item.scheduled_minutes
-            )
-                ? (item.scheduled_minutes!)
-                : undefined;
             if (!modifiedRows[item.user_id]) {
                 setValue(`reason_${item.user_id}`, reasonValue);
             }
@@ -226,10 +192,14 @@ export default function EventAttendance() {
                 attendance_status: item.attendance_status,
                 note: item.note ?? '',
                 reason_category: reasonValue,
-                check_in_at: checkInAt,
-                check_out_at: checkOutAt,
-                minutes_attended: minutesAttended,
-                scheduled_minutes: scheduledMinutes
+                 
+                check_in_at: item.check_in_at ?? undefined,
+                 
+                check_out_at: item.check_out_at ?? undefined,
+                 
+                minutes_attended: item.minutes_attended,
+                 
+                scheduled_minutes: item.scheduled_minutes
             };
             return modifiedRows[item.user_id]
                 ? { ...baseRow, ...modifiedRows[item.user_id] }
