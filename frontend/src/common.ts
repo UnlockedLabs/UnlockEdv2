@@ -890,6 +890,7 @@ export interface ClassEnrollment {
     class_id: number;
     user_id: number;
     enrollment_status: EnrollmentStatus;
+    change_reason?: string;
     name_full: string;
     doc_id: string;
     completion_dt?: string;

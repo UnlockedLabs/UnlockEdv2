@@ -1,6 +1,8 @@
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { ClassEnrollment, EnrollmentStatus, Class } from '@/common';
 import EditableEnrollmentDate from './EditableEnrollmentDate';
+import ULIComponent from './ULIComponent';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
 interface EnrollmentTableProps {
     enrollments: ClassEnrollment[];
@@ -140,20 +142,34 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                             }}
                         >
                             {isEditable(enrollment) ? (
-                                <DropdownControl
-                                    enumType={inlineOptions}
-                                    value={enrollment.enrollment_status}
-                                    customCallback={(val) =>
-                                        handleChange(val, enrollment)
-                                    }
-                                />
+                                <div className="sm:min-w-[10rem] sm:max-w-[10rem] lg:min-w-[11.6rem] lg:max-w-[11.6rem]">
+                                    <DropdownControl
+                                        enumType={inlineOptions}
+                                        value={enrollment.enrollment_status}
+                                        customCallback={(val) =>
+                                            handleChange(val, enrollment)
+                                        }
+                                    />
+                                </div>
                             ) : (
-                                <div className="h-12 w-48 border-2 grey-3 rounded-md flex items-center justify-center">
-                                    <span className="menu-title">
-                                        {translateEnrollmentStatus(
-                                            enrollment.enrollment_status
-                                        )}
-                                    </span>
+                                <div className="min-h-12 sm:min-w-[10rem] sm:max-w-[10rem] lg:min-w-[11.6rem] lg:max-w-[11.6rem] border-2 grey-3 rounded-md flex flex-col items-center justify-center text-center px-2">
+                                    <div className="flex items-center gap-2 justify-center break-words">
+                                        <span className="menu-title text-[12px] leading-5">
+                                            {translateEnrollmentStatus(
+                                                enrollment.enrollment_status
+                                            )}
+                                        </span>
+                                        {viewMode === 'other' &&
+                                            enrollment.change_reason && (
+                                                <ULIComponent
+                                                    icon={InformationCircleIcon}
+                                                    tooltipClassName="tooltip-left cursor-help"
+                                                    dataTip={
+                                                        enrollment.change_reason
+                                                    }
+                                                />
+                                            )}
+                                    </div>
                                 </div>
                             )}
                         </td>
