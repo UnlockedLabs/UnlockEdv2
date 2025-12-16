@@ -135,6 +135,11 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 }
 
 func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeEnd time.Time) ([]models.RoomBooking, error) {
+	var facility models.Facility
+	if err := db.Select("timezone").First(&facility, facilityID).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facility")
+	}
+
 	var events []models.ProgramClassEvent
 	if err := db.Table("program_class_events e").
 		Select("e.*").
@@ -147,7 +152,7 @@ func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 
 	var bookings []models.RoomBooking
 	for _, event := range events {
-		eventBookings, err := expandEventToBookings(event, rangeStart, rangeEnd, roomID)
+		eventBookings, err := expandEventToBookings(event, rangeStart, rangeEnd, roomID, facility.Timezone)
 		if err != nil {
 			return nil, err
 		}
@@ -156,14 +161,14 @@ func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 	return bookings, nil
 }
 
-func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd time.Time, targetRoomID uint) ([]models.RoomBooking, error) {
+func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd time.Time, targetRoomID uint, facilityTimezone string) ([]models.RoomBooking, error) {
 	var bookings []models.RoomBooking
 
 	if event.RoomID == nil {
 		return bookings, nil
 	}
 
-	rule, err := event.GetRRule()
+	rule, err := event.GetRRuleWithTimezone(facilityTimezone)
 	if err != nil {
 		return nil, fmt.Errorf("invalid recurrence rule for event %d: %w", event.ID, err)
 	}

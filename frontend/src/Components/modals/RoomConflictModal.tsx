@@ -7,13 +7,14 @@ import { textMonthLocalDate } from '../helperFunctions/formatting';
 interface RoomConflictModalProps {
     conflicts: RoomConflict[];
     roomName?: string;
+    timezone: string;
     onClose: () => void;
 }
 
 export const RoomConflictModal = forwardRef<
     HTMLDialogElement,
     RoomConflictModalProps
->(function RoomConflictModal({ conflicts, roomName, onClose }, ref) {
+>(function RoomConflictModal({ conflicts, roomName, timezone, onClose }, ref) {
     return (
         <dialog ref={ref} className="modal" onClose={onClose}>
             {conflicts && conflicts.length > 0 && (
@@ -53,8 +54,7 @@ export const RoomConflictModal = forwardRef<
                                                 {textMonthLocalDate(
                                                     conflict.start_time,
                                                     true,
-                                                    Intl.DateTimeFormat().resolvedOptions()
-                                                        .timeZone
+                                                    timezone
                                                 )}{' '}
                                                 &ndash;{' '}
                                                 {new Date(
@@ -62,7 +62,8 @@ export const RoomConflictModal = forwardRef<
                                                 ).toLocaleTimeString('en-US', {
                                                     hour: 'numeric',
                                                     minute: '2-digit',
-                                                    hour12: true
+                                                    hour12: true,
+                                                    timeZone: timezone
                                                 })}
                                             </span>
                                         </div>
