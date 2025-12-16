@@ -383,6 +383,7 @@ export default function ClassManagementForm() {
             <RoomConflictModal
                 ref={conflictModalRef}
                 conflicts={conflicts}
+                timezone={user.timezone}
                 roomName={
                     rooms.find((r) => r.id === getValues('events.0.room_id'))
                         ?.name

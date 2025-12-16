@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/teambition/rrule-go"
@@ -83,20 +84,26 @@ func (secEvent *ProgramClassEvent) BeforeCreate(tx *gorm.DB) (err error) {
 func (ProgramClassEvent) TableName() string { return "program_class_events" }
 
 func (e *ProgramClassEvent) GetRRule() (*rrule.RRule, error) {
-	rruleOptions, err := rrule.StrToROption(e.RecurrenceRule)
+	return e.GetRRuleWithTimezone("")
+}
+
+func (e *ProgramClassEvent) GetRRuleWithTimezone(facilityTimezone string) (*rrule.RRule, error) {
+	rruleStr := e.RecurrenceRule
+	if strings.Contains(rruleStr, "TZID=Local") && facilityTimezone != "" {
+		rruleStr = strings.Replace(rruleStr, "TZID=Local", "TZID="+facilityTimezone, 1)
+	}
+	rruleOptions, err := rrule.StrToROption(rruleStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse event recurrence rule: %w", err)
 	}
 	rruleOptions.Dtstart = rruleOptions.Dtstart.In(time.UTC)
 	if !rruleOptions.Until.IsZero() {
 		loc := rruleOptions.Until.Location()
-
 		endOfDay := time.Date(
 			rruleOptions.Until.Year(),
 			rruleOptions.Until.Month(),
 			rruleOptions.Until.Day(),
 			23, 59, 59, int(time.Second-time.Nanosecond), loc)
-
 		rruleOptions.Until = endOfDay.In(time.UTC)
 	}
 	rule, err := rrule.NewRRule(*rruleOptions)
