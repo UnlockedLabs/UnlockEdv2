@@ -138,9 +138,9 @@ export default function ClassManagementForm() {
         if (!response.success) {
             const isRoomConflict =
                 response.status === 409 &&
-                (response.message.includes('room conflict') ||
-                    response.message.includes('already booked'));
-            if (isRoomConflict && Array.isArray(response.data)) {
+                Array.isArray(response.data) &&
+                response.data.length > 0;
+            if (isRoomConflict) {
                 setConflicts(response.data as RoomConflict[]);
                 showModal(conflictModalRef);
                 return;
