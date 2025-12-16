@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -114,7 +113,16 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 			return newDatabaseServiceError(err)
 		}
 		if len(conflicts) > 0 {
-			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			conflictResponse := models.Resource[[]models.RoomConflict]{
+				Message: "room is already booked during this time",
+				Data:    conflicts,
+			}
+			if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
+				return newResponseServiceError(err)
+			}
+			return nil
 		}
 	}
 	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
@@ -147,6 +155,37 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = models.UintPtr(claims.UserID)
+	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+		existing, err := srv.Db.GetClassByID(id)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(existing.Events) > 0 && existing.Events[0].RoomID != nil &&
+			*class.Events[0].RoomID != *existing.Events[0].RoomID {
+			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+				FacilityID:     claims.FacilityID,
+				RoomID:         *class.Events[0].RoomID,
+				RecurrenceRule: existing.Events[0].RecurrenceRule,
+				Duration:       existing.Events[0].Duration,
+				ExcludeEventID: &existing.Events[0].ID,
+			})
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			if len(conflicts) > 0 {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				conflictResponse := models.Resource[[]models.RoomConflict]{
+					Message: "room is already booked during this time",
+					Data:    conflicts,
+				}
+				if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
+					return newResponseServiceError(err)
+				}
+				return nil
+			}
+		}
+	}
 	updated, err := srv.WithUserContext(r).UpdateProgramClass(&class, id)
 	if err != nil {
 		return newDatabaseServiceError(err)

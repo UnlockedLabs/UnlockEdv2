@@ -14,7 +14,8 @@ import {
     Class,
     ToastState,
     ClassLoaderData,
-    Room
+    Room,
+    RoomConflict
 } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
@@ -26,6 +27,7 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { RoomConflictModal, showModal } from '@/Components/modals';
 import { parseDurationToMs } from '@/Components/helperFunctions/formatting';
 import { RRule } from 'rrule';
 import moment from 'moment';
@@ -42,6 +44,8 @@ export default function ClassManagementForm() {
     const [rooms, setRooms] = useState<Room[]>(clsLoader.rooms ?? []);
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
+    const conflictModalRef = useRef<HTMLDialogElement>(null);
+    const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [events, setEvents] = useState<ShortCalendarEvent[]>([]);
     const { id, class_id } = useParams<{ id: string; class_id?: string }>();
     const navigate = useNavigate();
@@ -51,7 +55,6 @@ export default function ClassManagementForm() {
     const isNewClass = class_id === 'new' || !class_id;
     const {
         register,
-        unregister,
         handleSubmit,
         getValues,
         watch,
@@ -65,7 +68,6 @@ export default function ClassManagementForm() {
     });
     useEffect(() => {
         if (!isNewClass && clsLoader.class) {
-            unregister('events');
             setEditFormValues(clsLoader.class);
         }
     }, [clsLoader, isNewClass]);
@@ -78,7 +80,7 @@ export default function ClassManagementForm() {
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
-        if (rruleString?.rule === '') {
+        if (isNewClass && rruleString?.rule === '') {
             return;
         }
         const creditHours = Number(data.credit_hours);
@@ -101,7 +103,11 @@ export default function ClassManagementForm() {
                   ]
                 : [
                       {
-                          ...clsLoader.class!.events[0],
+                          id: clsLoader.class!.events[0].id,
+                          class_id: clsLoader.class!.events[0].class_id,
+                          duration: clsLoader.class!.events[0].duration,
+                          recurrence_rule:
+                              clsLoader.class!.events[0].recurrence_rule,
                           room_id:
                               data.events?.[0]?.room_id ??
                               clsLoader.class!.events[0].room_id
@@ -130,21 +136,24 @@ export default function ClassManagementForm() {
         }
 
         if (!response.success) {
+            const isRoomConflict =
+                response.status === 409 &&
+                (response.message.includes('room conflict') ||
+                    response.message.includes('already booked'));
+            if (isRoomConflict && Array.isArray(response.data)) {
+                setConflicts(response.data as RoomConflict[]);
+                showModal(conflictModalRef);
+                return;
+            }
             const toasterMsg =
-                response.message.includes('room conflict') ||
-                response.message.includes('already booked')
-                    ? 'Room is already booked during this time'
-                    : class_id && response.message.includes('unenrolling')
-                      ? 'Cannot update class until unenrolling residents'
-                      : response.message.includes('inactive')
-                        ? 'Cannot create class for an inactive program'
-                        : class_id
-                          ? 'Failed to update class'
-                          : 'Failed to create class';
+                class_id && response.message.includes('unenrolling')
+                    ? 'Cannot update class until unenrolling residents'
+                    : response.message.includes('inactive')
+                      ? 'Cannot create class for an inactive program'
+                      : class_id
+                        ? 'Failed to update class'
+                        : 'Failed to create class';
             toaster(toasterMsg, ToastState.error);
-            console.error(
-                `error occurred while trying to create/update class, error message: ${response.message}`
-            );
             return;
         }
         toaster(
@@ -189,7 +198,8 @@ export default function ClassManagementForm() {
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
                 ? new Date(editCls.end_dt).toISOString().split('T')[0]
-                : ruleEndDate
+                : ruleEndDate,
+            events: [{ room_id: editCls.events[0].room_id }]
         });
     }
     const filteredEnumType: Partial<typeof ProgClassStatus> = isNewClass
@@ -217,11 +227,17 @@ export default function ClassManagementForm() {
             new Date(),
             moment().add(1, 'year').toDate()
         );
-        const generated = occurrences.map((occurrence) => ({
-            title,
-            start: occurrence,
-            end: new Date(occurrence.getTime() + durationMs)
-        }));
+        const generated = occurrences.map((occurrence) => {
+            const displayStart = toZonedTime(
+                occurrence,
+                user?.timezone ?? 'UTC'
+            );
+            return {
+                title,
+                start: displayStart,
+                end: new Date(displayStart.getTime() + durationMs)
+            };
+        });
         setEvents(generated);
         setShowCalendar(true);
     }
@@ -231,7 +247,9 @@ export default function ClassManagementForm() {
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
-                    rruleFormRef.current?.validate();
+                    if (isNewClass) {
+                        rruleFormRef.current?.validate();
+                    }
                     void handleSubmit(onSubmit)(e);
                 }}
             >
@@ -362,6 +380,18 @@ export default function ClassManagementForm() {
                     </div>
                 </div>
             )}
+            <RoomConflictModal
+                ref={conflictModalRef}
+                conflicts={conflicts}
+                roomName={
+                    rooms.find((r) => r.id === getValues('events.0.room_id'))
+                        ?.name
+                }
+                onClose={() => {
+                    conflictModalRef.current?.close();
+                    setConflicts([]);
+                }}
+            />
         </div>
     );
 }
