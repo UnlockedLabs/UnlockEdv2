@@ -103,6 +103,9 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	class.FacilityID = claims.FacilityID
 	class.ProgramID = uint(id)
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
 		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     claims.FacilityID,
 			RoomID:         *class.Events[0].RoomID,
@@ -156,12 +159,18 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = models.UintPtr(claims.UserID)
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
 		existing, err := srv.Db.GetClassByID(id)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		if len(existing.Events) > 0 && existing.Events[0].RoomID != nil &&
-			*class.Events[0].RoomID != *existing.Events[0].RoomID {
+		existingRoomID := uint(0)
+		if len(existing.Events) > 0 && existing.Events[0].RoomID != nil {
+			existingRoomID = *existing.Events[0].RoomID
+		}
+		if *class.Events[0].RoomID != existingRoomID {
 			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 				FacilityID:     claims.FacilityID,
 				RoomID:         *class.Events[0].RoomID,
@@ -197,9 +206,12 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	ids := r.URL.Query()["id"]
 	classIDs := make([]int, 0, len(ids))
 	for _, id := range ids {
-		if classID, err := strconv.Atoi(id); err == nil {
-			classIDs = append(classIDs, classID)
+		classID, err := strconv.Atoi(id)
+		if err != nil {
+			log.warn("invalid class ID in batch update, skipping: ", id)
+			continue
 		}
+		classIDs = append(classIDs, classID)
 	}
 	classMap := make(map[string]any)
 	if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {

@@ -83,12 +83,22 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		overrides[i].EventID = uint(eventId)
 		overrides[i].ClassID = uint(classID)
 	}
+	var class *models.ProgramClass
+	for _, override := range overrides {
+		if !override.IsCancelled && override.RoomID != nil {
+			var err error
+			class, err = srv.Db.GetClassByID(classID)
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			break
+		}
+	}
 	for _, override := range overrides {
 		if override.IsCancelled || override.RoomID == nil {
 			continue
 		}
-		class, err := srv.Db.GetClassByID(classID)
-		if err != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*override.RoomID, class.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
 		eventIDUint := uint(eventId)
@@ -170,6 +180,9 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
 		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
 			RoomID:         *event.RoomID,
@@ -221,6 +234,9 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	if eventSeriesRequest.EventSeries.RoomID != nil {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*eventSeriesRequest.EventSeries.RoomID, class.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
 		var excludeEventID *uint
@@ -323,6 +339,8 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 		if eventIdStr != "" {
 			if parsedEventId, err := strconv.Atoi(eventIdStr); err == nil {
 				eventId = &parsedEventId
+			} else {
+				log.errorf("Error parsing event_id: %v", err)
 			}
 		}
 		dates, err := srv.Db.GetClassEventDatesForRecurrence(classID, timezone, month, year, eventId)
