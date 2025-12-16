@@ -71,12 +71,13 @@ func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramCla
 	var needsRoomUpdate bool
 	var newRoomID *uint
 	var eventID uint
-	if len(content.Events) > 0 && len(existing.Events) > 0 &&
-		content.Events[0].RoomID != nil && existing.Events[0].RoomID != nil &&
-		*content.Events[0].RoomID != *existing.Events[0].RoomID {
-		needsRoomUpdate = true
-		newRoomID = content.Events[0].RoomID
-		eventID = existing.Events[0].ID
+	if len(content.Events) > 0 && len(existing.Events) > 0 && content.Events[0].RoomID != nil {
+		existingRoomID := existing.Events[0].RoomID
+		if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
+			needsRoomUpdate = true
+			newRoomID = content.Events[0].RoomID
+			eventID = existing.Events[0].ID
+		}
 	}
 
 	models.UpdateStruct(existing, content)

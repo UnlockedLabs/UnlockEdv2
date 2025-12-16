@@ -2,9 +2,12 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"errors"
+	"fmt"
 	"sort"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
 )
 
@@ -19,6 +22,14 @@ func (db *DB) GetRoomsForFacility(facilityID uint) ([]models.Room, error) {
 func (db *DB) GetRoomByID(roomID uint) (*models.Room, error) {
 	var room models.Room
 	if err := db.First(&room, roomID).Error; err != nil {
+		return nil, newNotFoundDBError(err, "rooms")
+	}
+	return &room, nil
+}
+
+func (db *DB) GetRoomByIDForFacility(roomID, facilityID uint) (*models.Room, error) {
+	var room models.Room
+	if err := db.Where("id = ? AND facility_id = ?", roomID, facilityID).First(&room).Error; err != nil {
 		return nil, newNotFoundDBError(err, "rooms")
 	}
 	return &room, nil
@@ -49,6 +60,13 @@ func (db *DB) DeleteRoom(roomID uint) error {
 }
 
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	if req.RecurrenceRule == "" {
+		return nil, NewDBError(errors.New("recurrence rule is required"), "invalid conflict check request")
+	}
+	if req.Duration == "" {
+		return nil, NewDBError(errors.New("duration is required"), "invalid conflict check request")
+	}
+
 	rule, err := rrule.StrToRRule(req.RecurrenceRule)
 	if err != nil {
 		return nil, NewDBError(err, "invalid recurrence rule")
@@ -129,23 +147,30 @@ func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 
 	var bookings []models.RoomBooking
 	for _, event := range events {
-		eventBookings := expandEventToBookings(event, rangeStart, rangeEnd, roomID)
+		eventBookings, err := expandEventToBookings(event, rangeStart, rangeEnd, roomID)
+		if err != nil {
+			return nil, err
+		}
 		bookings = append(bookings, eventBookings...)
 	}
 	return bookings, nil
 }
 
-func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd time.Time, targetRoomID uint) []models.RoomBooking {
+func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd time.Time, targetRoomID uint) ([]models.RoomBooking, error) {
 	var bookings []models.RoomBooking
+
+	if event.RoomID == nil {
+		return bookings, nil
+	}
 
 	rule, err := event.GetRRule()
 	if err != nil {
-		return bookings
+		return nil, fmt.Errorf("invalid recurrence rule for event %d: %w", event.ID, err)
 	}
 
 	duration, err := time.ParseDuration(event.Duration)
 	if err != nil {
-		duration = time.Hour
+		return nil, fmt.Errorf("invalid duration '%s' for event %d: %w", event.Duration, event.ID, err)
 	}
 
 	cancelledDates := make(map[string]bool)
@@ -153,6 +178,7 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 	for _, override := range event.Overrides {
 		overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
 		if err != nil {
+			logrus.Warnf("skipping override %d with invalid rrule: %v", override.ID, err)
 			continue
 		}
 		overrideOccurrences := overrideRule.Between(rangeStart, rangeEnd, true)
@@ -198,6 +224,7 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 		}
 		overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
 		if err != nil {
+			logrus.Warnf("skipping override %d with invalid rrule: %v", override.ID, err)
 			continue
 		}
 		overrideDuration, err := time.ParseDuration(override.Duration)
@@ -220,7 +247,7 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 		return bookings[i].StartTime.Before(bookings[j].StartTime)
 	})
 
-	return bookings
+	return bookings, nil
 }
 
 func hasTimeOverlap(start1, end1, start2, end2 time.Time) bool {
