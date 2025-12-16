@@ -35,6 +35,7 @@ func (suite *ProgramOutcomesReportTestSuite) cleanDatabase() {
 	suite.env.DB.Exec("DELETE FROM program_types")
 	suite.env.DB.Exec("DELETE FROM facilities_programs")
 	suite.env.DB.Exec("DELETE FROM programs")
+	suite.env.DB.Exec("DELETE FROM rooms")
 	suite.env.DB.Exec("DELETE FROM facilities")
 	suite.env.DB.Exec("DELETE FROM users WHERE role != 'system_admin'")
 }
@@ -382,10 +383,15 @@ func (suite *ProgramOutcomesReportTestSuite) createEnrollment(classID, userID ui
 
 func (suite *ProgramOutcomesReportTestSuite) createEvent(classID uint, eventDate time.Time) *models.ProgramClassEvent {
 	rrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1", eventDate.Format("20060102T090000Z"))
+	roomID, err := suite.env.getOrCreateTestRoom(classID)
+	if err != nil {
+		suite.T().Fatalf("failed to create test room: %v", err)
+	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
+		RoomID:         &roomID,
 	}
 	suite.env.DB.Create(event)
 	return event

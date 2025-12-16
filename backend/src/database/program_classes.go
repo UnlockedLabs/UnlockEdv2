@@ -67,10 +67,29 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
+	var needsRoomUpdate bool
+	var newRoomID *uint
+	var eventID uint
+	if len(content.Events) > 0 && len(existing.Events) > 0 &&
+		content.Events[0].RoomID != nil && existing.Events[0].RoomID != nil &&
+		*content.Events[0].RoomID != *existing.Events[0].RoomID {
+		needsRoomUpdate = true
+		newRoomID = content.Events[0].RoomID
+		eventID = existing.Events[0].ID
+	}
+
 	models.UpdateStruct(existing, content)
-	if err := trans.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
+	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Updates(&existing).Error; err != nil {
 		trans.Rollback()
 		return nil, newUpdateDBError(err, "program classes")
+	}
+
+	if needsRoomUpdate {
+		if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("room_id", newRoomID).Error; err != nil {
+			trans.Rollback()
+			return nil, newUpdateDBError(err, "program class event room")
+		}
+		existing.Events[0].RoomID = newRoomID
 	}
 
 	if len(allChanges) > 0 {
@@ -83,6 +102,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.
 	if err := trans.Commit().Error; err != nil {
 		return nil, NewDBError(err, "unable to commit the database transaction")
 	}
+
 	return existing, nil
 }
 

@@ -72,6 +72,7 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 
 	occurrences := rule.Between(dtStart, until, true)
 	var conflicts []models.RoomConflict
+	classNamesCache := make(map[uint]string)
 
 	for _, occ := range occurrences {
 		endTime := occ.Add(duration)
@@ -80,14 +81,23 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 				continue
 			}
 			if hasTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime) {
+				className := classNamesCache[booking.ClassID]
+				if className == "" {
+					var class models.ProgramClass
+					if err := db.Select("name").First(&class, booking.ClassID).Error; err == nil {
+						className = class.Name
+						classNamesCache[booking.ClassID] = className
+					}
+				}
+
 				conflict := models.RoomConflict{
 					ConflictingEventID: booking.EventID,
 					ConflictingClassID: booking.ClassID,
+					ClassName:          className,
 					StartTime:          booking.StartTime,
 					EndTime:            booking.EndTime,
 				}
 				conflicts = append(conflicts, conflict)
-				return conflicts, nil
 			}
 		}
 	}

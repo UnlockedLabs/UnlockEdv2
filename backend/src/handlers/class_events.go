@@ -103,7 +103,16 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 			return newDatabaseServiceError(err)
 		}
 		if len(conflicts) > 0 {
-			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			conflictResponse := models.Resource[[]models.RoomConflict]{
+				Message: "room is already booked during this time",
+				Data:    conflicts,
+			}
+			if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
+				return newResponseServiceError(err)
+			}
+			return nil
 		}
 	}
 	ctx := srv.getQueryContext(r)
@@ -171,7 +180,16 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 			return newDatabaseServiceError(err)
 		}
 		if len(conflicts) > 0 {
-			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			conflictResponse := models.Resource[[]models.RoomConflict]{
+				Message: "room is already booked during this time",
+				Data:    conflicts,
+			}
+			if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
+				return newResponseServiceError(err)
+			}
+			return nil
 		}
 	}
 	_, err = srv.WithUserContext(r).CreateNewEvent(classID, event)
@@ -220,7 +238,16 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 			return newDatabaseServiceError(err)
 		}
 		if len(conflicts) > 0 {
-			return NewServiceError(errors.New("room conflict detected"), http.StatusConflict, "room is already booked during this time")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			conflictResponse := models.Resource[[]models.RoomConflict]{
+				Message: "room is already booked during this time",
+				Data:    conflicts,
+			}
+			if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
+				return newResponseServiceError(err)
+			}
+			return nil
 		}
 	}
 	args := srv.getQueryContext(r)

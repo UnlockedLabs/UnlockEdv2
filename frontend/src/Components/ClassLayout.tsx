@@ -137,7 +137,7 @@ function ClassInfoCard({
             formattedOccurence = textMonthLocalDate(
                 getDateObj(nextOccurrence),
                 true,
-                user?.timezone
+                Intl.DateTimeFormat().resolvedOptions().timeZone
             );
         } else {
             formattedOccurence = 'No upcoming class found';
