@@ -59,22 +59,30 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 		return nil, NewDBError(err, "invalid duration")
 	}
 
-	dtStart := rule.GetDTStart()
+	now := time.Now()
+	rangeStart := now
 	until := rule.GetUntil()
-	if until.IsZero() {
-		until = dtStart.AddDate(2, 0, 0)
+	if until.IsZero() || until.Before(now) {
+		until = now.AddDate(1, 0, 0)
+	}
+	if until.After(now.AddDate(1, 0, 0)) {
+		until = now.AddDate(1, 0, 0)
 	}
 
-	bookings, err := db.GetRoomBookingsInRange(req.FacilityID, req.RoomID, dtStart, until)
+	bookings, err := db.GetRoomBookingsInRange(req.FacilityID, req.RoomID, rangeStart, until)
 	if err != nil {
 		return nil, err
 	}
 
-	occurrences := rule.Between(dtStart, until, true)
+	occurrences := rule.Between(rangeStart, until, true)
 	var conflicts []models.RoomConflict
 	classNamesCache := make(map[uint]string)
+	const maxConflicts = 50
 
 	for _, occ := range occurrences {
+		if len(conflicts) >= maxConflicts {
+			break
+		}
 		endTime := occ.Add(duration)
 		for _, booking := range bookings {
 			if req.ExcludeEventID != nil && booking.EventID == *req.ExcludeEventID {
@@ -98,6 +106,9 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 					EndTime:            booking.EndTime,
 				}
 				conflicts = append(conflicts, conflict)
+				if len(conflicts) >= maxConflicts {
+					break
+				}
 			}
 		}
 	}
@@ -144,7 +155,8 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 		if err != nil {
 			continue
 		}
-		for _, occ := range overrideRule.All() {
+		overrideOccurrences := overrideRule.Between(rangeStart, rangeEnd, true)
+		for _, occ := range overrideOccurrences {
 			dateKey := occ.Format("2006-01-02")
 			if override.IsCancelled {
 				cancelledDates[dateKey] = true
