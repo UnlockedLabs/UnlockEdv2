@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine
+FROM ghcr.io/unlockedlabs/golang-jasper:latest
 
 WORKDIR /app
 

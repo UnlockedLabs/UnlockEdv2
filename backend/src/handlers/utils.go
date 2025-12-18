@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
-	"github.com/go-pdf/fpdf"
 	"github.com/sirupsen/logrus"
 )
 
@@ -295,99 +294,4 @@ func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML st
 		return fmt.Errorf("failed to send email via SES: %v", err)
 	}
 	return nil
-}
-
-func writeLine(pdf *fpdf.Fpdf, text string) {
-	pdf.Cell(0, 10, text)
-	pdf.Ln(5)
-}
-
-func drawDataTable(pdf *fpdf.Fpdf, headers []string, rows [][]string, colWidths []float64) {
-	pdf.SetFont("Arial", "B", 10)
-	drawTableRow(pdf, headers, colWidths, true) //draw header
-
-	pdf.SetFont("Arial", "", 10)
-	for _, row := range rows {
-		drawTableRow(pdf, row, colWidths, false) //draw row
-	}
-}
-
-func drawTableRow(pdf *fpdf.Fpdf, cells []string, colWidths []float64, isHeader bool) {
-	fill := false
-	style := "D"
-	align := "C"
-
-	if isHeader {
-		pdf.SetFillColor(240, 240, 240)
-		fill = true
-		style = "FD"
-	}
-
-	maxRowHeight := 0.0
-	for i, cell := range cells { //have to calc height here
-		lines := pdf.SplitLines([]byte(cell), colWidths[i])
-		height := float64(len(lines)) * 5
-		if height > maxRowHeight {
-			maxRowHeight = height
-		}
-	}
-	if !isHeader && maxRowHeight < 10 {
-		maxRowHeight = 10
-	}
-
-	x, y := pdf.GetXY()
-	for i, cell := range cells { //can build the rows
-		pdf.Rect(x, y, colWidths[i], maxRowHeight, style)
-
-		lines := pdf.SplitLines([]byte(cell), colWidths[i])
-		textHeight := float64(len(lines)) * 5
-		yText := y + (maxRowHeight-textHeight)/2
-
-		pdf.SetXY(x, yText)
-		pdf.MultiCell(colWidths[i], 5, cell, "", align, fill)
-
-		x += colWidths[i]
-		pdf.SetXY(x, y)
-	}
-	pdf.Ln(maxRowHeight)
-}
-
-// takes a timestamp (time.RFC3339) returns date in the following format: MMM, D YYYY
-func formatDateForDisplay(dateStr string) string {
-	if dateStr == "" {
-		return "--"
-	}
-	parsed, err := time.Parse(time.RFC3339, dateStr)
-	if err != nil || parsed.IsZero() {
-		return "--"
-	}
-	return parsed.Format("Jan 2, 2006")
-}
-
-// returns the following format based upon a total of minutes: 5 hours 6 minutes
-func formatDurationFromMinutes(totalMinutes float64) string {
-	minutes := int(totalMinutes)
-	if minutes <= 0 {
-		return "none"
-	}
-
-	hours := minutes / 60
-	mins := minutes % 60
-
-	var durations []string
-	if hours > 0 {
-		if hours == 1 {
-			durations = append(durations, fmt.Sprintf("%d hour", hours))
-		} else {
-			durations = append(durations, fmt.Sprintf("%d hours", hours))
-		}
-	}
-	if mins > 0 {
-		if mins == 1 {
-			durations = append(durations, fmt.Sprintf("%d minute", mins))
-		} else {
-			durations = append(durations, fmt.Sprintf("%d minutes", mins))
-		}
-	}
-	return strings.Join(durations, " ")
 }

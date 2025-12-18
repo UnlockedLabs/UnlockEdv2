@@ -68,6 +68,7 @@ services:
     volumes:
       - ./:/app
       - ./frontend/public/thumbnails:/imgs
+      - ./csvs/jaspertmp/:/jaspertmp
     environment:
       - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
       - APP_ENV=dev
@@ -89,6 +90,8 @@ services:
       - KIWIX_SERVER_URL=http://kiwix:8080
       - CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1
       - PROXY_SCHEME_OVERRIDE=false
+      - JASPER_TEMP_DIR=/jaspertmp
+      - JASPER_TEMPLATE_DIR=/app/backend/src/templates
     depends_on:
       kratos:
         condition: service_started

@@ -631,6 +631,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 			pc.end_dt AS end_date,
             pc.id                    AS class_id,
 			pce.updated_at,
+			pce.created_at,
 			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
 
             -- count present attendance status
@@ -657,8 +658,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		Group(`
             pce.enrollment_status,
             p.name, p.id,
-            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at, pce.change_reason
-        `).Order(args.OrderClause("pce.created_at desc"))
+            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at,
+			pce.created_at, pce.change_reason`).Order(args.OrderClause("pce.created_at desc"))
 
 	if !args.All {
 		if err := base.Count(&args.Total).Error; err != nil {
