@@ -2,10 +2,10 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"context"
 	"fmt"
 	"strings"
 
-	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
 
