@@ -3,8 +3,8 @@ package handlers
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/database"
+	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/go-pdf/fpdf"
 )
 
 func (srv *Server) registerUserRoutes() []routeDef {
@@ -40,7 +38,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		newAdminRoute("POST /api/users/bulk/upload", srv.handleBulkUpload),
 		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
 		validatedAdminRoute("POST /api/users/{id}/deactivate", srv.handleDeactivateUser, FacilityAdminResolver("users", "id")),
-		newAdminRoute("GET /api/users/{id}/usage-report", srv.handleGenerateUsageReportPDF),
+		validatedAdminRoute("GET /api/users/{id}/usage-report", srv.handleGenerateUsageReportPDF, FacilityAdminResolver("users", "id")),
 	}
 }
 
@@ -665,129 +663,15 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 	queryCtx.All = true
 	queryCtx.OrderBy, queryCtx.Order = "start_dt", "DESC"
 
-	//get user programs
-	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userID)
+	pdfBytes, err := jasper.GenerateUsageReportPDF(srv.Db, &queryCtx, srv.hasFeatureAccess(models.ProgramAccess), userID)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		log.errorf("jasper service error: %v", err)
+		return newInternalServerServiceError(err, "failed to generate PDF report")
 	}
-	//get user total time spent in unlocked
-	sessionEngagements, err := srv.Db.GetUserSessionEngagement(userID, -1)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	//get user (with loginmetrics)
-	user, err := srv.Db.GetUserByID(uint(userID))
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	//get user total distinct resources accessed
-	resourceCount, err := srv.Db.GetUserOpenContentAccessCount(queryCtx.Ctx, userID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-
-	pdf := srv.buildUsageReportPDF(user, userPrograms, sessionEngagements, resourceCount.TotalResourcesAccessed)
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=transcript.pdf")
 
-	return pdf.Output(w)
-}
-
-func (srv *Server) buildUsageReportPDF(user *models.User, programs []models.ResidentProgramClassInfo, engagements []models.SessionEngagement, resourceCount int64) *fpdf.Fpdf {
-	pdf := fpdf.New("P", "mm", "Letter", "")
-	pdf.AddPage()
-
-	unlockedLogo := pdf.RegisterImageOptionsReader(
-		"logo",
-		fpdf.ImageOptions{ImageType: "PNG"},
-		bytes.NewReader(src.UnlockedLogoImg),
-	)
-
-	margin := 10.0
-	if unlockedLogo != nil { //adding logo here
-		const imageHeight = 30.48 //added fixed hieght
-		aspectRatio := unlockedLogo.Width() / unlockedLogo.Height()
-		imageWidth := imageHeight * aspectRatio // Place image on the top-left
-		//this is what places the image into the PDF
-		pdf.ImageOptions(
-			"logo",
-			margin,
-			margin,
-			imageWidth,
-			imageHeight,
-			false,
-			fpdf.ImageOptions{ImageType: "PNG"},
-			0,
-			"",
-		)
-		titleCellHeight := 10.0
-		titleY := margin + (imageHeight / 2) - (titleCellHeight / 2)
-		titleX := margin + imageWidth + 5
-		pdf.SetXY(titleX, titleY)
-
-		pdf.SetFont("Arial", "B", 24)
-		pdf.Cell(0, titleCellHeight, "Resident Usage Transcript")
-
-		pdf.SetY(margin + imageHeight)
-		pdf.Ln(10)
-		pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
-		pdf.Ln(10)
-	} else { //in case the image doesn't load doing this
-		pdf.SetFont("Arial", "B", 24)
-		pdf.Cell(0, 10, "Resident Usage Transcript")
-		pdf.Ln(10)
-		pdf.Line(10, pdf.GetY(), 200, pdf.GetY())
-		pdf.Ln(10)
-	}
-
-	//add resident information start
-	pdf.SetFont("Arial", "", 12)
-	writeLine(pdf, "Resident: "+user.NameFirst+" "+user.NameLast)
-	writeLine(pdf, "ID: "+user.DocID)
-	writeLine(pdf, "Facility: "+user.Facility.Name)
-	writeLine(pdf, "Generated Date: "+time.Now().Format("January 2, 2006"))
-	writeLine(pdf, "Date Range: "+user.CreatedAt.Format("January 2, 2006")+" - present")
-	pdf.Ln(10)
-
-	//add platform usage information start
-	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(0, 10, "Platform Usage")
-	pdf.Ln(10)
-	pdf.SetFont("Arial", "", 12)
-
-	duration := "none" //possible there is none
-	if len(engagements) > 0 {
-		duration = formatDurationFromMinutes(engagements[0].TotalMinutes)
-	}
-	writeLine(pdf, "Total time spent on UnlockEd: "+duration)
-
-	totalLogins := "0" //logins can be 0
-	if user.LoginMetrics != nil {
-		totalLogins = fmt.Sprintf("%d", user.LoginMetrics.Total)
-	}
-	writeLine(pdf, "Total Logins: "+totalLogins)
-	writeLine(pdf, fmt.Sprintf("Distinct resources accessed: %d", resourceCount))
-
-	if srv.hasFeatureAccess(models.ProgramAccess) { //add program participation start only if feature is turned on
-		pdf.Ln(10)
-		pdf.SetFont("Arial", "B", 16)
-		pdf.Cell(0, 10, "Program Participation")
-		pdf.Ln(10)
-		headers := []string{"Program\nName", "Class\nName", "Status", "Attendance", "Start Date", "End Date"}
-		widths := []float64{40, 30, 25, 25, 30, 30}
-		var rows [][]string
-		for _, program := range programs {
-			rows = append(rows, []string{
-				program.ProgramName,
-				program.ClassName,
-				string(program.Status),
-				program.CalculateAttendancePercentage(),
-				formatDateForDisplay(program.StartDate),
-				formatDateForDisplay(program.EndDate),
-			})
-		}
-		drawDataTable(pdf, headers, rows, widths)
-	}
-	return pdf
+	_, err = w.Write(pdfBytes)
+	return err
 }
