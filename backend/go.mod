@@ -2,7 +2,7 @@ module UnlockEdv2
 
 go 1.25.0
 
-toolchain go1.25.4
+toolchain go1.25.5
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
