@@ -10,7 +10,7 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/jackc/pgx"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 	client "github.com/ory/kratos-client-go"
