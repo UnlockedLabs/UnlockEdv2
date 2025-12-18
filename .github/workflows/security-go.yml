@@ -3,6 +3,8 @@ name: PR Security Check - Go Vulnerabilities Scan
 on:
   pull_request:
     paths:
+      - "go.work"
+      - "go.work.sum"
       - "backend/**"
       - "backend/go.mod"
       - "backend/go.sum"
@@ -28,11 +30,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.4"
+          go-version: "1.25.5"
           cache: true
           cache-dependency-path: |
-            backend/go.mod
-            provider-middleware/go.mod
+            go.work.sum
+            backend/go.sum
+            backend/migrations/go.sum
+            backend/seeder/go.sum
+            provider-middleware/go.sum
 
       - name: Install govulncheck
         run: |
