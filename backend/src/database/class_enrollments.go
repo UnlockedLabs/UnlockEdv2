@@ -435,7 +435,6 @@ func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.Con
 					ConflictEnd:      end,
 					Reason:           fmt.Sprintf("Conflict with class: %s", enrollment.Class.Name),
 				})
-				break
 			}
 		}
 	}
