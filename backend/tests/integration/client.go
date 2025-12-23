@@ -179,6 +179,14 @@ func (r *Response[T]) ExpectBodyContains(expected string) *Response[T] {
 	return r
 }
 
+func (r *Response[T]) ExpectHeader(key, expected string) *Response[T] {
+	r.t.Helper()
+
+	actual := r.resp.Header.Get(key)
+	require.Equal(r.t, expected, actual, "expected header %s to be '%s', got '%s'", key, expected, actual)
+	return r
+}
+
 func (c *Client) buildURL(endpoint string) (string, error) {
 	baseURL, err := url.Parse(c.baseURL)
 	if err != nil {
