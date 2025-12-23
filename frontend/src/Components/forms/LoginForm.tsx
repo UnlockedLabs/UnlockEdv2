@@ -77,21 +77,6 @@ export default function LoginForm() {
         return () => clearInterval(timer);
     }, [lockedOutSeconds]);
 
-    useEffect(() => {
-        if (lockedOutSeconds === null) {
-            return;
-        }
-        const minutes = Math.floor(lockedOutSeconds / 60);
-        const seconds = lockedOutSeconds % 60;
-        setCountdownDisplay(
-            minutes > 0
-                ? `${minutes} minute${minutes > 1 ? 's' : ''} and ${seconds} second${
-                      seconds !== 1 ? 's' : ''
-                  }`
-                : `${seconds} second${seconds !== 1 ? 's' : ''}`
-        );
-    }, [lockedOutSeconds]);
-
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         if (user) {
             data.identifier = user;
