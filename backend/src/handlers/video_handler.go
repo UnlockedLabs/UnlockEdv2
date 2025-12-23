@@ -6,10 +6,31 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/nats-io/nats.go"
 )
+
+var errInvalidVideoURL = errors.New("invalid video URL")
+
+func validateVideoURL(urlStr string) error {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return fmt.Errorf("%w: %v", errInvalidVideoURL, err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("%w: scheme must be http or https", errInvalidVideoURL)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("%w: missing host", errInvalidVideoURL)
+	}
+	if strings.ContainsAny(urlStr, ";<>|&$`\\\"'") {
+		return fmt.Errorf("%w: contains invalid characters", errInvalidVideoURL)
+	}
+	return nil
+}
 
 func (srv *Server) registerVideoRoutes() []routeDef {
 	axx := models.OpenContentAccess
@@ -134,6 +155,11 @@ func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log 
 	}
 	if err := json.NewDecoder(r.Body).Decode(&video); err != nil {
 		return newBadRequestServiceError(err, "error reading video")
+	}
+	for _, videoURL := range video.VideoUrls {
+		if err := validateVideoURL(videoURL); err != nil {
+			return newBadRequestServiceError(err, "invalid video URL")
+		}
 	}
 	provider, err := srv.Db.GetVideoProvider()
 	if err != nil {

@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,6 +38,25 @@ type VideoService struct {
 	db                    *gorm.DB
 	bucketName            string
 	s3Svc                 *s3.Client
+}
+
+var errInvalidVideoURL = errors.New("invalid video URL")
+
+func validateVideoURL(urlStr string) error {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return fmt.Errorf("%w: %v", errInvalidVideoURL, err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("%w: scheme must be http or https, got %q", errInvalidVideoURL, u.Scheme)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("%w: missing host", errInvalidVideoURL)
+	}
+	if strings.ContainsAny(urlStr, ";<>|&$`\\\"'") {
+		return fmt.Errorf("%w: contains invalid characters", errInvalidVideoURL)
+	}
+	return nil
 }
 
 func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[string]any) *VideoService {
@@ -446,6 +467,10 @@ func ytIdFromUrl(url string) string {
 
 // can be called vith the existing goutubedl.Result, or nil and it will fetch the info again
 func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Result, video *models.Video) error {
+	if err := validateVideoURL(video.Url); err != nil {
+		logger().Errorf("URL validation failed for video %d: %v", video.ID, err)
+		return fmt.Errorf("URL validation failed: %w", err)
+	}
 	if vidInfo == nil {
 		result, err := goutubedl.New(ctx, video.Url, goutubedl.Options{
 			Type:     goutubedl.TypeAny,
@@ -462,6 +487,10 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 	// if we already have the video in the S3 bucket, skip the download
 	if yt.videoExistsInS3(ctx, vidInfo.Info.ID) {
 		return nil
+	}
+	if err := validateVideoURL(vidInfo.RawURL); err != nil {
+		logger().Errorf("URL validation failed for video %d: %v", video.ID, err)
+		return fmt.Errorf("URL validation failed: %w", err)
 	}
 	cmd := exec.CommandContext(
 		ctx,

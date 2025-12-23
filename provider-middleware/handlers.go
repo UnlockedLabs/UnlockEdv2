@@ -56,7 +56,6 @@ func (sh *ServiceHandler) initSubscription() error {
 	return nil
 }
 
-
 /**
 * GET: /api/courses
 * This handler will be responsible for importing courses from Providers
