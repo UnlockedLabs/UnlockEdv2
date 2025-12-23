@@ -192,7 +192,6 @@ export default function LibraryViewer() {
             } else if (!src.startsWith('/')) {
                 relativeUrl = '/' + src;
             }
-            console.log('Unbookmarking with relative URL:', relativeUrl);
             const response = await API.put(
                 `open-content/${libraryId}/bookmark`,
                 {
@@ -206,9 +205,8 @@ export default function LibraryViewer() {
             } else {
                 toaster(response.message, ToastState.error);
             }
-        } catch (error: unknown) {
+        } catch {
             toaster('Error updating bookmark status', ToastState.error);
-            console.error('Unbookmark error:', error);
         }
     };
 
@@ -243,9 +241,8 @@ export default function LibraryViewer() {
             } else {
                 toaster(response.message, ToastState.error);
             }
-        } catch (error) {
+        } catch {
             toaster('Error updating favorite status', ToastState.error);
-            console.error(error);
         } finally {
             favoriteModalRef.current?.close();
         }

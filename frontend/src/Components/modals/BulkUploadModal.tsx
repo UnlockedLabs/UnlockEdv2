@@ -86,7 +86,6 @@ export const BulkUploadModal = forwardRef<
                 );
             }
         } catch (error) {
-            console.error('Upload error:', error);
             toaster(
                 `${error instanceof Error ? error.message : 'An error occurred while uploading the file.'}`,
                 ToastState.error
@@ -115,8 +114,7 @@ export const BulkUploadModal = forwardRef<
                     ToastState.error
                 );
             }
-        } catch (error) {
-            console.error('Create accounts error:', error);
+        } catch {
             toaster(
                 'Failed to create accounts. Please try again.',
                 ToastState.error
@@ -167,8 +165,7 @@ export const BulkUploadModal = forwardRef<
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Download error report error:', error);
+        } catch {
             toaster('Failed to download error report.', ToastState.error);
         }
     };
