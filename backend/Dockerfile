@@ -1,4 +1,4 @@
-FROM ghcr.io/unlockedlabs/golang-jasper:latest-3.6.2 AS builder
+FROM ghcr.io/unlockedlabs/golang-jasper:latest AS builder
 
 WORKDIR /app
 COPY ./backend/go.mod ./backend/go.sum ./
@@ -8,7 +8,7 @@ COPY ./backend/ ./
 
 RUN CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -trimpath -o backend ./cmd/main.go
 
-FROM ghcr.io/unlockedlabs/golang-jasper:latest-3.6.2
+FROM ghcr.io/unlockedlabs/golang-jasper:latest
 WORKDIR /
 
 COPY --from=builder /app/backend /backend
