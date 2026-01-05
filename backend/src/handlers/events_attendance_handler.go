@@ -333,11 +333,7 @@ func applyTimeTracking(attendance *models.ProgramClassEventAttendance, scheduled
 		attendance.CheckOutAt = &checkOut
 	}
 
-	if minutesAttended != nil {
-		attendance.MinutesAttended = minutesAttended
-	} else {
-		attendance.MinutesAttended = nil
-	}
+	attendance.MinutesAttended = minutesAttended
 	attendance.ScheduledMinutes = &scheduledMinutes
 
 	if minutesAttended == nil {
@@ -379,11 +375,11 @@ func applyTimeTracking(attendance *models.ProgramClassEventAttendance, scheduled
 }
 
 func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	eventID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	classID, err := strconv.Atoi(r.PathValue("event_id"))
+	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "event ID")
 	}
