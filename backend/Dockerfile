@@ -9,6 +9,7 @@ COPY ./backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -trimpath -o backend ./cmd/main.go
 
 FROM ghcr.io/unlockedlabs/golang-jasper:1.25-3.6.2
+WORKDIR /
 
 COPY --from=builder /app/backend /backend
 COPY --from=builder /app/src/templates /templates
