@@ -56,23 +56,62 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class := newClass(program, facility)
+	t.Run("Create class with assigned instructor", func(t *testing.T) {
+		// Create instructor user (using FacilityAdmin role as instructors should be privileged)
+		instructor, err := env.CreateTestUser("instructor1", models.FacilityAdmin, facility.ID, "")
+		require.NoError(t, err)
 
-	resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-		Do().
-		ExpectStatus(http.StatusCreated)
+		// Create class with instructor
+		class := newClassWithInstructor(program, facility, &instructor.ID)
 
-	got := resp.GetData()
+		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+			Do().
+			ExpectStatus(http.StatusCreated)
 
-	require.NotZero(t, got.ID)
-	require.Equal(t, class.Name, got.Name)
-	require.Equal(t, class.InstructorName, got.InstructorName)
-	require.Equal(t, class.Description, got.Description)
-	require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
-	require.WithinDuration(t, *class.EndDt, *got.EndDt, time.Millisecond)
-	require.Equal(t, class.Status, got.Status)
-	require.Equal(t, class.CreditHours, got.CreditHours)
+		got := resp.GetData()
+
+		require.NotZero(t, got.ID)
+		require.Equal(t, class.Name, got.Name)
+		require.Equal(t, class.InstructorID, got.InstructorID)
+		require.NotEmpty(t, got.InstructorName)
+		// Backend populates InstructorName from the instructor user (name_first || ' ' || name_last, fallback to username)
+		expectedInstructorName := fmt.Sprintf("%s %s", instructor.NameFirst, instructor.NameLast)
+		if expectedInstructorName == " " {
+			expectedInstructorName = instructor.Username
+		}
+		require.Equal(t, expectedInstructorName, got.InstructorName)
+
+		// Note: The instructor relationship is not populated in the response, only InstructorName is filled
+		require.Equal(t, class.Description, got.Description)
+		require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
+		require.WithinDuration(t, *class.EndDt, *got.EndDt, time.Millisecond)
+		require.Equal(t, class.Status, got.Status)
+		require.Equal(t, class.CreditHours, got.CreditHours)
+	})
+
+	t.Run("Create class without instructor", func(t *testing.T) {
+		// Create class without instructor
+		class := newClassWithInstructor(program, facility, nil)
+
+		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+			Do().
+			ExpectStatus(http.StatusCreated)
+
+		got := resp.GetData()
+
+		require.NotZero(t, got.ID)
+		require.Equal(t, class.Name, got.Name)
+		require.Nil(t, got.InstructorID)
+		require.Equal(t, "Unassigned", got.InstructorName)
+		require.Nil(t, got.Instructor)
+		require.Equal(t, class.Description, got.Description)
+		require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
+		require.WithinDuration(t, *class.EndDt, *got.EndDt, time.Millisecond)
+		require.Equal(t, class.Status, got.Status)
+		require.Equal(t, class.CreditHours, got.CreditHours)
+	})
 }
 
 func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
@@ -133,6 +172,26 @@ func newClass(program *models.Program, facility *models.Facility) models.Program
 		EndDt:          &endDt,
 		Status:         models.Scheduled,
 		CreditHours:    &creditHours,
+	}
+	return class
+}
+
+// creates a boilerplate class with optional instructor
+func newClassWithInstructor(program *models.Program, facility *models.Facility, instructorID *uint) models.ProgramClass {
+	endDt := time.Now().Add(time.Hour * 24)
+	creditHours := int64(2)
+
+	class := models.ProgramClass{
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Test Class",
+		InstructorID: instructorID,
+		Description:  "This is a test class created for integration testing purposes.",
+		StartDt:      time.Now(),
+		EndDt:        &endDt,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 	return class
 }
