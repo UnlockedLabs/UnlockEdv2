@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +40,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
 		validatedAdminRoute("POST /api/users/{id}/deactivate", srv.handleDeactivateUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/usage-report", srv.handleGenerateUsageReportPDF, FacilityAdminResolver("users", "id")),
+		validatedAdminRoute("GET /api/users/{id}/attendance-export", srv.handleExportResidentAttendanceCSV, UserRoleResolver("id")),
 	}
 }
 
@@ -674,4 +676,53 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 
 	_, err = w.Write(pdfBytes)
 	return err
+}
+
+func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	queryCtx := srv.getQueryContext(r)
+
+	user, err := srv.Db.GetUserByID(uint(userID))
+	if err != nil {
+		log.add("user_id", userID)
+		return newDatabaseServiceError(err)
+	}
+
+	if claims.Role == models.FacilityAdmin && user.FacilityID != claims.FacilityID {
+		return newUnauthorizedServiceError()
+	}
+
+	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, queryCtx.All)
+	if err != nil {
+		log.add("user_id", userID)
+		return newDatabaseServiceError(err)
+	}
+
+	toCSV, err := models.ResidentAttendanceToCSVFormat(csvData)
+	if err != nil {
+		return newInternalServerServiceError(err, "Failed to convert attendance data to CSV format")
+	}
+
+	date := time.Now().Format("2006-01-02")
+	filename := fmt.Sprintf("Attendance-%s-%s.csv", user.DocID, date)
+
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	w.WriteHeader(http.StatusOK)
+
+	writer := csv.NewWriter(w)
+	if err := writer.WriteAll(toCSV); err != nil {
+		return newInternalServerServiceError(err, "Failed to write CSV data")
+	}
+
+	log.add("user_id", userID)
+	log.add("rows_exported", len(csvData))
+	log.info("Exported resident attendance CSV")
+
+	return nil
 }

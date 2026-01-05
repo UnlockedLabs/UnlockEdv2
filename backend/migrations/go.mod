@@ -1,6 +1,6 @@
 module migrations
 
-go 1.25.0
+go 1.25.5
 
 require (
 	github.com/jackc/pgx v3.6.2+incompatible

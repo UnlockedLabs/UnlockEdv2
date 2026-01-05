@@ -224,3 +224,39 @@ type BulkUploadResponse struct {
 	InvalidRows  []InvalidUserRow   `json:"invalid_rows"`
 	ErrorCSVData []byte             `json:"error_csv_data,omitempty"`
 }
+
+type ResidentAttendanceCSVData struct {
+	ProgramName      string `json:"program_name" gorm:"column:program_name"`
+	ClassName        string `json:"class_name" gorm:"column:class_name"`
+	SessionDate      string `json:"session_date" gorm:"column:session_date"`
+	AttendanceStatus string `json:"attendance_status" gorm:"column:attendance_status"`
+	Note             string `json:"note" gorm:"column:note"`
+}
+
+func ResidentAttendanceToCSVFormat(data []ResidentAttendanceCSVData) ([][]string, error) {
+	csvData := [][]string{{"Program Name", "Class Name", "Session Date", "Attendance Status", "Note"}}
+
+	for _, record := range data {
+		statusDisplay := ""
+		switch record.AttendanceStatus {
+		case "present":
+			statusDisplay = "Present"
+		case "absent_excused":
+			statusDisplay = "Absent Excused"
+		case "absent_unexcused":
+			statusDisplay = "Absent Unexcused"
+		default:
+			statusDisplay = "No Record"
+		}
+
+		row := []string{
+			record.ProgramName,
+			record.ClassName,
+			record.SessionDate,
+			statusDisplay,
+			record.Note,
+		}
+		csvData = append(csvData, row)
+	}
+	return csvData, nil
+}

@@ -840,3 +840,40 @@ func (db *DB) DeactivatedUsersPresent(userIDs []int) (bool, error) {
 	}
 	return count > 0, nil
 }
+
+func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, facilityID uint, all bool) ([]models.ResidentAttendanceCSVData, error) {
+	var csvData []models.ResidentAttendanceCSVData
+
+	query := `
+		SELECT
+			p.name AS program_name,
+			pc.name AS class_name,
+			pcea.date AS session_date,
+			pcea.attendance_status,
+			COALESCE(pcea.note, '') AS note
+		FROM program_class_event_attendance pcea
+		JOIN program_class_events pce ON pce.id = pcea.event_id
+		JOIN program_classes pc ON pc.id = pce.class_id
+		JOIN programs p ON p.id = pc.program_id
+		JOIN program_class_enrollments e ON e.class_id = pc.id AND e.user_id = pcea.user_id
+		JOIN users u ON u.id = pcea.user_id
+		WHERE pcea.user_id = ?
+			AND CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date
+			AND (e.enrollment_ended_at IS NULL OR CAST(DATE(e.enrollment_ended_at) AS TEXT) >= pcea.date)
+	`
+
+	args := []any{userID}
+
+	if !all {
+		query += " AND u.facility_id = ?"
+		args = append(args, facilityID)
+	}
+
+	query += " ORDER BY p.name ASC, pc.name ASC, pcea.date ASC"
+
+	if err := db.WithContext(ctx).Raw(query, args...).Scan(&csvData).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "resident attendance CSV data")
+	}
+
+	return csvData, nil
+}

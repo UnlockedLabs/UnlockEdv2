@@ -100,6 +100,7 @@ func MigrateTesting(db *gorm.DB) {
 	var TableList = []any{
 		&models.Role{},
 		&models.User{},
+		&models.LoginMetrics{},
 		&models.Facility{},
 		&models.ProviderPlatform{},
 		&models.ProviderUserMapping{},

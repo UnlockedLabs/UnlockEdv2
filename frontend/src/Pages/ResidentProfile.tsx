@@ -218,6 +218,9 @@ const ResidentProfile = () => {
             case ResidentAccountAction['Download Usage Report (PDF)']:
                 void downloadUsageReport();
                 break;
+            case ResidentAccountAction['Export Attendance']:
+                void downloadAttendanceExport();
+                break;
             case ResidentAccountAction['Transfer Resident']:
                 showModal(verifyResidentModal);
                 break;
@@ -274,6 +277,35 @@ const ResidentProfile = () => {
                 ToastState.error
             );
         }
+    }
+
+    function downloadAttendanceExport() {
+        API.downloadFile(`users/${residentId}/attendance-export`)
+            .then(({ blob, headers }) => {
+                const disposition = headers.get('Content-Disposition') ?? '';
+                const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(
+                    disposition
+                );
+                const filename =
+                    match?.[1]?.replace(/['"]/g, '') ??
+                    `Attendance-${residentId}-${getTimestamp()}.csv`;
+
+                const url = window.URL.createObjectURL(blob);
+                const anchorTag = document.createElement('a');
+                anchorTag.href = url;
+                anchorTag.download = filename;
+                document.body.appendChild(anchorTag);
+                anchorTag.click();
+                anchorTag.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch((error) => {
+                console.error('Error downloading attendance export', error);
+                toaster(
+                    'Failed to download attendance export',
+                    ToastState.error
+                );
+            });
     }
 
     return (
