@@ -104,7 +104,7 @@ func (js *jasperService) generateUsageReportPDF(userID int) ([]byte, error) {
 		"output_file_path": outputFilePath,
 		"json_data_length": len(jsonData),
 		"json_file_path":   jsonFilePath,
-	}).Info("Creating temporary JSON file for JasperReports")
+	}).Info("Creating temporary JSON file for Jasper Reports")
 
 	if err := os.WriteFile(jsonFilePath, jsonData, 0600); err != nil {
 		return nil, fmt.Errorf("failed to write temporary data file: %w", err)
