@@ -801,7 +801,9 @@ export interface Class {
     program_id: number;
     facility_id: number;
     facility_name: string;
-    instructor_name: string;
+    instructor_name: string; // Legacy field - kept for backward compatibility
+    instructor_id?: number | null;
+    instructor?: User | null;
     name: string;
     description: string;
     start_dt: string;

@@ -4,13 +4,22 @@ import (
 	"UnlockEdv2/src/models"
 	"fmt"
 	"strings"
+	"time"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/teambition/rrule-go"
+	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
 
+type BulkCancelClaims interface {
+	GetUserID() uint
+	GetFacilityID() uint
+}
+
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -105,7 +114,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
-	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled"}
+	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled", "instructor"}
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
@@ -287,4 +296,330 @@ func (db *DB) GetClassCreatedAtAndBy(id int, args *models.QueryContext) (models.
 		return classDetails, newNotFoundDBError(err, "program_classes")
 	}
 	return classDetails, nil
+}
+
+func (db *DB) GetFacilityInstructors(facilityID int) ([]models.Instructor, error) {
+	var instructors []models.Instructor
+
+	// Get all facility admins (role = 'facility_admin') for this facility
+	if err := db.Table("users u").
+		Select("u.id, u.username, u.name_first, u.name_last, u.email").
+		Where("u.facility_id = ? AND u.role = ? AND u.deactivated_at IS NULL", facilityID, "facility_admin").
+		Order("u.name_first, u.name_last").
+		Find(&instructors).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "instructors")
+	}
+
+	// Prepend "Unassigned" option with ID = 0
+	unassigned := models.Instructor{
+		ID:        0,
+		Username:  "unassigned",
+		NameFirst: "Unassigned",
+		NameLast:  "",
+		Email:     "",
+	}
+
+	// Create a new slice with Unassigned first, then the real instructors
+	result := make([]models.Instructor, 0, len(instructors)+1)
+	result = append(result, unassigned)
+	result = append(result, instructors...)
+
+	return result, nil
+}
+
+func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint) (string, error) {
+	var instructorName string
+	err := db.Table("users").
+		Select("COALESCE(name_first || ' ' || name_last, username)").
+		Where("id = ? AND facility_id = ? AND role IN ?",
+			instructorID, facilityID,
+			[]models.UserRole{models.SystemAdmin, models.FacilityAdmin, models.DepartmentAdmin}).
+		Scan(&instructorName).Error
+	if err != nil {
+		return "", err
+	}
+	return instructorName, nil
+}
+
+func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, endDate string) ([]models.InstructorClassData, error) {
+	var classes []models.InstructorClassData
+
+	// Handle unassigned classes (instructorID = 0)
+	var query *gorm.DB
+	if instructorID == 0 {
+		query = db.Table("program_classes pc").
+			Select(`pc.id as id,
+					pc.name as name,
+					0 as session_count,
+					COALESCE(COUNT(DISTINCT CASE WHEN pce.enrollment_status = ? THEN pce.id END), 0) as enrolled_count,
+					0 as upcoming_sessions,
+					0 as cancelled_sessions`, models.Enrolled).
+			Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
+			Where("pc.instructor_id IS NULL AND pc.facility_id = ?", facilityID).
+			Where("pc.status != ?", models.Cancelled).
+			Group("pc.id, pc.name").
+			Order("pc.name")
+	} else {
+		query = db.Table("program_classes pc").
+			Select(`pc.id as id,
+					pc.name as name,
+					0 as session_count,
+					COALESCE(COUNT(DISTINCT CASE WHEN pce.enrollment_status = ? THEN pce.id END), 0) as enrolled_count,
+					0 as upcoming_sessions,
+					0 as cancelled_sessions`, models.Enrolled).
+			Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
+			Where("pc.instructor_id = ? AND pc.facility_id = ?", instructorID, facilityID).
+			Where("pc.status != ?", models.Cancelled).
+			Group("pc.id, pc.name").
+			Order("pc.name")
+	}
+
+	if err := query.Find(&classes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program classes")
+	}
+
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, NewDBError(err, "invalid start date format")
+	}
+	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, NewDBError(err, "invalid end date format")
+	}
+
+	end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	for i := range classes {
+		totalSessions, upcomingSessions, cancelledSessions, err := db.calculateSessionCounts(classes[i].ID, start, end)
+		if err != nil {
+			return nil, err
+		}
+
+		classes[i].SessionCount = totalSessions
+		classes[i].UpcomingSessions = upcomingSessions
+		classes[i].CancelledSessions = cancelledSessions
+	}
+
+	return classes, nil
+}
+
+func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) (int, int, int, error) {
+
+	var events []struct {
+		models.ProgramClassEvent
+		Overrides []models.ProgramClassEventOverride `gorm:"foreignKey:EventID;references:ID"`
+	}
+
+	if err := db.Preload("Overrides").Where("class_id = ?", classID).Find(&events).Error; err != nil {
+		return 0, 0, 0, newGetRecordsDBError(err, "class events")
+	}
+
+	var totalSessions, upcomingSessions, cancelledSessions int
+
+	for _, event := range events {
+		rule, err := rrule.StrToRRule(event.RecurrenceRule)
+		if err != nil {
+			continue // Skip invalid rules
+		}
+
+		eventStart := rule.GetDTStart()
+		totalOccurrences := rule.Between(eventStart, time.Now().UTC(), true)
+		totalSessions += len(totalOccurrences)
+
+		upcomingOccurrences := rule.Between(startDate, endDate, true)
+		upcomingSessions += len(upcomingOccurrences)
+
+		cancelledInDateRange := 0
+		for _, override := range event.Overrides {
+			if override.IsCancelled {
+
+				overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
+				if err != nil {
+					continue // Skip invalid override rules
+				}
+
+				overrideOccurrences := overrideRule.Between(startDate, endDate, true)
+				cancelledInDateRange += len(overrideOccurrences)
+			}
+		}
+
+		cancelledSessions += cancelledInDateRange
+	}
+
+	return totalSessions, upcomingSessions, cancelledSessions, nil
+}
+
+func (db *DB) BulkCancelSessions(instructorID, facilityID int, startDate, endDate, reason string, claims BulkCancelClaims) (*models.BulkCancelSessionsResponse, error) {
+	ctx := context.Background()
+
+	tx := db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return nil, newUpdateDBError(tx.Error, "begin transaction")
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			if err := tx.Rollback().Error; err != nil {
+				log.WithError(err).Error("Error rolling back transaction in BulkCancelSessions after panic")
+			}
+		}
+	}()
+
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		tx.Rollback()
+		return nil, NewDBError(err, "invalid start date format")
+	}
+
+	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		tx.Rollback()
+		return nil, NewDBError(err, "invalid end date format")
+	}
+
+	end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	var baseEvents []models.ProgramClassEvent
+	var query *gorm.DB
+	if instructorID == 0 {
+		query = tx.Table("program_class_events pce").
+			Select("pce.*").
+			Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
+			Where("pc.instructor_id IS NULL AND pc.facility_id = ?", facilityID)
+	} else {
+		query = tx.Table("program_class_events pce").
+			Select("pce.*").
+			Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
+			Where("pc.instructor_id = ? AND pc.facility_id = ?", instructorID, facilityID)
+	}
+
+	if err := query.Find(&baseEvents).Error; err != nil {
+		tx.Rollback()
+		return nil, newGetRecordsDBError(err, "class events")
+	}
+
+	var eventInstances []struct {
+		Event      models.ProgramClassEvent
+		Occurrence time.Time
+	}
+	for _, baseEvent := range baseEvents {
+		rule, err := rrule.StrToRRule(baseEvent.RecurrenceRule)
+		if err != nil {
+			continue // Skip invalid rules
+		}
+
+		occurrences := rule.Between(start, end, true)
+		for _, occurrence := range occurrences {
+			eventInstances = append(eventInstances, struct {
+				Event      models.ProgramClassEvent
+				Occurrence time.Time
+			}{
+				Event:      baseEvent,
+				Occurrence: occurrence,
+			})
+		}
+	}
+
+	// Get unique classes affected and count cancelled sessions
+	classMap := make(map[int]*models.AffectedClass)
+	for _, instance := range eventInstances {
+		if _, exists := classMap[int(instance.Event.ClassID)]; !exists {
+			classMap[int(instance.Event.ClassID)] = &models.AffectedClass{
+				ClassID:           int(instance.Event.ClassID),
+				ClassName:         "",
+				UpcomingSessions:  0,
+				CancelledSessions: 0,
+				StudentCount:      0,
+			}
+		}
+		classMap[int(instance.Event.ClassID)].CancelledSessions++
+	}
+
+	for classID := range classMap {
+		var studentCount int64
+		if err := tx.Table("program_class_enrollments").
+			Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
+			Count(&studentCount).Error; err != nil {
+			tx.Rollback()
+			return nil, newGetRecordsDBError(err, "enrollments")
+		}
+		classMap[classID].StudentCount = int(studentCount)
+
+		var className string
+		if err := tx.Table("program_classes").
+			Select("name").
+			Where("id = ?", classID).
+			Scan(&className).Error; err != nil {
+			tx.Rollback()
+			return nil, newGetRecordsDBError(err, "class name")
+		}
+		classMap[classID].ClassName = className
+	}
+
+	var auditEntries []models.ChangeLogEntry
+	for _, instance := range eventInstances {
+		overrideRrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1",
+			instance.Occurrence.Format("20060102T150405Z"))
+
+		override := models.ProgramClassEventOverride{
+			EventID:       instance.Event.ID,
+			OverrideRrule: overrideRrule,
+			Duration:      instance.Event.Duration,
+			Room:          instance.Event.Room,
+			IsCancelled:   true,
+			Reason:        reason,
+		}
+
+		if err := tx.Create(&override).Error; err != nil {
+			tx.Rollback()
+			return nil, newCreateDBError(err, "event override")
+		}
+
+		oldStatus := "Scheduled"
+		newStatus := "Cancelled"
+
+		auditEntry := models.NewChangeLogEntry(
+			"program_classes",
+			"status",
+			&oldStatus,
+			&newStatus,
+			instance.Event.ClassID,
+			claims.GetUserID(),
+		)
+		auditEntries = append(auditEntries, *auditEntry)
+	}
+
+	if len(auditEntries) > 0 {
+		if err := tx.Create(&auditEntries).Error; err != nil {
+			tx.Rollback()
+			return nil, newCreateDBError(err, "change log entries")
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, newUpdateDBError(err, "commit transaction")
+	}
+
+	var affectedClasses []models.AffectedClass
+	for _, class := range classMap {
+		affectedClasses = append(affectedClasses, *class)
+	}
+
+	totalStudents := 0
+	for _, class := range affectedClasses {
+		totalStudents += class.StudentCount
+	}
+
+	response := &models.BulkCancelSessionsResponse{
+		Success:      true,
+		SessionCount: len(eventInstances),
+		ClassCount:   len(affectedClasses),
+		StudentCount: totalStudents,
+		Classes:      affectedClasses,
+	}
+
+	return response, nil
 }

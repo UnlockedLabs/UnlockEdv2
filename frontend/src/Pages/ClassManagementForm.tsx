@@ -33,7 +33,7 @@ import { RRule } from 'rrule';
 import moment from 'moment';
 import { toZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/useAuth';
-import { ShortCalendarEvent } from '@/types/events';
+import { ShortCalendarEvent, Instructor } from '@/types/events';
 
 export default function ClassManagementForm() {
     const { user } = useAuth();
@@ -60,9 +60,11 @@ export default function ClassManagementForm() {
         getValues,
         watch,
         reset,
+        unregister,
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
+            instructor_id: 0,
             events: [{ recurrence_rule: '', duration: '' }]
         }
     });
@@ -77,6 +79,8 @@ export default function ClassManagementForm() {
 
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
+    const [instructors, setInstructors] = useState<Instructor[]>([]);
+    const [instructorsLoading, setInstructorsLoading] = useState(false);
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
@@ -87,6 +91,10 @@ export default function ClassManagementForm() {
         const formattedJson = {
             ...data,
             ...(class_id && { id: Number(class_id) }),
+            instructor_id:
+                data.instructor_id !== undefined && data.instructor_id !== null
+                    ? Number(data.instructor_id)
+                    : null,
             start_dt: new Date(data.start_dt),
             end_dt: data.end_dt ? new Date(data.end_dt) : null,
             capacity: Number(data.capacity),
@@ -175,11 +183,43 @@ export default function ClassManagementForm() {
     }, [nameValue, rruleIsValid]);
 
     useEffect(() => {
+        const fetchInstructors = async () => {
+            if (!user?.facility?.id) return;
+
+            setInstructorsLoading(true);
+            try {
+                const response = await API.get(
+                    `facilities/${user.facility.id}/instructors`
+                );
+                if (response.success) {
+                    setInstructors((response.data as Instructor[]) || []);
+                } else {
+                    toaster('Failed to load instructors', ToastState.error);
+                    console.error(
+                        'Failed to fetch instructors:',
+                        response.message
+                    );
+                }
+            } catch (error) {
+                toaster('Failed to load instructors', ToastState.error);
+                console.error('Error fetching instructors:', error);
+            } finally {
+                setInstructorsLoading(false);
+            }
+        };
+
+        void fetchInstructors();
+    }, [user?.facility?.id]);
+
+    // Set form values for editing - wait for instructors to load first
+    useEffect(() => {
         if (isNewClass) return;
-        if (clsLoader.class) {
+
+        if (clsLoader.class && instructors.length > 0) {
+            unregister('events');
             setEditFormValues(clsLoader.class);
         }
-    }, [id, class_id, reset]);
+    }, [isNewClass, clsLoader.class, instructors.length]);
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
@@ -194,6 +234,7 @@ export default function ClassManagementForm() {
         setSelectedRoomId(editCls.events[0].room_id ?? null);
         reset({
             ...values,
+            instructor_id: editCls.instructor_id ?? editCls.instructor?.id ?? 0,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
@@ -273,14 +314,46 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <TextInput
-                            label="Instructor"
-                            register={register}
-                            interfaceRef="instructor_name"
-                            required
-                            length={255}
-                            errors={errors}
-                        />
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text font-medium">
+                                    Instructor
+                                </span>
+                                <span className="label-text-alt text-error">
+                                    *
+                                </span>
+                            </label>
+                            <select
+                                {...register('instructor_id', {
+                                    required:
+                                        'Instructor selection is required',
+                                    valueAsNumber: true
+                                })}
+                                className={`select select-bordered w-full ${errors.instructor_id ? 'select-error' : ''}`}
+                                disabled={instructorsLoading}
+                            >
+                                {instructors.map((instructor) => (
+                                    <option
+                                        key={instructor.id}
+                                        value={instructor.id}
+                                    >
+                                        {instructor.id === 0
+                                            ? instructor.name_first
+                                            : `${instructor.name_first} ${instructor.name_last}`.trim()}
+                                    </option>
+                                ))}
+                            </select>
+                            {instructorsLoading && (
+                                <span className="loading loading-spinner loading-sm"></span>
+                            )}
+                            {errors.instructor_id && (
+                                <label className="label">
+                                    <span className="label-text-alt text-error">
+                                        {errors.instructor_id.message}
+                                    </span>
+                                </label>
+                            )}
+                        </div>
                         <NumberInput
                             label="Capacity"
                             register={register}
