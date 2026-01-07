@@ -4,7 +4,8 @@ ALTER TABLE public.program_class_event_attendance
     ADD COLUMN IF NOT EXISTS check_in_at VARCHAR(8),
     ADD COLUMN IF NOT EXISTS check_out_at VARCHAR(8),
     ADD COLUMN IF NOT EXISTS minutes_attended INTEGER,
-    ADD COLUMN IF NOT EXISTS scheduled_minutes INTEGER;
+    ADD COLUMN IF NOT EXISTS scheduled_minutes INTEGER,
+    ADD COLUMN IF NOT EXISTS reason_category TEXT DEFAULT '';
 
 UPDATE public.program_class_event_attendance AS att
 SET
@@ -20,5 +21,6 @@ ALTER TABLE public.program_class_event_attendance
     DROP COLUMN IF EXISTS check_in_at,
     DROP COLUMN IF EXISTS check_out_at,
     DROP COLUMN IF EXISTS minutes_attended,
-    DROP COLUMN IF EXISTS scheduled_minutes;
+    DROP COLUMN IF EXISTS scheduled_minutes,
+    DROP COLUMN IF EXISTS reason_category;
 -- +goose StatementEnd

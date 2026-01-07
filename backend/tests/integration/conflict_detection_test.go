@@ -33,11 +33,17 @@ func TestSchedulingConflictDetection(t *testing.T) {
 	classB, err := env.CreateTestClass(program, facility, models.Active)
 	require.NoError(t, err)
 
+	// Create test room for events
+	room := models.Room{FacilityID: facility.ID, Name: "Conflict Test Room"}
+	err = env.DB.Create(&room).Error
+	require.NoError(t, err)
+
 	// Update Class A event to be specific
 	eventA := models.ProgramClassEvent{
 		ClassID:        classA.ID,
 		Duration:       "1h",
 		RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR;DTSTART=20240101T100000Z", // UTC
+		RoomID:         &room.ID,
 	}
 	err = env.DB.Create(&eventA).Error
 	require.NoError(t, err)
@@ -47,6 +53,7 @@ func TestSchedulingConflictDetection(t *testing.T) {
 		ClassID:        classB.ID,
 		Duration:       "1h",
 		RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR;DTSTART=20240101T103000Z", // UTC, overlaps by 30 mins
+		RoomID:         &room.ID,
 	}
 	err = env.DB.Create(&eventB).Error
 	require.NoError(t, err)
