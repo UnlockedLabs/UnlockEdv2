@@ -135,8 +135,12 @@ func securityHeadersMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (srv *Server) Handler() http.Handler {
+	return securityHeadersMiddleware(corsMiddleware(srv.Mux))
+}
+
 func (srv *Server) ListenAndServe(ctx context.Context) {
-	handler := securityHeadersMiddleware(corsMiddleware(srv.Mux))
+	handler := srv.Handler()
 	log.Println("Starting server on port: ", srv.port)
 	// Listen for context cancellation to trigger graceful shutdown
 	go func() {
