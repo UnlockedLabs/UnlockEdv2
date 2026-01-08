@@ -94,8 +94,28 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 
 	occurrences := rule.Between(rangeStart, until, true)
 	var conflicts []models.RoomConflict
-	classNamesCache := make(map[uint]string)
 	const maxConflicts = 50
+
+	classIDs := make(map[uint]struct{})
+	for _, booking := range bookings {
+		classIDs[booking.ClassID] = struct{}{}
+	}
+
+	classNamesCache := make(map[uint]string)
+	if len(classIDs) > 0 {
+		ids := make([]uint, 0, len(classIDs))
+		for id := range classIDs {
+			ids = append(ids, id)
+		}
+		var classes []models.ProgramClass
+		if err := db.Select("id, name").Where("id IN ?", ids).Find(&classes).Error; err != nil {
+			logrus.Warnf("failed to batch fetch class names: %v", err)
+		} else {
+			for _, c := range classes {
+				classNamesCache[c.ID] = c.Name
+			}
+		}
+	}
 
 	for _, occ := range occurrences {
 		if len(conflicts) >= maxConflicts {
@@ -109,11 +129,7 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 			if hasTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime) {
 				className := classNamesCache[booking.ClassID]
 				if className == "" {
-					var class models.ProgramClass
-					if err := db.Select("name").First(&class, booking.ClassID).Error; err == nil {
-						className = class.Name
-						classNamesCache[booking.ClassID] = className
-					}
+					className = "Unknown Class"
 				}
 
 				conflict := models.RoomConflict{
