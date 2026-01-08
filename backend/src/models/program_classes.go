@@ -348,4 +348,3 @@ type InstructorClassData struct {
 	UpcomingSessions  int    `json:"upcomingSessions"`
 	CancelledSessions int    `json:"cancelledSessions"`
 }
-}

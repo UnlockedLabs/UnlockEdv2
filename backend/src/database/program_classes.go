@@ -364,9 +364,8 @@ func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint) (string,
 	var instructorName string
 	err := db.Table("users").
 		Select("COALESCE(name_first || ' ' || name_last, username)").
-		Where("id = ? AND facility_id = ? AND role IN ?",
-			instructorID, facilityID,
-			[]models.UserRole{models.SystemAdmin, models.FacilityAdmin, models.DepartmentAdmin}).
+		Where("id = ? AND facility_id = ? AND role = ?",
+			instructorID, facilityID, models.FacilityAdmin).
 		Scan(&instructorName).Error
 	if err != nil {
 		return "", err
@@ -449,12 +448,18 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 			continue // Skip invalid rules
 		}
 
-		eventStart := rule.GetDTStart()
-		totalOccurrences := rule.Between(eventStart, time.Now().UTC(), true)
+		totalOccurrences := rule.Between(startDate, endDate, true)
 		totalSessions += len(totalOccurrences)
 
 		upcomingOccurrences := rule.Between(startDate, endDate, true)
-		upcomingSessions += len(upcomingOccurrences)
+		now := time.Now()
+		filteredUpcoming := make([]time.Time, 0)
+		for _, occurrence := range upcomingOccurrences {
+			if occurrence.After(now) {
+				filteredUpcoming = append(filteredUpcoming, occurrence)
+			}
+		}
+		upcomingSessions += len(filteredUpcoming)
 
 		cancelledInDateRange := 0
 		for _, override := range event.Overrides {
@@ -618,8 +623,84 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		classMap[classID].ClassName = nameMap[classID]
 	}
 
-	var auditEntries []models.ChangeLogEntry
+	existingOverridesMap := make(map[uint]map[string]bool)
+
+	eventIDs := make([]uint, 0, len(eventInstances))
+	rruleMap := make(map[string]bool)
 	for _, instance := range eventInstances {
+		eventIDs = append(eventIDs, instance.Event.ID)
+		overrideRrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1",
+			instance.Occurrence.Format("20060102T150405Z"))
+		rruleMap[overrideRrule] = true
+	}
+
+	if len(eventIDs) > 0 {
+		var existingOverrides []models.ProgramClassEventOverride
+		rruleList := make([]string, 0, len(rruleMap))
+		for rrule := range rruleMap {
+			rruleList = append(rruleList, rrule)
+		}
+
+		if err := tx.Table("program_class_event_overrides").
+			Where("event_id IN ? AND override_rrule IN ? AND is_cancelled = ? AND deleted_at IS NULL",
+				eventIDs, rruleList, true).
+			Find(&existingOverrides).Error; err != nil {
+			tx.Rollback()
+			return nil, newGetRecordsDBError(err, "existing overrides")
+		}
+
+		for _, override := range existingOverrides {
+			if existingOverridesMap[override.EventID] == nil {
+				existingOverridesMap[override.EventID] = make(map[string]bool)
+			}
+			existingOverridesMap[override.EventID][override.OverrideRrule] = true
+		}
+	}
+	var newCancellations []struct {
+		Event      models.ProgramClassEvent
+		Occurrence time.Time
+	}
+	var alreadyCancelled []struct {
+		Event      models.ProgramClassEvent
+		Occurrence time.Time
+	}
+
+	for _, instance := range eventInstances {
+		overrideRrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1",
+			instance.Occurrence.Format("20060102T150405Z"))
+
+		// Check if this override already exists
+		if eventOverrides, exists := existingOverridesMap[instance.Event.ID]; exists {
+			if eventOverrides[overrideRrule] {
+				// Already cancelled
+				alreadyCancelled = append(alreadyCancelled, instance)
+				continue
+			}
+		}
+		newCancellations = append(newCancellations, instance)
+	}
+
+	classMap = make(map[int]*models.AffectedClass)
+	for _, instance := range newCancellations {
+		if _, exists := classMap[int(instance.Event.ClassID)]; !exists {
+			classMap[int(instance.Event.ClassID)] = &models.AffectedClass{
+				ClassID:           int(instance.Event.ClassID),
+				ClassName:         "",
+				UpcomingSessions:  0,
+				CancelledSessions: 0,
+				StudentCount:      0,
+			}
+		}
+		classMap[int(instance.Event.ClassID)].CancelledSessions++
+	}
+
+	for classID := range classMap {
+		classMap[classID].StudentCount = int(countMap[classID])
+		classMap[classID].ClassName = nameMap[classID]
+	}
+
+	var auditEntries []models.ChangeLogEntry
+	for _, instance := range newCancellations {
 		overrideRrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1",
 			instance.Occurrence.Format("20060102T150405Z"))
 
@@ -672,12 +753,25 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		totalStudents += class.StudentCount
 	}
 
+	alreadyCancelledCount := len(alreadyCancelled)
+	var message string
+	if alreadyCancelledCount > 0 {
+		if len(newCancellations) == 0 {
+			message = fmt.Sprintf("All %d sessions in the selected range were already cancelled.", alreadyCancelledCount)
+		} else {
+			message = fmt.Sprintf("Successfully cancelled %d sessions. %d sessions were already cancelled and were skipped.",
+				len(newCancellations), alreadyCancelledCount)
+		}
+	}
+
 	response := &models.BulkCancelSessionsResponse{
-		Success:      true,
-		SessionCount: len(eventInstances),
-		ClassCount:   len(affectedClasses),
-		StudentCount: totalStudents,
-		Classes:      affectedClasses,
+		Success:               true,
+		SessionCount:          len(newCancellations),
+		ClassCount:            len(affectedClasses),
+		StudentCount:          totalStudents,
+		AlreadyCancelledCount: alreadyCancelledCount,
+		Message:               message,
+		Classes:               affectedClasses,
 	}
 
 	return response, nil
