@@ -65,7 +65,7 @@ func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, events []mod
 	var changeLogEntry *models.ChangeLogEntry
 	for _, event := range events {
 		if event.ID == 0 {
-			changeLogEntry = models.NewChangeLogEntry("program_classes", "event_rescheduled_series", models.StringPtr(""), &event.RecurrenceRule, event.ClassID, ctx.UserID)
+			changeLogEntry = models.NewChangeLogEntry("program_classes", "event_rescheduled_series", models.StringPtr(""), &event.RecurrenceRule, event.ClassID, ctx.UserID, "")
 			if err := tx.Create(&event).Error; err != nil {
 				tx.Rollback()
 				return newCreateDBError(err, "program_class_events")
@@ -135,7 +135,7 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		return err
 	}
 
-	changeLogEntry = models.NewChangeLogEntry("program_classes", "event_restored", &override.OverrideRrule, models.StringPtr(""), uint(classID), args.UserID)
+	changeLogEntry = models.NewChangeLogEntry("program_classes", "event_restored", &override.OverrideRrule, models.StringPtr(""), uint(classID), args.UserID, "")
 	if err := trans.Create(&changeLogEntry).Error; err != nil {
 		trans.Rollback()
 		return newCreateDBError(err, "change_log_entries")
@@ -166,7 +166,7 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		isOverrideUpdate bool
 	)
 
-	changeLogEntry = models.NewChangeLogEntry("program_classes", "", nil, nil, 0, ctx.UserID)
+	changeLogEntry = models.NewChangeLogEntry("program_classes", "", nil, nil, 0, ctx.UserID, "")
 	for _, overrideEvent := range overrideEvents {
 		if !overrideEvent.IsCancelled && linkedOverrideID != nil {
 			overrideEvent.LinkedOverrideEventID = linkedOverrideID

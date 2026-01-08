@@ -17,13 +17,14 @@ type ChangeLogEntry struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UserID      uint      `json:"user_id"`
 	Username    string    `json:"username" gorm:"->"`
+	IPAddress   string    `json:"ip_address" gorm:"size:45"`
 }
 
 func (ChangeLogEntry) TableName() string {
 	return "change_log_entries"
 }
 
-func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, parentRefID, userID uint) *ChangeLogEntry {
+func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, parentRefID, userID uint, ipAddress string) *ChangeLogEntry {
 	return &ChangeLogEntry{
 		NameTable:   tableName,
 		ParentRefID: parentRefID,
@@ -32,6 +33,7 @@ func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, 
 		NewValue:    newValue,
 		CreatedAt:   time.Now(),
 		UserID:      userID,
+		IPAddress:   ipAddress,
 	}
 }
 
@@ -63,7 +65,7 @@ func GenerateChangeLogEntries(oldRecord, updRecord interface{}, tableName string
 		newValue := derefToString(newVal.Field(i))
 
 		if oldValue != newValue {
-			entries = append(entries, *NewChangeLogEntry(tableName, name, StringPtr(oldValue), StringPtr(newValue), parentID, userID))
+			entries = append(entries, *NewChangeLogEntry(tableName, name, StringPtr(oldValue), StringPtr(newValue), parentID, userID, ""))
 		}
 	}
 	return entries

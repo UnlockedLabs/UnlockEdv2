@@ -44,7 +44,10 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility1.ID, facility2.ID})
 	require.NoError(t, err)
 
-	class1, err := env.CreateTestClass(program, facility1, models.Active)
+	instructor1, err := env.CreateTestInstructor(facility1.ID, "export1")
+	require.NoError(t, err)
+
+	class1, err := env.CreateTestClass(program, facility1, models.Active, &instructor1.ID)
 	require.NoError(t, err)
 
 	event1, err := env.CreateTestEvent(class1.ID, "")
@@ -213,7 +216,10 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		studentEnrollmentDates, err := env.CreateTestUser("studenroll", models.Student, facility1.ID, "STU004")
 		require.NoError(t, err)
 
-		class2, err := env.CreateTestClass(program, facility1, models.Active)
+		instructor2, err := env.CreateTestInstructor(facility1.ID, "export2")
+		require.NoError(t, err)
+
+		class2, err := env.CreateTestClass(program, facility1, models.Active, &instructor2.ID)
 		require.NoError(t, err)
 
 		event2, err := env.CreateTestEvent(class2.ID, "")
@@ -293,10 +299,15 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		err = env.SetFacilitiesToProgram(program2.ID, []uint{facility1.ID})
 		require.NoError(t, err)
 
-		class3, err := env.CreateTestClass(program2, facility1, models.Active)
+		instructor3, err := env.CreateTestInstructor(facility1.ID, "export3")
+		require.NoError(t, err)
+		instructor4, err := env.CreateTestInstructor(facility1.ID, "export4")
 		require.NoError(t, err)
 
-		class4, err := env.CreateTestClass(program, facility1, models.Active)
+		class3, err := env.CreateTestClass(program2, facility1, models.Active, &instructor3.ID)
+		require.NoError(t, err)
+
+		class4, err := env.CreateTestClass(program, facility1, models.Active, &instructor4.ID)
 		require.NoError(t, err)
 
 		event3, err := env.CreateTestEvent(class3.ID, "")

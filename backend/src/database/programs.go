@@ -169,7 +169,7 @@ func updateFacilitiesPrograms(trans *gorm.DB, updateProgram *models.Program, fac
 		facilityID = uint(facId)
 		updateFacPrgsMap[facilityID] = struct{}{}
 		if _, ok := currentFacPrgsMap[facilityID]; !ok {
-			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "facility_id", nil, models.StringPtr(strconv.Itoa(int(facilityID))), updateProgram.ID, updateProgram.UpdateUserID))
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "facility_id", nil, models.StringPtr(strconv.Itoa(int(facilityID))), updateProgram.ID, updateProgram.UpdateUserID, ""))
 			if err := trans.Create(&models.FacilitiesPrograms{
 				ProgramID:  updateProgram.ID,
 				FacilityID: facilityID,
@@ -181,7 +181,7 @@ func updateFacilitiesPrograms(trans *gorm.DB, updateProgram *models.Program, fac
 
 	for facId := range currentFacPrgsMap {
 		if _, ok := updateFacPrgsMap[facId]; !ok { //delete entry
-			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "facility_id", models.StringPtr(strconv.Itoa(int(facId))), nil, updateProgram.ID, updateProgram.UpdateUserID))
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "facility_id", models.StringPtr(strconv.Itoa(int(facId))), nil, updateProgram.ID, updateProgram.UpdateUserID, ""))
 			if err := trans.Where("program_id = ? and facility_id = ?", updateProgram.ID, facId).Delete(&models.FacilitiesPrograms{}).Error; err != nil {
 				return nil, newDeleteDBError(err, "facilities_programs")
 			}
@@ -211,7 +211,7 @@ func updateProgramTypes(trans *gorm.DB, updateProgram *models.Program, programTy
 		progType = pt.ProgramType
 		updatePrgTypesMap[progType] = struct{}{}
 		if _, ok := currentPrgTypesMap[progType]; !ok { //type doesn't exist create it
-			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "program_type", nil, models.StringPtr(string(progType)), updateProgram.ID, updateProgram.UpdateUserID))
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "program_type", nil, models.StringPtr(string(progType)), updateProgram.ID, updateProgram.UpdateUserID, ""))
 			if err := trans.Create(&models.ProgramType{
 				ProgramID:   updateProgram.ID,
 				ProgramType: progType,
@@ -223,7 +223,7 @@ func updateProgramTypes(trans *gorm.DB, updateProgram *models.Program, programTy
 
 	for prgType := range currentPrgTypesMap {
 		if _, ok := updatePrgTypesMap[prgType]; !ok {
-			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "program_type", models.StringPtr(string(prgType)), nil, updateProgram.ID, updateProgram.UpdateUserID))
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "program_type", models.StringPtr(string(prgType)), nil, updateProgram.ID, updateProgram.UpdateUserID, ""))
 			if err := trans.Where("program_id = ? and program_type = ?", updateProgram.ID, prgType).Delete(&models.ProgramType{}).Error; err != nil {
 				return nil, newDeleteDBError(err, "program_types")
 			}
@@ -252,7 +252,7 @@ func updateProgramCreditTypes(trans *gorm.DB, updateProgram *models.Program, pro
 		progCreditType = pt.CreditType
 		updatePrgCreditTypesMap[progCreditType] = struct{}{}
 		if _, ok := currentPrgCreditTypesMap[progCreditType]; !ok { //type doesn't exist create it
-			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "credit_type", nil, models.StringPtr(string(progCreditType)), updateProgram.ID, updateProgram.UpdateUserID))
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "credit_type", nil, models.StringPtr(string(progCreditType)), updateProgram.ID, updateProgram.UpdateUserID, ""))
 			if err := trans.Create(&models.ProgramCreditType{
 				ProgramID:  updateProgram.ID,
 				CreditType: progCreditType,
@@ -264,7 +264,7 @@ func updateProgramCreditTypes(trans *gorm.DB, updateProgram *models.Program, pro
 
 	for creditType := range currentPrgCreditTypesMap {
 		if _, ok := updatePrgCreditTypesMap[creditType]; !ok { //type was removed delete it
-			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "credit_type", models.StringPtr(string(creditType)), nil, updateProgram.ID, updateProgram.UpdateUserID))
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "credit_type", models.StringPtr(string(creditType)), nil, updateProgram.ID, updateProgram.UpdateUserID, ""))
 			if err := trans.Where("program_id = ? and credit_type = ?", updateProgram.ID, creditType).Delete(&models.ProgramCreditType{}).Error; err != nil {
 				return nil, newDeleteDBError(err, "program_credit_types")
 			}
@@ -296,11 +296,11 @@ func (db *DB) UpdateProgramStatus(ctx context.Context, programUpdate map[string]
 		if len(facilities) > 0 {
 			return facilities, false, nil
 		}
-		logEntry = models.NewChangeLogEntry("programs", "archived_at", nil, models.StringPtr(programUpdate["archived_at"].(string)), updatePrg.ID, programUpdate["update_user_id"].(uint))
+		logEntry = models.NewChangeLogEntry("programs", "archived_at", nil, models.StringPtr(programUpdate["archived_at"].(string)), updatePrg.ID, programUpdate["update_user_id"].(uint), "")
 	} else { //is possible that the old value is the same as the new value here when reactivating
 		oldValue := strconv.FormatBool(updatePrg.IsActive)
 		newValue := strconv.FormatBool(programUpdate["is_active"].(bool))
-		logEntry = models.NewChangeLogEntry("programs", "is_active", models.StringPtr(oldValue), models.StringPtr(newValue), updatePrg.ID, programUpdate["update_user_id"].(uint))
+		logEntry = models.NewChangeLogEntry("programs", "is_active", models.StringPtr(oldValue), models.StringPtr(newValue), updatePrg.ID, programUpdate["update_user_id"].(uint), "")
 	}
 	trans := db.WithContext(ctx).Begin() //create transaction
 	if trans.Error != nil {
