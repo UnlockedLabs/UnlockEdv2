@@ -16,6 +16,7 @@ COPY --from=builder /app/src/templates /templates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /app/migrations /migrations
 COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /
+ENV ZONEINFO=/zoneinfo.zip
 
 EXPOSE 8080
 ENTRYPOINT ["/backend"]
