@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -15,6 +16,22 @@ import (
 type BulkCancelClaims interface {
 	GetUserID() uint
 	GetFacilityID() uint
+}
+
+func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid start date format: %w", err)
+	}
+	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid end date format: %w", err)
+	}
+	end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	return start, end, nil
 }
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
@@ -301,7 +318,6 @@ func (db *DB) GetClassCreatedAtAndBy(id int, args *models.QueryContext) (models.
 func (db *DB) GetFacilityInstructors(facilityID int) ([]models.Instructor, error) {
 	var instructors []models.Instructor
 
-	// Get all facility admins (role = 'facility_admin') for this facility
 	if err := db.Table("users u").
 		Select("u.id, u.username, u.name_first, u.name_last, u.email").
 		Where("u.facility_id = ? AND u.role = ? AND u.deactivated_at IS NULL", facilityID, "facility_admin").
@@ -378,18 +394,10 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 
-	start, err := time.Parse("2006-01-02", startDate)
+	start, end, err := parseDateRange(startDate, endDate)
 	if err != nil {
-		return nil, NewDBError(err, "invalid start date format")
+		return nil, NewDBError(err, err.Error())
 	}
-	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
-
-	end, err := time.Parse("2006-01-02", endDate)
-	if err != nil {
-		return nil, NewDBError(err, "invalid end date format")
-	}
-
-	end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	for i := range classes {
 		totalSessions, upcomingSessions, cancelledSessions, err := db.calculateSessionCounts(classes[i].ID, start, end)
@@ -451,8 +459,12 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 	return totalSessions, upcomingSessions, cancelledSessions, nil
 }
 
-func (db *DB) BulkCancelSessions(instructorID, facilityID int, startDate, endDate, reason string, claims BulkCancelClaims) (*models.BulkCancelSessionsResponse, error) {
+func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facilityID int, claims BulkCancelClaims) (*models.BulkCancelSessionsResponse, error) {
 	ctx := context.Background()
+
+	if err := Validate().Struct(req); err != nil {
+		return nil, NewDBError(err, "bulk cancel sessions validation error")
+	}
 
 	tx := db.WithContext(ctx).Begin()
 	if tx.Error != nil {
@@ -463,28 +475,20 @@ func (db *DB) BulkCancelSessions(instructorID, facilityID int, startDate, endDat
 			if err := tx.Rollback().Error; err != nil {
 				log.WithError(err).Error("Error rolling back transaction in BulkCancelSessions after panic")
 			}
+			log.WithField("stack", string(debug.Stack())).Error("Panic in BulkCancelSessions")
+			panic(r)
 		}
 	}()
 
-	start, err := time.Parse("2006-01-02", startDate)
+	start, end, err := parseDateRange(req.StartDate, req.EndDate)
 	if err != nil {
 		tx.Rollback()
-		return nil, NewDBError(err, "invalid start date format")
+		return nil, NewDBError(err, err.Error())
 	}
-
-	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
-
-	end, err := time.Parse("2006-01-02", endDate)
-	if err != nil {
-		tx.Rollback()
-		return nil, NewDBError(err, "invalid end date format")
-	}
-
-	end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	var baseEvents []models.ProgramClassEvent
 	var query *gorm.DB
-	if instructorID == 0 {
+	if req.InstructorID == 0 {
 		query = tx.Table("program_class_events pce").
 			Select("pce.*").
 			Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
@@ -493,7 +497,7 @@ func (db *DB) BulkCancelSessions(instructorID, facilityID int, startDate, endDat
 		query = tx.Table("program_class_events pce").
 			Select("pce.*").
 			Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
-			Where("pc.instructor_id = ? AND pc.facility_id = ?", instructorID, facilityID)
+			Where("pc.instructor_id = ? AND pc.facility_id = ?", req.InstructorID, facilityID)
 	}
 
 	if err := query.Find(&baseEvents).Error; err != nil {
@@ -538,25 +542,50 @@ func (db *DB) BulkCancelSessions(instructorID, facilityID int, startDate, endDat
 		classMap[int(instance.Event.ClassID)].CancelledSessions++
 	}
 
+	classIDs := make([]int, 0, len(classMap))
 	for classID := range classMap {
-		var studentCount int64
-		if err := tx.Table("program_class_enrollments").
-			Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
-			Count(&studentCount).Error; err != nil {
-			tx.Rollback()
-			return nil, newGetRecordsDBError(err, "enrollments")
-		}
-		classMap[classID].StudentCount = int(studentCount)
+		classIDs = append(classIDs, classID)
+	}
 
-		var className string
-		if err := tx.Table("program_classes").
-			Select("name").
-			Where("id = ?", classID).
-			Scan(&className).Error; err != nil {
-			tx.Rollback()
-			return nil, newGetRecordsDBError(err, "class name")
-		}
-		classMap[classID].ClassName = className
+	type enrollmentCount struct {
+		ClassID int   `gorm:"column:class_id"`
+		Count   int64 `gorm:"column:count"`
+	}
+	var counts []enrollmentCount
+	if err := tx.Table("program_class_enrollments").
+		Select("class_id, COUNT(*) as count").
+		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
+		Group("class_id").
+		Scan(&counts).Error; err != nil {
+		tx.Rollback()
+		return nil, newGetRecordsDBError(err, "enrollments")
+	}
+
+	type classInfo struct {
+		ID   int    `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+	var classInfos []classInfo
+	if err := tx.Table("program_classes").
+		Select("id, name").
+		Where("id IN ?", classIDs).
+		Scan(&classInfos).Error; err != nil {
+		tx.Rollback()
+		return nil, newGetRecordsDBError(err, "class names")
+	}
+
+	countMap := make(map[int]int64)
+	for _, c := range counts {
+		countMap[c.ClassID] = c.Count
+	}
+	nameMap := make(map[int]string)
+	for _, info := range classInfos {
+		nameMap[info.ID] = info.Name
+	}
+
+	for classID := range classMap {
+		classMap[classID].StudentCount = int(countMap[classID])
+		classMap[classID].ClassName = nameMap[classID]
 	}
 
 	var auditEntries []models.ChangeLogEntry
@@ -570,7 +599,7 @@ func (db *DB) BulkCancelSessions(instructorID, facilityID int, startDate, endDat
 			Duration:      instance.Event.Duration,
 			Room:          instance.Event.Room,
 			IsCancelled:   true,
-			Reason:        reason,
+			Reason:        req.Reason,
 		}
 
 		if err := tx.Create(&override).Error; err != nil {

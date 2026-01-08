@@ -357,13 +357,13 @@ func (srv *Server) handleGetClassesByInstructor(w http.ResponseWriter, r *http.R
 
 	startDate := r.URL.Query().Get("start_date")
 	endDate := r.URL.Query().Get("end_date")
-	facilityIdStr := r.URL.Query().Get("facility_id")
+	facilityIDStr := r.URL.Query().Get("facility_id")
 
-	if startDate == "" || endDate == "" || facilityIdStr == "" {
+	if startDate == "" || endDate == "" || facilityIDStr == "" {
 		return newBadRequestServiceError(nil, "start_date, end_date, and facility_id are required")
 	}
 
-	facilityId, err := strconv.Atoi(facilityIdStr)
+	facilityId, err := strconv.Atoi(facilityIDStr)
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
 	}
@@ -384,10 +384,9 @@ func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Reque
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 
-	// Create a claims adapter that implements the BulkCancelClaims interface
 	claimsAdapter := &BulkCancelClaimsAdapter{Claims: claims}
 
-	response, err := srv.Db.BulkCancelSessions(req.InstructorID, int(claims.FacilityID), req.StartDate, req.EndDate, req.Reason, claimsAdapter)
+	response, err := srv.Db.BulkCancelSessions(&req, int(claims.FacilityID), claimsAdapter)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

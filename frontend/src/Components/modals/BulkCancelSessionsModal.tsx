@@ -382,7 +382,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
                     isLoading ? 'Processing...' : 'Bulk Cancel Sessions'
                 }
                 ref={ref}
-                title={'Bulk Cancel Classs by Instructor'}
+                title={'Bulk Cancel Class by Instructor'}
                 inputs={bulkCancelSessionsInputs}
                 showCancel={true}
                 onSubmit={handleBulkCancelSessions}
