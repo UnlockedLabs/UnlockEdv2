@@ -8,11 +8,12 @@ import {
     showModal,
     closeModal
 } from '.';
-import { CancelEventReason } from '@/common';
+import { CancelEventReason, Class, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth } from '@/useAuth';
+import { KeyedMutator } from 'swr';
 import {
     Instructor,
     BulkCancelSessionsPreview,
@@ -25,10 +26,11 @@ interface BulkCancelSessionsModalProps {
     ref: React.ForwardedRef<HTMLDialogElement>;
     onSuccess?: () => void;
     facilityId: number;
+    mutate: KeyedMutator<ServerResponseMany<Class>>;
 }
 
 export const BulkCancelSessionsModal = forwardRef(function (
-    { facilityId, onSuccess }: BulkCancelSessionsModalProps,
+    { facilityId, onSuccess, mutate }: BulkCancelSessionsModalProps,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     const { user } = useAuth();
@@ -55,7 +57,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
 
     const checkResponse = useCheckResponse({
         refModal: ref,
-        mutate: null as never
+        mutate: mutate
     });
 
     const buildPreviewFromClasses = (
@@ -170,13 +172,16 @@ export const BulkCancelSessionsModal = forwardRef(function (
             if (
                 responseData &&
                 'success' in responseData &&
-                responseData.success &&
-                responseData.sessionCount > 0
+                responseData.success
             ) {
+                const successMessage =
+                    responseData.message ??
+                    `Successfully cancelled ${responseData.sessionCount ?? 0} sessions across ${responseData.classCount ?? 0} classes. ${responseData.studentCount ?? 0} students were affected.`;
+
                 checkResponse(
                     Boolean(responseData.success),
                     'Failed to cancel sessions',
-                    `Successfully cancelled ${responseData.sessionCount ?? 0} sessions across ${responseData.classCount ?? 0} classes. ${responseData.studentCount ?? 0} students were affected.`
+                    successMessage
                 );
 
                 if (onSuccess) {
@@ -185,7 +190,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
             } else if (
                 responseData &&
                 'success' in responseData &&
-                (!responseData.success || responseData.sessionCount === 0)
+                !responseData.success
             ) {
                 setError(
                     'No sessions found to cancel for the selected instructor and date range.'
