@@ -51,7 +51,7 @@ export default function ClassManagementForm() {
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
-            instructor_id: 0,
+            instructor_id: undefined,
             events: [{ room: '', recurrence_rule: '', duration: '' }]
         }
     });
@@ -80,7 +80,9 @@ export default function ClassManagementForm() {
             ...data,
             ...(class_id && { id: Number(class_id) }),
             instructor_id:
-                data.instructor_id !== undefined && data.instructor_id !== null
+                data.instructor_id !== undefined &&
+                data.instructor_id !== null &&
+                data.instructor_id !== 0
                     ? Number(data.instructor_id)
                     : null,
             start_dt: new Date(data.start_dt),
@@ -210,9 +212,11 @@ export default function ClassManagementForm() {
                 .split('T')[0];
         }
 
+        const instructorId = editCls.instructor_id ?? editCls.instructor?.id;
         reset({
             ...values,
-            instructor_id: editCls.instructor_id ?? editCls.instructor?.id ?? 0,
+            instructor_id:
+                instructorId && instructorId > 0 ? instructorId : undefined,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
@@ -297,21 +301,32 @@ export default function ClassManagementForm() {
                                 {...register('instructor_id', {
                                     required:
                                         'Instructor selection is required',
-                                    valueAsNumber: true
+                                    valueAsNumber: true,
+                                    validate: (value) => {
+                                        if (
+                                            value === 0 ||
+                                            value === undefined ||
+                                            value === null
+                                        ) {
+                                            return 'Please select an instructor (Unassigned is not allowed)';
+                                        }
+                                        return true;
+                                    }
                                 })}
                                 className={`select select-bordered w-full ${errors.instructor_id ? 'select-error' : ''}`}
                                 disabled={instructorsLoading}
                             >
-                                {instructors.map((instructor) => (
-                                    <option
-                                        key={instructor.id}
-                                        value={instructor.id}
-                                    >
-                                        {instructor.id === 0
-                                            ? instructor.name_first
-                                            : `${instructor.name_first} ${instructor.name_last}`.trim()}
-                                    </option>
-                                ))}
+                                <option value="">Select an instructor</option>
+                                {instructors
+                                    .filter((instructor) => instructor.id !== 0)
+                                    .map((instructor) => (
+                                        <option
+                                            key={instructor.id}
+                                            value={instructor.id}
+                                        >
+                                            {`${instructor.name_first} ${instructor.name_last}`.trim()}
+                                        </option>
+                                    ))}
                             </select>
                             {instructorsLoading && (
                                 <span className="loading loading-spinner loading-sm"></span>

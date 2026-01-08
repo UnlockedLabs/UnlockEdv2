@@ -93,7 +93,24 @@ func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramCla
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, content.UpdateUserID, ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
+	originalInstructorID := existing.InstructorID
+
 	models.UpdateStruct(existing, content)
+
+	instructorIDChanged := false
+	if originalInstructorID == nil && content.InstructorID != nil {
+		instructorIDChanged = true
+	} else if originalInstructorID != nil && content.InstructorID == nil {
+		instructorIDChanged = true
+	} else if originalInstructorID != nil && content.InstructorID != nil && *originalInstructorID != *content.InstructorID {
+		instructorIDChanged = true
+	}
+
+	if instructorIDChanged {
+		existing.InstructorID = content.InstructorID
+		existing.InstructorName = content.InstructorName
+	}
+
 	if err := trans.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
 		trans.Rollback()
 		return nil, newUpdateDBError(err, "program classes")
@@ -459,6 +476,19 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 				Occurrence: occurrence,
 			})
 		}
+	}
+
+	if len(eventInstances) == 0 {
+		if err := tx.Rollback().Error; err != nil {
+			log.WithError(err).Error("Error rolling back transaction in BulkCancelSessions")
+		}
+		return &models.BulkCancelSessionsResponse{
+			Success:      false,
+			SessionCount: 0,
+			ClassCount:   0,
+			StudentCount: 0,
+			Classes:      []models.AffectedClass{},
+		}, nil
 	}
 
 	// Get unique classes affected and count cancelled sessions
