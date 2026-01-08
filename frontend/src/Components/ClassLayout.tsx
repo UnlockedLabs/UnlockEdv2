@@ -7,13 +7,11 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
-import { PencilSquareIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate, useParams } from 'react-router';
 import ClassStatus from './ClassStatus';
 import useSWR, { KeyedMutator } from 'swr';
 import ActivityHistoryCard from './ActivityHistoryCard';
-import { useRef } from 'react';
-import { BulkCancelSessionsModal } from './modals/BulkCancelSessionsModal';
 import { useEffect, useState } from 'react';
 import Pagination from './Pagination';
 import { useAuth } from '@/useAuth';
@@ -36,7 +34,6 @@ function ClassInfoCard({
     }
 
     const navigate = useNavigate();
-    const bulkCancelModalRef = useRef<HTMLDialogElement>(null);
 
     const programDisabled = classInfo.program.archived_at !== null;
     const blockEdits = isCompletedCancelledOrArchived(
@@ -172,21 +169,6 @@ function ClassInfoCard({
                     <ULIComponent icon={PencilSquareIcon} />
                     <span className="hover:underline">Edit Class</span>
                 </button>
-                <button
-                    className={`body text-red-3 cursor-pointer flex items-center gap-1 tooltip-bottom ${blockEdits ? 'tooltip' : ''}`}
-                    onClick={() => {
-                        bulkCancelModalRef.current?.showModal();
-                    }}
-                    disabled={programDisabled || blockEdits}
-                    data-tip={
-                        blockEdits
-                            ? `Bulk cancellation is not available for ${classInfo.status.toLowerCase()} classes.`
-                            : 'Cancel multiple class sessions for an instructor within a date range.'
-                    }
-                >
-                    <ULIComponent icon={XCircleIcon} />
-                    <span className="hover:underline">Bulk Cancel Classes</span>
-                </button>
             </div>
             <p className="body-small">{classInfo.description}</p>
             <div className="grid grid-cols-2 gap-4">
@@ -226,15 +208,6 @@ function ClassInfoCard({
                 <span className="font-bold">Next scheduled class:</span>{' '}
                 {getNextOccurrenceDateAsStr()}
             </p>
-
-            <BulkCancelSessionsModal
-                ref={bulkCancelModalRef}
-                facilityId={classInfo.facility_id}
-                onSuccess={() => {
-                    // Refresh class data after bulk cancellation
-                    void mutateClass();
-                }}
-            />
         </div>
     );
 }

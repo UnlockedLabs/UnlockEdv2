@@ -4,7 +4,8 @@ import StatsCard from '@/Components/StatsCard';
 import {
     ArchiveBoxIcon,
     PencilSquareIcon,
-    ArrowDownTrayIcon
+    ArrowDownTrayIcon,
+    XCircleIcon
 } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -34,6 +35,7 @@ import { AddButton } from '@/Components/inputs';
 import WarningBanner from '@/Components/WarningBanner';
 import EmptyStateCard from '@/Components/EmptyStateCard';
 import { ReportExportModal } from '@/Components/modals/ReportExportModal';
+import { BulkCancelSessionsModal } from '@/Components/modals/BulkCancelSessionsModal';
 
 export function isCompletedCancelledOrArchived(program_class: Class): boolean {
     return (
@@ -48,6 +50,7 @@ export default function ProgramOverviewDashboard() {
     const { program_id } = useParams<{ program_id: string }>();
     const { user } = useAuth();
     const reportModalRef = useRef<HTMLDialogElement>(null);
+    const bulkCancelModalRef = useRef<HTMLDialogElement>(null);
     const revalidator = useRevalidator();
     const { program, redirect } = useLoaderData() as {
         program: ProgramOverview;
@@ -390,14 +393,27 @@ export default function ProgramOverviewDashboard() {
                             {selectedClasses.length > 1 ? 'es' : ''}
                         </button>
                     ) : (
-                        <AddButton
-                            dataTip={getTooltip()}
-                            disabled={!canAddClass}
-                            label="Add Class"
-                            onClick={() =>
-                                navigate(`/programs/${program_id}/classes/new`)
-                            }
-                        />
+                        <>
+                            <AddButton
+                                dataTip={getTooltip()}
+                                disabled={!canAddClass}
+                                label="Add Class"
+                                onClick={() =>
+                                    navigate(
+                                        `/programs/${program_id}/classes/new`
+                                    )
+                                }
+                            />
+                            <button
+                                className="button flex items-center gap-2 text-red-3 border-2 border-red-3 bg-transparent hover:bg-red-1"
+                                onClick={() => {
+                                    bulkCancelModalRef.current?.showModal();
+                                }}
+                            >
+                                <XCircleIcon className="w-5 h-5" />
+                                <span>Cancel Classes</span>
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -664,6 +680,17 @@ export default function ProgramOverviewDashboard() {
                         programId: program.id
                     }}
                     user={user}
+                />
+            )}
+
+            {user && (
+                <BulkCancelSessionsModal
+                    ref={bulkCancelModalRef}
+                    facilityId={user.facility.id}
+                    onSuccess={() => {
+                        void mutateClasses();
+                        revalidator.revalidate();
+                    }}
                 />
             )}
         </div>
