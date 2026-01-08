@@ -170,7 +170,8 @@ export const BulkCancelSessionsModal = forwardRef(function (
             if (
                 responseData &&
                 'success' in responseData &&
-                responseData.success
+                responseData.success &&
+                responseData.sessionCount > 0
             ) {
                 checkResponse(
                     Boolean(responseData.success),
@@ -181,6 +182,14 @@ export const BulkCancelSessionsModal = forwardRef(function (
                 if (onSuccess) {
                     onSuccess();
                 }
+            } else if (
+                responseData &&
+                'success' in responseData &&
+                (!responseData.success || responseData.sessionCount === 0)
+            ) {
+                setError(
+                    'No sessions found to cancel for the selected instructor and date range.'
+                );
             } else {
                 const errorData = response.data as { error?: string };
                 setError(errorData?.error ?? 'Failed to cancel sessions');
@@ -226,6 +235,14 @@ export const BulkCancelSessionsModal = forwardRef(function (
                     setIsLoading(false);
                     return;
                 }
+            }
+
+            if (currentPreview && currentPreview.upcomingSessionCount === 0) {
+                setError(
+                    'No sessions found to cancel for the selected instructor and date range.'
+                );
+                setIsLoading(false);
+                return;
             }
 
             setPendingRequest(request);
