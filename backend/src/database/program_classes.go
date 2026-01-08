@@ -16,6 +16,7 @@ import (
 type BulkCancelClaims interface {
 	GetUserID() uint
 	GetFacilityID() uint
+	GetIPAddress() string
 }
 
 func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
@@ -551,6 +552,7 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 			&newStatus,
 			instance.Event.ClassID,
 			claims.GetUserID(),
+			claims.GetIPAddress(),
 		)
 		auditEntries = append(auditEntries, *auditEntry)
 	}

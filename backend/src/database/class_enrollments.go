@@ -301,7 +301,7 @@ func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap
 			if fieldName == "update_user_id" {
 				continue
 			}
-			logEntry = *models.NewChangeLogEntry("program_classes", fieldName, nil, models.StringPtr(value.(string)), uint(classID), classMap["update_user_id"].(uint))
+			logEntry = *models.NewChangeLogEntry("program_classes", fieldName, nil, models.StringPtr(value.(string)), uint(classID), classMap["update_user_id"].(uint), "")
 			allChanges = append(allChanges, logEntry)
 		}
 	}

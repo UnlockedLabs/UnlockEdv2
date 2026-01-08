@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (srv *Server) registerClassesRoutes() []routeDef {
@@ -322,7 +323,19 @@ func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Reque
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 
-	claimsAdapter := &BulkCancelClaimsAdapter{Claims: claims}
+	ipAddress := r.Header.Get("X-Forwarded-For")
+	if ipAddress == "" {
+		ipAddress = r.RemoteAddr
+	} else {
+		// X-Forwarded-For can contain multiple IPs, take the first one
+		ipAddress = strings.Split(ipAddress, ",")[0]
+		ipAddress = strings.TrimSpace(ipAddress)
+	}
+
+	claimsAdapter := &BulkCancelClaimsAdapter{
+		Claims:    claims,
+		IPAddress: ipAddress,
+	}
 
 	response, err := srv.Db.BulkCancelSessions(&req, int(claims.FacilityID), claimsAdapter)
 	if err != nil {
@@ -340,6 +353,7 @@ func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Reque
 
 type BulkCancelClaimsAdapter struct {
 	*Claims
+	IPAddress string
 }
 
 func (c *BulkCancelClaimsAdapter) GetUserID() uint {
@@ -348,4 +362,8 @@ func (c *BulkCancelClaimsAdapter) GetUserID() uint {
 
 func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
 	return c.FacilityID
+}
+
+func (c *BulkCancelClaimsAdapter) GetIPAddress() string {
+	return c.IPAddress
 }
