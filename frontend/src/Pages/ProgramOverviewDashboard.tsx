@@ -687,8 +687,8 @@ export default function ProgramOverviewDashboard() {
                 <BulkCancelSessionsModal
                     ref={bulkCancelModalRef}
                     facilityId={user.facility.id}
+                    mutate={mutateClasses}
                     onSuccess={() => {
-                        void mutateClasses();
                         revalidator.revalidate();
                     }}
                 />

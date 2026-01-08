@@ -111,11 +111,12 @@ export interface InstructorClassData {
     cancelledSessions: number;
 }
 
-// Bulk cancellation response
 export interface BulkCancelSessionsResponse {
     success: boolean;
     sessionCount: number;
     classCount: number;
     studentCount: number;
+    alreadyCancelledCount?: number;
+    message?: string;
     classes: AffectedClass[];
 }
