@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -36,9 +35,7 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 	//SeedTestData(server.Db)
 	server.RegisterRoutes()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		server.Mux.ServeHTTP(w, r)
-	}))
+	ts := httptest.NewServer(server.Handler())
 
 	client := NewClient(ts.URL)
 

@@ -283,6 +283,9 @@ func (srv *Server) checkKolibriAccountSetup(prov *models.ProviderPlatform) error
 		log.Info("kolibri facility not found")
 		return errors.New("kolibri facility or instance not found")
 	}
-	first := body[0]["id"].(string)
+	first, ok := body[0]["id"].(string)
+	if !ok {
+		return errors.New("facility ID not found in Kolibri response")
+	}
 	return srv.Db.Model(prov).Update("account_id", first).Error
 }
