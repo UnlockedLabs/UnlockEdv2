@@ -3,6 +3,8 @@ package integration
 import (
 	"UnlockEdv2/src/models"
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,7 +120,24 @@ func createTestProgram(t *testing.T, env *TestEnv, name string, facilityID uint)
 }
 
 func createTestClass(t *testing.T, env *TestEnv, program *models.Program, facility *models.Facility, name string) *models.ProgramClass {
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	// Create unique instructor prefix from class name (remove spaces and special chars for alphanumunicode validation)
+	instructorPrefix := strings.ToLower(strings.ReplaceAll(name, " ", ""))
+	// Remove any non-alphanumeric characters to comply with validation
+	instructorPrefix = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return -1
+	}, instructorPrefix)
+	// Fallback if name becomes empty after sanitization
+	if instructorPrefix == "" {
+		instructorPrefix = fmt.Sprintf("reports%d", time.Now().UnixNano())
+	}
+
+	instructor, err := env.CreateTestInstructor(facility.ID, instructorPrefix)
+	require.NoError(t, err)
+
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 	class.Name = name
 	err = env.DB.Save(class).Error

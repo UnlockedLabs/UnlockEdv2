@@ -29,7 +29,10 @@ func TestClassCompletedAddsUntilDate(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	instructor, err := env.CreateTestInstructor(facility.ID, "rrule")
+	require.NoError(t, err)
+
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	indefiniteRRule := "DTSTART:20240101T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH"
@@ -84,7 +87,10 @@ func TestClassCancelledAddsUntilDate(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	instructor, err := env.CreateTestInstructor(facility.ID, "rrule")
+	require.NoError(t, err)
+
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	indefiniteRRule := "DTSTART:20240715T150000Z\nRRULE:FREQ=DAILY;INTERVAL=2"
@@ -139,7 +145,10 @@ func TestMultipleEventsGetUntilDate(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	instructor, err := env.CreateTestInstructor(facility.ID, "rrule")
+	require.NoError(t, err)
+
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	event1, err := env.CreateTestEventWithRRule(class.ID, "DTSTART:20240721T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR")
@@ -207,7 +216,10 @@ func TestExistingUntilDateReplaced(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	instructor, err := env.CreateTestInstructor(facility.ID, "rrule")
+	require.NoError(t, err)
+
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	futureDate := time.Now().AddDate(1, 0, 0)

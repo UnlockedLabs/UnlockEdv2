@@ -116,27 +116,15 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	class.FacilityID = claims.FacilityID
 	class.ProgramID = uint(id)
 
-	var rawClass map[string]any
-	err = json.Unmarshal(bodyBytes, &rawClass)
-	if err == nil {
-		if rawInstructorID, exists := rawClass["instructor_id"]; exists {
-			if rawInstructorID == float64(0) {
-				class.InstructorID = nil
-			}
-		}
+	if class.InstructorID == nil || *class.InstructorID == 0 {
+		return newBadRequestServiceError(nil, "instructor selection is required")
 	}
 
-	if class.InstructorID != nil && *class.InstructorID > 0 {
-		instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
-		if err == nil && instructorName != "" {
-			class.InstructorName = instructorName
-		} else {
-			class.InstructorName = "Unassigned"
-			class.InstructorID = nil
-		}
-	} else {
-		class.InstructorName = "Unassigned"
+	instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
+	if err != nil || instructorName == "" {
+		return newBadRequestServiceError(err, "invalid instructor selected")
 	}
+	class.InstructorName = instructorName
 
 	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
@@ -180,27 +168,36 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+
 	var rawClass map[string]any
-	err = json.Unmarshal(bodyBytes, &rawClass)
-	if err == nil {
-		if rawInstructorID, exists := rawClass["instructor_id"]; exists {
-			if rawInstructorID == float64(0) {
-				class.InstructorID = nil
-			}
+	var instructorIDProvided bool
+	if err := json.Unmarshal(bodyBytes, &rawClass); err == nil {
+		if _, exists := rawClass["instructor_id"]; exists {
+			instructorIDProvided = true
 		}
 	}
 
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	if class.InstructorID != nil && *class.InstructorID > 0 {
-		instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
-		if err == nil && instructorName != "" {
-			class.InstructorName = instructorName
-		} else {
-			class.InstructorName = "Unassigned"
+	if instructorIDProvided {
+		if class.InstructorID == nil || *class.InstructorID == 0 {
 			class.InstructorID = nil
+			class.InstructorName = "Unassigned"
+		} else {
+
+			instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
+			if err != nil || instructorName == "" {
+				return newBadRequestServiceError(err, "invalid instructor selected")
+			}
+			class.InstructorName = instructorName
 		}
 	} else {
-		class.InstructorName = "Unassigned"
+
+		existing, err := srv.Db.GetClassByID(id)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		class.InstructorID = existing.InstructorID
+		class.InstructorName = existing.InstructorName
 	}
 
 	if class.CannotUpdateClass() {
