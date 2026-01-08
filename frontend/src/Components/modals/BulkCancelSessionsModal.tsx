@@ -400,11 +400,9 @@ export const BulkCancelSessionsModal = forwardRef(function (
     return (
         <>
             <FormModal
-                submitText={
-                    isLoading ? 'Processing...' : 'Bulk Cancel Sessions'
-                }
+                submitText={isLoading ? 'Processing...' : 'Cancel Sessions'}
                 ref={ref}
-                title={'Bulk Cancel Class by Instructor'}
+                title={'Cancel Classes by Instructor'}
                 inputs={bulkCancelSessionsInputs}
                 showCancel={true}
                 onSubmit={handleBulkCancelSessions}
@@ -412,7 +410,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
             <TextOnlyModal
                 ref={confirmModalRef}
                 type={TextModalType.Confirm}
-                title="Confirm Bulk Cancellation"
+                title="Confirm Cancellation"
                 text={
                     <p>
                         {pendingRequest
