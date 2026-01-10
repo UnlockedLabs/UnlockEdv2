@@ -116,16 +116,7 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 			return newDatabaseServiceError(err)
 		}
 		if len(conflicts) > 0 {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-			conflictResponse := models.Resource[[]models.RoomConflict]{
-				Message: "room is already booked during this time",
-				Data:    conflicts,
-			}
-			if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
-				return newResponseServiceError(err)
-			}
-			return nil
+			return writeConflictResponse(w, conflicts)
 		}
 	}
 	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
@@ -182,16 +173,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 				return newDatabaseServiceError(err)
 			}
 			if len(conflicts) > 0 {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusConflict)
-				conflictResponse := models.Resource[[]models.RoomConflict]{
-					Message: "room is already booked during this time",
-					Data:    conflicts,
-				}
-				if err := json.NewEncoder(w).Encode(conflictResponse); err != nil {
-					return newResponseServiceError(err)
-				}
-				return nil
+				return writeConflictResponse(w, conflicts)
 			}
 		}
 	}
