@@ -142,6 +142,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         key={inputs.length}
                         onSubmit={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (extValidationIsValid())
                                 void handleSubmit(onSubmitHandler)(e);
                         }}

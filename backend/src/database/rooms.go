@@ -19,14 +19,6 @@ func (db *DB) GetRoomsForFacility(facilityID uint) ([]models.Room, error) {
 	return rooms, nil
 }
 
-func (db *DB) GetRoomByID(roomID uint) (*models.Room, error) {
-	var room models.Room
-	if err := db.First(&room, roomID).Error; err != nil {
-		return nil, newNotFoundDBError(err, "rooms")
-	}
-	return &room, nil
-}
-
 func (db *DB) GetRoomByIDForFacility(roomID, facilityID uint) (*models.Room, error) {
 	var room models.Room
 	if err := db.Where("id = ? AND facility_id = ?", roomID, facilityID).First(&room).Error; err != nil {
@@ -43,20 +35,6 @@ func (db *DB) CreateRoom(room *models.Room) (*models.Room, error) {
 		return nil, newCreateDBError(err, "room")
 	}
 	return room, nil
-}
-
-func (db *DB) UpdateRoom(roomID uint, updates map[string]interface{}) error {
-	if err := db.Model(&models.Room{}).Where("id = ?", roomID).Updates(updates).Error; err != nil {
-		return newUpdateDBError(err, "room")
-	}
-	return nil
-}
-
-func (db *DB) DeleteRoom(roomID uint) error {
-	if err := db.Delete(&models.Room{}, roomID).Error; err != nil {
-		return newDeleteDBError(err, "room")
-	}
-	return nil
 }
 
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
@@ -109,11 +87,10 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 		}
 		var classes []models.ProgramClass
 		if err := db.Select("id, name").Where("id IN ?", ids).Find(&classes).Error; err != nil {
-			logrus.Warnf("failed to batch fetch class names: %v", err)
-		} else {
-			for _, c := range classes {
-				classNamesCache[c.ID] = c.Name
-			}
+			logrus.Warnf("failed to batch fetch class names for conflict display: %v", err)
+		}
+		for _, c := range classes {
+			classNamesCache[c.ID] = c.Name
 		}
 	}
 

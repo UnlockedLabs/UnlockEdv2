@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from 'react';
+import { forwardRef, useRef, useState, useEffect, useMemo } from 'react';
 import {
     closeModal,
     FormInputTypes,
@@ -8,7 +8,7 @@ import {
     TextModalType,
     TextOnlyModal
 } from '.';
-import { ServerResponseMany } from '@/common';
+import { Room, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import { FieldValues, SubmitHandler, UseFormGetValues } from 'react-hook-form';
 import { KeyedMutator } from 'swr';
@@ -49,6 +49,27 @@ export const RescheduleClassEventModal = forwardRef(function (
     const rescheduleConfirmationRef = useRef<HTMLDialogElement>(null);
     const [dataToSubmit, setDataToSubmit] = useState<FieldValues | null>(null);
     const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
+    const [rooms, setRooms] = useState<Room[]>([]);
+
+    useEffect(() => {
+        async function fetchRooms() {
+            const resp = await API.get<Room>('rooms');
+            if (resp.success && resp.data) {
+                setRooms(resp.data as Room[]);
+            }
+        }
+        void fetchRooms();
+    }, []);
+
+    const roomOptions = useMemo(() => {
+        return rooms.reduce(
+            (acc, room) => {
+                acc[room.id.toString()] = room.name;
+                return acc;
+            },
+            {} as Record<string, string>
+        );
+    }, [rooms]);
     const rescheduleClassEvent: SubmitHandler<FieldValues> = async (data) => {
         if (!calendarEvent) {
             return;
@@ -77,6 +98,9 @@ export const RescheduleClassEventModal = forwardRef(function (
             data.start_time as string,
             data.end_time as string
         );
+        const selectedRoomId = data.room_id
+            ? Number(data.room_id)
+            : calendarEvent.room_id;
         const rescheduledEvent = {
             ...(calendarEvent.linked_override_event && {
                 linked_override_event_id:
@@ -87,7 +111,7 @@ export const RescheduleClassEventModal = forwardRef(function (
             class_id: calendarEvent.class_id,
             override_rrule: rescheduledRule,
             duration: duration,
-            room_id: calendarEvent.room_id,
+            room_id: selectedRoomId,
             is_cancelled: false
         };
 
@@ -117,16 +141,11 @@ export const RescheduleClassEventModal = forwardRef(function (
             interfaceRef: '',
             required: true,
             uniqueComponent: (
-                <>
-                    <p className="mb-4">
-                        You are editing a single event for this class. Changes
-                        made here will apply <b>only to this occurrence</b> and
-                        will not affect the rest of the schedule.
-                    </p>
-                    <p className="text-sm text-grey-3 mb-4">
-                        Room: {calendarEvent?.room ?? 'TBD'}
-                    </p>
-                </>
+                <p className="mb-4">
+                    You are editing a single event for this class. Changes made
+                    here will apply <b>only to this occurrence</b> and will not
+                    affect the rest of the schedule.
+                </p>
             )
         },
         {
@@ -149,6 +168,13 @@ export const RescheduleClassEventModal = forwardRef(function (
             interfaceRef: 'end_time',
             required: true,
             getValues: formDataRef?.getValues
+        },
+        {
+            type: FormInputTypes.Dropdown,
+            label: 'Room',
+            interfaceRef: 'room_id',
+            required: true,
+            enumType: roomOptions
         }
     ];
 
@@ -193,6 +219,9 @@ export const RescheduleClassEventModal = forwardRef(function (
                 ref={ref}
                 title={'Edit Event'}
                 inputs={rescheduleClassEventInputs}
+                defaultValues={{
+                    room_id: calendarEvent?.room_id?.toString() ?? ''
+                }}
                 showCancel={true}
                 onSubmit={(data) => {
                     verifyDatesAndShowModal(data);
