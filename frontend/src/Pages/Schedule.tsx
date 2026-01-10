@@ -5,12 +5,12 @@ import {
 } from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
-import { getDateObj } from '@/Components/helperFunctions/formatting';
 import { FacilityProgramClassEvent } from '@/types/events';
 import { useAuth } from '@/useAuth';
 import { useMemo, useState } from 'react';
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
+import { toZonedTime } from 'date-fns-tz';
 
 export default function Schedule() {
     const { user } = useAuth();
@@ -55,15 +55,14 @@ export default function Schedule() {
 
     const formattedEvents = events
         ? events.map((event) => {
-              const displayDate = getDateObj(event.start);
+              const startDate = new Date(event.start);
+              const endDate = new Date(event.end);
+              const displayStart = toZonedTime(startDate, user.timezone);
+              const displayEnd = toZonedTime(endDate, user.timezone);
               return {
                   ...event,
-                  start: displayDate,
-                  end: new Date(
-                      displayDate.getTime() +
-                          (new Date(event.end).getTime() -
-                              new Date(event.start).getTime())
-                  )
+                  start: displayStart,
+                  end: displayEnd
               };
           })
         : [];

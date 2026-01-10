@@ -31,31 +31,43 @@ func TestClassDateSynchronization(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Event override creation extends class end date", func(t *testing.T) {
-		runTestOverrideCreationExtendsEndDate(t, env, facility, facilityAdmin, program)
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 1"}
+		require.NoError(t, env.DB.Create(room).Error)
+		runTestOverrideCreationExtendsEndDate(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Event rescheduling extends class across multiple months", func(t *testing.T) {
-		runTestEventReschedulingExtendsMultipleMonths(t, env, facility, facilityAdmin, program)
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 2"}
+		require.NoError(t, env.DB.Create(room).Error)
+		runTestEventReschedulingExtendsMultipleMonths(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Multiple overrides extend class end date appropriately", func(t *testing.T) {
-		runTestMultipleOverridesExtendEndDate(t, env, facility, facilityAdmin, program)
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 3"}
+		require.NoError(t, env.DB.Create(room).Error)
+		runTestMultipleOverridesExtendEndDate(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Cannot modify events for completed classes", func(t *testing.T) {
-		runTestCannotModifyEventsForCompletedClasses(t, env, facility, facilityAdmin, program)
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 4"}
+		require.NoError(t, env.DB.Create(room).Error)
+		runTestCannotModifyEventsForCompletedClasses(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Class start date updates when event moved earlier", func(t *testing.T) {
-		runTestStartDateUpdatesWhenEventMovedEarlier(t, env, facility, facilityAdmin, program)
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 5"}
+		require.NoError(t, env.DB.Create(room).Error)
+		runTestStartDateUpdatesWhenEventMovedEarlier(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
 	t.Run("Event cancellation affects class boundaries", func(t *testing.T) {
-		runTestEventCancellationAffectsBoundaries(t, env, facility, facilityAdmin, program)
+		room := &models.Room{FacilityID: facility.ID, Name: "Test Room 6"}
+		require.NoError(t, env.DB.Create(room).Error)
+		runTestEventCancellationAffectsBoundaries(t, env, facility, facilityAdmin, program, room.ID)
 	})
 }
 
-func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)  // November 1, 2025
 	initialEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC) // November 30, 2025
 	creditHours := int64(3)
@@ -83,7 +95,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 
 	eventPayload := map[string]interface{}{
 		"duration":        "2h",
-		"room":            "Test Room 101",
+		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251101T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20251130T000000Z",
 	}
 
@@ -118,7 +130,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20251127T180000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "2h",
-			"room":           "Rescheduled Room",
+			"room_id":        roomID,
 			"is_cancelled":   true,
 			"reason":         "Thanksgiving reschedule",
 		},
@@ -127,7 +139,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20251202T180000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "2h",
-			"room":           "Holiday Room",
+			"room_id":        roomID,
 			"is_cancelled":   false,
 			"reason":         "Post-Thanksgiving session",
 		},
@@ -149,7 +161,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 	require.True(t, updatedClass.EndDt.After(*createdClass.EndDt), "End date should be later than original November 30")
 }
 
-func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(4)
@@ -176,7 +188,7 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 
 	eventPayload := map[string]interface{}{
 		"duration":        "2h",
-		"room":            "Conference Room A",
+		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251104T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20251130T000000Z",
 	}
 
@@ -191,13 +203,13 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 		"event_series": map[string]interface{}{
 			"id":              event.ID,
 			"duration":        "2h",
-			"room":            "Future Conference Room",
+			"room_id":         roomID,
 			"recurrence_rule": "DTSTART:20260203T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20260228T000000Z",
 		},
 		"closed_event_series": map[string]interface{}{
 			"id":              event.ID,
 			"duration":        "2h",
-			"room":            "Conference Room A",
+			"room_id":         roomID,
 			"recurrence_rule": "DTSTART:20251104T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20251130T000000Z",
 		},
 	}
@@ -217,7 +229,7 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should remain at original November 30")
 }
 
-func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
 	classStartDate := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 12, 20, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(3)
@@ -244,7 +256,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 
 	eventPayload := map[string]interface{}{
 		"duration":        "1h",
-		"room":            "Main Room",
+		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251202T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20251220T000000Z",
 	}
 
@@ -261,7 +273,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20260106T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h",
-			"room":           "January Room",
+			"room_id":        roomID,
 			"is_cancelled":   false,
 			"reason":         "January extension",
 		},
@@ -270,7 +282,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20260203T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h",
-			"room":           "February Room",
+			"room_id":        roomID,
 			"is_cancelled":   false,
 			"reason":         "February extension",
 		},
@@ -279,7 +291,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20260303T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h",
-			"room":           "March Room",
+			"room_id":        roomID,
 			"is_cancelled":   false,
 			"reason":         "March extension",
 		},
@@ -300,7 +312,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should reflect base event UNTIL date")
 }
 
-func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
 
 	class, err := env.CreateTestClass(program, facility, models.Scheduled)
 	require.NoError(t, err)
@@ -318,7 +330,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 
 	eventPayload := map[string]interface{}{
 		"duration":        "1h",
-		"room":            "Test Room",
+		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20240101T100000Z\nRRULE:FREQ=WEEKLY;COUNT=4",
 	}
 
@@ -330,7 +342,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 	overridePayload := map[string]interface{}{
 		"override_rrule": "DTSTART:20241201T100000Z\nRRULE:FREQ=DAILY;COUNT=1",
 		"duration":       "1h",
-		"room":           "Test Room",
+		"room_id":        roomID,
 		"is_cancelled":   true,
 		"reason":         "Testing completed class",
 	}
@@ -346,7 +358,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 			"date":            "2024-12-01",
 			"start_time":      "15:00",
 			"duration":        "90m",
-			"room":            "Rescheduled Room",
+			"room_id":         roomID,
 			"recurrence_rule": "DTSTART:20241201T150000Z\nRRULE:FREQ=WEEKLY;COUNT=6",
 		},
 		"closed_event_series": map[string]interface{}{
@@ -354,7 +366,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 			"date":            "2024-11-01",
 			"start_time":      "15:00",
 			"duration":        "90m",
-			"room":            "Original Room",
+			"room_id":         roomID,
 			"recurrence_rule": "DTSTART:20241101T150000Z\nRRULE:FREQ=WEEKLY;COUNT=4",
 		},
 	}
@@ -365,7 +377,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		ExpectStatus(http.StatusBadRequest)
 }
 
-func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
 	classStartDate := time.Date(2025, 12, 15, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
@@ -393,7 +405,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 
 	eventPayload := map[string]interface{}{
 		"duration":        "1h30m",
-		"room":            "Test Room",
+		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251220T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20260131T000000Z",
 	}
 
@@ -410,7 +422,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20251210T180000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h30m",
-			"room":           "Earlier Room",
+			"room_id":        roomID,
 			"is_cancelled":   false,
 			"reason":         "Start date earlier adjustment",
 		},
@@ -431,7 +443,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 	require.Equal(t, expectedStartDate, updatedClass.StartDt, "Class start date should sync with original RRULE start date when rescheduled events exist")
 }
 
-func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
 	classStartDate := time.Date(2026, 1, 6, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
@@ -458,7 +470,7 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 
 	eventPayload := map[string]interface{}{
 		"duration":        "1h",
-		"room":            "Test Room",
+		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260108T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20260228T000000Z",
 	}
 
@@ -475,7 +487,7 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 			"class_id":       createdClass.ID,
 			"override_rrule": "DTSTART:20260201T180000Z\nRRULE:FREQ=DAILY;COUNT=8",
 			"duration":       "1h",
-			"room":           "Test Room",
+			"room_id":        roomID,
 			"is_cancelled":   true,
 			"reason":         "February events cancelled",
 		},

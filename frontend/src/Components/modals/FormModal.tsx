@@ -19,7 +19,8 @@ import {
     TextInput,
     TimeInput
 } from '../inputs';
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FormInputTypes, Input, InputWithOptions } from '.';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '../UnlockEdTour';
@@ -104,7 +105,25 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         }
     }, []);
 
-    return (
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+        null
+    );
+
+    useEffect(() => {
+        let container = document.getElementById('modal-root');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'modal-root';
+            document.body.appendChild(container);
+        }
+        setPortalContainer(container);
+    }, []);
+
+    if (!portalContainer) {
+        return null;
+    }
+
+    return createPortal(
         <dialog
             ref={ref}
             className="modal"
@@ -123,6 +142,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         key={inputs.length}
                         onSubmit={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (extValidationIsValid())
                                 void handleSubmit(onSubmitHandler)(e);
                         }}
@@ -282,7 +302,8 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                     </form>
                 </div>
             </div>
-        </dialog>
+        </dialog>,
+        portalContainer
     );
 });
 export default FormModal;

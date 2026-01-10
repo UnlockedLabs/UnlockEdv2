@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from 'react';
+import { forwardRef, useRef, useState, useEffect, useMemo } from 'react';
 import {
     closeModal,
     FormInputTypes,
@@ -8,7 +8,7 @@ import {
     TextModalType,
     TextOnlyModal
 } from '.';
-import { ServerResponseMany } from '@/common';
+import { Room, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import {
     FieldValues,
@@ -57,17 +57,41 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         duration: string;
     } | null>(null);
     const [dataToSubmit, setDataToSubmit] = useState<FieldValues | null>(null);
+    const [rooms, setRooms] = useState<Room[]>([]);
+
+    useEffect(() => {
+        async function fetchRooms() {
+            const resp = await API.get<Room>('rooms');
+            if (resp.success && resp.data) {
+                setRooms(resp.data as Room[]);
+            }
+        }
+        void fetchRooms();
+    }, []);
+
+    const roomOptions = useMemo(() => {
+        return rooms.reduce(
+            (acc, room) => {
+                acc[room.id.toString()] = room.name;
+                return acc;
+            },
+            {} as Record<string, string>
+        );
+    }, [rooms]);
     const rescheduleClassEventSeries: SubmitHandler<FieldValues> = async (
         data
     ) => {
         if (!calendarEvent || !rruleObj) {
             return;
         }
+        const selectedRoomId = data.room_id
+            ? Number(data.room_id)
+            : calendarEvent.room_id;
         const rescheduledEventSeries = {
             id: 0,
             class_id: calendarEvent.class_id,
             duration: rruleObj?.duration,
-            room: data.room as string,
+            room_id: selectedRoomId,
             recurrence_rule: rruleObj?.rule
         };
 
@@ -111,13 +135,11 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
             interfaceRef: '',
             required: true,
             uniqueComponent: (
-                <>
-                    <p className="mb-4">
-                        You are editing the recurring schedule for this class.
-                        Changes will apply to this session and{' '}
-                        <b>all future occurrences.</b>
-                    </p>
-                </>
+                <p className="mb-4">
+                    You are editing the recurring schedule for this class.
+                    Changes will apply to this session and{' '}
+                    <b>all future occurrences.</b>
+                </p>
             )
         },
         ...(formDataRef
@@ -158,11 +180,11 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
               ]
             : []),
         {
-            type: FormInputTypes.Text,
+            type: FormInputTypes.Dropdown,
             label: 'Room',
-            interfaceRef: 'room',
+            interfaceRef: 'room_id',
             required: true,
-            defaultValue: calendarEvent?.room
+            enumType: roomOptions
         }
     ];
 
@@ -187,6 +209,9 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                 ref={ref}
                 title={'Edit Schedule (Recurring)'}
                 inputs={rescheduleClassEventSeriesInputs}
+                defaultValues={{
+                    room_id: calendarEvent?.room_id?.toString() ?? ''
+                }}
                 showCancel={true}
                 extValidationIsValid={verify}
                 onSubmit={(data) => {

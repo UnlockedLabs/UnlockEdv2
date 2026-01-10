@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
