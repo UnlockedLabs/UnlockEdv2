@@ -49,6 +49,9 @@ export function RoomSelector({
     const modalRef = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
     const [isCreating, setIsCreating] = useState(false);
+    const fieldOnChangeRef = useRef<((value: number | null) => void) | null>(
+        null
+    );
 
     const options: RoomOption[] = [
         ...rooms.map((r) => ({ value: r.id, label: r.name })),
@@ -63,9 +66,13 @@ export function RoomSelector({
         setIsCreating(false);
 
         if (resp.success && resp.data) {
+            const newRoom = resp.data as Room;
             toaster('Room created', ToastState.success);
             modalRef.current?.close();
-            onRoomCreated(resp.data as Room);
+            onRoomCreated(newRoom);
+            setTimeout(() => {
+                fieldOnChangeRef.current?.(newRoom.id);
+            }, 0);
         } else {
             toaster(resp.message || 'Failed to create room', ToastState.error);
         }
@@ -85,36 +92,39 @@ export function RoomSelector({
                     control={control}
                     name={name}
                     rules={required ? { required: `${label} is required` } : {}}
-                    render={({ field, fieldState }) => (
-                        <>
-                            <Select
-                                {...field}
-                                isDisabled={disabled}
-                                options={options}
-                                placeholder="Select room..."
-                                styles={defaultStyles}
-                                value={
-                                    field.value
-                                        ? options.find(
-                                              (o) => o.value === field.value
-                                          )
-                                        : null
-                                }
-                                onChange={(selected) => {
-                                    if (selected?.value === 'create') {
-                                        modalRef.current?.showModal();
-                                        return;
+                    render={({ field, fieldState }) => {
+                        fieldOnChangeRef.current = field.onChange;
+                        return (
+                            <>
+                                <Select
+                                    {...field}
+                                    isDisabled={disabled}
+                                    options={options}
+                                    placeholder="Select room..."
+                                    styles={defaultStyles}
+                                    value={
+                                        field.value
+                                            ? options.find(
+                                                  (o) => o.value === field.value
+                                              )
+                                            : null
                                     }
-                                    field.onChange(selected?.value ?? null);
-                                }}
-                            />
-                            {fieldState.error && (
-                                <p className="text-error text-sm">
-                                    {fieldState.error.message}
-                                </p>
-                            )}
-                        </>
-                    )}
+                                    onChange={(selected) => {
+                                        if (selected?.value === 'create') {
+                                            modalRef.current?.showModal();
+                                            return;
+                                        }
+                                        field.onChange(selected?.value ?? null);
+                                    }}
+                                />
+                                {fieldState.error && (
+                                    <p className="text-error text-sm">
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
+                            </>
+                        );
+                    }}
                 />
             </div>
             <FormModal
