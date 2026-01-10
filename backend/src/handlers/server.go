@@ -570,6 +570,19 @@ func (srv *Server) WithUserContext(r *http.Request) *database.DB {
 	return database.NewDB(srv.Db.WithContext(r.Context()))
 }
 
+func writeConflictResponse(w http.ResponseWriter, conflicts []models.RoomConflict) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+	resp := models.Resource[[]models.RoomConflict]{
+		Message: "room is already booked during this time",
+		Data:    conflicts,
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return newResponseServiceError(err)
+	}
+	return nil
+}
+
 func (srv *Server) errorResponse(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
