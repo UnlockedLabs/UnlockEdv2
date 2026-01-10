@@ -75,6 +75,17 @@ ALTER TABLE public.program_class_events
     ADD COLUMN room VARCHAR(255) DEFAULT 'TBD',
     ALTER COLUMN room_id DROP NOT NULL;
 ALTER TABLE public.program_class_event_overrides ADD COLUMN room VARCHAR(255);
+
+UPDATE public.program_class_events e
+SET room = r.name
+FROM public.rooms r
+WHERE e.room_id = r.id;
+
+UPDATE public.program_class_event_overrides ov
+SET room = r.name
+FROM public.rooms r
+WHERE ov.room_id = r.id;
+
 ALTER TABLE public.program_class_event_overrides DROP CONSTRAINT IF EXISTS fk_pceo_room_id;
 ALTER TABLE public.program_class_event_overrides DROP COLUMN IF EXISTS room_id;
 ALTER TABLE public.program_class_events DROP CONSTRAINT IF EXISTS fk_pce_room_id;

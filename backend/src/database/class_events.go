@@ -308,7 +308,7 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 
 	computedEnd := allDates[len(allDates)-1]
 
-	updates := make(map[string]interface{})
+	updates := make(map[string]any)
 
 	targetStart := originalBaseStart
 	if !earliestReschedule.IsZero() && earliestReschedule.Before(originalBaseStart) {
@@ -539,6 +539,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			endTime := consistentOccurrence.Add(duration)
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent: event.ProgramClassEvent,
+				Room:              event.Room,
 				InstructorName:    event.InstructorName,
 				ProgramName:       event.ProgramName,
 				ClassName:         event.ClassName,
@@ -595,6 +596,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			}
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent:   event.ProgramClassEvent,
+				Room:                event.Room,
 				InstructorName:      event.InstructorName,
 				ProgramName:         event.ProgramName,
 				ClassName:           event.ClassName,
