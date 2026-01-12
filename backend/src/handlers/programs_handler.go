@@ -148,12 +148,11 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 		Description:        program.Description,
 		FundingType:        program.FundingType,
 		IsActive:           program.IsActive,
-		CreateUserID:       claims.UserID,
 		ProgramTypes:       program.ProgramTypes,
 		ProgramCreditTypes: program.CreditTypes,
 	}
 
-	err = srv.Db.CreateProgram(&newProg)
+	err = srv.WithUserContext(r).CreateProgram(&newProg)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -164,7 +163,7 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 			ProgramID:  newProg.ID,
 		}
 	}, program.Facilities)
-	if err := srv.Db.Model(&models.FacilitiesPrograms{}).Create(&facilityPrograms).Error; err != nil {
+	if err := srv.WithUserContext(r).Model(&models.FacilitiesPrograms{}).Create(&facilityPrograms).Error; err != nil {
 		log.info("Error creating facility program: " + err.Error())
 	}
 	return writeJsonResponse(w, http.StatusCreated, newProg)
@@ -184,18 +183,18 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	programID := uint(id)
 	theProg := models.Program{
 		DatabaseFields: models.DatabaseFields{
-			ID: programID,
+			ID:           programID,
+			UpdateUserID: models.UintPtr(claims.UserID),
 		},
 		Name:               programForm.Name,
 		Description:        programForm.Description,
 		FundingType:        programForm.FundingType,
 		IsActive:           programForm.IsActive,
-		UpdateUserID:       claims.UserID,
 		ProgramTypes:       programForm.ProgramTypes,
 		ProgramCreditTypes: programForm.CreditTypes,
 	}
 
-	updated, updateErr := srv.Db.UpdateProgram(r.Context(), &theProg, programForm.Facilities)
+	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities)
 	if updateErr != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -212,10 +211,9 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	log.add("program_id", id)
-	// These will need to be uncommented once the update_user_id is added to the database
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	programUpdate["update_user_id"] = claims.UserID
-	facilities, updated, err := srv.Db.UpdateProgramStatus(r.Context(), programUpdate, uint(id))
+	facilities, updated, err := srv.WithUserContext(r).UpdateProgramStatus(programUpdate, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

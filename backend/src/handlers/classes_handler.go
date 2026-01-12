@@ -101,9 +101,8 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.FacilityID = claims.FacilityID
-	class.CreateUserID = claims.UserID
 	class.ProgramID = uint(id)
-	newClass, err := srv.Db.CreateProgramClass(&class)
+	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -132,8 +131,8 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	class.UpdateUserID = claims.UserID
-	updated, err := srv.Db.UpdateProgramClass(r.Context(), &class, id)
+	class.UpdateUserID = models.UintPtr(claims.UserID)
+	updated, err := srv.WithUserContext(r).UpdateProgramClass(&class, id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -156,7 +155,7 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	classMap["update_user_id"] = claims.UserID
 
-	if err := srv.Db.UpdateProgramClasses(r.Context(), classIDs, classMap); err != nil {
+	if err := srv.WithUserContext(r).UpdateProgramClasses(classIDs, classMap); err != nil {
 		return newDatabaseServiceError(err)
 	}
 

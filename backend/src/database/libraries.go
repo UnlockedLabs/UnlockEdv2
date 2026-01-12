@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm/clause"
 )
 
 type LibraryResponse struct {
@@ -58,9 +59,9 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 	switch visibility {
 	case "featured":
 		// Join with open_content_favorites, ensuring facility_id is not null (admin-specific)
-		tx = tx.Joins(`JOIN open_content_favorites f 
-			ON f.content_id = libraries.id 
-			AND f.open_content_provider_id = libraries.open_content_provider_id 
+		tx = tx.Joins(`JOIN open_content_favorites f
+			ON f.content_id = libraries.id
+			AND f.open_content_provider_id = libraries.open_content_provider_id
 			AND f.facility_id IS NOT NULL`).Where("f.facility_id = ? AND fvs.visibility_status = true", args.FacilityID)
 		isFeatured = true
 	case "visible":
@@ -99,8 +100,8 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 					AND f.user_id = ?
 			) AS is_favorited`, args.UserID)
 		if !isFeatured {
-			tx = tx.Joins(`JOIN open_content_favorites f 
-				ON f.content_id = libraries.id 
+			tx = tx.Joins(`JOIN open_content_favorites f
+				ON f.content_id = libraries.id
 				AND f.open_content_provider_id = libraries.open_content_provider_id
 				AND f.facility_id IS NULL`)
 		}
@@ -144,8 +145,8 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
         LEFT OUTER JOIN facility_visibility_statuses fvs
             on fvs.open_content_provider_id = v.open_content_provider_id
             and fvs.content_id = v.id
-            and fvs.facility_id = ? 
-        WHERE fvs.visibility_status = true 
+            and fvs.facility_id = ?
+        WHERE fvs.visibility_status = true
 				and to_tsvector('english', v.title || ' ' || v.description || ' ' || v.channel_title) @@ plainto_tsquery('english', ?)
 		   UNION ALL
 		SELECT
@@ -220,7 +221,17 @@ func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int, args *models.QueryConte
 	}
 	visibility := library.GetFacilityVisibilityStatus(args.FacilityID)
 	visibility.VisibilityStatus = !visibility.VisibilityStatus
-	if err := db.Save(&visibility).Error; err != nil {
+
+	updateMap := map[string]any{
+		"visibility_status": visibility.VisibilityStatus,
+	}
+	if args.UserID != 0 {
+		updateMap["update_user_id"] = args.UserID
+	}
+	if err := db.WithContext(args.Ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "facility_id"}, {Name: "open_content_provider_id"}, {Name: "content_id"}},
+		DoUpdates: clause.Assignments(updateMap),
+	}).Create(&visibility).Error; err != nil {
 		return nil, newUpdateDBError(err, "libraries")
 	}
 	library.VisibilityStatus = visibility.VisibilityStatus

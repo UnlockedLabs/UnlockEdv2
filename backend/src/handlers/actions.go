@@ -55,7 +55,7 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 			NameFirst: user.NameFirst,
 			NameLast:  user.NameLast,
 		}
-		err := srv.Db.CreateUser(&newUser)
+		err := srv.WithUserContext(r).CreateUser(&newUser)
 		if err != nil {
 			log.error("Error creating user:" + err.Error())
 			continue

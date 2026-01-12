@@ -71,7 +71,7 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	err = srv.Db.CreateFacility(&facility)
+	err = srv.WithUserContext(r).CreateFacility(&facility)
 	if err != nil {
 		log.add("facility_name", facility.Name)
 		return newDatabaseServiceError(err)
@@ -93,7 +93,7 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	err = srv.Db.UpdateFacility(&facility, uint(id))
+	err = srv.WithUserContext(r).UpdateFacility(&facility, uint(id))
 	if err != nil {
 		log.add("facilityName", facility.Name)
 		return newDatabaseServiceError(err)
@@ -112,7 +112,7 @@ func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
 	}
-	if err = srv.Db.DeleteFacility(id); err != nil {
+	if err = srv.WithUserContext(r).DeleteFacility(id); err != nil {
 		log.add("facilityId", id)
 		return newDatabaseServiceError(err)
 	}

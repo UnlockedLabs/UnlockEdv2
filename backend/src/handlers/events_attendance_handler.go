@@ -109,7 +109,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 			return err
 		}
 	}
-	if err := srv.Db.LogUserAttendance(attendances, r.Context(), &args.UserID, class.Name); err != nil {
+	if err := srv.WithUserContext(r).LogUserAttendance(attendances, args.Ctx, &args.UserID, class.Name); err != nil {
 		return newDatabaseServiceError(err)
 	}
 
@@ -154,7 +154,7 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class")
 	}
 
-	rowsAffected, err := srv.Db.DeleteAttendance(eventID, userID, date, r.Context(), &args.UserID, class.Name)
+	rowsAffected, err := srv.WithUserContext(r).DeleteAttendance(eventID, userID, date, args.Ctx, &args.UserID, class.Name)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

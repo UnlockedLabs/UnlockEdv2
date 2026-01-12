@@ -45,6 +45,7 @@ import { ClassEventInstance } from '@/types/events';
 interface LocalRowData {
     selected: boolean;
     user_id: number;
+    attendance_id?: number;
     doc_id: string;
     name_last: string;
     name_first: string;
@@ -186,19 +187,20 @@ export default function EventAttendance() {
             const baseRow: LocalRowData = {
                 selected: false,
                 user_id: item.user_id,
+                attendance_id: item.attendance_id,
                 doc_id: item.doc_id ?? '',
                 name_last: item.name_last,
                 name_first: item.name_first,
                 attendance_status: item.attendance_status,
                 note: item.note ?? '',
                 reason_category: reasonValue,
-                 
+
                 check_in_at: item.check_in_at ?? undefined,
-                 
+
                 check_out_at: item.check_out_at ?? undefined,
-                 
+
                 minutes_attended: item.minutes_attended,
-                 
+
                 scheduled_minutes: item.scheduled_minutes
             };
             return modifiedRows[item.user_id]
@@ -377,6 +379,7 @@ export default function EventAttendance() {
         const payload = updatedRows
             .filter((row) => row.selected)
             .map((row) => ({
+                id: row.attendance_id,
                 user_id: row.user_id,
                 event_id: Number(event_id),
                 date: date,

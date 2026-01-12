@@ -24,6 +24,8 @@ import (
 const (
 	DaysInPast     = 90
 	MonthsInFuture = 6
+	SystemBatchID  = 99999
+	SystemBatchUID = "system_batch"
 )
 
 var (
@@ -50,6 +52,13 @@ func main() {
 func seedTestData(db *gorm.DB) {
 	// isTesting is false because this needs to seed real users w/ kratos
 	testServer := handlers.NewServer(false, context.Background())
+	var systemUser models.User
+	systemUserID := uint(SystemBatchID)
+	if err := db.Where("username = ?", SystemBatchUID).First(&systemUser).Error; err == nil {
+		systemUserID = systemUser.ID
+	}
+	db = db.WithContext(context.WithValue(context.Background(), models.UserIDKey, systemUserID))
+
 	facilities := []models.Facility{
 		{
 			Name:     "BCF",
@@ -157,13 +166,8 @@ func seedTestData(db *gorm.DB) {
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
 
-	var adminUser models.User
-	if db.Where("role = ?", models.SystemAdmin).Limit(1).Find(&adminUser).Error != nil {
-		log.Fatalf("Failed to get users from db")
-		return
-	}
 	classes := []models.ProgramClass{}
-	classes, err = createFacilityPrograms(db, adminUser.ID)
+	classes, err = createFacilityPrograms(db)
 	if err != nil {
 		log.Printf("Failed to create facility programs: %v", err)
 	}
@@ -536,7 +540,7 @@ func generateFakeVideos(providerID uint, count int) []models.Video {
 	}
 	return videos
 }
-func createFacilityPrograms(db *gorm.DB, adminID uint) ([]models.ProgramClass, error) {
+func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
 	creditTypes := [4]models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
@@ -579,9 +583,8 @@ func createFacilityPrograms(db *gorm.DB, adminID uint) ([]models.ProgramClass, e
 	programs := make([]models.Program, 0, 7)
 	for range 7 {
 		programs = append(programs, models.Program{
-			Name:         getRandomProgram(programMap),
-			FundingType:  fundingTypes[rand.Intn(len(fundingTypes))],
-			CreateUserID: adminID,
+			Name:        getRandomProgram(programMap),
+			FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 		})
 	}
 	for i := range programs {
@@ -626,7 +629,6 @@ func createFacilityPrograms(db *gorm.DB, adminID uint) ([]models.ProgramClass, e
 					EndDt:          &endDates[rand.Intn(len(endDates))],
 					FacilityID:     facilities[idx].ID,
 					ProgramID:      programs[i].ID,
-					CreateUserID:   adminID,
 				}
 				if err := db.Create(&class).Error; err != nil {
 					log.Printf("Failed to create program class: %v", err)

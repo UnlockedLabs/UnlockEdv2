@@ -18,14 +18,14 @@ func (srv *Server) registerFeatureFlagRoutes() []routeDef {
 }
 
 func (srv *Server) handleToggleFeatureFlag(w http.ResponseWriter, r *http.Request, log sLog) error {
-	return srv.toggleFeature(w, r, log, srv.Db.ToggleFeatureAccess, "feature toggled successfully")
+	return srv.toggleFeature(w, r, log, (*database.DB).ToggleFeatureAccess, "feature toggled successfully")
 }
 
 func (srv *Server) handleTogglePageFeatureFlag(w http.ResponseWriter, r *http.Request, log sLog) error {
-	return srv.toggleFeature(w, r, log, srv.Db.TogglePageFeature, "page feature toggled successfully")
+	return srv.toggleFeature(w, r, log, (*database.DB).TogglePageFeature, "page feature toggled successfully")
 }
 
-func (srv *Server) toggleFeature(w http.ResponseWriter, r *http.Request, log sLog, toggleFeatureAccess func(string) error, successMessage string) error {
+func (srv *Server) toggleFeature(w http.ResponseWriter, r *http.Request, log sLog, toggleFeatureAccess func(*database.DB, string) error, successMessage string) error {
 	user := r.Context().Value(ClaimsKey).(*Claims)
 	if user.Role != models.SystemAdmin {
 		return newUnauthorizedServiceError()
@@ -38,11 +38,13 @@ func (srv *Server) toggleFeature(w http.ResponseWriter, r *http.Request, log sLo
 		return newBadRequestServiceError(errors.New("feature flag invalid"), "invalid feature was requested")
 	}
 
-	if err := toggleFeatureAccess(feature); err != nil {
+	dbWithCtx := srv.WithUserContext(r)
+
+	if err := toggleFeatureAccess(dbWithCtx, feature); err != nil {
 		return newInternalServerServiceError(err, "unable to toggle feature")
 	}
 
-	features, err := srv.Db.GetFeatureAccess()
+	features, err := dbWithCtx.GetFeatureAccess()
 	if err != nil {
 		return newInternalServerServiceError(err, "unable to fetch features")
 	}

@@ -99,7 +99,7 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		return writeJsonResponse(w, http.StatusOK, msg)
 
 	case ToggleVisibilityAction:
-		if err = srv.Db.ToggleVideoVisibility(vidId, facilityID); err != nil {
+		if err = srv.WithUserContext(r).ToggleVideoVisibility(vidId, facilityID); err != nil {
 			return newInternalServerServiceError(err, "error toggling video visibility")
 		}
 		log.auditDetails("visibility_toggled")
