@@ -67,9 +67,21 @@ func (ProviderPlatform) TableName() string {
 }
 
 func (provider *ProviderPlatform) BeforeCreate(tx *gorm.DB) (err error) {
+	if err := provider.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
+	provider.UpdateUserID = nil
+
 	if provider.Type == Kolibri && !strings.Contains(provider.AccountID, "-") && len(provider.AccountID) == UuidV4Len {
 		// convert the uuid back into hypenated format
 		provider.AccountID = fmt.Sprintf("%s-%s-%s-%s-%s", provider.AccountID[0:8], provider.AccountID[8:12], provider.AccountID[12:16], provider.AccountID[16:20], provider.AccountID[20:])
+	}
+	return nil
+}
+
+func (provider *ProviderPlatform) BeforeUpdate(tx *gorm.DB) (err error) {
+	if err := provider.DatabaseFields.BeforeUpdate(tx); err != nil {
+		return err
 	}
 	return nil
 }

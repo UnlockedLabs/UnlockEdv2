@@ -2,15 +2,17 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+
+	"gorm.io/gorm/clause"
 )
 
 func (db *DB) GetVideoByID(id int, facilityId uint) (*models.Video, error) {
 	var video models.Video
 	query := db.Model(&models.Video{}).Preload("Attempts").
 		Select("videos.*, fvs.visibility_status").
-		Joins(`left outer join facility_visibility_statuses fvs on 
-			fvs.open_content_provider_id = videos.open_content_provider_id and 
-			fvs.content_id = videos.id and 
+		Joins(`left outer join facility_visibility_statuses fvs on
+			fvs.open_content_provider_id = videos.open_content_provider_id and
+			fvs.content_id = videos.id and
 			fvs.facility_id = ?`, facilityId)
 
 	if err := query.First(&video, id).Error; err != nil {
@@ -71,7 +73,7 @@ func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]Vide
 	var videos []VideoResponse
 	tx := db.WithContext(args.Ctx).Model(&models.Video{}).Preload("Attempts").Select(`
 	videos.*,
-        CASE WHEN fvs.visibility_status is null then false 
+        CASE WHEN fvs.visibility_status is null then false
         else fvs.visibility_status
     end as visibility_status,
 	EXISTS (
@@ -81,9 +83,9 @@ func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]Vide
 		  AND f.open_content_provider_id = videos.open_content_provider_id
 		  AND f.user_id = ?
 	) AS is_favorited`, args.UserID).
-		Joins(`left join facility_visibility_statuses fvs 
+		Joins(`left join facility_visibility_statuses fvs
         on fvs.open_content_provider_id = videos.open_content_provider_id
-        and fvs.content_id = videos.id 
+        and fvs.content_id = videos.id
         and fvs.facility_id = ?`, args.FacilityID)
 
 	switch visibility {
@@ -124,7 +126,18 @@ func (db *DB) ToggleVideoVisibility(id int, facilityId uint) error {
 	}
 	visibility := video.GetFacilityVisibilityStatus(facilityId)
 	visibility.VisibilityStatus = !visibility.VisibilityStatus
-	if err := db.Save(&visibility).Error; err != nil {
+	updateMap := map[string]any{
+		"visibility_status": visibility.VisibilityStatus,
+	}
+	if ctx := db.Statement.Context; ctx != nil {
+		if userID, ok := ctx.Value(models.UserIDKey).(uint); ok {
+			updateMap["update_user_id"] = userID
+		}
+	}
+	if err := db.WithContext(db.Statement.Context).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "facility_id"}, {Name: "open_content_provider_id"}, {Name: "content_id"}},
+		DoUpdates: clause.Assignments(updateMap),
+	}).Create(&visibility).Error; err != nil {
 		return newUpdateDBError(err, "video visibility")
 	}
 

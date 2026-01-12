@@ -34,7 +34,13 @@ func (db *DB) ToggleFeatureAccess(name string) error {
 		return newCreateDBError(err, "unable to save feature")
 	}
 	if len(featureFlag.PageFeatures) > 0 {
-		if err := db.Model(&models.PageFeatureFlags{}).Where("feature_flag_id = ?", featureFlag.ID).Update("enabled", featureFlag.Enabled).Error; err != nil {
+		update := map[string]any{"enabled": featureFlag.Enabled}
+		if ctx := db.Statement.Context; ctx != nil {
+			if userID, ok := ctx.Value(models.UserIDKey).(uint); ok {
+				update["update_user_id"] = userID
+			}
+		}
+		if err := db.Model(&models.PageFeatureFlags{}).Where("feature_flag_id = ?", featureFlag.ID).Updates(update).Error; err != nil {
 			return newCreateDBError(err, "unable to update page features")
 		}
 	}

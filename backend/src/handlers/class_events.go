@@ -84,7 +84,7 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		overrides[i].ClassID = uint(classID)
 	}
 	ctx := srv.getQueryContext(r)
-	if err := srv.Db.CreateOverrideEvents(&ctx, overrides); err != nil {
+	if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, overrides); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Override(s) created successfully")
@@ -109,7 +109,7 @@ func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Requ
 	log.add("class_id", classID)
 	log.add("event_override_id", id)
 	args := srv.getQueryContext(r)
-	err = srv.Db.DeleteOverrideEvent(&args, id, classID)
+	err = srv.WithUserContext(r).DeleteOverrideEvent(&args, id, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -133,7 +133,7 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	event.ClassID = uint(classID)
-	_, err = srv.Db.CreateNewEvent(classID, event)
+	_, err = srv.WithUserContext(r).CreateNewEvent(classID, event)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -184,7 +184,7 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 			events = append(events, *maxEvent)
 		}
 	}
-	err = srv.Db.CreateRescheduleEventSeries(&args, events)
+	err = srv.WithUserContext(r).CreateRescheduleEventSeries(&args, events)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

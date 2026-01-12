@@ -217,7 +217,7 @@ func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newInvalidIdServiceError(err, "library id")
 	}
-	library, err := srv.Db.ToggleVisibilityAndRetrieveLibrary(id, &args)
+	library, err := srv.WithUserContext(r).ToggleVisibilityAndRetrieveLibrary(id, &args)
 	if err != nil {
 		log.add("library_id", id)
 		return newDatabaseServiceError(err)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 type Library struct {
@@ -35,16 +37,34 @@ func (lib *Library) GetFacilityVisibilityStatus(facilityID uint) *FacilityVisibi
 }
 
 type FacilityVisibilityStatus struct {
-	FacilityID            uint `gorm:"primaryKey" json:"facility_id"`
-	OpenContentProviderID uint `gorm:"primaryKey" json:"open_content_provider_id"`
-	ContentID             uint `gorm:"primaryKey" json:"content_id"`
-	VisibilityStatus      bool `gorm:"default:false;not null" json:"visibility_status"`
+	FacilityID            uint  `gorm:"primaryKey" json:"facility_id"`
+	OpenContentProviderID uint  `gorm:"primaryKey" json:"open_content_provider_id"`
+	ContentID             uint  `gorm:"primaryKey" json:"content_id"`
+	VisibilityStatus      bool  `gorm:"default:false;not null" json:"visibility_status"`
+	CreateUserID          *uint `json:"create_user_id"`
+	UpdateUserID          *uint `json:"update_user_id"`
 
 	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
 	Facility            *Facility            `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
 }
 
 func (FacilityVisibilityStatus) TableName() string { return "facility_visibility_statuses" }
+
+func (f *FacilityVisibilityStatus) BeforeCreate(tx *gorm.DB) error {
+	if userID, ok := tx.Statement.Context.Value(UserIDKey).(uint); ok {
+		f.CreateUserID = &userID
+		tx.Statement.SetColumn("create_user_id", userID)
+	}
+	return nil
+}
+
+func (f *FacilityVisibilityStatus) BeforeUpdate(tx *gorm.DB) error {
+	if userID, ok := tx.Statement.Context.Value(UserIDKey).(uint); ok {
+		f.UpdateUserID = &userID
+		tx.Statement.SetColumn("update_user_id", userID)
+	}
+	return nil
+}
 
 func (lib *Library) IntoProxyPO() *LibraryProxyPO {
 	proxyParams := LibraryProxyPO{

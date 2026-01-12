@@ -546,6 +546,14 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 	return nil
 }
 
+// Returns a database instance with user context for audit hooks
+func (srv *Server) WithUserContext(r *http.Request) *database.DB {
+	if claims, ok := r.Context().Value(ClaimsKey).(*Claims); ok {
+		return database.NewDB(srv.Db.WithContext(context.WithValue(r.Context(), models.UserIDKey, claims.UserID)))
+	}
+	return database.NewDB(srv.Db.WithContext(r.Context()))
+}
+
 func (srv *Server) errorResponse(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

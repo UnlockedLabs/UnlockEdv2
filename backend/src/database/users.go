@@ -211,7 +211,15 @@ func (db *DB) CreateUser(user *models.User) error {
 }
 
 func (db *DB) DeleteUser(id int) error {
-	result := db.Model(&models.User{}).Where("id = ?", id).Delete(&models.User{})
+	updates := map[string]any{
+		"deleted_at": time.Now(),
+	}
+	if userID, ok := db.Statement.Context.Value(models.UserIDKey).(uint); ok {
+		updates["update_user_id"] = userID
+	}
+	result := db.Model(&models.User{}).
+		Where("id = ? AND deleted_at IS NULL", id).
+		Updates(updates)
 	if result.Error != nil {
 		return newDeleteDBError(result.Error, "users")
 	}
@@ -266,8 +274,8 @@ func (db *DB) IncrementUserLogin(user *models.User) (int64, error) {
 	var total int64
 	if err := db.Raw(
 		`INSERT INTO login_metrics (user_id, total, last_login)
-		 VALUES (?, 1, CURRENT_TIMESTAMP) 
-		 ON CONFLICT (user_id) DO UPDATE 
+		 VALUES (?, 1, CURRENT_TIMESTAMP)
+		 ON CONFLICT (user_id) DO UPDATE
 		 SET total = login_metrics.total + 1, last_login = CURRENT_TIMESTAMP
 		 RETURNING total`,
 		user.ID).Scan(&total).Error; err != nil {
@@ -494,7 +502,7 @@ func (db *DB) IncrementUserFAQClick(args *models.QueryContext, question string) 
 		log.Errorf("failed to find or create FAQ: %v", err)
 		return newUpdateDBError(err, "faqs")
 	}
-	if err := db.WithContext(args.Ctx).Exec(`INSERT INTO faq_click_metrics(user_id, faq_id, total) VALUES (?, ?, 1) 
+	if err := db.WithContext(args.Ctx).Exec(`INSERT INTO faq_click_metrics(user_id, faq_id, total) VALUES (?, ?, 1)
 		 ON CONFLICT (user_id, faq_id) DO UPDATE SET total = faq_click_metrics.total + 1`,
 		args.UserID, faq.ID).Error; err != nil {
 		log.Errorf("Error incrementing faq clicks: %v", err)
@@ -523,10 +531,10 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint, cate
 
 	tx := db.WithContext(args.Ctx).
 		Table("user_account_history uah").
-		Select(`uah.action, uah.created_at, uah.user_id, 
-				users.username AS user_username, 
-				admins.username AS admin_username, 
-				facilities.name AS facility_name, 
+		Select(`uah.action, uah.created_at, uah.user_id,
+				users.username AS user_username,
+				admins.username AS admin_username,
+				facilities.name AS facility_name,
 				uah.attendance_status, uah.class_name, uah.session_date,
 				psh.*`).
 		Joins("INNER JOIN users ON uah.user_id = users.id").
@@ -578,8 +586,8 @@ func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, r
 	//added criteria field_name != 'facility_id to skip these records from being a part of the result set, this may be temporary?
 	tx := db.WithContext(args.Ctx).
 		Table("change_log_entries cle").
-		Select(`cle.created_at, cle.user_id, 
-				users.username AS admin_username, 
+		Select(`cle.created_at, cle.user_id,
+				users.username AS admin_username,
 				'progclass_history' AS action,
 				cle.*`).
 		Joins("inner join users on cle.user_id = users.id").
@@ -636,14 +644,14 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 
             -- count present attendance status
             COALESCE(SUM(
-              CASE 
+              CASE
                 WHEN pcea.attendance_status = 'present' THEN 1
                 WHEN pcea.attendance_status = 'partial' THEN LEAST(
 					COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric /
 					NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0),
 					1
 				)
-                ELSE 0 
+                ELSE 0
               END
             ), 0) AS present_attendance,
 
@@ -657,8 +665,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		Joins("INNER JOIN program_credit_types pct ON pct.program_id = p.id").
 		Joins("INNER JOIN program_class_events e ON e.class_id = pc.id").
 		Joins(
-			`LEFT JOIN program_class_event_attendance pcea 
-            ON pcea.event_id = e.id 
+			`LEFT JOIN program_class_event_attendance pcea
+            ON pcea.event_id = e.id
            AND pcea.user_id = ?`,
 			userId,
 		).
