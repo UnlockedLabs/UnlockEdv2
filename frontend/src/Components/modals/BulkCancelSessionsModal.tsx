@@ -63,16 +63,20 @@ export const BulkCancelSessionsModal = forwardRef(function (
     const buildPreviewFromClasses = (
         classes: InstructorClassData[]
     ): BulkCancelSessionsPreview => {
+        const filteredClasses = classes.filter(
+            (cls) => cls.upcomingSessions > 0
+        );
+        const upcomingSessionCount = classes.reduce(
+            (total, cls) => total + cls.upcomingSessions,
+            0
+        );
         return {
             sessionCount: classes.reduce(
                 (total, cls) => total + cls.sessionCount,
                 0
             ),
-            upcomingSessionCount: classes.reduce(
-                (total, cls) => total + cls.upcomingSessions,
-                0
-            ),
-            classCount: classes.length,
+            upcomingSessionCount,
+            classCount: filteredClasses.length,
             studentCount: classes.reduce(
                 (total, cls) => total + cls.enrolledCount,
                 0
@@ -112,7 +116,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
         }
     };
 
-    const handleInstructorChange = (instructorId: number) => {
+    const handleInstructorChange = (instructorId: number | null) => {
         setCurrentFormValues((prev) => ({ ...prev, instructorId }));
         setPreview(null);
         setShowPreview(false);
@@ -294,19 +298,27 @@ export const BulkCancelSessionsModal = forwardRef(function (
             label: 'Instructor',
             interfaceRef: 'instructorId',
             required: true,
-            enumType: instructors
-                .filter((instructor) => instructor.id !== 0) // Filter out "Unassigned" instructor
-                .reduce(
-                    (acc, instructor) => {
-                        // For DropdownInput: key = display text, value = form value
-                        acc[
-                            `${instructor.name_first} ${instructor.name_last}`
-                        ] = instructor.id.toString();
-                        return acc;
-                    },
-                    {} as Record<string, string>
-                ),
-            onChange: (e) => handleInstructorChange(parseInt(e.target.value))
+            enumType: {
+                'Select an instructor...': '',
+                ...instructors
+                    .filter((instructor) => instructor.id !== 0) // Filter out "Unassigned" instructor
+                    .reduce(
+                        (acc, instructor) => {
+                            // For DropdownInput: key = display text, value = form value
+                            acc[
+                                `${instructor.name_first} ${instructor.name_last}`
+                            ] = instructor.id.toString();
+                            return acc;
+                        },
+                        {} as Record<string, string>
+                    )
+            },
+            onChange: (e) => {
+                const value = e.target.value;
+                handleInstructorChange(
+                    value === '' ? null : parseInt(value, 10)
+                );
+            }
         },
         {
             type: FormInputTypes.Date,
