@@ -246,6 +246,14 @@
     box-shadow: none;
 }
 
+input.react-select__input,
+input.react-select__input:focus {
+    --tw-ring-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 /* added the below css for coloring the calendar icon in dark mode */
 html[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
 html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {

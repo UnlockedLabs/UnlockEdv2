@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, useEffect, useMemo } from 'react';
+import { forwardRef, useRef, useState, useEffect } from 'react';
 import {
     closeModal,
     FormInputTypes,
@@ -11,6 +11,7 @@ import {
 import { Room, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import {
+    Control,
     FieldValues,
     SubmitHandler,
     UseFormGetValues,
@@ -22,6 +23,7 @@ import { useAuth } from '@/useAuth';
 import { RRule } from 'rrule';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { RRuleControl, RRuleFormHandle } from '../inputs/RRuleControl';
+import { RoomSelector } from '../inputs/RoomSelector';
 import { addDays } from 'date-fns';
 import { parseRRuleUntilDate } from '../helperFunctions';
 import { FacilityProgramClassEvent } from '@/types/events';
@@ -50,6 +52,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
     const [formDataRef, setFormDataRef] = useState<{
         getValues: UseFormGetValues<any>; // eslint-disable-line
         register: UseFormRegister<any>; // eslint-disable-line
+        control: Control<any>; // eslint-disable-line
     }>();
     const rescheduleSeriesConfirmationRef = useRef<HTMLDialogElement>(null);
     const [rruleObj, setRruleObj] = useState<{
@@ -69,24 +72,18 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         void fetchRooms();
     }, []);
 
-    const roomOptions = useMemo(() => {
-        return rooms.reduce(
-            (acc, room) => {
-                acc[room.id.toString()] = room.name;
-                return acc;
-            },
-            {} as Record<string, string>
-        );
-    }, [rooms]);
+    const handleRoomCreated = (room: Room) => {
+        setRooms((prev) => [...prev, room]);
+    };
+
     const rescheduleClassEventSeries: SubmitHandler<FieldValues> = async (
         data
     ) => {
         if (!calendarEvent || !rruleObj) {
             return;
         }
-        const selectedRoomId = data.room_id
-            ? Number(data.room_id)
-            : calendarEvent.room_id;
+        const selectedRoomId =
+            (data.room_id as number | undefined) ?? calendarEvent.room_id;
         const rescheduledEventSeries = {
             id: 0,
             class_id: calendarEvent.class_id,
@@ -176,16 +173,25 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                               }
                           />
                       )
+                  },
+                  {
+                      type: FormInputTypes.Unique,
+                      label: '',
+                      interfaceRef: '',
+                      required: false,
+                      uniqueComponent: (
+                          <RoomSelector
+                              name="room_id"
+                              label="Room"
+                              control={formDataRef.control}
+                              rooms={rooms}
+                              onRoomCreated={handleRoomCreated}
+                              required
+                          />
+                      )
                   }
               ]
-            : []),
-        {
-            type: FormInputTypes.Dropdown,
-            label: 'Room',
-            interfaceRef: 'room_id',
-            required: true,
-            enumType: roomOptions
-        }
+            : [])
     ];
 
     function verify(): boolean {
@@ -210,7 +216,18 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                 title={'Edit Schedule (Recurring)'}
                 inputs={rescheduleClassEventSeriesInputs}
                 defaultValues={{
-                    room_id: calendarEvent?.room_id?.toString() ?? ''
+                    room_id: calendarEvent?.room_id ?? null,
+                    start_dt:
+                        calendarEvent?.start &&
+                        toZonedTime(calendarEvent?.start, user?.timezone)
+                            .toISOString()
+                            .split('T')[0],
+                    end_dt:
+                        calendarEvent &&
+                        parseRRuleUntilDate(
+                            calendarEvent.recurrence_rule,
+                            user?.timezone
+                        )
                 }}
                 showCancel={true}
                 extValidationIsValid={verify}

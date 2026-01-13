@@ -1,4 +1,5 @@
 import {
+    Control,
     DefaultValues,
     FieldError,
     FieldValues,
@@ -40,6 +41,7 @@ interface FormModalProps<T extends FieldValues> {
     setFormDataRef?: (utils: {
         getValues: UseFormGetValues<T>;
         register: UseFormRegister<T>;
+        control: Control<T>;
     }) => void;
 }
 
@@ -70,14 +72,15 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         handleSubmit,
         setError,
         getValues,
+        control,
         formState: { errors }
     } = useForm<T>({ defaultValues: defaultValues });
     useEffect(() => {
         //used for setting form data reference if needed for validation
         if (setFormDataRef) {
-            setFormDataRef({ getValues, register });
+            setFormDataRef({ getValues, register, control });
         }
-    }, [setFormDataRef, getValues, register]);
+    }, [setFormDataRef, getValues, register, control]);
     const { tourState, setTourState } = useTourContext();
 
     useEffect(() => {
