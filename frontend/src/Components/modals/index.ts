@@ -11,31 +11,6 @@ import { KeyedMutator } from 'swr';
 import { UseFormGetValues, Validate } from 'react-hook-form';
 import { AdminRoles } from '@/useAuth';
 
-export enum TextModalType {
-    Confirm,
-    Delete,
-    Information,
-    Warning
-}
-
-export { TextOnlyModal } from './TextOnlyModal';
-export { FormModal } from './FormModal';
-export { DeactivateUserModal } from './DeactivateUserModal';
-
-export enum CRUDActions {
-    Add,
-    Edit,
-    Delete,
-    Reset
-}
-
-export interface CRUDModalProps<T> {
-    mutate:
-        | KeyedMutator<ServerResponseMany<T>>
-        | KeyedMutator<ServerResponseOne<T>>;
-    target?: T;
-}
-
 export enum FormInputTypes {
     Text,
     Date,
@@ -45,6 +20,11 @@ export enum FormInputTypes {
     MultiSelectDropdown,
     Checkbox,
     Unique
+}
+
+export interface Pattern {
+    value: RegExp;
+    message: string;
 }
 
 export interface Input {
@@ -73,9 +53,29 @@ export interface InputWithOptions<T> extends Input {
     options?: T[];
 }
 
-export interface Pattern {
-    value: RegExp;
-    message: string;
+export enum TextModalType {
+    Confirm,
+    Delete,
+    Information,
+    Warning
+}
+
+export { TextOnlyModal } from './TextOnlyModal';
+export { FormModal } from './FormModal';
+export { DeactivateUserModal } from './DeactivateUserModal';
+
+export enum CRUDActions {
+    Add,
+    Edit,
+    Delete,
+    Reset
+}
+
+export interface CRUDModalProps<T> {
+    mutate:
+        | KeyedMutator<ServerResponseMany<T>>
+        | KeyedMutator<ServerResponseOne<T>>;
+    target?: T;
 }
 
 export function closeModal(ref: React.ForwardedRef<HTMLDialogElement>) {
