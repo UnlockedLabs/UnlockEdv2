@@ -168,8 +168,6 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if reqForm.User.FacilityID == 0 {
 		reqForm.User.FacilityID = claims.FacilityID
 	}
-	// Ensure audit fields are set for create
-	reqForm.User.CreateUserID = &claims.UserID
 	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
