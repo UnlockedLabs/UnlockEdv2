@@ -2,11 +2,13 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
+	"time"
 	"unicode"
 
 	"github.com/glebarez/sqlite"
@@ -51,7 +53,8 @@ func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
-		gormDb, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		dbName := fmt.Sprintf("file:memdb_%d?mode=memory&cache=shared", time.Now().UnixNano())
+		gormDb, err = gorm.Open(sqlite.Open(dbName), &gorm.Config{
 			DisableForeignKeyConstraintWhenMigrating: true,
 		})
 		if err != nil {
@@ -163,37 +166,61 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 				}
 			}
 		}
-		defaultFacility := models.Facility{
-			Name:     "Default",
-			Timezone: "America/Chicago",
+
+		// Get system_batch user for audit field references
+		var systemBatchUser models.User
+		systemBatchUserID := uint(99999)
+		if err := db.Where("username = ?", "system_batch").First(&systemBatchUser).Error; err != nil {
+			logrus.Printf("Warning: system_batch user not found, this might indicate migration hasn't run yet: %v", err)
+		} else {
+			systemBatchUserID = systemBatchUser.ID
 		}
-		logrus.Printf("Creating facility: %v", defaultFacility)
-		if err := db.Create(&defaultFacility).Error; err != nil {
-			logrus.Fatalf("Failed to create user: %v", err)
-		}
+		dbWithCtx := db.WithContext(context.WithValue(context.Background(), models.UserIDKey, systemBatchUserID))
+
 		user := models.User{
 			Username:   "SuperAdmin",
 			NameFirst:  "Super",
 			NameLast:   "Admin",
 			Email:      "admin@unlocked.v2",
 			Role:       models.SystemAdmin,
-			FacilityID: 1,
+			FacilityID: 0, // will update after facility creation
+			DatabaseFields: models.DatabaseFields{
+				CreateUserID: &systemBatchUserID, // using system_batch user ID
+			},
 		}
 		logrus.Printf("Creating user: %v", user)
 		logrus.Println("Make sure to sync the Kratos instance if you are freshly migrating")
-		if err := db.Create(&user).Error; err != nil {
+		if err := dbWithCtx.Create(&user).Error; err != nil {
 			logrus.Fatalf("Failed to create user: %v", err)
+		}
+
+		// Step 2: Create facility referencing the user we just created
+		defaultFacility := models.Facility{
+			Name:     "Default",
+			Timezone: "America/Chicago",
+			DatabaseFields: models.DatabaseFields{
+				CreateUserID: &user.ID,
+			},
+		}
+		logrus.Printf("Creating facility: %v", defaultFacility)
+		if err := dbWithCtx.Create(&defaultFacility).Error; err != nil {
+			logrus.Fatalf("Failed to create facility: %v", err)
+
+		}
+
+		if err := db.Model(&user).Update("facility_id", defaultFacility.ID).Error; err != nil {
+			logrus.Fatalf("Failed to update user facility_id: %v", err)
 		}
 
 		links := []models.HelpfulLink{}
 		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
 			logrus.Fatalf("Failed to unmarshal default left menu links: %v", err)
 		}
-		if err := db.Create(&links).Error; err != nil {
+		if err := dbWithCtx.Create(&links).Error; err != nil {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
 		for idx := range defaultOpenContentProviders {
-			if err := db.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
+			if err := dbWithCtx.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
 				logrus.Fatalf("Failed to create default open content providers: %v", err)
 			}
 		}

@@ -12,11 +12,14 @@ import (
 
 type UserRole string
 
+type contextKey string
+
 const (
-	SystemAdmin     UserRole = "system_admin"
-	FacilityAdmin   UserRole = "facility_admin"
-	DepartmentAdmin UserRole = "department_admin"
-	Student         UserRole = "student"
+	UserIDKey       contextKey = "user_id"
+	SystemAdmin     UserRole   = "system_admin"
+	FacilityAdmin   UserRole   = "facility_admin"
+	DepartmentAdmin UserRole   = "department_admin"
+	Student         UserRole   = "student"
 )
 
 var AdminRoles = []UserRole{SystemAdmin, FacilityAdmin, DepartmentAdmin}
@@ -26,6 +29,26 @@ type DatabaseFields struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Audit fields - track which user created/updated the record
+	CreateUserID *uint `json:"create_user_id"`
+	UpdateUserID *uint `json:"update_user_id"`
+}
+
+func (m *DatabaseFields) BeforeCreate(tx *gorm.DB) error {
+	if userID, ok := tx.Statement.Context.Value(UserIDKey).(uint); ok {
+		m.CreateUserID = &userID
+		return nil
+	}
+	return nil
+}
+
+func (m *DatabaseFields) BeforeUpdate(tx *gorm.DB) error {
+	if userID, ok := tx.Statement.Context.Value(UserIDKey).(uint); ok {
+		m.UpdateUserID = &userID
+		tx.Statement.SetColumn("update_user_id", userID)
+	}
+	return nil
 }
 
 type Role struct {
@@ -67,6 +90,9 @@ func (User) TableName() string {
 }
 
 func (usr *User) BeforeCreate(tx *gorm.DB) error {
+	if err := usr.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
 	if usr.Email == "" {
 		usr.Email = usr.Username + "@unlocked.v2"
 	}

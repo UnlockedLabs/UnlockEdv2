@@ -69,6 +69,7 @@ func (slog *sLog) add(key string, value any) {
 func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	var facilityID, userID uint
 	claims := r.Context().Value(ClaimsKey).(*Claims)
+	ctxWithUser := context.WithValue(r.Context(), models.UserIDKey, claims.UserID)
 	f, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
 	if err != nil {
 		facilityID = claims.FacilityID
@@ -98,7 +99,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	tz := claims.TimeZone
 	return models.QueryContext{
 		Params:             r.URL.Query(),
-		Ctx:                r.Context(),
+		Ctx:                ctxWithUser,
 		Page:               page,
 		PerPage:            perPage,
 		FacilityID:         uint(facilityID),

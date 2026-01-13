@@ -123,10 +123,13 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			FacilityID: facilityId,
 			Role:       models.Student,
 		}
+		if claims := r.Context().Value(ClaimsKey).(*Claims); claims != nil {
+			newUser.CreateUserID = &claims.UserID
+		}
 		userResponse := ImportUserResponse{
 			Username: newUser.Username,
 		}
-		err := srv.Db.CreateUser(&newUser)
+		err := srv.WithUserContext(r).CreateUser(&newUser)
 		if err != nil {
 			log.error("Error creating user in import-provider-users", err)
 			userResponse.Error = "error creating user, likely a duplicate username"

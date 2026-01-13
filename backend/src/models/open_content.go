@@ -95,6 +95,9 @@ const (
 var KiwixLibraryUrl string = os.Getenv("KIWIX_SERVER_URL")
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
+	if err := cp.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
 	if cp.Title == Youtube && cp.Url == "" {
 		cp.Url = YoutubeApi
 	}

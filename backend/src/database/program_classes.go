@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
 
@@ -52,20 +51,20 @@ func (db *DB) CreateProgramClass(content *models.ProgramClass) (*models.ProgramC
 	return content, nil
 }
 
-func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramClass, id int) (*models.ProgramClass, error) {
+func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.ProgramClass, error) {
 	var allChanges []models.ChangeLogEntry
 	existing := &models.ProgramClass{}
-	if err := db.WithContext(ctx).Preload("Events").First(existing, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").First(existing, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 
-	trans := db.WithContext(ctx).Begin()
+	trans := db.Begin()
 	if trans.Error != nil {
 		return nil, NewDBError(trans.Error, "unable to start the database transaction")
 	}
 
 	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled"}
-	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, content.UpdateUserID, ignoredFieldNames)
+	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
 	models.UpdateStruct(existing, content)
@@ -123,9 +122,9 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		`).
 		Joins(`join facilities fac on fac.id = ps.facility_id
 			AND fac.deleted_at IS NULL`).
-		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id 
+		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id
 			and enrollment_status = 'Enrolled'`). //TODO Enrolled may change here
-		Where(`ps.program_id = ? 
+		Where(`ps.program_id = ?
 			and ps.facility_id = ?`, id, args.FacilityID).
 		Group("ps.id,fac.name")
 	if err := query.Count(&args.Total).Error; err != nil {
@@ -172,13 +171,13 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 
 	// Create a set that includes the last 6 months, excluding the current month, of program outcomes
 	const lastSixMonthsSubquery = `(SELECT TO_CHAR(
-		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month 
+		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month
 		FROM generate_series(1, 6) AS gs(i))`
 
-	enrollmentsSubquery := `(SELECT * 
-		FROM program_class_enrollments 
+	enrollmentsSubquery := `(SELECT *
+		FROM program_class_enrollments
 		WHERE class_id IN (
-			SELECT id FROM program_classes 
+			SELECT id FROM program_classes
 			WHERE program_id = ? AND facility_id = ?
 		))`
 
@@ -191,7 +190,7 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
         	COALESCE(COUNT(CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),0) AS drops
 		`, models.EnrollmentCompleted, incompleteStatuses).
 		Joins(fmt.Sprintf(`
-			LEFT JOIN (%s) AS pce 
+			LEFT JOIN (%s) AS pce
 			ON TO_CHAR(DATE_TRUNC('month', pce.updated_at), 'YYYY-MM') = months.month
 		`, enrollmentsSubquery), id, facilityID).
 		Group("months.month").

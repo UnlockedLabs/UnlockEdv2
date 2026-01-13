@@ -99,7 +99,7 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	skipped, err := srv.Db.CreateProgramClassEnrollments(classID, enrollment.UserIDs)
+	skipped, err := srv.WithUserContext(r).CreateProgramClassEnrollments(classID, enrollment.UserIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -116,7 +116,7 @@ func (srv *Server) handleDeleteProgramClassEnrollments(w http.ResponseWriter, r 
 		return newInvalidIdServiceError(err, "program class enrollment ID")
 	}
 	log.add("class_enrollment_id", id)
-	err = srv.Db.DeleteProgramClassEnrollments(id)
+	err = srv.WithUserContext(r).DeleteProgramClassEnrollments(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -151,9 +151,9 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	}
 	switch enrollment.EnrollmentStatus {
 	case "Completed":
-		err = srv.Db.GraduateEnrollments(r.Context(), adminEmail, enrollment.UserIDs, classId)
+		err = srv.WithUserContext(r).GraduateEnrollments(adminEmail, enrollment.UserIDs, classId)
 	default:
-		err = srv.Db.UpdateProgramClassEnrollments(classId, enrollment.UserIDs, enrollment.EnrollmentStatus, enrollment.ChangeReason)
+		err = srv.WithUserContext(r).UpdateProgramClassEnrollments(classId, enrollment.UserIDs, enrollment.EnrollmentStatus, enrollment.ChangeReason)
 	}
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -190,7 +190,7 @@ func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Req
 	if class.CannotUpdateClass() {
 		return newBadRequestServiceError(errors.New("cannot perform action on class that is completed cancelled or archived"), "invalid class status")
 	}
-	err = srv.Db.UpdateProgramClassEnrollmentDate(r.Context(), enrollmentId, enrolledDate)
+	err = srv.WithUserContext(r).UpdateProgramClassEnrollmentDate(enrollmentId, enrolledDate)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

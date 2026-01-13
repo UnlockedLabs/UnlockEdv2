@@ -38,8 +38,6 @@ type ProgramClass struct {
 	CreditHours    *int64      `json:"credit_hours"`
 	Enrolled       int64       `json:"enrolled" gorm:"-"`
 	Completed      int64       `json:"completed" gorm:"-"`
-	CreateUserID   uint        `json:"create_user_id"`
-	UpdateUserID   uint        `json:"update_user_id"`
 
 	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -49,6 +47,14 @@ type ProgramClass struct {
 }
 
 func (ProgramClass) TableName() string { return "program_classes" }
+
+func (c *ProgramClass) BeforeCreate(tx *gorm.DB) error {
+	if err := c.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
+	c.UpdateUserID = nil
+	return nil
+}
 
 // AfterUpdate hook that runs when switching class status to Active to verify existing enrollments have enrolled_at set.
 func (c *ProgramClass) AfterUpdate(tx *gorm.DB) (err error) {
@@ -125,6 +131,10 @@ func (ProgramClassEnrollment) TableName() string { return "program_class_enrollm
 
 // BeforeCreate hook that runs to set enrolled_at when enrolling in an Active class
 func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
+	if err := e.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
+
 	// allow calling code to override
 	if e.EnrolledAt != nil {
 		return nil

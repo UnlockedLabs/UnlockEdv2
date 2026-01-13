@@ -88,7 +88,7 @@ func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request, 
 			"oauth2Url": oauthURL,
 		})
 	}
-	err = srv.Db.CreateProviderPlatform(&platform)
+	err = srv.WithUserContext(r).CreateProviderPlatform(&platform)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -148,14 +148,14 @@ func (srv *Server) handleOAuthProviderCallback(w http.ResponseWriter, r *http.Re
 	provider.AccessKey = config.ClientSecret + ";" + token.RefreshToken
 	var action string
 	if provider.ID > 0 {
-		if _, err := srv.Db.UpdateProviderPlatform(&provider, provider.ID); err != nil {
+		if _, err := srv.WithUserContext(r).UpdateProviderPlatform(&provider, provider.ID); err != nil {
 			log.errorf("unable to update provider platform, error is %s", err) //error
 			http.Redirect(w, r, errorRedirectUrl, http.StatusTemporaryRedirect)
 			return nil
 		}
 		action = "updated"
 	} else {
-		if err := srv.Db.CreateProviderPlatform(&provider); err != nil {
+		if err := srv.WithUserContext(r).CreateProviderPlatform(&provider); err != nil {
 			log.errorf("unable to save provider platform, error is %s", err) //error
 			http.Redirect(w, r, errorRedirectUrl, http.StatusTemporaryRedirect)
 			return nil
@@ -196,8 +196,10 @@ func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	dbWithCtx := srv.WithUserContext(r)
+
 	if platform.BaseUrl != "" || platform.AccessKey != "" || platform.AccountID != "" || (platform.State != "" && platform.State == models.Enabled) {
-		existingPlatform, err := srv.Db.GetProviderPlatformByID(id)
+		existingPlatform, err := dbWithCtx.GetProviderPlatformByID(id)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -213,7 +215,7 @@ func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request, 
 			})
 		}
 	}
-	updated, err := srv.Db.UpdateProviderPlatform(&platform, uint(id))
+	updated, err := dbWithCtx.UpdateProviderPlatform(&platform, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

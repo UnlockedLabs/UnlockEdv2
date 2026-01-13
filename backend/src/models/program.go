@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type FundingType string
@@ -94,8 +96,6 @@ type Program struct {
 	IsActive     bool        `json:"is_active" gorm:"not null"`
 	IsFavorited  bool        `json:"is_favorited" gorm:"-"`
 	ArchivedAt   *time.Time  `json:"archived_at"`
-	CreateUserID uint        `json:"create_user_id"`
-	UpdateUserID uint        `json:"update_user_id"`
 
 	ProgramTypes       []ProgramType        `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	ProgramCreditTypes []ProgramCreditType  `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -140,6 +140,14 @@ type FacilitiesPrograms struct {
 }
 
 func (FacilitiesPrograms) TableName() string { return "facilities_programs" }
+
+func (fp *FacilitiesPrograms) BeforeCreate(tx *gorm.DB) error {
+	if err := fp.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
+	fp.UpdateUserID = nil
+	return nil
+}
 
 type ProgramsFacilitiesStats struct {
 	TotalPrograms                *int64   `json:"total_programs"`
