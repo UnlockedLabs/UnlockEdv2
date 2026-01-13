@@ -448,23 +448,13 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 			continue // Skip invalid rules
 		}
 
-		totalOccurrences := rule.Between(startDate, endDate, true)
-		totalSessions += len(totalOccurrences)
+		occurrences := rule.Between(startDate, endDate, true)
+		totalSessions += len(occurrences)
 
-		upcomingOccurrences := rule.Between(startDate, endDate, true)
-		now := time.Now()
-		filteredUpcoming := make([]time.Time, 0)
-		for _, occurrence := range upcomingOccurrences {
-			if occurrence.After(now) {
-				filteredUpcoming = append(filteredUpcoming, occurrence)
-			}
-		}
-		upcomingSessions += len(filteredUpcoming)
-
+		cancelledDates := make(map[string]bool)
 		cancelledInDateRange := 0
 		for _, override := range event.Overrides {
 			if override.IsCancelled {
-
 				overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
 				if err != nil {
 					continue // Skip invalid override rules
@@ -472,8 +462,20 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 
 				overrideOccurrences := overrideRule.Between(startDate, endDate, true)
 				cancelledInDateRange += len(overrideOccurrences)
+
+				for _, occ := range overrideOccurrences {
+					cancelledDates[occ.Format("2006-01-02")] = true
+				}
 			}
 		}
+
+		actualUpcoming := 0
+		for _, occurrence := range occurrences {
+			if !cancelledDates[occurrence.Format("2006-01-02")] {
+				actualUpcoming++
+			}
+		}
+		upcomingSessions += actualUpcoming
 
 		cancelledSessions += cancelledInDateRange
 	}
