@@ -45,7 +45,13 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 		return nil, NewDBError(errors.New("duration is required"), "invalid conflict check request")
 	}
 
-	rule, err := rrule.StrToRRule(req.RecurrenceRule)
+	var facility models.Facility
+	if err := db.Select("timezone").First(&facility, req.FacilityID).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facility")
+	}
+
+	tempEvent := &models.ProgramClassEvent{RecurrenceRule: req.RecurrenceRule}
+	rule, err := tempEvent.GetRRuleWithTimezone(facility.Timezone)
 	if err != nil {
 		return nil, NewDBError(err, "invalid recurrence rule")
 	}

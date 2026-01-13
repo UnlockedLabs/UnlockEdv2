@@ -6,7 +6,7 @@ import {
     SubmitHandler
 } from 'react-hook-form';
 import Select from 'react-select';
-import { FormModal, FormInputTypes, Input } from '@/Components/modals';
+import { FormModal } from '@/Components/modals/FormModal';
 import { Room, ToastState } from '@/common';
 import { useToast } from '@/Context/ToastCtx';
 import API from '@/api/api';
@@ -27,9 +27,9 @@ interface RoomSelectorProps {
     disabled?: boolean;
 }
 
-const createRoomInputs: Input[] = [
+const createRoomInputs = [
     {
-        type: FormInputTypes.Text,
+        type: 0, // FormInputTypes.Text
         label: 'Room Name',
         interfaceRef: 'name',
         required: true,
@@ -72,7 +72,7 @@ export function RoomSelector({
             onRoomCreated(newRoom);
             setTimeout(() => {
                 fieldOnChangeRef.current?.(newRoom.id);
-            }, 0);
+            }, 50);
         } else {
             toaster(resp.message || 'Failed to create room', ToastState.error);
         }
@@ -102,6 +102,9 @@ export function RoomSelector({
                                     options={options}
                                     placeholder="Select room..."
                                     styles={defaultStyles}
+                                    classNamePrefix="react-select"
+                                    menuPlacement="auto"
+                                    maxMenuHeight={150}
                                     value={
                                         field.value
                                             ? options.find(

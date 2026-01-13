@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, useEffect, useMemo } from 'react';
+import { forwardRef, useRef, useState, useEffect } from 'react';
 import {
     closeModal,
     FormInputTypes,
@@ -10,7 +10,13 @@ import {
 } from '.';
 import { Room, ServerResponseMany } from '@/common';
 import API from '@/api/api';
-import { FieldValues, SubmitHandler, UseFormGetValues } from 'react-hook-form';
+import {
+    Control,
+    FieldValues,
+    SubmitHandler,
+    UseFormGetValues,
+    UseFormRegister
+} from 'react-hook-form';
 import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth } from '@/useAuth';
@@ -22,6 +28,7 @@ import {
     fromLocalDateToNumericDateFormat
 } from '../helperFunctions';
 import { FacilityProgramClassEvent } from '@/types/events';
+import { RoomSelector } from '../inputs/RoomSelector';
 
 export const RescheduleClassEventModal = forwardRef(function (
     {
@@ -45,6 +52,8 @@ export const RescheduleClassEventModal = forwardRef(function (
     });
     const [formDataRef, setFormDataRef] = useState<{
         getValues: UseFormGetValues<any>; // eslint-disable-line
+        register: UseFormRegister<any>; // eslint-disable-line
+        control: Control<any>; // eslint-disable-line
     }>();
     const rescheduleConfirmationRef = useRef<HTMLDialogElement>(null);
     const [dataToSubmit, setDataToSubmit] = useState<FieldValues | null>(null);
@@ -61,15 +70,10 @@ export const RescheduleClassEventModal = forwardRef(function (
         void fetchRooms();
     }, []);
 
-    const roomOptions = useMemo(() => {
-        return rooms.reduce(
-            (acc, room) => {
-                acc[room.id.toString()] = room.name;
-                return acc;
-            },
-            {} as Record<string, string>
-        );
-    }, [rooms]);
+    const handleRoomCreated = (room: Room) => {
+        setRooms((prev) => [...prev, room]);
+    };
+
     const rescheduleClassEvent: SubmitHandler<FieldValues> = async (data) => {
         if (!calendarEvent) {
             return;
@@ -98,9 +102,8 @@ export const RescheduleClassEventModal = forwardRef(function (
             data.start_time as string,
             data.end_time as string
         );
-        const selectedRoomId = data.room_id
-            ? Number(data.room_id)
-            : calendarEvent.room_id;
+        const selectedRoomId =
+            (data.room_id as number | undefined) ?? calendarEvent.room_id;
         const rescheduledEvent = {
             ...(calendarEvent.linked_override_event && {
                 linked_override_event_id:
@@ -169,13 +172,26 @@ export const RescheduleClassEventModal = forwardRef(function (
             required: true,
             getValues: formDataRef?.getValues
         },
-        {
-            type: FormInputTypes.Dropdown,
-            label: 'Room',
-            interfaceRef: 'room_id',
-            required: true,
-            enumType: roomOptions
-        }
+        ...(formDataRef
+            ? [
+                  {
+                      type: FormInputTypes.Unique,
+                      label: '',
+                      interfaceRef: '',
+                      required: false,
+                      uniqueComponent: (
+                          <RoomSelector
+                              name="room_id"
+                              label="Room"
+                              control={formDataRef.control}
+                              rooms={rooms}
+                              onRoomCreated={handleRoomCreated}
+                              required
+                          />
+                      )
+                  }
+              ]
+            : [])
     ];
 
     const verifyDatesAndShowModal = (data: FieldValues) => {
@@ -220,7 +236,7 @@ export const RescheduleClassEventModal = forwardRef(function (
                 title={'Edit Event'}
                 inputs={rescheduleClassEventInputs}
                 defaultValues={{
-                    room_id: calendarEvent?.room_id?.toString() ?? ''
+                    room_id: calendarEvent?.room_id ?? null
                 }}
                 showCancel={true}
                 onSubmit={(data) => {

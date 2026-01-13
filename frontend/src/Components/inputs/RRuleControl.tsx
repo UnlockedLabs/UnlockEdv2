@@ -146,7 +146,6 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 startDate: '',
                 endDate: ''
             };
-            setTimeErrors(errors);
             if (!startTime) {
                 errors.startTime = 'Start time is required';
                 isValid = false;
@@ -157,6 +156,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             }
             if (!formErrors) {
                 checkDateInputs(errors);
+                if (errors.startDate || errors.endDate) {
+                    isValid = false;
+                }
             }
             if (startTime && endTime) {
                 const startTotalMin = timeToMinutes(startTime);
@@ -170,6 +172,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 errors.weekDays = 'Must select a day to repeat on';
                 isValid = false;
             }
+            setTimeErrors(errors);
             return isValid;
         }
 

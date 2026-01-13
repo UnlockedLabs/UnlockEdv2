@@ -13,6 +13,8 @@ export function getDefaultSelectStyles<
             borderRadius: '0.375rem',
             minHeight: '42px',
             boxShadow: state.isFocused ? '0 0 0 2px var(--grey-1)' : 'none',
+            outline: 'none',
+            cursor: 'pointer',
             transition: 'all 0.2s ease-in-out',
             '&:hover': {
                 borderColor: 'var(--grey-3)'
@@ -72,6 +74,10 @@ export function getDefaultSelectStyles<
         placeholder: (provided: CSSObjectWithLabel) => ({
             ...provided,
             color: 'var(--grey-3)'
+        }),
+        menuPortal: (provided) => ({
+            ...provided,
+            zIndex: 9999
         })
     };
 }
