@@ -37,6 +37,8 @@ func (db *DB) CreateRoom(room *models.Room) (*models.Room, error) {
 	return room, nil
 }
 
+const maxConflictsToReturn = 50
+
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
 	if req.RecurrenceRule == "" {
 		return nil, NewDBError(errors.New("recurrence rule is required"), "invalid conflict check request")
@@ -74,14 +76,13 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 		until = rangeStart.AddDate(1, 0, 0)
 	}
 
-	bookings, err := db.GetRoomBookingsInRange(req.FacilityID, req.RoomID, rangeStart, until)
+	bookings, err := db.getRoomBookingsInRange(req.FacilityID, req.RoomID, rangeStart, until, facility.Timezone)
 	if err != nil {
 		return nil, err
 	}
 
 	occurrences := rule.Between(rangeStart, until, true)
 	var conflicts []models.RoomConflict
-	const maxConflicts = 50
 
 	classIDs := make(map[uint]struct{})
 	for _, booking := range bookings {
@@ -104,7 +105,7 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 	}
 
 	for _, occ := range occurrences {
-		if len(conflicts) >= maxConflicts {
+		if len(conflicts) >= maxConflictsToReturn {
 			break
 		}
 		endTime := occ.Add(duration)
@@ -126,7 +127,7 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 					EndTime:            booking.EndTime,
 				}
 				conflicts = append(conflicts, conflict)
-				if len(conflicts) >= maxConflicts {
+				if len(conflicts) >= maxConflictsToReturn {
 					break
 				}
 			}
@@ -136,12 +137,7 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 	return conflicts, nil
 }
 
-func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeEnd time.Time) ([]models.RoomBooking, error) {
-	var facility models.Facility
-	if err := db.Select("timezone").First(&facility, facilityID).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "facility")
-	}
-
+func (db *DB) getRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeEnd time.Time, facilityTimezone string) ([]models.RoomBooking, error) {
 	var events []models.ProgramClassEvent
 	if err := db.Table("program_class_events e").
 		Select("DISTINCT e.*").
@@ -155,7 +151,7 @@ func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 
 	var bookings []models.RoomBooking
 	for _, event := range events {
-		eventBookings, err := expandEventToBookings(event, rangeStart, rangeEnd, roomID, facility.Timezone)
+		eventBookings, err := expandEventToBookings(event, rangeStart, rangeEnd, roomID, facilityTimezone)
 		if err != nil {
 			return nil, err
 		}
