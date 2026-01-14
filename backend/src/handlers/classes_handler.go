@@ -102,10 +102,6 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.FacilityID = claims.FacilityID
 	class.ProgramID = uint(id)
-	log.infof("handleCreateClass: events count=%d", len(class.Events))
-	if len(class.Events) > 0 {
-		log.infof("handleCreateClass: events[0].RoomID=%v", class.Events[0].RoomID)
-	}
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
 		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
