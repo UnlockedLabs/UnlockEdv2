@@ -98,15 +98,22 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		if override.IsCancelled || override.RoomID == nil {
 			continue
 		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*override.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
 		eventIDUint := uint(eventId)
-		if err := srv.checkRoomConflicts(w, &models.ConflictCheckRequest{
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
 			RoomID:         *override.RoomID,
 			RecurrenceRule: override.OverrideRrule,
 			Duration:       override.Duration,
 			ExcludeEventID: &eventIDUint,
-		}); err != nil {
-			return err
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeConflictResponse(w, conflicts)
 		}
 	}
 	ctx := srv.getQueryContext(r)
@@ -164,13 +171,20 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		if err := srv.checkRoomConflicts(w, &models.ConflictCheckRequest{
+		if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
 			RoomID:         *event.RoomID,
 			RecurrenceRule: event.RecurrenceRule,
 			Duration:       event.Duration,
-		}); err != nil {
-			return err
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeConflictResponse(w, conflicts)
 		}
 	}
 	_, err = srv.WithUserContext(r).CreateNewEvent(classID, event)
@@ -204,18 +218,25 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*eventSeriesRequest.EventSeries.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
 		var excludeEventID *uint
 		if eventSeriesRequest.EventSeries.ID > 0 {
 			excludeEventID = &eventSeriesRequest.EventSeries.ID
 		}
-		if err := srv.checkRoomConflicts(w, &models.ConflictCheckRequest{
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
 			RoomID:         *eventSeriesRequest.EventSeries.RoomID,
 			RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
 			Duration:       eventSeriesRequest.EventSeries.Duration,
 			ExcludeEventID: excludeEventID,
-		}); err != nil {
-			return err
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeConflictResponse(w, conflicts)
 		}
 	}
 	args := srv.getQueryContext(r)
