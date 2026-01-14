@@ -6,7 +6,9 @@ import {
     SubmitHandler,
     useForm,
     UseFormGetValues,
-    UseFormRegister
+    UseFormRegister,
+    UseFormSetValue,
+    UseFormWatch
 } from 'react-hook-form';
 import {
     CancelButton,
@@ -42,6 +44,8 @@ interface FormModalProps<T extends FieldValues> {
         getValues: UseFormGetValues<T>;
         register: UseFormRegister<T>;
         control: Control<T>;
+        setValue: UseFormSetValue<T>;
+        watch: UseFormWatch<T>;
     }) => void;
 }
 
@@ -73,14 +77,16 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         setError,
         getValues,
         control,
+        setValue,
+        watch,
         formState: { errors }
     } = useForm<T>({ defaultValues: defaultValues });
     useEffect(() => {
         //used for setting form data reference if needed for validation
         if (setFormDataRef) {
-            setFormDataRef({ getValues, register, control });
+            setFormDataRef({ getValues, register, control, setValue, watch });
         }
-    }, [setFormDataRef, getValues, register, control]);
+    }, [setFormDataRef, getValues, register, control, setValue, watch]);
     const { tourState, setTourState } = useTourContext();
 
     useEffect(() => {

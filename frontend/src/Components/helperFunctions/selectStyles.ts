@@ -74,10 +74,6 @@ export function getDefaultSelectStyles<
         placeholder: (provided: CSSObjectWithLabel) => ({
             ...provided,
             color: 'var(--grey-3)'
-        }),
-        menuPortal: (provided) => ({
-            ...provided,
-            zIndex: 9999
         })
     };
 }

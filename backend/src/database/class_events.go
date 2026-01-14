@@ -519,11 +519,11 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		)
 		userLocation, _ := time.LoadLocation(args.Timezone)
 		for _, occurrence := range occurrences {
-			//day light savings time issue
+			localOccurrence := occurrence.In(userLocation)
 			consistentOccurrence := time.Date(
-				occurrence.Year(),
-				occurrence.Month(),
-				occurrence.Day(),
+				localOccurrence.Year(),
+				localOccurrence.Month(),
+				localOccurrence.Day(),
 				canonicalHour,
 				canonicalMinute,
 				0,
@@ -577,14 +577,12 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 
 			userLocation, _ := time.LoadLocation(args.Timezone)
 			localOverrideTime := overrideDate.In(userLocation)
-			canonicalHour := localOverrideTime.Hour()
-			canonicalMinute := localOverrideTime.Minute()
 			consistentOverrideDate := time.Date(
-				overrideDate.Year(),
-				overrideDate.Month(),
-				overrideDate.Day(),
-				canonicalHour,
-				canonicalMinute,
+				localOverrideTime.Year(),
+				localOverrideTime.Month(),
+				localOverrideTime.Day(),
+				localOverrideTime.Hour(),
+				localOverrideTime.Minute(),
 				0,
 				0,
 				userLocation,
@@ -594,9 +592,15 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			if override.LinkedOverrideEventID != nil {
 				linkedOverrideEvent = linkedOverridesMap[*override.LinkedOverrideEventID]
 			}
+			pce := event.ProgramClassEvent
+			roomName := event.Room
+			if override.RoomRef != nil {
+				roomName = override.RoomRef.Name
+				pce.RoomID = override.RoomID
+			}
 			facilityEvent := models.FacilityProgramClassEvent{
-				ProgramClassEvent:   event.ProgramClassEvent,
-				Room:                event.Room,
+				ProgramClassEvent:   pce,
+				Room:                roomName,
 				InstructorName:      event.InstructorName,
 				ProgramName:         event.ProgramName,
 				ClassName:           event.ClassName,
@@ -1145,7 +1149,7 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 
 func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventIDs ...uint) ([]models.ProgramClassEventOverride, error) {
 	overrides := make([]models.ProgramClassEventOverride, 0)
-	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id IN (?)", eventIDs).Order("id desc").Find(&overrides).Error; err != nil {
+	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Preload("RoomRef").Where("event_id IN (?)", eventIDs).Order("id desc").Find(&overrides).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_event_overrides")
 	}
 	return overrides, nil
