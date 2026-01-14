@@ -346,3 +346,7 @@ func (c *BulkCancelClaimsAdapter) GetUserID() uint {
 func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
 	return c.FacilityID
 }
+
+func (c *BulkCancelClaimsAdapter) GetTimezone() string {
+	return c.TimeZone
+}
