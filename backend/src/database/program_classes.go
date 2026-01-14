@@ -16,6 +16,7 @@ import (
 type BulkCancelClaims interface {
 	GetUserID() uint
 	GetFacilityID() uint
+	GetTimezone() string
 }
 
 func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
@@ -534,19 +535,31 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		Occurrence time.Time
 	}
 	for _, baseEvent := range baseEvents {
-		rule, err := rrule.StrToRRule(baseEvent.RecurrenceRule)
+		rule, err := baseEvent.GetRRule()
 		if err != nil {
-			continue // Skip invalid rules
+			continue
 		}
-
 		occurrences := rule.Between(start, end, true)
+		firstOccurrence := rule.After(time.Time{}, false)
+		canonicalHour, canonicalMinute := getCanonicalHourAndMinute([]time.Time{firstOccurrence}, claims.GetTimezone())
+		userLocation, _ := time.LoadLocation(claims.GetTimezone())
 		for _, occurrence := range occurrences {
+			consistentOccurrence := time.Date(
+				occurrence.Year(),
+				occurrence.Month(),
+				occurrence.Day(),
+				canonicalHour,
+				canonicalMinute,
+				0,
+				0,
+				userLocation,
+			).UTC()
 			eventInstances = append(eventInstances, struct {
 				Event      models.ProgramClassEvent
 				Occurrence time.Time
 			}{
 				Event:      baseEvent,
-				Occurrence: occurrence,
+				Occurrence: consistentOccurrence,
 			})
 		}
 	}
