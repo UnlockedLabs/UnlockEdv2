@@ -262,20 +262,6 @@ func enforceDeptAdminForAllQuery(tx *database.DB, r *http.Request) bool {
 	return claims.isAdmin()
 }
 
-func (srv *Server) checkRoomConflicts(w http.ResponseWriter, req *models.ConflictCheckRequest) error {
-	if _, err := srv.Db.GetRoomByIDForFacility(req.RoomID, req.FacilityID); err != nil {
-		return newDatabaseServiceError(err)
-	}
-	conflicts, err := srv.Db.CheckRRuleConflicts(req)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	if len(conflicts) > 0 {
-		return writeConflictResponse(w, conflicts)
-	}
-	return nil
-}
-
 func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML string) error {
 	charset := aws.String("UTF-8")
 	input := &sesv2.SendEmailInput{
