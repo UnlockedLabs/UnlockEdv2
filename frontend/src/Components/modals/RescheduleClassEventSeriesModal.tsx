@@ -68,6 +68,9 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
     const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
         calendarEvent?.room_id ?? null
     );
+    const [selectedRoomName, setSelectedRoomName] = useState<
+        string | undefined
+    >(calendarEvent?.room);
 
     const rescheduleClassEventSeries: SubmitHandler<FieldValues> = async (
         data
@@ -188,7 +191,10 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                           <RoomSelector
                               label="Room"
                               value={selectedRoomId}
-                              onChange={setSelectedRoomId}
+                              onChange={(id, name) => {
+                                  setSelectedRoomId(id);
+                                  setSelectedRoomName(name);
+                              }}
                               required
                           />
                       )
@@ -272,7 +278,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                 ref={conflictModalRef}
                 conflicts={conflicts}
                 timezone={user.timezone}
-                roomName={calendarEvent?.room}
+                roomName={selectedRoomName}
                 onClose={() => {
                     conflictModalRef.current?.close();
                     setConflicts([]);
