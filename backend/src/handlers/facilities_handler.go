@@ -90,7 +90,7 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
 	}
-	log.add("facilty_id", id)
+	log.add("facility_id", id)
 	var facility models.Facility
 	err = json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import { Room, ToastState } from '@/common';
 import { useToast } from '@/Context/ToastCtx';
@@ -58,10 +58,13 @@ export function RoomSelector({
         }
     }, []);
 
-    const options: RoomOption[] = [
-        ...rooms.map((r) => ({ value: r.id, label: r.name })),
-        { value: 'create' as const, label: '+ Add new room' }
-    ];
+    const options: RoomOption[] = useMemo(
+        () => [
+            ...rooms.map((r) => ({ value: r.id, label: r.name })),
+            { value: 'create' as const, label: '+ Add new room' }
+        ],
+        [rooms]
+    );
 
     const handleCreateRoom = async () => {
         if (!roomName.trim()) return;
