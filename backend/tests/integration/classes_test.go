@@ -56,23 +56,39 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class := newClass(program, facility)
+	t.Run("Create class with assigned instructor", func(t *testing.T) {
+		// Create instructor user (using FacilityAdmin role as instructors should be privileged)
+		instructor, err := env.CreateTestInstructor(facility.ID, "1")
+		require.NoError(t, err)
 
-	resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
-		Do().
-		ExpectStatus(http.StatusCreated)
+		// Create class with instructor
+		class := newClassWithInstructor(program, facility, &instructor.ID)
 
-	got := resp.GetData()
+		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+			Do().
+			ExpectStatus(http.StatusCreated)
 
-	require.NotZero(t, got.ID)
-	require.Equal(t, class.Name, got.Name)
-	require.Equal(t, class.InstructorName, got.InstructorName)
-	require.Equal(t, class.Description, got.Description)
-	require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
-	require.WithinDuration(t, *class.EndDt, *got.EndDt, time.Millisecond)
-	require.Equal(t, class.Status, got.Status)
-	require.Equal(t, class.CreditHours, got.CreditHours)
+		got := resp.GetData()
+
+		require.NotZero(t, got.ID)
+		require.Equal(t, class.Name, got.Name)
+		require.Equal(t, class.InstructorID, got.InstructorID)
+		require.NotEmpty(t, got.InstructorName)
+		// Backend populates InstructorName from the instructor user (name_first || ' ' || name_last, fallback to username)
+		expectedInstructorName := fmt.Sprintf("%s %s", instructor.NameFirst, instructor.NameLast)
+		if expectedInstructorName == " " {
+			expectedInstructorName = instructor.Username
+		}
+		require.Equal(t, expectedInstructorName, got.InstructorName)
+
+		// Note: The instructor relationship is not populated in the response, only InstructorName is filled
+		require.Equal(t, class.Description, got.Description)
+		require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
+		require.WithinDuration(t, *class.EndDt, *got.EndDt, time.Millisecond)
+		require.Equal(t, class.Status, got.Status)
+		require.Equal(t, class.CreditHours, got.CreditHours)
+	})
 }
 
 func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
@@ -82,7 +98,10 @@ func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *mod
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class := newClass(program, facility)
+	instructor, err := env.CreateTestInstructor(facility.ID, "inactive")
+	require.NoError(t, err)
+
+	class := newClassWithInstructor(program, facility, &instructor.ID)
 
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
@@ -98,7 +117,10 @@ func runCreateClassArchivedProgramTest(t *testing.T, env *TestEnv, facility *mod
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class := newClass(program, facility)
+	instructor, err := env.CreateTestInstructor(facility.ID, "archived")
+	require.NoError(t, err)
+
+	class := newClassWithInstructor(program, facility, &instructor.ID)
 
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
@@ -109,7 +131,11 @@ func runCreateClassArchivedProgramTest(t *testing.T, env *TestEnv, facility *mod
 func runCreateClassNotOfferedFacilityTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
 	program, err := env.CreateTestProgram("Not Offered at Facility", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
 	require.NoError(t, err)
-	class := newClass(program, facility)
+
+	instructor, err := env.CreateTestInstructor(facility.ID, "notoffered")
+	require.NoError(t, err)
+
+	class := newClassWithInstructor(program, facility, &instructor.ID)
 
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
@@ -117,22 +143,22 @@ func runCreateClassNotOfferedFacilityTest(t *testing.T, env *TestEnv, facility *
 		ExpectStatus(http.StatusUnauthorized)
 }
 
-// creates a boilerplate class
-func newClass(program *models.Program, facility *models.Facility) models.ProgramClass {
+// creates a boilerplate class with required instructor
+func newClassWithInstructor(program *models.Program, facility *models.Facility, instructorID *uint) models.ProgramClass {
 	endDt := time.Now().Add(time.Hour * 24)
 	creditHours := int64(2)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Test Class",
-		InstructorName: "Test Instructor",
-		Description:    "This is a test class created for integration testing purposes.",
-		StartDt:        time.Now(),
-		EndDt:          &endDt,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Test Class",
+		InstructorID: instructorID,
+		Description:  "This is a test class created for integration testing purposes.",
+		StartDt:      time.Now(),
+		EndDt:        &endDt,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 	return class
 }
@@ -175,9 +201,11 @@ func TestUpdateClasses(t *testing.T) {
 }
 
 func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "scheduled")
+	require.NoError(t, err)
 
 	// Create a scheduled class using helper function
-	class, err := env.CreateTestClass(program, facility, models.Scheduled)
+	class, err := env.CreateTestClass(program, facility, models.Scheduled, &instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users
@@ -228,8 +256,11 @@ func runUpdateClassScheduledToActiveTest(t *testing.T, env *TestEnv, facility *m
 }
 
 func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "active")
+	require.NoError(t, err)
+
 	// Create an Active class
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	_, err = env.CreateTestEvent(class.ID, "")
@@ -283,8 +314,11 @@ func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 }
 
 func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "paused")
+	require.NoError(t, err)
+
 	// Create an Active class first
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	_, err = env.CreateTestEvent(class.ID, "")
@@ -348,8 +382,11 @@ func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 }
 
 func runUpdateActivePausedActiveTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "activepaused")
+	require.NoError(t, err)
+
 	// Create an Active class
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	// Create test user and enrollment
@@ -413,8 +450,11 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
+	instructor, err := env.CreateTestInstructor(facility.ID, "completed")
+	require.NoError(t, err)
+
 	// Create an Active class
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	_, err = env.CreateTestEvent(class.ID, "")

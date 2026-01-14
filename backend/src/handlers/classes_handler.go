@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -33,6 +34,10 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		featureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, axx),
 		/* admin */
 		adminValidatedFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx, validateFacility("is_active = true AND archived_at IS NULL AND")),
+		adminValidatedFeatureRoute("GET /api/instructors/{id}/classes",
+			srv.handleGetClassesByInstructor, axx, FacilityAdminResolver("users", "id")),
+		adminFeatureRoute("POST /api/program-classes/bulk-cancel",
+			srv.handleBulkCancelSessions, axx),
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
@@ -94,15 +99,33 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	var class models.ProgramClass
-	err = json.NewDecoder(r.Body).Decode(&class)
+
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+
+	var class models.ProgramClass
+	err = json.Unmarshal(bodyBytes, &class)
+	if err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.FacilityID = claims.FacilityID
 	class.CreateUserID = claims.UserID
 	class.ProgramID = uint(id)
+
+	if class.InstructorID == nil || *class.InstructorID == 0 {
+		return newBadRequestServiceError(nil, "instructor selection is required")
+	}
+
+	instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
+	if err != nil || instructorName == "" {
+		return newBadRequestServiceError(err, "invalid instructor selected")
+	}
+	class.InstructorName = instructorName
+
 	newClass, err := srv.Db.CreateProgramClass(&class)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -117,10 +140,50 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	class := models.ProgramClass{}
-	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+
+	class := models.ProgramClass{}
+	err = json.Unmarshal(bodyBytes, &class)
+	if err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+
+	var rawClass map[string]any
+	var instructorIDProvided bool
+	if err := json.Unmarshal(bodyBytes, &rawClass); err == nil {
+		if _, exists := rawClass["instructor_id"]; exists {
+			instructorIDProvided = true
+		}
+	}
+
+	if instructorIDProvided {
+		if class.InstructorID == nil || *class.InstructorID == 0 {
+			class.InstructorID = nil
+			class.InstructorName = "Unassigned"
+		} else {
+
+			instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
+			if err != nil || instructorName == "" {
+				return newBadRequestServiceError(err, "invalid instructor selected")
+			}
+			class.InstructorName = instructorName
+		}
+	} else {
+
+		existing, err := srv.Db.GetClassByID(id)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		class.InstructorID = existing.InstructorID
+		class.InstructorName = existing.InstructorName
+	}
+
 	if class.CannotUpdateClass() {
 		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
@@ -131,7 +194,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if enrolled > class.Capacity {
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
+
 	class.UpdateUserID = claims.UserID
 	updated, err := srv.Db.UpdateProgramClass(r.Context(), &class, id)
 	if err != nil {
@@ -219,4 +282,71 @@ func (srv *Server) handleGetMissingAttendance(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, totalMissing)
+}
+
+func (srv *Server) handleGetClassesByInstructor(w http.ResponseWriter, r *http.Request, log sLog) error {
+	instructorId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || instructorId < 0 {
+		return newInvalidIdServiceError(fmt.Errorf("instructor ID must be 0 or positive"), "instructor ID")
+	}
+
+	startDate := r.URL.Query().Get("start_date")
+	endDate := r.URL.Query().Get("end_date")
+	facilityIDStr := r.URL.Query().Get("facility_id")
+
+	if startDate == "" || endDate == "" || facilityIDStr == "" {
+		return newBadRequestServiceError(nil, "start_date, end_date, and facility_id are required")
+	}
+
+	facilityId, err := strconv.Atoi(facilityIDStr)
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+
+	classes, err := srv.Db.GetClassesByInstructor(instructorId, facilityId, startDate, endDate)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, classes)
+}
+
+func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Request, log sLog) error {
+	var req models.BulkCancelSessionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+
+	claimsAdapter := &BulkCancelClaimsAdapter{Claims: claims}
+
+	response, err := srv.Db.BulkCancelSessions(&req, int(claims.FacilityID), claimsAdapter)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	log.add("instructor_id", req.InstructorID)
+	log.add("start_date", req.StartDate)
+	log.add("end_date", req.EndDate)
+	log.add("session_count", response.SessionCount)
+	log.add("class_count", response.ClassCount)
+
+	return writeJsonResponse(w, http.StatusOK, response)
+}
+
+type BulkCancelClaimsAdapter struct {
+	*Claims
+}
+
+func (c *BulkCancelClaimsAdapter) GetUserID() uint {
+	return c.UserID
+}
+
+func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
+	return c.FacilityID
+}
+
+func (c *BulkCancelClaimsAdapter) GetTimezone() string {
+	return c.TimeZone
 }
