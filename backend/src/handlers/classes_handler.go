@@ -103,20 +103,13 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	class.FacilityID = claims.FacilityID
 	class.ProgramID = uint(id)
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
-		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
-		}
-		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+		if err := srv.checkRoomConflicts(w, &models.ConflictCheckRequest{
 			FacilityID:     claims.FacilityID,
 			RoomID:         *class.Events[0].RoomID,
 			RecurrenceRule: class.Events[0].RecurrenceRule,
 			Duration:       class.Events[0].Duration,
-		})
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		if len(conflicts) > 0 {
-			return writeConflictResponse(w, conflicts)
+		}); err != nil {
+			return err
 		}
 	}
 	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
@@ -150,9 +143,6 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = models.UintPtr(claims.UserID)
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
-		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
-		}
 		existing, err := srv.Db.GetClassByID(id)
 		if err != nil {
 			return newDatabaseServiceError(err)
@@ -162,18 +152,14 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 			existingRoomID = *existing.Events[0].RoomID
 		}
 		if *class.Events[0].RoomID != existingRoomID {
-			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			if err := srv.checkRoomConflicts(w, &models.ConflictCheckRequest{
 				FacilityID:     claims.FacilityID,
 				RoomID:         *class.Events[0].RoomID,
 				RecurrenceRule: existing.Events[0].RecurrenceRule,
 				Duration:       existing.Events[0].Duration,
 				ExcludeEventID: &existing.Events[0].ID,
-			})
-			if err != nil {
-				return newDatabaseServiceError(err)
-			}
-			if len(conflicts) > 0 {
-				return writeConflictResponse(w, conflicts)
+			}); err != nil {
+				return err
 			}
 		}
 	}
