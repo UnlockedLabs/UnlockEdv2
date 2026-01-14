@@ -66,9 +66,9 @@ export const RescheduleClassEventModal = forwardRef(function (
     const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
         calendarEvent?.room_id ?? null
     );
-    const [selectedRoomName, setSelectedRoomName] = useState<string | undefined>(
-        calendarEvent?.room
-    );
+    const [selectedRoomName, setSelectedRoomName] = useState<
+        string | undefined
+    >(calendarEvent?.room);
 
     const rescheduleClassEvent: SubmitHandler<FieldValues> = async (data) => {
         if (!calendarEvent) {
@@ -275,7 +275,7 @@ export const RescheduleClassEventModal = forwardRef(function (
                 ref={conflictModalRef}
                 conflicts={conflicts}
                 timezone={user.timezone}
-                roomName={calendarEvent?.room}
+                roomName={selectedRoomName}
                 onClose={() => {
                     conflictModalRef.current?.close();
                     setConflicts([]);

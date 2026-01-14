@@ -38,7 +38,6 @@ func (db *DB) CreateRoom(room *models.Room) (*models.Room, error) {
 }
 
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
-	logrus.Infof("CheckRRuleConflicts called: FacilityID=%d, RoomID=%d, Rule=%s, Duration=%s", req.FacilityID, req.RoomID, req.RecurrenceRule, req.Duration)
 	if req.RecurrenceRule == "" {
 		return nil, NewDBError(errors.New("recurrence rule is required"), "invalid conflict check request")
 	}
@@ -79,10 +78,8 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("CheckRRuleConflicts: found %d existing bookings for room %d in range %v to %v", len(bookings), req.RoomID, rangeStart, until)
 
 	occurrences := rule.Between(rangeStart, until, true)
-	logrus.Infof("CheckRRuleConflicts: new rule produces %d occurrences", len(occurrences))
 	var conflicts []models.RoomConflict
 	const maxConflicts = 50
 
@@ -155,7 +152,6 @@ func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 		Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
-	logrus.Infof("GetRoomBookingsInRange: found %d events matching room %d or having overrides to room %d", len(events), roomID, roomID)
 
 	var bookings []models.RoomBooking
 	for _, event := range events {

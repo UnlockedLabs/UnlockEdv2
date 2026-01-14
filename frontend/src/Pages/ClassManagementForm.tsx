@@ -292,7 +292,7 @@ export default function ClassManagementForm() {
                         <RoomSelector
                             label="Room"
                             value={selectedRoomId}
-                            onChange={setSelectedRoomId}
+                            onChange={(id) => setSelectedRoomId(id)}
                             onRoomCreated={(room) =>
                                 setRooms((prev) => [...prev, room])
                             }
