@@ -38,6 +38,7 @@ func (db *DB) CreateRoom(room *models.Room) (*models.Room, error) {
 }
 
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	logrus.Infof("CheckRRuleConflicts called: FacilityID=%d, RoomID=%d, Rule=%s, Duration=%s", req.FacilityID, req.RoomID, req.RecurrenceRule, req.Duration)
 	if req.RecurrenceRule == "" {
 		return nil, NewDBError(errors.New("recurrence rule is required"), "invalid conflict check request")
 	}
@@ -62,21 +63,26 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 	}
 
 	now := time.Now()
-	rangeStart := now
-	until := rule.GetUntil()
-	if until.IsZero() || until.Before(now) {
-		until = now.AddDate(1, 0, 0)
+	rangeStart := rule.GetDTStart()
+	if rangeStart.Before(now.AddDate(-1, 0, 0)) {
+		rangeStart = now.AddDate(-1, 0, 0)
 	}
-	if until.After(now.AddDate(1, 0, 0)) {
-		until = now.AddDate(1, 0, 0)
+	until := rule.GetUntil()
+	if until.IsZero() || until.Before(rangeStart) {
+		until = rangeStart.AddDate(1, 0, 0)
+	}
+	if until.After(rangeStart.AddDate(1, 0, 0)) {
+		until = rangeStart.AddDate(1, 0, 0)
 	}
 
 	bookings, err := db.GetRoomBookingsInRange(req.FacilityID, req.RoomID, rangeStart, until)
 	if err != nil {
 		return nil, err
 	}
+	logrus.Infof("CheckRRuleConflicts: found %d existing bookings for room %d in range %v to %v", len(bookings), req.RoomID, rangeStart, until)
 
 	occurrences := rule.Between(rangeStart, until, true)
+	logrus.Infof("CheckRRuleConflicts: new rule produces %d occurrences", len(occurrences))
 	var conflicts []models.RoomConflict
 	const maxConflicts = 50
 
@@ -141,13 +147,15 @@ func (db *DB) GetRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 
 	var events []models.ProgramClassEvent
 	if err := db.Table("program_class_events e").
-		Select("e.*").
+		Select("DISTINCT e.*").
 		Joins("JOIN program_classes c ON c.id = e.class_id").
-		Where("c.facility_id = ? AND e.room_id = ? AND e.deleted_at IS NULL", facilityID, roomID).
+		Joins("LEFT JOIN program_class_event_overrides o ON o.event_id = e.id AND o.deleted_at IS NULL").
+		Where("c.facility_id = ? AND e.deleted_at IS NULL AND (e.room_id = ? OR o.room_id = ?)", facilityID, roomID, roomID).
 		Preload("Overrides").
 		Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
+	logrus.Infof("GetRoomBookingsInRange: found %d events matching room %d or having overrides to room %d", len(events), roomID, roomID)
 
 	var bookings []models.RoomBooking
 	for _, event := range events {
@@ -203,6 +211,9 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 			continue
 		}
 		if _, rescheduled := rescheduledDates[dateKey]; rescheduled {
+			continue
+		}
+		if *event.RoomID != targetRoomID {
 			continue
 		}
 		bookings = append(bookings, models.RoomBooking{

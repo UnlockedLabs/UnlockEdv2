@@ -1,21 +1,23 @@
-import { forwardRef, useRef, useState, useEffect } from 'react';
+import { forwardRef, useRef, useState, useMemo } from 'react';
 import {
     closeModal,
     FormInputTypes,
     FormModal,
     Input,
+    RoomConflictModal,
     showModal,
     TextModalType,
     TextOnlyModal
 } from '.';
-import { Room, ServerResponseMany } from '@/common';
+import { RoomConflict, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import {
     Control,
     FieldValues,
     SubmitHandler,
     UseFormGetValues,
-    UseFormRegister
+    UseFormRegister,
+    UseFormWatch
 } from 'react-hook-form';
 import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
@@ -53,28 +55,19 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         getValues: UseFormGetValues<any>; // eslint-disable-line
         register: UseFormRegister<any>; // eslint-disable-line
         control: Control<any>; // eslint-disable-line
+        watch: UseFormWatch<any>; // eslint-disable-line
     }>();
     const rescheduleSeriesConfirmationRef = useRef<HTMLDialogElement>(null);
+    const conflictModalRef = useRef<HTMLDialogElement>(null);
     const [rruleObj, setRruleObj] = useState<{
         rule: string;
         duration: string;
     } | null>(null);
     const [dataToSubmit, setDataToSubmit] = useState<FieldValues | null>(null);
-    const [rooms, setRooms] = useState<Room[]>([]);
-
-    useEffect(() => {
-        async function fetchRooms() {
-            const resp = await API.get<Room>('rooms');
-            if (resp.success && resp.data) {
-                setRooms(resp.data as Room[]);
-            }
-        }
-        void fetchRooms();
-    }, []);
-
-    const handleRoomCreated = (room: Room) => {
-        setRooms((prev) => [...prev, room]);
-    };
+    const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
+    const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
+        calendarEvent?.room_id ?? null
+    );
 
     const rescheduleClassEventSeries: SubmitHandler<FieldValues> = async (
         data
@@ -82,13 +75,13 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         if (!calendarEvent || !rruleObj) {
             return;
         }
-        const selectedRoomId =
-            (data.room_id as number | undefined) ?? calendarEvent.room_id;
+        const roomIdToUse =
+            (data.selectedRoomId as number | null) ?? calendarEvent.room_id;
         const rescheduledEventSeries = {
             id: 0,
             class_id: calendarEvent.class_id,
             duration: rruleObj?.duration,
-            room_id: selectedRoomId,
+            room_id: roomIdToUse,
             recurrence_rule: rruleObj?.rule
         };
 
@@ -113,6 +106,18 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                 closed_event_series: closeOriginalEventSeries
             }
         );
+
+        if (!response.success) {
+            const isRoomConflict =
+                response.status === 409 &&
+                Array.isArray(response.data) &&
+                response.data.length > 0;
+            if (isRoomConflict) {
+                setConflicts(response.data as RoomConflict[]);
+                showModal(conflictModalRef);
+                return;
+            }
+        }
 
         checkResponse(
             response.success,
@@ -181,11 +186,9 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                       required: false,
                       uniqueComponent: (
                           <RoomSelector
-                              name="room_id"
                               label="Room"
-                              control={formDataRef.control}
-                              rooms={rooms}
-                              onRoomCreated={handleRoomCreated}
+                              value={selectedRoomId}
+                              onChange={setSelectedRoomId}
                               required
                           />
                       )
@@ -207,6 +210,24 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         setRruleObj(null);
         closeModal(rescheduleSeriesConfirmationRef);
     }
+
+    const formDefaultValues = useMemo(
+        () => ({
+            start_dt:
+                calendarEvent?.start &&
+                toZonedTime(calendarEvent?.start, user?.timezone)
+                    .toISOString()
+                    .split('T')[0],
+            end_dt:
+                calendarEvent &&
+                parseRRuleUntilDate(
+                    calendarEvent.recurrence_rule,
+                    user?.timezone
+                )
+        }),
+        [calendarEvent?.start, calendarEvent?.recurrence_rule, user?.timezone]
+    );
+
     return (
         <>
             <FormModal
@@ -215,26 +236,13 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                 ref={ref}
                 title={'Edit Schedule (Recurring)'}
                 inputs={rescheduleClassEventSeriesInputs}
-                defaultValues={{
-                    room_id: calendarEvent?.room_id ?? null,
-                    start_dt:
-                        calendarEvent?.start &&
-                        toZonedTime(calendarEvent?.start, user?.timezone)
-                            .toISOString()
-                            .split('T')[0],
-                    end_dt:
-                        calendarEvent &&
-                        parseRRuleUntilDate(
-                            calendarEvent.recurrence_rule,
-                            user?.timezone
-                        )
-                }}
+                defaultValues={formDefaultValues}
                 showCancel={true}
                 extValidationIsValid={verify}
                 onSubmit={(data) => {
                     if (rruleFormRef?.current) {
                         setRruleObj(rruleFormRef.current?.createRule());
-                        setDataToSubmit(data);
+                        setDataToSubmit({ ...data, selectedRoomId });
                         showModal(rescheduleSeriesConfirmationRef);
                         closeModal(ref);
                     }
@@ -260,6 +268,16 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                     clearFormAndCloseModal();
                 }}
             ></TextOnlyModal>
+            <RoomConflictModal
+                ref={conflictModalRef}
+                conflicts={conflicts}
+                timezone={user.timezone}
+                roomName={calendarEvent?.room}
+                onClose={() => {
+                    conflictModalRef.current?.close();
+                    setConflicts([]);
+                }}
+            />
         </>
     );
 });

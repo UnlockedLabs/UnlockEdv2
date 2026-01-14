@@ -43,6 +43,7 @@ export default function ClassManagementForm() {
     const clsLoader = useLoaderData() as ClassLoaderData;
     const [rooms, setRooms] = useState<Room[]>(clsLoader.rooms ?? []);
     const [rruleIsValid, setRruleIsValid] = useState(false);
+    const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
     const conflictModalRef = useRef<HTMLDialogElement>(null);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
@@ -59,11 +60,10 @@ export default function ClassManagementForm() {
         getValues,
         watch,
         reset,
-        control,
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
-            events: [{ room_id: undefined, recurrence_rule: '', duration: '' }]
+            events: [{ recurrence_rule: '', duration: '' }]
         }
     });
     useEffect(() => {
@@ -97,7 +97,7 @@ export default function ClassManagementForm() {
                           ...(class_id && { id: Number(data?.events[0].id) }),
                           ...(class_id && { class_id: Number(class_id) }),
                           recurrence_rule: rruleString?.rule,
-                          room_id: data.events[0].room_id,
+                          room_id: selectedRoomId,
                           duration: rruleString?.duration
                       }
                   ]
@@ -109,7 +109,7 @@ export default function ClassManagementForm() {
                           recurrence_rule:
                               clsLoader.class!.events[0].recurrence_rule,
                           room_id:
-                              data.events?.[0]?.room_id ??
+                              selectedRoomId ??
                               clsLoader.class!.events[0].room_id
                       },
                       ...clsLoader.class!.events.slice(1)
@@ -183,7 +183,6 @@ export default function ClassManagementForm() {
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
-        //this is temporary fix for end date (create ticket to fix after discussion)
         const rule = RRule.fromString(editCls.events[0].recurrence_rule);
         let ruleEndDate = '';
         if (!editCls.end_dt && rule.options.until && user) {
@@ -192,14 +191,14 @@ export default function ClassManagementForm() {
                 .split('T')[0];
         }
 
+        setSelectedRoomId(editCls.events[0].room_id ?? null);
         reset({
             ...values,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
                 ? new Date(editCls.end_dt).toISOString().split('T')[0]
-                : ruleEndDate,
-            events: [{ room_id: editCls.events[0].room_id }]
+                : ruleEndDate
         });
     }
     const filteredEnumType: Partial<typeof ProgClassStatus> = isNewClass
@@ -291,10 +290,9 @@ export default function ClassManagementForm() {
                             errors={errors}
                         />
                         <RoomSelector
-                            name="events.0.room_id"
                             label="Room"
-                            control={control}
-                            rooms={rooms}
+                            value={selectedRoomId}
+                            onChange={setSelectedRoomId}
                             onRoomCreated={(room) =>
                                 setRooms((prev) => [...prev, room])
                             }
@@ -384,10 +382,7 @@ export default function ClassManagementForm() {
                 ref={conflictModalRef}
                 conflicts={conflicts}
                 timezone={user.timezone}
-                roomName={
-                    rooms.find((r) => r.id === getValues('events.0.room_id'))
-                        ?.name
-                }
+                roomName={rooms.find((r) => r.id === selectedRoomId)?.name}
                 onClose={() => {
                     conflictModalRef.current?.close();
                     setConflicts([]);
