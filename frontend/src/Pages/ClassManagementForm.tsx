@@ -6,9 +6,17 @@ import {
     TextAreaInput,
     TextInput,
     CancelButton,
-    CloseX
+    CloseX,
+    RoomSelector
 } from '@/Components/inputs';
-import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
+import {
+    ProgClassStatus,
+    Class,
+    ToastState,
+    ClassLoaderData,
+    Room,
+    RoomConflict
+} from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -19,6 +27,7 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { RoomConflictModal, showModal } from '@/Components/modals';
 import { parseDurationToMs } from '@/Components/helperFunctions/formatting';
 import { RRule } from 'rrule';
 import moment from 'moment';
@@ -32,8 +41,12 @@ export default function ClassManagementForm() {
         return null;
     }
     const clsLoader = useLoaderData() as ClassLoaderData;
+    const [rooms, setRooms] = useState<Room[]>(clsLoader.rooms ?? []);
     const [rruleIsValid, setRruleIsValid] = useState(false);
+    const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
+    const conflictModalRef = useRef<HTMLDialogElement>(null);
+    const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [events, setEvents] = useState<ShortCalendarEvent[]>([]);
     const { id, class_id } = useParams<{ id: string; class_id?: string }>();
     const navigate = useNavigate();
@@ -43,7 +56,6 @@ export default function ClassManagementForm() {
     const isNewClass = class_id === 'new' || !class_id;
     const {
         register,
-        unregister,
         handleSubmit,
         getValues,
         watch,
@@ -51,12 +63,11 @@ export default function ClassManagementForm() {
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
-            events: [{ room: '', recurrence_rule: '', duration: '' }]
+            events: [{ recurrence_rule: '', duration: '' }]
         }
     });
     useEffect(() => {
         if (!isNewClass && clsLoader.class) {
-            unregister('events');
             setEditFormValues(clsLoader.class);
         }
     }, [clsLoader, isNewClass]);
@@ -69,7 +80,7 @@ export default function ClassManagementForm() {
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
-        if (rruleString?.rule === '') {
+        if (isNewClass && rruleString?.rule === '') {
             return;
         }
         const creditHours = Number(data.credit_hours);
@@ -86,16 +97,20 @@ export default function ClassManagementForm() {
                           ...(class_id && { id: Number(data?.events[0].id) }),
                           ...(class_id && { class_id: Number(class_id) }),
                           recurrence_rule: rruleString?.rule,
-                          room: data.events[0].room,
+                          room_id: selectedRoomId,
                           duration: rruleString?.duration
                       }
                   ]
                 : [
                       {
-                          ...clsLoader.class!.events[0],
-                          room:
-                              data.events?.[0]?.room ??
-                              clsLoader.class!.events[0].room
+                          id: clsLoader.class!.events[0].id,
+                          class_id: clsLoader.class!.events[0].class_id,
+                          duration: clsLoader.class!.events[0].duration,
+                          recurrence_rule:
+                              clsLoader.class!.events[0].recurrence_rule,
+                          room_id:
+                              selectedRoomId ??
+                              clsLoader.class!.events[0].room_id
                       },
                       ...clsLoader.class!.events.slice(1)
                   ]
@@ -121,6 +136,15 @@ export default function ClassManagementForm() {
         }
 
         if (!response.success) {
+            const isRoomConflict =
+                response.status === 409 &&
+                Array.isArray(response.data) &&
+                response.data.length > 0;
+            if (isRoomConflict) {
+                setConflicts(response.data as RoomConflict[]);
+                showModal(conflictModalRef);
+                return;
+            }
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')
                     ? 'Cannot update class until unenrolling residents'
@@ -130,9 +154,6 @@ export default function ClassManagementForm() {
                         ? 'Failed to update class'
                         : 'Failed to create class';
             toaster(toasterMsg, ToastState.error);
-            console.error(
-                `error occurred while trying to create/update class, error message: ${response.message}`
-            );
             return;
         }
         toaster(
@@ -162,7 +183,6 @@ export default function ClassManagementForm() {
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
-        //this is temporary fix for end date (create ticket to fix after discussion)
         const rule = RRule.fromString(editCls.events[0].recurrence_rule);
         let ruleEndDate = '';
         if (!editCls.end_dt && rule.options.until && user) {
@@ -171,6 +191,7 @@ export default function ClassManagementForm() {
                 .split('T')[0];
         }
 
+        setSelectedRoomId(editCls.events[0].room_id ?? null);
         reset({
             ...values,
             ...(credit_hours > 0 ? { credit_hours } : {}),
@@ -205,11 +226,17 @@ export default function ClassManagementForm() {
             new Date(),
             moment().add(1, 'year').toDate()
         );
-        const generated = occurrences.map((occurrence) => ({
-            title,
-            start: occurrence,
-            end: new Date(occurrence.getTime() + durationMs)
-        }));
+        const generated = occurrences.map((occurrence) => {
+            const displayStart = toZonedTime(
+                occurrence,
+                user?.timezone ?? 'UTC'
+            );
+            return {
+                title,
+                start: displayStart,
+                end: new Date(displayStart.getTime() + durationMs)
+            };
+        });
         setEvents(generated);
         setShowCalendar(true);
     }
@@ -219,7 +246,9 @@ export default function ClassManagementForm() {
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
-                    rruleFormRef.current?.validate();
+                    if (isNewClass) {
+                        rruleFormRef.current?.validate();
+                    }
                     void handleSubmit(onSubmit)(e);
                 }}
             >
@@ -260,13 +289,14 @@ export default function ClassManagementForm() {
                             required
                             errors={errors}
                         />
-                        <TextInput
+                        <RoomSelector
                             label="Room"
-                            register={register}
-                            interfaceRef="events.0.room"
+                            value={selectedRoomId}
+                            onChange={(id) => setSelectedRoomId(id)}
+                            onRoomCreated={(room) =>
+                                setRooms((prev) => [...prev, room])
+                            }
                             required
-                            length={255}
-                            errors={errors}
                         />
 
                         <NumberInput
@@ -348,6 +378,16 @@ export default function ClassManagementForm() {
                     </div>
                 </div>
             )}
+            <RoomConflictModal
+                ref={conflictModalRef}
+                conflicts={conflicts}
+                timezone={user.timezone}
+                roomName={rooms.find((r) => r.id === selectedRoomId)?.name}
+                onClose={() => {
+                    conflictModalRef.current?.close();
+                    setConflicts([]);
+                }}
+            />
         </div>
     );
 }

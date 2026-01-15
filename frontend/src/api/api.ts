@@ -1,5 +1,6 @@
 import {
     ServerResponse,
+    ServerResponseOne,
     ServerResponseMany,
     ReportGenerateRequest
 } from '@/common';
@@ -98,12 +99,15 @@ class API {
                 }
 
                 const error = new Error(message) as Error & {
-                    response: ServerResponse<unknown>;
+                    response: ServerResponseOne<T>;
                 };
+                const errorData = Array.isArray(data?.data)
+                    ? (data.data as unknown as T)
+                    : data?.data ?? ({} as T);
                 error.response = {
                     type: 'one',
                     success: false,
-                    data: data?.data,
+                    data: errorData,
                     message,
                     status: resp.status,
                     headers: responseHeaders
@@ -114,7 +118,7 @@ class API {
             return API.getReturnData<T>(data, resp.status);
         } catch (err) {
             const error = err as Error & {
-                response?: ServerResponse<unknown>;
+                response?: ServerResponseOne<T>;
             };
             const errCode = error.response?.status;
             return {
