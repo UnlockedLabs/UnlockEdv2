@@ -52,6 +52,11 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 		return nil, newGetRecordsDBError(err, "facility")
 	}
 
+	tz, err := time.LoadLocation(facility.Timezone)
+	if err != nil {
+		tz = time.UTC
+	}
+
 	tempEvent := &models.ProgramClassEvent{RecurrenceRule: req.RecurrenceRule}
 	rule, err := tempEvent.GetRRuleWithTimezone(facility.Timezone)
 	if err != nil {
@@ -113,7 +118,7 @@ func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.Ro
 			if req.ExcludeEventID != nil && booking.EventID == *req.ExcludeEventID {
 				continue
 			}
-			if hasTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime) {
+			if hasLocalTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime, tz) {
 				className := classNamesCache[booking.ClassID]
 				if className == "" {
 					className = "Unknown Class"
@@ -257,6 +262,17 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 	return bookings, nil
 }
 
-func hasTimeOverlap(start1, end1, start2, end2 time.Time) bool {
-	return start1.Before(end2) && start2.Before(end1)
+func hasLocalTimeOverlap(start1, end1, start2, end2 time.Time, tz *time.Location) bool {
+	local1Start := start1.In(tz)
+	local1End := end1.In(tz)
+	local2Start := start2.In(tz)
+	local2End := end2.In(tz)
+	if local1Start.YearDay() != local2Start.YearDay() || local1Start.Year() != local2Start.Year() {
+		return false
+	}
+	t1Start := local1Start.Hour()*60 + local1Start.Minute()
+	t1End := local1End.Hour()*60 + local1End.Minute()
+	t2Start := local2Start.Hour()*60 + local2Start.Minute()
+	t2End := local2End.Hour()*60 + local2End.Minute()
+	return t1Start < t2End && t2Start < t1End
 }
