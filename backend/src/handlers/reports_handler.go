@@ -1,9 +1,8 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
+	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
-	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -13,105 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-pdf/fpdf"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 const (
-	pdfMaxWidth         = 280.0
-	pdfSampleSize       = 100
 	maxDateRangeDays    = 90
 	maxFacilitiesInList = 50
 )
-
-func calculateOptimalColumnWidths(config *ColumnWidthConfig) []float64 {
-	colWidths := make([]float64, len(config.Headers))
-	copy(colWidths, config.MinWidths)
-
-	sampleSize := config.SampleSize
-	if sampleSize > len(config.Data) {
-		sampleSize = len(config.Data)
-	}
-
-	for i := 0; i < sampleSize; i++ {
-		for j, cell := range config.Data[i] {
-			if j < len(colWidths) {
-				contentWidth := config.PDF.GetStringWidth(cell) + 4
-				if contentWidth > colWidths[j] {
-					colWidths[j] = contentWidth
-				}
-			}
-		}
-	}
-
-	totalWidth := 0.0
-	for _, width := range colWidths {
-		totalWidth += width
-	}
-
-	if totalWidth > config.MaxWidth {
-		scale := config.MaxWidth / totalWidth
-		for i := range colWidths {
-			colWidths[i] *= scale
-		}
-	}
-
-	return colWidths
-}
-
-func renderPDFTable(config *PDFTableConfig) {
-	config.PDF.SetFont("Arial", "B", config.HeaderFontSize)
-	for i, header := range config.Headers {
-		config.PDF.CellFormat(config.ColumnWidths[i], 7, header, "1", 0, "C", false, 0, "")
-	}
-	config.PDF.Ln(-1)
-
-	config.PDF.SetFont("Arial", "", config.DataFontSize)
-	for _, row := range config.Data {
-		for i, cell := range row {
-			if i < len(config.ColumnWidths) {
-				alignment := "L"
-				if i < len(config.Alignments) {
-					alignment = config.Alignments[i]
-				}
-				config.PDF.CellFormat(config.ColumnWidths[i], 6, cell, "1", 0, alignment, false, 0, "")
-			}
-		}
-		config.PDF.Ln(-1)
-	}
-}
-
-func renderPDFHeader(pdf *fpdf.Fpdf, title string, filterSummary []models.PDFFilterLine) {
-	pdf.RegisterImageOptionsReader("logo", fpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(src.UnlockedLogoImg))
-	pdf.ImageOptions("logo", 10, 10, 25, 0, false, fpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-
-	pdf.SetFont("Arial", "B", 16)
-	pdf.SetXY(40, 12)
-	pdf.Cell(0, 8, title+" Report")
-
-	pdf.SetFont("Arial", "", 9)
-	pdf.SetXY(40, 21)
-	pdf.Cell(0, 5, "Generated: "+time.Now().Format("January 2, 2006 at 3:04 PM"))
-
-	if len(filterSummary) > 0 {
-		pdf.SetXY(10, 38)
-		pdf.SetFont("Arial", "B", 10)
-		pdf.Cell(0, 5, "Report Filters:")
-		pdf.Ln(6)
-
-		pdf.SetFont("Arial", "", 9)
-		for _, filter := range filterSummary {
-			pdf.SetX(15)
-			pdf.Cell(30, 5, filter.Label+":")
-			pdf.Cell(0, 5, filter.Value)
-			pdf.Ln(5)
-		}
-		pdf.Ln(5)
-	} else {
-		pdf.Ln(30)
-	}
-}
 
 func buildFilterSummary(req *models.ReportGenerateRequest, facilityName, residentName string) []models.PDFFilterLine {
 	var filters []models.PDFFilterLine
@@ -243,25 +151,6 @@ func (srv *Server) handleGenerateReport(w http.ResponseWriter, r *http.Request, 
 		return newBadRequestServiceError(errors.New("invalid report type"),
 			"invalid report type specified")
 	}
-}
-
-type PDFTableConfig struct {
-	PDF            *fpdf.Fpdf
-	Headers        []string
-	ColumnWidths   []float64
-	Alignments     []string
-	Data           [][]string
-	HeaderFontSize float64
-	DataFontSize   float64
-}
-
-type ColumnWidthConfig struct {
-	PDF        *fpdf.Fpdf
-	Headers    []string
-	Data       [][]string
-	MinWidths  []float64
-	MaxWidth   float64
-	SampleSize int
 }
 
 type reportExporter interface {
@@ -412,39 +301,30 @@ func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, fo
 
 		filterSummary := buildFilterSummary(req, facilityName, residentName)
 
-		pdf := fpdf.New("L", "mm", "A4", "")
-		pdf.AddPage()
+		var pdfBytes []byte
+		switch req.Type {
+		case models.AttendanceReport:
+			pdfBytes, err = jasper.GenerateAttendanceReportPDF(config, filterSummary)
+		case models.ProgramOutcomesReport:
+			pdfBytes, err = jasper.GenerateProgramOutcomesReportPDF(config, filterSummary)
+		case models.FacilityComparisonReport:
+			pdfBytes, err = jasper.GenerateFacilityComparisonReportPDF(config, filterSummary)
+		default:
+			return newBadRequestServiceError(errors.New("unsupported report type"), "unsupported report type for PDF generation")
+		}
 
-		renderPDFHeader(pdf, config.Title, filterSummary)
-
-		pdf.SetFont("Arial", "", config.DataFontSize)
-
-		colWidths := calculateOptimalColumnWidths(&ColumnWidthConfig{
-			PDF:        pdf,
-			Headers:    config.Headers,
-			Data:       config.Data,
-			MinWidths:  config.MinWidths,
-			MaxWidth:   pdfMaxWidth,
-			SampleSize: pdfSampleSize,
-		})
-
-		renderPDFTable(&PDFTableConfig{
-			PDF:            pdf,
-			Headers:        config.Headers,
-			ColumnWidths:   colWidths,
-			Alignments:     config.Alignments,
-			Data:           config.Data,
-			HeaderFontSize: config.HeaderFontSize,
-			DataFontSize:   config.DataFontSize,
-		})
+		if err != nil {
+			logrus.WithError(err).Error("Failed to generate PDF with Jasper")
+			return newInternalServerServiceError(err, "failed to generate PDF")
+		}
 
 		filename := fmt.Sprintf("%s-Report-%s.pdf", config.Title, time.Now().Format("2006-01-02"))
 		w.Header().Set("Content-Type", "application/pdf")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 		w.WriteHeader(http.StatusOK)
 
-		if err := pdf.Output(w); err != nil {
-			return newInternalServerServiceError(err, "failed to generate PDF")
+		if _, err := w.Write(pdfBytes); err != nil {
+			return newInternalServerServiceError(err, "failed to write PDF")
 		}
 		return nil
 

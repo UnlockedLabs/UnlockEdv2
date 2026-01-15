@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/evertonvps/go-jasper"
@@ -181,4 +182,120 @@ func (js *jasperService) calculateTotalLogins(user *models.User) string {
 func GenerateUsageReportPDF(db *database.DB, queryCtx *models.QueryContext, hasProgramAccess bool, userID int) ([]byte, error) {
 	service := newJasperServiceWithContext(db, queryCtx, hasProgramAccess)
 	return service.generateUsageReportPDF(userID)
+}
+
+func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine, templateName string) ([]byte, error) {
+	type ReportData struct {
+		Rows [][]string `json:"rows"`
+	}
+
+	rows := config.Data
+	if len(rows) == 0 {
+		rows = [][]string{}
+	}
+
+	reportData := ReportData{
+		Rows: rows,
+	}
+
+	jsonData, err := json.Marshal(reportData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal report data: %w", err)
+	}
+
+	title := config.Title
+	if title == "" {
+		title = "Report"
+	}
+
+	filterSummaryText := ""
+	if len(filterSummary) > 0 {
+		var filterLines []string
+		for _, filter := range filterSummary {
+			filterLines = append(filterLines, fmt.Sprintf("%s: %s", filter.Label, filter.Value))
+		}
+		filterSummaryText = strings.Join(filterLines, "\n")
+	}
+
+	params := []jasper.Parameter{
+		{Key: "ReportTitle", Value: title},
+		{Key: "GeneratedDate", Value: time.Now().Format("January 2, 2006 at 3:04 PM")},
+		{Key: "LogoImage", Value: base64.StdEncoding.EncodeToString(src.UnlockedLogoImg)},
+		{Key: "FilterSummary", Value: filterSummaryText},
+	}
+
+	tempDir := os.Getenv("JASPER_TEMP_DIR")
+	if tempDir == "" {
+		tempDir = filepath.Join(os.TempDir(), "jasper-reports")
+		if err := os.MkdirAll(tempDir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create temp directory: %w", err)
+		}
+		logrus.WithField("temp_dir", tempDir).Info("JASPER_TEMP_DIR not set, using fallback directory")
+	}
+
+	outputFileName := fmt.Sprintf("%s_%s", templateName, uuid.New().String())
+	outputFilePath := filepath.Join(tempDir, outputFileName)
+	jsonFileName := fmt.Sprintf("%s_%s.json", templateName, uuid.New().String())
+	jsonFilePath := filepath.Join(tempDir, jsonFileName)
+
+	if err := os.WriteFile(jsonFilePath, jsonData, 0600); err != nil {
+		return nil, fmt.Errorf("failed to write temporary data file: %w", err)
+	}
+
+	defer func() {
+		if err := os.Remove(jsonFilePath); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"json_file": jsonFilePath,
+				"error":     err,
+			}).Warn("Failed to remove temporary JSON file")
+		}
+
+		if err := os.Remove(outputFilePath + ".pdf"); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"pdf_file": outputFilePath + ".pdf",
+				"error":    err,
+			}).Warn("Failed to remove temporary PDF file")
+		}
+	}()
+
+	gj := jasper.NewGoJasperJsonData(jsonFilePath, "", params, "pdf", outputFilePath)
+	gj.Output = outputFilePath
+
+	if path, err := exec.LookPath("jasperstarter"); err == nil {
+		gj.Executable = path
+	} else {
+		logrus.Info("jasperstarter not found in PATH, falling back to default path")
+		gj.Executable = "/opt/jasperstarter/bin/jasperstarter"
+	}
+
+	templateDir := os.Getenv("JASPER_TEMPLATE_DIR")
+	if templateDir == "" {
+		templateDir = "/templates"
+	}
+	compiledTemplatePath := filepath.Join(templateDir, templateName+".jasper")
+
+	pdfBytes, err := gj.Process(compiledTemplatePath)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"template_path": compiledTemplatePath,
+			"template_dir":  templateDir,
+			"error":         err,
+		}).Error("Failed to process compiled template")
+
+		return nil, fmt.Errorf("failed to process template: %w", err)
+	}
+
+	return pdfBytes, nil
+}
+
+func GenerateAttendanceReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine) ([]byte, error) {
+	return generateReportPDF(config, filterSummary, "attendance_report")
+}
+
+func GenerateProgramOutcomesReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine) ([]byte, error) {
+	return generateReportPDF(config, filterSummary, "program_outcomes_report")
+}
+
+func GenerateFacilityComparisonReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine) ([]byte, error) {
+	return generateReportPDF(config, filterSummary, "facility_comparison_report")
 }
