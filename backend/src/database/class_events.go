@@ -500,7 +500,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 
 	facilityEvents := make([]models.FacilityProgramClassEvent, 0, 10)
 	for _, event := range events {
-		rRule, err := event.GetRRule()
+		rRule, err := event.GetRRuleWithTimezone(args.Timezone)
 		if err != nil {
 			return nil, err
 		}
@@ -851,7 +851,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 
-	rRule, err := event.GetRRule()
+	rRule, err := event.GetRRuleWithTimezone(qryCtx.Timezone)
 	if err != nil {
 		logrus.Errorf("event has invalid rule, event: %v", event)
 	}
@@ -1067,7 +1067,7 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 	}
 
 	loc, _ := time.LoadLocation(timezone)
-	rule, err := event.GetRRule()
+	rule, err := event.GetRRuleWithTimezone(timezone)
 	if err != nil {
 		return nil, err
 	}

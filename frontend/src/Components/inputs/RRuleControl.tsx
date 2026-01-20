@@ -117,13 +117,13 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
 
                 const duration = formatDuration(startTime, endTime);
                 const rule = new RRule(options);
-                const utcDtstart = zonedDateTime
-                    .toISOString()
-                    .replace(/[-:]/g, '')
-                    .split('.')[0];
+                const localDtstart = `${(startDate as string).replace(/-/g, '')}T${startTime.replace(':', '')}00`;
                 const ruleString = rule
                     .toString()
-                    .replace(/DTSTART[^:]*:[^\n]+/, `DTSTART:${utcDtstart}Z`);
+                    .replace(
+                        /DTSTART[^:]*:[^\n]+/,
+                        `DTSTART;TZID=${user.timezone}:${localDtstart}`
+                    );
                 returnValue = {
                     rule: ruleString,
                     duration: duration

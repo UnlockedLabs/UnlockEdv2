@@ -59,6 +59,18 @@ func TestRoomConflictDetection(t *testing.T) {
 		require.NoError(t, env.DB.Create(otherRoom).Error)
 		testRejectsRoomFromDifferentFacility(t, env, facility, facilityAdmin, program, otherRoom.ID)
 	})
+
+	t.Run("Detects conflicts with timezone-aware RRULEs across DST", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "DST Test Room"}
+		require.NoError(t, env.DB.Create(room).Error)
+		testDetectsConflictsWithTimezoneAwareRRules(t, env, facility, facilityAdmin, program, room.ID)
+	})
+
+	t.Run("Backwards compatible with UTC-based RRULEs", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "UTC Compat Room"}
+		require.NoError(t, env.DB.Create(room).Error)
+		testBackwardsCompatibleUTCRules(t, env, facility, facilityAdmin, program, room.ID)
+	})
 }
 
 func testDetectsOverlappingBookings(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
@@ -317,4 +329,123 @@ func testRejectsRoomFromDifferentFacility(t *testing.T, env *TestEnv, facility *
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusBadRequest)
+}
+
+// testDetectsConflictsWithTimezoneAwareRRules tests that timezone-aware RRULEs
+// correctly detect conflicts across DST transitions. Two classes at "10 AM local time"
+// created in different DST periods should conflict when using DTSTART;TZID= format.
+func testDetectsConflictsWithTimezoneAwareRRules(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	// Use America/New_York timezone for DST testing
+	facility.Timezone = "America/New_York"
+	require.NoError(t, env.DB.Save(facility).Error)
+
+	// Class 1: Created in July (EDT) at 10 AM local time, repeating on Thursdays
+	// Using timezone-aware RRULE format: DTSTART;TZID=America/New_York:20250701T100000
+	classStartDate := time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)
+	creditHours := int64(2)
+
+	class1 := models.ProgramClass{
+		ProgramID:      program.ID,
+		FacilityID:     facility.ID,
+		Capacity:       10,
+		Name:           "Summer Class",
+		InstructorName: "Instructor 1",
+		Description:    "Class created in summer at 10 AM",
+		StartDt:        classStartDate,
+		Status:         models.Scheduled,
+		CreditHours:    &creditHours,
+	}
+
+	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
+
+	createdClass1 := class1Resp.GetData()
+
+	// Timezone-aware RRULE: 10 AM in America/New_York, every Thursday
+	event1Payload := map[string]interface{}{
+		"duration":        "1h",
+		"room_id":         roomID,
+		"recurrence_rule": "DTSTART;TZID=America/New_York:20250703T100000\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+	}
+
+	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass1.ID), event1Payload).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
+
+	// Now try to create Class 2 in December (EST) at 10 AM local time
+	// With timezone-aware RRULEs, this should conflict because both are at 10 AM wall time
+	conflicts, err := env.DB.CheckRRuleConflicts(&models.ConflictCheckRequest{
+		FacilityID:     facility.ID,
+		RoomID:         roomID,
+		RecurrenceRule: "DTSTART;TZID=America/New_York:20251204T100000\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+		Duration:       "1h",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, conflicts, "Should detect conflicts when both classes are at 10 AM wall time (timezone-aware RRULEs preserve wall time across DST)")
+	require.Equal(t, "Summer Class", conflicts[0].ClassName, "Conflict should identify the Summer Class")
+
+	// Verify that classes at different wall times don't conflict
+	// 11 AM local time should NOT conflict with 10 AM class
+	noConflicts, err := env.DB.CheckRRuleConflicts(&models.ConflictCheckRequest{
+		FacilityID:     facility.ID,
+		RoomID:         roomID,
+		RecurrenceRule: "DTSTART;TZID=America/New_York:20251204T110000\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+		Duration:       "1h",
+	})
+	require.NoError(t, err)
+	require.Empty(t, noConflicts, "Should NOT detect conflicts when classes are at different wall times (10 AM vs 11 AM)")
+}
+
+// testBackwardsCompatibleUTCRules verifies that old UTC-based RRULEs still work.
+// Note: UTC-based RRULEs will have the DST shift behavior (this is expected for legacy data).
+func testBackwardsCompatibleUTCRules(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	facility.Timezone = "America/New_York"
+	require.NoError(t, env.DB.Save(facility).Error)
+
+	classStartDate := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	creditHours := int64(2)
+
+	class1 := models.ProgramClass{
+		ProgramID:      program.ID,
+		FacilityID:     facility.ID,
+		Capacity:       10,
+		Name:           "Legacy UTC Class",
+		InstructorName: "Instructor",
+		Description:    "Class using old UTC-based RRULE format",
+		StartDt:        classStartDate,
+		Status:         models.Scheduled,
+		CreditHours:    &creditHours,
+	}
+
+	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
+
+	createdClass1 := class1Resp.GetData()
+
+	// Old UTC-based RRULE format: 14:00 UTC = 10:00 AM EDT in August
+	event1Payload := map[string]interface{}{
+		"duration":        "1h",
+		"room_id":         roomID,
+		"recurrence_rule": "DTSTART:20260806T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+	}
+
+	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass1.ID), event1Payload).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
+
+	// Another UTC-based RRULE at the same UTC time should conflict
+	conflicts, err := env.DB.CheckRRuleConflicts(&models.ConflictCheckRequest{
+		FacilityID:     facility.ID,
+		RoomID:         roomID,
+		RecurrenceRule: "DTSTART:20260806T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+		Duration:       "1h",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, conflicts, "UTC-based RRULEs at same UTC time should still conflict (backwards compatibility)")
 }
