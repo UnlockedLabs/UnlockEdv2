@@ -96,7 +96,9 @@ func (e *ProgramClassEvent) GetRRuleWithTimezone(facilityTimezone string) (*rrul
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse event recurrence rule: %w", err)
 	}
-	rruleOptions.Dtstart = rruleOptions.Dtstart.In(time.UTC)
+	// NOTE: We no longer convert Dtstart to UTC here.
+	// For timezone-aware RRULEs (DTSTART;TZID=...), this preserves wall-clock time across DST.
+	// For legacy UTC-based RRULEs (DTSTART:...Z), the DTSTART is already in UTC.
 	if !rruleOptions.Until.IsZero() {
 		loc := rruleOptions.Until.Location()
 		endOfDay := time.Date(

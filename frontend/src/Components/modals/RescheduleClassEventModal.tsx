@@ -84,16 +84,9 @@ export const RescheduleClassEventModal = forwardRef(function (
         }
 
         //reschedule logic
-        const timeZoneStartDateTime = fromZonedTime(
-            `${data.date}T${data.start_time}`,
-            user.timezone
-        );
-
-        const rescheduledRule = new RRule({
-            freq: RRule.DAILY,
-            count: 1,
-            dtstart: timeZoneStartDateTime
-        }).toString();
+        const dateStr = (data.date as string).replace(/-/g, '');
+        const timeStr = (data.start_time as string).replace(':', '') + '00';
+        const rescheduledRule = `DTSTART;TZID=${user.timezone}:${dateStr}T${timeStr}\nRRULE:FREQ=DAILY;COUNT=1`;
         const duration = formatDuration(
             data.start_time as string,
             data.end_time as string
