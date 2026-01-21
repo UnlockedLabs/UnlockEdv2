@@ -99,8 +99,8 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		}
 
 		if _, ok := enrolledSet[attendances[i].UserID]; !ok {
-			return writeJsonResponse(w, http.StatusBadRequest,
-				fmt.Sprintf("user %d is not enrolled in class %d", attendances[i].UserID, classId))
+			// just logging this since we may need to take past classes attendance
+			log.warnf("user %d is not enrolled in class %d", attendances[i].UserID, classId)
 		}
 		attendances[i].EventID = uint(eventID)
 		overrideForDate := findOverrideForDate(overrides, attendances[i].Date)

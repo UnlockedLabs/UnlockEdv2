@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -176,6 +177,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&qryCtx.Total).Error; err != nil {
 		return nil, err
 	}
+
 	selectClause := `
 		SELECT
 			e.id AS enrollment_id,
@@ -205,12 +207,12 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 
 	finalQuery += " LIMIT ? OFFSET ?"
 	args = append(args, qryCtx.PerPage, qryCtx.CalcOffset())
-
 	var results []models.EnrollmentAttendance
-	if err := db.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
+
+	newSession := db.Session(&gorm.Session{NewDB: true})
+	if err := newSession.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
 		return nil, err
 	}
-
 	return results, nil
 }
 
