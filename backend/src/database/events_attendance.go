@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -165,6 +166,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&qryCtx.Total).Error; err != nil {
 		return nil, err
 	}
+
 	selectClause := `
 		SELECT
 			e.id AS enrollment_id,
@@ -194,12 +196,12 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 
 	finalQuery += " LIMIT ? OFFSET ?"
 	args = append(args, qryCtx.PerPage, qryCtx.CalcOffset())
-
 	var results []models.EnrollmentAttendance
-	if err := db.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
+
+	newSession := db.Session(&gorm.Session{NewDB: true})
+	if err := newSession.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
 		return nil, err
 	}
-
 	return results, nil
 }
 
@@ -219,8 +221,8 @@ func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classI
 			end
 		) * 100.0 /
 		nullif(
-			(select count(*) from program_class_enrollments e 
-			 where e.class_id = ? 
+			(select count(*) from program_class_enrollments e
+			 where e.class_id = ?
 			   and e.enrolled_at <= ?
 			   and (e.enrollment_ended_at IS NULL OR e.enrollment_ended_at >= ?)),
 			0
@@ -279,10 +281,10 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 	}
 
 	attendanceQuery := fmt.Sprintf(`select name_first, name_last, doc_id, flag_type from (
-			select u.name_first, u.name_last, 
+			select u.name_first, u.name_last,
 			u.doc_id, 'no_attendance' as flag_type %s %s
 			union all
-			select u.name_first, u.name_last, 
+			select u.name_first, u.name_last,
 			u.doc_id, 'multiple_absences' as flag_type %s %s
 		) AS attendance_flags
 		ORDER BY name_last, name_first
