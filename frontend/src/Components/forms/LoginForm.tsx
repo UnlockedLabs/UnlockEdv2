@@ -11,6 +11,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import API from '@/api/api';
 import { useEffect, useState } from 'react';
 import { useTourContext } from '@/Context/TourContext';
+import { tabSessionManager } from '@/tabSession';
 
 interface Inputs {
     identifier: string;
@@ -91,6 +92,7 @@ export default function LoginForm() {
             data
         )) as ServerResponseOne<AuthResponse>;
         if (resp.success) {
+            tabSessionManager.onLogin();
             if (resp.data.first_login) {
                 setTourState({ tourActive: true });
             }
