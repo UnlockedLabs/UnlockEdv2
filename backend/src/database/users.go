@@ -211,12 +211,7 @@ func (db *DB) CreateUser(user *models.User) error {
 }
 
 func (db *DB) DeleteUser(id int) error {
-	updates := map[string]any{
-		"deleted_at": time.Now(),
-	}
-	if userID, ok := db.Statement.Context.Value(models.UserIDKey).(uint); ok {
-		updates["update_user_id"] = userID
-	}
+	updates := db.softDeleteMap()
 	result := db.Model(&models.User{}).
 		Where("id = ? AND deleted_at IS NULL", id).
 		Updates(updates)
