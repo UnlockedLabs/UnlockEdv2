@@ -227,6 +227,16 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 	}
 }
 
+func (db *DB) softDeleteMap() map[string]any {
+	updates := map[string]any{
+		"deleted_at": time.Now(),
+	}
+	if userID, ok := db.Statement.Context.Value(models.UserIDKey).(uint); ok {
+		updates["update_user_id"] = userID
+	}
+	return updates
+}
+
 const (
 	defaultLeftMenuLinks = `[{
 			"title": "Unlocked Labs",

@@ -3,7 +3,6 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -54,12 +53,7 @@ func (db *DB) UpdateFacility(facility *models.Facility, id uint) error {
 }
 
 func (db *DB) DeleteFacility(id int) error {
-	updates := map[string]any{
-		"deleted_at": time.Now(),
-	}
-	if userID, ok := db.Statement.Context.Value(models.UserIDKey).(uint); ok {
-		updates["update_user_id"] = userID
-	}
+	updates := db.softDeleteMap()
 	result := db.Model(&models.Facility{}).
 		Where("id = ? AND deleted_at IS NULL", fmt.Sprintf("%d", id)).
 		Updates(updates)

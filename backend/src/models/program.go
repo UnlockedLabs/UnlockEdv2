@@ -90,12 +90,12 @@ var AllCreditTypes = []CreditType{
 
 type Program struct {
 	DatabaseFields
-	Name         string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
-	Description  string      `json:"description" gorm:"not null" validate:"required,max=255"`
-	FundingType  FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
-	IsActive     bool        `json:"is_active" gorm:"not null"`
-	IsFavorited  bool        `json:"is_favorited" gorm:"-"`
-	ArchivedAt   *time.Time  `json:"archived_at"`
+	Name        string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
+	Description string      `json:"description" gorm:"not null" validate:"required,max=255"`
+	FundingType FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
+	IsActive    bool        `json:"is_active" gorm:"not null"`
+	IsFavorited bool        `json:"is_favorited" gorm:"-"`
+	ArchivedAt  *time.Time  `json:"archived_at"`
 
 	ProgramTypes       []ProgramType        `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	ProgramCreditTypes []ProgramCreditType  `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
