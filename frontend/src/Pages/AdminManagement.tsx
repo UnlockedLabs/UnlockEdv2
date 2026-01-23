@@ -173,6 +173,8 @@ export default function AdminManagement() {
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
+                                'Last Active (Newest)': 'last_login desc',
+                                'Last Active (Oldest)': 'last_login asc',
                                 'Account Created (Newest) ': 'created_at desc',
                                 'Account Created (Oldest) ': 'created_at asc'
                             }}
