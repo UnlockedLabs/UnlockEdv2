@@ -250,10 +250,8 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 
 	// Build individual filter label/value parameters for proper spacing in JRXML.
 	// Each filter line is passed as FilterLabelN and FilterValueN pairs.
-	// This allows JRXML to position labels (at x=10) and values (at x=105) separately,
-	// creating consistent spacing regardless of label length.
 	filterCount := len(filterSummary)
-	maxFilters := 6 // Maximum filters: Date Range, Facility, Resident, Class Status, Program Types, Funding Types
+	maxFilters := 6
 
 	params := []jasper.Parameter{
 		{Key: "ReportTitle", Value: title},
@@ -262,7 +260,7 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		{Key: "FilterCount", Value: fmt.Sprintf("%d", filterCount)},
 	}
 
-	// Add individual filter label and value parameters (FilterLabel1, FilterValue1, etc.)
+
 	for i := 0; i < filterCount && i < maxFilters; i++ {
 		params = append(params,
 			jasper.Parameter{Key: fmt.Sprintf("FilterLabel%d", i+1), Value: filterSummary[i].Label},
