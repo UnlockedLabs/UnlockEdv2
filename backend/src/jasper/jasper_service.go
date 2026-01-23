@@ -240,7 +240,7 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 	// The quotes are added by go-jasper when generating command-line args.
 	//
 	// Solution: JRXML templates must use .replaceAll("\"", "") to strip quotes at display time.
-	// Future developers: ALL command-line parameters (ReportTitle, GeneratedDate, FilterSummary, etc.)
+	// Future developers: ALL command-line parameters (ReportTitle, GeneratedDate, FilterLabelN, FilterValueN, etc.)
 	// MUST include .replaceAll("\"", "") in their JRXML template fields.
 	// Table data from JSON does NOT need quote stripping (not passed as command-line args).
 	title := config.Title
@@ -248,20 +248,26 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		title = "Report"
 	}
 
-	filterSummaryText := ""
-	if len(filterSummary) > 0 {
-		var filterLines []string
-		for _, filter := range filterSummary {
-			filterLines = append(filterLines, fmt.Sprintf("%s: %s", filter.Label, filter.Value))
-		}
-		filterSummaryText = strings.Join(filterLines, "\n")
-	}
+	// Build individual filter label/value parameters for proper spacing in JRXML.
+	// Each filter line is passed as FilterLabelN and FilterValueN pairs.
+	// This allows JRXML to position labels (at x=10) and values (at x=105) separately,
+	// creating consistent spacing regardless of label length.
+	filterCount := len(filterSummary)
+	maxFilters := 6 // Maximum filters: Date Range, Facility, Resident, Class Status, Program Types, Funding Types
 
 	params := []jasper.Parameter{
 		{Key: "ReportTitle", Value: title},
 		{Key: "GeneratedDate", Value: time.Now().Format("January 2, 2006 at 3:04 PM")},
 		{Key: "LogoImage", Value: base64.StdEncoding.EncodeToString(src.UnlockedLogoImg)},
-		{Key: "FilterSummary", Value: filterSummaryText},
+		{Key: "FilterCount", Value: fmt.Sprintf("%d", filterCount)},
+	}
+
+	// Add individual filter label and value parameters (FilterLabel1, FilterValue1, etc.)
+	for i := 0; i < filterCount && i < maxFilters; i++ {
+		params = append(params,
+			jasper.Parameter{Key: fmt.Sprintf("FilterLabel%d", i+1), Value: filterSummary[i].Label},
+			jasper.Parameter{Key: fmt.Sprintf("FilterValue%d", i+1), Value: filterSummary[i].Value},
+		)
 	}
 
 	tempDir := os.Getenv("JASPER_TEMP_DIR")
