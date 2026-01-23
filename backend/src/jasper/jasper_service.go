@@ -184,6 +184,35 @@ func GenerateUsageReportPDF(db *database.DB, queryCtx *models.QueryContext, hasP
 	return service.generateUsageReportPDF(userID)
 }
 
+// recompileTemplate compiles a .jrxml file using JasperStarter
+// This is called when a .jasper file is missing or corrupt (e.g., Studio-compiled with UUID suffix)
+func recompileTemplate(templateDir, baseTemplateName string) error {
+	jrxmlPath := filepath.Join(templateDir, baseTemplateName+".jrxml")
+
+	logrus.WithFields(logrus.Fields{
+		"template": baseTemplateName,
+	}).Info("Recompiling template from .jrxml source with JasperStarter")
+
+	cmd := exec.Command("/opt/jasperstarter/bin/jasperstarter", "compile", jrxmlPath)
+	cmd.Dir = templateDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"template": baseTemplateName,
+			"error":    err,
+			"output":   string(output),
+		}).Error("Failed to recompile template")
+		return fmt.Errorf("failed to recompile template %s: %w", baseTemplateName, err)
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"template": baseTemplateName,
+		"output":   string(output),
+	}).Info("Successfully recompiled template from .jrxml source")
+
+	return nil
+}
+
 func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine, templateName string) ([]byte, error) {
 	type ReportData struct {
 		Rows [][]string `json:"rows"`
@@ -203,6 +232,17 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		return nil, fmt.Errorf("failed to marshal report data: %w", err)
 	}
 
+	// IMPORTANT: The go-jasper library wraps string parameter values in quotes for command-line safety.
+	// See: https://github.com/evertonvps/go-jasper/blob/main/go-jasper.go#L88
+	//
+	// This causes JasperReports to receive parameter values like "\"Attendance\"" instead of "Attendance".
+	// We CANNOT strip quotes here because the backend values don't have quotes yet!
+	// The quotes are added by go-jasper when generating command-line args.
+	//
+	// Solution: JRXML templates must use .replaceAll("\"", "") to strip quotes at display time.
+	// Future developers: ALL command-line parameters (ReportTitle, GeneratedDate, FilterSummary, etc.)
+	// MUST include .replaceAll("\"", "") in their JRXML template fields.
+	// Table data from JSON does NOT need quote stripping (not passed as command-line args).
 	title := config.Title
 	if title == "" {
 		title = "Report"
@@ -273,16 +313,45 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		templateDir = "/templates"
 	}
 	compiledTemplatePath := filepath.Join(templateDir, templateName+".jasper")
+	jrxmlTemplatePath := filepath.Join(templateDir, templateName+".jrxml")
 
 	pdfBytes, err := gj.Process(compiledTemplatePath)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"template_path": compiledTemplatePath,
-			"template_dir":  templateDir,
-			"error":         err,
-		}).Error("Failed to process compiled template")
+		// Check if this is a Jaspersoft Studio compilation error (NoClassDefFoundError with UUID suffix)
+		// If so, recompile from .jrxml source and retry
+		errStr := err.Error()
+		if strings.Contains(errStr, "NoClassDefFoundError") && strings.Contains(errStr, "_") {
+			logrus.WithFields(logrus.Fields{
+				"template":   templateName,
+				"error":      err,
+				"jrxml_path": jrxmlTemplatePath,
+			}).Warn("Detected Jaspersoft Studio-compiled .jasper file (UUID suffix), recompiling with JasperStarter")
 
-		return nil, fmt.Errorf("failed to process template: %w", err)
+			if recompileErr := recompileTemplate(templateDir, templateName); recompileErr != nil {
+				return nil, fmt.Errorf("failed to recover from Studio compilation: %w (original error: %w)", recompileErr, err)
+			}
+
+			pdfBytes, err = gj.Process(compiledTemplatePath)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"template_path": compiledTemplatePath,
+					"template_dir":  templateDir,
+					"error":         err,
+				}).Error("Failed to process compiled template after recompilation")
+				return nil, fmt.Errorf("failed to process template after recompilation: %w", err)
+			}
+
+			logrus.WithFields(logrus.Fields{
+				"template": templateName,
+			}).Info("Successfully recovered from Studio compilation and generated PDF")
+		} else {
+			logrus.WithFields(logrus.Fields{
+				"template_path": compiledTemplatePath,
+				"template_dir":  templateDir,
+				"error":         err,
+			}).Error("Failed to process compiled template")
+			return nil, fmt.Errorf("failed to process template: %w", err)
+		}
 	}
 
 	return pdfBytes, nil
