@@ -102,26 +102,26 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.FacilityID = claims.FacilityID
 	class.ProgramID = uint(id)
+
+	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
 		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
-		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+		conflictReq = &models.ConflictCheckRequest{
 			FacilityID:     claims.FacilityID,
 			RoomID:         *class.Events[0].RoomID,
 			RecurrenceRule: class.Events[0].RecurrenceRule,
 			Duration:       class.Events[0].Duration,
-		})
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		if len(conflicts) > 0 {
-			return writeConflictResponse(w, conflicts)
 		}
 	}
-	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
+
+	newClass, conflicts, err := srv.WithUserContext(r).CreateProgramClass(&class, conflictReq)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	if len(conflicts) > 0 {
+		return writeConflictResponse(w, conflicts)
 	}
 	log.add("program_id", id)
 	log.add("class_id", newClass.ID)
@@ -149,6 +149,8 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = models.UintPtr(claims.UserID)
+
+	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
 		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
@@ -162,24 +164,22 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 			existingRoomID = *existing.Events[0].RoomID
 		}
 		if *class.Events[0].RoomID != existingRoomID {
-			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			conflictReq = &models.ConflictCheckRequest{
 				FacilityID:     claims.FacilityID,
 				RoomID:         *class.Events[0].RoomID,
 				RecurrenceRule: existing.Events[0].RecurrenceRule,
 				Duration:       existing.Events[0].Duration,
 				ExcludeEventID: &existing.Events[0].ID,
-			})
-			if err != nil {
-				return newDatabaseServiceError(err)
-			}
-			if len(conflicts) > 0 {
-				return writeConflictResponse(w, conflicts)
 			}
 		}
 	}
-	updated, err := srv.WithUserContext(r).UpdateProgramClass(&class, id)
+
+	updated, conflicts, err := srv.WithUserContext(r).UpdateProgramClass(&class, id, conflictReq)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	if len(conflicts) > 0 {
+		return writeConflictResponse(w, conflicts)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
 }

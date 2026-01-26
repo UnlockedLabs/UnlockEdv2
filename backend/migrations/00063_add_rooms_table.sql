@@ -7,8 +7,12 @@ CREATE TABLE public.rooms (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE,
+    create_user_id INTEGER REFERENCES public.users(id) ON DELETE SET NULL,
+    update_user_id INTEGER REFERENCES public.users(id) ON DELETE SET NULL,
     FOREIGN KEY (facility_id) REFERENCES public.facilities(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+CREATE INDEX idx_rooms_create_user_id ON public.rooms(create_user_id);
+CREATE INDEX idx_rooms_update_user_id ON public.rooms(update_user_id);
 CREATE INDEX idx_rooms_facility_id ON public.rooms(facility_id);
 CREATE INDEX idx_rooms_deleted_at ON public.rooms(deleted_at);
 CREATE UNIQUE INDEX idx_rooms_facility_name ON public.rooms(facility_id, name) WHERE deleted_at IS NULL;

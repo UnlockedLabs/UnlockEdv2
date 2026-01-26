@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"context"
 	"fmt"
 	"strings"
 
@@ -41,27 +40,66 @@ func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.Program
 	return content, nil
 }
 
-func (db *DB) CreateProgramClass(content *models.ProgramClass) (*models.ProgramClass, error) {
-	err := Validate().Struct(content)
+func (db *DB) CreateProgramClass(content *models.ProgramClass, conflictReq *models.ConflictCheckRequest) (*models.ProgramClass, []models.RoomConflict, error) {
+	if err := Validate().Struct(content); err != nil {
+		return nil, nil, newCreateDBError(err, "create program classes validation error")
+	}
+
+	if conflictReq == nil {
+		if err := db.Create(&content).Error; err != nil {
+			return nil, nil, newCreateDBError(err, "program classes")
+		}
+		return content, nil, nil
+	}
+
+	tx := db.Begin()
+	if tx.Error != nil {
+		return nil, nil, NewDBError(tx.Error, "unable to start transaction")
+	}
+
+	conflicts, err := LockRoomAndCheckConflicts(tx, conflictReq)
 	if err != nil {
-		return nil, newCreateDBError(err, "create program classes validation error")
+		tx.Rollback()
+		return nil, nil, err
 	}
-	if err := db.Create(&content).Error; err != nil {
-		return nil, newCreateDBError(err, "program classes")
+	if len(conflicts) > 0 {
+		tx.Rollback()
+		return nil, conflicts, nil
 	}
-	return content, nil
+
+	if err := tx.Create(&content).Error; err != nil {
+		tx.Rollback()
+		return nil, nil, newCreateDBError(err, "program classes")
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, nil, NewDBError(err, "unable to commit transaction")
+	}
+	return content, nil, nil
 }
 
-func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.ProgramClass, error) {
+func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictReq *models.ConflictCheckRequest) (*models.ProgramClass, []models.RoomConflict, error) {
 	var allChanges []models.ChangeLogEntry
 	existing := &models.ProgramClass{}
 	if err := db.Preload("Events").First(existing, "id = ?", id).Error; err != nil {
-		return nil, newNotFoundDBError(err, "program classes")
+		return nil, nil, newNotFoundDBError(err, "program classes")
 	}
 
 	trans := db.Begin()
 	if trans.Error != nil {
-		return nil, NewDBError(trans.Error, "unable to start the database transaction")
+		return nil, nil, NewDBError(trans.Error, "unable to start the database transaction")
+	}
+
+	if conflictReq != nil {
+		conflicts, err := LockRoomAndCheckConflicts(trans, conflictReq)
+		if err != nil {
+			trans.Rollback()
+			return nil, nil, err
+		}
+		if len(conflicts) > 0 {
+			trans.Rollback()
+			return nil, conflicts, nil
+		}
 	}
 
 	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled"}
@@ -83,13 +121,13 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.
 	models.UpdateStruct(existing, content)
 	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Updates(&existing).Error; err != nil {
 		trans.Rollback()
-		return nil, newUpdateDBError(err, "program classes")
+		return nil, nil, newUpdateDBError(err, "program classes")
 	}
 
 	if needsRoomUpdate {
 		if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("room_id", newRoomID).Error; err != nil {
 			trans.Rollback()
-			return nil, newUpdateDBError(err, "program class event room")
+			return nil, nil, newUpdateDBError(err, "program class event room")
 		}
 		existing.Events[0].RoomID = newRoomID
 	}
@@ -97,15 +135,15 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.
 	if len(allChanges) > 0 {
 		if err := trans.Create(&allChanges).Error; err != nil {
 			trans.Rollback()
-			return nil, newCreateDBError(err, "change_log_entries")
+			return nil, nil, newCreateDBError(err, "change_log_entries")
 		}
 	}
 
 	if err := trans.Commit().Error; err != nil {
-		return nil, NewDBError(err, "unable to commit the database transaction")
+		return nil, nil, NewDBError(err, "unable to commit the database transaction")
 	}
 
-	return existing, nil
+	return existing, nil, nil
 }
 
 func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
