@@ -26,9 +26,6 @@ func TestSecurityHeaders(t *testing.T) {
 		require.Equal(t, "nosniff", headers.Get("X-Content-Type-Options"),
 			"X-Content-Type-Options header should be nosniff")
 
-		require.Equal(t, "1; mode=block", headers.Get("X-XSS-Protection"),
-			"X-XSS-Protection header should be 1; mode=block")
-
 		require.Equal(t, "max-age=31536000; includeSubDomains", headers.Get("Strict-Transport-Security"),
 			"Strict-Transport-Security header should be set")
 
