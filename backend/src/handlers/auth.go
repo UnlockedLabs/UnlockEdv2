@@ -107,7 +107,9 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 			}
 		}
 
+		// Add claims to context for authentication
 		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
+		ctx = context.WithValue(ctx, models.UserIDKey, claims.UserID)
 
 		if err := s.ensureCSRFToken(w, r.WithContext(ctx)); err != nil {
 			log.Error("Failed to set CSRF token: ", err)
@@ -365,7 +367,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	log.add("username_to_reset", user.Username)
 	if claims.Role == models.SystemAdmin && form.FacilityName != "" {
 		facility := models.Facility{Name: form.FacilityName, Timezone: form.Timezone}
-		if err := srv.Db.UpdateFacility(&facility, 1); err != nil {
+		if err := srv.WithUserContext(r).UpdateFacility(&facility, 1); err != nil {
 			tx.Rollback()
 			return newDatabaseServiceError(err)
 		}

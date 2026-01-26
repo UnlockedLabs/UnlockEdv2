@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func (db *DB) GetAllFacilities(page, itemsPerPage int) (int64, []models.Facility, error) {
@@ -43,7 +44,8 @@ func (db *DB) CreateFacility(facility *models.Facility) error {
 }
 
 func (db *DB) UpdateFacility(facility *models.Facility, id uint) error {
-	if err := db.Model(models.Facility{}).Where("id = ?", id).Updates(&facility).Error; err != nil {
+	facility.ID = id
+	if err := db.Save(&facility).Error; err != nil {
 		log.WithField("facility_id", facility.ID).Error("error updating facility name database/UpdateFacility")
 		return newUpdateDBError(err, "facilities")
 	}
@@ -51,8 +53,15 @@ func (db *DB) UpdateFacility(facility *models.Facility, id uint) error {
 }
 
 func (db *DB) DeleteFacility(id int) error {
-	if err := db.Delete(&models.Facility{}, "id = ?", fmt.Sprintf("%d", id)).Error; err != nil {
-		return newDeleteDBError(err, "facilities")
+	updates := db.softDeleteMap()
+	result := db.Model(&models.Facility{}).
+		Where("id = ? AND deleted_at IS NULL", fmt.Sprintf("%d", id)).
+		Updates(updates)
+	if result.Error != nil {
+		return newDeleteDBError(result.Error, "facilities")
+	}
+	if result.RowsAffected == 0 {
+		return newDeleteDBError(gorm.ErrRecordNotFound, "facilities")
 	}
 	return nil
 }

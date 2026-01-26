@@ -77,6 +77,17 @@ func StringPtr(s string) *string {
 	return &s
 }
 
+func UintPtr(u uint) *uint {
+	return &u
+}
+
+func DerefUint(ptr *uint) uint {
+	if ptr == nil {
+		return 0
+	}
+	return *ptr
+}
+
 type QueryContext struct {
 	Params             url.Values
 	Page               int

@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"context"
 	"fmt"
 	"time"
 )
@@ -110,10 +109,10 @@ func (db *DB) DeleteProgramClassEnrollments(id int) error {
 	return nil
 }
 
-func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userIds []int, classId int) error {
+func (db *DB) GraduateEnrollments(adminEmail string, userIds []int, classId int) error {
 	enrollment := models.ProgramClassEnrollment{}
 	// begin transaction
-	tx := db.WithContext(ctx).Begin()
+	tx := db.Begin()
 
 	// preload necessary relationships
 	err := tx.Model(&models.ProgramClassEnrollment{}).
@@ -176,6 +175,11 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status m
 	if changeReason != nil {
 		updates["change_reason"] = *changeReason
 	}
+	if ctx := db.Statement.Context; ctx != nil {
+		if userID, ok := ctx.Value(models.UserIDKey).(uint); ok {
+			updates["update_user_id"] = userID
+		}
+	}
 	if err := db.Model(&models.ProgramClassEnrollment{}).
 		Where("class_id = ? AND user_id IN (?)", classId, userIds).
 		Set("class_id", classId).
@@ -185,17 +189,23 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status m
 	return nil
 }
 
-func (db *DB) UpdateProgramClassEnrollmentDate(ctx context.Context, enrollmentId int, enrolledDate time.Time) error {
-	if err := db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
+func (db *DB) UpdateProgramClassEnrollmentDate(enrollmentId int, enrolledDate time.Time) error {
+	update := map[string]any{"enrolled_at": enrolledDate}
+	if ctx := db.Statement.Context; ctx != nil {
+		if userID, ok := ctx.Value(models.UserIDKey).(uint); ok {
+			update["update_user_id"] = userID
+		}
+	}
+	if err := db.Model(&models.ProgramClassEnrollment{}).
 		Where("id = ?", enrollmentId).
-		Update("enrolled_at", enrolledDate).Error; err != nil {
+		Updates(update).Error; err != nil {
 		return newUpdateDBError(err, "enrollment date")
 	}
 	return nil
 }
 
-func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap map[string]any) error {
-	tx := db.WithContext(ctx).Begin()
+func (db *DB) UpdateProgramClasses(classIDs []int, classMap map[string]any) error {
+	tx := db.Begin()
 	if tx.Error != nil {
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}

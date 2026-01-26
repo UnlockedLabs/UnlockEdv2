@@ -57,6 +57,12 @@ func (dt *DateRange) LoadLocation(location *time.Location) {
 }
 
 func (secEvent *ProgramClassEvent) BeforeCreate(tx *gorm.DB) (err error) {
+	if err := secEvent.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
+	// For events we only want to stamp creator on insert; leave update_user_id nil until first update
+	secEvent.UpdateUserID = nil
+
 	duration, parseErr := time.ParseDuration(secEvent.Duration)
 	if parseErr != nil {
 		err = parseErr
@@ -183,6 +189,13 @@ type ProgramClassEventAttendance struct {
 }
 
 func (ProgramClassEventAttendance) TableName() string { return "program_class_event_attendance" }
+
+func (p *ProgramClassEventAttendance) BeforeCreate(tx *gorm.DB) error {
+	if err := p.DatabaseFields.BeforeCreate(tx); err != nil {
+		return err
+	}
+	return nil
+}
 
 type ClassEventInstance struct {
 	EventID           uint                          `json:"event_id"`

@@ -69,7 +69,7 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 	link.FacilityID = facilityID
 	link.ThumbnailUrl = srv.getFavicon(link.Url)
 	log.infof("Adding helpful link icon %s", link.ThumbnailUrl)
-	if err := srv.Db.AddHelpfulLink(&link); err != nil {
+	if err := srv.WithUserContext(r).AddHelpfulLink(&link); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Link added successfully")
@@ -86,7 +86,7 @@ func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sL
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
 	link.ThumbnailUrl = srv.getFavicon(link.Url)
-	if err = srv.Db.EditLink(uint(id), link); err != nil {
+	if err = srv.WithUserContext(r).EditLink(uint(id), link); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, link)
@@ -98,7 +98,7 @@ func (srv *Server) handleToggleVisibilityStatus(w http.ResponseWriter, r *http.R
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
 	log.infof("Toggling visibility status for link with id %d", id)
-	if err := srv.Db.ToggleVisibilityStatus(id); err != nil {
+	if err := srv.WithUserContext(r).ToggleVisibilityStatus(id); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Visibility status toggled")
@@ -109,7 +109,7 @@ func (srv *Server) handleDeleteLink(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
-	if err := srv.Db.DeleteLink(uint(id)); err != nil {
+	if err := srv.WithUserContext(r).DeleteLink(uint(id)); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Link deleted successfully")

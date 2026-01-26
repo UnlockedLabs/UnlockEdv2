@@ -183,7 +183,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
 		return unicode.IsLetter(char) || unicode.IsDigit(char)
 	})
-	err = srv.Db.CreateUser(&reqForm.User)
+	err = srv.WithUserContext(r).CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -258,7 +258,7 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 		log.add("deleted_kratos_id", user.KratosID)
 		return newInternalServerServiceError(err, "error deleting user in kratos")
 	}
-	if err := srv.Db.DeleteUser(id); err != nil {
+	if err := srv.WithUserContext(r).DeleteUser(id); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "User deleted successfully")
@@ -300,7 +300,7 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
 	models.UpdateStruct(toUpdate, &user)
-	err = srv.Db.UpdateUser(toUpdate)
+	err = srv.WithUserContext(r).UpdateUser(toUpdate)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
