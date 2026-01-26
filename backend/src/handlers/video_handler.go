@@ -29,6 +29,10 @@ func validateVideoURL(urlStr string) error {
 	if strings.ContainsAny(urlStr, ";<>|&$`\\\"'") {
 		return fmt.Errorf("%w: contains invalid characters", errInvalidVideoURL)
 	}
+	lowerURL := strings.ToLower(urlStr)
+	if strings.ContainsAny(urlStr, "\n\r") || strings.Contains(lowerURL, "%0a") || strings.Contains(lowerURL, "%0d") {
+		return fmt.Errorf("%w: contains newline characters", errInvalidVideoURL)
+	}
 	return nil
 }
 
