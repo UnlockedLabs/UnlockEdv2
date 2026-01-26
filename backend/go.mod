@@ -20,8 +20,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
 	github.com/teambition/rrule-go v1.8.2
-	golang.org/x/net v0.48.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/oauth2 v0.27.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )

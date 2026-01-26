@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"context"
 	"fmt"
 	"strings"
 
