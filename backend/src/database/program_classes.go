@@ -338,7 +338,7 @@ func (db *DB) GetFacilityInstructors(facilityID int) ([]models.Instructor, error
 
 	if err := db.Table("users u").
 		Select("u.id, u.username, u.name_first, u.name_last, u.email").
-		Where("u.facility_id = ? AND u.role = ? AND u.deactivated_at IS NULL", facilityID, "facility_admin").
+		Where("u.facility_id = ? AND u.role IN ? AND u.deactivated_at IS NULL", facilityID, []string{"facility_admin", "department_admin"}).
 		Order("u.name_first, u.name_last").
 		Find(&instructors).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "instructors")
@@ -365,8 +365,9 @@ func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint) (string,
 	var instructorName string
 	err := db.Table("users").
 		Select("COALESCE(name_first || ' ' || name_last, username)").
-		Where("id = ? AND facility_id = ? AND role = ?",
-			instructorID, facilityID, models.FacilityAdmin).
+		Where("id = ? AND facility_id = ? AND role IN ?",
+			instructorID, facilityID,
+			[]models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}).
 		Scan(&instructorName).Error
 	if err != nil {
 		return "", err
