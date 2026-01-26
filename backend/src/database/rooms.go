@@ -9,6 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (db *DB) GetRoomsForFacility(facilityID uint) ([]models.Room, error) {
@@ -37,9 +39,21 @@ func (db *DB) CreateRoom(room *models.Room) (*models.Room, error) {
 	return room, nil
 }
 
+func LockRoomAndCheckConflicts(tx *gorm.DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	var room models.Room
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&room, req.RoomID).Error; err != nil {
+		return nil, newNotFoundDBError(err, "room")
+	}
+	return checkRRuleConflictsInternal(&DB{tx}, req)
+}
+
 const maxConflictsToReturn = 50
 
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	return checkRRuleConflictsInternal(db, req)
+}
+
+func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
 	if req.RecurrenceRule == "" {
 		return nil, NewDBError(errors.New("recurrence rule is required"), "invalid conflict check request")
 	}
