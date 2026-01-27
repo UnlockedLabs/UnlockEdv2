@@ -226,9 +226,9 @@ export const getClassMgmtData: LoaderFunction = async ({
         if (classResp.data.status === SelectedClassStatus.Scheduled) {
             attendanceRate = 0;
             missingAttendance = 0;
-        } else if (cls.events && cls.events.length > 0) {
+        } else {
             const resp2 = (await API.get(
-                `program-classes/${class_id}/events/${cls.events[0].id}/attendance-rate`
+                `program-classes/${class_id}/attendance-rate`
             )) as ServerResponseOne<{ attendance_rate: number }>;
             attendanceRate = resp2.success ? resp2.data.attendance_rate : 0;
             const resp3 = (await API.get(

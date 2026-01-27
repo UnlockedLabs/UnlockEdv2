@@ -37,6 +37,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/missing-attendance", srv.handleGetMissingAttendance, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-rate", srv.handleGetCumulativeAttendanceRate, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
 			var programClass models.ProgramClass
@@ -266,4 +267,19 @@ func (srv *Server) handleGetMissingAttendance(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, totalMissing)
+}
+
+func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	attendanceRate, err := srv.Db.GetCumulativeAttendanceRateForClass(r.Context(), classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	response := map[string]float64{
+		"attendance_rate": attendanceRate,
+	}
+	return writeJsonResponse(w, http.StatusOK, response)
 }
