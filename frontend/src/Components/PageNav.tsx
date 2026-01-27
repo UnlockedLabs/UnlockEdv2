@@ -6,7 +6,9 @@ import { Facility, RouteTitleHandler, TitleHandler, UserRole } from '@/common';
 import { useMatches } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { useBreadcrumb } from '@/Context/BreadcrumbContext';
 import { resolveTitle } from '@/routeLoaders';
+import Breadcrumb from './Breadcrumb';
 
 export default function PageNav({
     showOpenMenu,
@@ -25,6 +27,7 @@ export default function PageNav({
     const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
     const pageTitle = resolveTitle(routeHandle, routeData);
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
+    const { breadcrumbItems } = useBreadcrumb();
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -98,22 +101,29 @@ export default function PageNav({
     return (
         <div className="px-2 py-3 flex justify-between items-center">
             <div
-                className={`flex items-center gap-3 ${showOpenMenu ? 'px-3' : ''}`}
+                className={`flex flex-col gap-1 ${showOpenMenu ? 'px-3' : ''}`}
             >
-                {showOpenMenu ? (
-                    <ULIComponent
-                        onClick={onShowNav}
-                        icon={Bars3Icon}
-                        iconClassName="cursor-pointer"
-                    />
-                ) : (
-                    <ULIComponent
-                        onClick={onShowNav}
-                        icon={Bars3Icon}
-                        iconClassName="lg:hidden cursor-pointer"
-                    />
+                <div className="flex items-center gap-3">
+                    {showOpenMenu ? (
+                        <ULIComponent
+                            onClick={onShowNav}
+                            icon={Bars3Icon}
+                            iconClassName="cursor-pointer"
+                        />
+                    ) : (
+                        <ULIComponent
+                            onClick={onShowNav}
+                            icon={Bars3Icon}
+                            iconClassName="lg:hidden cursor-pointer"
+                        />
+                    )}
+                </div>
+                {breadcrumbItems.length > 0 && (
+                    <div className={showOpenMenu ? '' : 'lg:pl-0 pl-9'}>
+                        <Breadcrumb items={breadcrumbItems} />
+                    </div>
                 )}
-                <h1>
+                <h1 className={showOpenMenu ? '' : 'lg:pl-0 pl-9'}>
                     {pageTitle === 'Library Viewer'
                         ? authLayoutPageTitle
                         : pageTitle}
