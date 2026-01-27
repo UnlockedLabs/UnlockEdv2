@@ -84,7 +84,7 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 			ExpectBodyContains("cannot record attendance for cancelled class date")
 	})
 
-	t.Run("Reject attendance for unenrolled user", func(t *testing.T) {
+	t.Run("Allow attendance for historically enrolled user", func(t *testing.T) {
 		attendanceData := []models.ProgramClassEventAttendance{
 			{
 				UserID:           unenrolledStudent.ID,
