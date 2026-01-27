@@ -157,6 +157,9 @@ export default function EventAttendance() {
         return { check_in_at: start, check_out_at: end };
     };
 
+    const isPresentLike = (status?: Attendance) =>
+        status === Attendance.Present || status === Attendance.Partial;
+
     const getAttendedMinutes = (row: LocalRowData) => {
         if (!isPresentLike(row.attendance_status)) {
             return null;
@@ -254,9 +257,6 @@ export default function EventAttendance() {
             </div>
         );
     }
-
-    const isPresentLike = (status?: Attendance) =>
-        status === Attendance.Present || status === Attendance.Partial;
 
     const handleSearch = (search: string) => {
         startTransition(() => {
