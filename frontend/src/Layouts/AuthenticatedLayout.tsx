@@ -4,6 +4,7 @@ import { useMatches, UIMatch, Outlet } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
 import { RouteLabel, RouteTitleHandler, TitleHandler } from '@/common';
 import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
+import { BreadcrumbProvider } from '@/Context/BreadcrumbContext';
 import WebsocketSession from '@/session_ws';
 import { useAuth } from '@/useAuth';
 import HelpCenter from '@/Pages/HelpCenter';
@@ -64,53 +65,57 @@ export default function AuthenticatedLayout() {
 
     return (
         <PageTitleProvider>
-            <div className="font-lato h-full">
-                <div title={title} />
-                <UnlockEdTour />
-                <div
-                    className={`drawer ${isNavPinned ? 'lg:drawer-open' : ''} `}
-                >
-                    <div className="drawer-content flex flex-col h-screen border-l border-grey-1">
-                        <main className="w-full h-full bg-background flex flex-col">
-                            <PageNav
-                                facilities={user?.facilities ?? []}
-                                showOpenMenu={!isNavPinned}
-                                onShowNav={showNav}
-                            />
-                            <div className="flex flex-1 relative min-h-0 overflow-y-auto">
-                                <div
-                                    className={`transition-all duration-100 ease-in-out ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
-                                >
-                                    <Outlet />
-                                </div>
-                                {isHelpOpen && (
-                                    <div className="w-80 bg-inner-background p-4 shadow-lg h-[85vh] max-h-full overflow-y-auto scrollbar">
-                                        <HelpCenter close={toggleHelpCenter} />
+            <BreadcrumbProvider>
+                <div className="font-lato h-full">
+                    <div title={title} />
+                    <UnlockEdTour />
+                    <div
+                        className={`drawer ${isNavPinned ? 'lg:drawer-open' : ''} `}
+                    >
+                        <div className="drawer-content flex flex-col h-screen border-l border-grey-1">
+                            <main className="w-full h-full bg-background flex flex-col">
+                                <PageNav
+                                    facilities={user?.facilities ?? []}
+                                    showOpenMenu={!isNavPinned}
+                                    onShowNav={showNav}
+                                />
+                                <div className="flex flex-1 relative min-h-0 overflow-y-auto">
+                                    <div
+                                        className={`transition-all duration-100 ease-in-out ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
+                                    >
+                                        <Outlet />
                                     </div>
-                                )}
-                            </div>
-                        </main>
-                    </div>
-                    <input
-                        id="nav-drawer"
-                        type="checkbox"
-                        className="drawer-toggle"
-                        checked={isNavOpen && !isNavPinned}
-                        onChange={() => setIsNavOpen(!isNavOpen)}
-                    />
-                    <div className="!overflow-visible drawer-side">
-                        <label
-                            htmlFor="nav-drawer"
-                            className="drawer-overlay"
-                        ></label>
-                        <Navbar
-                            onTogglePin={togglePin}
-                            isPinned={isNavPinned}
-                            onToggleHelpCenter={toggleHelpCenter}
+                                    {isHelpOpen && (
+                                        <div className="w-80 bg-inner-background p-4 shadow-lg h-[85vh] max-h-full overflow-y-auto scrollbar">
+                                            <HelpCenter
+                                                close={toggleHelpCenter}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </main>
+                        </div>
+                        <input
+                            id="nav-drawer"
+                            type="checkbox"
+                            className="drawer-toggle"
+                            checked={isNavOpen && !isNavPinned}
+                            onChange={() => setIsNavOpen(!isNavOpen)}
                         />
+                        <div className="!overflow-visible drawer-side">
+                            <label
+                                htmlFor="nav-drawer"
+                                className="drawer-overlay"
+                            ></label>
+                            <Navbar
+                                onTogglePin={togglePin}
+                                isPinned={isNavPinned}
+                                onToggleHelpCenter={toggleHelpCenter}
+                            />
+                        </div>
                     </div>
                 </div>
-            </div>
+            </BreadcrumbProvider>
         </PageTitleProvider>
     );
 }
