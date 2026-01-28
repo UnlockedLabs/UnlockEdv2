@@ -352,20 +352,16 @@ func (srv *Server) handleGetClassesByInstructor(w http.ResponseWriter, r *http.R
 		return newInvalidIdServiceError(fmt.Errorf("instructor ID must be 0 or positive"), "instructor ID")
 	}
 
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+
 	startDate := r.URL.Query().Get("start_date")
 	endDate := r.URL.Query().Get("end_date")
-	facilityIDStr := r.URL.Query().Get("facility_id")
 
-	if startDate == "" || endDate == "" || facilityIDStr == "" {
-		return newBadRequestServiceError(nil, "start_date, end_date, and facility_id are required")
+	if startDate == "" || endDate == "" {
+		return newBadRequestServiceError(nil, "start_date and end_date are required")
 	}
 
-	facilityId, err := strconv.Atoi(facilityIDStr)
-	if err != nil {
-		return newInvalidIdServiceError(err, "facility ID")
-	}
-
-	classes, err := srv.Db.GetClassesByInstructor(instructorId, facilityId, startDate, endDate)
+	classes, err := srv.Db.GetClassesByInstructor(instructorId, int(claims.FacilityID), startDate, endDate)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

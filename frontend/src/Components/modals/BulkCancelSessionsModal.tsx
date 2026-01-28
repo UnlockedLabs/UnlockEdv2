@@ -100,7 +100,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
         setError(null);
         try {
             const response = await API.get(
-                `instructors/${instructorId}/classes?start_date=${startDate}&end_date=${endDate}&facility_id=${facilityId}`
+                `instructors/${instructorId}/classes?start_date=${startDate}&end_date=${endDate}`
             );
 
             const classes = response.data as InstructorClassData[];
@@ -233,7 +233,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
             ) {
                 try {
                     const response = await API.get(
-                        `instructors/${request.instructorId}/classes?start_date=${request.startDate}&end_date=${request.endDate}&facility_id=${facilityId}`
+                        `instructors/${request.instructorId}/classes?start_date=${request.startDate}&end_date=${request.endDate}`
                     );
 
                     const classes = response.data as InstructorClassData[];
