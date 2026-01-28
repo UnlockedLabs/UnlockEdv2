@@ -360,6 +360,9 @@ export { RescheduleClassEventModal } from './RescheduleClassEventModal';
 export { RescheduleClassEventSeriesModal } from './RescheduleClassEventSeriesModal';
 
 export { BulkCancelSessionsModal } from './BulkCancelSessionsModal';
+export { BulkCancelSessionsFormModal } from './BulkCancelSessionsFormModal';
+export { BulkCancelSessionsConfirmModal } from './BulkCancelSessionsConfirmModal';
+export { BulkCancelSessionsPreview } from './BulkCancelSessionsPreview';
 
 // Bulk Upload Exports
 export { BulkUploadModal } from './BulkUploadModal';
