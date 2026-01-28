@@ -34,6 +34,7 @@ import moment from 'moment';
 import { toZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/useAuth';
 import { ShortCalendarEvent, Instructor } from '@/types/events';
+import useSWR from 'swr';
 
 export default function ClassManagementForm() {
     const { user } = useAuth();
@@ -79,8 +80,19 @@ export default function ClassManagementForm() {
 
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
-    const [instructors, setInstructors] = useState<Instructor[]>([]);
-    const [instructorsLoading, setInstructorsLoading] = useState(false);
+
+    const {
+        data: instructorsResponse,
+        error: instructorsError,
+        isLoading: instructorsLoading
+    } = useSWR<{ message: string; data: Instructor[] }, Error>(
+        user?.facility?.id
+            ? `/api/facilities/${user.facility.id}/instructors`
+            : null
+    );
+
+    const instructors = instructorsResponse?.data ?? [];
+
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
@@ -185,33 +197,11 @@ export default function ClassManagementForm() {
     }, [nameValue, rruleIsValid]);
 
     useEffect(() => {
-        const fetchInstructors = async () => {
-            if (!user?.facility?.id) return;
-
-            setInstructorsLoading(true);
-            try {
-                const response = await API.get(
-                    `facilities/${user.facility.id}/instructors`
-                );
-                if (response.success) {
-                    setInstructors((response.data as Instructor[]) || []);
-                } else {
-                    toaster('Failed to load instructors', ToastState.error);
-                    console.error(
-                        'Failed to fetch instructors:',
-                        response.message
-                    );
-                }
-            } catch (error) {
-                toaster('Failed to load instructors', ToastState.error);
-                console.error('Error fetching instructors:', error);
-            } finally {
-                setInstructorsLoading(false);
-            }
-        };
-
-        void fetchInstructors();
-    }, [user?.facility?.id]);
+        if (instructorsError) {
+            toaster('Failed to load instructors', ToastState.error);
+            console.error('Error fetching instructors:', instructorsError);
+        }
+    }, [instructorsError, toaster]);
 
     // Set form values for editing - wait for instructors to load first
     useEffect(() => {

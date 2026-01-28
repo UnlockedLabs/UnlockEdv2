@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useRef, useState } from 'react';
 import {
     FormInputTypes,
     FormModal,
@@ -14,6 +14,7 @@ import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth } from '@/useAuth';
 import { KeyedMutator } from 'swr';
+import useSWR from 'swr';
 import {
     Instructor,
     BulkCancelSessionsPreview,
@@ -38,19 +39,30 @@ export const BulkCancelSessionsModal = forwardRef(function (
         return null;
     }
 
-    const [instructors, setInstructors] = useState<Instructor[]>([]);
     const [preview, setPreview] = useState<BulkCancelSessionsPreview | null>(
         null
     );
     const [showPreview, setShowPreview] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [hasTriedFetch, setHasTriedFetch] = useState(false);
     const [currentFormValues, setCurrentFormValues] = useState({
         instructorId: null as number | null,
         startDate: '',
         endDate: ''
     });
+
+    const { data: instructorsResponse, error: instructorsError } = useSWR<
+        { message: string; data: Instructor[] },
+        Error
+    >(user && facilityId ? `/api/facilities/${facilityId}/instructors` : null);
+
+    const instructors = instructorsResponse?.data ?? [];
+    const instructorsErrorFiltered =
+        instructorsError &&
+        !instructorsError.message.includes('401') &&
+        !instructorsError.message.includes('403')
+            ? instructorsError
+            : null;
     const confirmModalRef = useRef<HTMLDialogElement>(null);
     const [pendingRequest, setPendingRequest] =
         useState<BulkCancelSessionsRequest | null>(null);
@@ -264,33 +276,6 @@ export const BulkCancelSessionsModal = forwardRef(function (
             setIsLoading(false);
         }
     };
-    useEffect(() => {
-        // Only fetch if we have a user (authenticated) and haven't tried yet
-        if (user && facilityId && !hasTriedFetch) {
-            setHasTriedFetch(true);
-            const fetchInstructors = async () => {
-                try {
-                    const response = await API.get(
-                        `/facilities/${facilityId}/instructors`
-                    );
-                    setInstructors(response.data as Instructor[]);
-                } catch (error: unknown) {
-                    console.error('Error fetching instructors:', error);
-
-                    const apiError = error as {
-                        response?: { status?: number };
-                    };
-                    if (
-                        apiError.response?.status !== 401 &&
-                        apiError.response?.status !== 403
-                    ) {
-                        setError('Failed to load instructors');
-                    }
-                }
-            };
-            void fetchInstructors();
-        }
-    }, [user, facilityId, hasTriedFetch]);
 
     const bulkCancelSessionsInputs: Input[] = [
         {
@@ -392,7 +377,7 @@ export const BulkCancelSessionsModal = forwardRef(function (
                   }
               ]
             : []),
-        ...(error
+        ...(error || instructorsErrorFiltered
             ? [
                   {
                       type: FormInputTypes.Unique,
@@ -401,7 +386,9 @@ export const BulkCancelSessionsModal = forwardRef(function (
                       required: false,
                       uniqueComponent: (
                           <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-                              <p className="text-sm text-red-600">{error}</p>
+                              <p className="text-sm text-red-600">
+                                  {error ?? 'Failed to load instructors'}
+                              </p>
                           </div>
                       ) as React.ReactElement
                   }
