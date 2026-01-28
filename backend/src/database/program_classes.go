@@ -30,11 +30,14 @@ func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 
 func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.ProgramClass, error) {
 	content := []models.ProgramClass{}
-	tx := db.WithContext(args.Ctx).Find(&content, "facility_id = ?", args.FacilityID)
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{}).Where("facility_id = ?", args.FacilityID)
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ?", args.SearchQuery())
 	}
-	if err := tx.Count(&args.Total).Limit(args.PerPage).Offset(args.CalcOffset()).Error; err != nil {
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program classes")
+	}
+	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 	return content, nil
@@ -187,6 +190,9 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		Where(`ps.program_id = ?
 			and ps.facility_id = ?`, id, args.FacilityID).
 		Group("ps.id,fac.name")
+	if args.Search != "" {
+		query = query.Where("LOWER(ps.name) LIKE ? OR LOWER(ps.description) LIKE ?", args.SearchQuery(), args.SearchQuery())
+	}
 	if err := query.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}

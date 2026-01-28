@@ -36,7 +36,7 @@ func (db *DB) GetEnrollmentsForClass(page, perPage, classId int) (int64, []model
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program class enrollments")
 	}
-	if err := tx.Find(&content).Limit(page).Offset(calcOffset(page, perPage)).Error; err != nil {
+	if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program class enrollments")
 	}
 	return total, content, nil
@@ -110,24 +110,33 @@ func (db *DB) DeleteProgramClassEnrollments(id int) error {
 }
 
 func (db *DB) GraduateEnrollments(adminEmail string, userIds []int, classId int) error {
-	enrollment := models.ProgramClassEnrollment{}
-	// begin transaction
 	tx := db.Begin()
 
-	// preload necessary relationships
+	var enrollments []models.ProgramClassEnrollment
 	err := tx.Model(&models.ProgramClassEnrollment{}).
 		Preload("User.Facility").
 		Preload("Class.Program.ProgramCreditTypes").
 		Preload("Class.FacilityProg").
-		First(&enrollment, "class_id = ?", classId).Error
+		Where("class_id = ? AND user_id IN (?)", classId, userIds).
+		Find(&enrollments).Error
 	if err != nil {
 		tx.Rollback()
 		return newNotFoundDBError(err, "class enrollment")
 	}
+	if len(enrollments) == 0 {
+		tx.Rollback()
+		return newNotFoundDBError(fmt.Errorf("no enrollments found"), "class enrollment")
+	}
 
+	enrollmentMap := make(map[uint]models.ProgramClassEnrollment)
+	for _, e := range enrollments {
+		enrollmentMap[e.UserID] = e
+	}
+
+	firstEnrollment := enrollments[0]
 	creditType := ""
-	for i, ct := range enrollment.Class.Program.ProgramCreditTypes {
-		if i == len(enrollment.Class.Program.ProgramCreditTypes)-1 {
+	for i, ct := range firstEnrollment.Class.Program.ProgramCreditTypes {
+		if i == len(firstEnrollment.Class.Program.ProgramCreditTypes)-1 {
 			creditType += string(ct.CreditType)
 		} else {
 			creditType += fmt.Sprintf("%s,", ct.CreditType)
@@ -135,18 +144,22 @@ func (db *DB) GraduateEnrollments(adminEmail string, userIds []int, classId int)
 	}
 
 	completions := make([]models.ProgramCompletion, 0, len(userIds))
-	for i := range userIds {
+	for _, uid := range userIds {
+		enrollment, exists := enrollmentMap[uint(uid)]
+		if !exists {
+			continue
+		}
 		completions = append(completions, models.ProgramCompletion{
 			ProgramClassID:      uint(classId),
 			FacilityName:        enrollment.User.Facility.Name,
-			ProgramName:         enrollment.Class.Program.Name,
-			ProgramOwner:        enrollment.Class.FacilityProg.ProgramOwner,
-			ProgramID:           enrollment.Class.ProgramID,
+			ProgramName:         firstEnrollment.Class.Program.Name,
+			ProgramOwner:        firstEnrollment.Class.FacilityProg.ProgramOwner,
+			ProgramID:           firstEnrollment.Class.ProgramID,
 			AdminEmail:          adminEmail,
-			ProgramClassStartDt: enrollment.Class.StartDt,
+			ProgramClassStartDt: firstEnrollment.Class.StartDt,
 			CreditType:          creditType,
-			ProgramClassName:    enrollment.Class.Name,
-			UserID:              uint(userIds[i]),
+			ProgramClassName:    firstEnrollment.Class.Name,
+			UserID:              uint(uid),
 			EnrolledOnDt:        enrollment.CreatedAt,
 		})
 	}

@@ -376,6 +376,9 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 		// count enrolled students on this specific date
 		enrolledCountOnDate := 0
 		for _, student := range students {
+			if student.EnrolledAt == nil {
+				continue
+			}
 			if !student.EnrolledAt.After(eventDate.StartTime) && // enrolled before or on this date
 				(student.EnrollmentEndedAt == nil || student.EnrollmentEndedAt.After(eventDate.StartTime.AddDate(0, 0, -1))) { // not ended before this date
 				enrolledCountOnDate++

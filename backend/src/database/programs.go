@@ -133,6 +133,7 @@ func (db *DB) UpdateProgram(program *models.Program, facilityIds []int) (*models
 	}
 	allChanges = append(allChanges, creditTypeLogEntries...)
 	if err := trans.Omit("Facilities", "CreatedAt").Select("IsActive", "Name", "Description", "FundingType", "UpdateUserID").Updates(&updatePrg).Error; err != nil {
+		trans.Rollback()
 		return nil, newUpdateDBError(err, "programs")
 	}
 
