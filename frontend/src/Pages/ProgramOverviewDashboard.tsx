@@ -81,7 +81,7 @@ export default function ProgramOverviewDashboard() {
         mutate: mutateClasses,
         isLoading
     } = useSWR<ServerResponseMany<Class>, Error>(
-        `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
+        `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}&search=${searchTerm}`
     );
 
     useEffect(() => {

@@ -196,7 +196,7 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 
 	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities)
 	if updateErr != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(updateErr)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
 }

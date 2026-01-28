@@ -180,10 +180,6 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 			return newCreateDBError(err, "program_class_event_overrides")
 		}
 		if overrideEvent.IsCancelled && len(overrideEvents) < 2 { //only add log for cancelled event
-			if err != nil {
-				trans.Rollback()
-				return NewDBError(err, "unable to parse override date")
-			}
 			changeLogEntry.FieldName = "event_cancelled"
 			changeLogEntry.OldValue = models.StringPtr("")
 			changeLogEntry.ParentRefID = overrideEvent.ClassID
@@ -199,14 +195,14 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 			changeLogEntry.NewValue = eventSummary
 		} else if overrideEvent.IsCancelled { //not logging the cancelled one from rescheduling action
 			linkedOverrideID = &overrideEvent.ID
-			if err != nil {
-				trans.Rollback()
-				return NewDBError(err, "unable to parse override date")
-			}
 			changeLogEntry.OldValue = &overrideEvent.OverrideRrule
 		}
 		if overrideEvent.IsCancelled || isOverrideUpdate { //delete attendance
 			eventDate, err = overrideEvent.GetFormattedOverrideDate("2006-01-02")
+			if err != nil {
+				trans.Rollback()
+				return NewDBError(err, "unable to parse override date")
+			}
 			if err := deleteEventAttedanceByDate(trans, overrideEvent.EventID, *eventDate); err != nil {
 				trans.Rollback()
 				return err
