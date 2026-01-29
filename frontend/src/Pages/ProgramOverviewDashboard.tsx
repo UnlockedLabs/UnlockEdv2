@@ -31,7 +31,7 @@ import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
-import { AddButton } from '@/Components/inputs';
+import { AddButton, DangerOutlineButton } from '@/Components/inputs';
 import WarningBanner from '@/Components/WarningBanner';
 import EmptyStateCard from '@/Components/EmptyStateCard';
 import { ReportExportModal } from '@/Components/modals/ReportExportModal';
@@ -404,15 +404,13 @@ export default function ProgramOverviewDashboard() {
                                     )
                                 }
                             />
-                            <button
-                                className="button flex items-center gap-2 text-red-3 border-2 border-red-3 bg-transparent hover:bg-red-1"
+                            <DangerOutlineButton
+                                label="Cancel Classes"
                                 onClick={() => {
                                     bulkCancelModalRef.current?.showModal();
                                 }}
-                            >
-                                <XCircleIcon className="w-5 h-5" />
-                                <span>Cancel Classes</span>
-                            </button>
+                                icon={<XCircleIcon className="w-5 h-5" />}
+                            />
                         </>
                     )}
                 </div>

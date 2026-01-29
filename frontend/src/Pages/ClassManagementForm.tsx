@@ -7,7 +7,8 @@ import {
     TextInput,
     CancelButton,
     CloseX,
-    RoomSelector
+    RoomSelector,
+    ObjectDropdownInput
 } from '@/Components/inputs';
 import {
     ProgClassStatus,
@@ -223,15 +224,12 @@ export default function ClassManagementForm() {
                 .split('T')[0];
         }
 
-<<<<<<< HEAD
         setSelectedRoomId(editCls.events[0].room_id ?? null);
-=======
         const instructorId = editCls.instructor_id ?? editCls.instructor?.id;
->>>>>>> be61cabc (fix: make it a requirement that the user select an instructor for the class creation and edit and modified tests)
         reset({
             ...values,
             instructor_id:
-                instructorId && instructorId > 0 ? instructorId : undefined,
+                instructorId && instructorId > 0 ? instructorId : 0,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
@@ -311,57 +309,34 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text font-medium">
-                                    Instructor
-                                </span>
-                                <span className="label-text-alt text-error">
-                                    *
-                                </span>
-                            </label>
-                            <select
-                                {...register('instructor_id', {
-                                    required:
-                                        'Instructor selection is required',
-                                    valueAsNumber: true,
-                                    validate: (value) => {
-                                        if (
-                                            value === 0 ||
-                                            value === undefined ||
-                                            value === null
-                                        ) {
-                                            return 'Please select an instructor (Unassigned is not allowed)';
-                                        }
-                                        return true;
+                        <ObjectDropdownInput
+                            label="Instructor"
+                            interfaceRef="instructor_id"
+                            required
+                            errors={errors}
+                            register={register}
+                            options={instructors}
+                            valueKey="id"
+                            labelFn={(instructor) =>
+                                `${instructor.name_first} ${instructor.name_last}`.trim()
+                            }
+                            isLoading={instructorsLoading}
+                            placeholder="Select an instructor"
+                            validation={{
+                                required: 'Instructor selection is required',
+                                validate: (value) => {
+                                    if (
+                                        value === 0 ||
+                                        value === undefined ||
+                                        value === null
+                                    ) {
+                                        return 'Please select an instructor (Unassigned is not allowed)';
                                     }
-                                })}
-                                className={`select select-bordered w-full ${errors.instructor_id ? 'select-error' : ''}`}
-                                disabled={instructorsLoading}
-                            >
-                                <option value="">Select an instructor</option>
-                                {instructors
-                                    .filter((instructor) => instructor.id !== 0)
-                                    .map((instructor) => (
-                                        <option
-                                            key={instructor.id}
-                                            value={instructor.id}
-                                        >
-                                            {`${instructor.name_first} ${instructor.name_last}`.trim()}
-                                        </option>
-                                    ))}
-                            </select>
-                            {instructorsLoading && (
-                                <span className="loading loading-spinner loading-sm"></span>
-                            )}
-                            {errors.instructor_id && (
-                                <label className="label">
-                                    <span className="label-text-alt text-error">
-                                        {errors.instructor_id.message}
-                                    </span>
-                                </label>
-                            )}
-                        </div>
+                                    return true;
+                                }
+                            }}
+                            filterFn={(instructor) => instructor.id !== 0}
+                        />
                         <NumberInput
                             label="Capacity"
                             register={register}

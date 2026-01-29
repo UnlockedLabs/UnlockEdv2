@@ -1,6 +1,7 @@
 export { CloseX } from './CloseX';
 export { TextAreaInput } from './TextAreaInput';
 export { DropdownInput } from './DropdownInput';
+export { ObjectDropdownInput } from './ObjectDropdownInput';
 export { TextInput } from './TextInput';
 export { SubmitButton } from './SubmitButton';
 export { MultiSelectDropdown } from './MultiSelectDropdownControl';
@@ -10,6 +11,7 @@ export { CancelButton } from './CancelButton';
 export { DeleteButton } from './DeleteButton';
 export { ConfirmButton } from './ConfirmButton';
 export { WarningButton } from './WarningButton';
+export { DangerOutlineButton } from './DangerOutlineButton';
 export { CancelSubmitRow } from './CancelSubmitRow';
 export { CheckboxInput } from './CheckboxInput';
 export { CheckboxGroupInput } from './CheckboxGroupInput';
