@@ -717,9 +717,9 @@ func checkEventCancelledAndRescheduled(occurrence time.Time, overrides []models.
 		canonicalOverrideHour := localOverrideTime.Hour()
 		canonicalOverrideMinute := localOverrideTime.Minute()
 		consistentOverrideDate := time.Date(
-			overrideDate.Year(),
-			overrideDate.Month(),
-			overrideDate.Day(),
+			localOverrideTime.Year(),
+			localOverrideTime.Month(),
+			localOverrideTime.Day(),
 			canonicalOverrideHour,
 			canonicalOverrideMinute,
 			0, 0,
