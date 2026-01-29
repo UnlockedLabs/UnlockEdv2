@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="attendance_report" pageWidth="842" pageHeight="595" whenNoDataType="AllSectionsNoDetail" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e9657877-8b66-40f7-bce3-d804c4935dca">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="RowDataset" uuid="cf48652d-2ccf-41d2-8887-d2a4bef35450">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="mock_data"/>
+		<queryString language="json">
+			<![CDATA[]]>
+		</queryString>
+		<field name="col0" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[0]"/>
+		</field>
+		<field name="col1" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[1]"/>
+		</field>
+		<field name="col2" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[2]"/>
+		</field>
+		<field name="col3" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[3]"/>
+		</field>
+		<field name="col4" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[4]"/>
+		</field>
+		<field name="col5" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[5]"/>
+		</field>
+		<field name="col6" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[6]"/>
+		</field>
+		<field name="col7" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[7]"/>
+		</field>
+		<field name="col8" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[8]"/>
+		</field>
+		<field name="col9" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[9]"/>
+		</field>
+		<field name="col10" class="java.lang.String">
+			<property name="net.sf.jasperreports.json.field.expression" value="[10]"/>
+		</field>
+	</subDataset>
+	<parameter name="ReportTitle" class="java.lang.String"/>
+	<parameter name="GeneratedDate" class="java.lang.String"/>
+	<parameter name="LogoImage" class="java.lang.String"/>
+	<parameter name="FilterCount" class="java.lang.String"/>
+	<parameter name="FilterLabel1" class="java.lang.String"/>
+	<parameter name="FilterValue1" class="java.lang.String"/>
+	<parameter name="FilterLabel2" class="java.lang.String"/>
+	<parameter name="FilterValue2" class="java.lang.String"/>
+	<parameter name="FilterLabel3" class="java.lang.String"/>
+	<parameter name="FilterValue3" class="java.lang.String"/>
+	<parameter name="FilterLabel4" class="java.lang.String"/>
+	<parameter name="FilterValue4" class="java.lang.String"/>
+	<parameter name="FilterLabel5" class="java.lang.String"/>
+	<parameter name="FilterValue5" class="java.lang.String"/>
+	<parameter name="FilterLabel6" class="java.lang.String"/>
+	<parameter name="FilterValue6" class="java.lang.String"/>
+	<queryString language="JSON">
+		<![CDATA[]]>
+	</queryString>
+	<title>
+		<band height="200" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<image>
+				<reportElement x="10" y="10" width="71" height="71" uuid="6c581198-0e0b-4763-a6db-e2f6de0733d5">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA[new java.io.ByteArrayInputStream(
+    org.apache.commons.codec.binary.Base64.decodeBase64($P{LogoImage})
+)]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="91" y="12" width="400" height="20" uuid="2d3ec6ca-6da6-4e65-b514-1eae432404e9"/>
+				<textElement>
+					<font fontName="DejaVu Sans" size="16" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ReportTitle}.replaceAll("\"", "") + " Report"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="91" y="32" width="400" height="15" uuid="096900ec-e8f5-4101-aa67-7426c071ee39"/>
+				<textElement>
+					<font fontName="DejaVu Sans" size="9"/>
+				</textElement>
+				<text><![CDATA[Generated: ]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="150" y="32" width="341" height="15" uuid="5e6942a7-76bc-484e-bae3-871223445b71"/>
+				<textElement>
+					<font fontName="DejaVu Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{GeneratedDate}.replaceAll("\"", "")]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="87" width="100" height="15" uuid="0ddd07bb-9455-4a5e-af86-fe7d4f0b8c63">
+					<printWhenExpression><![CDATA[$P{FilterCount} != null && Integer.parseInt($P{FilterCount}.replaceAll("\"", "")) > 0]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Filters:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="17" y="102" width="90" height="15" uuid="14552aaf-9b03-4a87-b617-a9c5c81a1eb0">
+					<printWhenExpression><![CDATA[$P{FilterCount} != null && Integer.parseInt($P{FilterCount}.replaceAll("\"", "")) >= 1 && $P{FilterLabel1} != null && !$P{FilterLabel1}.replaceAll("\"", "").trim().isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="9" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{FilterLabel1}.replaceAll("\"", "") + ":"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="112" y="102" width="505" height="15" uuid="ede15536-5dda-4ca4-8b0c-b2c2a317fc10">
+					<printWhenExpression><![CDATA[$P{FilterCount} != null && Integer.parseInt($P{FilterCount}.replaceAll("\"", "")) >= 1 && $P{FilterLabel1} != null && !$P{FilterLabel1}.replaceAll("\"", "").trim().isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{FilterValue1}.replaceAll("\"", "")]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="17" y="117" width="90" height="15" uuid="c623e316-9103-4ae0-a8ff-d2a75934c244">
+					<printWhenExpression><![CDATA[$P{FilterCount} != null && Integer.parseInt($P{FilterCount}.replaceAll("\"", "")) >= 2 && $P{FilterLabel2} != null && !$P{FilterLabel2}.replaceAll("\"", "").trim().isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font fontName="DejaVu Sans" size="9" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{FilterLabel2}.replaceAll("\"", "") + ":"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="112" y="117" width="505" height="15" uuid="070254f5-e676-41f0-b1c0-cdf063c2e09c">
+					<printWhenExpression><![CDATA[$P{FilterCount} != null && Integer.parseInt($P{FilterCount}.replaceAll("\"", "")) >= 2 && $P{FilterLabel2} != null && !$P{FilterLabel2}.replaceAll("\"", "").trim().isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="DejaVu Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{FilterValue2}.replaceAll("\"", "")]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="30" splitType="Stretch">
+			<componentElement>
+				<reportElement x="9" y="-53" width="802" height="30" uuid="1b39c379-3fb1-45d7-8766-42a707faf63a">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+					<property name="com.jaspersoft.studio.components.autoresize.proportional" value="true"/>
+					<property name="com.jaspersoft.studio.components.autoresize.next" value="true"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="RowDataset" uuid="28a38d33-2cb3-43d0-8ad4-f4e269751563">
+						<dataSourceExpression><![CDATA[((net.sf.jasperreports.engine.data.JsonDataSource)$P{REPORT_DATA_SOURCE})
+        .subDataSource("rows")]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="81" uuid="53d14052-a2bd-42fb-992a-4ceaf97cb41f">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column0"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="81" height="20" uuid="066439c4-50cf-4a78-bcde-0a47c07a7614"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Facility"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="81" height="20" uuid="545202ab-572f-49a8-b9a8-07d26685966f"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col0} != null ? $F{col0} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="91" uuid="d03fb436-054c-450d-9881-f3179e8a046e">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="91" height="20" uuid="35fc63af-f29f-4330-8c71-0c54c959f462"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Program"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="91" height="20" uuid="08a5628f-b2d9-4402-9e5d-c262117fdf2c"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col1} != null ? $F{col1} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="81" uuid="d6aa7a99-e643-4c0f-8bc3-d33f37c20925">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="81" height="20" uuid="625ac8bf-45f7-4788-9aca-cebcea370e9f"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Class"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="81" height="20" uuid="2fb8c02e-866e-4a1f-b19b-be74d0679784"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col2} != null ? $F{col2} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="70" uuid="9b99072f-0194-4b61-863c-a38b9e8cb6cf">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="20" uuid="29323859-6b6f-4d2c-a850-9d5d8d1ac694"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Date"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="20" uuid="045dd6dd-2da6-49e8-a808-dc243cb7be8e"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col3} != null ? $F{col3} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="70" uuid="1ee21be2-81bf-4680-8cda-eed762bc9410">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="20" uuid="3667127e-23fd-4e10-bc95-4ecb4808805c"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Last Name"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="20" uuid="d26d7cb3-29dd-4d3f-acc4-94b57477f59c"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col4} != null ? $F{col4} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="70" uuid="a7dd2191-0d35-49f4-963c-8f7b2886c1b5">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="20" uuid="693a76fd-7805-4e9d-a278-843560273165"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["First Name"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="20" uuid="a294daff-668d-490a-8416-8bfde3f640ac"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col5} != null ? $F{col5} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="56" uuid="ea170895-bb1a-4c6a-813d-a25f5a735ebc">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column6"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="56" height="20" uuid="5de40966-3618-4e5f-b18a-9bebeb96da63"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["DOC ID"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="56" height="20" uuid="21be044b-3504-4f64-b5f9-c4a1b8769cb7"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col6} != null ? $F{col6} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="63" uuid="fd57d692-bd23-41fa-aafc-653937512420">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column7"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="63" height="20" uuid="49a32ab3-2865-4762-b978-d8a5a8713fca"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Status"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="63" height="20" uuid="7b7887fa-7599-4fab-9bf4-5ac239e3c25c"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col7} != null ? $F{col7} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="63" uuid="7689ee84-c6be-4f26-b7c4-4aaa1edb6bd0">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column8"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="63" height="20" uuid="c23701e6-01f0-4812-b6c4-8a6b6fb451de"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Seat Time"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="63" height="20" uuid="3d1e7e28-f47a-4040-8fcf-744c692b76c8"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col8} != null ? $F{col8} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="77" uuid="49de4bcf-91ad-40c7-895b-b9e4504d5f4d">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column9"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="77" height="20" uuid="45f31348-27e3-4259-954c-25a317900009"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Recorded By"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="77" height="20" uuid="7e536ca7-1cc7-466c-9675-f4d01147d5c6"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col9} != null ? $F{col9} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="81" uuid="2b46d91f-7a39-4b32-a53b-97e89586268f">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column10"/>
+						<jr:columnHeader style="Table_CH" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="81" height="20" uuid="8dbca7dc-7013-4bf4-887d-26e3099900dd"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="8" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["Reason"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="20">
+							<textField>
+								<reportElement x="0" y="0" width="81" height="20" uuid="769cd65c-bc16-4fd7-b247-00172a5e8acd"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="DejaVu Sans" size="7"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{col10} != null ? $F{col10} : ""]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+</jasperReport>
