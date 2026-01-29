@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -176,6 +177,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&qryCtx.Total).Error; err != nil {
 		return nil, err
 	}
+
 	selectClause := `
 		SELECT
 			e.id AS enrollment_id,
@@ -205,12 +207,12 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 
 	finalQuery += " LIMIT ? OFFSET ?"
 	args = append(args, qryCtx.PerPage, qryCtx.CalcOffset())
-
 	var results []models.EnrollmentAttendance
-	if err := db.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
+
+	newSession := db.Session(&gorm.Session{NewDB: true})
+	if err := newSession.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
 		return nil, err
 	}
-
 	return results, nil
 }
 
@@ -411,4 +413,36 @@ func (db *DB) CreateAttendanceAuditTrail(ctx context.Context, att *models.Progra
 	}
 
 	return nil
+}
+
+func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID int) (float64, error) {
+	var attendanceRate float64
+	today := time.Now().Format("2006-01-02")
+	sql := `
+	WITH attendance_credits AS (
+		SELECT
+			pcea.id,
+			CASE
+				WHEN pcea.attendance_status = 'present' THEN 1.0
+				WHEN pcea.attendance_status = 'partial' THEN LEAST(
+					COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric /
+					NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0),
+					1
+				)
+				ELSE 0
+			END as credit
+		FROM program_class_event_attendance pcea
+		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
+		WHERE pce.class_id = ? AND pcea.date <= ?
+	)
+	SELECT COALESCE(
+		(SELECT SUM(credit) FROM attendance_credits) * 100.0 /
+		NULLIF((SELECT COUNT(*) FROM attendance_credits), 0),
+		0
+	) as attendance_percentage`
+
+	if err := db.WithContext(ctx).Raw(sql, classID, today).Scan(&attendanceRate).Error; err != nil {
+		return 0, newNotFoundDBError(err, "program_class_event_attendance")
+	}
+	return attendanceRate, nil
 }

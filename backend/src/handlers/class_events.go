@@ -83,6 +83,39 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		overrides[i].EventID = uint(eventId)
 		overrides[i].ClassID = uint(classID)
 	}
+	var class *models.ProgramClass
+	for _, override := range overrides {
+		if !override.IsCancelled && override.RoomID != nil {
+			var err error
+			class, err = srv.Db.GetClassByID(classID)
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			break
+		}
+	}
+	for _, override := range overrides {
+		if override.IsCancelled || override.RoomID == nil {
+			continue
+		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*override.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		eventIDUint := uint(eventId)
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     class.FacilityID,
+			RoomID:         *override.RoomID,
+			RecurrenceRule: override.OverrideRrule,
+			Duration:       override.Duration,
+			ExcludeEventID: &eventIDUint,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeConflictResponse(w, conflicts)
+		}
+	}
 	ctx := srv.getQueryContext(r)
 	if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, overrides); err != nil {
 		return newDatabaseServiceError(err)
@@ -133,6 +166,27 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	event.ClassID = uint(classID)
+	if event.RoomID != nil {
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     class.FacilityID,
+			RoomID:         *event.RoomID,
+			RecurrenceRule: event.RecurrenceRule,
+			Duration:       event.Duration,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeConflictResponse(w, conflicts)
+		}
+	}
 	_, err = srv.WithUserContext(r).CreateNewEvent(classID, event)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -158,6 +212,32 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	}
 	if err := json.NewDecoder(r.Body).Decode(&eventSeriesRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
+	}
+	if eventSeriesRequest.EventSeries.RoomID != nil {
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if _, err := srv.Db.GetRoomByIDForFacility(*eventSeriesRequest.EventSeries.RoomID, class.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		var excludeEventID *uint
+		if eventSeriesRequest.EventSeries.ID > 0 {
+			excludeEventID = &eventSeriesRequest.EventSeries.ID
+		}
+		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+			FacilityID:     class.FacilityID,
+			RoomID:         *eventSeriesRequest.EventSeries.RoomID,
+			RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
+			Duration:       eventSeriesRequest.EventSeries.Duration,
+			ExcludeEventID: excludeEventID,
+		})
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if len(conflicts) > 0 {
+			return writeConflictResponse(w, conflicts)
+		}
 	}
 	args := srv.getQueryContext(r)
 	args.All = true
@@ -232,6 +312,8 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 		if eventIdStr != "" {
 			if parsedEventId, err := strconv.Atoi(eventIdStr); err == nil {
 				eventId = &parsedEventId
+			} else {
+				log.errorf("Error parsing event_id: %v", err)
 			}
 		}
 		dates, err := srv.Db.GetClassEventDatesForRecurrence(classID, timezone, month, year, eventId)

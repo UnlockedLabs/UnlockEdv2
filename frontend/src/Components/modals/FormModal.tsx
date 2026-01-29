@@ -1,11 +1,14 @@
 import {
+    Control,
     DefaultValues,
     FieldError,
     FieldValues,
     SubmitHandler,
     useForm,
     UseFormGetValues,
-    UseFormRegister
+    UseFormRegister,
+    UseFormSetValue,
+    UseFormWatch
 } from 'react-hook-form';
 import {
     CancelButton,
@@ -19,7 +22,8 @@ import {
     TextInput,
     TimeInput
 } from '../inputs';
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FormInputTypes, Input, InputWithOptions } from '.';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from '../UnlockEdTour';
@@ -39,6 +43,9 @@ interface FormModalProps<T extends FieldValues> {
     setFormDataRef?: (utils: {
         getValues: UseFormGetValues<T>;
         register: UseFormRegister<T>;
+        control: Control<T>;
+        setValue: UseFormSetValue<T>;
+        watch: UseFormWatch<T>;
     }) => void;
 }
 
@@ -69,14 +76,17 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         handleSubmit,
         setError,
         getValues,
+        control,
+        setValue,
+        watch,
         formState: { errors }
     } = useForm<T>({ defaultValues: defaultValues });
     useEffect(() => {
         //used for setting form data reference if needed for validation
         if (setFormDataRef) {
-            setFormDataRef({ getValues, register });
+            setFormDataRef({ getValues, register, control, setValue, watch });
         }
-    }, [setFormDataRef, getValues, register]);
+    }, [setFormDataRef, getValues, register, control, setValue, watch]);
     const { tourState, setTourState } = useTourContext();
 
     useEffect(() => {
@@ -104,7 +114,25 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         }
     }, []);
 
-    return (
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+        null
+    );
+
+    useEffect(() => {
+        let container = document.getElementById('modal-root');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'modal-root';
+            document.body.appendChild(container);
+        }
+        setPortalContainer(container);
+    }, []);
+
+    if (!portalContainer) {
+        return null;
+    }
+
+    return createPortal(
         <dialog
             ref={ref}
             className="modal"
@@ -123,6 +151,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         key={inputs.length}
                         onSubmit={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (extValidationIsValid())
                                 void handleSubmit(onSubmitHandler)(e);
                         }}
@@ -282,7 +311,8 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                     </form>
                 </div>
             </div>
-        </dialog>
+        </dialog>,
+        portalContainer
     );
 });
 export default FormModal;

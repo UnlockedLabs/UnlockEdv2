@@ -117,8 +117,15 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
 
                 const duration = formatDuration(startTime, endTime);
                 const rule = new RRule(options);
+                const localDtstart = `${(startDate as string).replace(/-/g, '')}T${startTime.replace(':', '')}00`;
+                const ruleString = rule
+                    .toString()
+                    .replace(
+                        /DTSTART[^:]*:[^\n]+/,
+                        `DTSTART;TZID=${user.timezone}:${localDtstart}`
+                    );
                 returnValue = {
-                    rule: rule.toString(),
+                    rule: ruleString,
                     duration: duration
                 };
             } else {
@@ -139,7 +146,6 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 startDate: '',
                 endDate: ''
             };
-            setTimeErrors(errors);
             if (!startTime) {
                 errors.startTime = 'Start time is required';
                 isValid = false;
@@ -150,6 +156,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             }
             if (!formErrors) {
                 checkDateInputs(errors);
+                if (errors.startDate || errors.endDate) {
+                    isValid = false;
+                }
             }
             if (startTime && endTime) {
                 const startTotalMin = timeToMinutes(startTime);
@@ -163,6 +172,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 errors.weekDays = 'Must select a day to repeat on';
                 isValid = false;
             }
+            setTimeErrors(errors);
             return isValid;
         }
 

@@ -87,7 +87,7 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 			ExpectBodyContains("cannot record attendance for cancelled class date")
 	})
 
-	t.Run("Reject attendance for unenrolled user", func(t *testing.T) {
+	t.Run("Allow attendance for historically enrolled user", func(t *testing.T) {
 		attendanceData := []models.ProgramClassEventAttendance{
 			{
 				UserID:           unenrolledStudent.ID,
@@ -105,8 +105,8 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 				FacilityID: admin.FacilityID,
 			}).
 			Do().
-			ExpectStatus(http.StatusBadRequest).
-			ExpectBodyContains(fmt.Sprintf("user %d is not enrolled in class %d", unenrolledStudent.ID, class.ID))
+			ExpectStatus(http.StatusOK).
+			ExpectBodyContains("Attendance updated")
 	})
 
 	t.Run("Accept valid attendance for enrolled user on valid date", func(t *testing.T) {
@@ -155,8 +155,8 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 				FacilityID: admin.FacilityID,
 			}).
 			Do().
-			ExpectStatus(http.StatusBadRequest).
-			ExpectBodyContains(fmt.Sprintf("user %d is not enrolled in class %d", unenrolledStudent.ID, class.ID))
+			ExpectStatus(http.StatusOK).
+			ExpectBodyContains("Attendance updated")
 	})
 }
 

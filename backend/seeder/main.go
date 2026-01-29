@@ -579,6 +579,27 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	if err := db.Find(&facilities).Error; err != nil {
 		return nil, err
 	}
+	facilityRooms := make(map[uint][]models.Room)
+	roomNames := []string{
+		"Room A", "Room B", "Classroom 1", "Classroom 2",
+		"Computer Lab", "Library", "Auditorium", "Conference Room",
+	}
+	for _, facility := range facilities {
+		var rooms []models.Room
+		for _, name := range roomNames {
+			room := models.Room{
+				FacilityID: facility.ID,
+				Name:       name,
+			}
+			if err := db.Create(&room).Error; err != nil {
+				log.Printf("Failed to create room %s for facility %d: %v", name, facility.ID, err)
+				continue
+			}
+			rooms = append(rooms, room)
+		}
+		facilityRooms[facility.ID] = rooms
+		log.Printf("Created %d rooms for facility %s", len(rooms), facility.Name)
+	}
 	toReturn := make([]models.ProgramClass, 0)
 	programs := make([]models.Program, 0, 7)
 	for range 7 {
@@ -650,10 +671,12 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 				if err != nil {
 					log.Printf("Failed to create rrule: %v", err)
 				}
+				rooms := facilityRooms[facilities[idx].ID]
+				roomID := rooms[rand.Intn(len(rooms))].ID
 				event := models.ProgramClassEvent{
 					ClassID:        class.ID,
 					RecurrenceRule: rule.String(),
-					Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
+					RoomID:         &roomID,
 					Duration:       "1h0m0s",
 				}
 				if err := db.Create(&event).Error; err != nil {

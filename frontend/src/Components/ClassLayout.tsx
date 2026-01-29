@@ -140,7 +140,7 @@ function ClassInfoCard({
             formattedOccurence = textMonthLocalDate(
                 getDateObj(nextOccurrence),
                 true,
-                user?.timezone
+                Intl.DateTimeFormat().resolvedOptions().timeZone
             );
         } else {
             formattedOccurence = 'No upcoming class found';
@@ -195,7 +195,9 @@ function ClassInfoCard({
                 </div>
                 <div className="space-y-2">
                     <h3 className="body">Room:</h3>
-                    <p className="body-small">{classInfo.events[0].room}</p>
+                    <p className="body-small">
+                        {classInfo.events[0].room_ref?.name ?? 'TBD'}
+                    </p>
                 </div>
                 <div className="space-y-2">
                     <h3 className="body">Instructor(s)</h3>

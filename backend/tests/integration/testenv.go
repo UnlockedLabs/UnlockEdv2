@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -36,9 +35,7 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 	//SeedTestData(server.Db)
 	server.RegisterRoutes()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		server.Mux.ServeHTTP(w, r)
-	}))
+	ts := httptest.NewServer(server.Handler())
 
 	client := NewClient(ts.URL)
 
@@ -258,11 +255,15 @@ func (env *TestEnv) CreateTestEvent(classID uint, rrule string) (*models.Program
 		rrule = fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=10", startDate.Format("20060102T090000Z"))
 	}
 
+	roomID, err := env.getOrCreateTestRoom(classID)
+	if err != nil {
+		return nil, err
+	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
-		Room:           "Test Room",
+		RoomID:         &roomID,
 	}
 
 	if err := env.DB.Create(event).Error; err != nil {
@@ -281,11 +282,15 @@ func (env *TestEnv) GetEventRecurrenceRule(eventID uint) (string, error) {
 }
 
 func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string) (*models.ProgramClassEvent, error) {
+	roomID, err := env.getOrCreateTestRoom(classID)
+	if err != nil {
+		return nil, err
+	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: customRRule,
-		Room:           "Test Room",
+		RoomID:         &roomID,
 	}
 	if err := env.DB.Create(event).Error; err != nil {
 		return nil, err
@@ -307,7 +312,6 @@ func (env *TestEnv) CreateTestEventOverride(eventID uint, date string, isCancell
 		OverrideRrule: rrule,
 		IsCancelled:   isCancelled,
 		Reason:        reason,
-		Room:          "Test Room",
 	}
 
 	if err := env.DB.Create(override).Error; err != nil {
@@ -351,4 +355,24 @@ func (env *TestEnv) CreateTestEnrollmentWithDates(classID, userID uint, status m
 	}
 
 	return enrollment, nil
+}
+
+func (env *TestEnv) getOrCreateTestRoom(classID uint) (uint, error) {
+	var class models.ProgramClass
+	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
+		return 0, err
+	}
+	var room models.Room
+	result := env.DB.Where("facility_id = ? AND name = ?", class.FacilityID, "Test Room").First(&room)
+	if result.Error == nil {
+		return room.ID, nil
+	}
+	room = models.Room{
+		FacilityID: class.FacilityID,
+		Name:       "Test Room",
+	}
+	if err := env.DB.Create(&room).Error; err != nil {
+		return 0, err
+	}
+	return room.ID, nil
 }

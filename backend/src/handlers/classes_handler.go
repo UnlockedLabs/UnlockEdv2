@@ -42,6 +42,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/missing-attendance", srv.handleGetMissingAttendance, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-rate", srv.handleGetCumulativeAttendanceRate, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
 			var programClass models.ProgramClass
@@ -125,9 +126,25 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	}
 	class.InstructorName = instructorName
 
-	newClass, err := srv.WithUserContext(r).CreateProgramClass(&class)
+	var conflictReq *models.ConflictCheckRequest
+	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		conflictReq = &models.ConflictCheckRequest{
+			FacilityID:     claims.FacilityID,
+			RoomID:         *class.Events[0].RoomID,
+			RecurrenceRule: class.Events[0].RecurrenceRule,
+			Duration:       class.Events[0].Duration,
+		}
+	}
+
+	newClass, conflicts, err := srv.WithUserContext(r).CreateProgramClass(&class, conflictReq)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	if len(conflicts) > 0 {
+		return writeConflictResponse(w, conflicts)
 	}
 	log.add("program_id", id)
 	log.add("class_id", newClass.ID)
@@ -195,9 +212,37 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	}
 
 	class.UpdateUserID = models.UintPtr(claims.UserID)
-	updated, err := srv.WithUserContext(r).UpdateProgramClass(&class, id)
+
+	var conflictReq *models.ConflictCheckRequest
+	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		existing, err := srv.Db.GetClassByID(id)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		existingRoomID := uint(0)
+		if len(existing.Events) > 0 && existing.Events[0].RoomID != nil {
+			existingRoomID = *existing.Events[0].RoomID
+		}
+		if *class.Events[0].RoomID != existingRoomID {
+			conflictReq = &models.ConflictCheckRequest{
+				FacilityID:     claims.FacilityID,
+				RoomID:         *class.Events[0].RoomID,
+				RecurrenceRule: existing.Events[0].RecurrenceRule,
+				Duration:       existing.Events[0].Duration,
+				ExcludeEventID: &existing.Events[0].ID,
+			}
+		}
+	}
+
+	updated, conflicts, err := srv.WithUserContext(r).UpdateProgramClass(&class, id, conflictReq)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	if len(conflicts) > 0 {
+		return writeConflictResponse(w, conflicts)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
 }
@@ -206,9 +251,12 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	ids := r.URL.Query()["id"]
 	classIDs := make([]int, 0, len(ids))
 	for _, id := range ids {
-		if classID, err := strconv.Atoi(id); err == nil {
-			classIDs = append(classIDs, classID)
+		classID, err := strconv.Atoi(id)
+		if err != nil {
+			log.warn("invalid class ID in batch update, skipping: ", id)
+			continue
 		}
+		classIDs = append(classIDs, classID)
 	}
 	classMap := make(map[string]any)
 	if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
@@ -344,4 +392,19 @@ func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
 
 func (c *BulkCancelClaimsAdapter) GetTimezone() string {
 	return c.TimeZone
+}
+
+func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	attendanceRate, err := srv.Db.GetCumulativeAttendanceRateForClass(r.Context(), classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	response := map[string]float64{
+		"attendance_rate": attendanceRate,
+	}
+	return writeJsonResponse(w, http.StatusOK, response)
 }

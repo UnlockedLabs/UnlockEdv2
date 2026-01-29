@@ -280,7 +280,10 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					log.Error("User is deactivated, cannot access auth endpoint")
 					return &Claims{}, false, newBadRequestServiceError(errors.New("account deactivated"), "Account deactivated. Contact the facility administrator for support.")
 				}
-				traits := identity["traits"].(map[string]any)
+				traits, ok := identity["traits"].(map[string]any)
+				if !ok {
+					return nil, hasCookie, errors.New("invalid identity traits")
+				}
 				fields["user"] = user
 				log.WithFields(fields).Trace("found user from ory session")
 				facilityId, ok := traits["facility_id"].(float64)
@@ -324,7 +327,8 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					SessionID:     sessionID,
 					TimeZone:      tz,
 				}
-				if string(user.Role) != traits["role"].(string) {
+				traitsRole, ok := traits["role"].(string)
+				if !ok || string(user.Role) != traitsRole {
 					err := srv.updateUserTraitsInKratos(claims)
 					if err != nil {
 						log.WithFields(fields).Errorf("Error updating user traits in kratos: %v", err)

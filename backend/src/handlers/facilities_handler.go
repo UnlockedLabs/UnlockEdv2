@@ -8,6 +8,7 @@ import (
 )
 
 func (srv *Server) registerFacilitiesRoutes() []routeDef {
+	axx := models.ProgramAccess
 	return []routeDef{
 		newAdminRoute("GET /api/facilities", srv.handleIndexFacilities),
 		newAdminRoute("GET /api/facilities/{id}", srv.handleShowFacility),
@@ -17,6 +18,8 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 		adminValidatedFeatureRoute("GET /api/facilities/{facilityId}/instructors",
 			srv.handleGetFacilityInstructors, models.ProgramAccess, FacilityAdminResolver("facilities", "facilityId")),
+		adminFeatureRoute("GET /api/rooms", srv.handleGetRooms, axx),
+		adminFeatureRoute("POST /api/rooms", srv.handleCreateRoom, axx),
 	}
 }
 
@@ -89,7 +92,7 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
 	}
-	log.add("facilty_id", id)
+	log.add("facility_id", id)
 	var facility models.Facility
 	err = json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
@@ -136,4 +139,30 @@ func (srv *Server) handleGetFacilityInstructors(w http.ResponseWriter, r *http.R
 	}
 
 	return writeJsonResponse(w, http.StatusOK, instructors)
+}
+
+func (srv *Server) handleGetRooms(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityID := srv.getFacilityID(r)
+	log.add("facility_id", facilityID)
+	rooms, err := srv.Db.GetRoomsForFacility(facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, rooms)
+}
+
+func (srv *Server) handleCreateRoom(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityID := srv.getFacilityID(r)
+	var room models.Room
+	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	room.FacilityID = facilityID
+	log.add("facility_id", facilityID)
+	log.add("room_name", room.Name)
+	created, err := srv.Db.CreateRoom(&room)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, created)
 }

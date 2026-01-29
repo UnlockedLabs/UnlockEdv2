@@ -124,8 +124,24 @@ func init() {
 	prometheus.MustRegister(errorCount)
 }
 
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if os.Getenv("APP_ENV") != "dev" {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (srv *Server) Handler() http.Handler {
+	return securityHeadersMiddleware(corsMiddleware(srv.Mux))
+}
+
 func (srv *Server) ListenAndServe(ctx context.Context) {
-	handler := corsMiddleware(srv.Mux)
+	handler := srv.Handler()
 	log.Println("Starting server on port: ", srv.port)
 	// Listen for context cancellation to trigger graceful shutdown
 	go func() {
@@ -552,6 +568,19 @@ func (srv *Server) WithUserContext(r *http.Request) *database.DB {
 		return database.NewDB(srv.Db.WithContext(context.WithValue(r.Context(), models.UserIDKey, claims.UserID)))
 	}
 	return database.NewDB(srv.Db.WithContext(r.Context()))
+}
+
+func writeConflictResponse(w http.ResponseWriter, conflicts []models.RoomConflict) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+	resp := models.Resource[[]models.RoomConflict]{
+		Message: "room is already booked during this time",
+		Data:    conflicts,
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return newResponseServiceError(err)
+	}
+	return nil
 }
 
 func (srv *Server) errorResponse(w http.ResponseWriter, status int, message string) {

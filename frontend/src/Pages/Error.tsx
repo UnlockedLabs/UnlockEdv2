@@ -1,5 +1,6 @@
+import { ErrorType, User } from '@/common';
+import API from '@/api/api';
 import { AUTHCALLBACK } from '@/useAuth';
-import { ErrorType } from '@/common';
 import { useNavigate } from 'react-router-dom';
 
 interface ErrorPageProps {
@@ -9,25 +10,19 @@ interface ErrorPageProps {
     navigateTo?: string;
 }
 
-const errorMap: Record<
-    ErrorType,
-    { message: string; buttonText: string; onClick: () => void }
-> = {
+const errorMap: Record<ErrorType, { message: string; buttonText: string }> = {
     unauthorized: {
         message:
             'You do not have permission to access this page. Contact your administrator if you believe you have reached this page in error.',
-        buttonText: 'Home Page',
-        onClick: () => (window.location.href = AUTHCALLBACK)
+        buttonText: 'Home Page'
     },
     'not-found': {
         message: 'The page you requested does not exist.',
-        buttonText: 'Home Page',
-        onClick: () => (window.location.href = AUTHCALLBACK)
+        buttonText: 'Home Page'
     },
     'server-error': {
         message: 'An unexpected error occurred. Please try again later.',
-        buttonText: 'Home Page',
-        onClick: () => (window.location.href = AUTHCALLBACK)
+        buttonText: 'Home Page'
     }
 };
 
@@ -37,19 +32,28 @@ export default function Error({
     message: customMessage,
     navigateTo
 }: ErrorPageProps) {
-    const {
-        message: defaultMessage,
-        buttonText,
-        onClick
-    } = errorMap[type ?? 'server-error'];
+    const { message: defaultMessage, buttonText } =
+        errorMap[type ?? 'server-error'];
     const navigate = useNavigate();
     const label = back ? 'Go Back' : buttonText;
     const displayMessage = customMessage ?? defaultMessage;
+
+    const handleHomeClick = async () => {
+        const response = await API.get<User>('auth');
+        if (response.success) {
+            window.location.href = AUTHCALLBACK;
+            return;
+        }
+        window.location.href = '/';
+    };
+
     const clickHandler = navigateTo
         ? () => navigate(navigateTo)
         : back
-          ? () => navigate(-2)
-          : onClick;
+          ? () => navigate(-1)
+          : () => {
+                void handleHomeClick();
+            };
 
     return (
         <div className="flex items-center justify-center min-h-screen">

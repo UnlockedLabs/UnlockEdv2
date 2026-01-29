@@ -368,3 +368,5 @@ export { BulkCancelSessionsPreview } from './BulkCancelSessionsPreview';
 export { BulkUploadModal } from './BulkUploadModal';
 export { ValidationResultsModal } from './ValidationResultsModal';
 export { UploadCompleteModal } from './UploadCompleteModal';
+
+export { RoomConflictModal } from './RoomConflictModal';
