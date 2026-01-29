@@ -117,6 +117,12 @@ func (env *TestEnv) CreateTestUser(username string, role models.UserRole, facili
 	return user, nil
 }
 
+func (env *TestEnv) CreateTestInstructor(facilityID uint, usernamePrefix string) (*models.User, error) {
+	// Use no separator to comply with alphanumunicode validation (no underscores or hyphens allowed)
+	username := fmt.Sprintf("instructor%s", usernamePrefix)
+	return env.CreateTestUser(username, models.FacilityAdmin, facilityID, "")
+}
+
 func (env *TestEnv) CreateTestFacility(name string) (*models.Facility, error) {
 
 	facility := &models.Facility{
@@ -197,21 +203,21 @@ func (env *TestEnv) CleanupDatabase() error {
 	return nil
 }
 
-func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Facility, status models.ClassStatus) (*models.ProgramClass, error) {
+func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Facility, status models.ClassStatus, instructorID *uint) (*models.ProgramClass, error) {
 	endDt := time.Now().Add(time.Hour * 24)
 	creditHours := int64(2)
 
 	class := &models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Test Class",
-		InstructorName: "Test Instructor",
-		Description:    "This is a test class created for integration testing purposes.",
-		StartDt:        time.Now(),
-		EndDt:          &endDt,
-		Status:         status,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Test Class",
+		InstructorID: instructorID,
+		Description:  "This is a test class created for integration testing purposes.",
+		StartDt:      time.Now(),
+		EndDt:        &endDt,
+		Status:       status,
+		CreditHours:  &creditHours,
 	}
 
 	if err := env.DB.Create(class).Error; err != nil {

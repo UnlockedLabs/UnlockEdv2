@@ -27,10 +27,16 @@ func TestSchedulingConflictDetection(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	// Create Class A: Mon/Wed/Fri 10:00-11:00
-	classA, err := env.CreateTestClass(program, facility, models.Active)
+	instructorA, err := env.CreateTestInstructor(facility.ID, "conflicta")
 	require.NoError(t, err)
-	classB, err := env.CreateTestClass(program, facility, models.Active)
+
+	instructorB, err := env.CreateTestInstructor(facility.ID, "conflictb")
+	require.NoError(t, err)
+
+	// Create Class A: Mon/Wed/Fri 10:00-11:00
+	classA, err := env.CreateTestClass(program, facility, models.Active, &instructorA.ID)
+	require.NoError(t, err)
+	classB, err := env.CreateTestClass(program, facility, models.Active, &instructorB.ID)
 	require.NoError(t, err)
 
 	// Create test room for events

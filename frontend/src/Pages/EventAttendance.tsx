@@ -180,7 +180,7 @@ export default function EventAttendance() {
         const mergedRows: LocalRowData[] = items.map((item) => {
             const reasonValue = isPresentLike(item.attendance_status)
                 ? ''
-                : item.reason_category ?? '';
+                : (item.reason_category ?? '');
             if (!modifiedRows[item.user_id]) {
                 setValue(`reason_${item.user_id}`, reasonValue);
             }
@@ -313,21 +313,22 @@ export default function EventAttendance() {
                 reason_category:
                     newStatus === Attendance.Present
                         ? ''
-                        : prev[user_id]?.reason_category ??
-                          AttendanceReason.Lockdown,
+                        : (prev[user_id]?.reason_category ??
+                          AttendanceReason.Lockdown),
                 check_in_at:
                     newStatus === Attendance.Present
-                        ? prev[user_id]?.check_in_at ??
+                        ? (prev[user_id]?.check_in_at ??
                           currentRow.check_in_at ??
-                          getDefaultTimes(currentRow).check_in_at
+                          getDefaultTimes(currentRow).check_in_at)
                         : undefined,
                 check_out_at:
                     newStatus === Attendance.Present
-                        ? prev[user_id]?.check_out_at ?? currentRow.check_out_at
+                        ? (prev[user_id]?.check_out_at ??
+                          currentRow.check_out_at)
                         : undefined,
                 minutes_attended: isPresentLike(newStatus)
-                    ? prev[user_id]?.minutes_attended ??
-                      currentRow.minutes_attended
+                    ? (prev[user_id]?.minutes_attended ??
+                      currentRow.minutes_attended)
                     : undefined
             }
         }));
@@ -349,7 +350,7 @@ export default function EventAttendance() {
                 note:
                     (newReason as AttendanceReason) !== AttendanceReason.Other
                         ? ''
-                        : prev[user_id]?.note ?? ''
+                        : (prev[user_id]?.note ?? '')
             }
         }));
     }

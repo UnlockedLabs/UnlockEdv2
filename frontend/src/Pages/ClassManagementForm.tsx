@@ -7,6 +7,7 @@ import {
     TextInput,
     CancelButton,
     CloseX,
+    ObjectDropdownInput,
     RoomSelector
 } from '@/Components/inputs';
 import {
@@ -33,7 +34,8 @@ import { RRule } from 'rrule';
 import moment from 'moment';
 import { toZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/useAuth';
-import { ShortCalendarEvent } from '@/types/events';
+import { ShortCalendarEvent, Instructor } from '@/types/events';
+import useSWR from 'swr';
 
 export default function ClassManagementForm() {
     const { user } = useAuth();
@@ -56,6 +58,7 @@ export default function ClassManagementForm() {
     const isNewClass = class_id === 'new' || !class_id;
     const {
         register,
+        unregister,
         handleSubmit,
         getValues,
         watch,
@@ -63,6 +66,7 @@ export default function ClassManagementForm() {
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
+            instructor_id: undefined,
             events: [{ recurrence_rule: '', duration: '' }]
         }
     });
@@ -77,6 +81,19 @@ export default function ClassManagementForm() {
 
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
+
+    const {
+        data: instructorsResponse,
+        error: instructorsError,
+        isLoading: instructorsLoading
+    } = useSWR<{ message: string; data: Instructor[] }, Error>(
+        user?.facility?.id
+            ? `/api/facilities/${user.facility.id}/instructors`
+            : null
+    );
+
+    const instructors = instructorsResponse?.data ?? [];
+
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
@@ -87,6 +104,12 @@ export default function ClassManagementForm() {
         const formattedJson = {
             ...data,
             ...(class_id && { id: Number(class_id) }),
+            instructor_id:
+                data.instructor_id !== undefined &&
+                data.instructor_id !== null &&
+                data.instructor_id !== 0
+                    ? Number(data.instructor_id)
+                    : null,
             start_dt: new Date(data.start_dt),
             end_dt: data.end_dt ? new Date(data.end_dt) : null,
             capacity: Number(data.capacity),
@@ -175,11 +198,21 @@ export default function ClassManagementForm() {
     }, [nameValue, rruleIsValid]);
 
     useEffect(() => {
+        if (instructorsError) {
+            toaster('Failed to load instructors', ToastState.error);
+            console.error('Error fetching instructors:', instructorsError);
+        }
+    }, [instructorsError, toaster]);
+
+    // Set form values for editing - wait for instructors to load first
+    useEffect(() => {
         if (isNewClass) return;
-        if (clsLoader.class) {
+
+        if (clsLoader.class && instructors.length > 0) {
+            unregister('events');
             setEditFormValues(clsLoader.class);
         }
-    }, [id, class_id, reset]);
+    }, [isNewClass, clsLoader.class, instructors.length]);
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
@@ -191,9 +224,12 @@ export default function ClassManagementForm() {
                 .split('T')[0];
         }
 
+        const instructorId = editCls.instructor_id ?? editCls.instructor?.id;
         setSelectedRoomId(editCls.events[0].room_id ?? null);
         reset({
             ...values,
+            instructor_id:
+                instructorId && instructorId > 0 ? instructorId : undefined,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
@@ -273,13 +309,33 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <TextInput
+                        <ObjectDropdownInput
                             label="Instructor"
-                            register={register}
-                            interfaceRef="instructor_name"
+                            interfaceRef="instructor_id"
                             required
-                            length={255}
                             errors={errors}
+                            register={register}
+                            options={instructors}
+                            valueKey="id"
+                            labelFn={(instructor) =>
+                                `${instructor.name_first} ${instructor.name_last}`.trim()
+                            }
+                            isLoading={instructorsLoading}
+                            placeholder="Select an instructor"
+                            validation={{
+                                required: 'Instructor selection is required',
+                                validate: (value) => {
+                                    if (
+                                        value === 0 ||
+                                        value === undefined ||
+                                        value === null
+                                    ) {
+                                        return 'Please select an instructor (Unassigned is not allowed)';
+                                    }
+                                    return true;
+                                }
+                            }}
+                            filterFn={(instructor) => instructor.id !== 0}
                         />
                         <NumberInput
                             label="Capacity"

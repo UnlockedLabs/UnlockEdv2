@@ -103,7 +103,7 @@ class API {
                 };
                 const errorData = Array.isArray(data?.data)
                     ? (data.data as unknown as T)
-                    : data?.data ?? ({} as T);
+                    : (data?.data ?? ({} as T));
                 error.response = {
                     type: 'one',
                     success: false,
