@@ -136,7 +136,7 @@ function ClassInfoCard({
         const nextOccurrence =
             sortedDates.length > 0 ? sortedDates[0] : undefined;
         let formattedOccurence;
-        if (nextOccurrence && user && nextOccurrence instanceof Date) {
+        if (nextOccurrence && user) {
             formattedOccurence = textMonthLocalDate(
                 getDateObj(nextOccurrence),
                 true,
@@ -150,7 +150,7 @@ function ClassInfoCard({
 
     return (
         <div className="card card-row-padding flex flex-col h-full gap-4">
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2">
                 <h1>{classInfo.name}</h1>
                 <button
                     className={`body text-teal-3 cursor-pointer flex items-center gap-1 tooltip-bottom ${blockEdits ? 'tooltip' : ''}`}
