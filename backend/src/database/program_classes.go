@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	log "github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
-	"golang.org/x/net/context"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
