@@ -6,7 +6,8 @@ import {
     TextAreaInput,
     TextInput,
     CancelButton,
-    CloseX
+    CloseX,
+    ObjectDropdownInput
 } from '@/Components/inputs';
 import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
@@ -278,57 +279,34 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text font-medium">
-                                    Instructor
-                                </span>
-                                <span className="label-text-alt text-error">
-                                    *
-                                </span>
-                            </label>
-                            <select
-                                {...register('instructor_id', {
-                                    required:
-                                        'Instructor selection is required',
-                                    valueAsNumber: true,
-                                    validate: (value) => {
-                                        if (
-                                            value === 0 ||
-                                            value === undefined ||
-                                            value === null
-                                        ) {
-                                            return 'Please select an instructor (Unassigned is not allowed)';
-                                        }
-                                        return true;
+                        <ObjectDropdownInput
+                            label="Instructor"
+                            interfaceRef="instructor_id"
+                            required
+                            errors={errors}
+                            register={register}
+                            options={instructors}
+                            valueKey="id"
+                            labelFn={(instructor) =>
+                                `${instructor.name_first} ${instructor.name_last}`.trim()
+                            }
+                            isLoading={instructorsLoading}
+                            placeholder="Select an instructor"
+                            validation={{
+                                required: 'Instructor selection is required',
+                                validate: (value) => {
+                                    if (
+                                        value === 0 ||
+                                        value === undefined ||
+                                        value === null
+                                    ) {
+                                        return 'Please select an instructor (Unassigned is not allowed)';
                                     }
-                                })}
-                                className={`select select-bordered w-full ${errors.instructor_id ? 'select-error' : ''}`}
-                                disabled={instructorsLoading}
-                            >
-                                <option value="">Select an instructor</option>
-                                {instructors
-                                    .filter((instructor) => instructor.id !== 0)
-                                    .map((instructor) => (
-                                        <option
-                                            key={instructor.id}
-                                            value={instructor.id}
-                                        >
-                                            {`${instructor.name_first} ${instructor.name_last}`.trim()}
-                                        </option>
-                                    ))}
-                            </select>
-                            {instructorsLoading && (
-                                <span className="loading loading-spinner loading-sm"></span>
-                            )}
-                            {errors.instructor_id && (
-                                <label className="label">
-                                    <span className="label-text-alt text-error">
-                                        {errors.instructor_id.message}
-                                    </span>
-                                </label>
-                            )}
-                        </div>
+                                    return true;
+                                }
+                            }}
+                            filterFn={(instructor) => instructor.id !== 0}
+                        />
                         <NumberInput
                             label="Capacity"
                             register={register}
