@@ -1,5 +1,5 @@
 ARG FFMPEG_VERSION=7.1
-ARG GOLANG_VERSION=1.25.5
+ARG GOLANG_VERSION=1.25.6
 
 FROM mwader/static-ffmpeg:$FFMPEG_VERSION AS ffmpeg
 
@@ -9,7 +9,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 FROM golang:$GOLANG_VERSION-alpine as builder
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o provider-service provider-middleware/. 
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o provider-service provider-middleware/.
 
 
 FROM golang:$GOLANG_VERSION-alpine as final
