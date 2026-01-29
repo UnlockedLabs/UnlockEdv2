@@ -1,15 +1,17 @@
 import { useEffect, useState, useContext } from 'react';
 import Brand from '../Components/Brand';
-import { INIT_KRATOS_LOGIN_FLOW, ServerResponse, User } from '@/common';
+import { INIT_KRATOS_LOGIN_FLOW, User } from '@/common';
 import API from '@/api/api';
 import { Link } from 'react-router-dom';
 import { AUTHCALLBACK } from '@/useAuth';
 import Timeline from '@/Components/Timeline';
 import { ThemeContext } from '@/Context/ThemeContext';
+import { tabSessionManager } from '@/tabSession';
 
 export default function Welcome() {
     const [authUser, setAuthUser] = useState<User | undefined>();
     const [imgSrc, setImgSrc] = useState('unlockedv2Dk.png');
+    const [hasStaleSession, setHasStaleSession] = useState(false);
     const { theme } = useContext(ThemeContext);
 
     useEffect(() => {
@@ -21,15 +23,23 @@ export default function Welcome() {
         img.onload = () => {
             setImgSrc(imgPath);
         };
-        API.get<User>(`auth`)
-            .then((user: ServerResponse<User>) => {
+        const checkAuth = async () => {
+            try {
+                const user = await API.get<User>('auth');
                 if (user.success) {
-                    setAuthUser(user.data as User);
+                    const hasValidTabSession =
+                        await tabSessionManager.validateSession();
+                    if (hasValidTabSession) {
+                        setAuthUser(user.data as User);
+                    } else {
+                        setHasStaleSession(true);
+                    }
                 }
-            })
-            .catch(() => {
+            } catch {
                 return;
-            });
+            }
+        };
+        void checkAuth();
     }, [theme]);
 
     return (
@@ -42,7 +52,15 @@ export default function Welcome() {
                     <ul className="menu menu-horizontal px-1 text-primary">
                         {!authUser ? (
                             <li>
-                                <a href={INIT_KRATOS_LOGIN_FLOW}>Log in</a>
+                                <a
+                                    href={
+                                        hasStaleSession
+                                            ? `${INIT_KRATOS_LOGIN_FLOW}?refresh=true`
+                                            : INIT_KRATOS_LOGIN_FLOW
+                                    }
+                                >
+                                    Log in
+                                </a>
                             </li>
                         ) : (
                             <li>

@@ -13,6 +13,7 @@ import {
     FeatureAccess
 } from './common';
 import API from './api/api';
+import { tabSessionManager } from './tabSession';
 
 interface AuthContextType {
     user: User | undefined;
@@ -123,6 +124,13 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
         return json<AuthFlow>(redirectTo(INIT_KRATOS_LOGIN_FLOW));
     }
     const attributes = await initFlow(flow);
+    if (!tabSessionManager.hasLocalSession()) {
+        return json<AuthFlow>({
+            flow_id: attributes.flow_id,
+            challenge: attributes.challenge,
+            csrf_token: attributes.csrf_token
+        });
+    }
     try {
         const checkResp = await fetch(SESSION_URL, {
             credentials: 'include'
@@ -158,6 +166,7 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
 
 export async function handleLogout(): Promise<void> {
     try {
+        tabSessionManager.onLogout();
         const resp = await API.post<AuthResponse, object>('logout', {});
         if (resp.success) {
             const logout = await fetch(
