@@ -11,6 +11,7 @@ import (
 	"github.com/teambition/rrule-go"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type BulkCancelClaims interface {
@@ -715,24 +716,20 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		classMap[classID].ClassName = nameMap[classID]
 	}
 
+	var overrides []models.ProgramClassEventOverride
 	var auditEntries []models.ChangeLogEntry
 	for _, instance := range newCancellations {
 		overrideRrule := fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=1",
 			instance.Occurrence.Format("20060102T150405Z"))
 
-		override := models.ProgramClassEventOverride{
+		overrides = append(overrides, models.ProgramClassEventOverride{
 			EventID:       instance.Event.ID,
 			OverrideRrule: overrideRrule,
 			Duration:      instance.Event.Duration,
 			Room:          instance.Event.Room,
 			IsCancelled:   true,
 			Reason:        req.Reason,
-		}
-
-		if err := tx.Create(&override).Error; err != nil {
-			tx.Rollback()
-			return nil, newCreateDBError(err, "event override")
-		}
+		})
 
 		oldStatus := "Scheduled"
 		newStatus := "Cancelled"
@@ -746,6 +743,19 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 			claims.GetUserID(),
 		)
 		auditEntries = append(auditEntries, *auditEntry)
+	}
+
+	// Bulk insert overrides with ON CONFLICT DO NOTHING for idempotency (unique partial index on event_id, override_rrule WHERE deleted_at IS NULL).
+	if len(overrides) > 0 {
+		const overrideBatchSize = 100
+		if err := tx.Clauses(clause.OnConflict{
+			Columns:     []clause.Column{{Name: "event_id"}, {Name: "override_rrule"}},
+			TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: "deleted_at IS NULL"}}},
+			DoNothing:   true,
+		}).CreateInBatches(overrides, overrideBatchSize).Error; err != nil {
+			tx.Rollback()
+			return nil, newCreateDBError(err, "event override")
+		}
 	}
 
 	if len(auditEntries) > 0 {
