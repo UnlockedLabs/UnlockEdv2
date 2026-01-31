@@ -155,7 +155,7 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
                       required: false,
                       uniqueComponent: (
                           <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-                              <p className="text-sm text-red-600">
+                              <p className="text-sm text-error">
                                   {error ?? 'Failed to load instructors'}
                               </p>
                           </div>

@@ -60,7 +60,7 @@ export const BulkCancelSessionsConfirmModal = forwardRef(function (
             ) {
                 const successMessage =
                     responseData.message ??
-                    `Successfully cancelled ${responseData.sessionCount ?? 0} sessions across ${responseData.classCount ?? 0} classes. ${responseData.studentCount ?? 0} students were affected.`;
+                    `Successfully cancelled ${responseData.sessionCount ?? 0} session${responseData.sessionCount === 1 ? '' : 's'} across ${responseData.classCount ?? 0} class${responseData.classCount === 1 ? '' : 'es'}. ${responseData.studentCount ?? 0} students were affected.`;
 
                 checkResponse(
                     Boolean(responseData.success),
@@ -117,7 +117,7 @@ export const BulkCancelSessionsConfirmModal = forwardRef(function (
 
         return isPastDate
             ? 'You are cancelling sessions in the past. This action cannot be undone. Are you sure you want to continue?'
-            : `Are you sure you want to cancel ${preview.upcomingSessionCount ?? 0} sessions across ${preview.classCount ?? 0} classes? This action cannot be undone.`;
+            : `Are you sure you want to cancel ${preview.upcomingSessionCount ?? 0} session${preview.upcomingSessionCount === 1 ? '' : 's'} across ${preview.classCount ?? 0} class${preview.classCount === 1 ? '' : 'es'}? This action cannot be undone.`;
     };
 
     return (
@@ -129,7 +129,7 @@ export const BulkCancelSessionsConfirmModal = forwardRef(function (
                 <p>
                     {getConfirmationText()}
                     {error && (
-                        <div className="mt-3 text-sm text-red-600">{error}</div>
+                        <div className="mt-3 text-sm text-error">{error}</div>
                     )}
                 </p>
             }
