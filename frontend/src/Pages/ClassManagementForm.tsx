@@ -7,8 +7,7 @@ import {
     TextInput,
     CancelButton,
     CloseX,
-    RoomSelector,
-    ObjectDropdownInput
+    RoomSelector
 } from '@/Components/inputs';
 import {
     ProgClassStatus,
@@ -19,7 +18,7 @@ import {
     RoomConflict
 } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
 import EventCalendar from '@/Components/EventCalendar';
@@ -82,17 +81,33 @@ export default function ClassManagementForm() {
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
 
-    const {
-        data: instructorsResponse,
-        error: instructorsError,
-        isLoading: instructorsLoading
-    } = useSWR<{ message: string; data: Instructor[] }, Error>(
+    const { data: instructorsResponse, error: instructorsError } = useSWR<
+        { message: string; data: Instructor[] },
+        Error
+    >(
         user?.facility?.id
             ? `/api/facilities/${user.facility.id}/instructors`
             : null
     );
 
     const instructors = instructorsResponse?.data ?? [];
+
+    const instructorEnum = useMemo(() => {
+        return {
+            'Select an instructor...': '',
+            ...instructors
+                .filter((instructor) => instructor.id !== 0)
+                .reduce(
+                    (acc, instructor) => {
+                        acc[
+                            `${instructor.name_first} ${instructor.name_last}`
+                        ] = instructor.id.toString();
+                        return acc;
+                    },
+                    {} as Record<string, string>
+                )
+        };
+    }, [instructors]);
 
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
@@ -309,33 +324,13 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <ObjectDropdownInput
+                        <DropdownInput
                             label="Instructor"
                             interfaceRef="instructor_id"
                             required
                             errors={errors}
                             register={register}
-                            options={instructors}
-                            valueKey="id"
-                            labelFn={(instructor) =>
-                                `${instructor.name_first} ${instructor.name_last}`.trim()
-                            }
-                            isLoading={instructorsLoading}
-                            placeholder="Select an instructor"
-                            validation={{
-                                required: 'Instructor selection is required',
-                                validate: (value) => {
-                                    if (
-                                        value === 0 ||
-                                        value === undefined ||
-                                        value === null
-                                    ) {
-                                        return 'Please select an instructor (Unassigned is not allowed)';
-                                    }
-                                    return true;
-                                }
-                            }}
-                            filterFn={(instructor) => instructor.id !== 0}
+                            enumType={instructorEnum}
                         />
                         <NumberInput
                             label="Capacity"

@@ -1,7 +1,6 @@
 export { CloseX } from './CloseX';
 export { TextAreaInput } from './TextAreaInput';
 export { DropdownInput } from './DropdownInput';
-export { ObjectDropdownInput } from './ObjectDropdownInput';
 export { TextInput } from './TextInput';
 export { SubmitButton } from './SubmitButton';
 export { MultiSelectDropdown } from './MultiSelectDropdownControl';
