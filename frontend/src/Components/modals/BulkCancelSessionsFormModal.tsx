@@ -10,7 +10,6 @@ import {
     Instructor,
     InstructorClassData
 } from '@/types/events';
-import { BulkCancelSessionsPreview as BulkCancelSessionsPreviewComponent } from './BulkCancelSessionsPreview';
 
 interface BulkCancelSessionsFormModalProps {
     ref: React.ForwardedRef<HTMLDialogElement>;
@@ -25,17 +24,8 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
     { facilityId, onSubmit }: BulkCancelSessionsFormModalProps,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
-    const [preview, setPreview] = useState<BulkCancelSessionsPreview | null>(
-        null
-    );
-    const [showPreview, setShowPreview] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [currentFormValues, setCurrentFormValues] = useState({
-        instructorId: null as number | null,
-        startDate: '',
-        endDate: ''
-    });
 
     const { data: instructorsResponse, error: instructorsError } = useSWR<
         { message: string; data: Instructor[] },
@@ -81,75 +71,6 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
         };
     };
 
-    const generatePreview = async (
-        instructorId: number,
-        startDate: string,
-        endDate: string
-    ) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await API.get(
-                `instructors/${instructorId}/classes?start_date=${startDate}&end_date=${endDate}`
-            );
-
-            const classes = response.data as InstructorClassData[];
-            const previewData = buildPreviewFromClasses(classes);
-            setPreview(previewData);
-            setShowPreview(true);
-        } catch {
-            setError(
-                'Failed to generate preview. Please check your date range and try again.'
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleInstructorChange = (instructorId: number | null) => {
-        setCurrentFormValues((prev) => ({ ...prev, instructorId }));
-        setPreview(null);
-        setShowPreview(false);
-
-        if (
-            instructorId &&
-            currentFormValues.startDate &&
-            currentFormValues.endDate
-        ) {
-            generatePreview(
-                instructorId,
-                currentFormValues.startDate,
-                currentFormValues.endDate
-            ).catch(() => {
-                // Handle preview generation errors silently
-            });
-        }
-    };
-
-    const handleDateChange = (
-        field: 'startDate' | 'endDate',
-        value: string
-    ) => {
-        const newValues = { ...currentFormValues, [field]: value };
-        setCurrentFormValues(newValues);
-        setPreview(null);
-        setShowPreview(false);
-
-        if (
-            currentFormValues.instructorId &&
-            newValues.startDate &&
-            newValues.endDate
-        ) {
-            generatePreview(
-                currentFormValues.instructorId,
-                newValues.startDate,
-                newValues.endDate
-            ).catch(() => {
-                // Handle preview generation errors silently
-            });
-        }
-    };
-
     const handleSubmit: SubmitHandler<FieldValues> = async (data) => {
         setIsLoading(true);
         setError(null);
@@ -162,29 +83,14 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
                 reason: String(data.reason)
             };
 
-            let currentPreview: BulkCancelSessionsPreview | null = preview;
-            if (
-                currentPreview?.sessionCount === undefined ||
-                currentFormValues.instructorId !== request.instructorId ||
-                currentFormValues.startDate !== request.startDate ||
-                currentFormValues.endDate !== request.endDate
-            ) {
-                try {
-                    const response = await API.get(
-                        `instructors/${request.instructorId}/classes?start_date=${request.startDate}&end_date=${request.endDate}`
-                    );
+            const response = await API.get(
+                `instructors/${request.instructorId}/classes?start_date=${request.startDate}&end_date=${request.endDate}`
+            );
 
-                    const classes = response.data as InstructorClassData[];
-                    currentPreview = buildPreviewFromClasses(classes);
-                    setPreview(currentPreview);
-                } catch {
-                    setError('Failed to fetch session data. Please try again.');
-                    setIsLoading(false);
-                    return;
-                }
-            }
+            const classes = response.data as InstructorClassData[];
+            const preview = buildPreviewFromClasses(classes);
 
-            if (currentPreview && currentPreview.upcomingSessionCount === 0) {
+            if (preview.upcomingSessionCount === 0) {
                 setError(
                     'No sessions found to cancel for the selected instructor and date range.'
                 );
@@ -192,10 +98,10 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
                 return;
             }
 
-            onSubmit(request, currentPreview);
+            onSubmit(request, preview);
             setIsLoading(false);
         } catch {
-            setError('Failed to cancel sessions. Please try again.');
+            setError('Failed to fetch session data. Please try again.');
             setIsLoading(false);
         }
     };
@@ -219,27 +125,19 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
                         },
                         {} as Record<string, string>
                     )
-            },
-            onChange: (e) => {
-                const value = e.target.value;
-                handleInstructorChange(
-                    value === '' ? null : parseInt(value, 10)
-                );
             }
         },
         {
             type: FormInputTypes.Date,
             label: 'Start Date',
             interfaceRef: 'startDate',
-            required: true,
-            onChange: (e) => handleDateChange('startDate', e.target.value)
+            required: true
         },
         {
             type: FormInputTypes.Date,
             label: 'End Date',
             interfaceRef: 'endDate',
-            required: true,
-            onChange: (e) => handleDateChange('endDate', e.target.value)
+            required: true
         },
         {
             type: FormInputTypes.Dropdown,
@@ -248,22 +146,6 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
             enumType: CancelEventReason,
             required: true
         },
-        ...(preview && showPreview
-            ? [
-                  {
-                      type: FormInputTypes.Unique,
-                      label: 'Preview',
-                      interfaceRef: '',
-                      required: false,
-                      uniqueComponent: (
-                          <BulkCancelSessionsPreviewComponent
-                              preview={preview}
-                              showPreview={showPreview}
-                          />
-                      )
-                  }
-              ]
-            : []),
         ...(error || instructorsErrorFiltered
             ? [
                   {
