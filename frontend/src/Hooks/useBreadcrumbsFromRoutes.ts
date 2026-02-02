@@ -1,5 +1,5 @@
 import { useMatches } from 'react-router-dom';
-import { BreadcrumbItem } from '@/Components/Breadcrumb';
+import { BreadcrumbItem } from '@/common';
 
 interface RouteData {
     breadcrumbs?: BreadcrumbItem[];

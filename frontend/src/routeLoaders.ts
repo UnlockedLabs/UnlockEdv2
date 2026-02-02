@@ -16,10 +16,29 @@ import {
     ClassLoaderData,
     ProgramOverview,
     SelectedClassStatus,
-    Room
+    Room,
+    BreadcrumbItem
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
+
+function buildClassBreadcrumbs(
+    cls: Class,
+    currentTab: string
+): BreadcrumbItem[] {
+    return [
+        { label: 'Programs', href: '/programs' },
+        {
+            label: cls.program.name,
+            href: `/programs/${cls.program.id}`
+        },
+        {
+            label: cls.name,
+            href: `/program-classes/${cls.id}/dashboard`
+        },
+        { label: currentTab }
+    ];
+}
 
 export const getStudentLevel1Data: LoaderFunction = async ({ request }) => {
     const user = await fetchUser();
@@ -192,17 +211,31 @@ export const getProgramTitle: LoaderFunction = async ({
     };
 };
 
+const tabNameMap: Record<string, string> = {
+    enrollments: 'Enrollment',
+    attendance: 'Attendance',
+    schedule: 'Schedule'
+};
+
 export const getClassTitle: LoaderFunction = async ({
-    params
+    params,
+    request
 }): Promise<ClassLoaderData | Response> => {
     const { class_id } = params;
     const classResp = (await API.get(
         `program-classes/${class_id}`
     )) as ServerResponseOne<Class>;
     if (classResp.success) {
+        const cls = classResp.data;
+        const url = new URL(request.url);
+        const pathParts = url.pathname.split('/');
+        const tabSegment = pathParts[pathParts.length - 1];
+        const tabName = tabNameMap[tabSegment] ?? tabSegment;
+
         return {
-            title: classResp.data.name,
-            class: classResp.data
+            title: cls.name,
+            class: cls,
+            breadcrumbs: buildClassBreadcrumbs(cls, tabName)
         };
     } else {
         return redirectOnError(classResp);
@@ -241,8 +274,10 @@ export const getClassMgmtData: LoaderFunction = async ({
     }
     return {
         title: className,
+        class: cls,
         attendance_rate: attendanceRate,
-        missing_attendance: missingAttendance
+        missing_attendance: missingAttendance,
+        breadcrumbs: cls ? buildClassBreadcrumbs(cls, 'Dashboard') : undefined
     };
 };
 
