@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -295,7 +296,7 @@ func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta mod
 		pageMeta.LastPage++
 		pageMeta.Total++
 	}
-	if (args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && numOfHistoryEvents < args.PerPage)) && (len(categories) == 0 || srv.containsCategory(categories, "info")) { //add get class created by here
+	if (args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && numOfHistoryEvents < args.PerPage)) && (len(categories) == 0 || slices.Contains(categories, "info")) { //add get class created by here
 		switch tableName {
 		case "programs":
 			createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, args)
@@ -358,13 +359,4 @@ func (srv *Server) handleGetProgramFilters(w http.ResponseWriter, r *http.Reques
 		CreditTypes:  models.AllCreditTypes,
 	}
 	return writeJsonResponse(w, http.StatusOK, resp)
-}
-
-func (srv *Server) containsCategory(categories []string, target string) bool {
-	for _, category := range categories {
-		if category == target {
-			return true
-		}
-	}
-	return false
 }

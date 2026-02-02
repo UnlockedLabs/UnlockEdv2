@@ -148,10 +148,16 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
     const categories = tagsResp.data as Option[];
     let program: ProgramOverview | undefined;
     let redirect: string | undefined;
+    let breadcrumbs: BreadcrumbItem[] | undefined;
+
     if (program_id) {
         const resp = await API.get(`programs/${program_id}`);
         if (resp.success) {
             program = resp.data as ProgramOverview;
+            breadcrumbs = [
+                { label: 'Programs', href: '/programs' },
+                { label: program.name }
+            ];
         } else {
             redirectOnError(resp);
         }
@@ -159,7 +165,8 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
     return json({
         categories: categories,
         program: program,
-        redirect: redirect
+        redirect: redirect,
+        breadcrumbs
     });
 };
 
