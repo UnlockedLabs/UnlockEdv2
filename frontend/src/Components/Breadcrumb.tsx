@@ -1,9 +1,5 @@
 import { Link } from 'react-router-dom';
-
-export interface BreadcrumbItem {
-    label: string;
-    href?: string;
-}
+import { BreadcrumbItem } from '@/common';
 
 interface BreadcrumbProps {
     items: BreadcrumbItem[];
