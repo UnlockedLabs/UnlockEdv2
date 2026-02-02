@@ -173,12 +173,15 @@ export const getProviderPlatforms: LoaderFunction = async () => {
 };
 
 export const getProgramTitle: LoaderFunction = async ({
-    params
+    params,
+    request
 }): Promise<ClassLoaderData | Response> => {
     const { id, class_id } = params;
     let cls: Class | undefined;
     let programName = 'Class Details';
     let rooms: Room[] = [];
+    let breadcrumbs: BreadcrumbItem[] | undefined;
+
     const roomsResp = await API.get('rooms');
     if (roomsResp.success) {
         rooms = roomsResp.data as Room[];
@@ -191,9 +194,6 @@ export const getProgramTitle: LoaderFunction = async ({
             return redirectOnError(resp);
         }
     }
-    // one of the routes this is assigned to, uses either /:program_id || /new
-    // so if the program_id is provided and it's not new, then we make the request and
-    // return a redirect if the class is not found
     if (class_id && class_id != 'new') {
         const classResp = (await API.get(
             `program-classes/${class_id}`
@@ -204,10 +204,28 @@ export const getProgramTitle: LoaderFunction = async ({
             return redirectOnError(classResp);
         }
     }
+
+    const url = new URL(request.url);
+    const isAddEnrollment = url.pathname.includes('enrollments/add') && cls;
+
+    if (isAddEnrollment && cls) {
+        breadcrumbs = [
+            { label: 'Programs', href: '/programs' },
+            { label: cls.program.name, href: `/programs/${cls.program.id}` },
+            { label: cls.name, href: `/program-classes/${cls.id}/dashboard` },
+            {
+                label: 'Enrollment',
+                href: `/program-classes/${cls.id}/enrollments`
+            },
+            { label: 'Add Resident' }
+        ];
+    }
+
     return {
         title: programName,
         class: cls,
-        rooms: rooms
+        rooms: rooms,
+        breadcrumbs
     };
 };
 
@@ -221,7 +239,7 @@ export const getClassTitle: LoaderFunction = async ({
     params,
     request
 }): Promise<ClassLoaderData | Response> => {
-    const { class_id } = params;
+    const { class_id, date } = params;
     const classResp = (await API.get(
         `program-classes/${class_id}`
     )) as ServerResponseOne<Class>;
@@ -229,13 +247,37 @@ export const getClassTitle: LoaderFunction = async ({
         const cls = classResp.data;
         const url = new URL(request.url);
         const pathParts = url.pathname.split('/');
-        const tabSegment = pathParts[pathParts.length - 1];
-        const tabName = tabNameMap[tabSegment] ?? tabSegment;
+        const isEventAttendance =
+            pathParts.includes('events') && pathParts.includes('attendance');
+
+        let breadcrumbs: BreadcrumbItem[];
+        if (isEventAttendance && date) {
+            breadcrumbs = [
+                { label: 'Programs', href: '/programs' },
+                {
+                    label: cls.program.name,
+                    href: `/programs/${cls.program.id}`
+                },
+                {
+                    label: cls.name,
+                    href: `/program-classes/${cls.id}/dashboard`
+                },
+                {
+                    label: 'Attendance',
+                    href: `/program-classes/${cls.id}/attendance`
+                },
+                { label: `Attendance: ${date}` }
+            ];
+        } else {
+            const tabSegment = pathParts[pathParts.length - 1];
+            const tabName = tabNameMap[tabSegment] ?? tabSegment;
+            breadcrumbs = buildClassBreadcrumbs(cls, tabName);
+        }
 
         return {
             title: cls.name,
             class: cls,
-            breadcrumbs: buildClassBreadcrumbs(cls, tabName)
+            breadcrumbs
         };
     } else {
         return redirectOnError(classResp);
