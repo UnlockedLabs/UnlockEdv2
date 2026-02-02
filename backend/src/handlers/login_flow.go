@@ -25,7 +25,7 @@ func (srv *Server) registerLoginFlowRoutes() []routeDef {
 }
 
 const (
-	SessionTimeout      = 12 * time.Hour
+	SessionTimeout      = 4 * time.Hour
 	LoginEndpoint       = "/self-service/login"
 	LogoutEndpoint      = "/self-service/logout/browser"
 	ConsentPutEndpoint  = "/admin/oauth2/auth/requests/consent/accept"

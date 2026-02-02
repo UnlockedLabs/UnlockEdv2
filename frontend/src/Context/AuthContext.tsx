@@ -1,8 +1,9 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { INIT_KRATOS_LOGIN_FLOW, User } from '@/common';
-import { AuthContext, fetchUser } from '@/useAuth';
+import { AuthContext, fetchUser, handleLogout } from '@/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { tabSessionManager } from '@/tabSession';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children
@@ -15,6 +16,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const checkAuth = async () => {
             const authUser = await fetchUser();
             if (authUser) {
+                const hasValidTabSession =
+                    await tabSessionManager.validateSession();
+                if (!hasValidTabSession) {
+                    await handleLogout();
+                    return;
+                }
                 setUser(authUser);
             }
             setLoading(false);
