@@ -169,8 +169,8 @@ export default function StudentManagement() {
                                 ...FilterResidentNames,
                                 'Last Active (Newest)': 'last_login desc',
                                 'Last Active (Oldest)': 'last_login asc',
-                                'Account Created (Newest) ': 'created_at desc',
-                                'Account Created  (Oldest)': 'created_at asc'
+                                'Account Created (Newest)': 'created_at desc',
+                                'Account Created (Oldest)': 'created_at asc'
                             }}
                         />
                         <div className="form-control">

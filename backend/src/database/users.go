@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -44,8 +45,12 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
+	validUserOrderByFields := []string{"name_last", "created_at", "last_login"}
+	if !slices.Contains(validUserOrderByFields, args.OrderBy) {
+		args.OrderBy = "name_last"
+	}
 	orderClause := adjustUserOrderBy(args.OrderClause("users.name_last desc"))
-	if strings.Contains(orderClause, "last_login") {
+	if args.OrderBy == "last_login" {
 		tx = tx.Joins("LEFT JOIN login_metrics ON login_metrics.user_id = users.id")
 		orderClause = adjustLastLoginOrderBy(orderClause)
 	}
