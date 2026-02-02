@@ -7,6 +7,7 @@ import { useMatches } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useBreadcrumb } from '@/Context/BreadcrumbContext';
+import { useBreadcrumbsFromRoutes } from '@/Hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/routeLoaders';
 import Breadcrumb from './Breadcrumb';
 
@@ -27,7 +28,10 @@ export default function PageNav({
     const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
     const pageTitle = resolveTitle(routeHandle, routeData);
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
-    const { breadcrumbItems } = useBreadcrumb();
+    const { breadcrumbItems: contextBreadcrumbs } = useBreadcrumb();
+    const routeBreadcrumbs = useBreadcrumbsFromRoutes();
+    const breadcrumbItems =
+        routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -99,7 +103,7 @@ export default function PageNav({
     };
 
     return (
-        <div className="px-2 py-3 flex justify-between items-center">
+        <div className="px-5 py-3 flex justify-between items-center">
             <div
                 className={`flex flex-col gap-1 ${showOpenMenu ? 'px-3' : ''}`}
             >
@@ -118,16 +122,17 @@ export default function PageNav({
                         />
                     )}
                 </div>
-                {breadcrumbItems.length > 0 && (
+                {breadcrumbItems.length > 0 ? (
                     <div className={showOpenMenu ? '' : 'lg:pl-0 pl-9'}>
                         <Breadcrumb items={breadcrumbItems} />
                     </div>
+                ) : (
+                    <h1 className={showOpenMenu ? '' : 'lg:pl-0 pl-9'}>
+                        {pageTitle === 'Library Viewer'
+                            ? authLayoutPageTitle
+                            : pageTitle}
+                    </h1>
                 )}
-                <h1 className={showOpenMenu ? '' : 'lg:pl-0 pl-9'}>
-                    {pageTitle === 'Library Viewer'
-                        ? authLayoutPageTitle
-                        : pageTitle}
-                </h1>
             </div>
             {user && canSwitchFacility(user) && path !== '/programs' ? (
                 <FacilityDropdownToggle />
