@@ -265,6 +265,7 @@ type FacilityProgramClassEvent struct {
 	ProgramClassEvent
 	Room                string                     `json:"room" gorm:"->"` // read-only, populated from joined rooms table
 	InstructorName      string                     `json:"instructor_name"`
+	ProgramID           uint                       `json:"program_id"`
 	ProgramName         string                     `json:"program_name"`
 	ClassName           string                     `json:"title"`
 	IsCancelled         bool                       `json:"is_cancelled"`
