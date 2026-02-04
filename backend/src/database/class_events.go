@@ -456,6 +456,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
 		Select(`pcev.id, pcev.created_at, pcev.updated_at, pcev.deleted_at, pcev.class_id, pcev.duration, pcev.recurrence_rule, pcev.room_id,
 		r.name as room,
+		c.program_id as program_id,
 		p.name as program_name,
 		c.instructor_name,
 		c.name as class_name,
@@ -474,7 +475,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	if !args.IsAdmin {
 		tx = tx.Where("u.id = ? AND e.enrollment_status = 'Enrolled'", args.UserID)
 	}
-	tx = tx.Group("pcev.id, c.instructor_name, c.name, c.status, p.name, r.name")
+	tx = tx.Group("pcev.id, c.instructor_name, c.name, c.status, c.program_id, p.name, r.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -537,6 +538,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ProgramClassEvent: event.ProgramClassEvent,
 				Room:              event.Room,
 				InstructorName:    event.InstructorName,
+				ProgramID:         event.ProgramID,
 				ProgramName:       event.ProgramName,
 				ClassName:         event.ClassName,
 				EnrolledUsers:     event.EnrolledUsers,
@@ -598,6 +600,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ProgramClassEvent:   pce,
 				Room:                roomName,
 				InstructorName:      event.InstructorName,
+				ProgramID:           event.ProgramID,
 				ProgramName:         event.ProgramName,
 				ClassName:           event.ClassName,
 				EnrolledUsers:       event.EnrolledUsers,
