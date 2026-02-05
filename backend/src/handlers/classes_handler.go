@@ -377,6 +377,20 @@ func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Reque
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 
+	var count int64
+	err := srv.Db.WithContext(r.Context()).
+		Table("program_classes").
+		Where("instructor_id = ? AND facility_id = ?",
+			req.InstructorID, claims.FacilityID).
+		Count(&count).Error
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if count == 0 {
+		return newBadRequestServiceError(nil,
+			"instructor not found or does not belong to your facility")
+	}
+
 	claimsAdapter := &BulkCancelClaimsAdapter{Claims: claims}
 
 	response, err := srv.Db.BulkCancelSessions(&req, int(claims.FacilityID), claimsAdapter)
