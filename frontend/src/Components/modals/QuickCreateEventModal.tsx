@@ -205,7 +205,7 @@ export const QuickCreateEventModal = forwardRef<
     return (
         <>
             <dialog ref={ref} className="modal" onClose={handleClose}>
-                <div className="modal-box">
+                <div className="modal-box max-h-[90vh] overflow-y-auto no-scrollbar">
                     <CloseX close={handleClose} />
                     <span className="text-3xl font-semibold pb-6 text-neutral block">
                         Quick Create Event
