@@ -7,7 +7,8 @@ import {
     TextInput,
     CancelButton,
     CloseX,
-    RoomSelector
+    RoomSelector,
+    InstructorSelector
 } from '@/Components/inputs';
 import {
     ProgClassStatus,
@@ -18,7 +19,7 @@ import {
     RoomConflict
 } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
 import EventCalendar from '@/Components/EventCalendar';
@@ -33,8 +34,7 @@ import { RRule } from 'rrule';
 import moment from 'moment';
 import { toZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/useAuth';
-import { ShortCalendarEvent, Instructor } from '@/types/events';
-import useSWR from 'swr';
+import { ShortCalendarEvent } from '@/types/events';
 
 export default function ClassManagementForm() {
     const { user } = useAuth();
@@ -62,6 +62,7 @@ export default function ClassManagementForm() {
         watch,
         reset,
         unregister,
+        setValue,
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
@@ -80,34 +81,6 @@ export default function ClassManagementForm() {
 
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
-
-    const { data: instructorsResponse, error: instructorsError } = useSWR<
-        { message: string; data: Instructor[] },
-        Error
-    >(
-        user?.facility?.id
-            ? `/api/facilities/${user.facility.id}/instructors`
-            : null
-    );
-
-    const instructors = instructorsResponse?.data ?? [];
-
-    const instructorEnum = useMemo(() => {
-        return {
-            'Select an instructor...': '',
-            ...instructors
-                .filter((instructor) => instructor.id !== 0)
-                .reduce(
-                    (acc, instructor) => {
-                        acc[
-                            `${instructor.name_first} ${instructor.name_last}`
-                        ] = instructor.id.toString();
-                        return acc;
-                    },
-                    {} as Record<string, string>
-                )
-        };
-    }, [instructors]);
 
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
@@ -213,21 +186,13 @@ export default function ClassManagementForm() {
     }, [nameValue, rruleIsValid]);
 
     useEffect(() => {
-        if (instructorsError) {
-            toaster('Failed to load instructors', ToastState.error);
-            console.error('Error fetching instructors:', instructorsError);
-        }
-    }, [instructorsError, toaster]);
-
-    // Set form values for editing - wait for instructors to load first
-    useEffect(() => {
         if (isNewClass) return;
 
-        if (clsLoader.class && instructors.length > 0) {
+        if (clsLoader.class) {
             unregister('events');
             setEditFormValues(clsLoader.class);
         }
-    }, [isNewClass, clsLoader.class, instructors.length]);
+    }, [isNewClass, clsLoader.class]);
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
@@ -324,13 +289,15 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <DropdownInput
+                        <InstructorSelector
                             label="Instructor"
-                            interfaceRef="instructor_id"
+                            value={watch('instructor_id') ?? null}
+                            onChange={(id) =>
+                                setValue('instructor_id', id ?? undefined)
+                            }
                             required
-                            errors={errors}
-                            register={register}
-                            enumType={instructorEnum}
+                            error={errors.instructor_id?.message}
+                            facilityId={user.facility.id}
                         />
                         <NumberInput
                             label="Capacity"
