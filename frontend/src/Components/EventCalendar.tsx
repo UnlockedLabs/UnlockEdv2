@@ -10,13 +10,15 @@ interface EventCalendarProps {
     view?: View;
     classId?: string;
     handleDateClick?: (event: FacilityProgramClassEvent) => void;
+    onSlotSelect?: (slotInfo: { start: Date; end: Date }) => void;
 }
 
 export default function EventCalendar({
     events,
     view = 'month',
     classId,
-    handleDateClick
+    handleDateClick,
+    onSlotSelect
 }: EventCalendarProps) {
     const eventPropGetter = (event: FacilityProgramClassEvent) => {
         if (event.is_cancelled) {
@@ -43,9 +45,13 @@ export default function EventCalendar({
                 endAccessor="end"
                 style={{ height: 600 }}
                 defaultView={view}
+                selectable={!!onSlotSelect}
                 onSelectEvent={handleDateClick}
+                onSelectSlot={onSlotSelect}
                 eventPropGetter={eventPropGetter}
                 scrollToTime={scrollTime}
+                step={30}
+                timeslots={2}
             />
         </div>
     );

@@ -365,3 +365,5 @@ export { ValidationResultsModal } from './ValidationResultsModal';
 export { UploadCompleteModal } from './UploadCompleteModal';
 
 export { RoomConflictModal } from './RoomConflictModal';
+
+export { QuickCreateEventModal } from './QuickCreateEventModal';
