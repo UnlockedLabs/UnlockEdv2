@@ -165,6 +165,11 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
             : [])
     ];
 
+    const handleClose = () => {
+        setError(null);
+        setIsLoading(false);
+    };
+
     return (
         <FormModal
             submitText={isLoading ? 'Processing...' : 'Cancel Sessions'}
@@ -173,6 +178,7 @@ export const BulkCancelSessionsFormModal = forwardRef(function (
             inputs={bulkCancelSessionsInputs}
             showCancel={true}
             onSubmit={handleSubmit}
+            onClose={handleClose}
         />
     );
 });
