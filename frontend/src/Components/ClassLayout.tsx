@@ -386,7 +386,7 @@ export default function ClassLayout() {
                                                     {item.flag_type ===
                                                     AttendanceFlagType.NoAttendance
                                                         ? 'no attendance yet'
-                                                        : 'multiple abscences'}
+                                                        : 'multiple absences'}
                                                 </td>
                                             </tr>
                                         )
