@@ -5,9 +5,10 @@ import {
 } from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
+import { QuickCreateEventModal, showModal } from '@/Components/modals';
 import { FacilityProgramClassEvent } from '@/types/events';
 import { useAuth } from '@/useAuth';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toZonedTime } from 'date-fns-tz';
@@ -21,6 +22,15 @@ export default function Schedule() {
     const [showAllClasses, setShowAllClasses] = useState(false);
     const [selectedEvent, setSelectedEvent] =
         useState<FacilityProgramClassEvent | null>(null);
+    const [slotInfo, setSlotInfo] = useState<{
+        start: Date;
+        end: Date;
+    } | null>(null);
+    const quickCreateModalRef = useRef<HTMLDialogElement>(null);
+
+    useEffect(() => {
+        if (slotInfo) showModal(quickCreateModalRef);
+    }, [slotInfo]);
 
     const navigate = useNavigate();
     const clsLoader = useLoaderData() as ClassLoaderData;
@@ -101,6 +111,7 @@ export default function Schedule() {
                     events={formattedEvents}
                     view="week"
                     handleDateClick={(event) => setSelectedEvent(event)}
+                    onSlotSelect={(slot) => setSlotInfo(slot)}
                 />
             </div>
             <div className="w-1/4 flex flex-col gap-2">
@@ -115,6 +126,18 @@ export default function Schedule() {
                     setShowAllClasses={setShowAllClasses}
                 />
             </div>
+            {slotInfo && (
+                <QuickCreateEventModal
+                    key={slotInfo.start.toISOString()}
+                    ref={quickCreateModalRef}
+                    slotStart={slotInfo.start}
+                    slotEnd={slotInfo.end}
+                    classId={class_id}
+                    classData={clsLoader?.class}
+                    mutate={mutateEvents}
+                    handleCallback={clearSelectedEvent}
+                />
+            )}
         </div>
     );
 }

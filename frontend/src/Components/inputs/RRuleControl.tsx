@@ -41,6 +41,8 @@ interface RRuleControlProp {
     initialDuration?: string;
     startDateVal?: string;
     endDateVal?: string;
+    initialStartTime?: string;
+    initialEndTime?: string;
 }
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
     function RRuleControl(
@@ -55,7 +57,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             initialRule,
             initialDuration,
             startDateVal,
-            endDateVal
+            endDateVal,
+            initialStartTime,
+            initialEndTime
         },
         ref
     ) {
@@ -227,6 +231,15 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         useEffect(() => {
             onChange?.(canCreateRule());
         }, [startTime, endTime, interval, frequency, byWeekDays, endOption]);
+
+        useEffect(() => {
+            if (!initialRule && initialStartTime) {
+                setStartTime(initialStartTime);
+            }
+            if (!initialRule && initialEndTime) {
+                setEndTime(initialEndTime);
+            }
+        }, []);
 
         useEffect(() => {
             const recurrenceRule = initialRule;

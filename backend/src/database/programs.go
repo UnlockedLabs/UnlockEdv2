@@ -80,9 +80,10 @@ func (db *DB) GetProgramActiveClassFacilities(ctx context.Context, id uint) ([]s
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
-		Preload("Facilities").
 		Preload("ProgramTypes").
-		Preload("ProgramCreditTypes")
+		Preload("ProgramCreditTypes").
+		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
+		Where("fp.facility_id = ?", args.FacilityID)
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_types t ON t.program_id = programs.id").Where("t.id IN (?)", args.Tags)
 	}
