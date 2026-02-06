@@ -36,7 +36,7 @@ export function CheckboxGroupInput<
     columns
 }: CheckboxGroupInputProps<T, TFieldValues>) {
     return (
-        <label className="form-control w-full">
+        <div className="form-control w-full">
             <div className="label">
                 <span className="label-text">{label}</span>
             </div>
@@ -61,9 +61,9 @@ export function CheckboxGroupInput<
                             option !== undefined &&
                             'id' in option &&
                             'name' in option ? (
-                                <div
+                                <label
                                     key={option.id as string | number}
-                                    className="flex flex-row gap-2 items-center py-1"
+                                    className="flex flex-row gap-2 items-center py-1 cursor-pointer"
                                 >
                                     <input
                                         type="checkbox"
@@ -104,10 +104,10 @@ export function CheckboxGroupInput<
                                         }}
                                         disabled={disabled}
                                     />
-                                    <p className="body">
+                                    <span className="body">
                                         {option.name as string}
-                                    </p>
-                                </div>
+                                    </span>
+                                </label>
                             ) : null
                         )}
                     </div>
@@ -116,6 +116,6 @@ export function CheckboxGroupInput<
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message as string}
             </div>
-        </label>
+        </div>
     );
 }
