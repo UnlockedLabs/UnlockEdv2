@@ -1026,12 +1026,18 @@ export interface OpenContentItem {
     channel_title?: string;
 }
 
+export interface BreadcrumbItem {
+    label: string;
+    href?: string;
+}
+
 export interface ClassLoaderData extends TitleHandler {
     class?: Class;
     redirect?: string;
     attendance_rate?: number;
     missing_attendance?: number;
     rooms?: Room[];
+    breadcrumbs?: BreadcrumbItem[];
 }
 
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;

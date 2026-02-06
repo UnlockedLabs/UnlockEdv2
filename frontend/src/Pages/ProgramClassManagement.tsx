@@ -17,6 +17,7 @@ export default function ProgramClassManagement() {
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === tab) ?? tabOptions[0]
     );
+
     const handlePageChange = (tab: Tab) => {
         navigate(`${class_id}/${tab.value}`);
         setActiveTab(tab);

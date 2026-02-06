@@ -10,6 +10,7 @@ import {
     UserRole,
     ValidResident
 } from '@/common';
+import { useBreadcrumb } from '@/Context/BreadcrumbContext';
 import { hasFeature, isUserDeactivated } from '@/useAuth';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
 import { ResponsiveContainer } from 'recharts';
@@ -110,6 +111,20 @@ const ResidentProfile = () => {
     const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(
         'libraries'
     );
+    const { setBreadcrumbItems } = useBreadcrumb();
+
+    useEffect(() => {
+        if (metrics?.user) {
+            setBreadcrumbItems([
+                { label: 'Residents', href: '/residents' },
+                {
+                    label: `${metrics.user.name_first} ${metrics.user.name_last}`
+                }
+            ]);
+        }
+        return () => setBreadcrumbItems([]);
+    }, [metrics?.user, setBreadcrumbItems]);
+
     if (!user) return null;
 
     const { avgNumber, weekNumber, avgLabel, weekLabel } =
