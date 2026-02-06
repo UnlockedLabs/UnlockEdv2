@@ -1118,29 +1118,30 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 		})
 	}
 
-	//checking the overrides for other dates if existing
+	//checking the overrides for rescheduled dates (non-cancelled overrides are reschedule targets)
 	for _, override := range event.Overrides {
-		if override.IsCancelled { // only reschedules are marked cancelled with reason
-			rRule, err := rrule.StrToRRule(override.OverrideRrule)
-			if err != nil || len(rRule.All()) == 0 {
-				continue
-			}
-			overrideDate := rRule.All()[0].In(loc)
-			if overrideDate.Before(start) || !overrideDate.Before(until) {
-				continue
-			}
-			dur, err := time.ParseDuration(override.Duration)
-			if err != nil {
-				logrus.Errorf("error parsing override duration for event: %v", err)
-				dur = duration
-			}
-			classTime := overrideDate.Format("15:04") + "-" + overrideDate.Add(dur).Format("15:04")
-			out = append(out, models.EventDates{
-				EventID:   event.ID,
-				Date:      overrideDate.Format("2006-01-02"),
-				ClassTime: classTime,
-			})
+		if override.IsCancelled {
+			continue
 		}
+		rRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil || len(rRule.All()) == 0 {
+			continue
+		}
+		overrideDate := rRule.All()[0].In(loc)
+		if overrideDate.Before(start) || !overrideDate.Before(until) {
+			continue
+		}
+		dur, err := time.ParseDuration(override.Duration)
+		if err != nil {
+			logrus.Errorf("error parsing override duration for event: %v", err)
+			dur = duration
+		}
+		classTime := overrideDate.Format("15:04") + "-" + overrideDate.Add(dur).Format("15:04")
+		out = append(out, models.EventDates{
+			EventID:   event.ID,
+			Date:      overrideDate.Format("2006-01-02"),
+			ClassTime: classTime,
+		})
 	}
 
 	return out, nil
