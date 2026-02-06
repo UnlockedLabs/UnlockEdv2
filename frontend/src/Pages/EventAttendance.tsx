@@ -280,7 +280,6 @@ export default function EventAttendance() {
 
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {
         if (newStatus === Attendance.Present) {
-            setValue(`note_${user_id}`, '');
             clearErrors(`note_${user_id}`);
             setValue(`reason_${user_id}`, '');
             clearErrors(`reason_${user_id}`);
@@ -308,8 +307,7 @@ export default function EventAttendance() {
                 ...prev[user_id],
                 selected: true,
                 attendance_status: newStatus,
-                note:
-                    newStatus === Attendance.Present ? '' : prev[user_id]?.note,
+                note: prev[user_id]?.note ?? '',
                 reason_category:
                     newStatus === Attendance.Present
                         ? ''
@@ -631,7 +629,8 @@ export default function EventAttendance() {
                                 ) : (
                                     rows.map((row) => {
                                         const noteEnabled =
-                                            row.attendance_status &&
+                                            row.attendance_status;
+                                        const noteRequired =
                                             !isPresentLike(
                                                 row.attendance_status
                                             ) &&
@@ -788,7 +787,7 @@ export default function EventAttendance() {
                                                         required={
                                                             !blockEdits &&
                                                             row.selected &&
-                                                            noteEnabled
+                                                            noteRequired
                                                         }
                                                         length={500}
                                                         errors={errors}
