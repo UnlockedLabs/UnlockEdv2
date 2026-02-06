@@ -167,8 +167,10 @@ export default function StudentManagement() {
                             setState={setSortQuery}
                             enumType={{
                                 ...FilterResidentNames,
-                                'Account Created (Newest) ': 'created_at desc',
-                                'Account Created  (Oldest)': 'created_at asc'
+                                'Last Active (Newest)': 'last_login desc',
+                                'Last Active (Oldest)': 'last_login asc',
+                                'Account Created (Newest)': 'created_at desc',
+                                'Account Created (Oldest)': 'created_at asc'
                             }}
                         />
                         <div className="form-control">
