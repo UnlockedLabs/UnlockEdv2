@@ -164,14 +164,9 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 	require.True(t, updatedClass.EndDt.After(*createdClass.EndDt), "End date should be later than original November 30")
 }
 
-<<<<<<< HEAD
 func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
-=======
-func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	instructor, err := env.CreateTestInstructor(facility.ID, "reschedule")
 	require.NoError(t, err)
-
->>>>>>> be61cabc (fix: make it a requirement that the user select an instructor for the class creation and edit and modified tests)
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(4)
@@ -239,14 +234,9 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should remain at original November 30")
 }
 
-<<<<<<< HEAD
 func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
-=======
-func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	instructor, err := env.CreateTestInstructor(facility.ID, "multiple")
 	require.NoError(t, err)
-
->>>>>>> be61cabc (fix: make it a requirement that the user select an instructor for the class creation and edit and modified tests)
 	classStartDate := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 12, 20, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(3)
@@ -329,13 +319,9 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 	require.Equal(t, expectedExtendedEnd, *extendedClass.EndDt, "Class end date should reflect base event UNTIL date")
 }
 
-<<<<<<< HEAD
 func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
-=======
-func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	instructor, err := env.CreateTestInstructor(facility.ID, "completedevents")
 	require.NoError(t, err)
->>>>>>> be61cabc (fix: make it a requirement that the user select an instructor for the class creation and edit and modified tests)
 
 	class, err := env.CreateTestClass(program, facility, models.Scheduled, &instructor.ID)
 	require.NoError(t, err)
@@ -400,14 +386,9 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		ExpectStatus(http.StatusBadRequest)
 }
 
-<<<<<<< HEAD
 func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
-=======
-func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	instructor, err := env.CreateTestInstructor(facility.ID, "startdate")
 	require.NoError(t, err)
-
->>>>>>> be61cabc (fix: make it a requirement that the user select an instructor for the class creation and edit and modified tests)
 	classStartDate := time.Date(2025, 12, 15, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
@@ -473,14 +454,9 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 	require.Equal(t, expectedStartDate, updatedClass.StartDt, "Class start date should sync with original RRULE start date when rescheduled events exist")
 }
 
-<<<<<<< HEAD
 func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
-=======
-func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
 	instructor, err := env.CreateTestInstructor(facility.ID, "cancellation")
 	require.NoError(t, err)
-
->>>>>>> be61cabc (fix: make it a requirement that the user select an instructor for the class creation and edit and modified tests)
 	classStartDate := time.Date(2026, 1, 6, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)

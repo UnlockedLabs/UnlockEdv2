@@ -210,7 +210,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if enrolled > class.Capacity {
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
+	claims = r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = models.UintPtr(claims.UserID)
 
 	var conflictReq *models.ConflictCheckRequest

@@ -726,7 +726,7 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 			EventID:       instance.Event.ID,
 			OverrideRrule: overrideRrule,
 			Duration:      instance.Event.Duration,
-			Room:          instance.Event.Room,
+			RoomID:        instance.Event.RoomID,
 			IsCancelled:   true,
 			Reason:        req.Reason,
 		})
