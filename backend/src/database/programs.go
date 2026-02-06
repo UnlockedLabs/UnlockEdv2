@@ -64,6 +64,19 @@ func (db *DB) GetActiveClassFacilityIDs(ctx context.Context, id int) ([]int, err
 	return activeClassFacilityIDs, nil
 }
 
+func (db *DB) GetProgramActiveClassFacilities(ctx context.Context, id uint) ([]string, error) {
+	var facilities []string
+	if err := db.WithContext(ctx).Table("program_classes").
+		Joins("JOIN facilities ON facilities.id = program_classes.facility_id").
+		Where("program_classes.program_id = ? AND program_classes.status IN (?, ?) AND program_classes.archived_at IS NULL", id,
+			models.Active, models.Scheduled).
+		Distinct().
+		Pluck("facilities.name", &facilities).Error; err != nil {
+		return nil, newGetRecordsDBError(err, fmt.Sprintf("program %d active facilities", id))
+	}
+	return facilities, nil
+}
+
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).

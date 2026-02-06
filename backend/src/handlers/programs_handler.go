@@ -23,6 +23,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, axx),
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
 		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
+		adminFeatureRoute("GET /api/programs/{id}/archive-check", srv.handleGetProgramArchiveCheck, axx),
 		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
@@ -232,6 +233,24 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 		payload.Message = "Unable to archive program with active or scheduled classes"
 	}
 
+	return writeJsonResponse(w, http.StatusOK, payload)
+}
+
+func (srv *Server) handleGetProgramArchiveCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	log.add("program_id", id)
+	facilities, err := srv.Db.GetProgramActiveClassFacilities(r.Context(), uint(id))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		Facilities []string `json:"facilities"`
+	}{
+		Facilities: facilities,
+	}
 	return writeJsonResponse(w, http.StatusOK, payload)
 }
 
