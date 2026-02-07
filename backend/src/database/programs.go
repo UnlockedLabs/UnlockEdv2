@@ -342,8 +342,33 @@ func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id uint) ([]stri
 	return facilities, true, nil
 }
 
+func (db *DB) CanDeleteProgram(id int) (bool, int64, int64, error) {
+	var classCount int64
+	if err := db.Model(&models.ProgramClass{}).Where("program_id = ?", id).Count(&classCount).Error; err != nil {
+		return false, 0, 0, newGetRecordsDBError(err, "program_classes")
+	}
+
+	var enrollmentCount int64
+	if err := db.Model(&models.ProgramClassEnrollment{}).
+		Joins("JOIN program_classes ON program_classes.id = program_class_enrollments.class_id").
+		Where("program_classes.program_id = ?", id).
+		Count(&enrollmentCount).Error; err != nil {
+		return false, 0, 0, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+
+	canDelete := classCount == 0 && enrollmentCount == 0
+	return canDelete, classCount, enrollmentCount, nil
+}
+
 func (db *DB) DeleteProgram(id int) error {
-	if err := db.Delete(&models.Program{}, id).Error; err != nil {
+	canDelete, classCount, enrollmentCount, err := db.CanDeleteProgram(id)
+	if err != nil {
+		return err
+	}
+	if !canDelete {
+		return NewDBError(fmt.Errorf("cannot delete program with %d classes and %d enrollments", classCount, enrollmentCount), "program has associated data")
+	}
+	if err := db.Unscoped().Delete(&models.Program{}, id).Error; err != nil {
 		return newDeleteDBError(err, "programs")
 	}
 	return nil

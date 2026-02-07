@@ -24,6 +24,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
 		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
 		adminFeatureRoute("GET /api/programs/{id}/archive-check", srv.handleGetProgramArchiveCheck, axx),
+		adminFeatureRoute("GET /api/programs/{id}/delete-check", srv.handleGetProgramDeleteCheck, axx),
 		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
@@ -250,6 +251,28 @@ func (srv *Server) handleGetProgramArchiveCheck(w http.ResponseWriter, r *http.R
 		Facilities []string `json:"facilities"`
 	}{
 		Facilities: facilities,
+	}
+	return writeJsonResponse(w, http.StatusOK, payload)
+}
+
+func (srv *Server) handleGetProgramDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	log.add("program_id", id)
+	canDelete, classCount, enrollmentCount, err := srv.Db.CanDeleteProgram(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		CanDelete       bool  `json:"can_delete"`
+		ClassCount      int64 `json:"class_count"`
+		EnrollmentCount int64 `json:"enrollment_count"`
+	}{
+		CanDelete:       canDelete,
+		ClassCount:      classCount,
+		EnrollmentCount: enrollmentCount,
 	}
 	return writeJsonResponse(w, http.StatusOK, payload)
 }
