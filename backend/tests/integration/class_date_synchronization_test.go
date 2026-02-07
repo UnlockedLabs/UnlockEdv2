@@ -68,21 +68,24 @@ func TestClassDateSynchronization(t *testing.T) {
 }
 
 func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "override")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)  // November 1, 2025
 	initialEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC) // November 30, 2025
 	creditHours := int64(3)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       15,
-		Name:           "Override Extension Test Class",
-		InstructorName: "Test Instructor",
-		Description:    "Testing that override creation extends end date",
-		StartDt:        classStartDate,
-		EndDt:          &initialEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     15,
+		Name:         "Override Extension Test Class",
+		InstructorID: &instructor.ID,
+		Description:  "Testing that override creation extends end date",
+		StartDt:      classStartDate,
+		EndDt:        &initialEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -104,7 +107,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		Do()
 
 	var createdEvent models.ProgramClassEvent
-	err := env.DB.Where("class_id = ?", createdClass.ID).First(&createdEvent).Error
+	err = env.DB.Where("class_id = ?", createdClass.ID).First(&createdEvent).Error
 	if err == nil {
 		t.Logf("Event successfully created in DB with ID: %d", createdEvent.ID)
 	} else {
@@ -162,21 +165,23 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 }
 
 func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "reschedule")
+	require.NoError(t, err)
 	classStartDate := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(4)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       20,
-		Name:           "Multi-Month Extension Test",
-		InstructorName: "Test Instructor",
-		Description:    "Testing multi-month extension via rescheduling",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     20,
+		Name:         "Multi-Month Extension Test",
+		InstructorID: &instructor.ID,
+		Description:  "Testing multi-month extension via rescheduling",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -230,21 +235,23 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 }
 
 func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "multiple")
+	require.NoError(t, err)
 	classStartDate := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2025, 12, 20, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(3)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       15,
-		Name:           "Multiple Overrides Test Class",
-		InstructorName: "Test Instructor",
-		Description:    "Testing multiple overrides extend end date",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     15,
+		Name:         "Multiple Overrides Test Class",
+		InstructorID: &instructor.ID,
+		Description:  "Testing multiple overrides extend end date",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -313,8 +320,10 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 }
 
 func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "completedevents")
+	require.NoError(t, err)
 
-	class, err := env.CreateTestClass(program, facility, models.Scheduled)
+	class, err := env.CreateTestClass(program, facility, models.Scheduled, &instructor.ID)
 	require.NoError(t, err)
 
 	_, err = env.CreateTestEvent(class.ID, "")
@@ -378,21 +387,23 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 }
 
 func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "startdate")
+	require.NoError(t, err)
 	classStartDate := time.Date(2025, 12, 15, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Start Date Update Test Class",
-		InstructorName: "Test Instructor",
-		Description:    "Testing that start date updates when event moved earlier",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Start Date Update Test Class",
+		InstructorID: &instructor.ID,
+		Description:  "Testing that start date updates when event moved earlier",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -444,21 +455,23 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 }
 
 func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "cancellation")
+	require.NoError(t, err)
 	classStartDate := time.Date(2026, 1, 6, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       12,
-		Name:           "Cancellation Boundary Test Class",
-		InstructorName: "Test Instructor",
-		Description:    "Testing that event cancellation affects boundaries",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     12,
+		Name:         "Cancellation Boundary Test Class",
+		InstructorID: &instructor.ID,
+		Description:  "Testing that event cancellation affects boundaries",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).

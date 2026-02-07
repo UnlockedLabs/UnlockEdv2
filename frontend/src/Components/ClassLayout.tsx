@@ -129,9 +129,12 @@ function ClassInfoCard({
                 }
             }
         }
-        const nextOccurrence = allOccurrences
+        const sortedDates = allOccurrences
             .filter((d) => d > now)
-            .sort((a, b) => a.getTime() - b.getTime())[0];
+            .sort((a, b) => a.getTime() - b.getTime());
+
+        const nextOccurrence =
+            sortedDates.length > 0 ? sortedDates[0] : undefined;
         let formattedOccurence;
         if (nextOccurrence && user) {
             formattedOccurence = textMonthLocalDate(

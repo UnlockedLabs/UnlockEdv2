@@ -29,7 +29,9 @@ type ProgramClass struct {
 	FacilityID     uint        `json:"facility_id" gorm:"not null"`
 	Capacity       int64       `json:"capacity" gorm:"not null"`
 	Name           string      `json:"name" gorm:"size:255" validate:"required,max=255"`
-	InstructorName string      `json:"instructor_name" gorm:"size:255" validate:"required,max=255"`
+	InstructorID   *uint       `json:"instructor_id"`
+	Instructor     *User       `json:"instructor" gorm:"foreignKey:InstructorID;references:ID"`
+	InstructorName string      `json:"instructor_name" gorm:"size:255" validate:"omitempty,max=255"`
 	Description    string      `json:"description" gorm:"not null" validate:"required,max=255"`
 	ArchivedAt     *time.Time  `json:"archived_at"`
 	StartDt        time.Time   `gorm:"type:date" json:"start_dt"`
@@ -289,4 +291,60 @@ type ConflictDetail struct {
 	ConflictStart    time.Time `json:"conflict_start"`
 	ConflictEnd      time.Time `json:"conflict_end"`
 	Reason           string    `json:"reason"`
+}
+
+// GetInstructorNameForJSON returns instructor name with backward compatibility
+// Frontend should check instructor object first, then fallback to instructor_name
+func (pc *ProgramClass) GetInstructorNameForJSON() string {
+	// If we have instructor relationship, use it
+	if pc.Instructor != nil {
+		if pc.Instructor.NameFirst != "" && pc.Instructor.NameLast != "" {
+			return pc.Instructor.NameFirst + " " + pc.Instructor.NameLast
+		}
+		return pc.Instructor.Username
+	}
+	// Fallback to legacy instructor_name field
+	return pc.InstructorName
+}
+
+type BulkCancelSessionsRequest struct {
+	InstructorID int    `json:"instructorId" validate:"required,min=0"`
+	StartDate    string `json:"startDate" validate:"required"`
+	EndDate      string `json:"endDate" validate:"required"`
+	Reason       string `json:"reason" validate:"required,min=10,max=255"`
+}
+
+type BulkCancelSessionsResponse struct {
+	Success               bool            `json:"success"`
+	SessionCount          int             `json:"sessionCount"`
+	ClassCount            int             `json:"classCount"`
+	StudentCount          int             `json:"studentCount"`
+	AlreadyCancelledCount int             `json:"alreadyCancelledCount"`
+	Message               string          `json:"message,omitempty"`
+	Classes               []AffectedClass `json:"classes"`
+}
+
+type AffectedClass struct {
+	ClassID           int    `json:"classId"`
+	ClassName         string `json:"className"`
+	UpcomingSessions  int    `json:"upcomingSessions"`
+	CancelledSessions int    `json:"cancelledSessions"`
+	StudentCount      int    `json:"studentCount"`
+}
+
+type Instructor struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	NameFirst string `json:"name_first"`
+	NameLast  string `json:"name_last"`
+	Email     string `json:"email"`
+}
+
+type InstructorClassData struct {
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	SessionCount      int    `json:"sessionCount"`
+	EnrolledCount     int    `json:"enrolledCount"`
+	UpcomingSessions  int    `json:"upcomingSessions"`
+	CancelledSessions int    `json:"cancelledSessions"`
 }

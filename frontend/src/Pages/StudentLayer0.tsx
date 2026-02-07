@@ -18,7 +18,7 @@ export default function StudentLayer0() {
             />
             <div title="Error" />
             <div className="text-center">
-                <div className="mb-4 font-medium text-xl text-red-600">
+                <div className="mb-4 font-medium text-xl text-error">
                     Please contact your administrator to get access to
                     application features
                 </div>

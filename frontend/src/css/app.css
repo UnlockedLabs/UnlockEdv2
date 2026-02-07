@@ -94,6 +94,10 @@
         @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 button-core hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:border-grey-2 disabled:cursor-auto;
     }
 
+    .button-outline-red {
+        @apply border border-red-3 bg-transparent body text-red-3 py-3 px-3 button-core hover:bg-red-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:border-grey-2 disabled:cursor-auto;
+    }
+
     .button-red {
         @apply button bg-red-3 hover:bg-red-4;
     }

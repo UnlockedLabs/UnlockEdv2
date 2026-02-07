@@ -20,3 +20,4 @@ export { AddButton } from './AddButton';
 export { TimeInput } from './TimeInput';
 export { DragDropFileInput } from './DragDropFileInput';
 export { RoomSelector } from './RoomSelector';
+export { InstructorSelector } from './InstructorSelector';

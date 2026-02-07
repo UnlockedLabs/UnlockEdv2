@@ -39,8 +39,11 @@ func TestEnrollUsersInClass(t *testing.T) {
 }
 
 func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "enrollactive")
+	require.NoError(t, err)
+
 	// Create an Active class
-	activeClass, err := env.CreateTestClass(program, facility, models.Active)
+	activeClass, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users
@@ -74,8 +77,11 @@ func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Fac
 }
 
 func runEnrollInScheduledClassTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "enrollscheduled")
+	require.NoError(t, err)
+
 	// Create a Scheduled class
-	scheduledClass, err := env.CreateTestClass(program, facility, models.Scheduled)
+	scheduledClass, err := env.CreateTestClass(program, facility, models.Scheduled, &instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users
@@ -134,8 +140,11 @@ func runUpdateToTerminalStatusTest(t *testing.T, env *TestEnv, facility *models.
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
+	instructor, err := env.CreateTestInstructor(facility.ID, "updateterminal")
+	require.NoError(t, err)
+
 	// Create an Active class
-	activeClass, err := env.CreateTestClass(program, facility, models.Active)
+	activeClass, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	// Define all terminal statuses
@@ -197,8 +206,11 @@ func runUpdateToCancelledStatusTest(t *testing.T, env *TestEnv, facility *models
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
+	instructor, err := env.CreateTestInstructor(facility.ID, "terminal")
+	require.NoError(t, err)
+
 	// Create an Active class
-	activeClass, err := env.CreateTestClass(program, facility, models.Active)
+	activeClass, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	cancelledStatus := models.EnrollmentCancelled
@@ -243,8 +255,11 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
+	instructor, err := env.CreateTestInstructor(facility.ID, "terminal")
+	require.NoError(t, err)
+
 	// Create an Active class
-	activeClass, err := env.CreateTestClass(program, facility, models.Active)
+	activeClass, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users
