@@ -283,6 +283,146 @@ func (suite *ProgramsHandlerTestSuite) TestProgramsStatsHandler_ResponseStructur
 	assert.NotContains(suite.T(), resp.rawBody, "last_run", "last_run field should be removed")
 }
 
+func (suite *ProgramsHandlerTestSuite) TestDeleteProgram_Success() {
+	facility := &models.Facility{Name: "Delete Test Facility"}
+	suite.env.DB.Create(facility)
+
+	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
+	systemAdmin := &models.User{
+		NameFirst:  "System",
+		NameLast:   "Admin",
+		Username:   "deleteadmin" + timestamp,
+		Email:      "deleteadmin" + timestamp + "@test.com",
+		Role:       models.SystemAdmin,
+		FacilityID: facility.ID,
+	}
+	suite.env.DB.Create(systemAdmin)
+
+	program := &models.Program{
+		Name:        "Program To Delete",
+		Description: "This program has no classes or enrollments",
+		FundingType: models.FederalGrants,
+		IsActive:    true,
+	}
+	suite.env.DB.Create(program)
+
+	NewRequest[any](suite.env.Client, suite.T(), http.MethodDelete, fmt.Sprintf("/api/programs/%d", program.ID), nil).
+		WithTestClaims(&handlers.Claims{Role: models.SystemAdmin, UserID: systemAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusNoContent)
+
+	var count int64
+	suite.env.DB.Unscoped().Model(&models.Program{}).Where("id = ?", program.ID).Count(&count)
+	assert.Equal(suite.T(), int64(0), count, "Program should be permanently deleted")
+}
+
+func (suite *ProgramsHandlerTestSuite) TestDeleteProgram_BlockedByClasses() {
+	facility := &models.Facility{Name: "Delete Blocked Facility"}
+	suite.env.DB.Create(facility)
+
+	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
+	systemAdmin := &models.User{
+		NameFirst:  "System",
+		NameLast:   "Admin",
+		Username:   "blockedadmin" + timestamp,
+		Email:      "blockedadmin" + timestamp + "@test.com",
+		Role:       models.SystemAdmin,
+		FacilityID: facility.ID,
+	}
+	suite.env.DB.Create(systemAdmin)
+
+	program := &models.Program{
+		Name:        "Program With Classes",
+		Description: "This program has classes",
+		FundingType: models.FederalGrants,
+		IsActive:    true,
+	}
+	suite.env.DB.Create(program)
+
+	class := &models.ProgramClass{
+		ProgramID:  program.ID,
+		FacilityID: facility.ID,
+		Status:     models.Active,
+		Name:       "Blocking Class",
+	}
+	suite.env.DB.Create(class)
+
+	resp := NewRequest[any](suite.env.Client, suite.T(), http.MethodDelete, fmt.Sprintf("/api/programs/%d", program.ID), nil).
+		WithTestClaims(&handlers.Claims{Role: models.SystemAdmin, UserID: systemAdmin.ID, FacilityID: facility.ID}).
+		Do()
+
+	assert.True(suite.T(), resp.resp.StatusCode >= 400, "Should fail when program has classes")
+
+	var count int64
+	suite.env.DB.Model(&models.Program{}).Where("id = ?", program.ID).Count(&count)
+	assert.Equal(suite.T(), int64(1), count, "Program should NOT be deleted")
+}
+
+func (suite *ProgramsHandlerTestSuite) TestDeleteCheckEndpoint() {
+	facility := &models.Facility{Name: "Delete Check Facility"}
+	suite.env.DB.Create(facility)
+
+	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
+	systemAdmin := &models.User{
+		NameFirst:  "System",
+		NameLast:   "Admin",
+		Username:   "checkadmin" + timestamp,
+		Email:      "checkadmin" + timestamp + "@test.com",
+		Role:       models.SystemAdmin,
+		FacilityID: facility.ID,
+	}
+	suite.env.DB.Create(systemAdmin)
+
+	programNoData := &models.Program{
+		Name:        "Empty Program",
+		Description: "No classes or enrollments",
+		FundingType: models.FederalGrants,
+		IsActive:    true,
+	}
+	suite.env.DB.Create(programNoData)
+
+	type DeleteCheckResponse struct {
+		CanDelete       bool  `json:"can_delete"`
+		ClassCount      int64 `json:"class_count"`
+		EnrollmentCount int64 `json:"enrollment_count"`
+	}
+
+	resp := NewRequest[DeleteCheckResponse](suite.env.Client, suite.T(), http.MethodGet, fmt.Sprintf("/api/programs/%d/delete-check", programNoData.ID), nil).
+		WithTestClaims(&handlers.Claims{Role: models.SystemAdmin, UserID: systemAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	result := resp.GetData()
+	assert.True(suite.T(), result.CanDelete, "Should be deletable when no data")
+	assert.Equal(suite.T(), int64(0), result.ClassCount)
+	assert.Equal(suite.T(), int64(0), result.EnrollmentCount)
+
+	programWithData := &models.Program{
+		Name:        "Program With Data",
+		Description: "Has classes",
+		FundingType: models.FederalGrants,
+		IsActive:    true,
+	}
+	suite.env.DB.Create(programWithData)
+
+	class := &models.ProgramClass{
+		ProgramID:  programWithData.ID,
+		FacilityID: facility.ID,
+		Status:     models.Active,
+		Name:       "Test Class",
+	}
+	suite.env.DB.Create(class)
+
+	resp2 := NewRequest[DeleteCheckResponse](suite.env.Client, suite.T(), http.MethodGet, fmt.Sprintf("/api/programs/%d/delete-check", programWithData.ID), nil).
+		WithTestClaims(&handlers.Claims{Role: models.SystemAdmin, UserID: systemAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	result2 := resp2.GetData()
+	assert.False(suite.T(), result2.CanDelete, "Should NOT be deletable when has data")
+	assert.Equal(suite.T(), int64(1), result2.ClassCount)
+}
+
 func TestProgramsHandlerTestSuite(t *testing.T) {
 	suite.Run(t, new(ProgramsHandlerTestSuite))
 }
