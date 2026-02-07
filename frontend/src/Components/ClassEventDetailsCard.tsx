@@ -6,6 +6,7 @@ import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEv
 import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleClassEventSeriesModal';
 import { FacilityProgramClassEvent } from '@/types/events';
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { KeyedMutator } from 'swr';
 
 interface ClassEventDetailsCardProps {
@@ -159,9 +160,19 @@ export default function ClassEventDetailsCard({
 
                         <div className="space-y-2 overflow-y-scroll h-full">
                             <h3>Program Name</h3>
-                            <p>{event.program_name}</p>
+                            <Link
+                                to={`/programs/${event.program_id}`}
+                                className="link"
+                            >
+                                {event.program_name}
+                            </Link>
                             <h3>Class Name</h3>
-                            <p>{event.title}</p>
+                            <Link
+                                to={`/program-classes/${event.class_id}/dashboard`}
+                                className="link"
+                            >
+                                {event.title}
+                            </Link>
                             <h3>Instructor</h3>
                             <p>{event.instructor_name}</p>
                             <h3>Room</h3>

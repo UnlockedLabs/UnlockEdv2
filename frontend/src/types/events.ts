@@ -56,6 +56,7 @@ export interface ProgramClassEventOverride {
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
     room: string; // populated from joined rooms table in calendar query
     instructor_name: string;
+    program_id: number;
     program_name: string;
     title: string;
     is_override: boolean;
