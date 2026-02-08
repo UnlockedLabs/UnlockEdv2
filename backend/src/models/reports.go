@@ -41,14 +41,9 @@ type ReportGenerateRequest struct {
 }
 
 type PDFConfig struct {
-	Title          string
-	Headers        []string
-	Data           [][]string
-	MinWidths      []float64
-	Alignments     []string
-	HeaderFontSize float64
-	DataFontSize   float64
-	FilterSummary  []PDFFilterLine
+	Title         string
+	Data          [][]string
+	FilterSummary []PDFFilterLine
 }
 
 type PDFFilterLine struct {
@@ -328,13 +323,8 @@ func (r AttendanceReportData) ToPDF() (PDFConfig, error) {
 	}
 
 	return PDFConfig{
-		Title:          "Attendance",
-		Headers:        []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time", "Recorded By", "Reason"},
-		Data:           tableData,
-		MinWidths:      []float64{23, 26, 23, 20, 20, 20, 16, 18, 18, 22, 23},
-		Alignments:     []string{"L", "L", "L", "C", "L", "L", "C", "C", "C", "L", "L"},
-		HeaderFontSize: 8,
-		DataFontSize:   7,
+		Title: "Attendance",
+		Data:  tableData,
 	}, nil
 }
 
@@ -358,13 +348,8 @@ func (r ProgramOutcomesReportData) ToPDF() (PDFConfig, error) {
 	}
 
 	return PDFConfig{
-		Title:          "Program Outcomes",
-		Headers:        []string{"Facility", "Program", "Type", "Funding", "Total", "Active", "Completed", "Dropped", "Comp%", "Attend%", "Credit Hours", "Certificates"},
-		Data:           tableData,
-		MinWidths:      []float64{30, 30, 20, 20, 15, 15, 18, 16, 15, 15, 18, 15},
-		Alignments:     []string{},
-		HeaderFontSize: 8,
-		DataFontSize:   7,
+		Title: "Program Outcomes",
+		Data:  tableData,
 	}, nil
 }
 
@@ -391,13 +376,8 @@ func (r FacilityComparisonReportData) ToPDF() (PDFConfig, error) {
 	}
 
 	return PDFConfig{
-		Title:          "Facility Comparison",
-		Headers:        []string{"Facility", "Programs", "Active", "Enrollments", "Active", "Comp%", "Attend%", "Top Type", "Credit Hours", "Certificates", "Last Activity"},
-		Data:           tableData,
-		MinWidths:      []float64{35, 18, 16, 22, 16, 15, 15, 25, 18, 15, 20},
-		Alignments:     []string{},
-		HeaderFontSize: 8,
-		DataFontSize:   7,
+		Title: "Facility Comparison",
+		Data:  tableData,
 	}, nil
 }
 
