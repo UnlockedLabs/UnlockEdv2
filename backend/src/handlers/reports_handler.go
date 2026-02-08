@@ -301,17 +301,19 @@ func (srv *Server) exportReport(w http.ResponseWriter, report reportExporter, fo
 
 		filterSummary := buildFilterSummary(req, facilityName, residentName)
 
-		var pdfBytes []byte
+		templateName := ""
 		switch req.Type {
 		case models.AttendanceReport:
-			pdfBytes, err = jasper.GenerateAttendanceReportPDF(config, filterSummary)
+			templateName = "attendance_report"
 		case models.ProgramOutcomesReport:
-			pdfBytes, err = jasper.GenerateProgramOutcomesReportPDF(config, filterSummary)
+			templateName = "program_outcomes_report"
 		case models.FacilityComparisonReport:
-			pdfBytes, err = jasper.GenerateFacilityComparisonReportPDF(config, filterSummary)
+			templateName = "facility_comparison_report"
 		default:
 			return newBadRequestServiceError(errors.New("unsupported report type"), "unsupported report type for PDF generation")
 		}
+
+		pdfBytes, err := jasper.GenerateReportPDF(config, filterSummary, templateName)
 
 		if err != nil {
 			logrus.WithError(err).Error("Failed to generate PDF with Jasper")

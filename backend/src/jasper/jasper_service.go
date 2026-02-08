@@ -213,7 +213,7 @@ func recompileTemplate(templateDir, baseTemplateName string) error {
 	return nil
 }
 
-func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine, templateName string) ([]byte, error) {
+func GenerateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine, templateName string) ([]byte, error) {
 	type ReportData struct {
 		Rows [][]string `json:"rows"`
 	}
@@ -259,7 +259,6 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		{Key: "LogoImage", Value: base64.StdEncoding.EncodeToString(src.UnlockedLogoImg)},
 		{Key: "FilterCount", Value: fmt.Sprintf("%d", filterCount)},
 	}
-
 
 	for i := 0; i < filterCount && i < maxFilters; i++ {
 		params = append(params,
@@ -359,16 +358,4 @@ func generateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 	}
 
 	return pdfBytes, nil
-}
-
-func GenerateAttendanceReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine) ([]byte, error) {
-	return generateReportPDF(config, filterSummary, "attendance_report")
-}
-
-func GenerateProgramOutcomesReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine) ([]byte, error) {
-	return generateReportPDF(config, filterSummary, "program_outcomes_report")
-}
-
-func GenerateFacilityComparisonReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine) ([]byte, error) {
-	return generateReportPDF(config, filterSummary, "facility_comparison_report")
 }
