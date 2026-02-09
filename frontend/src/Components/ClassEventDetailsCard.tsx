@@ -5,6 +5,7 @@ import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal
 import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEventModal';
 import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleClassEventSeriesModal';
 import { FacilityProgramClassEvent } from '@/types/events';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { KeyedMutator } from 'swr';
@@ -30,6 +31,7 @@ export default function ClassEventDetailsCard({
     showAllClasses,
     setShowAllClasses
 }: ClassEventDetailsCardProps) {
+    const { user } = useAuth();
     const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
@@ -160,19 +162,27 @@ export default function ClassEventDetailsCard({
 
                         <div className="space-y-2 overflow-y-scroll h-full">
                             <h3>Program Name</h3>
-                            <Link
-                                to={`/programs/${event.program_id}`}
-                                className="link"
-                            >
-                                {event.program_name}
-                            </Link>
+                            {isAdministrator(user) ? (
+                                <Link
+                                    to={`/programs/${event.program_id}`}
+                                    className="link"
+                                >
+                                    {event.program_name}
+                                </Link>
+                            ) : (
+                                <p>{event.program_name}</p>
+                            )}
                             <h3>Class Name</h3>
-                            <Link
-                                to={`/program-classes/${event.class_id}/dashboard`}
-                                className="link"
-                            >
-                                {event.title}
-                            </Link>
+                            {isAdministrator(user) ? (
+                                <Link
+                                    to={`/program-classes/${event.class_id}/dashboard`}
+                                    className="link"
+                                >
+                                    {event.title}
+                                </Link>
+                            ) : (
+                                <p>{event.title}</p>
+                            )}
                             <h3>Instructor</h3>
                             <p>{event.instructor_name}</p>
                             <h3>Room</h3>
