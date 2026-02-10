@@ -584,7 +584,7 @@ export default function ProgramManagement() {
                     reportType={ReportType.FACILITY_COMPARISON}
                     contextData={{
                         reportType: ReportType.FACILITY_COMPARISON,
-                        facilityIds: user.facilities?.map((f) => f.id) ?? []
+                        facilityIds: []
                     }}
                     user={user}
                 />
