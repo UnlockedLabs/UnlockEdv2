@@ -5,7 +5,11 @@ import {
 } from '@/common';
 import ClassEventDetailsCard from '@/Components/ClassEventDetailsCard';
 import EventCalendar from '@/Components/EventCalendar';
-import { QuickCreateEventModal, showModal } from '@/Components/modals';
+import {
+    QuickCreateEventModal,
+    ScheduleActionModal,
+    showModal
+} from '@/Components/modals';
 import { FacilityProgramClassEvent } from '@/types/events';
 import { useAuth } from '@/useAuth';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -27,9 +31,16 @@ export default function Schedule() {
         end: Date;
     } | null>(null);
     const quickCreateModalRef = useRef<HTMLDialogElement>(null);
+    const actionModalRef = useRef<HTMLDialogElement>(null);
 
     useEffect(() => {
-        if (slotInfo) showModal(quickCreateModalRef);
+        if (slotInfo) {
+            if (class_id) {
+                showModal(quickCreateModalRef);
+            } else {
+                showModal(actionModalRef);
+            }
+        }
     }, [slotInfo]);
 
     const navigate = useNavigate();
@@ -126,6 +137,15 @@ export default function Schedule() {
                     setShowAllClasses={setShowAllClasses}
                 />
             </div>
+            {slotInfo && !class_id && (
+                <ScheduleActionModal
+                    key={`action-${slotInfo.start.toISOString()}`}
+                    ref={actionModalRef}
+                    slotStart={slotInfo.start}
+                    slotEnd={slotInfo.end}
+                    onSingleEvent={() => showModal(quickCreateModalRef)}
+                />
+            )}
             {slotInfo && (
                 <QuickCreateEventModal
                     key={slotInfo.start.toISOString()}
