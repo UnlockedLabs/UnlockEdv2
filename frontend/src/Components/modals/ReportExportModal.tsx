@@ -340,6 +340,7 @@ export const ReportExportModal = forwardRef<
                                 })) ?? []
                             }
                             disabled={isGenerating}
+                            showSelectAll
                         />
                     )}
 
