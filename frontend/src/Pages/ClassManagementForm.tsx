@@ -1,4 +1,9 @@
-import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
+import {
+    useLoaderData,
+    useLocation,
+    useNavigate,
+    useParams
+} from 'react-router-dom';
 import {
     DropdownInput,
     NumberInput,
@@ -50,6 +55,12 @@ export default function ClassManagementForm() {
     const [events, setEvents] = useState<ShortCalendarEvent[]>([]);
     const { id, class_id } = useParams<{ id: string; class_id?: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const prefillState = location.state as {
+        startDate?: string;
+        startTime?: string;
+        endTime?: string;
+    } | null;
     const [showCalendar, setShowCalendar] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const { toaster } = useToast();
@@ -60,6 +71,7 @@ export default function ClassManagementForm() {
         getValues,
         watch,
         reset,
+        setValue,
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
@@ -71,6 +83,11 @@ export default function ClassManagementForm() {
             setEditFormValues(clsLoader.class);
         }
     }, [clsLoader, isNewClass]);
+    useEffect(() => {
+        if (isNewClass && prefillState?.startDate) {
+            setValue('start_dt', prefillState.startDate);
+        }
+    }, [isNewClass, prefillState?.startDate]);
     if (clsLoader.redirect) {
         navigate(clsLoader.redirect);
     }
@@ -338,6 +355,8 @@ export default function ClassManagementForm() {
                                 initialRule={
                                     clsLoader.class?.events[0].recurrence_rule
                                 }
+                                initialStartTime={prefillState?.startTime}
+                                initialEndTime={prefillState?.endTime}
                             />
                             <DropdownInput
                                 label="Status"
