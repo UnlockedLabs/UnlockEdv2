@@ -173,7 +173,7 @@ export const PROGRAM_OUTCOMES_CONFIG: ReportConfig = {
 };
 
 export const FACILITY_COMPARISON_CONFIG: ReportConfig = {
-    title: 'Export Cross-Facility Comparison Report',
+    title: 'Facility Comparison Report',
     fields: [
         {
             name: 'start_date',

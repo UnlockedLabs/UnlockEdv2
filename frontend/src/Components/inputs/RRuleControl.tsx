@@ -1,7 +1,7 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { RRule, Weekday, Options } from 'rrule';
 import { DateInput } from '@/Components/inputs';
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { fromZonedTime } from 'date-fns-tz';
 import {
     UseFormRegister,
     FieldErrors,
@@ -233,18 +233,15 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             const duration = initialDuration;
             if (!recurrenceRule || !duration) return;
             try {
-                const cleanRule = recurrenceRule.replace(
-                    /DTSTART;TZID=Local:/,
+                const stripped = recurrenceRule.replace(
+                    /DTSTART;TZID=[^:]+:/,
                     'DTSTART:'
                 );
-                const rule = RRule.fromString(cleanRule);
+                const rule = RRule.fromString(stripped);
                 const dtStart = rule.options.dtstart;
-                const dtStartZonedDateTime: Date = toZonedTime(
-                    dtStart,
-                    user.timezone
-                );
-                const startTime = dtStartZonedDateTime
-                    ? dtStartZonedDateTime.toTimeString().slice(0, 5)
+                const pad = (n: number) => String(n).padStart(2, '0');
+                const startTime = dtStart
+                    ? `${pad(dtStart.getUTCHours())}:${pad(dtStart.getUTCMinutes())}`
                     : '';
                 let endTime = '';
                 const matches = /(\d+)h(\d+)m/.exec(duration);
@@ -252,10 +249,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     const hours = parseInt(matches[1]);
                     const minutes = parseInt(matches[2]);
                     const endDt = new Date(
-                        dtStartZonedDateTime.getTime() +
-                            (hours * 60 + minutes) * 60000
+                        dtStart.getTime() + (hours * 60 + minutes) * 60000
                     );
-                    endTime = endDt.toTimeString().slice(0, 5);
+                    endTime = `${pad(endDt.getUTCHours())}:${pad(endDt.getUTCMinutes())}`;
                 }
 
                 const frequency =

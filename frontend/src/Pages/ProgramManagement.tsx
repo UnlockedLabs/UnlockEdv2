@@ -476,7 +476,7 @@ export default function ProgramManagement() {
                             className="button flex items-center gap-2"
                         >
                             <ArrowDownTrayIcon className="h-5 w-5" />
-                            Export Facility Comparison Report
+                            Facility Comparison Report
                         </button>
                     )}
                 </div>

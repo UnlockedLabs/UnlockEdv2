@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -44,7 +45,16 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(adjustUserOrderBy(args.OrderClause("users.name_last desc"))).
+	validUserOrderByFields := []string{"name_last", "created_at", "last_login"}
+	if !slices.Contains(validUserOrderByFields, args.OrderBy) {
+		args.OrderBy = "name_last"
+	}
+	orderClause := adjustUserOrderBy(args.OrderClause("users.name_last desc"))
+	if args.OrderBy == "last_login" {
+		tx = tx.Joins("LEFT JOIN login_metrics ON login_metrics.user_id = users.id")
+		orderClause = adjustLastLoginOrderBy(orderClause)
+	}
+	if err := tx.Order(orderClause).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).
@@ -691,6 +701,16 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 func adjustUserOrderBy(arg string) string {
 	if strings.Contains(arg, "name_last") {
 		return arg + ", name_first"
+	}
+	return arg
+}
+
+func adjustLastLoginOrderBy(arg string) string {
+	if strings.Contains(arg, "last_login desc") {
+		return strings.Replace(arg, "last_login desc", "login_metrics.last_login desc NULLS LAST", 1)
+	}
+	if strings.Contains(arg, "last_login asc") {
+		return strings.Replace(arg, "last_login asc", "login_metrics.last_login asc NULLS FIRST", 1)
 	}
 	return arg
 }

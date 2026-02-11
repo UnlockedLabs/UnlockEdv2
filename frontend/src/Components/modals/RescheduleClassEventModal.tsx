@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import {
     closeModal,
     FormInputTypes,
@@ -69,6 +69,27 @@ export const RescheduleClassEventModal = forwardRef(function (
     const [selectedRoomName, setSelectedRoomName] = useState<
         string | undefined
     >(calendarEvent?.room);
+
+    useEffect(() => {
+        setSelectedRoomId(calendarEvent?.room_id ?? null);
+        setSelectedRoomName(calendarEvent?.room);
+    }, [calendarEvent?.room_id, calendarEvent?.room]);
+
+    const formDefaultValues = useMemo(() => {
+        if (!calendarEvent?.start || !calendarEvent?.end) {
+            return undefined;
+        }
+        const start = calendarEvent.start;
+        const end = calendarEvent.end;
+        const year = start.getFullYear();
+        const month = String(start.getMonth() + 1).padStart(2, '0');
+        const day = String(start.getDate()).padStart(2, '0');
+        return {
+            date: `${year}-${month}-${day}`,
+            start_time: start.toTimeString().slice(0, 5),
+            end_time: end.toTimeString().slice(0, 5)
+        };
+    }, [calendarEvent?.start, calendarEvent?.end]);
 
     const rescheduleClassEvent: SubmitHandler<FieldValues> = async (data) => {
         if (!calendarEvent) {
@@ -241,6 +262,7 @@ export const RescheduleClassEventModal = forwardRef(function (
                 ref={ref}
                 title={'Edit Event'}
                 inputs={rescheduleClassEventInputs}
+                defaultValues={formDefaultValues}
                 showCancel={true}
                 onSubmit={(data) => {
                     verifyDatesAndShowModal(data);
