@@ -7,7 +7,8 @@ import {
     TextInput,
     CancelButton,
     CloseX,
-    RoomSelector
+    RoomSelector,
+    InstructorSelector
 } from '@/Components/inputs';
 import {
     ProgClassStatus,
@@ -60,9 +61,12 @@ export default function ClassManagementForm() {
         getValues,
         watch,
         reset,
+        unregister,
+        setValue,
         formState: { errors }
     } = useForm<Class>({
         defaultValues: {
+            instructor_id: 0,
             events: [{ recurrence_rule: '', duration: '' }]
         }
     });
@@ -77,6 +81,7 @@ export default function ClassManagementForm() {
 
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
+
     const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
@@ -87,6 +92,12 @@ export default function ClassManagementForm() {
         const formattedJson = {
             ...data,
             ...(class_id && { id: Number(class_id) }),
+            instructor_id:
+                data.instructor_id !== undefined &&
+                data.instructor_id !== null &&
+                data.instructor_id !== 0
+                    ? Number(data.instructor_id)
+                    : null,
             start_dt: new Date(data.start_dt),
             end_dt: data.end_dt ? new Date(data.end_dt) : null,
             capacity: Number(data.capacity),
@@ -176,10 +187,12 @@ export default function ClassManagementForm() {
 
     useEffect(() => {
         if (isNewClass) return;
+
         if (clsLoader.class) {
+            unregister('events');
             setEditFormValues(clsLoader.class);
         }
-    }, [id, class_id, reset]);
+    }, [isNewClass, clsLoader.class]);
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
@@ -192,8 +205,11 @@ export default function ClassManagementForm() {
         }
 
         setSelectedRoomId(editCls.events[0].room_id ?? null);
+        const instructorId = editCls.instructor_id ?? editCls.instructor?.id;
         reset({
             ...values,
+            instructor_id:
+                instructorId && instructorId > 0 ? instructorId : 0,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
@@ -273,13 +289,15 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                         />
-                        <TextInput
+                        <InstructorSelector
                             label="Instructor"
-                            register={register}
-                            interfaceRef="instructor_name"
+                            value={watch('instructor_id') ?? null}
+                            onChange={(id) =>
+                                setValue('instructor_id', id ?? undefined)
+                            }
                             required
-                            length={255}
-                            errors={errors}
+                            error={errors.instructor_id?.message}
+                            facilityId={user.facility.id}
                         />
                         <NumberInput
                             label="Capacity"

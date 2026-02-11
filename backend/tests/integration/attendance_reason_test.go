@@ -31,7 +31,10 @@ func TestAttendanceReasons(t *testing.T) {
 	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
 	require.NoError(t, err)
 
-	class, err := env.CreateTestClass(program, facility, models.Active)
+	instructor, err := env.CreateTestInstructor(facility.ID, "reason")
+	require.NoError(t, err)
+
+	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
 	event, err := env.CreateTestEvent(class.ID, "")

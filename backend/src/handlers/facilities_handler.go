@@ -18,6 +18,8 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 		adminFeatureRoute("GET /api/rooms", srv.handleGetRooms, axx),
 		adminFeatureRoute("POST /api/rooms", srv.handleCreateRoom, axx),
+		adminValidatedFeatureRoute("GET /api/facilities/{facilityId}/instructors",
+			srv.handleGetFacilityInstructors, models.ProgramAccess, FacilityAdminResolver("facilities", "facilityId")),
 	}
 }
 
@@ -146,4 +148,21 @@ func (srv *Server) handleCreateRoom(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, created)
+}
+
+/**
+* GET: /api/facilities/{facilityId}/instructors
+ */
+func (srv *Server) handleGetFacilityInstructors(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityId, err := strconv.Atoi(r.PathValue("facilityId"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+
+	instructors, err := srv.Db.GetFacilityInstructors(facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, instructors)
 }

@@ -74,21 +74,24 @@ func TestRoomConflictDetection(t *testing.T) {
 }
 
 func testDetectsOverlappingBookings(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "conflict1")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class1 := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "First Class",
-		InstructorName: "Instructor 1",
-		Description:    "First class to book the room",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "First Class",
+		InstructorID: &instructor.ID,
+		Description:  "First class to book the room",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
@@ -121,21 +124,24 @@ func testDetectsOverlappingBookings(t *testing.T, env *TestEnv, facility *models
 }
 
 func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "conflict2")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 4, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Self Update Class",
-		InstructorName: "Instructor",
-		Description:    "Class for testing self-exclusion",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Self Update Class",
+		InstructorID: &instructor.ID,
+		Description:  "Class for testing self-exclusion",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -157,7 +163,7 @@ func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facilit
 		ExpectStatus(http.StatusCreated)
 
 	var event models.ProgramClassEvent
-	err := env.DB.Where("class_id = ?", createdClass.ID).First(&event).Error
+	err = env.DB.Where("class_id = ?", createdClass.ID).First(&event).Error
 	require.NoError(t, err)
 
 	conflictsWithoutExclusion, err := env.DB.CheckRRuleConflicts(&models.ConflictCheckRequest{
@@ -181,21 +187,24 @@ func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facilit
 }
 
 func testNoConflictForDifferentTimes(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "conflict3")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Morning Class",
-		InstructorName: "Instructor",
-		Description:    "Morning class",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Morning Class",
+		InstructorID: &instructor.ID,
+		Description:  "Morning class",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -227,21 +236,27 @@ func testNoConflictForDifferentTimes(t *testing.T, env *TestEnv, facility *model
 }
 
 func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor1, err := env.CreateTestInstructor(facility.ID, "conflict4a")
+	require.NoError(t, err)
+
+	instructor2, err := env.CreateTestInstructor(facility.ID, "conflict4b")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class1 := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Existing Class",
-		InstructorName: "Instructor 1",
-		Description:    "Class that already has the room",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Existing Class",
+		InstructorID: &instructor1.ID,
+		Description:  "Class that already has the room",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
@@ -263,16 +278,16 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 		ExpectStatus(http.StatusCreated)
 
 	class2 := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Conflicting Class",
-		InstructorName: "Instructor 2",
-		Description:    "Class that tries to book the same room",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Conflicting Class",
+		InstructorID: &instructor2.ID,
+		Description:  "Class that tries to book the same room",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	class2Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class2).
@@ -295,21 +310,24 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 }
 
 func testRejectsRoomFromDifferentFacility(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, otherFacilityRoomID uint) {
+	instructor, err := env.CreateTestInstructor(facility.ID, "conflict5")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
 	classEndDate := time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Security Test Class",
-		InstructorName: "Instructor",
-		Description:    "Class trying to use room from different facility",
-		StartDt:        classStartDate,
-		EndDt:          &classEndDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Security Test Class",
+		InstructorID: &instructor.ID,
+		Description:  "Class trying to use room from different facility",
+		StartDt:      classStartDate,
+		EndDt:        &classEndDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
@@ -339,21 +357,24 @@ func testDetectsConflictsWithTimezoneAwareRRules(t *testing.T, env *TestEnv, fac
 	facility.Timezone = "America/New_York"
 	require.NoError(t, env.DB.Save(facility).Error)
 
+	instructor, err := env.CreateTestInstructor(facility.ID, "conflict6")
+	require.NoError(t, err)
+
 	// Class 1: Created in July (EDT) at 10 AM local time, repeating on Thursdays
 	// Using timezone-aware RRULE format: DTSTART;TZID=America/New_York:20250701T100000
 	classStartDate := time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class1 := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Summer Class",
-		InstructorName: "Instructor 1",
-		Description:    "Class created in summer at 10 AM",
-		StartDt:        classStartDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Summer Class",
+		InstructorID: &instructor.ID,
+		Description:  "Class created in summer at 10 AM",
+		StartDt:      classStartDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
@@ -405,19 +426,22 @@ func testBackwardsCompatibleUTCRules(t *testing.T, env *TestEnv, facility *model
 	facility.Timezone = "America/New_York"
 	require.NoError(t, env.DB.Save(facility).Error)
 
+	instructor, err := env.CreateTestInstructor(facility.ID, "conflict7")
+	require.NoError(t, err)
+
 	classStartDate := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
 	class1 := models.ProgramClass{
-		ProgramID:      program.ID,
-		FacilityID:     facility.ID,
-		Capacity:       10,
-		Name:           "Legacy UTC Class",
-		InstructorName: "Instructor",
-		Description:    "Class using old UTC-based RRULE format",
-		StartDt:        classStartDate,
-		Status:         models.Scheduled,
-		CreditHours:    &creditHours,
+		ProgramID:    program.ID,
+		FacilityID:   facility.ID,
+		Capacity:     10,
+		Name:         "Legacy UTC Class",
+		InstructorID: &instructor.ID,
+		Description:  "Class using old UTC-based RRULE format",
+		StartDt:      classStartDate,
+		Status:       models.Scheduled,
+		CreditHours:  &creditHours,
 	}
 
 	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
