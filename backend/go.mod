@@ -33,7 +33,6 @@ require (
 
 require (
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.5 // indirect
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/richardlehane/mscfb v1.0.6 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
@@ -88,7 +87,6 @@ require (
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.47.0 // indirect
