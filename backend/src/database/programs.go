@@ -751,7 +751,27 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 
 	if args.Search != "" {
-		tx = tx.Where("LOWER(programs.name) LIKE ? OR LOWER(programs.description) LIKE ?", args.SearchQuery(), args.SearchQuery())
+		searchPattern := args.SearchQuery()
+		// TODO: frontend should use matching_classes to indicate class-level matches vs program-level matches
+		if adminRole == models.FacilityAdmin {
+			tx = tx.Joins(fmt.Sprintf(`LEFT JOIN (
+				SELECT pc.program_id, STRING_AGG(DISTINCT pc.name, ', ') AS matching_classes
+				FROM program_classes pc
+				WHERE pc.facility_id = %d AND LOWER(pc.name) LIKE ?
+				GROUP BY pc.program_id
+			) AS mc ON mc.program_id = programs.id`, args.FacilityID), searchPattern)
+		} else {
+			tx = tx.Joins(`LEFT JOIN (
+				SELECT pc.program_id, STRING_AGG(DISTINCT pc.name, ', ') AS matching_classes
+				FROM program_classes pc
+				WHERE LOWER(pc.name) LIKE ?
+				GROUP BY pc.program_id
+			) AS mc ON mc.program_id = programs.id`, searchPattern)
+		}
+		tx = tx.Select(selectFields + `, mc.matching_classes`)
+		tx = tx.Where(`LOWER(programs.name) LIKE ? OR LOWER(programs.description) LIKE ?
+			OR EXISTS (SELECT 1 FROM program_classes pc2 WHERE pc2.program_id = programs.id AND LOWER(pc2.name) LIKE ?)`,
+			searchPattern, searchPattern, searchPattern)
 	}
 
 	if err := tx.Count(&args.Total).Error; err != nil {
