@@ -9,6 +9,7 @@ interface MultiSelectDropdownProps {
     onSelectionChange: (selected: number[]) => void;
     onBlurSearch: () => void;
     small?: boolean;
+    openUpwards?: boolean;
 }
 
 export function MultiSelectDropdown({
@@ -17,7 +18,8 @@ export function MultiSelectDropdown({
     selectedOptions,
     onSelectionChange,
     onBlurSearch,
-    small
+    small,
+    openUpwards = false
 }: MultiSelectDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -61,7 +63,7 @@ export function MultiSelectDropdown({
                 </button>
                 {isOpen && (
                     <ul
-                        className="absolute left-0 bg-base-100 rounded-box shadow-lg p-2 mt-2 max-h-64 overflow-y-auto z-10"
+                        className={`absolute left-0 bg-base-100 rounded-box shadow-lg p-2 max-h-64 overflow-y-auto z-10 ${openUpwards ? 'bottom-full mb-2' : 'top-full mt-2'}`}
                         tabIndex={0}
                         style={{ minWidth: 'max-content' }}
                     >
