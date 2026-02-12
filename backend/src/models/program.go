@@ -180,6 +180,7 @@ type ProgramOverviewResponse struct {
 	Completions            int     `json:"completions"`
 	TotalEnrollments       int     `json:"total_enrollments"`
 	CompletionRate         float64 `json:"completion_rate"`
+	AttendanceRate         float64 `json:"attendance_rate"`
 	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids" gorm:"-"`
 }
 
