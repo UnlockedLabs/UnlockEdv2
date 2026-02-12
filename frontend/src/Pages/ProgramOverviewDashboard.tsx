@@ -36,6 +36,7 @@ import WarningBanner from '@/Components/WarningBanner';
 import EmptyStateCard from '@/Components/EmptyStateCard';
 import { ReportExportModal } from '@/Components/modals/ReportExportModal';
 import { BulkCancelSessionsModal } from '@/Components/modals/BulkCancelSessionsModal';
+import { formatPercent } from '@/Components/helperFunctions';
 
 export function isCompletedCancelledOrArchived(program_class: Class): boolean {
     return (
@@ -225,6 +226,11 @@ export default function ProgramOverviewDashboard() {
 
     const status = getProgramStatus(program, user?.facility.id);
     const canAddClass = status === 'active';
+    const attendanceRate: number | string | undefined =
+        typeof program?.attendance_rate === 'number' ||
+        typeof program?.attendance_rate === 'string'
+            ? program.attendance_rate
+            : undefined;
 
     function getTooltip(): string | undefined {
         const tooltipMap: Record<ProgramStatus, string | undefined> = {
@@ -338,15 +344,17 @@ export default function ProgramOverviewDashboard() {
                             number={program?.active_residents.toString() ?? '0'}
                             label="residents"
                         />
-                        <div className="col-span-2">
-                            <StatsCard
-                                title="Overall Completion"
-                                number={
-                                    program?.completion_rate.toString() ?? '0'
-                                }
-                                label="%"
-                            />
-                        </div>
+                        <StatsCard
+                            title="Overall Completion"
+                            number={program?.completion_rate.toString() ?? '0'}
+                            label="%"
+                        />
+                        <StatsCard
+                            title="Avg Attendance Rpate"
+                            number={formatPercent(attendanceRate)}
+                            label="%"
+                            useToLocaleString={false}
+                        />
                     </div>
                 </div>
             </div>
