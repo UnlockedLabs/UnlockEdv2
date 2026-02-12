@@ -309,7 +309,7 @@ const ResidentProfile = () => {
     }
 
     return (
-        <div className="resident-profile overflow-x-hidden px-5 pb-4">
+        <div className="overflow-x-hidden px-5 pb-4">
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
                 <div className="space-y-6">
