@@ -72,7 +72,7 @@ export const RoomConflictModal = forwardRef<
                             </div>
                         </div>
 
-                        <div className="flex justify-end mt-2">
+                        <div className="flex justify-end gap-4 mt-2">
                             <CancelButton onClick={onClose} label="Close" />
                         </div>
                     </div>
