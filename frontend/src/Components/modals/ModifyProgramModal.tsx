@@ -10,7 +10,7 @@ export const ProgramActionMessages = {
     },
     set_inactive: {
         title: 'Set to Inactive',
-        text: ' You won’t be able to create new classes for this program. \n Existing and scheduled classes will continue unless you cancel them manually.'
+        text: " You won't be able to create new classes for this program. \n Existing and scheduled classes will continue unless you cancel them manually."
     },
     archive: {
         title: 'Archive Program',
@@ -18,13 +18,18 @@ export const ProgramActionMessages = {
     },
     reactivate: {
         title: 'Reactivate Program',
-        text: 'Reactivating this program will make it available again for use. Please choose the program’s new status:'
+        text: "Reactivating this program will make it available again for use. Please choose the program's new status:"
+    },
+    delete: {
+        title: 'Delete Program',
+        text: 'This action will permanently delete the program and cannot be undone. To confirm, type the program name below:'
     }
 };
 
 const ModifyProgramModal = forwardRef(function (
     {
         action,
+        program,
         onConfirm,
         onClose
     }: {
@@ -36,6 +41,7 @@ const ModifyProgramModal = forwardRef(function (
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     const [chosenStatus, setChosenStatus] = useState<boolean>(true);
+    const [confirmName, setConfirmName] = useState<string>('');
 
     if (!action) return null;
 
@@ -43,8 +49,67 @@ const ModifyProgramModal = forwardRef(function (
 
     function close() {
         setChosenStatus(false);
+        setConfirmName('');
         closeModal(ref);
         onClose?.();
+    }
+
+    if (action === 'delete') {
+        const nameMatches = confirmName.trim() === program.program_name.trim();
+        return (
+            <dialog
+                ref={ref}
+                className="modal"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-3xl font-semibold text-error">
+                        {title}
+                    </span>
+                    <p className="py-4">{text}</p>
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text font-medium">
+                                Program name: {program.program_name}
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            className="input input-bordered w-full"
+                            placeholder="Type program name to confirm"
+                            value={confirmName}
+                            onChange={(e) => {
+                                e.stopPropagation();
+                                setConfirmName(e.target.value);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                    <div className="modal-action">
+                        <button
+                            className="btn"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                close();
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="btn btn-error"
+                            disabled={!nameMatches}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onConfirm();
+                                close();
+                            }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </dialog>
+        );
     }
 
     if (action === 'reactivate') {

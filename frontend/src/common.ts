@@ -1183,7 +1183,8 @@ export type ProgramAction =
     | 'set_available'
     | 'set_inactive'
     | 'archive'
-    | 'reactivate';
+    | 'reactivate'
+    | 'delete';
 
 export interface ValidatedUserRow {
     row_number: number;

@@ -74,11 +74,17 @@ export default function ProgramStatus({
     const effectiveStatus = getEffectiveStatus(program);
     const modifyProgramRef = useRef<HTMLDialogElement>(null);
     const cannotArchiveRef = useRef<HTMLDialogElement>(null);
+    const cannotDeleteRef = useRef<HTMLDialogElement>(null);
     const [selectedAction, setSelectedAction] = useState<ProgramAction | null>(
         null
     );
     const [archiveFacilities, setArchiveFacilities] = useState<string[]>([]);
     const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
+    const [deleteCheckLoading, setDeleteCheckLoading] = useState(false);
+    const [deleteBlockReason, setDeleteBlockReason] = useState<{
+        classCount: number;
+        enrollmentCount: number;
+    } | null>(null);
     const { toaster } = useToast();
 
     const checkResponse = useCheckResponse({
@@ -87,9 +93,15 @@ export default function ProgramStatus({
     });
 
     const programActions = new Map<ProgramEffectiveStatus, ProgramAction[]>([
-        [ProgramEffectiveStatus.Available, ['set_inactive', 'archive']],
-        [ProgramEffectiveStatus.Inactive, ['set_available', 'archive']],
-        [ProgramEffectiveStatus.Archived, ['reactivate']]
+        [
+            ProgramEffectiveStatus.Available,
+            ['set_inactive', 'archive', 'delete']
+        ],
+        [
+            ProgramEffectiveStatus.Inactive,
+            ['set_available', 'archive', 'delete']
+        ],
+        [ProgramEffectiveStatus.Archived, ['reactivate', 'delete']]
     ]);
     const availableActions = programActions.get(effectiveStatus) ?? [];
 
@@ -97,6 +109,10 @@ export default function ProgramStatus({
         setDropdownOpen(false);
         if (action === 'archive') {
             void handleArchiveCheck();
+            return;
+        }
+        if (action === 'delete') {
+            void handleDeleteCheck();
             return;
         }
         setSelectedAction(action);
@@ -116,6 +132,12 @@ export default function ProgramStatus({
 
     interface ArchiveCheckResponse {
         facilities: string[];
+    }
+
+    interface DeleteCheckResponse {
+        can_delete: boolean;
+        class_count: number;
+        enrollment_count: number;
     }
 
     async function handleArchiveCheck() {
@@ -144,7 +166,51 @@ export default function ProgramStatus({
         setSelectedAction('archive');
     }
 
+    async function handleDeleteCheck() {
+        if (deleteCheckLoading) return;
+        setDeleteCheckLoading(true);
+        const resp = (await API.get<DeleteCheckResponse>(
+            `programs/${program.program_id}/delete-check`
+        )) as ServerResponseOne<DeleteCheckResponse>;
+        setDeleteCheckLoading(false);
+
+        if (!resp.success) {
+            toaster(
+                resp.message || 'Unable to check if program can be deleted.',
+                ToastState.error
+            );
+            return;
+        }
+
+        if (!resp.data.can_delete) {
+            setDeleteBlockReason({
+                classCount: resp.data.class_count,
+                enrollmentCount: resp.data.enrollment_count
+            });
+            showModal(cannotDeleteRef);
+            return;
+        }
+
+        setSelectedAction('delete');
+    }
+
     async function handleConfirm(newStatus?: boolean) {
+        if (selectedAction === 'delete') {
+            const resp = await API.delete<void>(
+                `programs/${program.program_id}`
+            );
+            if (resp.success) {
+                toaster('Program deleted successfully', ToastState.success);
+                void mutate();
+            } else {
+                toaster(
+                    resp.message || 'Failed to delete program',
+                    ToastState.error
+                );
+            }
+            return;
+        }
+
         const body: Record<string, unknown> = {};
         if (selectedAction === 'set_available') {
             body.is_active = true;
@@ -182,6 +248,11 @@ export default function ProgramStatus({
         closeModal(cannotArchiveRef);
     }
 
+    function closeCannotDeleteModal() {
+        setDeleteBlockReason(null);
+        closeModal(cannotDeleteRef);
+    }
+
     return (
         <>
             <div
@@ -212,14 +283,18 @@ export default function ProgramStatus({
                                         openSelectionModal(action);
                                     }}
                                 >
-                                    <span className="text-sm">
+                                    <span
+                                        className={`text-sm ${action === 'delete' ? 'text-error' : ''}`}
+                                    >
                                         {action === 'set_available'
                                             ? 'Available'
                                             : action === 'set_inactive'
                                               ? 'Inactive'
                                               : action === 'archive'
                                                 ? 'Archive'
-                                                : 'Reactivate'}
+                                                : action === 'delete'
+                                                  ? 'Delete'
+                                                  : 'Reactivate'}
                                     </span>
                                 </div>
                             </li>
@@ -273,6 +348,61 @@ export default function ProgramStatus({
                     <div className="flex justify-end">
                         <CancelButton
                             onClick={closeCannotArchiveModal}
+                            label="Close"
+                        />
+                    </div>
+                </TextOnlyModal>
+            </div>
+            <div
+                className="cursor-default"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <TextOnlyModal
+                    ref={cannotDeleteRef}
+                    type={TextModalType.Information}
+                    title={`Cannot Delete ${program.program_name}`}
+                    onSubmit={closeCannotDeleteModal}
+                    onClose={closeCannotDeleteModal}
+                    text={
+                        <div className="flex flex-col gap-4">
+                            <p className="body text-grey-4">
+                                This program cannot be deleted because it has
+                                associated data. You must delete all classes and
+                                enrollments before deleting this program.
+                            </p>
+                            {deleteBlockReason && (
+                                <div className="flex flex-col gap-2">
+                                    <span className="font-semibold">
+                                        Associated data:
+                                    </span>
+                                    <ul className="list-disc pl-5 text-sm text-grey-4">
+                                        <li>
+                                            {deleteBlockReason.classCount}{' '}
+                                            {deleteBlockReason.classCount === 1
+                                                ? 'class'
+                                                : 'classes'}
+                                        </li>
+                                        <li>
+                                            {deleteBlockReason.enrollmentCount}{' '}
+                                            {deleteBlockReason.enrollmentCount ===
+                                            1
+                                                ? 'enrollment'
+                                                : 'enrollments'}
+                                        </li>
+                                    </ul>
+                                </div>
+                            )}
+                            <p className="body-small text-grey-4 italic">
+                                Tip: Use &quot;Inactive&quot; to temporarily
+                                disable or &quot;Archive&quot; to preserve data
+                                for reporting.
+                            </p>
+                        </div>
+                    }
+                >
+                    <div className="flex justify-end">
+                        <CancelButton
+                            onClick={closeCannotDeleteModal}
                             label="Close"
                         />
                     </div>
