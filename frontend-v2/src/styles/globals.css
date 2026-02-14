@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --font-size: 16px;
+    --background: #ffffff;
+    --foreground: #0a0a0a;
+    --card: #ffffff;
+    --card-foreground: #0a0a0a;
+    --popover: #ffffff;
+    --popover-foreground: #0a0a0a;
+    --primary: #030213;
+    --primary-foreground: #ffffff;
+    --secondary: #ececf0;
+    --secondary-foreground: #030213;
+    --muted: #ececf0;
+    --muted-foreground: #717182;
+    --accent: #e9ebef;
+    --accent-foreground: #030213;
+    --destructive: #d4183d;
+    --destructive-foreground: #ffffff;
+    --border: rgba(0, 0, 0, 0.1);
+    --input: transparent;
+    --input-background: #f3f3f5;
+    --switch-background: #cbced4;
+    --ring: #b3b3b3;
+    --chart-1: #e76f51;
+    --chart-2: #2a9d8f;
+    --chart-3: #264653;
+    --chart-4: #e9c46a;
+    --chart-5: #f4a261;
+    --radius: 0.625rem;
+    --sidebar: #fafafa;
+    --sidebar-foreground: #0a0a0a;
+    --sidebar-primary: #030213;
+    --sidebar-primary-foreground: #fafafa;
+    --sidebar-accent: #f5f5f5;
+    --sidebar-accent-foreground: #1a1a1a;
+    --sidebar-border: #e5e5e5;
+    --sidebar-ring: #b3b3b3;
+}
+
+.dark {
+    --background: #0a0a0a;
+    --foreground: #fafafa;
+    --card: #0a0a0a;
+    --card-foreground: #fafafa;
+    --popover: #0a0a0a;
+    --popover-foreground: #fafafa;
+    --primary: #fafafa;
+    --primary-foreground: #1a1a1a;
+    --secondary: #262626;
+    --secondary-foreground: #fafafa;
+    --muted: #262626;
+    --muted-foreground: #b3b3b3;
+    --accent: #262626;
+    --accent-foreground: #fafafa;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #ef4444;
+    --border: #262626;
+    --input: #262626;
+    --ring: #525252;
+    --chart-1: #3b82f6;
+    --chart-2: #34d399;
+    --chart-3: #f4a261;
+    --chart-4: #a855f7;
+    --chart-5: #ef4444;
+    --sidebar: #1a1a1a;
+    --sidebar-foreground: #fafafa;
+    --sidebar-primary: #3b82f6;
+    --sidebar-primary-foreground: #fafafa;
+    --sidebar-accent: #262626;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #262626;
+    --sidebar-ring: #525252;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+html {
+    font-size: var(--font-size);
+}
