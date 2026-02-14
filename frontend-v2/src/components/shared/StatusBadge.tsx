@@ -1,0 +1,102 @@
+import { cn } from '@/lib/utils';
+import {
+    SelectedClassStatus,
+    ProgClassStatus,
+    ProgramEffectiveStatus,
+    EnrollmentStatus
+} from '@/types';
+
+const classStatusStyles: Record<SelectedClassStatus, string> = {
+    [SelectedClassStatus.Active]: 'bg-green-50 text-green-700 border-green-200',
+    [SelectedClassStatus.Scheduled]:
+        'bg-blue-50 text-blue-700 border-blue-200',
+    [SelectedClassStatus.Completed]:
+        'bg-gray-50 text-gray-700 border-gray-200',
+    [SelectedClassStatus.Paused]:
+        'bg-amber-50 text-amber-700 border-amber-200',
+    [SelectedClassStatus.Cancelled]: 'bg-red-50 text-red-700 border-red-200'
+};
+
+const progClassStatusStyles: Record<ProgClassStatus, string> = {
+    [ProgClassStatus.ACTIVE]: 'bg-green-50 text-green-700 border-green-200',
+    [ProgClassStatus.SCHEDULED]: 'bg-blue-50 text-blue-700 border-blue-200',
+    [ProgClassStatus.COMPLETED]: 'bg-gray-50 text-gray-700 border-gray-200',
+    [ProgClassStatus.PAUSED]: 'bg-amber-50 text-amber-700 border-amber-200',
+    [ProgClassStatus.CANCELLED]: 'bg-red-50 text-red-700 border-red-200'
+};
+
+const programStatusStyles: Record<ProgramEffectiveStatus, string> = {
+    [ProgramEffectiveStatus.Available]:
+        'bg-green-100 text-green-700 border-green-300',
+    [ProgramEffectiveStatus.Inactive]:
+        'bg-gray-100 text-gray-700 border-gray-300',
+    [ProgramEffectiveStatus.Archived]: 'bg-red-100 text-red-700 border-red-300'
+};
+
+const enrollmentStatusStyles: Record<string, string> = {
+    Enrolled: 'bg-green-50 text-green-700 border-green-200',
+    Completed: 'bg-blue-50 text-blue-700 border-blue-200',
+    Dropped: 'bg-red-50 text-red-700 border-red-200',
+    Transferred: 'bg-amber-50 text-amber-700 border-amber-200'
+};
+
+type StatusType =
+    | SelectedClassStatus
+    | ProgClassStatus
+    | ProgramEffectiveStatus
+    | EnrollmentStatus
+    | string;
+
+interface StatusBadgeProps {
+    status: StatusType;
+    variant?: 'class' | 'progClass' | 'program' | 'enrollment' | 'auto';
+    className?: string;
+}
+
+function getStyleForStatus(
+    status: StatusType,
+    variant: StatusBadgeProps['variant']
+): string {
+    if (variant === 'class' && status in classStatusStyles) {
+        return classStatusStyles[status as SelectedClassStatus];
+    }
+    if (variant === 'progClass' && status in progClassStatusStyles) {
+        return progClassStatusStyles[status as ProgClassStatus];
+    }
+    if (variant === 'program' && status in programStatusStyles) {
+        return programStatusStyles[status as ProgramEffectiveStatus];
+    }
+    if (variant === 'enrollment' && status in enrollmentStatusStyles) {
+        return enrollmentStatusStyles[status];
+    }
+    if (variant === 'auto') {
+        if (status in classStatusStyles)
+            return classStatusStyles[status as SelectedClassStatus];
+        if (status in progClassStatusStyles)
+            return progClassStatusStyles[status as ProgClassStatus];
+        if (status in programStatusStyles)
+            return programStatusStyles[status as ProgramEffectiveStatus];
+        if (status in enrollmentStatusStyles)
+            return enrollmentStatusStyles[status];
+    }
+    return 'bg-gray-100 text-gray-700 border-gray-200';
+}
+
+export function StatusBadge({
+    status,
+    variant = 'auto',
+    className
+}: StatusBadgeProps) {
+    const style = getStyleForStatus(status, variant);
+    return (
+        <span
+            className={cn(
+                'inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border whitespace-nowrap',
+                style,
+                className
+            )}
+        >
+            {status}
+        </span>
+    );
+}
