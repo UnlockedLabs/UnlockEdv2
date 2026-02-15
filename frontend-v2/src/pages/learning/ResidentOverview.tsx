@@ -7,17 +7,9 @@ import {
     EnrollmentStatus
 } from '@/types';
 import { PageHeader, StatusBadge, EmptyState } from '@/components/shared';
+import { formatDate } from '@/lib/formatters';
 import { Card, CardContent } from '@/components/ui/card';
 import { GraduationCap } from 'lucide-react';
-
-function formatDate(dateStr?: string): string {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-}
 
 function getEnrollmentStatusStyle(status?: EnrollmentStatus): string {
     switch (status) {

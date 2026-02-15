@@ -20,10 +20,10 @@ services:
 
   frontend:
     build:
-      context: frontend
+      context: frontend-v2
       dockerfile: dev.Dockerfile
     volumes:
-      - ./frontend:/app
+      - ./frontend-v2:/app
       - node_modules:/app/node_modules
     networks:
       - intranet
@@ -67,7 +67,7 @@ services:
       - intranet
     volumes:
       - ./:/app
-      - ./frontend/public/thumbnails:/imgs
+      - ./frontend-v2/public/thumbnails:/imgs
       - ./csvs/jaspertmp/:/jaspertmp
     environment:
       - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
@@ -120,7 +120,7 @@ services:
       - intranet
     volumes:
       - logs:/logs
-      - ./frontend/public/videos:/videos
+      - ./frontend-v2/public/videos:/videos
       - ./:/app
       - csvs:/csvs
     ports:

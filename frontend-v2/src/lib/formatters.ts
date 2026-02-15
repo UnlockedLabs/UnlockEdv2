@@ -2,6 +2,30 @@ import { Video } from '@/types/content';
 import { Class } from '@/types/program';
 import { RRule, Weekday } from 'rrule';
 
+export function formatDate(dateStr?: string): string {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+export function formatDateTime(dateStr: string): string {
+    const dt = new Date(dateStr);
+    const date = dt.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    const time = dt.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    return `${date} - ${time}`;
+}
+
 export function getVideoErrorMessage(video: Video): string | undefined {
     return video.video_download_attempts.find(
         (attempt) => attempt.error_message !== ''

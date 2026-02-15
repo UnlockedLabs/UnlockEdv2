@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AUTHCALLBACK, hasFeature, useAuth } from '@/auth/useAuth';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW, UserRole } from '@/types';
@@ -17,8 +18,14 @@ function RouteGuard({
     features?: FeatureAccess[];
 }) {
     const { user } = useAuth();
+
+    useEffect(() => {
+        if (!user) {
+            window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        }
+    }, [user]);
+
     if (!user) {
-        window.location.href = INIT_KRATOS_LOGIN_FLOW;
         return null;
     }
     if (

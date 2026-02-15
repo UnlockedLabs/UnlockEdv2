@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { formatDate } from '@/lib/formatters';
 import useSWR from 'swr';
 import { useAuth, hasFeature, isUserDeactivated } from '@/auth/useAuth';
 import { useToast } from '@/contexts/ToastContext';
@@ -41,14 +42,6 @@ import {
     Clock,
     Activity
 } from 'lucide-react';
-
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
 
 function getTimestamp(): string {
     const now = new Date();
@@ -104,15 +97,15 @@ export default function ResidentProfile() {
         residentId ? `/api/users/${residentId}/activity-history?per_page=10` : null
     );
 
-    if (error?.message === 'Not Found') {
-        navigate('/404');
-        return null;
-    }
-    if (error) {
-        navigate('/error');
-        return null;
-    }
-    if (!user) return null;
+    useEffect(() => {
+        if (error?.message === 'Not Found') {
+            navigate('/404');
+        } else if (error) {
+            navigate('/error');
+        }
+    }, [error, navigate]);
+
+    if (error || !user) return null;
 
     const metrics = profileResp?.data;
     const programs = programsResp?.data ?? [];

@@ -67,11 +67,11 @@ export default function Welcome() {
             </nav>
 
             <div className="flex justify-center p-10">
-                <div className="max-w-prose space-y-6 text-[#203622]">
+                <div className="max-w-prose space-y-6 text-[#203622] text-center">
                     <h1 className="text-4xl font-bold">
                         Built from the inside out...
                     </h1>
-                    <p className="text-lg text-justify leading-relaxed">
+                    <p className="text-lg leading-relaxed">
                         Our mission is to make education accessible to all
                         justice-impacted people, and to ensure that their
                         educational progress is recorded and recognized by
@@ -81,7 +81,7 @@ export default function Welcome() {
                     <div className="flex items-center h-8 border rounded-[15px] text-lg justify-center text-[#203622] bg-teal-100 overflow-hidden">
                         Now live in correctional facilities!
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col items-center">
                         <img
                             src="/ul-logo-stacked-med-d.svg"
                             className="mb-2 w-full h-auto max-h-64 object-contain"

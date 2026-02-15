@@ -20,14 +20,15 @@ interface ResidentHomeData {
     favorites: OpenContentItem[];
 }
 
-function LibraryCard({ library }: { library: Library }) {
+function FeaturedLibraryCard({
+    library,
+    onClick
+}: {
+    library: Library;
+    onClick: () => void;
+}) {
     return (
-        <a
-            href={library.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-        >
+        <div onClick={onClick} className="block cursor-pointer">
             <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
                 <div className="h-[100px] bg-[#E2E7EA]">
                     {library.thumbnail_url ? (
@@ -51,7 +52,7 @@ function LibraryCard({ library }: { library: Library }) {
                     )}
                 </CardContent>
             </Card>
-        </a>
+        </div>
     );
 }
 
@@ -134,9 +135,14 @@ export default function ResidentHome() {
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {featuredItems.map((lib) => (
-                                    <LibraryCard
+                                    <FeaturedLibraryCard
                                         key={`${lib.id}-${lib.open_content_provider_id}`}
                                         library={lib}
+                                        onClick={() =>
+                                            navigate(
+                                                `/viewer/libraries/${lib.id}`
+                                            )
+                                        }
                                     />
                                 ))}
                             </div>
