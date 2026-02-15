@@ -1,11 +1,20 @@
+import { useEffect, useState } from 'react';
 import LoginForm from '@/components/forms/LoginForm';
 import { INIT_KRATOS_LOGIN_FLOW } from '@/types';
 import { Link } from 'react-router-dom';
 
 export default function Login() {
-    if (!window.location.search.includes('flow')) {
-        window.location.href = INIT_KRATOS_LOGIN_FLOW;
-    }
+    const [redirecting, setRedirecting] = useState(false);
+
+    useEffect(() => {
+        if (!window.location.search.includes('flow')) {
+            setRedirecting(true);
+            window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        }
+    }, []);
+
+    if (redirecting) return null;
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#E2E7EA]">
             <div className="mb-8">

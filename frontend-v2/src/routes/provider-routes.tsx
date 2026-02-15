@@ -10,7 +10,6 @@ import MyProgress from '@/pages/learning/MyProgress';
 import CourseCatalog from '@/pages/learning/CourseCatalog';
 import LearningInsights from '@/pages/insights/LearningInsights';
 import ProviderUserManagement from '@/pages/admin/ProviderUserManagement';
-import CourseCatalog from '@/pages/learning/CourseCatalog';
 import ProviderPlatformManagement from '@/pages/admin/ProviderPlatformManagement';
 
 const routes: RouteObject = declareAuthenticatedRoutes(

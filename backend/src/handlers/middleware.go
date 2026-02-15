@@ -126,7 +126,7 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 			if marshErr != nil {
 				log.Warnf("issue marshaling LibraryProxyPO, error is: %v", marshErr)
 			}
-			if marshErr != nil {
+			if marshErr == nil {
 				if _, err := libraryBucket.Put(resourceID, marshaledParams); err != nil {
 					log.Warnf("issue putting LibraryProxyPO into bucket, error is: %v", err)
 				}

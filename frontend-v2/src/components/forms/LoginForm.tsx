@@ -17,6 +17,15 @@ interface Inputs {
     csrf_token: string;
 }
 
+function formatCountdown(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (minutes > 0) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''} and ${secs} second${secs !== 1 ? 's' : ''}`;
+    }
+    return `${secs} second${secs !== 1 ? 's' : ''}`;
+}
+
 export default function LoginForm() {
     const navigate = useNavigate();
     const loaderData = useLoaderData() as AuthFlow;
@@ -29,7 +38,6 @@ export default function LoginForm() {
     const [lockedOutSeconds, setLockedOutSeconds] = useState<number | null>(
         null
     );
-    const [countdownDisplay, setCountdownDisplay] = useState<string>('');
     const {
         register,
         handleSubmit,
@@ -38,15 +46,7 @@ export default function LoginForm() {
     } = useForm<Inputs>();
 
     useEffect(() => {
-        if (lockedOutSeconds === null) {
-            setCountdownDisplay('');
-            return;
-        }
-        if (lockedOutSeconds <= 0) {
-            setLockedOutSeconds(null);
-            setCountdownDisplay('');
-            return;
-        }
+        if (lockedOutSeconds === null || lockedOutSeconds <= 0) return;
         const timer = setInterval(() => {
             setLockedOutSeconds((prev) => {
                 if (prev === null || prev <= 1) {
@@ -56,15 +56,8 @@ export default function LoginForm() {
                 return prev - 1;
             });
         }, 1000);
-        const minutes = Math.floor(lockedOutSeconds / 60);
-        const seconds = lockedOutSeconds % 60;
-        setCountdownDisplay(
-            minutes > 0
-                ? `${minutes} minute${minutes > 1 ? 's' : ''} and ${seconds} second${seconds !== 1 ? 's' : ''}`
-                : `${seconds} second${seconds !== 1 ? 's' : ''}`
-        );
         return () => clearInterval(timer);
-    }, [lockedOutSeconds]);
+    }, [lockedOutSeconds !== null && lockedOutSeconds > 0]);
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         if (user) {
@@ -73,7 +66,6 @@ export default function LoginForm() {
         setErrorMessage(false);
         setErrorType('generic');
         setProcessing(true);
-        setValue('password', '');
         const resp = (await API.post<AuthResponse, Inputs>(
             'login',
             data
@@ -118,7 +110,10 @@ export default function LoginForm() {
         if (loaderData.identifier) {
             setUser(loaderData.identifier);
         }
-    }, [loaderData]);
+        setValue('flow_id', loaderData.flow_id ?? '');
+        setValue('challenge', loaderData.challenge ?? '');
+        setValue('csrf_token', loaderData.csrf_token ?? '');
+    }, [loaderData, setValue]);
 
     const renderError = () => {
         if (!errorMessage) return null;
@@ -127,7 +122,7 @@ export default function LoginForm() {
             lockedOutSeconds !== null &&
             lockedOutSeconds > 0
         ) {
-            return `Currently locked out. Try again in ${countdownDisplay}.`;
+            return `Currently locked out. Try again in ${formatCountdown(lockedOutSeconds)}.`;
         }
         if (errorType === 'deactivated') {
             return 'Account deactivated. Contact the facility administrator for support.';
@@ -141,21 +136,9 @@ export default function LoginForm() {
                 void handleSubmit(onSubmit)(e);
             }}
         >
-            <input
-                type="hidden"
-                {...register('flow_id')}
-                value={loaderData.flow_id}
-            />
-            <input
-                type="hidden"
-                {...register('challenge')}
-                value={loaderData.challenge ?? ''}
-            />
-            <input
-                type="hidden"
-                {...register('csrf_token')}
-                value={loaderData.csrf_token}
-            />
+            <input type="hidden" {...register('flow_id')} />
+            <input type="hidden" {...register('challenge')} />
+            <input type="hidden" {...register('csrf_token')} />
             {user ? (
                 <div className="space-y-2">
                     <Label className="text-[#203622]">Username</Label>

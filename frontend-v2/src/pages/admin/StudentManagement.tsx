@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Pencil, RotateCcw, Trash2, MoreHorizontal, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime } from '@/lib/formatters';
 
 type SortOption = 'name_last asc' | 'name_last desc' | 'last_login desc' | 'last_login asc' | 'created_at desc' | 'created_at asc';
 
@@ -48,29 +49,6 @@ interface StudentFormData {
     username: string;
     email: string;
     doc_id?: string;
-}
-
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function formatDateTime(dateStr: string): string {
-    const dt = new Date(dateStr);
-    const date = dt.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-    const time = dt.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    });
-    return `${date} - ${time}`;
 }
 
 export default function StudentManagement() {
