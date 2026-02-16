@@ -20,9 +20,18 @@ import {
     BookOpenIcon,
     UsersIcon,
     ChartBarIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    InformationCircleIcon,
+    ClockIcon,
+    FolderIcon
 } from '@heroicons/react/24/outline';
-import { ClipboardList, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+    ClipboardList,
+    ArrowRight,
+    ChevronDown,
+    ChevronUp,
+    List
+} from 'lucide-react';
 
 interface MetricCardProps {
     icon: React.ReactNode;
@@ -35,23 +44,28 @@ interface MetricCardProps {
 
 function MetricCard({ icon, iconBg, label, value, tooltip, subtitle }: MetricCardProps) {
     return (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="bg-card rounded-lg border border-border p-5 flex items-start gap-4">
-                    <div className={cn('rounded-lg p-2.5 shrink-0', iconBg)}>
-                        {icon}
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-sm text-muted-foreground">{label}</p>
-                        <p className="text-2xl font-semibold text-foreground">
-                            {value}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-                    </div>
+        <div className="bg-background rounded-lg border border-border p-4 relative">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button className="absolute top-3 right-3 text-muted-foreground/50 hover:text-muted-foreground">
+                        <InformationCircleIcon className="size-4" />
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent>{tooltip}</TooltipContent>
+            </Tooltip>
+            <div className="flex items-start gap-3">
+                <div className={cn('rounded-lg p-2 shrink-0', iconBg)}>
+                    {icon}
                 </div>
-            </TooltipTrigger>
-            <TooltipContent>{tooltip}</TooltipContent>
-        </Tooltip>
+                <div className="min-w-0">
+                    <p className="text-2xl font-semibold text-foreground leading-tight">
+                        {value}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -82,13 +96,22 @@ function computeStats(classes: Class[]): DashboardStats {
     };
 }
 
-function TodaysScheduleTable({
+function TodaysSchedule({
     classes,
     onNavigate
 }: {
     classes: Class[];
     onNavigate: (id: number) => void;
 }) {
+    const navigate = useNavigate();
+    const today = new Date();
+    const dateLabel = today.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
     const todayClasses = useMemo(() => {
         return classes
             .filter((c) => isClassToday(c) && c.status === SelectedClassStatus.Active)
@@ -99,86 +122,70 @@ function TodaysScheduleTable({
             });
     }, [classes]);
 
-    if (todayClasses.length === 0) {
-        return (
-            <div className="bg-card rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Today's Schedule
-                </h3>
+    return (
+        <div className="bg-background rounded-lg border border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h3 className="text-lg font-semibold text-foreground">
+                        Today's Schedule
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{dateLabel}</p>
+                </div>
+                <button
+                    onClick={() => navigate('/schedule')}
+                    className="text-sm text-[#556830] hover:underline flex items-center gap-1"
+                >
+                    View all classes
+                    <ArrowRight className="size-3.5" />
+                </button>
+            </div>
+
+            {todayClasses.length === 0 ? (
                 <p className="text-muted-foreground text-sm py-8 text-center">
                     No classes scheduled for today.
                 </p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="bg-card rounded-lg border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-                Today's Schedule
-            </h3>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-border">
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Time
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Class
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Instructor
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Room
-                            </th>
-                            <th className="text-right py-2 text-muted-foreground font-medium">
-                                Action
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {todayClasses.map((cls) => {
-                            const schedule = getClassSchedule(cls);
-                            return (
-                                <tr
-                                    key={cls.id}
-                                    className="border-b border-border last:border-0"
-                                >
-                                    <td className="py-3 pr-4 text-foreground font-medium whitespace-nowrap">
-                                        {formatTime12h(schedule.startTime)}
-                                        {schedule.endTime &&
-                                            ` - ${formatTime12h(schedule.endTime)}`}
-                                    </td>
-                                    <td className="py-3 pr-4 text-foreground">
+            ) : (
+                <div className="space-y-2">
+                    {todayClasses.map((cls) => {
+                        const schedule = getClassSchedule(cls);
+                        return (
+                            <div
+                                key={cls.id}
+                                className="bg-[#e5e7e3] rounded-lg px-4 py-3 flex items-center gap-4"
+                            >
+                                <div className="flex items-center gap-2 text-sm text-foreground font-medium min-w-[140px] shrink-0">
+                                    <ClockIcon className="size-4 text-muted-foreground" />
+                                    {formatTime12h(schedule.startTime)}
+                                    {schedule.endTime &&
+                                        ` - ${formatTime12h(schedule.endTime)}`}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">
                                         {cls.name}
-                                    </td>
-                                    <td className="py-3 pr-4 text-muted-foreground">
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
                                         {cls.instructor_name}
-                                    </td>
-                                    <td className="py-3 pr-4 text-muted-foreground">
-                                        {schedule.room || '-'}
-                                    </td>
-                                    <td className="py-3 text-right">
-                                        <Button
-                                            size="sm"
-                                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onNavigate(cls.id);
-                                            }}
-                                        >
-                                            <ClipboardList className="size-4" />
-                                            Take Attendance
-                                        </Button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+                                    </p>
+                                </div>
+                                <p className="text-sm text-muted-foreground shrink-0 hidden sm:block">
+                                    {schedule.room || '-'}
+                                </p>
+                                <Button
+                                    size="sm"
+                                    className="bg-[#556830] text-white hover:bg-[#556830]/90 shrink-0"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onNavigate(cls.id);
+                                    }}
+                                >
+                                    <ClipboardList className="size-4" />
+                                    Take Attendance
+                                </Button>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
@@ -191,12 +198,10 @@ function MissingAttendanceWidget({
     expandable?: boolean;
 }) {
     const [expanded, setExpanded] = useState(false);
+    const navigate = useNavigate();
 
     const missingAttendance = useMemo(() => {
         const now = new Date();
-        const threeDaysAgo = new Date(now);
-        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
         return classes.filter(
             (c) =>
                 c.status === SelectedClassStatus.Active &&
@@ -210,45 +215,55 @@ function MissingAttendanceWidget({
         : missingAttendance;
 
     return (
-        <div className="bg-card rounded-lg border border-border p-6">
-            <div className="flex items-center gap-2 mb-4">
-                <ExclamationTriangleIcon className="size-5 text-amber-500" />
+        <div className="bg-background rounded-lg border border-border p-6">
+            <div className="flex items-center gap-2 mb-1">
+                <ExclamationTriangleIcon className="size-5 text-[#F1B51C]" />
                 <h3 className="text-lg font-semibold text-foreground">
                     Missing Attendance
                 </h3>
-                {missingAttendance.length > 0 && (
-                    <span className="ml-auto bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                        {missingAttendance.length}
-                    </span>
-                )}
             </div>
+            <p className="text-sm text-muted-foreground mb-4">Past 3 days</p>
+
             {missingAttendance.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-4">
                     All attendance records are up to date.
                 </p>
             ) : (
                 <>
-                    <ul className="space-y-2">
-                        {displayList.map((cls) => (
-                            <li
-                                key={cls.id}
-                                className="flex items-center justify-between py-2 px-3 rounded-md bg-amber-50/50 border border-amber-100"
-                            >
-                                <div>
-                                    <p className="text-sm font-medium text-foreground">
-                                        {cls.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {cls.instructor_name}
-                                        {cls.facility_name && ` - ${cls.facility_name}`}
-                                    </p>
+                    <div className="space-y-2">
+                        {displayList.map((cls) => {
+                            const schedule = getClassSchedule(cls);
+                            return (
+                                <div
+                                    key={cls.id}
+                                    className="border border-[#F1B51C] rounded-lg px-4 py-3 flex items-center justify-between gap-3"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                            {cls.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {schedule.days.join(', ')}
+                                            {schedule.startTime &&
+                                                ` ${formatTime12h(schedule.startTime)}`}
+                                            {cls.facility_name &&
+                                                ` - ${cls.facility_name}`}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-[#F1B51C] text-[#F1B51C] hover:bg-[#F1B51C]/10 shrink-0"
+                                        onClick={() =>
+                                            navigate('/program-classes/' + cls.id)
+                                        }
+                                    >
+                                        Take Attendance
+                                    </Button>
                                 </div>
-                                <span className="text-xs text-amber-600 font-medium">
-                                    {cls.enrolled} enrolled
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
+                            );
+                        })}
+                    </div>
                     {expandable && missingAttendance.length > 5 && (
                         <button
                             onClick={() => setExpanded(!expanded)}
@@ -274,26 +289,26 @@ function MissingAttendanceWidget({
 
 function QuickActions({ navigate }: { navigate: (path: string) => void }) {
     return (
-        <div className="bg-card rounded-lg border border-border p-6">
+        <div className="bg-background rounded-lg border border-border p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">
                 Quick Actions
             </h3>
             <div className="space-y-3">
                 <Button
                     variant="outline"
-                    className="w-full justify-between border-border text-foreground hover:bg-muted/50"
+                    className="w-full justify-start gap-3 border-border text-foreground hover:bg-muted/50"
                     onClick={() => navigate('/programs')}
                 >
+                    <FolderIcon className="size-4 text-muted-foreground" />
                     View All Programs
-                    <ArrowRight className="size-4" />
                 </Button>
                 <Button
                     variant="outline"
-                    className="w-full justify-between border-border text-foreground hover:bg-muted/50"
+                    className="w-full justify-start gap-3 border-border text-foreground hover:bg-muted/50"
                     onClick={() => navigate('/classes')}
                 >
+                    <List className="size-4 text-muted-foreground" />
                     Browse Classes
-                    <ArrowRight className="size-4" />
                 </Button>
             </div>
         </div>
@@ -312,7 +327,7 @@ interface FacilityHealthRow {
 function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
     if (rows.length === 0) {
         return (
-            <div className="bg-card rounded-lg border border-border p-6">
+            <div className="bg-background rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4">
                     Facility Health Overview
                 </h3>
@@ -324,7 +339,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
     }
 
     return (
-        <div className="bg-card rounded-lg border border-border p-6">
+        <div className="bg-background rounded-lg border border-border p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">
                 Facility Health Overview
             </h3>
@@ -397,6 +412,45 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
     );
 }
 
+function MetricCards({ stats, subtitle }: { stats: DashboardStats; subtitle: string }) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+                icon={<BookOpenIcon className="size-5 text-[#556830]" />}
+                iconBg="bg-[#e5e7e3]"
+                label="Active Classes"
+                value={stats.activeClasses}
+                tooltip="Number of classes currently in Active status"
+                subtitle={subtitle}
+            />
+            <MetricCard
+                icon={<UsersIcon className="size-5 text-[#556830]" />}
+                iconBg="bg-[#e5e7e3]"
+                label="Total Enrollment"
+                value={stats.totalEnrollment}
+                tooltip="Total students enrolled across all active classes"
+                subtitle="Across active classes"
+            />
+            <MetricCard
+                icon={<ChartBarIcon className="size-5 text-[#556830]" />}
+                iconBg="bg-[#e5e7e3]"
+                label="Capacity Utilization"
+                value={`${stats.capacityUtilization}%`}
+                tooltip="Percentage of total capacity filled across active classes"
+                subtitle="Of available seats filled"
+            />
+            <MetricCard
+                icon={<ExclamationTriangleIcon className="size-5 text-[#F1B51C]" />}
+                iconBg="bg-amber-50"
+                label="Attendance Concerns"
+                value={stats.attendanceConcerns}
+                tooltip="Active classes scheduled today that may need attendance tracking"
+                subtitle="Classes needing attention"
+            />
+        </div>
+    );
+}
+
 function FacilityAdminView({
     classes,
     facilityName
@@ -408,7 +462,7 @@ function FacilityAdminView({
     const stats = useMemo(() => computeStats(classes), [classes]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div>
                 <h1 className="text-2xl font-bold text-foreground">
                     Facility Dashboard
@@ -416,53 +470,18 @@ function FacilityAdminView({
                 <p className="text-muted-foreground mt-1">{facilityName}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard
-                    icon={<BookOpenIcon className="size-5 text-white" />}
-                    iconBg="bg-[#556830]"
-                    label="Active Classes"
-                    value={stats.activeClasses}
-                    tooltip="Number of classes currently in Active status"
-                    subtitle="Currently running"
-                />
-                <MetricCard
-                    icon={<UsersIcon className="size-5 text-white" />}
-                    iconBg="bg-[#203622]"
-                    label="Total Enrollment"
-                    value={stats.totalEnrollment}
-                    tooltip="Total students enrolled across all active classes"
-                    subtitle="Across active classes"
-                />
-                <MetricCard
-                    icon={<ChartBarIcon className="size-5 text-white" />}
-                    iconBg="bg-[#556830]"
-                    label="Capacity Utilization"
-                    value={`${stats.capacityUtilization}%`}
-                    tooltip="Percentage of total capacity filled across active classes"
-                    subtitle="Of available seats filled"
-                />
-                <MetricCard
-                    icon={
-                        <ExclamationTriangleIcon className="size-5 text-white" />
-                    }
-                    iconBg="bg-amber-500"
-                    label="Attendance Concerns"
-                    value={stats.attendanceConcerns}
-                    tooltip="Active classes scheduled today that may need attendance tracking"
-                    subtitle="Classes needing attention"
-                />
-            </div>
+            <MetricCards stats={stats} subtitle="Currently running" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2">
-                    <TodaysScheduleTable
+                    <TodaysSchedule
                         classes={classes}
                         onNavigate={(id) =>
-                            navigate('/program-classes/' + id)
+                            navigate('/program-classes/' + id + '/attendance')
                         }
                     />
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <MissingAttendanceWidget classes={classes} />
                     <QuickActions navigate={navigate} />
                 </div>
@@ -525,7 +544,7 @@ function DeptAdminView({
     }, [classes]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div>
                 <h1 className="text-2xl font-bold text-foreground">
                     Department Overview
@@ -536,46 +555,11 @@ function DeptAdminView({
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard
-                    icon={<BookOpenIcon className="size-5 text-white" />}
-                    iconBg="bg-[#556830]"
-                    label="Active Classes"
-                    value={stats.activeClasses}
-                    tooltip="Number of classes currently in Active status across all facilities"
-                    subtitle="Across all facilities"
-                />
-                <MetricCard
-                    icon={<UsersIcon className="size-5 text-white" />}
-                    iconBg="bg-[#203622]"
-                    label="Total Enrollment"
-                    value={stats.totalEnrollment}
-                    tooltip="Total students enrolled across all active classes in all facilities"
-                    subtitle="Across active classes"
-                />
-                <MetricCard
-                    icon={<ChartBarIcon className="size-5 text-white" />}
-                    iconBg="bg-[#556830]"
-                    label="Capacity Utilization"
-                    value={`${stats.capacityUtilization}%`}
-                    tooltip="Percentage of total capacity filled across all active classes"
-                    subtitle="Of available seats filled"
-                />
-                <MetricCard
-                    icon={
-                        <ExclamationTriangleIcon className="size-5 text-white" />
-                    }
-                    iconBg="bg-amber-500"
-                    label="Attendance Concerns"
-                    value={stats.attendanceConcerns}
-                    tooltip="Active classes scheduled today that may need attendance tracking"
-                    subtitle="Classes needing attention"
-                />
-            </div>
+            <MetricCards stats={stats} subtitle="Across all facilities" />
 
             <FacilityHealthTable rows={facilityRows} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2">
                     <MissingAttendanceWidget
                         classes={classes}
@@ -608,23 +592,17 @@ export default function Dashboard() {
         return allClasses.filter((c) => c.facility_id === user.facility.id);
     }, [allClasses, deptAdmin, user]);
 
-    if (deptAdmin) {
-        return (
-            <div className="bg-muted min-h-screen p-6">
-                <div className="max-w-7xl mx-auto">
-                    <DeptAdminView classes={allClasses} programs={programs} />
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-muted min-h-screen p-6">
-            <div className="max-w-7xl mx-auto">
-                <FacilityAdminView
-                    classes={facilityClasses}
-                    facilityName={user?.facility.name ?? 'My Facility'}
-                />
+        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#e5e7e3]">
+            <div className="px-16 pt-6 pb-6 space-y-5">
+                {deptAdmin ? (
+                    <DeptAdminView classes={allClasses} programs={programs} />
+                ) : (
+                    <FacilityAdminView
+                        classes={facilityClasses}
+                        facilityName={user?.facility.name ?? 'My Facility'}
+                    />
+                )}
             </div>
         </div>
     );

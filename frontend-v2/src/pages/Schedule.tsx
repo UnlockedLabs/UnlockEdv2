@@ -6,18 +6,22 @@ import { useAuth } from '@/auth/useAuth';
 import {
     FacilityProgramClassEvent,
     ServerResponseMany,
-    SelectedClassStatus
+    SelectedClassStatus,
+    Room
 } from '@/types';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { CancelEventModal } from '@/components/schedule/CancelEventModal';
+import { RescheduleEventModal } from '@/components/schedule/RescheduleEventModal';
+import { RescheduleSeriesModal } from '@/components/schedule/RescheduleSeriesModal';
+import { RestoreEventModal } from '@/components/schedule/RestoreEventModal';
 import { Calendar, Clock, MapPin, User, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function formatTime(date: Date): string {
@@ -52,6 +56,10 @@ export default function Schedule() {
     const [selectedEvent, setSelectedEvent] = useState<FacilityProgramClassEvent | null>(null);
     const [currentWeek, setCurrentWeek] = useState(new Date());
     const [showAllClasses, setShowAllClasses] = useState(false);
+    const [showCancel, setShowCancel] = useState(false);
+    const [showReschedule, setShowReschedule] = useState(false);
+    const [showRescheduleSeries, setShowRescheduleSeries] = useState(false);
+    const [showRestore, setShowRestore] = useState(false);
 
     if (!user) return null;
 
@@ -61,13 +69,16 @@ export default function Schedule() {
         return { startDate: start, endDate: end };
     }, []);
 
-    const { data: eventsResp, isLoading } = useSWR<
+    const { data: eventsResp, isLoading, mutate } = useSWR<
         ServerResponseMany<FacilityProgramClassEvent>
     >(
         `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}${
             class_id && !showAllClasses ? `&class_id=${class_id}` : ''
         }`
     );
+
+    const { data: roomsResp } = useSWR<ServerResponseMany<Room>>('/api/rooms');
+    const rooms = roomsResp?.data ?? [];
 
     const events = eventsResp?.data ?? [];
 
@@ -115,6 +126,11 @@ export default function Schedule() {
             return false;
         }
         return true;
+    };
+
+    const handleModalSuccess = () => {
+        void mutate();
+        setSelectedEvent(null);
     };
 
     const weekLabel = useMemo(() => {
@@ -314,6 +330,60 @@ export default function Schedule() {
                                             This event belongs to another class and cannot be edited here.
                                         </div>
                                     )}
+
+                                    {canUpdateEvent() && (
+                                        <div className="space-y-2 pt-2 border-t">
+                                            {selectedEvent.is_cancelled ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="w-full text-[#556830] border-[#556830]"
+                                                    onClick={() => setShowRestore(true)}
+                                                >
+                                                    Restore Event
+                                                </Button>
+                                            ) : (
+                                                <>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-full text-[#556830] border-[#556830]"
+                                                        onClick={() => setShowReschedule(true)}
+                                                    >
+                                                        Edit Event
+                                                    </Button>
+                                                    {!selectedEvent.is_override && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full text-[#556830] border-[#556830]"
+                                                            onClick={() => setShowRescheduleSeries(true)}
+                                                        >
+                                                            Edit Series
+                                                        </Button>
+                                                    )}
+                                                    {selectedEvent.is_override && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full text-[#556830] border-[#556830]"
+                                                            onClick={() => setShowRestore(true)}
+                                                        >
+                                                            Restore Event
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-full text-red-600 border-red-300"
+                                                        onClick={() => setShowCancel(true)}
+                                                    >
+                                                        Cancel Event
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground">
@@ -324,6 +394,37 @@ export default function Schedule() {
                     </Card>
                 </div>
             </div>
+
+            {selectedEvent && (
+                <>
+                    <CancelEventModal
+                        open={showCancel}
+                        onOpenChange={setShowCancel}
+                        event={selectedEvent}
+                        onSuccess={handleModalSuccess}
+                    />
+                    <RescheduleEventModal
+                        open={showReschedule}
+                        onOpenChange={setShowReschedule}
+                        event={selectedEvent}
+                        rooms={rooms}
+                        onSuccess={handleModalSuccess}
+                    />
+                    <RescheduleSeriesModal
+                        open={showRescheduleSeries}
+                        onOpenChange={setShowRescheduleSeries}
+                        event={selectedEvent}
+                        rooms={rooms}
+                        onSuccess={handleModalSuccess}
+                    />
+                    <RestoreEventModal
+                        open={showRestore}
+                        onOpenChange={setShowRestore}
+                        event={selectedEvent}
+                        onSuccess={handleModalSuccess}
+                    />
+                </>
+            )}
         </div>
     );
 }
