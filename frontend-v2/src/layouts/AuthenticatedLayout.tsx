@@ -4,6 +4,8 @@ import { Facility, RouteTitleHandler, TitleHandler } from '@/types';
 import { useAuth, isAdministrator, canSwitchFacility } from '@/auth/useAuth';
 import API from '@/api/api';
 import TopNav from '@/components/navigation/TopNav';
+import Sidebar from '@/components/navigation/Sidebar';
+import MobileNav from '@/components/navigation/MobileNav';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { TitleManager } from '@/components/TitleManager';
 import UnlockEdTour from '@/components/UnlockEdTour';
@@ -18,6 +20,7 @@ export default function AuthenticatedLayout() {
     const { user } = useAuth();
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [helpCenterOpen, setHelpCenterOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const matches = useMatches();
     const currentRoute = matches[matches.length - 1];
     const routeData = currentRoute?.data as TitleHandler;
@@ -60,22 +63,43 @@ export default function AuthenticatedLayout() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-background">
-            <TopNav
-                facilities={facilities}
-                onToggleHelpCenter={() => setHelpCenterOpen(!helpCenterOpen)}
-            />
-            <TitleManager />
-            <UnlockEdTour />
-            <Toaster />
+        <div className="h-screen bg-background flex overflow-hidden">
+            <div className="hidden md:flex">
+                <Sidebar
+                    collapsed={sidebarCollapsed}
+                    onToggleCollapse={() =>
+                        setSidebarCollapsed(!sidebarCollapsed)
+                    }
+                />
+            </div>
 
-            <div className="px-6 py-4">
-                {breadcrumbItems.length > 0 && (
-                    <div className="mb-4">
-                        <Breadcrumbs items={breadcrumbItems} />
+            <div className="flex-1 flex flex-col min-w-0">
+                <div className="flex items-center">
+                    <div className="md:hidden px-2">
+                        <MobileNav />
                     </div>
-                )}
-                <Outlet />
+                    <div className="flex-1">
+                        <TopNav
+                            facilities={facilities}
+                            onToggleHelpCenter={() =>
+                                setHelpCenterOpen(!helpCenterOpen)
+                            }
+                        />
+                    </div>
+                </div>
+
+                <TitleManager />
+                <UnlockEdTour />
+                <Toaster />
+
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                    {breadcrumbItems.length > 0 && (
+                        <div className="mb-4">
+                            <Breadcrumbs items={breadcrumbItems} />
+                        </div>
+                    )}
+                    <Outlet />
+                </div>
             </div>
         </div>
     );

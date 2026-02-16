@@ -13,6 +13,7 @@ import FacilityManagement from '@/pages/admin/FacilityManagement';
 import StudentManagement from '@/pages/admin/StudentManagement';
 import ResidentProfile from '@/pages/admin/ResidentProfile';
 import Schedule from '@/pages/Schedule';
+import Dashboard from '@/pages/Dashboard';
 import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
@@ -38,6 +39,12 @@ const deptAdminRoutes = declareAuthenticatedRoutes(
 
 const adminRoutes = declareAuthenticatedRoutes(
     [
+        {
+            path: 'dashboard',
+            element: <Dashboard />,
+            errorElement: <Error />,
+            handle: { title: 'Dashboard' }
+        },
         {
             path: 'operational-insights',
             element: <OperationalInsights />,
