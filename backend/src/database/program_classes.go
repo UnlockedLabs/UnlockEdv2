@@ -65,7 +65,7 @@ func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.Program
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
-	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
+	if err := tx.Preload("Events").Preload("Events.RoomRef").Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 	return content, nil
