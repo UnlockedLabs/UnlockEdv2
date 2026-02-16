@@ -81,7 +81,8 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Preload("ProgramTypes").
-		Preload("ProgramCreditTypes")
+		Preload("ProgramCreditTypes").
+		Preload("FacilitiesPrograms.Facility")
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_types t ON t.program_id = programs.id").Where("t.id IN (?)", args.Tags)
 	}
@@ -96,6 +97,13 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	}
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
+	}
+	for i := range content {
+		for _, fp := range content[i].FacilitiesPrograms {
+			if fp.Facility != nil {
+				content[i].Facilities = append(content[i].Facilities, *fp.Facility)
+			}
+		}
 	}
 	return content, nil
 }

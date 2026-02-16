@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { useAuth, isDeptAdmin } from '@/auth/useAuth';
 import {
     Class,
+    Program,
     ServerResponseMany,
     SelectedClassStatus
 } from '@/types';
@@ -18,6 +19,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -67,9 +75,14 @@ export default function ClassesPage() {
     const [attendanceConcerns, setAttendanceConcerns] = useState(false);
     const [programFilter, setProgramFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [programSearch, setProgramSearch] = useState('');
 
     const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
-        '/api/program-classes'
+        '/api/program-classes?per_page=100'
+    );
+    const { data: programsResp } = useSWR<ServerResponseMany<Program>>(
+        showCreateModal ? '/api/programs' : null
     );
     const allClasses = classesResp?.data ?? [];
 
@@ -91,6 +104,29 @@ export default function ClassesPage() {
             a[1].localeCompare(b[1])
         );
     }, [facilityClasses]);
+
+    const filteredPrograms = useMemo(() => {
+        const programs = programsResp?.data ?? [];
+        const facilityId = user?.facility?.id;
+        const filtered = programs.filter((p) => {
+            if (!p.is_active) return false;
+            if (!facilityId || !p.facilities?.length) return true;
+            return p.facilities.some((f) => f.id === facilityId);
+        });
+        if (!programSearch) return filtered;
+        const q = programSearch.toLowerCase();
+        return filtered.filter(
+            (p) =>
+                p.name.toLowerCase().includes(q) ||
+                p.description?.toLowerCase().includes(q)
+        );
+    }, [programsResp, user, programSearch]);
+
+    const handleProgramSelect = (programId: number) => {
+        setShowCreateModal(false);
+        setProgramSearch('');
+        navigate(`/programs/${programId}`);
+    };
 
     const filteredClasses = useMemo(() => {
         let result = facilityClasses;
@@ -138,75 +174,76 @@ export default function ClassesPage() {
     ]);
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#e5e7e3]">
-            <div className="px-16 pt-6 pb-6 space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">
-                            Classes
-                        </h1>
-                        <p className="text-muted-foreground mt-1">
-                            Manage and monitor all classes at your facility
-                        </p>
+        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-2">
+                        <div>
+                            <h1 className="text-2xl font-bold text-[#203622]">
+                                Classes
+                            </h1>
+                            <p className="text-gray-600 mt-1">
+                                Manage and monitor all classes at your facility
+                            </p>
+                        </div>
+                        <Button
+                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2"
+                            onClick={() => setShowCreateModal(true)}
+                        >
+                            <Plus className="size-5" />
+                            Create New Class
+                        </Button>
                     </div>
-                    <Button
-                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
-                        onClick={() => navigate('/programs')}
-                    >
-                        <Plus className="size-4" />
-                        Create New Class
-                    </Button>
                 </div>
-                <div className="bg-background rounded-xl border border-border p-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="relative flex-1 min-w-[200px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+
+                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                    <div className="flex gap-4 items-center flex-wrap">
+                        <div className="flex-1 relative min-w-[300px]">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
                             <Input
                                 placeholder="Search classes, programs, or instructors..."
                                 value={searchQuery}
                                 onChange={(e) =>
                                     setSearchQuery(e.target.value)
                                 }
-                                className="pl-9"
+                                className="pl-10"
                             />
                         </div>
                         <Button
                             variant={todayOnly ? 'default' : 'outline'}
                             className={cn(
-                                'gap-2',
                                 todayOnly
-                                    ? 'bg-[#556830] text-white hover:bg-[#556830]/90'
-                                    : 'bg-background border-border text-foreground'
+                                    ? 'bg-[#556830] hover:bg-[#203622]'
+                                    : ''
                             )}
                             onClick={() => setTodayOnly(!todayOnly)}
                         >
-                            <Calendar className="size-4" />
+                            <Calendar className="size-4 mr-2" />
                             Today Only
                         </Button>
                         <Button
-                            variant={attendanceConcerns ? 'default' : 'outline'}
+                            variant={
+                                attendanceConcerns ? 'default' : 'outline'
+                            }
                             className={cn(
-                                'gap-2',
                                 attendanceConcerns
-                                    ? 'bg-amber-500 text-white hover:bg-amber-500/90'
-                                    : 'bg-background border-border text-foreground'
+                                    ? 'bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]'
+                                    : ''
                             )}
                             onClick={() =>
                                 setAttendanceConcerns(!attendanceConcerns)
                             }
                         >
-                            <Clock className="size-4" />
+                            <Clock className="size-4 mr-2" />
                             Attendance Concerns
                         </Button>
                         <Select
                             value={programFilter}
                             onValueChange={setProgramFilter}
                         >
-                            <SelectTrigger className="w-[180px] bg-background">
-                                <div className="flex items-center gap-2">
-                                    <Filter className="size-3.5 text-muted-foreground" />
-                                    <SelectValue placeholder="All Programs" />
-                                </div>
+                            <SelectTrigger className="w-[220px]">
+                                <Filter className="size-4 mr-2" />
+                                <SelectValue placeholder="All Programs" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">
@@ -226,7 +263,7 @@ export default function ClassesPage() {
                             value={statusFilter}
                             onValueChange={setStatusFilter}
                         >
-                            <SelectTrigger className="w-[160px] bg-background">
+                            <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -243,41 +280,41 @@ export default function ClassesPage() {
                     </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground">
+                <div className="mb-4 text-sm text-gray-600">
                     Showing {filteredClasses.length}{' '}
                     {filteredClasses.length === 1 ? 'class' : 'classes'}
-                </p>
+                </div>
 
-                <div className="bg-background rounded-xl border border-border overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-border">
-                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-[#E2E7EA] border-b border-gray-200">
+                            <tr>
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[24%]">
                                     Class Name
                                 </th>
-                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[15%]">
                                     Instructor
                                 </th>
-                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[23%]">
                                     Schedule
                                 </th>
-                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[14%]">
                                     Enrollment
                                 </th>
-                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[10%]">
                                     Status
                                 </th>
-                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[14%]">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-200">
                             {filteredClasses.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={6}
-                                        className="py-12 text-center text-muted-foreground"
+                                        className="px-6 py-12 text-center text-gray-500"
                                     >
                                         No classes match the current filters.
                                     </td>
@@ -289,7 +326,7 @@ export default function ClassesPage() {
                                         cls={cls}
                                         onClick={() =>
                                             navigate(
-                                                `/program-classes/${cls.id}`
+                                                `/program-classes/${cls.id}/detail`
                                             )
                                         }
                                         onAttendance={() =>
@@ -304,6 +341,57 @@ export default function ClassesPage() {
                     </table>
                 </div>
             </div>
+
+            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create New Class</DialogTitle>
+                        <DialogDescription>
+                            Classes are organized within Programs. Which
+                            program is this class for?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 mt-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                            <Input
+                                placeholder="Search programs..."
+                                value={programSearch}
+                                onChange={(e) =>
+                                    setProgramSearch(e.target.value)
+                                }
+                                className="pl-10"
+                            />
+                        </div>
+                        <div className="max-h-[400px] overflow-y-auto space-y-2">
+                            {filteredPrograms.length === 0 ? (
+                                <p className="text-center text-gray-500 py-8">
+                                    No programs found.
+                                </p>
+                            ) : (
+                                filteredPrograms.map((program) => (
+                                    <button
+                                        key={program.id}
+                                        onClick={() =>
+                                            handleProgramSelect(program.id)
+                                        }
+                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/50 transition-colors"
+                                    >
+                                        <div className="text-[#203622] font-medium">
+                                            {program.name}
+                                        </div>
+                                        {program.description && (
+                                            <div className="text-sm text-gray-600 mt-1">
+                                                {program.description}
+                                            </div>
+                                        )}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
@@ -325,26 +413,26 @@ function ClassRow({
     return (
         <tr
             onClick={onClick}
-            className="hover:bg-muted/30 cursor-pointer transition-colors border-b border-border last:border-0"
+            className="hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors"
         >
-            <td className="py-4 px-5">
-                <div className="flex items-start gap-2">
+            <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
                     {today && (
-                        <span className="size-2.5 rounded-full bg-[#F1B51C] shrink-0 mt-1.5" />
+                        <div className="w-2 h-2 bg-[#F1B51C] rounded-full flex-shrink-0" />
                     )}
-                    <div className="space-y-1">
-                        <p className="font-semibold text-foreground">
+                    <div>
+                        <div className="text-[#203622] hover:text-[#556830] transition-colors font-medium">
                             {cls.name}
-                        </p>
+                        </div>
                         <Link
                             to={`/programs/${cls.program_id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-[#556830] hover:underline"
+                            className="text-sm text-[#556830] hover:text-[#203622] hover:underline mt-0.5 block"
                         >
                             {cls.program?.name ?? 'Program'}
                         </Link>
                         {schedule.room && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                                 <MapPin className="size-3" />
                                 {schedule.room}
                             </div>
@@ -352,14 +440,16 @@ function ClassRow({
                     </div>
                 </div>
             </td>
-            <td className="py-4 px-5 text-muted-foreground align-top pt-5">
-                {cls.instructor_name}
+            <td className="px-6 py-4">
+                <div className="text-sm text-gray-700">
+                    {cls.instructor_name}
+                </div>
             </td>
-            <td className="py-4 px-5 align-top pt-5">
-                <div className="space-y-0.5">
+            <td className="px-6 py-4">
+                <div className="text-sm text-gray-700">
                     {schedule.startTime && (
-                        <div className="flex items-center gap-1.5 text-foreground">
-                            <Clock className="size-3.5 text-muted-foreground" />
+                        <div className="flex items-center gap-1 mb-1">
+                            <Clock className="size-3 text-gray-500" />
                             <span>
                                 {formatTime12h(schedule.startTime)}
                                 {schedule.endTime &&
@@ -368,35 +458,36 @@ function ClassRow({
                         </div>
                     )}
                     {schedule.days.length > 0 && (
-                        <p className="text-xs text-muted-foreground">
+                        <div className="text-xs text-gray-500 mb-1">
                             {schedule.days.join(', ')}
-                        </p>
+                        </div>
                     )}
-                    <p className="text-xs text-muted-foreground">
+                    <div className="text-xs text-gray-500">
                         {formatDateRangeFull(cls.start_dt, cls.end_dt)}
-                    </p>
+                    </div>
                 </div>
             </td>
-            <td className="py-4 px-5 align-top pt-5">
-                <div className="w-24 space-y-1.5">
-                    <p className="text-sm font-medium text-foreground">
-                        {cls.enrolled}{' '}
-                        <span className="text-muted-foreground font-normal">
-                            / {cls.capacity}
+            <td className="px-6 py-4">
+                <div className="w-[140px]">
+                    <div className="mb-1">
+                        <span className="text-sm text-gray-700">
+                            {cls.enrolled} / {cls.capacity}
                         </span>
-                    </p>
+                    </div>
                     <Progress
                         value={enrollPct}
-                        className="h-1.5 bg-gray-200"
+                        className="h-2 bg-gray-200"
                         indicatorClassName={cn(
-                            enrollPct >= 90
-                                ? 'bg-amber-500'
-                                : 'bg-[#556830]'
+                            enrollPct >= 75
+                                ? 'bg-[#556830]'
+                                : enrollPct >= 40
+                                  ? 'bg-[#F1B51C]'
+                                  : 'bg-red-500'
                         )}
                     />
                 </div>
             </td>
-            <td className="py-4 px-5 align-top pt-5">
+            <td className="px-6 py-4">
                 <Badge
                     variant="outline"
                     className={getStatusColor(cls.status)}
@@ -404,12 +495,12 @@ function ClassRow({
                     {cls.status}
                 </Badge>
             </td>
-            <td className="py-4 px-5 align-top pt-5">
+            <td className="px-6 py-4">
                 {cls.status === SelectedClassStatus.Active ? (
                     <Button
-                        variant="outline"
                         size="sm"
-                        className="border-[#556830] text-[#556830] hover:bg-[#556830]/5"
+                        variant="outline"
+                        className="border-[#556830] text-[#556830] hover:bg-[#556830] hover:text-white"
                         onClick={(e) => {
                             e.stopPropagation();
                             onAttendance();

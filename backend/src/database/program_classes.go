@@ -66,13 +66,25 @@ func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.Program
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
-
-	tx = tx.Preload("Events").Preload("Events.RoomRef")
+	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program")
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
 	if err := tx.Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
+	}
+	for i := range content {
+		var enrollments, completed int
+		for _, e := range content[i].Enrollments {
+			switch e.EnrollmentStatus {
+			case models.Enrolled:
+				enrollments++
+			case models.EnrollmentCompleted:
+				completed++
+			}
+		}
+		content[i].Enrolled = int64(enrollments)
+		content[i].Completed = int64(completed)
 	}
 	return content, nil
 }

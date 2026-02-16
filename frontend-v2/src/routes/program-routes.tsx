@@ -16,13 +16,13 @@ import ProgramManagementForm from '@/pages/programs/ProgramManagementForm';
 import ProgramOverviewDashboard from '@/pages/programs/ProgramOverviewDashboard';
 import ClassManagementForm from '@/pages/programs/ClassManagementForm';
 import ProgramClassManagement from '@/pages/programs/ProgramClassManagement';
+import ClassDetailPage from '@/pages/class-detail';
 import ClassLayout from '@/pages/programs/ClassLayout';
 import ClassEnrollmentDetails from '@/pages/programs/ClassEnrollmentDetails';
 import ClassEvents from '@/pages/programs/ClassEvents';
 import AddClassEnrollments from '@/pages/programs/AddClassEnrollments';
 import EventAttendance from '@/pages/event-attendance';
 import Schedule from '@/pages/Schedule';
-import { Navigate } from 'react-router-dom';
 
 export const ProgramRoutes = declareAuthenticatedRoutes(
     [
@@ -91,14 +91,18 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
             }
         },
         {
+            path: 'program-classes/:class_id/detail',
+            element: <ClassDetailPage />,
+            handle: {
+                title: 'Class Details',
+                path: ['classes']
+            }
+        },
+        {
             path: 'program-classes',
             element: <ProgramClassManagement />,
             handle: { title: 'Class Management' },
             children: [
-                {
-                    path: ':class_id',
-                    element: <Navigate to="./dashboard" replace />
-                },
                 {
                     path: ':class_id/dashboard',
                     loader: getClassMgmtData,
