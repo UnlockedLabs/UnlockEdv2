@@ -37,16 +37,16 @@ function MetricCard({ icon, iconBg, label, value, tooltip, subtitle }: MetricCar
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <div className="bg-white rounded-lg border border-gray-200 p-5 flex items-start gap-4">
+                <div className="bg-card rounded-lg border border-border p-5 flex items-start gap-4">
                     <div className={cn('rounded-lg p-2.5 shrink-0', iconBg)}>
                         {icon}
                     </div>
                     <div className="min-w-0">
-                        <p className="text-sm text-gray-500">{label}</p>
-                        <p className="text-2xl font-semibold text-[#203622]">
+                        <p className="text-sm text-muted-foreground">{label}</p>
+                        <p className="text-2xl font-semibold text-foreground">
                             {value}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
                     </div>
                 </div>
             </TooltipTrigger>
@@ -101,11 +101,11 @@ function TodaysScheduleTable({
 
     if (todayClasses.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-[#203622] mb-4">
+            <div className="bg-card rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
                     Today's Schedule
                 </h3>
-                <p className="text-gray-500 text-sm py-8 text-center">
+                <p className="text-muted-foreground text-sm py-8 text-center">
                     No classes scheduled for today.
                 </p>
             </div>
@@ -113,27 +113,27 @@ function TodaysScheduleTable({
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-[#203622] mb-4">
+        <div className="bg-card rounded-lg border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
                 Today's Schedule
             </h3>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b border-gray-100">
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                        <tr className="border-b border-border">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Time
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Class
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Instructor
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Room
                             </th>
-                            <th className="text-right py-2 text-gray-500 font-medium">
+                            <th className="text-right py-2 text-muted-foreground font-medium">
                                 Action
                             </th>
                         </tr>
@@ -144,26 +144,26 @@ function TodaysScheduleTable({
                             return (
                                 <tr
                                     key={cls.id}
-                                    className="border-b border-gray-50 last:border-0"
+                                    className="border-b border-border last:border-0"
                                 >
-                                    <td className="py-3 pr-4 text-[#203622] font-medium whitespace-nowrap">
+                                    <td className="py-3 pr-4 text-foreground font-medium whitespace-nowrap">
                                         {formatTime12h(schedule.startTime)}
                                         {schedule.endTime &&
                                             ` - ${formatTime12h(schedule.endTime)}`}
                                     </td>
-                                    <td className="py-3 pr-4 text-[#203622]">
+                                    <td className="py-3 pr-4 text-foreground">
                                         {cls.name}
                                     </td>
-                                    <td className="py-3 pr-4 text-gray-600">
+                                    <td className="py-3 pr-4 text-muted-foreground">
                                         {cls.instructor_name}
                                     </td>
-                                    <td className="py-3 pr-4 text-gray-600">
+                                    <td className="py-3 pr-4 text-muted-foreground">
                                         {schedule.room || '-'}
                                     </td>
                                     <td className="py-3 text-right">
                                         <Button
                                             size="sm"
-                                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 onNavigate(cls.id);
@@ -210,10 +210,10 @@ function MissingAttendanceWidget({
         : missingAttendance;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center gap-2 mb-4">
                 <ExclamationTriangleIcon className="size-5 text-amber-500" />
-                <h3 className="text-lg font-semibold text-[#203622]">
+                <h3 className="text-lg font-semibold text-foreground">
                     Missing Attendance
                 </h3>
                 {missingAttendance.length > 0 && (
@@ -223,7 +223,7 @@ function MissingAttendanceWidget({
                 )}
             </div>
             {missingAttendance.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">
+                <p className="text-muted-foreground text-sm text-center py-4">
                     All attendance records are up to date.
                 </p>
             ) : (
@@ -235,10 +235,10 @@ function MissingAttendanceWidget({
                                 className="flex items-center justify-between py-2 px-3 rounded-md bg-amber-50/50 border border-amber-100"
                             >
                                 <div>
-                                    <p className="text-sm font-medium text-[#203622]">
+                                    <p className="text-sm font-medium text-foreground">
                                         {cls.name}
                                     </p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-muted-foreground">
                                         {cls.instructor_name}
                                         {cls.facility_name && ` - ${cls.facility_name}`}
                                     </p>
@@ -274,14 +274,14 @@ function MissingAttendanceWidget({
 
 function QuickActions({ navigate }: { navigate: (path: string) => void }) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-[#203622] mb-4">
+        <div className="bg-card rounded-lg border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
                 Quick Actions
             </h3>
             <div className="space-y-3">
                 <Button
                     variant="outline"
-                    className="w-full justify-between border-gray-200 text-[#203622] hover:bg-[#E2E7EA]/50"
+                    className="w-full justify-between border-border text-foreground hover:bg-muted/50"
                     onClick={() => navigate('/programs')}
                 >
                     View All Programs
@@ -289,7 +289,7 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                 </Button>
                 <Button
                     variant="outline"
-                    className="w-full justify-between border-gray-200 text-[#203622] hover:bg-[#E2E7EA]/50"
+                    className="w-full justify-between border-border text-foreground hover:bg-muted/50"
                     onClick={() => navigate('/classes')}
                 >
                     Browse Classes
@@ -312,11 +312,11 @@ interface FacilityHealthRow {
 function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
     if (rows.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-[#203622] mb-4">
+            <div className="bg-card rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
                     Facility Health Overview
                 </h3>
-                <p className="text-gray-500 text-sm text-center py-4">
+                <p className="text-muted-foreground text-sm text-center py-4">
                     No facility data available.
                 </p>
             </div>
@@ -324,30 +324,30 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-[#203622] mb-4">
+        <div className="bg-card rounded-lg border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
                 Facility Health Overview
             </h3>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b border-gray-100">
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                        <tr className="border-b border-border">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Facility
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Programs
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Active Classes
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Enrollment
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Missing Attendance
                             </th>
-                            <th className="text-left py-2 text-gray-500 font-medium">
+                            <th className="text-left py-2 text-muted-foreground font-medium">
                                 Attendance Concerns
                             </th>
                         </tr>
@@ -356,18 +356,18 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                         {rows.map((row) => (
                             <tr
                                 key={row.facilityName}
-                                className="border-b border-gray-50 last:border-0"
+                                className="border-b border-border last:border-0"
                             >
-                                <td className="py-3 pr-4 font-medium text-[#203622]">
+                                <td className="py-3 pr-4 font-medium text-foreground">
                                     {row.facilityName}
                                 </td>
-                                <td className="py-3 pr-4 text-gray-600">
+                                <td className="py-3 pr-4 text-muted-foreground">
                                     {row.programs}
                                 </td>
-                                <td className="py-3 pr-4 text-gray-600">
+                                <td className="py-3 pr-4 text-muted-foreground">
                                     {row.activeClasses}
                                 </td>
-                                <td className="py-3 pr-4 text-gray-600">
+                                <td className="py-3 pr-4 text-muted-foreground">
                                     {row.enrollment}
                                 </td>
                                 <td className="py-3 pr-4">
@@ -376,7 +376,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                                             {row.missingAttendance}
                                         </span>
                                     ) : (
-                                        <span className="text-gray-400">0</span>
+                                        <span className="text-muted-foreground">0</span>
                                     )}
                                 </td>
                                 <td className="py-3">
@@ -385,7 +385,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                                             {row.attendanceConcerns}
                                         </span>
                                     ) : (
-                                        <span className="text-gray-400">0</span>
+                                        <span className="text-muted-foreground">0</span>
                                     )}
                                 </td>
                             </tr>
@@ -410,10 +410,10 @@ function FacilityAdminView({
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-[#203622]">
+                <h1 className="text-2xl font-bold text-foreground">
                     Facility Dashboard
                 </h1>
-                <p className="text-gray-500 mt-1">{facilityName}</p>
+                <p className="text-muted-foreground mt-1">{facilityName}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -527,10 +527,10 @@ function DeptAdminView({
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-[#203622]">
+                <h1 className="text-2xl font-bold text-foreground">
                     Department Overview
                 </h1>
-                <p className="text-gray-500 mt-1">
+                <p className="text-muted-foreground mt-1">
                     {programs.length} programs across {facilityRows.length}{' '}
                     facilities
                 </p>
@@ -610,7 +610,7 @@ export default function Dashboard() {
 
     if (deptAdmin) {
         return (
-            <div className="bg-[#E2E7EA] min-h-screen p-6">
+            <div className="bg-muted min-h-screen p-6">
                 <div className="max-w-7xl mx-auto">
                     <DeptAdminView classes={allClasses} programs={programs} />
                 </div>
@@ -619,7 +619,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto">
                 <FacilityAdminView
                     classes={facilityClasses}

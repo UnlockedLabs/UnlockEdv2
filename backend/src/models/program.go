@@ -160,11 +160,13 @@ type ProgramsFacilitiesStats struct {
 type ProgramsOverviewTable struct {
 	ProgramID              uint     `json:"program_id"`
 	ProgramName            string   `json:"program_name"`
+	Description            string   `json:"description"`
 	ArchivedAt             *string  `json:"archived_at"`
 	TotalActiveFacilities  *int64   `json:"total_active_facilities"`
 	TotalEnrollments       *int64   `json:"total_enrollments"`
 	TotalActiveEnrollments *int64   `json:"total_active_enrollments"`
 	TotalClasses           *int64   `json:"total_classes"`
+	TotalCapacity          *int64   `json:"total_capacity"`
 	CompletionRate         *float64 `json:"completion_rate"`
 	AttendanceRate         *float64 `json:"attendance_rate"`
 	Types                  string   `json:"program_types" gorm:"column:program_types"`

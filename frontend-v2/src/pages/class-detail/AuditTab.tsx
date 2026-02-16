@@ -23,11 +23,11 @@ export function AuditTab({ classId }: AuditTabProps) {
     const displayEntries = expanded ? entries : entries.slice(0, 20);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-[#203622] mb-6 font-semibold">Audit History</h3>
+        <div className="bg-card rounded-lg border border-border p-6">
+            <h3 className="text-foreground mb-6 font-semibold">Audit History</h3>
             {entries.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                    <Calendar className="size-12 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-12 text-muted-foreground">
+                    <Calendar className="size-12 mx-auto mb-3 text-muted-foreground" />
                     <p>No audit history available</p>
                     <p className="text-sm mt-1">
                         Changes to this class will be logged here
@@ -37,7 +37,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                 <div className="space-y-3">
                     {displayEntries.map((entry) => (
                         <div key={entry.id} className="flex gap-3 text-sm">
-                            <div className="text-gray-500 min-w-[100px]">
+                            <div className="text-muted-foreground min-w-[100px]">
                                 {new Date(entry.created_at).toLocaleDateString(
                                     'en-US',
                                     {
@@ -47,7 +47,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                                     }
                                 )}
                             </div>
-                            <div className="flex-1 text-gray-700">
+                            <div className="flex-1 text-foreground">
                                 {entry.description}
                                 {entry.actor_name && (
                                     <>
@@ -63,7 +63,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                     {entries.length > 20 && (
                         <button
                             onClick={() => setExpanded(!expanded)}
-                            className="text-sm text-[#556830] hover:text-[#203622] underline"
+                            className="text-sm text-[#556830] hover:text-foreground underline"
                         >
                             {expanded ? 'Show Less' : `Show All (${entries.length})`}
                         </button>

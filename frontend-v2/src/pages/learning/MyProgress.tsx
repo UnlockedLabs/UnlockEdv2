@@ -49,15 +49,15 @@ function StatCard({
     return (
         <Card>
             <CardContent className="p-5 flex items-start gap-4">
-                <div className="rounded-lg bg-[#E2E7EA] p-2.5 shrink-0">
+                <div className="rounded-lg bg-muted p-2.5 shrink-0">
                     {icon}
                 </div>
                 <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
                         {title}
                     </p>
-                    <p className="text-2xl font-bold text-[#203622]">{value}</p>
-                    <p className="text-xs text-gray-400">{label}</p>
+                    <p className="text-2xl font-bold text-foreground">{value}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                 </div>
             </CardContent>
         </Card>
@@ -104,12 +104,12 @@ export default function MyProgress() {
     );
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader title="My Progress" />
 
                 {isLoading && (
-                    <p className="text-gray-500 text-center py-8">Loading...</p>
+                    <p className="text-muted-foreground text-center py-8">Loading...</p>
                 )}
 
                 {!isLoading && !error && courseData && (
@@ -146,7 +146,7 @@ export default function MyProgress() {
                         <Card>
                             <CardContent className="p-5">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-[#203622]">
+                                    <h2 className="text-lg font-semibold text-foreground">
                                         All Courses
                                     </h2>
                                     <Select
@@ -172,14 +172,14 @@ export default function MyProgress() {
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
                                         <thead>
-                                            <tr className="border-b border-gray-200">
-                                                <th className="text-left py-2 pr-4 text-gray-500 font-medium w-1/2">
+                                            <tr className="border-b border-border">
+                                                <th className="text-left py-2 pr-4 text-muted-foreground font-medium w-1/2">
                                                     Course Name
                                                 </th>
-                                                <th className="text-left py-2 pr-4 text-gray-500 font-medium w-1/4">
+                                                <th className="text-left py-2 pr-4 text-muted-foreground font-medium w-1/4">
                                                     Status
                                                 </th>
-                                                <th className="text-left py-2 text-gray-500 font-medium w-1/4">
+                                                <th className="text-left py-2 text-muted-foreground font-medium w-1/4">
                                                     Time Spent
                                                 </th>
                                             </tr>
@@ -192,9 +192,9 @@ export default function MyProgress() {
                                                 ) => (
                                                     <tr
                                                         key={idx}
-                                                        className="border-b border-gray-50 last:border-0"
+                                                        className="border-b border-border last:border-0"
                                                     >
-                                                        <td className="py-3 pr-4 text-[#203622]">
+                                                        <td className="py-3 pr-4 text-foreground">
                                                             {course.course_name}
                                                         </td>
                                                         <td className="py-3 pr-4">
@@ -213,7 +213,7 @@ export default function MyProgress() {
                                                                 }
                                                             />
                                                         </td>
-                                                        <td className="py-3 text-gray-500">
+                                                        <td className="py-3 text-muted-foreground">
                                                             {formatTime(
                                                                 course.total_time
                                                             )}
@@ -226,7 +226,7 @@ export default function MyProgress() {
                                 </div>
 
                                 {filteredCourses.length === 0 && (
-                                    <p className="text-gray-500 text-center py-8">
+                                    <p className="text-muted-foreground text-center py-8">
                                         No courses match the current filter.
                                     </p>
                                 )}

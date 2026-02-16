@@ -210,7 +210,7 @@ export default function ClassEnrollmentDetails() {
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="inline-flex rounded-md border border-gray-200">
+                    <div className="inline-flex rounded-md border border-border">
                         <Button
                             variant={viewMode === 'enrolled' ? 'default' : 'ghost'}
                             size="sm"
@@ -238,7 +238,7 @@ export default function ClassEnrollmentDetails() {
                     </div>
 
                     <div className="relative w-56">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <Input
                             placeholder="Search..."
                             value={searchTerm}
@@ -290,7 +290,7 @@ export default function ClassEnrollmentDetails() {
                     <Button
                         disabled={blockEdits}
                         onClick={() => navigate(`/program-classes/${class_id}/enrollments/add`)}
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                     >
                         <Plus className="size-4" />
                         Add Resident
@@ -298,7 +298,7 @@ export default function ClassEnrollmentDetails() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-card rounded-lg border border-border">
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
@@ -353,7 +353,7 @@ export default function ClassEnrollmentDetails() {
                                                 )}
                                             </TableCell>
                                         )}
-                                        <TableCell className="font-medium text-[#203622]">
+                                        <TableCell className="font-medium text-foreground">
                                             {enrollment.name_full}
                                         </TableCell>
                                         <TableCell>{enrollment.doc_id}</TableCell>
@@ -409,7 +409,7 @@ export default function ClassEnrollmentDetails() {
                         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                             Previous
                         </Button>
-                        <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+                        <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
                         <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                             Next
                         </Button>

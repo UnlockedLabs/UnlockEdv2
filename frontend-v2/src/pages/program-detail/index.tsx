@@ -57,11 +57,11 @@ function StatCard({
     subtitle?: string;
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
-            <div className="text-sm text-gray-600 mb-1">{label}</div>
-            <div className="text-2xl text-[#203622]">{value}</div>
+        <div className="bg-muted rounded-lg p-3">
+            <div className="text-sm text-muted-foreground mb-1">{label}</div>
+            <div className="text-2xl text-foreground">{value}</div>
             {subtitle && (
-                <div className="text-xs text-gray-500 mt-0.5">{subtitle}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>
             )}
         </div>
     );
@@ -79,9 +79,9 @@ function MetricCard({
     progress?: number;
 }) {
     return (
-        <div className="p-4 bg-[#E2E7EA] rounded-lg">
-            <div className="text-sm text-gray-600 mb-2">{label}</div>
-            <div className="text-3xl text-[#203622] mb-2">{value}</div>
+        <div className="p-4 bg-muted rounded-lg">
+            <div className="text-sm text-muted-foreground mb-2">{label}</div>
+            <div className="text-3xl text-foreground mb-2">{value}</div>
             {progress !== undefined && (
                 <Progress
                     value={progress}
@@ -89,7 +89,7 @@ function MetricCard({
                     indicatorClassName="bg-[#556830]"
                 />
             )}
-            <div className="text-xs text-gray-500 mt-2">{subtitle}</div>
+            <div className="text-xs text-muted-foreground mt-2">{subtitle}</div>
         </div>
     );
 }
@@ -141,13 +141,13 @@ export default function ProgramDetail() {
             : 0;
 
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
-            <div className="bg-white border-b border-gray-200">
+        <div className="min-h-screen bg-muted">
+            <div className="bg-card border-b border-border">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Button
                         variant="ghost"
                         onClick={() => navigate('/programs')}
-                        className="mb-4 -ml-2 text-gray-600 hover:text-[#203622]"
+                        className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="size-4 mr-2" />
                         Back to Programs
@@ -160,7 +160,7 @@ export default function ProgramDetail() {
                         <div className="flex-1">
                             <div className="flex items-start justify-between mb-2">
                                 <div>
-                                    <h1 className="text-[#203622] mb-2">
+                                    <h1 className="text-foreground mb-2">
                                         {program.name}
                                     </h1>
                                     <div className="flex flex-wrap gap-2 mb-3">
@@ -172,7 +172,7 @@ export default function ProgramDetail() {
                                                     programTypeColors[
                                                         pt.program_type
                                                     ] ||
-                                                    'bg-gray-100 text-gray-700 border-gray-200'
+                                                    'bg-muted text-foreground border-border'
                                                 }
                                             >
                                                 {pt.program_type.replace(
@@ -186,7 +186,7 @@ export default function ProgramDetail() {
                                             className={
                                                 program.is_active
                                                     ? 'bg-green-50 text-[#556830] border-green-200'
-                                                    : 'bg-gray-50 text-gray-700 border-gray-200'
+                                                    : 'bg-muted text-foreground border-border'
                                             }
                                         >
                                             {program.is_active
@@ -204,7 +204,7 @@ export default function ProgramDetail() {
                                     Edit Program
                                 </Button>
                             </div>
-                            <p className="text-gray-600 mb-4 max-w-3xl">
+                            <p className="text-muted-foreground mb-4 max-w-3xl">
                                 {program.description}
                             </p>
 
@@ -241,7 +241,7 @@ export default function ProgramDetail() {
 
             <div className="max-w-7xl mx-auto px-6 py-6">
                 <Tabs defaultValue="classes" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
+                    <TabsList className="bg-card border border-border p-1 h-auto gap-1">
                         <TabsTrigger
                             value="classes"
                             className={TAB_TRIGGER_CLASSES}
@@ -292,11 +292,11 @@ export default function ProgramDetail() {
                     </TabsContent>
 
                     <TabsContent value="audit">
-                        <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <h3 className="text-[#203622] mb-6">
+                        <div className="bg-card rounded-lg border border-border p-6">
+                            <h3 className="text-foreground mb-6">
                                 Audit History
                             </h3>
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-muted-foreground text-sm">
                                 Audit history coming soon
                             </p>
                         </div>
@@ -315,18 +315,18 @@ export default function ProgramDetail() {
 
 function DetailsTab({ program }: { program: ProgramOverview }) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-[#203622] mb-6">Program Details</h3>
+        <div className="bg-card rounded-lg border border-border p-6">
+            <h3 className="text-foreground mb-6">Program Details</h3>
             <div className="space-y-6">
                 <div>
-                    <div className="text-sm text-gray-600 mb-2">
+                    <div className="text-sm text-muted-foreground mb-2">
                         Description
                     </div>
-                    <p className="text-[#203622]">{program.description}</p>
+                    <p className="text-foreground">{program.description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                     <div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                             Program Types
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -336,7 +336,7 @@ function DetailsTab({ program }: { program: ProgramOverview }) {
                                     variant="outline"
                                     className={
                                         programTypeColors[pt.program_type] ||
-                                        'bg-gray-100 text-gray-700 border-gray-200'
+                                        'bg-muted text-foreground border-border'
                                     }
                                 >
                                     {pt.program_type.replace(/_/g, ' ')}
@@ -345,7 +345,7 @@ function DetailsTab({ program }: { program: ProgramOverview }) {
                         </div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                             Credit Types
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -353,7 +353,7 @@ function DetailsTab({ program }: { program: ProgramOverview }) {
                                 <Badge
                                     key={ct.credit_type}
                                     variant="outline"
-                                    className="bg-gray-100 text-gray-700 border-gray-200"
+                                    className="bg-muted text-foreground border-border"
                                 >
                                     {ct.credit_type}
                                 </Badge>
@@ -361,15 +361,15 @@ function DetailsTab({ program }: { program: ProgramOverview }) {
                         </div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                             Funding Type
                         </div>
-                        <div className="text-[#203622]">
+                        <div className="text-foreground">
                             {program.funding_type.replace(/_/g, ' ')}
                         </div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                             Status
                         </div>
                         <Badge
@@ -377,7 +377,7 @@ function DetailsTab({ program }: { program: ProgramOverview }) {
                             className={
                                 program.is_active
                                     ? 'bg-green-50 text-[#556830] border-green-200'
-                                    : 'bg-gray-50 text-gray-700 border-gray-200'
+                                    : 'bg-muted text-foreground border-border'
                             }
                         >
                             {program.is_active ? 'Active' : 'Inactive'}
@@ -406,8 +406,8 @@ function PerformanceTab({
 }) {
     const rate = completionRate ?? 0;
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-[#203622] mb-6">Performance Metrics</h3>
+        <div className="bg-card rounded-lg border border-border p-6">
+            <h3 className="text-foreground mb-6">Performance Metrics</h3>
             <div className="grid grid-cols-2 gap-6">
                 <MetricCard
                     label="Total Enrollment"

@@ -44,16 +44,16 @@ function MetricCard({ icon, iconBg, label, value, subtitle, tooltip }: MetricCar
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <div className="bg-white rounded-lg border border-gray-200 p-5 flex items-start gap-4">
+                <div className="bg-card rounded-lg border border-border p-5 flex items-start gap-4">
                     <div className={`rounded-lg p-2.5 shrink-0 ${iconBg}`}>
                         {icon}
                     </div>
                     <div className="min-w-0">
-                        <p className="text-sm text-gray-500">{label}</p>
-                        <p className="text-2xl font-semibold text-[#203622]">
+                        <p className="text-sm text-muted-foreground">{label}</p>
+                        <p className="text-2xl font-semibold text-foreground">
                             {value}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                             {subtitle}
                         </p>
                     </div>
@@ -69,7 +69,7 @@ const insightColumns: Column<LearningInsight>[] = [
         key: 'course_name',
         header: 'Course Name',
         render: (item) => (
-            <span className="font-medium text-[#203622]">
+            <span className="font-medium text-foreground">
                 {item.course_name}
             </span>
         )
@@ -131,7 +131,7 @@ export default function LearningInsights() {
 
     if (isLoading) {
         return (
-            <div className="bg-[#E2E7EA] min-h-screen p-6">
+            <div className="bg-muted min-h-screen p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <Skeleton className="h-10 w-64" />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -147,9 +147,9 @@ export default function LearningInsights() {
 
     if (error) {
         return (
-            <div className="bg-[#E2E7EA] min-h-screen p-6">
+            <div className="bg-muted min-h-screen p-6">
                 <div className="max-w-7xl mx-auto">
-                    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <div className="bg-card rounded-lg border border-border p-8 text-center">
                         <p className="text-red-600">
                             Error loading learning insights data.
                         </p>
@@ -166,7 +166,7 @@ export default function LearningInsights() {
     const insights = layer2.data.learning_insights ?? [];
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
                     <PageHeader
@@ -176,7 +176,7 @@ export default function LearningInsights() {
                     <div className="flex items-end gap-4">
                         {canSwitchFacility(user) && (
                             <div>
-                                <label className="text-sm text-gray-500 mb-1 block">
+                                <label className="text-sm text-muted-foreground mb-1 block">
                                     Facility
                                 </label>
                                 <Select
@@ -203,14 +203,14 @@ export default function LearningInsights() {
                             </div>
                         )}
                         <div className="text-right">
-                            <p className="text-xs text-gray-400 mb-1">
+                            <p className="text-xs text-muted-foreground mb-1">
                                 Last updated: {formattedDate}
                             </p>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setResetCache(!resetCache)}
-                                className="text-[#203622] border-gray-200"
+                                className="text-foreground border-border"
                             >
                                 <ArrowPathIcon className="size-4 mr-1" />
                                 Refresh Data

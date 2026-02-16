@@ -53,7 +53,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
     if (isLoading) {
         return (
-            <div className={cn('bg-white rounded-lg border border-gray-200', className)}>
+            <div className={cn('bg-card rounded-lg border border-border', className)}>
                 <div className="p-4 space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
                         <Skeleton key={i} className="h-10 w-full" />
@@ -64,15 +64,15 @@ export function DataTable<T>({
     }
 
     return (
-        <div className={cn('bg-white rounded-lg border border-gray-200', className)}>
+        <div className={cn('bg-card rounded-lg border border-border', className)}>
             <Table>
                 <TableHeader>
-                    <TableRow className="border-b border-gray-100 hover:bg-transparent">
+                    <TableRow className="border-b border-border hover:bg-transparent">
                         {columns.map((col) => (
                             <TableHead
                                 key={col.key}
                                 className={cn(
-                                    'text-gray-500 font-medium',
+                                    'text-muted-foreground font-medium',
                                     col.headerClassName
                                 )}
                             >
@@ -101,7 +101,7 @@ export function DataTable<T>({
                                         : undefined
                                 }
                                 className={cn(
-                                    'border-b border-gray-50 last:border-0',
+                                    'border-b border-border last:border-0',
                                     onRowClick && 'cursor-pointer'
                                 )}
                             >
@@ -119,8 +119,8 @@ export function DataTable<T>({
                 </TableBody>
             </Table>
 
-            {totalPages && totalPages > 1 && page && onPageChange && (
-                <div className="border-t border-gray-100 px-4 py-3">
+            {(totalPages ?? 0) > 1 && page != null && onPageChange != null && (
+                <div className="border-t border-border px-4 py-3">
                     <Pagination>
                         <PaginationContent>
                             <PaginationItem>

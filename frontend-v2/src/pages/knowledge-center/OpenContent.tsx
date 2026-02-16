@@ -244,7 +244,7 @@ export default function OpenContent() {
                     </Select>
                 )}
                 <div className="ml-auto flex items-center gap-3">
-                    <div className="flex border border-gray-200 rounded-md">
+                    <div className="flex border border-border rounded-md">
                         <Button
                             variant={
                                 activeView === ViewType.Grid

@@ -63,14 +63,14 @@ export function EnrollmentHistoryTab({ enrollments }: EnrollmentHistoryTabProps)
     }, [historicalEnrollments, statusFilter, timeFilter]);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
+        <div className="bg-card rounded-lg border border-border">
+            <div className="border-b border-border px-6 py-4">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3 className="text-[#203622] font-semibold">
+                        <h3 className="text-foreground font-semibold">
                             Enrollment History ({historicalEnrollments.length})
                         </h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                             View past enrollments and completion records
                         </p>
                     </div>
@@ -78,7 +78,7 @@ export function EnrollmentHistoryTab({ enrollments }: EnrollmentHistoryTabProps)
 
                 <div className="flex gap-3">
                     <div className="flex-1">
-                        <label className="text-sm text-gray-600 mb-1 block">
+                        <label className="text-sm text-muted-foreground mb-1 block">
                             Status
                         </label>
                         <Select
@@ -113,7 +113,7 @@ export function EnrollmentHistoryTab({ enrollments }: EnrollmentHistoryTabProps)
                         </Select>
                     </div>
                     <div className="flex-1">
-                        <label className="text-sm text-gray-600 mb-1 block">
+                        <label className="text-sm text-muted-foreground mb-1 block">
                             Time Period
                         </label>
                         <Select
@@ -139,27 +139,27 @@ export function EnrollmentHistoryTab({ enrollments }: EnrollmentHistoryTabProps)
             </div>
 
             {filtered.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                    <CheckCircle className="size-12 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-12 text-muted-foreground">
+                    <CheckCircle className="size-12 mx-auto mb-3 text-muted-foreground" />
                     <p>No historical enrollments found</p>
                     <p className="text-sm mt-1">
                         Adjust filters to see more records
                     </p>
                 </div>
             ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-border">
                     {filtered.map((enrollment) => (
                         <div
                             key={enrollment.id}
-                            className="px-6 py-4 hover:bg-gray-50/50 transition-colors"
+                            className="px-6 py-4 hover:bg-muted/50 transition-colors"
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-6 flex-1">
                                     <div className="min-w-[100px]">
-                                        <div className="text-[#203622] font-medium">
+                                        <div className="text-foreground font-medium">
                                             {enrollment.doc_id}
                                         </div>
-                                        <div className="text-sm text-gray-600 mt-0.5">
+                                        <div className="text-sm text-muted-foreground mt-0.5">
                                             {enrollment.name_full}
                                         </div>
                                     </div>
@@ -174,7 +174,7 @@ export function EnrollmentHistoryTab({ enrollments }: EnrollmentHistoryTabProps)
                                                 {enrollment.enrollment_status}
                                             </Badge>
                                         </div>
-                                        <div className="text-sm text-gray-600 space-y-1">
+                                        <div className="text-sm text-muted-foreground space-y-1">
                                             {enrollment.enrolled_at && (
                                                 <div className="flex gap-2">
                                                     <span className="font-medium">
@@ -204,11 +204,11 @@ export function EnrollmentHistoryTab({ enrollments }: EnrollmentHistoryTabProps)
                                             )}
                                         </div>
                                         {enrollment.change_reason && (
-                                            <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                                                <div className="text-xs text-gray-500 font-medium mb-1">
+                                            <div className="mt-3 p-3 bg-muted rounded-md">
+                                                <div className="text-xs text-muted-foreground font-medium mb-1">
                                                     Reason:
                                                 </div>
-                                                <div className="text-sm text-gray-700">
+                                                <div className="text-sm text-foreground">
                                                     {enrollment.change_reason}
                                                 </div>
                                             </div>

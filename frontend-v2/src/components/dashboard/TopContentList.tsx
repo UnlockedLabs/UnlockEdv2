@@ -13,7 +13,7 @@ function ContentRow({ item }: { item: OpenContentItem }) {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
+            className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:shadow-md transition-shadow"
         >
             {item.thumbnail_url ? (
                 <img
@@ -22,14 +22,14 @@ function ContentRow({ item }: { item: OpenContentItem }) {
                     className="w-10 h-10 rounded object-cover shrink-0"
                 />
             ) : (
-                <div className="w-10 h-10 rounded bg-[#E2E7EA] shrink-0" />
+                <div className="w-10 h-10 rounded bg-muted shrink-0" />
             )}
             <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-[#203622] truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                     {item.title}
                 </p>
                 {item.provider_name && (
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                         {item.provider_name}
                     </p>
                 )}
@@ -44,8 +44,8 @@ export default function TopContentList({
     onViewAll
 }: TopContentListProps) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h3 className="text-lg font-semibold text-[#203622] mb-3">
+        <div className="bg-card rounded-lg border border-border p-5">
+            <h3 className="text-lg font-semibold text-foreground mb-3">
                 {heading}
             </h3>
             <div className="space-y-2">

@@ -110,11 +110,13 @@ export interface ProgramsFacilitiesStats {
 export interface ProgramsOverviewTable {
     program_id: number;
     program_name: string;
+    description: string;
     archived_at: string;
     total_active_facilities: number;
     total_enrollments: number;
     total_active_enrollments: number;
     total_classes: number;
+    total_capacity: number;
     completion_rate: number;
     attendance_rate: number;
     program_types: string;

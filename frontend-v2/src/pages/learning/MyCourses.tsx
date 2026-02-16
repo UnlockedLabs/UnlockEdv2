@@ -44,7 +44,7 @@ export default function MyCourses() {
     const courses = courseData?.courses ?? [];
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader title="My Courses" />
 
@@ -79,7 +79,7 @@ export default function MyCourses() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="flex items-center border border-gray-200 rounded-md">
+                        <div className="flex items-center border border-border rounded-md">
                             <Button
                                 variant={view === ViewType.Grid ? 'default' : 'ghost'}
                                 size="sm"
@@ -110,7 +110,7 @@ export default function MyCourses() {
                     {['in_progress', 'completed', 'all'].map((tab) => (
                         <TabsContent key={tab} value={tab}>
                             {isLoading && (
-                                <p className="text-gray-500 text-center py-8">
+                                <p className="text-muted-foreground text-center py-8">
                                     Loading...
                                 </p>
                             )}
@@ -122,7 +122,7 @@ export default function MyCourses() {
                             {!isLoading && !error && courses.length === 0 && (
                                 <EmptyState
                                     icon={
-                                        <BookOpen className="size-6 text-gray-400" />
+                                        <BookOpen className="size-6 text-muted-foreground" />
                                     }
                                     title="No courses found"
                                     description="Try adjusting your search or filter."

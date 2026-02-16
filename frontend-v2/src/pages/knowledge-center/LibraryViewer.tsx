@@ -228,17 +228,17 @@ export default function LibraryViewer() {
                             }}
                         />
                         {iframeLoading && (
-                            <div className="absolute inset-0 bg-[#E2E7EA]/90 flex items-center justify-center z-10">
+                            <div className="absolute inset-0 bg-muted/90 flex items-center justify-center z-10">
                                 <div className="flex items-center gap-3">
-                                    <Loader2 className="size-6 animate-spin text-[#203622]" />
-                                    <span className="text-sm text-[#203622]">
+                                    <Loader2 className="size-6 animate-spin text-foreground" />
+                                    <span className="text-sm text-foreground">
                                         Loading library content...
                                     </span>
                                 </div>
                             </div>
                         )}
                         {iframeError && (
-                            <div className="absolute inset-0 bg-[#E2E7EA]/90 flex items-center justify-center z-10">
+                            <div className="absolute inset-0 bg-muted/90 flex items-center justify-center z-10">
                                 <div className="text-center space-y-4">
                                     <p className="text-sm text-destructive">
                                         Failed to load library content

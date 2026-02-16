@@ -10,6 +10,7 @@ import {
 } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
 import ResidentOverview from '@/pages/learning/ResidentOverview';
+import ClassesPage from '@/pages/ClassesPage';
 import ProgramsPage from '@/pages/ProgramsPage';
 import ProgramManagementForm from '@/pages/programs/ProgramManagementForm';
 import ProgramOverviewDashboard from '@/pages/programs/ProgramOverviewDashboard';
@@ -57,6 +58,14 @@ export const DeptAdminProgramRoutes = declareAuthenticatedRoutes(
 
 export const AdminProgramRoutes = declareAuthenticatedRoutes(
     [
+        {
+            path: 'classes',
+            element: <ClassesPage />,
+            handle: {
+                title: 'Classes',
+                path: ['classes']
+            }
+        },
         {
             path: 'programs',
             id: 'programs-facilities',

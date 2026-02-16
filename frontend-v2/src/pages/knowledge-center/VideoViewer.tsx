@@ -66,11 +66,11 @@ export default function VideoViewer() {
                 controls
                 onError={handleError}
                 src={`/api/proxy/videos/${video?.id}`}
-                className="rounded-lg border border-gray-200"
+                className="rounded-lg border border-border"
             >
                 Your browser does not support the video tag.
             </video>
-            <h2 className="text-lg font-semibold text-[#203622]">
+            <h2 className="text-lg font-semibold text-foreground">
                 {video?.title}
             </h2>
             {video?.channel_title && (

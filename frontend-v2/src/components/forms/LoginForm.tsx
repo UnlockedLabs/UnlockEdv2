@@ -141,14 +141,14 @@ export default function LoginForm() {
             <input type="hidden" {...register('csrf_token')} />
             {user ? (
                 <div className="space-y-2">
-                    <Label className="text-[#203622]">Username</Label>
-                    <div className="flex h-9 w-full items-center rounded-md border px-3 py-1 text-sm text-[#203622] bg-muted">
+                    <Label className="text-foreground">Username</Label>
+                    <div className="flex h-9 w-full items-center rounded-md border px-3 py-1 text-sm text-foreground bg-muted">
                         {user}
                     </div>
                 </div>
             ) : (
                 <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-[#203622]">
+                    <Label htmlFor="identifier" className="text-foreground">
                         Username
                     </Label>
                     <Input
@@ -169,7 +169,7 @@ export default function LoginForm() {
             )}
 
             <div className="space-y-2 mt-4">
-                <Label htmlFor="password" className="text-[#203622]">
+                <Label htmlFor="password" className="text-foreground">
                     Password
                 </Label>
                 <Input
@@ -197,7 +197,7 @@ export default function LoginForm() {
                 <Button
                     type="submit"
                     disabled={processing}
-                    className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-semibold"
+                    className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-semibold"
                 >
                     {processing ? (
                         <Loader2 className="size-4 animate-spin" />

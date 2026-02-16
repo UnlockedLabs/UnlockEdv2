@@ -80,7 +80,6 @@ func (db *DB) GetProgramActiveClassFacilities(ctx context.Context, id uint) ([]s
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
-		Preload("Facilities").
 		Preload("ProgramTypes").
 		Preload("ProgramCreditTypes")
 	if len(args.Tags) > 0 {
@@ -567,15 +566,18 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 
 	baseQuery := db.WithContext(args.Ctx).Model(&models.Program{})
 
+	facilityScoped := adminRole == models.FacilityAdmin || adminRole == models.SystemAdmin
 	var selectFields string
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		selectFields = `
 			programs.id AS program_id,
 			programs.name AS program_name,
+			programs.description AS description,
 			programs.archived_at AS archived_at,
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
+			mr.total_capacity AS total_capacity,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -587,11 +589,13 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		selectFields = `
 			programs.id AS program_id,
 			programs.name AS program_name,
+			programs.description AS description,
 			programs.archived_at AS archived_at,
 			mr.total_active_facilities AS total_active_facilities,
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
+			mr.total_capacity AS total_capacity,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -602,14 +606,15 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 
 	var currentMetricsSubquery string
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		currentMetricsSubquery = fmt.Sprintf(`
 			LEFT JOIN (
 				SELECT
 					p.id as program_id,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
-					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
+					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
+					COALESCE(SUM(CASE WHEN pc.status != 'Cancelled' THEN pc.capacity ELSE 0 END), 0) AS total_capacity
 				FROM programs p
 				JOIN facilities_programs fp ON fp.program_id = p.id
 				LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = %d
@@ -626,7 +631,8 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN p.is_active = true AND p.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
-					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
+					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
+					COALESCE(SUM(CASE WHEN pc.status != 'Cancelled' THEN pc.capacity ELSE 0 END), 0) AS total_capacity
 				FROM programs p
 				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
 				LEFT JOIN program_classes pc ON pc.program_id = p.id
@@ -645,7 +651,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 
 	var facilityFilterForRates string
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		facilityFilterForRates = fmt.Sprintf("AND pc.facility_id = %d", args.FacilityID)
 	}
 
@@ -688,7 +694,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			GROUP BY program_id
 		) AS pct ON pct.program_id = programs.id`)
 
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", args.FacilityID)
 	}
 
@@ -714,7 +720,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			op, num := parseOperatorAndValue(val)
 			tx = tx.Where(fmt.Sprintf("mr.total_classes %s ?", op), num)
 		case "mr.total_active_facilities":
-			if adminRole != models.FacilityAdmin {
+			if !facilityScoped {
 				op, num := parseOperatorAndValue(val)
 				tx = tx.Where(fmt.Sprintf("mr.total_active_facilities %s ?", op), num)
 			}

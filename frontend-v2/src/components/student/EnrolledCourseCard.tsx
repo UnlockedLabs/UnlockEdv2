@@ -52,11 +52,11 @@ export default function EnrolledCourseCard({
                 <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="flex items-center justify-between py-4 px-5">
                         <div className="flex items-center gap-3 min-w-0">
-                            <h3 className="font-medium text-[#203622] truncate">
+                            <h3 className="font-medium text-foreground truncate">
                                 {course.course_name}
                             </h3>
-                            <span className="text-gray-400">|</span>
-                            <p className="text-sm text-gray-500 truncate">
+                            <span className="text-muted-foreground">|</span>
+                            <p className="text-sm text-muted-foreground truncate">
                                 {course.provider_platform_name}
                                 {dateStr}
                             </p>
@@ -73,7 +73,7 @@ export default function EnrolledCourseCard({
                                         value={Math.floor(course.course_progress)}
                                         indicatorClassName="bg-[#556830]"
                                     />
-                                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                                         {Math.floor(course.course_progress)}%
                                     </span>
                                 </div>
@@ -94,10 +94,10 @@ export default function EnrolledCourseCard({
         >
             <Card
                 className={`overflow-hidden hover:shadow-md transition-shadow ${
-                    recent ? 'bg-white' : ''
+                    recent ? 'bg-card' : ''
                 }`}
             >
-                <div className="h-[124px] bg-[#E2E7EA]">
+                <div className="h-[124px] bg-muted">
                     {course.thumbnail_url ? (
                         <img
                             src={course.thumbnail_url}
@@ -105,14 +105,14 @@ export default function EnrolledCourseCard({
                             className="object-cover w-full h-full"
                         />
                     ) : (
-                        <div className="w-full h-full bg-[#E2E7EA]" />
+                        <div className="w-full h-full bg-muted" />
                     )}
                 </div>
                 <CardContent className="p-4 min-h-[140px] relative pb-12">
-                    <h3 className="text-sm font-semibold text-[#203622] line-clamp-2">
+                    <h3 className="text-sm font-semibold text-foreground line-clamp-2">
                         {fullName}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {course.provider_platform_name}
                         {dateStr}
                     </p>
@@ -134,7 +134,7 @@ export default function EnrolledCourseCard({
                                     className="flex-1"
                                     indicatorClassName="bg-[#556830]"
                                 />
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                     {Math.floor(course.course_progress)}%
                                 </span>
                             </div>

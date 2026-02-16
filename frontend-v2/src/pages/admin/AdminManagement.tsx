@@ -119,8 +119,8 @@ export default function AdminManagement() {
 
     const handleAddUser = async (formData: UserFormData) => {
         const response = await API.post<NewUserResponse, object>('users', {
-            ...formData,
-            role: newAdminRole
+            user: { ...formData, role: newAdminRole },
+            provider_platforms: []
         }) as ServerResponseOne<NewUserResponse>;
 
         if (response.success) {
@@ -206,7 +206,7 @@ export default function AdminManagement() {
             key: 'name',
             header: 'Name',
             render: (u) => (
-                <span className="font-medium text-[#203622]">
+                <span className="font-medium text-foreground">
                     {u.name_last}, {u.name_first}
                 </span>
             )
@@ -228,7 +228,7 @@ export default function AdminManagement() {
             key: 'role',
             header: 'Role',
             render: (u) => (
-                <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border bg-gray-50 text-gray-700 border-gray-200">
+                <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border bg-muted text-foreground border-border">
                     {getRoleLabel(u.role)}
                 </span>
             )
@@ -267,7 +267,7 @@ export default function AdminManagement() {
                                 </DropdownMenuItem>
                             ) : (
                                 <DropdownMenuItem disabled>
-                                    <Pencil className="size-4 mr-2 text-gray-300" />
+                                    <Pencil className="size-4 mr-2 text-muted-foreground" />
                                     Edit not allowed
                                 </DropdownMenuItem>
                             )}
@@ -278,7 +278,7 @@ export default function AdminManagement() {
                                 </DropdownMenuItem>
                             ) : (
                                 <DropdownMenuItem disabled>
-                                    <RotateCcw className="size-4 mr-2 text-gray-300" />
+                                    <RotateCcw className="size-4 mr-2 text-muted-foreground" />
                                     Reset not allowed
                                 </DropdownMenuItem>
                             )}
@@ -292,12 +292,12 @@ export default function AdminManagement() {
                                 </DropdownMenuItem>
                             ) : targetUser.role === UserRole.SystemAdmin ? (
                                 <DropdownMenuItem disabled>
-                                    <Lock className="size-4 mr-2 text-gray-300" />
+                                    <Lock className="size-4 mr-2 text-muted-foreground" />
                                     Cannot Delete
                                 </DropdownMenuItem>
                             ) : (
                                 <DropdownMenuItem disabled>
-                                    <Trash2 className="size-4 mr-2 text-gray-300" />
+                                    <Trash2 className="size-4 mr-2 text-muted-foreground" />
                                     Delete not allowed
                                 </DropdownMenuItem>
                             )}
@@ -311,7 +311,7 @@ export default function AdminManagement() {
     const addButtons = isSysAdmin(user!) ? (
         <div className="flex gap-2">
             <Button
-                className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
+                className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
                 onClick={() => {
                     setNewAdminRole(UserRole.DepartmentAdmin);
                     addForm.reset();
@@ -322,7 +322,7 @@ export default function AdminManagement() {
                 Add Department Admin
             </Button>
             <Button
-                className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
+                className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
                 onClick={() => {
                     setNewAdminRole(UserRole.FacilityAdmin);
                     addForm.reset();
@@ -335,7 +335,7 @@ export default function AdminManagement() {
         </div>
     ) : (
         <Button
-            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
+            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
             onClick={() => {
                 setNewAdminRole(UserRole.FacilityAdmin);
                 addForm.reset();
@@ -409,8 +409,8 @@ export default function AdminManagement() {
                         <Input id="add-username" {...addForm.register('username', { required: true })} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="add-email">Email</Label>
-                        <Input id="add-email" type="email" {...addForm.register('email', { required: true })} />
+                        <Label htmlFor="add-email">Email (optional)</Label>
+                        <Input id="add-email" type="email" {...addForm.register('email')} />
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" type="button" onClick={() => setAddModalOpen(false)}>Cancel</Button>
@@ -440,8 +440,8 @@ export default function AdminManagement() {
                         <Input id="edit-username" {...editForm.register('username', { required: true })} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="edit-email">Email</Label>
-                        <Input id="edit-email" type="email" {...editForm.register('email', { required: true })} />
+                        <Label htmlFor="edit-email">Email (optional)</Label>
+                        <Input id="edit-email" type="email" {...editForm.register('email')} />
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" type="button" onClick={() => setEditModalOpen(false)}>Cancel</Button>
@@ -481,9 +481,9 @@ export default function AdminManagement() {
                 title="New Password"
                 description="Copy the password below and share it with the admin. If it's lost, you'll need to reset it again."
             >
-                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 text-center">
+                <div className="bg-muted rounded-lg border border-border p-4 text-center">
                     <p className="text-sm text-muted-foreground mb-1">Temporary Password</p>
-                    <p className="text-2xl font-bold text-[#203622] select-all">{tempPassword}</p>
+                    <p className="text-2xl font-bold text-foreground select-all">{tempPassword}</p>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button

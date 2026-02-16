@@ -196,8 +196,8 @@ export default function ProgramManagementForm() {
             />
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                    <h2 className="text-lg font-semibold text-[#203622]">
+                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                    <h2 className="text-lg font-semibold text-foreground">
                         Program Information
                     </h2>
 
@@ -242,7 +242,7 @@ export default function ProgramManagementForm() {
                                                 handleCheckboxToggle('program_types', type, checked === true)
                                             }
                                         />
-                                        <span className="text-sm text-gray-700">
+                                        <span className="text-sm text-foreground">
                                             {type.replace(/_/g, ' ')}
                                         </span>
                                     </label>
@@ -261,7 +261,7 @@ export default function ProgramManagementForm() {
                                                 handleCheckboxToggle('credit_types', type, checked === true)
                                             }
                                         />
-                                        <span className="text-sm text-gray-700">{type}</span>
+                                        <span className="text-sm text-foreground">{type}</span>
                                     </label>
                                 ))}
                             </div>
@@ -292,8 +292,8 @@ export default function ProgramManagementForm() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                    <h2 className="text-lg font-semibold text-[#203622]">Availability</h2>
+                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                    <h2 className="text-lg font-semibold text-foreground">Availability</h2>
 
                     {user && canSwitchFacility(user) && facilities.length > 0 && (
                         <div className="space-y-2">
@@ -307,7 +307,7 @@ export default function ProgramManagementForm() {
                                                 handleFacilityToggle(fac.id, checked === true)
                                             }
                                         />
-                                        <span className="text-sm text-gray-700">{fac.name}</span>
+                                        <span className="text-sm text-foreground">{fac.name}</span>
                                     </label>
                                 ))}
                             </div>
@@ -334,7 +334,7 @@ export default function ProgramManagementForm() {
                                 </Select>
                             )}
                         />
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                             Set to &apos;Available&apos; to let facility admins schedule classes.
                             &apos;Inactive&apos; programs stay hidden.
                         </p>
@@ -342,7 +342,7 @@ export default function ProgramManagementForm() {
                 </div>
 
                 {isEditing && (
-                    <p className="text-sm text-gray-500 text-right">
+                    <p className="text-sm text-muted-foreground text-right">
                         This change will not impact historical data.
                     </p>
                 )}
@@ -359,7 +359,7 @@ export default function ProgramManagementForm() {
                     <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                     >
                         {isSubmitting
                             ? 'Saving...'

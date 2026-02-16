@@ -110,7 +110,7 @@ export default function ChangePasswordForm() {
             }}
         >
             <div className="space-y-2">
-                <Label htmlFor="password" className="text-[#203622]">
+                <Label htmlFor="password" className="text-foreground">
                     New password
                 </Label>
                 <Input
@@ -142,7 +142,7 @@ export default function ChangePasswordForm() {
             </div>
 
             <div className="space-y-2 mt-4">
-                <Label htmlFor="confirm" className="text-[#203622]">
+                <Label htmlFor="confirm" className="text-foreground">
                     Confirm password
                 </Label>
                 <Input
@@ -177,7 +177,7 @@ export default function ChangePasswordForm() {
                     <div className="space-y-2 mt-4">
                         <Label
                             htmlFor="facility_name"
-                            className="text-[#203622]"
+                            className="text-foreground"
                         >
                             New default facility name
                         </Label>
@@ -204,7 +204,7 @@ export default function ChangePasswordForm() {
                     </div>
 
                     <div className="space-y-2 mt-4">
-                        <Label htmlFor="timezone" className="text-[#203622]">
+                        <Label htmlFor="timezone" className="text-foreground">
                             Timezone
                         </Label>
                         <Select
@@ -233,7 +233,7 @@ export default function ChangePasswordForm() {
                 <Button
                     type="submit"
                     disabled={processing || !isValid}
-                    className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-semibold"
+                    className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-semibold"
                 >
                     {processing ? (
                         <Loader2 className="size-4 animate-spin" />

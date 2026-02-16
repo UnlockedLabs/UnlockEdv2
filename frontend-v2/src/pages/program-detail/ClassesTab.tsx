@@ -14,12 +14,12 @@ function ClassRow({ cls, onClick }: { cls: Class; onClick: () => void }) {
     return (
         <div
             onClick={onClick}
-            className="p-6 hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors"
+            className="p-6 hover:bg-muted/50 cursor-pointer transition-colors"
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-[#203622] hover:text-[#556830] transition-colors">
+                        <h4 className="text-foreground hover:text-[#556830] transition-colors">
                             {cls.name}
                         </h4>
                         <Badge
@@ -29,7 +29,7 @@ function ClassRow({ cls, onClick }: { cls: Class; onClick: () => void }) {
                             {cls.status}
                         </Badge>
                     </div>
-                    <div className="flex items-center gap-6 text-sm text-gray-600">
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
                         <span>{cls.instructor_name}</span>
                         {schedule.days.length > 0 && (
                             <span>
@@ -44,10 +44,10 @@ function ClassRow({ cls, onClick }: { cls: Class; onClick: () => void }) {
                 </div>
                 <div className="ml-6 min-w-[200px]">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                             Enrollment
                         </span>
-                        <span className="text-sm text-[#203622]">
+                        <span className="text-sm text-foreground">
                             {cls.enrolled} / {cls.capacity}
                         </span>
                     </div>
@@ -75,8 +75,8 @@ export default function ClassesTab({
         <>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h2 className="text-[#203622]">Classes</h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h2 className="text-foreground">Classes</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
                         All classes offered under this program
                     </p>
                 </div>
@@ -84,16 +84,16 @@ export default function ClassesTab({
                     onClick={() =>
                         navigate('/programs/' + programId + '/classes')
                     }
-                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622] gap-2"
+                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-foreground gap-2"
                 >
                     <Plus className="size-5" />
                     Add Class
                 </Button>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-card rounded-lg border border-border">
                 {programClasses.length > 0 ? (
-                    <div className="divide-y divide-gray-200">
+                    <div className="divide-y divide-border">
                         {programClasses.map((cls) => (
                             <ClassRow
                                 key={cls.id}
@@ -109,8 +109,8 @@ export default function ClassesTab({
                         ))}
                     </div>
                 ) : (
-                    <div className="p-12 text-center text-gray-500">
-                        <BookOpen className="size-12 mx-auto mb-3 text-gray-300" />
+                    <div className="p-12 text-center text-muted-foreground">
+                        <BookOpen className="size-12 mx-auto mb-3 text-muted-foreground" />
                         <p>No classes yet</p>
                         <p className="text-sm mt-1">
                             Create the first class for this program

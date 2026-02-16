@@ -135,16 +135,16 @@ function logQuestionClick(question: string) {
 export function FAQContent() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-[#203622]">
+            <h2 className="text-2xl font-bold text-foreground">
                 Frequently Asked Questions
             </h2>
             {Object.entries(FAQ_CATEGORIES).map(
                 ([category, questions]) => (
                     <div key={category}>
-                        <h3 className="text-lg font-semibold text-[#203622] mb-2">
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
                             {category}
                         </h3>
-                        <div className="bg-white rounded-lg border border-gray-200">
+                        <div className="bg-card rounded-lg border border-border">
                             <Accordion type="single" collapsible>
                                 {questions.map((faq, index) => (
                                     <AccordionItem
@@ -157,11 +157,11 @@ export function FAQContent() {
                                                     faq.question
                                                 )
                                             }
-                                            className="px-4 text-[#203622] hover:no-underline hover:text-[#556830]"
+                                            className="px-4 text-foreground hover:no-underline hover:text-[#556830]"
                                         >
                                             {faq.question}
                                         </AccordionTrigger>
-                                        <AccordionContent className="px-4 text-gray-600">
+                                        <AccordionContent className="px-4 text-muted-foreground">
                                             <p>{faq.answer}</p>
                                             {faq.list && (
                                                 <ul className="list-disc list-outside pl-6 mt-2 space-y-1">
@@ -193,7 +193,7 @@ export function FAQContent() {
 
 export default function FAQs() {
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-3xl mx-auto">
                 <FAQContent />
             </div>

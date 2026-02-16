@@ -159,8 +159,8 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
 
     return (
         <div className="space-y-4">
-            <div className="bg-white rounded-lg border border-gray-200">
-                <div className="border-b border-gray-200 px-6 py-4">
+            <div className="bg-card rounded-lg border border-border">
+                <div className="border-b border-border px-6 py-4">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
                             <Checkbox
@@ -172,7 +172,7 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                                 aria-label="Select all residents"
                             />
                             <div>
-                                <h3 className="text-[#203622] font-semibold">
+                                <h3 className="text-foreground font-semibold">
                                     Enrolled Residents ({rows.length})
                                     {selectedIds.size > 0 && (
                                         <span className="ml-2 text-[#556830] font-normal">
@@ -180,7 +180,7 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                                         </span>
                                     )}
                                 </h3>
-                                <p className="text-sm text-gray-600 mt-1">
+                                <p className="text-sm text-muted-foreground mt-1">
                                     View enrollment and track engagement
                                 </p>
                             </div>
@@ -199,7 +199,7 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                         </Button>
                     </div>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
                         <Input
                             type="text"
                             placeholder="Search by resident ID or name..."
@@ -209,10 +209,10 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                         />
                     </div>
                 </div>
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-border">
                     {filteredRows.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
-                            <Search className="size-12 mx-auto mb-3 text-gray-300" />
+                        <div className="text-center py-12 text-muted-foreground">
+                            <Search className="size-12 mx-auto mb-3 text-muted-foreground" />
                             <p>No residents found</p>
                             <p className="text-sm mt-1">
                                 Try adjusting your search
@@ -222,7 +222,7 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                         filteredRows.map((row) => (
                             <div
                                 key={row.enrollment.id}
-                                className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                                className="px-6 py-4 hover:bg-muted/30 transition-colors"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-6 flex-1">
@@ -239,22 +239,22 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                                             className="shrink-0"
                                         />
                                         <div className="min-w-[80px]">
-                                            <div className="text-[#203622] font-medium">
+                                            <div className="text-foreground font-medium">
                                                 {row.enrollment.doc_id}
                                             </div>
-                                            <div className="text-sm text-gray-600 mt-0.5">
+                                            <div className="text-sm text-muted-foreground mt-0.5">
                                                 {row.enrollment.name_full}
                                             </div>
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <span className="text-sm text-gray-600">
+                                                <span className="text-sm text-muted-foreground">
                                                     Attendance:
                                                 </span>
-                                                <span className="text-sm text-[#203622] font-medium">
+                                                <span className="text-sm text-foreground font-medium">
                                                     {row.attendanceRate}%
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-muted-foreground">
                                                     ({row.attendedSessions}/
                                                     {row.totalSessions}{' '}
                                                     sessions)
@@ -273,7 +273,7 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {row.enrollment.enrolled_at && (
-                                            <span className="text-sm text-gray-600">
+                                            <span className="text-sm text-muted-foreground">
                                                 Enrolled:{' '}
                                                 {new Date(
                                                     row.enrollment.enrolled_at
@@ -304,13 +304,13 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
             </div>
 
             {selectedIds.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-card border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">
-                            <span className="font-semibold text-[#203622]">
+                            <span className="font-semibold text-foreground">
                                 {selectedIds.size}
                             </span>
-                            <span className="text-gray-600 ml-1">
+                            <span className="text-muted-foreground ml-1">
                                 {selectedIds.size === 1
                                     ? 'resident'
                                     : 'residents'}{' '}

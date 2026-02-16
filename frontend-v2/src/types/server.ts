@@ -24,3 +24,15 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 }
 
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
+
+export interface ChangeLogEntry {
+    id: number;
+    table_name: string;
+    parent_ref_id: number;
+    field_name: string;
+    old_value: string | null;
+    new_value: string | null;
+    created_at: string;
+    user_id: number;
+    username: string;
+}

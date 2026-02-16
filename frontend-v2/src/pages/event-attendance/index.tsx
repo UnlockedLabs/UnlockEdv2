@@ -352,7 +352,7 @@ export default function EventAttendance() {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="relative w-56">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <Input
                             placeholder="Search..."
                             value={searchTerm}
@@ -398,7 +398,7 @@ export default function EventAttendance() {
                         void onSubmit();
                     }}
                 >
-                    <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+                    <div className="bg-card rounded-lg border border-border overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
@@ -451,7 +451,7 @@ export default function EventAttendance() {
                         <Button
                             type="submit"
                             disabled={!anyRowSelected || blockEdits}
-                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                         >
                             Save Attendance
                         </Button>
@@ -464,7 +464,7 @@ export default function EventAttendance() {
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                         Previous
                     </Button>
-                    <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+                    <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
                     <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                         Next
                     </Button>

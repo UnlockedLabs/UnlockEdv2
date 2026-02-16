@@ -44,16 +44,16 @@ function StatsCard({ title, value, label, tooltip, icon, iconBg }: StatsCardProp
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <div className="bg-white rounded-lg border border-gray-200 p-5 flex items-start gap-4">
+                <div className="bg-card rounded-lg border border-border p-5 flex items-start gap-4">
                     <div className={`rounded-lg p-2.5 shrink-0 ${iconBg}`}>
                         {icon}
                     </div>
                     <div className="min-w-0">
-                        <p className="text-sm text-gray-500">{title}</p>
-                        <p className="text-2xl font-semibold text-[#203622]">
+                        <p className="text-sm text-muted-foreground">{title}</p>
+                        <p className="text-2xl font-semibold text-foreground">
                             {value}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
                     </div>
                 </div>
             </TooltipTrigger>
@@ -105,7 +105,7 @@ export default function OperationalInsightsCharts() {
 
     if (error) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+            <div className="bg-card rounded-lg border border-border p-8 text-center">
                 <p className="text-red-600">Error loading operational insights data.</p>
             </div>
         );
@@ -129,7 +129,7 @@ export default function OperationalInsightsCharts() {
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
                 <div className="flex flex-row gap-4">
                     <div>
-                        <label className="text-sm text-gray-500 mb-1 block">
+                        <label className="text-sm text-muted-foreground mb-1 block">
                             Time Period
                         </label>
                         <Select
@@ -148,7 +148,7 @@ export default function OperationalInsightsCharts() {
                     </div>
                     {user && canSwitchFacility(user) && (
                         <div>
-                            <label className="text-sm text-gray-500 mb-1 block">
+                            <label className="text-sm text-muted-foreground mb-1 block">
                                 Facility
                             </label>
                             <Select
@@ -176,14 +176,14 @@ export default function OperationalInsightsCharts() {
                     )}
                 </div>
                 <div className="text-right">
-                    <p className="text-xs text-gray-400 mb-1">
+                    <p className="text-xs text-muted-foreground mb-1">
                         Last updated: {formattedDate}
                     </p>
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setResetCache(!resetCache)}
-                        className="text-[#203622] border-gray-200"
+                        className="text-foreground border-border"
                     >
                         <ArrowPathIcon className="size-4 mr-1" />
                         Refresh Data
@@ -216,7 +216,7 @@ export default function OperationalInsightsCharts() {
                     icon={
                         <ArrowTrendingDownIcon className="size-5 text-white" />
                     }
-                    iconBg="bg-gray-500"
+                    iconBg="bg-muted0"
                 />
                 <StatsCard
                     title="New Users Added"
@@ -242,11 +242,11 @@ export default function OperationalInsightsCharts() {
                 />
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-[#203622] mb-2">
+            <div className="bg-card rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                     Peak Login Times
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">
+                <p className="text-xs text-muted-foreground mb-4">
                     Residents only
                 </p>
                 <div className="h-[280px]">

@@ -10,7 +10,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-2xl font-bold text-[#203622]">{title}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{title}</h1>
                 {subtitle && (
                     <p className="text-sm text-muted-foreground mt-1">
                         {subtitle}

@@ -6,7 +6,6 @@ import { useAuth, hasFeature, isUserDeactivated } from '@/auth/useAuth';
 import { useToast } from '@/contexts/ToastContext';
 import API from '@/api/api';
 import {
-    User,
     UserRole,
     ServerResponseOne,
     ResidentEngagementProfile,
@@ -52,18 +51,18 @@ function ProfileInfoRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex justify-between py-1.5 text-sm">
             <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium text-[#203622]">{value}</span>
+            <span className="font-medium text-foreground">{value}</span>
         </div>
     );
 }
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
     return (
-        <Card className="bg-white">
+        <Card className="bg-card">
             <CardContent className="flex items-center gap-3 py-4">
-                <div className="rounded-lg bg-[#E2E7EA] p-2">{icon}</div>
+                <div className="rounded-lg bg-muted p-2">{icon}</div>
                 <div>
-                    <p className="text-2xl font-bold text-[#203622]">{value}</p>
+                    <p className="text-2xl font-bold text-foreground">{value}</p>
                     <p className="text-xs text-muted-foreground">{label}</p>
                 </div>
             </CardContent>
@@ -94,7 +93,7 @@ export default function ResidentProfile() {
     );
 
     const { data: activityResp } = useSWR<ServerResponseMany<ActivityHistoryResponse>>(
-        residentId ? `/api/users/${residentId}/activity-history?per_page=10` : null
+        residentId ? `/api/users/${residentId}/account-history?per_page=10` : null
     );
 
     useEffect(() => {
@@ -196,7 +195,7 @@ export default function ResidentProfile() {
         {
             key: 'program',
             header: 'Program',
-            render: (p) => <span className="font-medium text-[#203622]">{p.program_name}</span>
+            render: (p) => <span className="font-medium text-foreground">{p.program_name}</span>
         },
         {
             key: 'class',
@@ -321,11 +320,11 @@ export default function ResidentProfile() {
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="bg-white">
+                <Card className="bg-card">
                     <CardContent className="pt-6 space-y-3">
                         <div className="flex flex-col items-center mb-4">
                             <UserCircle className="size-20 text-[#556830]" />
-                            <h2 className="text-xl font-bold text-[#203622] mt-2">
+                            <h2 className="text-xl font-bold text-foreground mt-2">
                                 {metrics.user.name_first} {metrics.user.name_last}
                             </h2>
                             {isDeactivated && (

@@ -87,7 +87,7 @@ export default function MobileNav() {
                                 'px-3 py-2 rounded text-sm transition-colors',
                                 location.pathname.startsWith(item.to)
                                     ? 'bg-[#556830] text-white'
-                                    : 'text-gray-300 hover:text-white hover:bg-[#556830]/50'
+                                    : 'text-muted-foreground hover:text-white hover:bg-[#556830]/50'
                             )}
                         >
                             {item.label}

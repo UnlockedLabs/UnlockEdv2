@@ -16,12 +16,12 @@ import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { AuditTab } from './AuditTab';
 
 const TAB_TRIGGER_CLASS =
-    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
+    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-muted px-4 py-2.5 rounded-lg transition-all duration-200';
 
 function LoadingSkeleton() {
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
-            <div className="bg-white border-b border-gray-200">
+        <div className="min-h-screen bg-muted">
+            <div className="bg-card border-b border-border">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Skeleton className="h-8 w-32 mb-4" />
                     <Skeleton className="h-10 w-80 mb-3" />
@@ -62,12 +62,12 @@ export default function ClassDetailPage() {
 
     if (!cls) {
         return (
-            <div className="min-h-screen bg-[#E2E7EA] flex items-center justify-center">
-                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
-                    <h2 className="text-xl font-semibold text-[#203622] mb-2">
+            <div className="min-h-screen bg-muted flex items-center justify-center">
+                <div className="bg-card rounded-lg border border-border p-8 text-center max-w-md">
+                    <h2 className="text-xl font-semibold text-foreground mb-2">
                         Class Not Found
                     </h2>
-                    <p className="text-gray-600 mb-4">
+                    <p className="text-muted-foreground mb-4">
                         The class you are looking for does not exist or you do
                         not have access to it.
                     </p>
@@ -86,15 +86,15 @@ export default function ClassDetailPage() {
     const attendanceRecords = attendanceResp?.data ?? [];
 
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
-            <div className="bg-white border-b border-gray-200">
+        <div className="min-h-screen bg-muted">
+            <div className="bg-card border-b border-border">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Button
                         variant="ghost"
                         onClick={() =>
                             navigate(`/programs/${cls.program_id}`)
                         }
-                        className="mb-4 -ml-2 text-gray-600 hover:text-[#203622]"
+                        className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="size-4 mr-2" />
                         Back to Program
@@ -135,7 +135,7 @@ export default function ClassDetailPage() {
                                             );
                                         }
                                     }}
-                                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]"
+                                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-foreground"
                                 >
                                     Take Attendance
                                 </Button>
@@ -147,7 +147,7 @@ export default function ClassDetailPage() {
 
             <div className="max-w-7xl mx-auto px-6 py-6">
                 <Tabs defaultValue="roster" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
+                    <TabsList className="bg-card border border-border p-1 h-auto gap-1">
                         <TabsTrigger
                             value="roster"
                             className={TAB_TRIGGER_CLASS}

@@ -96,9 +96,9 @@ export default function FavoriteCard({
     if (view === ViewType.Grid) {
         return (
             <div
-                className={`bg-white rounded-lg border border-gray-200 p-4 space-y-2 relative ${
+                className={`bg-card rounded-lg border border-border p-4 space-y-2 relative ${
                     isDisabled
-                        ? 'bg-gray-100 cursor-not-allowed opacity-75'
+                        ? 'bg-muted cursor-not-allowed opacity-75'
                         : 'cursor-pointer hover:shadow-md transition-shadow'
                 }`}
                 title={
@@ -124,7 +124,7 @@ export default function FavoriteCard({
                     alt={favorite.title}
                     className="h-16 mx-auto object-contain"
                 />
-                <h3 className="text-sm font-medium text-[#203622] text-center line-clamp-1">
+                <h3 className="text-sm font-medium text-foreground text-center line-clamp-1">
                     {favorite.title}
                 </h3>
                 <p className="text-xs text-muted-foreground text-center">
@@ -138,9 +138,9 @@ export default function FavoriteCard({
 
     return (
         <div
-            className={`bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-4 ${
+            className={`bg-card rounded-lg border border-border p-4 flex items-center gap-4 ${
                 isDisabled
-                    ? 'bg-gray-100 cursor-not-allowed opacity-75'
+                    ? 'bg-muted cursor-not-allowed opacity-75'
                     : 'cursor-pointer hover:shadow-md transition-shadow'
             }`}
             title={
@@ -156,7 +156,7 @@ export default function FavoriteCard({
                 className="w-12 h-12 flex-shrink-0 object-contain"
             />
             <div className="flex flex-col flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-[#203622]">
+                <h3 className="text-sm font-medium text-foreground">
                     {favorite.title}
                 </h3>
                 <p className="text-xs text-muted-foreground">

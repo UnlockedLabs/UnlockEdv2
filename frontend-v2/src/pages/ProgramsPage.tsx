@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, isDeptAdmin } from '@/auth/useAuth';
 import {
-    ProgramOverview,
+    ProgramsOverviewTable,
     ProgramType,
     ProgramEffectiveStatus,
     ServerResponseMany
@@ -25,16 +25,7 @@ import {
     PopoverTrigger
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Search,
-    Plus,
-    Filter,
-    Users,
-    BookOpen,
-    TrendingUp,
-    GraduationCap,
-    Building2
-} from 'lucide-react';
+import { Search, Plus, Filter, Building2 } from 'lucide-react';
 
 const programTypeColors: Record<string, string> = {
     Educational: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -50,7 +41,7 @@ const statusColors: Record<ProgramEffectiveStatus, string> = {
     [ProgramEffectiveStatus.Available]:
         'bg-green-100 text-green-700 border-green-300',
     [ProgramEffectiveStatus.Inactive]:
-        'bg-gray-100 text-gray-700 border-gray-300',
+        'bg-muted text-foreground border-gray-300',
     [ProgramEffectiveStatus.Archived]: 'bg-red-100 text-red-700 border-red-300'
 };
 
@@ -60,9 +51,11 @@ type SortOption =
     | 'enrollment-asc'
     | 'enrollment-desc';
 
-function getEffectiveStatus(program: ProgramOverview): ProgramEffectiveStatus {
+function getEffectiveStatus(
+    program: ProgramsOverviewTable
+): ProgramEffectiveStatus {
     if (program.archived_at) return ProgramEffectiveStatus.Archived;
-    if (program.is_active) return ProgramEffectiveStatus.Available;
+    if (program.status) return ProgramEffectiveStatus.Available;
     return ProgramEffectiveStatus.Inactive;
 }
 
@@ -70,17 +63,28 @@ function formatDisplayName(value: string): string {
     return value.replace(/_/g, ' ').replace(/-/g, ' ');
 }
 
+function parseCommaSeparated(value: string | null | undefined): string[] {
+    if (!value) return [];
+    return value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
 export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { data: resp } = useSWR<ServerResponseMany<ProgramOverview>>(
-        '/api/programs'
-    );
+    const { data: resp } =
+        useSWR<ServerResponseMany<ProgramsOverviewTable>>(
+            '/api/programs/detailed-list'
+        );
     const programs = resp?.data ?? [];
 
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<SortOption>('name-asc');
-    const [typeFilters, setTypeFilters] = useState<Set<ProgramType>>(new Set());
+    const [typeFilters, setTypeFilters] = useState<Set<ProgramType>>(
+        new Set()
+    );
     const [statusFilters, setStatusFilters] = useState<
         Set<ProgramEffectiveStatus>
     >(new Set());
@@ -114,17 +118,16 @@ export default function ProgramsPage() {
 
         if (search) {
             const q = search.toLowerCase();
-            result = result.filter(
-                (p) =>
-                    p.name.toLowerCase().includes(q) ||
-                    p.description.toLowerCase().includes(q)
+            result = result.filter((p) =>
+                p.program_name.toLowerCase().includes(q)
             );
         }
 
         if (typeFilters.size > 0) {
-            result = result.filter((p) =>
-                p.program_types.some((pt) => typeFilters.has(pt.program_type))
-            );
+            result = result.filter((p) => {
+                const types = parseCommaSeparated(p.program_types);
+                return types.some((t) => typeFilters.has(t as ProgramType));
+            });
         }
 
         if (statusFilters.size > 0) {
@@ -136,13 +139,19 @@ export default function ProgramsPage() {
         result = [...result].sort((a, b) => {
             switch (sort) {
                 case 'name-asc':
-                    return a.name.localeCompare(b.name);
+                    return a.program_name.localeCompare(b.program_name);
                 case 'name-desc':
-                    return b.name.localeCompare(a.name);
+                    return b.program_name.localeCompare(a.program_name);
                 case 'enrollment-asc':
-                    return a.active_enrollments - b.active_enrollments;
+                    return (
+                        (a.total_active_enrollments ?? 0) -
+                        (b.total_active_enrollments ?? 0)
+                    );
                 case 'enrollment-desc':
-                    return b.active_enrollments - a.active_enrollments;
+                    return (
+                        (b.total_active_enrollments ?? 0) -
+                        (a.total_active_enrollments ?? 0)
+                    );
             }
         });
 
@@ -150,38 +159,41 @@ export default function ProgramsPage() {
     }, [programs, search, sort, typeFilters, statusFilters]);
 
     const stats = useMemo(() => {
-        const active = programs.filter((p) => p.is_active && !p.archived_at);
+        const active = programs.filter((p) => p.status && !p.archived_at);
         const totalEnrollment = programs.reduce(
-            (sum, p) => sum + p.active_enrollments,
+            (sum, p) => sum + (p.total_active_enrollments ?? 0),
             0
         );
         const totalClasses = programs.reduce(
-            (sum, p) => sum + (p.active_class_facility_ids?.length ?? 0),
+            (sum, p) => sum + (p.total_classes ?? 0),
             0
         );
-        const avgCompletion =
-            active.length > 0
-                ? active.reduce((sum, p) => sum + p.completion_rate, 0) /
-                  active.length
+        const totalCapacity = programs.reduce(
+            (sum, p) => sum + (p.total_capacity ?? 0),
+            0
+        );
+        const utilization =
+            totalCapacity > 0
+                ? Math.round((totalEnrollment / totalCapacity) * 100)
                 : 0;
         return {
             activePrograms: active.length,
             totalClasses,
             totalEnrollment,
-            capacityUtilization: Math.round(avgCompletion)
+            capacityUtilization: utilization
         };
     }, [programs]);
 
     const isDeptAdminUser = user ? isDeptAdmin(user) : false;
     const subtitle = isDeptAdminUser
         ? 'Manage programs across all facilities'
-        : 'Manage programs at your facility';
+        : 'Supporting resident growth and rehabilitation';
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#203622]">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Programs
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -189,39 +201,37 @@ export default function ProgramsPage() {
                     </p>
                 </div>
                 <Button
-                    className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
-                    onClick={() => navigate('/programs/new')}
+                    className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
+                    onClick={() => navigate('/programs/detail')}
                 >
                     <Plus className="size-4" />
-                    Add Program
+                    {isDeptAdminUser
+                        ? 'Create Statewide Program'
+                        : 'Add Program'}
                 </Button>
             </div>
 
             <div className="grid grid-cols-4 gap-4">
                 <StatCard
-                    icon={<BookOpen className="size-5 text-[#556830]" />}
                     label="Active Programs"
                     value={stats.activePrograms}
                 />
                 <StatCard
-                    icon={<GraduationCap className="size-5 text-[#556830]" />}
                     label="Total Classes"
                     value={stats.totalClasses}
                 />
                 <StatCard
-                    icon={<Users className="size-5 text-[#556830]" />}
                     label="Total Enrollment"
                     value={stats.totalEnrollment}
                 />
                 <StatCard
-                    icon={<TrendingUp className="size-5 text-[#556830]" />}
-                    label="Avg Completion Rate"
+                    label="Capacity Utilization"
                     value={`${stats.capacityUtilization}%`}
                 />
             </div>
 
             <div className="flex items-center gap-3">
-                <div className="relative flex-1 max-w-sm">
+                <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
                         placeholder="Search programs..."
@@ -235,28 +245,28 @@ export default function ProgramsPage() {
                     value={sort}
                     onValueChange={(v) => setSort(v as SortOption)}
                 >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-44">
                         <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="name-asc">Name A-Z</SelectItem>
-                        <SelectItem value="name-desc">Name Z-A</SelectItem>
+                        <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                         <SelectItem value="enrollment-desc">
-                            Enrollment High-Low
+                            Enrollment (High-Low)
                         </SelectItem>
                         <SelectItem value="enrollment-asc">
-                            Enrollment Low-High
+                            Enrollment (Low-High)
                         </SelectItem>
                     </SelectContent>
                 </Select>
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" className="gap-2">
                             <Filter className="size-4" />
                             Type
                             {typeFilters.size > 0 && (
-                                <span className="ml-1 rounded-full bg-[#556830] text-white size-5 flex items-center justify-center text-xs">
+                                <span className="rounded-full bg-[#556830] text-white size-5 flex items-center justify-center text-xs">
                                     {typeFilters.size}
                                 </span>
                             )}
@@ -287,11 +297,11 @@ export default function ProgramsPage() {
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" className="gap-2">
                             <Filter className="size-4" />
                             Status
                             {statusFilters.size > 0 && (
-                                <span className="ml-1 rounded-full bg-[#556830] text-white size-5 flex items-center justify-center text-xs">
+                                <span className="rounded-full bg-[#556830] text-white size-5 flex items-center justify-center text-xs">
                                     {statusFilters.size}
                                 </span>
                             )}
@@ -331,11 +341,13 @@ export default function ProgramsPage() {
                 <div className="grid grid-cols-2 gap-4">
                     {filtered.map((program) => (
                         <ProgramCard
-                            key={program.id}
+                            key={program.program_id}
                             program={program}
                             showFacilities={isDeptAdminUser}
                             onClick={() =>
-                                navigate('/programs/' + program.id)
+                                navigate(
+                                    '/programs/' + program.program_id
+                                )
                             }
                         />
                     ))}
@@ -346,22 +358,17 @@ export default function ProgramsPage() {
 }
 
 function StatCard({
-    icon,
     label,
     value
 }: {
-    icon: React.ReactNode;
     label: string;
     value: string | number;
 }) {
     return (
-        <Card className="bg-white">
-            <CardContent className="flex items-center gap-3 py-4">
-                <div className="rounded-lg bg-[#E2E7EA] p-2">{icon}</div>
-                <div>
-                    <p className="text-2xl font-bold text-[#203622]">{value}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                </div>
+        <Card className="bg-card">
+            <CardContent className="p-5">
+                <p className="text-3xl font-bold text-foreground">{value}</p>
+                <p className="text-sm text-muted-foreground mt-1">{label}</p>
             </CardContent>
         </Card>
     );
@@ -372,30 +379,37 @@ function ProgramCard({
     showFacilities,
     onClick
 }: {
-    program: ProgramOverview;
+    program: ProgramsOverviewTable;
     showFacilities: boolean;
     onClick: () => void;
 }) {
     const status = getEffectiveStatus(program);
-    const types = program.program_types.map((pt) => pt.program_type);
-    const credits = program.credit_types.map((ct) => ct.credit_type);
+    const types = parseCommaSeparated(program.program_types);
+    const credits = parseCommaSeparated(program.credit_types);
     const funding = program.funding_type
         ? program.funding_type.replace(/_/g, ' ')
         : '';
 
     return (
         <Card
-            className="cursor-pointer hover:shadow-md transition-shadow bg-white"
+            className="cursor-pointer hover:shadow-md transition-shadow bg-card"
             onClick={onClick}
         >
-            <CardContent className="p-5 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-[#203622] text-lg">
-                        {program.name}
-                    </h3>
+            <CardContent className="p-5 space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground text-lg leading-tight">
+                            {program.program_name}
+                        </h3>
+                        {program.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                {program.description}
+                            </p>
+                        )}
+                    </div>
                     <span
                         className={cn(
-                            'text-xs px-2 py-0.5 rounded-full border shrink-0',
+                            'text-xs px-2.5 py-0.5 rounded-full border shrink-0 font-medium',
                             statusColors[status]
                         )}
                     >
@@ -403,19 +417,15 @@ function ProgramCard({
                     </span>
                 </div>
 
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                    {program.description}
-                </p>
-
                 {types.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                         {types.map((type) => (
                             <span
                                 key={type}
                                 className={cn(
-                                    'text-xs px-2 py-0.5 rounded border',
+                                    'text-xs px-2.5 py-0.5 rounded-full border font-medium',
                                     programTypeColors[type] ??
-                                        'bg-gray-100 text-gray-700 border-gray-200'
+                                        'bg-muted text-foreground border-border'
                                 )}
                             >
                                 {formatDisplayName(type)}
@@ -424,47 +434,50 @@ function ProgramCard({
                     </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-3 pt-2 border-t">
-                    <MetricCell
+                <div className="grid grid-cols-3 gap-3">
+                    <MetricBox
                         label="Active Enrollment"
-                        value={program.active_enrollments}
+                        value={program.total_active_enrollments ?? 0}
                     />
-                    <MetricCell
+                    <MetricBox
                         label="Classes"
-                        value={
-                            program.active_class_facility_ids?.length ?? 0
-                        }
+                        value={program.total_classes ?? 0}
                     />
-                    <MetricCell
+                    <MetricBox
                         label="Completion"
-                        value={`${Math.round(program.completion_rate)}%`}
+                        value={`${Math.round(program.completion_rate ?? 0)}%`}
                     />
                 </div>
 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {credits.length > 0 && (
                         <span>
-                            Credits: {credits.map(formatDisplayName).join(', ')}
+                            Credit:{' '}
+                            {credits.map(formatDisplayName).join(', ')}
                         </span>
                     )}
                     {funding && <span>Funding: {funding}</span>}
                 </div>
 
-                {showFacilities && program.facilities?.length > 0 && (
-                    <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground border-t">
-                        <Building2 className="size-3.5" />
-                        Active in {program.facilities.length}{' '}
-                        {program.facilities.length === 1
-                            ? 'facility'
-                            : 'facilities'}
-                    </div>
-                )}
+                {showFacilities &&
+                    (program.total_active_facilities ?? 0) > 0 && (
+                        <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground border-t">
+                            <Building2 className="size-3.5" />
+                            Active in{' '}
+                            <span className="font-semibold text-foreground">
+                                {program.total_active_facilities}
+                            </span>{' '}
+                            {program.total_active_facilities === 1
+                                ? 'facility'
+                                : 'facilities'}
+                        </div>
+                    )}
             </CardContent>
         </Card>
     );
 }
 
-function MetricCell({
+function MetricBox({
     label,
     value
 }: {
@@ -472,9 +485,11 @@ function MetricCell({
     value: string | number;
 }) {
     return (
-        <div className="text-center">
-            <p className="text-lg font-semibold text-[#203622]">{value}</p>
+        <div className="bg-muted/50 rounded-lg p-3">
             <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="text-lg font-semibold text-foreground mt-0.5">
+                {value}
+            </p>
         </div>
     );
 }

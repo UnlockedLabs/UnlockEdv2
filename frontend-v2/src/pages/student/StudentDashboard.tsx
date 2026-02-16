@@ -12,21 +12,21 @@ const INITIAL_VISIBLE = 4;
 
 function RecentCoursesTable({ courses }: { courses: RecentCourse[] }) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-5 flex-1">
-            <h3 className="text-lg font-semibold text-[#203622] mb-3">
+        <div className="bg-card rounded-lg border border-border p-5 flex-1">
+            <h3 className="text-lg font-semibold text-foreground mb-3">
                 Recent Activity
             </h3>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b border-gray-100">
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                        <tr className="border-b border-border">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Course
                             </th>
-                            <th className="text-left py-2 pr-4 text-gray-500 font-medium">
+                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
                                 Provider
                             </th>
-                            <th className="text-right py-2 text-gray-500 font-medium">
+                            <th className="text-right py-2 text-muted-foreground font-medium">
                                 Progress
                             </th>
                         </tr>
@@ -35,9 +35,9 @@ function RecentCoursesTable({ courses }: { courses: RecentCourse[] }) {
                         {courses.map((course, idx) => (
                             <tr
                                 key={idx}
-                                className="border-b border-gray-50 last:border-0"
+                                className="border-b border-border last:border-0"
                             >
-                                <td className="py-3 pr-4 text-[#203622] font-medium">
+                                <td className="py-3 pr-4 text-foreground font-medium">
                                     <a
                                         href={course.external_url}
                                         target="_blank"
@@ -47,10 +47,10 @@ function RecentCoursesTable({ courses }: { courses: RecentCourse[] }) {
                                         {course.course_name}
                                     </a>
                                 </td>
-                                <td className="py-3 pr-4 text-gray-500">
+                                <td className="py-3 pr-4 text-muted-foreground">
                                     {course.provider_platform_name}
                                 </td>
-                                <td className="py-3 text-right text-gray-500">
+                                <td className="py-3 text-right text-muted-foreground">
                                     {Math.floor(course.course_progress)}%
                                 </td>
                             </tr>
@@ -80,14 +80,14 @@ export default function StudentDashboard() {
     }));
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-                <h1 className="text-3xl font-bold text-[#203622]">
+                <h1 className="text-3xl font-bold text-foreground">
                     Hi, {user.name_first ?? 'Student'}!
                 </h1>
 
                 <section>
-                    <h2 className="text-xl font-semibold text-[#203622] mb-4">
+                    <h2 className="text-xl font-semibold text-foreground mb-4">
                         Pick Up Where You Left Off
                     </h2>
                     {courses.length > 0 ? (
@@ -109,7 +109,7 @@ export default function StudentDashboard() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setExpanded(!expanded)}
-                                        className="text-[#556830] hover:text-[#203622]"
+                                        className="text-[#556830] hover:text-foreground"
                                     >
                                         {expanded ? (
                                             <>
@@ -128,7 +128,7 @@ export default function StudentDashboard() {
                         </>
                     ) : (
                         <EmptyState
-                            icon={<BookOpen className="size-6 text-gray-400" />}
+                            icon={<BookOpen className="size-6 text-muted-foreground" />}
                             title="No courses yet"
                             description="You are not currently enrolled in any courses."
                         />
@@ -136,8 +136,8 @@ export default function StudentDashboard() {
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-lg border border-gray-200 p-5">
-                        <h3 className="text-lg font-semibold text-[#203622] mb-3">
+                    <div className="bg-card rounded-lg border border-border p-5">
+                        <h3 className="text-lg font-semibold text-foreground mb-3">
                             My Activity
                         </h3>
                         <WeeklyActivity data={recentActivities} />

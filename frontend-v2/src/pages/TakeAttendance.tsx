@@ -81,8 +81,8 @@ const summaryConfig: {
     {
         status: Attendance.Absent_Excused,
         label: 'Absent Excused',
-        bgClass: 'bg-gray-50 border-gray-200',
-        textClass: 'text-gray-700'
+        bgClass: 'bg-muted border-border',
+        textClass: 'text-foreground'
     },
     {
         status: Attendance.Absent_Unexcused,
@@ -220,7 +220,7 @@ export default function TakeAttendance() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-lg border p-5 space-y-4">
+            <div className="bg-card rounded-lg border p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button
@@ -283,7 +283,7 @@ export default function TakeAttendance() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg border">
+            <div className="bg-card rounded-lg border">
                 <div className="px-5 py-4 border-b">
                     <h2 className="font-semibold">
                         Roster ({enrollments.length})
@@ -369,7 +369,7 @@ function AttendanceRow({
                                 'px-3 py-1.5 text-xs font-medium rounded border transition-colors',
                                 entry.status === cfg.value
                                     ? cfg.activeClass
-                                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                    : 'bg-card text-muted-foreground border-gray-300 hover:bg-muted'
                             )}
                         >
                             {cfg.label}

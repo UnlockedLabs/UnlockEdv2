@@ -6,10 +6,10 @@ export default function StudentLayer0() {
     return (
         <Card className="max-w-lg mx-auto mt-10">
             <CardHeader className="text-center">
-                <CardTitle className="text-2xl text-[#203622]">
+                <CardTitle className="text-2xl text-foreground">
                     Hi, {user?.name_first ?? 'Student'}!
                 </CardTitle>
-                <p className="text-xl text-[#203622]">Welcome to UnlockEd</p>
+                <p className="text-xl text-foreground">Welcome to UnlockEd</p>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
                 <img

@@ -11,10 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
     return (
-        <Card className="bg-[#E2E7EA]">
+        <Card className="bg-muted">
             <CardContent className="p-3">
-                <p className="text-xs text-gray-600">{label}</p>
-                <p className="text-xl font-bold text-[#203622]">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-xl font-bold text-foreground">{value}</p>
             </CardContent>
         </Card>
     );
@@ -47,10 +47,10 @@ export default function ClassLayout() {
     if (!cls) {
         return (
             <div className="text-center py-12">
-                <h2 className="text-lg font-semibold text-[#203622]">
+                <h2 className="text-lg font-semibold text-foreground">
                     Class Not Found
                 </h2>
-                <p className="text-gray-600 mt-2">
+                <p className="text-muted-foreground mt-2">
                     The class you are looking for does not exist.
                 </p>
                 <Button
@@ -73,7 +73,7 @@ export default function ClassLayout() {
             <Button
                 variant="ghost"
                 onClick={() => navigate(`/programs/${cls.program_id}`)}
-                className="-ml-2 text-gray-600 hover:text-[#203622]"
+                className="-ml-2 text-muted-foreground hover:text-foreground"
             >
                 <ArrowLeft className="size-4 mr-2" />
                 Back to Program
@@ -82,12 +82,12 @@ export default function ClassLayout() {
             <div className="flex items-start justify-between">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-2xl font-bold text-[#203622]">{cls.name}</h1>
+                        <h1 className="text-2xl font-bold text-foreground">{cls.name}</h1>
                         <Badge variant="outline" className={getStatusColor(cls.status)}>
                             {cls.status}
                         </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         {cls.instructor_name && <span>{cls.instructor_name}</span>}
                         {schedule.days.length > 0 && (
                             <span>
@@ -123,7 +123,7 @@ export default function ClassLayout() {
                                     );
                                 }
                             }}
-                            className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]"
+                            className="bg-[#F1B51C] hover:bg-[#d9a419] text-foreground"
                         >
                             <ClipboardList className="size-4 mr-2" />
                             Take Attendance
@@ -155,7 +155,7 @@ export default function ClassLayout() {
                     className="h-2"
                     indicatorClassName="bg-[#556830]"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                     {cls.enrolled} of {cls.capacity} spots filled
                 </p>
             </div>

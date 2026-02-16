@@ -79,9 +79,9 @@ export default function VideoCard({
     if (view === ViewType.Grid) {
         return (
             <div
-                className={`bg-white rounded-lg border cursor-pointer hover:shadow-md transition-shadow relative ${
+                className={`bg-card rounded-lg border cursor-pointer hover:shadow-md transition-shadow relative ${
                     available
-                        ? 'border-gray-200'
+                        ? 'border-border'
                         : 'border-destructive border-2'
                 }`}
                 onClick={() =>
@@ -103,13 +103,13 @@ export default function VideoCard({
                         )}
                     </button>
                 )}
-                <div className="flex flex-col p-4 gap-2 border-b border-gray-200">
+                <div className="flex flex-col p-4 gap-2 border-b border-border">
                     <img
                         src={thumbnailSrc}
                         alt={video.title}
                         className="w-1/2 mx-auto object-cover"
                     />
-                    <h3 className="text-sm font-medium text-[#203622] text-center h-10 line-clamp-2">
+                    <h3 className="text-sm font-medium text-foreground text-center h-10 line-clamp-2">
                         {video.title}
                     </h3>
                 </div>
@@ -125,7 +125,10 @@ export default function VideoCard({
                     </p>
                     {isAdmin &&
                         (available ? (
-                            <div className="flex items-center gap-2 pt-1">
+                            <div
+                                className="flex items-center gap-2 pt-1"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <Switch
                                     checked={visible}
                                     onCheckedChange={() =>
@@ -168,8 +171,8 @@ export default function VideoCard({
 
     return (
         <div
-            className={`bg-white rounded-lg border p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow ${
-                available ? 'border-gray-200' : 'border-destructive border-2'
+            className={`bg-card rounded-lg border p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow ${
+                available ? 'border-border' : 'border-destructive border-2'
             }`}
             onClick={() =>
                 available && navigate(`/viewer/videos/${video.id}`)
@@ -181,7 +184,7 @@ export default function VideoCard({
                 className="w-16 h-16 flex-shrink-0 object-cover"
             />
             <div className="flex flex-col flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-[#203622]">
+                <h3 className="text-sm font-medium text-foreground">
                     {video.title}
                 </h3>
                 <p className="text-xs text-muted-foreground">
@@ -210,7 +213,10 @@ export default function VideoCard({
                 )}
                 {isAdmin &&
                     (available ? (
-                        <div className="flex items-center gap-2">
+                        <div
+                            className="flex items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <Switch
                                 checked={visible}
                                 onCheckedChange={() =>

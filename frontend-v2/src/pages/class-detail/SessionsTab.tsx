@@ -85,7 +85,7 @@ function FilterButton({
             className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
                 active
                     ? 'bg-[#556830] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-muted text-muted-foreground hover:bg-muted'
             }`}
         >
             {children}
@@ -170,14 +170,14 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
+        <div className="bg-card rounded-lg border border-border">
+            <div className="border-b border-border px-6 py-4">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h3 className="text-[#203622] font-semibold">
+                        <h3 className="text-foreground font-semibold">
                             Session Management
                         </h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                             View and manage individual sessions
                         </p>
                     </div>
@@ -206,7 +206,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                         <StatButton
                             active={statusFilter === 'cancelled'}
                             onClick={() => setStatusFilter('cancelled')}
-                            colorClass="bg-gray-100 text-gray-700"
+                            colorClass="bg-muted text-foreground"
                         >
                             {stats.cancelled} Cancelled
                         </StatButton>
@@ -214,7 +214,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Filter className="size-4 text-gray-400" />
+                    <Filter className="size-4 text-muted-foreground" />
                     <div className="flex gap-2 flex-1">
                         <FilterButton
                             active={statusFilter === 'all'}
@@ -277,14 +277,14 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                         <div className="flex items-start gap-3">
                             <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
                             <div>
-                                <div className="font-medium text-[#203622]">
+                                <div className="font-medium text-foreground">
                                     {stats.missing}{' '}
                                     {stats.missing === 1
                                         ? 'Session'
                                         : 'Sessions'}{' '}
                                     Missing Attendance Records
                                 </div>
-                                <p className="text-sm text-gray-600 mt-1">
+                                <p className="text-sm text-muted-foreground mt-1">
                                     Please review and complete attendance for
                                     past sessions
                                 </p>
@@ -304,8 +304,8 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
             <div className="p-6">
                 {filtered.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                        <Calendar className="size-12 mx-auto mb-3 text-gray-300" />
+                    <div className="text-center py-12 text-muted-foreground">
+                        <Calendar className="size-12 mx-auto mb-3 text-muted-foreground" />
                         <p>No sessions match your filters</p>
                         <p className="text-sm mt-1">
                             Try adjusting your filter selection
@@ -323,10 +323,10 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             />
                         )}
                         {pastAndToday.length > 15 && (
-                            <div className="text-sm text-gray-500 text-center">
+                            <div className="text-sm text-muted-foreground text-center">
                                 <button
                                     onClick={() => setShowAllPast(!showAllPast)}
-                                    className="text-[#556830] hover:text-[#203622] underline"
+                                    className="text-[#556830] hover:text-foreground underline"
                                 >
                                     {showAllPast ? 'Show Less' : 'Show All'}
                                 </button>
@@ -363,7 +363,7 @@ function StatButton({
         <button
             onClick={onClick}
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                active ? `${colorClass} font-medium` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                active ? `${colorClass} font-medium` : 'bg-muted text-muted-foreground hover:bg-muted'
             }`}
         >
             {children}
@@ -388,10 +388,10 @@ function SessionGroup({
         <div>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h4 className="text-[#203622] font-medium">{title}</h4>
-                    <p className="text-sm text-gray-600 mt-0.5">{subtitle}</p>
+                    <h4 className="text-foreground font-medium">{title}</h4>
+                    <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
                 </div>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                     {count} {count === 1 ? 'session' : 'sessions'}
                 </span>
             </div>
@@ -422,14 +422,14 @@ function SessionRow({
     });
 
     const borderClass = session.isCancelled
-        ? 'border-gray-300 bg-gray-100 hover:bg-gray-200'
+        ? 'border-gray-300 bg-muted hover:bg-muted'
         : session.isToday
           ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
           : session.hasAttendance
-            ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
+            ? 'border-border hover:bg-muted/30'
             : session.isPast
               ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
-              : 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
+              : 'border-border bg-muted hover:bg-muted/30';
 
     return (
         <div
@@ -438,16 +438,16 @@ function SessionRow({
         >
             <div className="flex items-center gap-4">
                 {session.isCancelled ? (
-                    <Calendar className="size-5 text-gray-400 flex-shrink-0" />
+                    <Calendar className="size-5 text-muted-foreground flex-shrink-0" />
                 ) : session.hasAttendance ? (
                     <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
                 ) : session.isPast ? (
                     <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
                 ) : (
-                    <Calendar className="size-5 text-gray-400 flex-shrink-0" />
+                    <Calendar className="size-5 text-muted-foreground flex-shrink-0" />
                 )}
                 <div>
-                    <div className="text-sm font-medium text-[#203622]">
+                    <div className="text-sm font-medium text-foreground">
                         <span
                             className={
                                 session.isCancelled ? 'line-through' : ''
@@ -463,14 +463,14 @@ function SessionRow({
                         {session.isCancelled && (
                             <Badge
                                 variant="outline"
-                                className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
+                                className="ml-2 bg-muted text-muted-foreground border-gray-300"
                             >
                                 Cancelled
                             </Badge>
                         )}
                     </div>
                     <div
-                        className={`text-xs text-gray-600 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
+                        className={`text-xs text-muted-foreground mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
                     >
                         {session.instance.class_time}
                     </div>
@@ -478,7 +478,7 @@ function SessionRow({
             </div>
             <div className="flex items-center gap-4">
                 {session.hasAttendance && (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
                         {session.totalEnrolled > 0

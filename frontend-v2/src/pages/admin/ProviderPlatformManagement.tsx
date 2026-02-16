@@ -48,7 +48,7 @@ const providerStateStyles: Record<ProviderPlatformState, string> = {
     [ProviderPlatformState.ENABLED]:
         'bg-green-50 text-green-700 border-green-200',
     [ProviderPlatformState.DISABLED]:
-        'bg-gray-50 text-gray-700 border-gray-200',
+        'bg-muted text-foreground border-border',
     [ProviderPlatformState.ARCHIVED]: 'bg-red-50 text-red-700 border-red-200'
 };
 
@@ -69,24 +69,24 @@ function ProviderCard({
 }) {
     const isArchived = provider.state === ProviderPlatformState.ARCHIVED;
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-5 flex items-center justify-between">
+        <div className="bg-card rounded-lg border border-border p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <div className="rounded-lg p-2.5 bg-[#E2E7EA]">
-                    <GlobeAltIcon className="size-6 text-[#203622]" />
+                <div className="rounded-lg p-2.5 bg-muted">
+                    <GlobeAltIcon className="size-6 text-foreground" />
                 </div>
                 <div>
                     <div className="flex items-center gap-2">
-                        <p className="font-medium text-[#203622]">
+                        <p className="font-medium text-foreground">
                             {provider.name}
                         </p>
                         <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border whitespace-nowrap ${providerStateStyles[provider.state]}`}>
                             {provider.state}
                         </span>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                         {providerTypeLabels[provider.type] ?? provider.type}
                     </p>
-                    <p className="text-xs text-gray-400">{provider.base_url}</p>
+                    <p className="text-xs text-muted-foreground">{provider.base_url}</p>
                 </div>
             </div>
             <DropdownMenu>
@@ -225,7 +225,7 @@ export default function ProviderPlatformManagement() {
 
     if (isLoading) {
         return (
-            <div className="bg-[#E2E7EA] min-h-screen p-6">
+            <div className="bg-muted min-h-screen p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <Skeleton className="h-10 w-64" />
                     <div className="space-y-4">
@@ -242,7 +242,7 @@ export default function ProviderPlatformManagement() {
     }
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader
                     title="Learning Platforms"
@@ -259,7 +259,7 @@ export default function ProviderPlatformManagement() {
                 />
 
                 {error ? (
-                    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <div className="bg-card rounded-lg border border-border p-8 text-center">
                         <p className="text-red-600">
                             Error loading provider platforms.
                         </p>
@@ -267,7 +267,7 @@ export default function ProviderPlatformManagement() {
                 ) : providerData.length === 0 ? (
                     <EmptyState
                         icon={
-                            <ServerStackIcon className="size-6 text-[#203622]" />
+                            <ServerStackIcon className="size-6 text-foreground" />
                         }
                         title="No learning platforms"
                         description="Connect your first learning management system to get started."
@@ -444,7 +444,7 @@ function AddProviderModal({
         >
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Name
                     </label>
                     <input
@@ -452,11 +452,11 @@ function AddProviderModal({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Platform Type
                     </label>
                     <select
@@ -464,7 +464,7 @@ function AddProviderModal({
                         onChange={(e) =>
                             setType(e.target.value as ProviderPlatformType)
                         }
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     >
                         {Object.entries(providerTypeLabels).map(([k, v]) => (
                             <option key={k} value={k}>
@@ -474,7 +474,7 @@ function AddProviderModal({
                     </select>
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Base URL
                     </label>
                     <input
@@ -483,11 +483,11 @@ function AddProviderModal({
                         onChange={(e) => setBaseUrl(e.target.value)}
                         required
                         placeholder="https://your-lms.example.com"
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Account ID
                     </label>
                     <input
@@ -495,11 +495,11 @@ function AddProviderModal({
                         value={accountId}
                         onChange={(e) => setAccountId(e.target.value)}
                         required
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Access Key
                     </label>
                     <input
@@ -507,7 +507,7 @@ function AddProviderModal({
                         value={accessKey}
                         onChange={(e) => setAccessKey(e.target.value)}
                         required
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
@@ -599,7 +599,7 @@ function EditProviderModal({
         >
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Name
                     </label>
                     <input
@@ -607,11 +607,11 @@ function EditProviderModal({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Base URL
                     </label>
                     <input
@@ -619,11 +619,11 @@ function EditProviderModal({
                         value={baseUrl}
                         onChange={(e) => setBaseUrl(e.target.value)}
                         required
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Account ID
                     </label>
                     <input
@@ -631,18 +631,18 @@ function EditProviderModal({
                         value={accountId}
                         onChange={(e) => setAccountId(e.target.value)}
                         required
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Access Key
                     </label>
                     <input
                         type="password"
                         value={accessKey}
                         onChange={(e) => setAccessKey(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
@@ -706,7 +706,7 @@ function RegisterOidcModal({
         >
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium text-[#203622]">
+                    <label className="text-sm font-medium text-foreground">
                         Redirect URL
                     </label>
                     <input
@@ -715,7 +715,7 @@ function RegisterOidcModal({
                         onChange={(e) => setRedirectUrl(e.target.value)}
                         required
                         placeholder="https://your-lms.example.com/oauth/callback"
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
@@ -769,12 +769,12 @@ function OidcInfoModal({
                 {fields.map((field) => (
                     <div
                         key={field.label}
-                        className="flex flex-col gap-1 rounded-md bg-gray-50 p-3"
+                        className="flex flex-col gap-1 rounded-md bg-muted p-3"
                     >
-                        <span className="text-xs font-medium text-gray-500">
+                        <span className="text-xs font-medium text-muted-foreground">
                             {field.label}
                         </span>
-                        <span className="text-sm font-mono text-[#203622] break-all">
+                        <span className="text-sm font-mono text-foreground break-all">
                             {field.value}
                         </span>
                     </div>
