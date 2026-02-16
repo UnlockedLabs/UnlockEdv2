@@ -16,7 +16,7 @@ import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { AuditTab } from './AuditTab';
 
 const TAB_TRIGGER_CLASS =
-    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-xs data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-muted px-4 py-2.5 rounded-lg transition-all duration-200';
+    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-xs data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-[#E2E7EA] px-4 py-2.5 rounded-lg transition-all duration-200';
 
 function LoadingSkeleton() {
     return (
@@ -82,7 +82,6 @@ export default function ClassDetailPage() {
         );
     }
 
-    const enrollments = cls.enrollments ?? [];
     const attendanceRecords = attendanceResp?.data ?? [];
 
     return (
@@ -185,10 +184,7 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab
-                            classId={cls.id}
-                            enrollments={enrollments}
-                        />
+                        <RosterTab classId={cls.id} />
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
@@ -207,7 +203,7 @@ export default function ClassDetailPage() {
                         value="enrollment-history"
                         className="space-y-4"
                     >
-                        <EnrollmentHistoryTab enrollments={enrollments} />
+                        <EnrollmentHistoryTab classId={cls.id} />
                     </TabsContent>
 
                     <TabsContent value="audit">
