@@ -19,12 +19,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger
-} from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Plus, Filter, Building2 } from 'lucide-react';
 
 const programTypeColors: Record<string, string> = {
@@ -82,36 +76,8 @@ export default function ProgramsPage() {
 
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<SortOption>('name-asc');
-    const [typeFilters, setTypeFilters] = useState<Set<ProgramType>>(
-        new Set()
-    );
-    const [statusFilters, setStatusFilters] = useState<
-        Set<ProgramEffectiveStatus>
-    >(new Set());
-
-    const toggleTypeFilter = (type: ProgramType) => {
-        setTypeFilters((prev) => {
-            const next = new Set(prev);
-            if (next.has(type)) {
-                next.delete(type);
-            } else {
-                next.add(type);
-            }
-            return next;
-        });
-    };
-
-    const toggleStatusFilter = (status: ProgramEffectiveStatus) => {
-        setStatusFilters((prev) => {
-            const next = new Set(prev);
-            if (next.has(status)) {
-                next.delete(status);
-            } else {
-                next.add(status);
-            }
-            return next;
-        });
-    };
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const filtered = useMemo(() => {
         let result = programs;
@@ -123,16 +89,16 @@ export default function ProgramsPage() {
             );
         }
 
-        if (typeFilters.size > 0) {
+        if (typeFilter !== 'all') {
             result = result.filter((p) => {
                 const types = parseCommaSeparated(p.program_types);
-                return types.some((t) => typeFilters.has(t as ProgramType));
+                return types.includes(typeFilter);
             });
         }
 
-        if (statusFilters.size > 0) {
-            result = result.filter((p) =>
-                statusFilters.has(getEffectiveStatus(p))
+        if (statusFilter !== 'all') {
+            result = result.filter(
+                (p) => getEffectiveStatus(p) === statusFilter
             );
         }
 
@@ -156,7 +122,7 @@ export default function ProgramsPage() {
         });
 
         return result;
-    }, [programs, search, sort, typeFilters, statusFilters]);
+    }, [programs, search, sort, typeFilter, statusFilter]);
 
     const stats = useMemo(() => {
         const active = programs.filter((p) => p.status && !p.archived_at);
@@ -190,169 +156,150 @@ export default function ProgramsPage() {
         : 'Supporting resident growth and rehabilitation';
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">
-                        Programs
-                    </h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        {subtitle}
-                    </p>
+        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#e5e7e3]">
+            <div className="px-16 pt-6 pb-6 space-y-5">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">
+                            Programs
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {subtitle}
+                        </p>
+                    </div>
+                    <Button
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
+                        onClick={() => navigate('/programs/detail')}
+                    >
+                        <Plus className="size-4" />
+                        {isDeptAdminUser
+                            ? 'Create Statewide Program'
+                            : 'Add Program'}
+                    </Button>
                 </div>
-                <Button
-                    className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
-                    onClick={() => navigate('/programs/detail')}
-                >
-                    <Plus className="size-4" />
-                    {isDeptAdminUser
-                        ? 'Create Statewide Program'
-                        : 'Add Program'}
-                </Button>
-            </div>
 
-            <div className="grid grid-cols-4 gap-4">
-                <StatCard
-                    label="Active Programs"
-                    value={stats.activePrograms}
-                />
-                <StatCard
-                    label="Total Classes"
-                    value={stats.totalClasses}
-                />
-                <StatCard
-                    label="Total Enrollment"
-                    value={stats.totalEnrollment}
-                />
-                <StatCard
-                    label="Capacity Utilization"
-                    value={`${stats.capacityUtilization}%`}
-                />
-            </div>
-
-            <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search programs..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
+                <div className="grid grid-cols-4 gap-4">
+                    <StatCard
+                        label="Active Programs"
+                        value={stats.activePrograms}
+                    />
+                    <StatCard
+                        label="Total Classes"
+                        value={stats.totalClasses}
+                    />
+                    <StatCard
+                        label="Total Enrollment"
+                        value={stats.totalEnrollment}
+                    />
+                    <StatCard
+                        label="Capacity Utilization"
+                        value={`${stats.capacityUtilization}%`}
                     />
                 </div>
 
-                <Select
-                    value={sort}
-                    onValueChange={(v) => setSort(v as SortOption)}
-                >
-                    <SelectTrigger className="w-44">
-                        <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                        <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                        <SelectItem value="enrollment-desc">
-                            Enrollment (High-Low)
-                        </SelectItem>
-                        <SelectItem value="enrollment-asc">
-                            Enrollment (Low-High)
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="bg-background rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search programs..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
 
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="gap-2">
-                            <Filter className="size-4" />
-                            Type
-                            {typeFilters.size > 0 && (
-                                <span className="rounded-full bg-[#556830] text-white size-5 flex items-center justify-center text-xs">
-                                    {typeFilters.size}
-                                </span>
-                            )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-56">
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium">Program Type</p>
-                            {Object.values(ProgramType).map((type) => (
-                                <label
-                                    key={type}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    <Checkbox
-                                        checked={typeFilters.has(type)}
-                                        onCheckedChange={() =>
-                                            toggleTypeFilter(type)
-                                        }
-                                    />
-                                    <span className="text-sm">
+                        <Select
+                            value={sort}
+                            onValueChange={(v) => setSort(v as SortOption)}
+                        >
+                            <SelectTrigger className="w-44 bg-background">
+                                <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="name-asc">
+                                    Name (A-Z)
+                                </SelectItem>
+                                <SelectItem value="name-desc">
+                                    Name (Z-A)
+                                </SelectItem>
+                                <SelectItem value="enrollment-desc">
+                                    Enrollment (High-Low)
+                                </SelectItem>
+                                <SelectItem value="enrollment-asc">
+                                    Enrollment (Low-High)
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={typeFilter}
+                            onValueChange={setTypeFilter}
+                        >
+                            <SelectTrigger className="w-[160px] bg-background">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="size-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="Type" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Type</SelectItem>
+                                {Object.values(ProgramType).map((type) => (
+                                    <SelectItem key={type} value={type}>
                                         {formatDisplayName(type)}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="gap-2">
-                            <Filter className="size-4" />
-                            Status
-                            {statusFilters.size > 0 && (
-                                <span className="rounded-full bg-[#556830] text-white size-5 flex items-center justify-center text-xs">
-                                    {statusFilters.size}
-                                </span>
-                            )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-48">
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium">Status</p>
-                            {Object.values(ProgramEffectiveStatus).map(
-                                (status) => (
-                                    <label
-                                        key={status}
-                                        className="flex items-center gap-2 cursor-pointer"
-                                    >
-                                        <Checkbox
-                                            checked={statusFilters.has(status)}
-                                            onCheckedChange={() =>
-                                                toggleStatusFilter(status)
-                                            }
-                                        />
-                                        <span className="text-sm">
+                        <Select
+                            value={statusFilter}
+                            onValueChange={setStatusFilter}
+                        >
+                            <SelectTrigger className="w-[160px] bg-background">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="size-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="Status" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Status</SelectItem>
+                                {Object.values(ProgramEffectiveStatus).map(
+                                    (status) => (
+                                        <SelectItem
+                                            key={status}
+                                            value={status}
+                                        >
                                             {status}
-                                        </span>
-                                    </label>
-                                )
-                            )}
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            </div>
+                                        </SelectItem>
+                                    )
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
 
-            {filtered.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    No programs found matching your criteria.
-                </div>
-            ) : (
-                <div className="grid grid-cols-2 gap-4">
-                    {filtered.map((program) => (
-                        <ProgramCard
-                            key={program.program_id}
-                            program={program}
-                            showFacilities={isDeptAdminUser}
-                            onClick={() =>
-                                navigate(
-                                    '/programs/' + program.program_id
-                                )
-                            }
-                        />
-                    ))}
-                </div>
-            )}
+                {filtered.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                        No programs found matching your criteria.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                        {filtered.map((program) => (
+                            <ProgramCard
+                                key={program.program_id}
+                                program={program}
+                                showFacilities={isDeptAdminUser}
+                                onClick={() =>
+                                    navigate(
+                                        '/programs/' + program.program_id
+                                    )
+                                }
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -365,7 +312,7 @@ function StatCard({
     value: string | number;
 }) {
     return (
-        <Card className="bg-card">
+        <Card className="bg-background">
             <CardContent className="p-5">
                 <p className="text-3xl font-bold text-foreground">{value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{label}</p>
@@ -392,7 +339,7 @@ function ProgramCard({
 
     return (
         <Card
-            className="cursor-pointer hover:shadow-md transition-shadow bg-card"
+            className="cursor-pointer hover:shadow-md transition-shadow bg-background"
             onClick={onClick}
         >
             <CardContent className="p-5 space-y-4">
@@ -442,6 +389,7 @@ function ProgramCard({
                     <MetricBox
                         label="Classes"
                         value={program.total_classes ?? 0}
+                        subLabel={`${program.total_classes ?? 0} active`}
                     />
                     <MetricBox
                         label="Completion"
@@ -479,17 +427,22 @@ function ProgramCard({
 
 function MetricBox({
     label,
-    value
+    value,
+    subLabel
 }: {
     label: string;
     value: string | number;
+    subLabel?: string;
 }) {
     return (
-        <div className="bg-muted/50 rounded-lg p-3">
+        <div className="bg-[#e5e7e3] rounded-lg p-3 border border-border">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className="text-lg font-semibold text-foreground mt-0.5">
                 {value}
             </p>
+            {subLabel && (
+                <p className="text-xs text-muted-foreground">{subLabel}</p>
+            )}
         </div>
     );
 }

@@ -138,8 +138,8 @@ export default function ClassesPage() {
     ]);
 
     return (
-        <div className="-mx-6 -my-4">
-            <div className="px-6 pt-4 pb-6 bg-background">
+        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#e5e7e3]">
+            <div className="px-16 pt-6 pb-6 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">
@@ -157,9 +157,6 @@ export default function ClassesPage() {
                         Create New Class
                     </Button>
                 </div>
-            </div>
-
-            <div className="px-16 py-6 bg-muted/40 min-h-[60vh] space-y-4">
                 <div className="bg-background rounded-xl border border-border p-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="relative flex-1 min-w-[200px]">
