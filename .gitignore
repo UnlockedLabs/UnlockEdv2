@@ -3,6 +3,7 @@
 .claude
 .idea
 .claude/*
+frontend-v2/dist/
 Claude.md
 AGENTS.md
 .github/workflows/test.yml
