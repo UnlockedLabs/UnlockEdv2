@@ -159,7 +159,7 @@ export default function Schedule() {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-3">
-                    <Card className="bg-white">
+                    <Card className="bg-card">
                         <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -173,13 +173,13 @@ export default function Schedule() {
                                         <ChevronRight className="size-4" />
                                     </Button>
                                 </div>
-                                <h3 className="text-lg font-semibold text-[#203622]">{weekLabel}</h3>
+                                <h3 className="text-lg font-semibold text-foreground">{weekLabel}</h3>
                             </div>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <div className="min-w-[700px]">
-                                    <div className="grid grid-cols-8 border-b border-gray-200">
+                                    <div className="grid grid-cols-8 border-b border-border">
                                         <div className="p-2 text-xs text-muted-foreground" />
                                         {weekDates.map((date, i) => {
                                             const isToday = isSameDay(date, new Date());
@@ -187,14 +187,14 @@ export default function Schedule() {
                                                 <div
                                                     key={i}
                                                     className={cn(
-                                                        'p-2 text-center border-l border-gray-100',
-                                                        isToday && 'bg-[#E2E7EA]'
+                                                        'p-2 text-center border-l border-border',
+                                                        isToday && 'bg-muted'
                                                     )}
                                                 >
                                                     <div className="text-xs text-muted-foreground">{SHORT_DAYS[i]}</div>
                                                     <div className={cn(
                                                         'text-sm font-medium',
-                                                        isToday ? 'text-[#203622]' : 'text-gray-700'
+                                                        isToday ? 'text-foreground' : 'text-foreground'
                                                     )}>
                                                         {date.getDate()}
                                                     </div>
@@ -204,7 +204,7 @@ export default function Schedule() {
                                     </div>
 
                                     {HOURS.map((hour) => (
-                                        <div key={hour} className="grid grid-cols-8 border-b border-gray-50 min-h-[60px]">
+                                        <div key={hour} className="grid grid-cols-8 border-b border-border min-h-[60px]">
                                             <div className="p-1 text-xs text-muted-foreground text-right pr-2 pt-1">
                                                 {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
                                             </div>
@@ -213,7 +213,7 @@ export default function Schedule() {
                                                     (e) => isSameDay(e.start, date) && e.start.getHours() === hour
                                                 );
                                                 return (
-                                                    <div key={dayIdx} className="border-l border-gray-50 p-0.5 relative">
+                                                    <div key={dayIdx} className="border-l border-border p-0.5 relative">
                                                         {dayEvents.map((event) => (
                                                             <button
                                                                 key={event.id}
@@ -224,7 +224,7 @@ export default function Schedule() {
                                                                         ? 'bg-[#203622] text-white'
                                                                         : event.is_cancelled
                                                                           ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                          : 'bg-[#556830]/10 text-[#203622] border border-[#556830]/20 hover:bg-[#556830]/20'
+                                                                          : 'bg-[#556830]/10 text-foreground border border-[#556830]/20 hover:bg-[#556830]/20'
                                                                 )}
                                                             >
                                                                 {event.title}
@@ -242,15 +242,15 @@ export default function Schedule() {
                 </div>
 
                 <div className="lg:col-span-1">
-                    <Card className="bg-white sticky top-6">
+                    <Card className="bg-card sticky top-6">
                         <CardHeader>
-                            <CardTitle className="text-[#203622] text-lg">Event Details</CardTitle>
+                            <CardTitle className="text-foreground text-lg">Event Details</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {selectedEvent ? (
                                 <div className="space-y-4">
                                     <div>
-                                        <h3 className="font-semibold text-[#203622] text-base">
+                                        <h3 className="font-semibold text-foreground text-base">
                                             {selectedEvent.title}
                                         </h3>
                                         <p className="text-sm text-muted-foreground mt-1">

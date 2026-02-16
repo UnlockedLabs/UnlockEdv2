@@ -12,9 +12,9 @@ import {
     SelectedClassStatus,
     ServerResponseMany,
     Room,
-    RoomConflict
+    RoomConflict,
+    User
 } from '@/types';
-import { Instructor } from '@/types/events';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -89,9 +89,13 @@ export default function ClassManagementForm() {
     const [rooms, setRooms] = useState<Room[]>(loaderData?.rooms ?? []);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
+    const [showAddRoom, setShowAddRoom] = useState(false);
+    const [showAddInstructor, setShowAddInstructor] = useState(false);
+    const [newRoomName, setNewRoomName] = useState('');
+    const [newInstructor, setNewInstructor] = useState({ name_first: '', name_last: '', username: '' });
 
-    const { data: instructorsResp } = useSWR<ServerResponseMany<Instructor>>(
-        user ? `/api/users?role=instructor&facility_id=${user.facility.id}` : null
+    const { data: instructorsResp, mutate: mutateInstructors } = useSWR<ServerResponseMany<User>>(
+        user ? `/api/users?role=${user.role}&per_page=100` : null
     );
     const instructors = instructorsResp?.data ?? [];
 
@@ -192,13 +196,54 @@ export default function ClassManagementForm() {
         reset({ ...watch(), days: updated });
     }
 
+    async function handleAddRoom() {
+        if (!newRoomName.trim()) return;
+        const resp = await API.post<Room, object>('rooms', { name: newRoomName.trim() });
+        if (resp.success) {
+            const created = resp.data as unknown as Room;
+            setRooms((prev) => [...prev, created]);
+            reset({ ...watch(), room_id: created.id });
+            toast.success('Room created');
+        } else {
+            toast.error('Failed to create room');
+        }
+        setNewRoomName('');
+        setShowAddRoom(false);
+    }
+
+    async function handleAddInstructor() {
+        const { name_first, name_last, username } = newInstructor;
+        if (!name_first.trim() || !name_last.trim() || !username.trim()) return;
+        const resp = await API.post<{ user: Instructor; temp_password: string }, object>('users', {
+            user: { name_first: name_first.trim(), name_last: name_last.trim(), username: username.trim(), role: 'facility_admin' },
+            provider_platforms: []
+        });
+        if (resp.success) {
+            void mutateInstructors();
+            toast.success('Instructor created');
+        } else {
+            toast.error(resp.message || 'Failed to create instructor');
+        }
+        setNewInstructor({ name_first: '', name_last: '', username: '' });
+        setShowAddInstructor(false);
+    }
+
     async function onSubmit(data: ClassFormData) {
         if (blockEdits) {
             toast.error('Cannot update classes that are complete or cancelled');
             return;
         }
 
+        if (isNewClass && (!data.start_time || !data.end_time)) {
+            toast.error('Start time and end time are required');
+            return;
+        }
+
         const duration = formatDuration(data.start_time, data.end_time);
+        if (isNewClass && duration === '0h0m0s') {
+            toast.error('End time must be after start time');
+            return;
+        }
         const rrule = isNewClass
             ? buildRRule(data.start_dt, data.start_time, data.days, data.end_dt)
             : existingClass?.events?.[0]?.recurrence_rule ?? '';
@@ -273,8 +318,8 @@ export default function ClassManagementForm() {
             />
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                    <h2 className="text-lg font-semibold text-[#203622]">
+                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                    <h2 className="text-lg font-semibold text-foreground">
                         Class Information
                     </h2>
 
@@ -316,7 +361,13 @@ export default function ClassManagementForm() {
                                 render={({ field }) => (
                                     <Select
                                         value={field.value ? String(field.value) : ''}
-                                        onValueChange={(v) => field.onChange(Number(v))}
+                                        onValueChange={(v) => {
+                                            if (v === '__add__') {
+                                                setShowAddInstructor(true);
+                                                return;
+                                            }
+                                            field.onChange(Number(v));
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select instructor" />
@@ -330,6 +381,9 @@ export default function ClassManagementForm() {
                                                     {inst.name_last}, {inst.name_first}
                                                 </SelectItem>
                                             ))}
+                                            <SelectItem value="__add__" className="text-[#556830] font-medium">
+                                                + Add Instructor
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
@@ -362,7 +416,13 @@ export default function ClassManagementForm() {
                                 render={({ field }) => (
                                     <Select
                                         value={field.value ? String(field.value) : ''}
-                                        onValueChange={(v) => field.onChange(Number(v))}
+                                        onValueChange={(v) => {
+                                            if (v === '__add__') {
+                                                setShowAddRoom(true);
+                                                return;
+                                            }
+                                            field.onChange(Number(v));
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select room" />
@@ -376,6 +436,9 @@ export default function ClassManagementForm() {
                                                     {room.name}
                                                 </SelectItem>
                                             ))}
+                                            <SelectItem value="__add__" className="text-[#556830] font-medium">
+                                                + Add Room
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
@@ -395,8 +458,8 @@ export default function ClassManagementForm() {
                 </div>
 
                 {isNewClass && (
-                    <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                        <h2 className="text-lg font-semibold text-[#203622]">
+                    <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                        <h2 className="text-lg font-semibold text-foreground">
                             Scheduling
                         </h2>
 
@@ -474,31 +537,40 @@ export default function ClassManagementForm() {
                                 ))}
                             </div>
                         </div>
-
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                            <Controller
-                                name="status"
-                                control={control}
-                                rules={{ required: 'Status is required' }}
-                                render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(statusOptions).map(([label, value]) => (
-                                                <SelectItem key={value} value={value}>
-                                                    {label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                        </div>
                     </div>
                 )}
+
+                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                    <h2 className="text-lg font-semibold text-foreground">
+                        Status
+                    </h2>
+                    <div className="space-y-2">
+                        <Label>Class Status</Label>
+                        <Controller
+                            name="status"
+                            control={control}
+                            rules={{ required: 'Status is required' }}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    disabled={blockEdits}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(statusOptions).map(([label, value]) => (
+                                            <SelectItem key={value} value={value}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    </div>
+                </div>
 
                 <div className="flex items-center justify-end gap-3">
                     <Button
@@ -512,7 +584,7 @@ export default function ClassManagementForm() {
                     <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                     >
                         {isSubmitting
                             ? 'Saving...'
@@ -545,6 +617,67 @@ export default function ClassManagementForm() {
                         >
                             Close
                         </Button>
+                    </div>
+                </div>
+            </FormModal>
+
+            <FormModal
+                open={showAddRoom}
+                onOpenChange={setShowAddRoom}
+                title="Add Room"
+            >
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-room-name">Room Name</Label>
+                        <Input
+                            id="new-room-name"
+                            value={newRoomName}
+                            onChange={(e) => setNewRoomName(e.target.value)}
+                            placeholder="e.g. Room 101"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddRoom(false)}>Cancel</Button>
+                        <Button className="bg-[#203622] text-white hover:bg-[#203622]/90" onClick={() => void handleAddRoom()}>Create</Button>
+                    </div>
+                </div>
+            </FormModal>
+
+            <FormModal
+                open={showAddInstructor}
+                onOpenChange={setShowAddInstructor}
+                title="Add Instructor"
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="inst-first">First Name</Label>
+                            <Input
+                                id="inst-first"
+                                value={newInstructor.name_first}
+                                onChange={(e) => setNewInstructor((p) => ({ ...p, name_first: e.target.value }))}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="inst-last">Last Name</Label>
+                            <Input
+                                id="inst-last"
+                                value={newInstructor.name_last}
+                                onChange={(e) => setNewInstructor((p) => ({ ...p, name_last: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="inst-username">Username</Label>
+                        <Input
+                            id="inst-username"
+                            value={newInstructor.username}
+                            onChange={(e) => setNewInstructor((p) => ({ ...p, username: e.target.value }))}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddInstructor(false)}>Cancel</Button>
+                        <Button className="bg-[#203622] text-white hover:bg-[#203622]/90" onClick={() => void handleAddInstructor()}>Create</Button>
                     </div>
                 </div>
             </FormModal>

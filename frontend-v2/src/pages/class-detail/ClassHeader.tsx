@@ -87,7 +87,7 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                        <h1 className="text-2xl font-bold text-[#203622]">
+                        <h1 className="text-2xl font-bold text-foreground">
                             {cls.name}
                         </h1>
                         <Badge
@@ -101,14 +101,14 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                     <div className="mb-4">
                         <Link
                             to={`/programs/${cls.program_id}`}
-                            className="text-[#556830] hover:text-[#203622] hover:underline inline-flex items-center gap-1"
+                            className="text-[#556830] hover:text-foreground hover:underline inline-flex items-center gap-1"
                         >
                             Part of: {cls.program?.name ?? 'Program'} →
                         </Link>
                     </div>
 
                     {cls.description && (
-                        <p className="text-gray-600 mb-4 max-w-3xl">
+                        <p className="text-muted-foreground mb-4 max-w-3xl">
                             {cls.description}
                         </p>
                     )}
@@ -118,15 +118,15 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                             label="Instructor"
                             value={cls.instructor_name}
                         />
-                        <div className="bg-[#E2E7EA] rounded-lg p-3">
-                            <div className="text-sm text-gray-600 mb-1">
+                        <div className="bg-muted rounded-lg p-3">
+                            <div className="text-sm text-muted-foreground mb-1">
                                 Schedule
                             </div>
-                            <div className="text-[#203622] text-sm">
+                            <div className="text-foreground text-sm">
                                 {schedule.days.join(', ') || 'Not set'}
                             </div>
                             {schedule.startTime && (
-                                <div className="text-xs text-gray-600 mt-1">
+                                <div className="text-xs text-muted-foreground mt-1">
                                     {schedule.startTime} - {schedule.endTime}
                                 </div>
                             )}
@@ -154,14 +154,14 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
             </div>
 
             <div className="grid grid-cols-3 gap-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Users className="size-5 text-[#556830]" />
-                        <h3 className="text-[#203622] font-semibold">
+                        <h3 className="text-foreground font-semibold">
                             Enrollment
                         </h3>
                     </div>
-                    <div className="text-3xl text-[#203622] mb-2">
+                    <div className="text-3xl text-foreground mb-2">
                         {cls.enrolled} / {cls.capacity}
                     </div>
                     <Progress
@@ -169,20 +169,20 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                         className="h-2 mb-3"
                         indicatorClassName="bg-[#556830]"
                     />
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                         {spotsAvailable}{' '}
                         {spotsAvailable === 1 ? 'spot' : 'spots'} available
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Calendar className="size-5 text-[#556830]" />
-                        <h3 className="text-[#203622] font-semibold">
+                        <h3 className="text-foreground font-semibold">
                             Attendance
                         </h3>
                     </div>
-                    <div className="text-3xl text-[#203622] mb-2">
+                    <div className="text-3xl text-foreground mb-2">
                         {avgRate}%
                     </div>
                     <Progress
@@ -192,22 +192,22 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                             avgRate >= 85 ? 'bg-[#556830]' : 'bg-[#F1B51C]'
                         }
                     />
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                         Average attendance rate
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="size-5 text-[#F1B51C]" />
-                        <h3 className="text-[#203622] font-semibold">
+                        <h3 className="text-foreground font-semibold">
                             At-Risk Residents
                         </h3>
                     </div>
-                    <div className="text-3xl text-[#203622] mb-2">
+                    <div className="text-3xl text-foreground mb-2">
                         {atRiskCount}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                         {atRiskCount === 0 ? (
                             <span className="text-[#556830]">
                                 All residents engaged
@@ -234,9 +234,9 @@ function InfoCard({
     icon?: React.ReactNode;
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
-            <div className="text-sm text-gray-600 mb-1">{label}</div>
-            <div className="text-[#203622] text-sm">
+        <div className="bg-muted rounded-lg p-3">
+            <div className="text-sm text-muted-foreground mb-1">{label}</div>
+            <div className="text-foreground text-sm">
                 {icon}
                 {value}
             </div>

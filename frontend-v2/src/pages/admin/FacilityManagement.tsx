@@ -133,7 +133,7 @@ export default function FacilityManagement() {
             render: (f) => (
                 <div className="flex items-center gap-2">
                     <Building2 className="size-4 text-[#556830]" />
-                    <span className="font-medium text-[#203622]">{f.name}</span>
+                    <span className="font-medium text-foreground">{f.name}</span>
                 </div>
             )
         },
@@ -179,7 +179,7 @@ export default function FacilityManagement() {
 
     const addButton = (
         <Button
-            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
+            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
             disabled={!isSysAdminUser}
             onClick={() => {
                 addForm.reset({ name: '', timezone: Timezones.CST });

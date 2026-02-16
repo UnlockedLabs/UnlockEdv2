@@ -158,7 +158,7 @@ export default function VideoManagement() {
             {hasFeature(user, FeatureAccess.UploadVideoAccess) && (
                 <div className="flex justify-end">
                     <Button
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                         onClick={() => setAddModalOpen(true)}
                     >
                         <Plus className="size-4" />

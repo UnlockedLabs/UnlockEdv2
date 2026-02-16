@@ -64,7 +64,7 @@ export default function ActivityHistoryCard({
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-[#203622]">{heading}</CardTitle>
+                <CardTitle className="text-foreground">{heading}</CardTitle>
                 <Select value={filterQuery} onValueChange={setFilterQuery}>
                     <SelectTrigger className="w-[160px]">
                         <SelectValue placeholder="Filter" />
@@ -80,7 +80,7 @@ export default function ActivityHistoryCard({
             </CardHeader>
             <CardContent>
                 {isLoading && (
-                    <p className="text-sm text-gray-500 py-4 text-center">
+                    <p className="text-sm text-muted-foreground py-4 text-center">
                         Loading...
                     </p>
                 )}
@@ -95,19 +95,19 @@ export default function ActivityHistoryCard({
                             {data.data.map((item, idx) => (
                                 <div
                                     key={idx}
-                                    className="flex items-center justify-between py-2 px-3 rounded-md border border-gray-100"
+                                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border"
                                 >
                                     <div>
-                                        <p className="text-sm font-medium text-[#203622]">
+                                        <p className="text-sm font-medium text-foreground">
                                             {formatAction(item.action)}
                                         </p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-muted-foreground">
                                             {item.user_username}
                                             {item.admin_username &&
                                                 ` by ${item.admin_username}`}
                                         </p>
                                     </div>
-                                    <span className="text-xs text-gray-400">
+                                    <span className="text-xs text-muted-foreground">
                                         {formatActivityDate(item.created_at)}
                                     </span>
                                 </div>
@@ -123,7 +123,7 @@ export default function ActivityHistoryCard({
                                 >
                                     <ChevronLeft className="size-4" />
                                 </Button>
-                                <span className="text-sm text-gray-500">
+                                <span className="text-sm text-muted-foreground">
                                     {page} of {totalPages}
                                 </span>
                                 <Button

@@ -166,7 +166,7 @@ export default function StudentManagement() {
             header: 'Name',
             render: (u) => (
                 <span className={cn(
-                    'font-medium text-[#203622]',
+                    'font-medium text-foreground',
                     u.deactivated_at && 'opacity-50'
                 )}>
                     {u.name_last}, {u.name_first}
@@ -259,7 +259,7 @@ export default function StudentManagement() {
                 actions={
                     <div className="flex gap-2">
                         <Button
-                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
+                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
                             onClick={() => {
                                 addForm.reset();
                                 setAddModalOpen(true);
@@ -418,9 +418,9 @@ export default function StudentManagement() {
                 title="New Password"
                 description="Copy the password below and share it with the resident. If it's lost, you'll need to reset it again."
             >
-                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 text-center">
+                <div className="bg-muted rounded-lg border border-border p-4 text-center">
                     <p className="text-sm text-muted-foreground mb-1">Temporary Password</p>
-                    <p className="text-2xl font-bold text-[#203622] select-all">{tempPassword}</p>
+                    <p className="text-2xl font-bold text-foreground select-all">{tempPassword}</p>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button

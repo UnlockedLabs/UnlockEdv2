@@ -120,7 +120,7 @@ func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
 func (db *DB) GetTotalHourlyActivity(facilityID *uint) (int, error) {
 	var totalActivity int
 	subQry := db.Table("activities a").
-		Select("CAST(COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS INTEGER) AS total_activity_time").
+		Select("CAST(COALESCE(ROUND(SUM(a.time_delta)/3600, 0), 0) AS INTEGER) AS total_activity_time").
 		Joins("INNER JOIN users u ON u.id = a.user_id")
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
@@ -151,7 +151,7 @@ func (db *DB) GetLearningInsights(facilityID *uint) ([]models.LearningInsight, e
 	        c.name,
 	        COUNT(DISTINCT ue.user_id) AS enrollments,
 	        (SELECT COUNT(DISTINCT o.user_id) FROM outcomes o WHERE o.course_id = c.id) AS completions,
-	        (SELECT ROUND(COALESCE(SUM(a.total_time) / 3600, 0), 2)
+	        (SELECT ROUND(COALESCE(SUM(a.time_delta) / 3600, 0), 2)
 	         FROM activities a WHERE a.course_id = c.id) AS activity_hours
 	    FROM courses c
 	    LEFT JOIN user_enrollments ue ON ue.course_id = c.id

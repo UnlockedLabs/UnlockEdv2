@@ -44,7 +44,7 @@ export default function ConsentForm() {
     return (
         <Card className="max-w-screen-xl mx-auto my-2">
             <CardHeader className="text-center">
-                <CardTitle className="text-3xl font-bold text-[#203622]">
+                <CardTitle className="text-3xl font-bold text-foreground">
                     External Provider Login
                 </CardTitle>
                 <CardDescription className="text-base">
@@ -59,7 +59,7 @@ export default function ConsentForm() {
                     <Button
                         type="button"
                         onClick={() => void accept()}
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-semibold"
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-semibold"
                     >
                         Accept
                     </Button>

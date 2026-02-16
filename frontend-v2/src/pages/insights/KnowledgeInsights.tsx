@@ -28,9 +28,9 @@ interface TopContentListProps {
 
 function TopContentList({ heading, items, onViewAll }: TopContentListProps) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-card rounded-lg border border-border p-4">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-[#203622]">
+                <h3 className="text-sm font-semibold text-foreground">
                     {heading}
                 </h3>
                 <Button variant="link" size="sm" onClick={onViewAll}>
@@ -56,7 +56,7 @@ function TopContentList({ heading, items, onViewAll }: TopContentListProps) {
                                 alt={item.title}
                                 className="w-8 h-8 flex-shrink-0 object-cover rounded"
                             />
-                            <span className="text-sm text-[#203622] line-clamp-1 flex-1">
+                            <span className="text-sm text-foreground line-clamp-1 flex-1">
                                 {item.title}
                             </span>
                         </li>
@@ -99,7 +99,7 @@ export default function KnowledgeInsights() {
 
             <div>
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-[#203622]">
+                    <h2 className="text-lg font-semibold text-foreground">
                         Featured Content
                     </h2>
                     <Button
@@ -119,7 +119,7 @@ export default function KnowledgeInsights() {
                         description="Feature content to showcase it here"
                         action={
                             <Button
-                                className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                                className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                                 onClick={navigateToOpenContent}
                             >
                                 Feature Content
@@ -141,7 +141,7 @@ export default function KnowledgeInsights() {
 
             <div>
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-[#203622] flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                         <TrendingUp className="size-5" />
                         Insights
                     </h2>

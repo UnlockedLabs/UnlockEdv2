@@ -127,7 +127,7 @@ export default function ClassEvents() {
                     >
                         <ChevronLeft className="size-4" />
                     </Button>
-                    <span className="text-lg font-semibold text-[#203622] min-w-[180px] text-center">
+                    <span className="text-lg font-semibold text-foreground min-w-[180px] text-center">
                         {formatMonthYear(currentMonth)}
                     </span>
                     <Button
@@ -152,7 +152,7 @@ export default function ClassEvents() {
             )}
 
             {!isLoading && events.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="bg-card rounded-lg border border-border">
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
@@ -190,7 +190,7 @@ export default function ClassEvents() {
                                         </TableCell>
                                         <TableCell>
                                             {future ? (
-                                                <span className="text-sm text-gray-400">
+                                                <span className="text-sm text-muted-foreground">
                                                     Available on{' '}
                                                     {toLocalMidnight(event.date).toLocaleDateString('en-US', {
                                                         month: 'numeric',
@@ -201,7 +201,7 @@ export default function ClassEvents() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-[#556830] hover:text-[#203622]"
+                                                    className="text-[#556830] hover:text-foreground"
                                                     onClick={() =>
                                                         handleAttendanceClick(event.event_id, event.date)
                                                     }

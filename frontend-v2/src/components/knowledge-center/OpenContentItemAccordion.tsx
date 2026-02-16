@@ -20,7 +20,7 @@ function ContentCard({ content }: { content: OpenContentItem }) {
 
     return (
         <div
-            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:shadow-sm transition-shadow"
+            className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border cursor-pointer hover:shadow-sm transition-shadow"
             onClick={handleClick}
         >
             <img
@@ -29,7 +29,7 @@ function ContentCard({ content }: { content: OpenContentItem }) {
                 className="w-10 h-10 flex-shrink-0 object-cover rounded"
             />
             <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-[#203622] line-clamp-1">
+                <h4 className="text-sm font-medium text-foreground line-clamp-1">
                     {content.title}
                 </h4>
                 {content.description && (
@@ -86,7 +86,7 @@ export default function OpenContentItemAccordion({
     return (
         <div className="w-full max-w-md mx-auto">
             {Object.entries(contentMap).map(([title, contentItems]) => (
-                <div key={title} className="border-b border-gray-200">
+                <div key={title} className="border-b border-border">
                     <button
                         className="flex items-center w-full px-4 py-3 text-left"
                         onClick={() => toggleAccordion(title)}
@@ -97,7 +97,7 @@ export default function OpenContentItemAccordion({
                             }`}
                         />
                         {getIconForCategory(title)}
-                        <span className="flex-1 text-sm font-medium ml-2 text-[#203622]">
+                        <span className="flex-1 text-sm font-medium ml-2 text-foreground">
                             {title}
                         </span>
                     </button>

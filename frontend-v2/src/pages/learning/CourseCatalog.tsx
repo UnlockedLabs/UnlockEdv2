@@ -29,13 +29,13 @@ export default function CourseCatalog() {
     const courses = (data?.data as CourseCatalogResponse[] | undefined) ?? [];
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader
                     title="Course Catalog"
                     subtitle="Browse available courses"
                     actions={
-                        <div className="flex items-center border border-gray-200 rounded-md">
+                        <div className="flex items-center border border-border rounded-md">
                             <Button
                                 variant={
                                     view === ViewType.Grid ? 'default' : 'ghost'
@@ -87,7 +87,7 @@ export default function CourseCatalog() {
                 </div>
 
                 {isLoading && (
-                    <p className="text-gray-500 text-center py-8">Loading...</p>
+                    <p className="text-muted-foreground text-center py-8">Loading...</p>
                 )}
 
                 {error && (
@@ -98,7 +98,7 @@ export default function CourseCatalog() {
 
                 {!isLoading && !error && courses.length === 0 && (
                     <EmptyState
-                        icon={<Search className="size-6 text-gray-400" />}
+                        icon={<Search className="size-6 text-muted-foreground" />}
                         title="No courses found"
                         description="Try adjusting your search terms."
                     />

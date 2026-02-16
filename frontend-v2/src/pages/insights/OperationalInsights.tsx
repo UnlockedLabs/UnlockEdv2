@@ -3,7 +3,7 @@ import OperationalInsightsCharts from '@/components/charts/OperationalInsightsCh
 
 export default function OperationalInsightsPage() {
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader
                     title="Operational Insights"

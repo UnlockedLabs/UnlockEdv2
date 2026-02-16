@@ -20,7 +20,7 @@ function getEnrollmentStatusStyle(status?: EnrollmentStatus): string {
         case EnrollmentStatus.Dropped:
             return 'bg-red-50 text-red-700 border-red-200';
         default:
-            return 'bg-gray-50 text-gray-700 border-gray-200';
+            return 'bg-muted text-foreground border-border';
     }
 }
 
@@ -50,7 +50,7 @@ export default function ResidentOverview() {
     const upcomingEvents = (eventsResp?.data ?? []).length;
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader
                     title="My Programs"
@@ -58,13 +58,13 @@ export default function ResidentOverview() {
                 />
 
                 {isLoading && (
-                    <p className="text-gray-500 text-center py-8">Loading...</p>
+                    <p className="text-muted-foreground text-center py-8">Loading...</p>
                 )}
 
                 {!isLoading && programs.length === 0 && (
                     <EmptyState
                         icon={
-                            <GraduationCap className="size-6 text-gray-400" />
+                            <GraduationCap className="size-6 text-muted-foreground" />
                         }
                         title="No programs yet"
                         description="You are not currently enrolled in any programs."
@@ -77,23 +77,23 @@ export default function ResidentOverview() {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-gray-200 bg-gray-50/50">
-                                            <th className="text-left py-3 px-5 text-gray-500 font-medium">
+                                        <tr className="border-b border-border bg-muted/50">
+                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
                                                 Program
                                             </th>
-                                            <th className="text-left py-3 px-5 text-gray-500 font-medium">
+                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
                                                 Class
                                             </th>
-                                            <th className="text-left py-3 px-5 text-gray-500 font-medium">
+                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
                                                 Status
                                             </th>
-                                            <th className="text-left py-3 px-5 text-gray-500 font-medium">
+                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
                                                 Enrollment
                                             </th>
-                                            <th className="text-left py-3 px-5 text-gray-500 font-medium">
+                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
                                                 Start Date
                                             </th>
-                                            <th className="text-left py-3 px-5 text-gray-500 font-medium">
+                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
                                                 Attendance
                                             </th>
                                         </tr>
@@ -102,12 +102,12 @@ export default function ResidentOverview() {
                                         {programs.map((prog, idx) => (
                                             <tr
                                                 key={idx}
-                                                className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                                                className="border-b border-border last:border-0 hover:bg-muted/50"
                                             >
-                                                <td className="py-3 px-5 font-medium text-[#203622]">
+                                                <td className="py-3 px-5 font-medium text-foreground">
                                                     {prog.program_name}
                                                 </td>
-                                                <td className="py-3 px-5 text-gray-600">
+                                                <td className="py-3 px-5 text-muted-foreground">
                                                     {prog.class_name}
                                                 </td>
                                                 <td className="py-3 px-5">
@@ -128,12 +128,12 @@ export default function ResidentOverview() {
                                                         />
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-5 text-gray-500">
+                                                <td className="py-3 px-5 text-muted-foreground">
                                                     {formatDate(
                                                         prog.start_date
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-5 text-gray-500">
+                                                <td className="py-3 px-5 text-muted-foreground">
                                                     {prog.attendance_percentage !==
                                                     undefined
                                                         ? `${Math.round(prog.attendance_percentage)}%`

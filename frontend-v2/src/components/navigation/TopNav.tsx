@@ -8,7 +8,7 @@ import {
 } from '@/auth/useAuth';
 import { FeatureAccess, Facility } from '@/types';
 import { useTheme } from 'next-themes';
-import Brand from '@/components/Brand';
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -56,6 +56,11 @@ function getAdminNavItems(user: NonNullable<ReturnType<typeof useAuth>['user']>)
         matchPaths: ['/operational-insights']
     });
     if (hasFeature(user, FeatureAccess.ProgramAccess)) {
+        items.push({
+            label: 'Classes',
+            to: '/classes',
+            matchPaths: ['/classes']
+        });
         items.push({
             label: 'Programs',
             to: '/programs',
@@ -194,21 +199,25 @@ export default function TopNav({
     return (
         <nav className="bg-[#203622] text-white border-b border-[#556830]">
             <div className="px-6">
-                <div className="flex items-center justify-between h-16">
-                    <div className="flex items-center gap-6">
-                        <Link to="/">
-                            <Brand className="flex items-center" />
+                <div className="flex items-center justify-between h-16 gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <Link to="/" className="flex-shrink-0">
+                            <img
+                                className="h-8"
+                                src="/ul-logo-w.svg"
+                                alt="UnlockEd"
+                            />
                         </Link>
-                        <div className="hidden md:flex gap-1">
+                        <div className="hidden md:flex gap-0.5 min-w-0">
                             {navItems.map((item) => (
                                 <Link
                                     key={item.to}
                                     to={item.to}
                                     className={cn(
-                                        'px-3 py-2 rounded text-sm transition-colors',
+                                        'px-2 py-1.5 rounded text-sm transition-colors whitespace-nowrap',
                                         isActive(item)
                                             ? 'bg-[#556830] text-white'
-                                            : 'text-gray-300 hover:text-white hover:bg-[#556830]/50'
+                                            : 'text-muted-foreground hover:text-white hover:bg-[#556830]/50'
                                     )}
                                 >
                                     {item.label}
@@ -217,17 +226,17 @@ export default function TopNav({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         {canSwitchFacility(user) && facilities && facilities.length > 0 ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="text-gray-300 hover:text-white hover:bg-[#556830]/50 gap-2"
+                                        className="text-muted-foreground hover:text-white hover:bg-[#556830]/50 gap-2"
                                     >
                                         <Building2 className="h-4 w-4" />
-                                        <span className="hidden sm:inline">
+                                        <span className="hidden sm:inline block truncate max-w-[8rem]">
                                             {user.facility.name}
                                         </span>
                                     </Button>
@@ -248,7 +257,7 @@ export default function TopNav({
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : (
-                            <div className="flex items-center gap-2 text-sm text-gray-300 px-3">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground px-3">
                                 <Building2 className="h-4 w-4" />
                                 <span className="hidden sm:inline">
                                     {user.facility.name}
@@ -260,7 +269,7 @@ export default function TopNav({
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gray-300 hover:text-white hover:bg-[#556830]/50"
+                                className="text-muted-foreground hover:text-white hover:bg-[#556830]/50"
                                 onClick={onToggleHelpCenter}
                             >
                                 <CircleHelp className="h-4 w-4" />
@@ -272,7 +281,7 @@ export default function TopNav({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-gray-300 hover:text-white hover:bg-[#556830]/50 gap-2"
+                                    className="text-muted-foreground hover:text-white hover:bg-[#556830]/50 gap-2"
                                 >
                                     <User className="h-4 w-4" />
                                     <span className="hidden sm:inline">

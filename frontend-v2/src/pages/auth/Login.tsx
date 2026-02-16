@@ -16,7 +16,7 @@ export default function Login() {
     if (redirecting) return null;
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#E2E7EA]">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-muted">
             <div className="mb-8">
                 <Link to="/">
                     <img

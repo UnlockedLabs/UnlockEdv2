@@ -7,7 +7,12 @@ import {
     ServerResponseMany,
     SelectedClassStatus
 } from '@/types';
-import { getClassSchedule, isClassToday, getStatusColor, formatTime12h } from '@/lib/formatters';
+import {
+    getClassSchedule,
+    isClassToday,
+    getStatusColor,
+    formatTime12h
+} from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,10 +25,17 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { Search, Plus, ClipboardList } from 'lucide-react';
+import {
+    Search,
+    Plus,
+    Calendar,
+    Clock,
+    Filter,
+    MapPin
+} from 'lucide-react';
 
 const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
-    { label: 'All Statuses', value: 'all' },
+    { label: 'All Status', value: 'all' },
     { label: 'Active', value: SelectedClassStatus.Active },
     { label: 'Scheduled', value: SelectedClassStatus.Scheduled },
     { label: 'Completed', value: SelectedClassStatus.Completed },
@@ -31,19 +43,19 @@ const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
     { label: 'Cancelled', value: SelectedClassStatus.Cancelled }
 ];
 
-function formatDateRange(startDt: string, endDt: string): string {
+function formatDateRangeFull(startDt: string, endDt: string): string {
     const fmt = (dt: string) => {
         const d = new Date(dt);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return d.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
     };
     if (!startDt) return '';
     const start = fmt(startDt);
     const end = endDt ? fmt(endDt) : '';
     return end ? `${start} - ${end}` : start;
-}
-
-function abbreviateDay(day: string): string {
-    return day.slice(0, 3);
 }
 
 export default function ClassesPage() {
@@ -116,75 +128,93 @@ export default function ClassesPage() {
         }
 
         return result;
-    }, [facilityClasses, searchQuery, todayOnly, attendanceConcerns, programFilter, statusFilter]);
+    }, [
+        facilityClasses,
+        searchQuery,
+        todayOnly,
+        attendanceConcerns,
+        programFilter,
+        statusFilter
+    ]);
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="-mx-6 -my-4">
+            <div className="px-6 pt-4 pb-6 bg-background">
+                <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-[#203622]">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Classes
                         </h1>
-                        <p className="text-gray-500 mt-1">
-                            Manage and monitor all program classes
+                        <p className="text-muted-foreground mt-1">
+                            Manage and monitor all classes at your facility
                         </p>
                     </div>
                     <Button
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90 font-medium"
+                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
                         onClick={() => navigate('/programs')}
                     >
                         <Plus className="size-4" />
                         Create New Class
                     </Button>
                 </div>
+            </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="px-16 py-6 bg-muted/40 min-h-[60vh] space-y-4">
+                <div className="bg-background rounded-xl border border-border p-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="relative flex-1 min-w-[200px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by class, program, or instructor..."
+                                placeholder="Search classes, programs, or instructors..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) =>
+                                    setSearchQuery(e.target.value)
+                                }
                                 className="pl-9"
                             />
                         </div>
                         <Button
                             variant={todayOnly ? 'default' : 'outline'}
-                            size="sm"
                             className={cn(
+                                'gap-2',
                                 todayOnly
                                     ? 'bg-[#556830] text-white hover:bg-[#556830]/90'
-                                    : 'border-gray-200 text-gray-600'
+                                    : 'bg-background border-border text-foreground'
                             )}
                             onClick={() => setTodayOnly(!todayOnly)}
                         >
+                            <Calendar className="size-4" />
                             Today Only
                         </Button>
                         <Button
                             variant={attendanceConcerns ? 'default' : 'outline'}
-                            size="sm"
                             className={cn(
+                                'gap-2',
                                 attendanceConcerns
                                     ? 'bg-amber-500 text-white hover:bg-amber-500/90'
-                                    : 'border-gray-200 text-gray-600'
+                                    : 'bg-background border-border text-foreground'
                             )}
                             onClick={() =>
                                 setAttendanceConcerns(!attendanceConcerns)
                             }
                         >
+                            <Clock className="size-4" />
                             Attendance Concerns
                         </Button>
                         <Select
                             value={programFilter}
                             onValueChange={setProgramFilter}
                         >
-                            <SelectTrigger className="w-[180px]" size="sm">
-                                <SelectValue placeholder="All Programs" />
+                            <SelectTrigger className="w-[180px] bg-background">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="size-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="All Programs" />
+                                </div>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Programs</SelectItem>
+                                <SelectItem value="all">
+                                    All Programs
+                                </SelectItem>
                                 {programOptions.map(([id, name]) => (
                                     <SelectItem
                                         key={id}
@@ -199,8 +229,8 @@ export default function ClassesPage() {
                             value={statusFilter}
                             onValueChange={setStatusFilter}
                         >
-                            <SelectTrigger className="w-[160px]" size="sm">
-                                <SelectValue placeholder="All Statuses" />
+                            <SelectTrigger className="w-[160px] bg-background">
+                                <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent>
                                 {STATUS_OPTIONS.map((opt) => (
@@ -216,194 +246,194 @@ export default function ClassesPage() {
                     </div>
                 </div>
 
-                <p className="text-sm text-gray-500">
-                    {filteredClasses.length}{' '}
-                    {filteredClasses.length === 1 ? 'class' : 'classes'} found
+                <p className="text-sm text-muted-foreground">
+                    Showing {filteredClasses.length}{' '}
+                    {filteredClasses.length === 1 ? 'class' : 'classes'}
                 </p>
 
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-gray-100 bg-gray-50/50">
-                                    <th className="text-left py-3 px-4 text-gray-500 font-medium">
-                                        Class Name
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-gray-500 font-medium">
-                                        Instructor
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-gray-500 font-medium">
-                                        Schedule
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-gray-500 font-medium">
-                                        Enrollment
-                                    </th>
-                                    <th className="text-left py-3 px-4 text-gray-500 font-medium">
-                                        Status
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-gray-500 font-medium">
-                                        Actions
-                                    </th>
+                <div className="bg-background rounded-xl border border-border overflow-hidden">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-border">
+                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                    Class Name
+                                </th>
+                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                    Instructor
+                                </th>
+                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                    Schedule
+                                </th>
+                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                    Enrollment
+                                </th>
+                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                    Status
+                                </th>
+                                <th className="text-left py-3 px-5 text-foreground font-semibold">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredClasses.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="py-12 text-center text-muted-foreground"
+                                    >
+                                        No classes match the current filters.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {filteredClasses.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={6}
-                                            className="py-12 text-center text-gray-500"
-                                        >
-                                            No classes match the current
-                                            filters.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredClasses.map((cls) => {
-                                        const schedule = getClassSchedule(cls);
-                                        const today = isClassToday(cls);
-                                        const enrollPct =
-                                            cls.capacity > 0
-                                                ? (cls.enrolled / cls.capacity) *
-                                                  100
-                                                : 0;
-
-                                        return (
-                                            <tr
-                                                key={cls.id}
-                                                onClick={() =>
-                                                    navigate(
-                                                        '/program-classes/' +
-                                                            cls.id
-                                                    )
-                                                }
-                                                className="hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
-                                            >
-                                                <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-2">
-                                                        {today && (
-                                                            <span className="size-2 rounded-full bg-[#F1B51C] shrink-0" />
-                                                        )}
-                                                        <div>
-                                                            <p className="font-medium text-[#203622]">
-                                                                {cls.name}
-                                                            </p>
-                                                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                                <Link
-                                                                    to={`/programs/${cls.program_id}`}
-                                                                    onClick={(e) =>
-                                                                        e.stopPropagation()
-                                                                    }
-                                                                    className="hover:text-[#556830] hover:underline"
-                                                                >
-                                                                    {cls.program
-                                                                        ?.name ??
-                                                                        'Program'}
-                                                                </Link>
-                                                                {schedule.room && (
-                                                                    <>
-                                                                        <span>
-                                                                            -
-                                                                        </span>
-                                                                        <span>
-                                                                            {
-                                                                                schedule.room
-                                                                            }
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4 text-gray-600">
-                                                    {cls.instructor_name}
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <div className="space-y-0.5">
-                                                        {schedule.startTime && (
-                                                            <p className="text-[#203622] font-medium">
-                                                                {formatTime12h(
-                                                                    schedule.startTime
-                                                                )}
-                                                                {schedule.endTime &&
-                                                                    ` - ${formatTime12h(schedule.endTime)}`}
-                                                            </p>
-                                                        )}
-                                                        {schedule.days.length >
-                                                            0 && (
-                                                            <p className="text-xs text-gray-500">
-                                                                {schedule.days
-                                                                    .map(
-                                                                        abbreviateDay
-                                                                    )
-                                                                    .join(
-                                                                        ', '
-                                                                    )}
-                                                            </p>
-                                                        )}
-                                                        <p className="text-xs text-gray-400">
-                                                            {formatDateRange(
-                                                                cls.start_dt,
-                                                                cls.end_dt
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <div className="w-24 space-y-1">
-                                                        <p className="text-xs text-gray-600">
-                                                            {cls.enrolled} /{' '}
-                                                            {cls.capacity}
-                                                        </p>
-                                                        <Progress
-                                                            value={enrollPct}
-                                                            className="h-1.5"
-                                                            indicatorClassName={cn(
-                                                                enrollPct >= 90
-                                                                    ? 'bg-amber-500'
-                                                                    : 'bg-[#556830]'
-                                                            )}
-                                                        />
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={getStatusColor(
-                                                            cls.status
-                                                        )}
-                                                    >
-                                                        {cls.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-3 px-4 text-right">
-                                                    {cls.status ===
-                                                        SelectedClassStatus.Active && (
-                                                        <Button
-                                                            size="sm"
-                                                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                navigate(
-                                                                    '/program-classes/' +
-                                                                        cls.id
-                                                                );
-                                                            }}
-                                                        >
-                                                            <ClipboardList className="size-4" />
-                                                            Attendance
-                                                        </Button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            ) : (
+                                filteredClasses.map((cls) => (
+                                    <ClassRow
+                                        key={cls.id}
+                                        cls={cls}
+                                        onClick={() =>
+                                            navigate(
+                                                `/program-classes/${cls.id}`
+                                            )
+                                        }
+                                        onAttendance={() =>
+                                            navigate(
+                                                `/program-classes/${cls.id}/attendance`
+                                            )
+                                        }
+                                    />
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+    );
+}
+
+function ClassRow({
+    cls,
+    onClick,
+    onAttendance
+}: {
+    cls: Class;
+    onClick: () => void;
+    onAttendance: () => void;
+}) {
+    const schedule = getClassSchedule(cls);
+    const today = isClassToday(cls);
+    const enrollPct =
+        cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
+
+    return (
+        <tr
+            onClick={onClick}
+            className="hover:bg-muted/30 cursor-pointer transition-colors border-b border-border last:border-0"
+        >
+            <td className="py-4 px-5">
+                <div className="flex items-start gap-2">
+                    {today && (
+                        <span className="size-2.5 rounded-full bg-[#F1B51C] shrink-0 mt-1.5" />
+                    )}
+                    <div className="space-y-1">
+                        <p className="font-semibold text-foreground">
+                            {cls.name}
+                        </p>
+                        <Link
+                            to={`/programs/${cls.program_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-[#556830] hover:underline"
+                        >
+                            {cls.program?.name ?? 'Program'}
+                        </Link>
+                        {schedule.room && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <MapPin className="size-3" />
+                                {schedule.room}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </td>
+            <td className="py-4 px-5 text-muted-foreground align-top pt-5">
+                {cls.instructor_name}
+            </td>
+            <td className="py-4 px-5 align-top pt-5">
+                <div className="space-y-0.5">
+                    {schedule.startTime && (
+                        <div className="flex items-center gap-1.5 text-foreground">
+                            <Clock className="size-3.5 text-muted-foreground" />
+                            <span>
+                                {formatTime12h(schedule.startTime)}
+                                {schedule.endTime &&
+                                    ` - ${formatTime12h(schedule.endTime)}`}
+                            </span>
+                        </div>
+                    )}
+                    {schedule.days.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                            {schedule.days.join(', ')}
+                        </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                        {formatDateRangeFull(cls.start_dt, cls.end_dt)}
+                    </p>
+                </div>
+            </td>
+            <td className="py-4 px-5 align-top pt-5">
+                <div className="w-24 space-y-1.5">
+                    <p className="text-sm font-medium text-foreground">
+                        {cls.enrolled}{' '}
+                        <span className="text-muted-foreground font-normal">
+                            / {cls.capacity}
+                        </span>
+                    </p>
+                    <Progress
+                        value={enrollPct}
+                        className="h-1.5 bg-gray-200"
+                        indicatorClassName={cn(
+                            enrollPct >= 90
+                                ? 'bg-amber-500'
+                                : 'bg-[#556830]'
+                        )}
+                    />
+                </div>
+            </td>
+            <td className="py-4 px-5 align-top pt-5">
+                <Badge
+                    variant="outline"
+                    className={getStatusColor(cls.status)}
+                >
+                    {cls.status}
+                </Badge>
+            </td>
+            <td className="py-4 px-5 align-top pt-5">
+                {cls.status === SelectedClassStatus.Active ? (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-[#556830] text-[#556830] hover:bg-[#556830]/5"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAttendance();
+                        }}
+                    >
+                        Take Attendance
+                    </Button>
+                ) : cls.status !== SelectedClassStatus.Completed &&
+                  cls.status !== SelectedClassStatus.Cancelled ? (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClick();
+                        }}
+                    >
+                        View Details
+                    </Button>
+                ) : null}
+            </td>
+        </tr>
     );
 }

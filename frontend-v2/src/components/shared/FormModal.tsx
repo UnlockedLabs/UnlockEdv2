@@ -28,7 +28,7 @@ export function FormModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className={className}>
                 <DialogHeader>
-                    <DialogTitle className="text-[#203622]">
+                    <DialogTitle className="text-foreground">
                         {title}
                     </DialogTitle>
                     {description && (

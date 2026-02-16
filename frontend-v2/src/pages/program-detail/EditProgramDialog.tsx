@@ -124,7 +124,7 @@ export default function EditProgramDialog({
 
                 <div className="space-y-6">
                     <div>
-                        <h4 className="text-sm text-gray-700 mb-3">
+                        <h4 className="text-sm text-foreground mb-3">
                             Basic Information
                         </h4>
                         <div className="space-y-4">
@@ -162,8 +162,8 @@ export default function EditProgramDialog({
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-gray-200">
-                        <h4 className="text-sm text-gray-700 mb-3">
+                    <div className="pt-4 border-t border-border">
+                        <h4 className="text-sm text-foreground mb-3">
                             Categorization
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
@@ -187,7 +187,7 @@ export default function EditProgramDialog({
                                                     )
                                                 }
                                             />
-                                            <span className="text-sm text-gray-700">
+                                            <span className="text-sm text-foreground">
                                                 {type.replace(/_/g, ' ')}
                                             </span>
                                         </label>
@@ -215,7 +215,7 @@ export default function EditProgramDialog({
                                                     )
                                                 }
                                             />
-                                            <span className="text-sm text-gray-700">
+                                            <span className="text-sm text-foreground">
                                                 {type}
                                             </span>
                                         </label>

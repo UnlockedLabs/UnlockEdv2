@@ -5,6 +5,7 @@ import {
     ProviderPlatform,
     ProviderPlatformType,
     ProviderUser,
+    User,
     UserImports,
     ServerResponseMany,
     PaginationMeta
@@ -24,11 +25,10 @@ import { useDebounceValue } from 'usehooks-ts';
 
 export default function ProviderUserManagement() {
     const { id: providerId } = useParams();
-    const providerID = parseInt(providerId ?? '0', 10);
 
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<ProviderUser | undefined>();
-    const [perPage, setPerPage] = useState(10);
+    const [perPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [search, setSearch] = useState('');
     const [debouncedSearch] = useDebounceValue(search, 400);
@@ -39,7 +39,8 @@ export default function ProviderUserManagement() {
     const [showMapModal, setShowMapModal] = useState(false);
     const [showImportedModal, setShowImportedModal] = useState(false);
     const [showImportAllConfirm, setShowImportAllConfirm] = useState(false);
-    const [mapUsername, setMapUsername] = useState('');
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+    const [mapSearch, setMapSearch] = useState('');
     const [mapSubmitting, setMapSubmitting] = useState(false);
 
     const [meta, setMeta] = useState<PaginationMeta>({
@@ -52,6 +53,21 @@ export default function ProviderUserManagement() {
     const { data, mutate } = useSWR<ServerResponseMany<ProviderUser>>(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${debouncedSearch}&clear_cache=${cache}`
     );
+
+    const { data: unmappedResp, mutate: mutateUnmapped } = useSWR<ServerResponseMany<User>>(
+        showMapModal
+            ? `/api/users?include=only_unmapped&provider_id=${providerId}&per_page=50`
+            : null
+    );
+    const unmappedUsers = unmappedResp?.data ?? [];
+
+    const filteredUnmapped = mapSearch
+        ? unmappedUsers.filter(
+              (u) =>
+                  u.username.toLowerCase().includes(mapSearch.toLowerCase()) ||
+                  `${u.name_first} ${u.name_last}`.toLowerCase().includes(mapSearch.toLowerCase())
+          )
+        : unmappedUsers;
 
     const providerUsers = data?.data ?? [];
 
@@ -132,21 +148,22 @@ export default function ProviderUserManagement() {
         }
     };
 
-    const handleMapUser = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!userToMap) return;
+    const handleMapUser = async () => {
+        if (!userToMap || selectedUserId === null) return;
         setMapSubmitting(true);
-        const res = await API.post(`provider-platforms/${providerId}/users/map`, {
-            external_user_id: userToMap.external_user_id,
-            username: mapUsername
-        });
+        const res = await API.post(
+            `provider-platforms/${providerId}/map-user/${selectedUserId}`,
+            userToMap
+        );
         setMapSubmitting(false);
         if (res.success) {
             toast.success('User mapped successfully.');
             setShowMapModal(false);
             setUserToMap(undefined);
-            setMapUsername('');
+            setSelectedUserId(null);
+            setMapSearch('');
             void mutate();
+            void mutateUnmapped();
         } else {
             toast.error('Failed to map user.');
         }
@@ -154,7 +171,7 @@ export default function ProviderUserManagement() {
 
     if (providerLoading) {
         return (
-            <div className="bg-[#E2E7EA] min-h-screen p-6">
+            <div className="bg-muted min-h-screen p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <Skeleton className="h-10 w-64" />
                     <Skeleton className="h-96 w-full rounded-lg" />
@@ -165,10 +182,10 @@ export default function ProviderUserManagement() {
 
     if (provider?.type === ProviderPlatformType.KOLIBRI) {
         return (
-            <div className="bg-[#E2E7EA] min-h-screen p-6">
+            <div className="bg-muted min-h-screen p-6">
                 <div className="max-w-7xl mx-auto">
-                    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                        <p className="text-gray-600">
+                    <div className="bg-card rounded-lg border border-border p-8 text-center">
+                        <p className="text-muted-foreground">
                             Kolibri users are managed automatically.
                         </p>
                     </div>
@@ -182,7 +199,7 @@ export default function ProviderUserManagement() {
             key: 'name',
             header: 'Name',
             render: (user) => (
-                <span className="font-medium text-[#203622]">
+                <span className="font-medium text-foreground">
                     {user.name_last}, {user.name_first}
                 </span>
             )
@@ -221,10 +238,11 @@ export default function ProviderUserManagement() {
                     onClick={(e) => {
                         e.stopPropagation();
                         setUserToMap(user);
-                        setMapUsername('');
+                        setSelectedUserId(null);
+                        setMapSearch('');
                         setShowMapModal(true);
                     }}
-                    className="text-[#203622] border-gray-200"
+                    className="text-foreground border-border"
                 >
                     Map User
                 </Button>
@@ -233,7 +251,7 @@ export default function ProviderUserManagement() {
     ];
 
     return (
-        <div className="bg-[#E2E7EA] min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader
                     title={provider?.name ?? 'Provider Users'}
@@ -251,7 +269,7 @@ export default function ProviderUserManagement() {
                         <Button
                             variant="outline"
                             onClick={handleRefresh}
-                            className="text-[#203622] border-gray-200"
+                            className="text-foreground border-border"
                         >
                             <ArrowPathIcon className="size-4 mr-1" />
                             Refresh
@@ -260,7 +278,7 @@ export default function ProviderUserManagement() {
                             variant="outline"
                             onClick={() => setShowImportAllConfirm(true)}
                             disabled={!provider}
-                            className="text-[#203622] border-gray-200"
+                            className="text-foreground border-border"
                         >
                             Import All Users
                         </Button>
@@ -290,40 +308,63 @@ export default function ProviderUserManagement() {
                     title="Map User"
                     description={`Associate ${userToMap ? `${userToMap.name_first} ${userToMap.name_last}` : ''} with an existing UnlockEd account.`}
                 >
-                    <form
-                        onSubmit={(e) => void handleMapUser(e)}
-                        className="space-y-4"
-                    >
-                        <div>
-                            <label className="text-sm font-medium text-[#203622]">
-                                UnlockEd Username
-                            </label>
-                            <input
-                                type="text"
-                                value={mapUsername}
-                                onChange={(e) => setMapUsername(e.target.value)}
-                                required
-                                placeholder="Enter existing username"
-                                className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
-                            />
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            value={mapSearch}
+                            onChange={(e) => setMapSearch(e.target.value)}
+                            placeholder="Search by name or username..."
+                            className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                        />
+                        <div className="max-h-64 overflow-y-auto border rounded-md">
+                            {filteredUnmapped.length === 0 ? (
+                                <p className="text-sm text-muted-foreground p-3 text-center">
+                                    No unmapped users found.
+                                </p>
+                            ) : (
+                                filteredUnmapped.map((u) => (
+                                    <div
+                                        key={u.id}
+                                        onClick={() => setSelectedUserId(u.id)}
+                                        className={`flex items-center justify-between px-3 py-2 cursor-pointer text-sm border-b last:border-b-0 ${
+                                            selectedUserId === u.id
+                                                ? 'bg-[#556830]/10'
+                                                : 'hover:bg-muted'
+                                        }`}
+                                    >
+                                        <div>
+                                            <span className="font-medium text-foreground">
+                                                {u.name_first} {u.name_last}
+                                            </span>
+                                            <span className="text-muted-foreground ml-2">
+                                                ({u.username})
+                                            </span>
+                                        </div>
+                                        {selectedUserId === u.id && (
+                                            <span className="text-[#556830] font-medium text-xs">
+                                                Selected
+                                            </span>
+                                        )}
+                                    </div>
+                                ))
+                            )}
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
                             <Button
-                                type="button"
                                 variant="outline"
                                 onClick={() => setShowMapModal(false)}
                             >
                                 Cancel
                             </Button>
                             <Button
-                                type="submit"
-                                disabled={mapSubmitting}
+                                onClick={() => void handleMapUser()}
+                                disabled={mapSubmitting || selectedUserId === null}
                                 className="bg-[#203622] text-white hover:bg-[#203622]/90"
                             >
                                 {mapSubmitting ? 'Mapping...' : 'Map User'}
                             </Button>
                         </div>
-                    </form>
+                    </div>
                 </FormModal>
 
                 <FormModal
@@ -336,9 +377,9 @@ export default function ProviderUserManagement() {
                         {importedUsers.map((u) => (
                             <div
                                 key={u.username}
-                                className="flex items-center justify-between rounded-md bg-gray-50 p-3"
+                                className="flex items-center justify-between rounded-md bg-muted p-3"
                             >
-                                <span className="text-sm font-medium text-[#203622]">
+                                <span className="text-sm font-medium text-foreground">
                                     {u.username}
                                 </span>
                                 <div className="text-right">
@@ -347,7 +388,7 @@ export default function ProviderUserManagement() {
                                             {u.error}
                                         </span>
                                     ) : (
-                                        <span className="text-xs font-mono text-gray-600">
+                                        <span className="text-xs font-mono text-muted-foreground">
                                             {u.temp_password}
                                         </span>
                                     )}

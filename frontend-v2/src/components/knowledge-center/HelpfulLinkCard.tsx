@@ -92,17 +92,17 @@ export default function HelpfulLinkCard({
     if (view === ViewType.Grid) {
         return (
             <div
-                className="bg-white rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                className="bg-card rounded-lg border border-border cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => void handleHelpfulLinkClick(link.id)}
             >
-                <div className="flex items-center justify-between p-4 gap-2 border-b border-gray-200">
+                <div className="flex items-center justify-between p-4 gap-2 border-b border-border">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <img
                             src={link.thumbnail_url ?? ''}
                             alt={link.title}
                             className="w-12 h-12 flex-shrink-0 object-cover"
                         />
-                        <h3 className="text-sm font-medium text-[#203622] line-clamp-2">
+                        <h3 className="text-sm font-medium text-foreground line-clamp-2">
                             {link.title}
                         </h3>
                     </div>
@@ -155,7 +155,10 @@ export default function HelpfulLinkCard({
                         {link.description}
                     </p>
                     {isAdmin && (
-                        <div className="flex items-center gap-2 pt-1">
+                        <div
+                            className="flex items-center gap-2 pt-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <Switch
                                 checked={visible}
                                 onCheckedChange={() =>
@@ -175,7 +178,7 @@ export default function HelpfulLinkCard({
 
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-card rounded-lg border border-border p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => void handleHelpfulLinkClick(link.id)}
         >
             <img
@@ -184,7 +187,7 @@ export default function HelpfulLinkCard({
                 className="w-16 h-16 flex-shrink-0 object-cover"
             />
             <div className="flex flex-col flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-[#203622]">
+                <h3 className="text-sm font-medium text-foreground">
                     {link.title}
                 </h3>
                 <p className="text-xs text-muted-foreground line-clamp-2">
@@ -234,7 +237,10 @@ export default function HelpfulLinkCard({
                     </Button>
                 )}
                 {isAdmin && (
-                    <div className="flex items-center gap-2">
+                    <div
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <Switch
                             checked={visible}
                             onCheckedChange={() =>

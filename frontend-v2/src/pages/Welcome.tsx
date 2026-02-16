@@ -32,8 +32,8 @@ export default function Welcome() {
     }, []);
 
     return (
-        <div className="min-h-screen font-sans bg-[#E2E7EA]">
-            <nav className="flex items-center justify-between px-6 py-4 bg-[#E2E7EA]">
+        <div className="min-h-screen font-sans bg-muted">
+            <nav className="flex items-center justify-between px-6 py-4 bg-muted">
                 <div className="cursor-default select-none">
                     <Brand />
                 </div>
@@ -42,7 +42,7 @@ export default function Welcome() {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-[#203622] font-semibold"
+                            className="text-foreground font-semibold"
                         >
                             <a
                                 href={
@@ -58,7 +58,7 @@ export default function Welcome() {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-[#203622] font-semibold"
+                            className="text-foreground font-semibold"
                         >
                             <Link to={AUTHCALLBACK}>Dashboard</Link>
                         </Button>
@@ -67,7 +67,7 @@ export default function Welcome() {
             </nav>
 
             <div className="flex justify-center p-10">
-                <div className="max-w-prose space-y-6 text-[#203622] text-center">
+                <div className="max-w-prose space-y-6 text-foreground text-center">
                     <h1 className="text-4xl font-bold">
                         Built from the inside out...
                     </h1>
@@ -78,7 +78,7 @@ export default function Welcome() {
                         institutions allowing for a faster and more equitable
                         re-entry process.
                     </p>
-                    <div className="flex items-center h-8 border rounded-[15px] text-lg justify-center text-[#203622] bg-teal-100 overflow-hidden">
+                    <div className="flex items-center h-8 border rounded-[15px] text-lg justify-center text-foreground bg-teal-100 overflow-hidden">
                         Now live in correctional facilities!
                     </div>
                     <div className="flex flex-col items-center">

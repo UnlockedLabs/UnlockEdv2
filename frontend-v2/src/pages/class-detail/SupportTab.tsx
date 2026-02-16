@@ -94,20 +94,20 @@ export function SupportTab({ classId }: SupportTabProps) {
     }, [attendanceResp]);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <h3 className="text-[#203622] font-semibold">
+        <div className="bg-card rounded-lg border border-border">
+            <div className="border-b border-border px-6 py-4">
+                <h3 className="text-foreground font-semibold">
                     At-Risk Residents ({atRisk.length})
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                     Residents with attendance below 75% or multiple consecutive
                     absences
                 </p>
             </div>
             {atRisk.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-muted-foreground">
                     <CheckCircle className="size-12 mx-auto mb-3 text-[#556830]" />
-                    <p className="font-medium text-[#203622]">
+                    <p className="font-medium text-foreground">
                         All residents are engaged!
                     </p>
                     <p className="text-sm mt-1">
@@ -115,7 +115,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                     </p>
                 </div>
             ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-border">
                     {atRisk.map((resident) => (
                         <div
                             key={resident.userId}
@@ -124,22 +124,22 @@ export function SupportTab({ classId }: SupportTabProps) {
                             <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-6 flex-1">
                                     <div className="min-w-[80px]">
-                                        <div className="text-[#203622] font-medium">
+                                        <div className="text-foreground font-medium">
                                             {resident.docId}
                                         </div>
-                                        <div className="text-sm text-gray-600 mt-0.5">
+                                        <div className="text-sm text-muted-foreground mt-0.5">
                                             {resident.name}
                                         </div>
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="text-sm text-gray-600">
+                                            <span className="text-sm text-muted-foreground">
                                                 Attendance:
                                             </span>
-                                            <span className="text-sm text-[#203622] font-medium">
+                                            <span className="text-sm text-foreground font-medium">
                                                 {resident.attendanceRate}%
                                             </span>
-                                            <span className="text-xs text-gray-500">
+                                            <span className="text-xs text-muted-foreground">
                                                 ({resident.attendedSessions}/
                                                 {resident.totalSessions}{' '}
                                                 sessions)
@@ -150,7 +150,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                             className="h-2 w-64 mb-2"
                                             indicatorClassName="bg-[#F1B51C]"
                                         />
-                                        <div className="flex gap-4 text-xs text-gray-600">
+                                        <div className="flex gap-4 text-xs text-muted-foreground">
                                             <span>
                                                 Missed:{' '}
                                                 {resident.missedSessions}{' '}

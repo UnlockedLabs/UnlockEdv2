@@ -61,11 +61,11 @@ export default function CatalogCourseCard({ course, view }: CatalogCourseCardPro
                 <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="py-4 px-5">
                         <div className="flex items-center gap-3 flex-wrap">
-                            <h3 className="font-medium text-[#203622]">
+                            <h3 className="font-medium text-foreground">
                                 {course.course_name}
                             </h3>
-                            <span className="text-gray-400">|</span>
-                            <p className="text-sm text-gray-500">
+                            <span className="text-muted-foreground">|</span>
+                            <p className="text-sm text-muted-foreground">
                                 {course.provider_name}
                                 {dateStr}
                             </p>
@@ -79,14 +79,14 @@ export default function CatalogCourseCard({ course, view }: CatalogCourseCardPro
                                 <Badge
                                     key={label}
                                     variant="outline"
-                                    className="bg-gray-100 text-gray-600 border-gray-200"
+                                    className="bg-muted text-muted-foreground border-border"
                                 >
                                     {label}
                                 </Badge>
                             ))}
                         </div>
                         {course.description && (
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
                                 {course.description}
                             </p>
                         )}
@@ -104,7 +104,7 @@ export default function CatalogCourseCard({ course, view }: CatalogCourseCardPro
             className="block"
         >
             <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-[124px] bg-[#E2E7EA]">
+                <div className="h-[124px] bg-muted">
                     {course.thumbnail_url ? (
                         <img
                             src={course.thumbnail_url}
@@ -112,19 +112,19 @@ export default function CatalogCourseCard({ course, view }: CatalogCourseCardPro
                             className="object-contain w-full h-full"
                         />
                     ) : (
-                        <div className="w-full h-full bg-[#E2E7EA]" />
+                        <div className="w-full h-full bg-muted" />
                     )}
                 </div>
                 <CardContent className="p-4">
-                    <h3 className="text-sm font-semibold text-[#203622] line-clamp-2">
+                    <h3 className="text-sm font-semibold text-foreground line-clamp-2">
                         {course.course_name}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                         {course.provider_name}
                         {dateStr}
                     </p>
                     {course.description && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {course.description}
                         </p>
                     )}
@@ -139,7 +139,7 @@ export default function CatalogCourseCard({ course, view }: CatalogCourseCardPro
                             <Badge
                                 key={label}
                                 variant="outline"
-                                className="bg-gray-100 text-gray-600 border-gray-200"
+                                className="bg-muted text-muted-foreground border-border"
                             >
                                 {label}
                             </Badge>

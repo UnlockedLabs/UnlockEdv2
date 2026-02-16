@@ -39,10 +39,10 @@ import {
 function StatItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
     return (
         <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-[#E2E7EA] p-2">{icon}</div>
+            <div className="rounded-lg bg-muted p-2">{icon}</div>
             <div>
-                <p className="text-sm text-gray-600">{label}</p>
-                <p className="text-lg font-bold text-[#203622]">{value}</p>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="text-lg font-bold text-foreground">{value}</p>
             </div>
         </div>
     );
@@ -154,9 +154,9 @@ export default function AddClassEnrollments() {
                 subtitle={`Add residents to ${classInfo?.name ?? 'class'}`}
             />
 
-            <Card className="bg-white">
+            <Card className="bg-card">
                 <CardContent className="p-4">
-                    <h2 className="text-lg font-semibold text-[#203622] mb-3">
+                    <h2 className="text-lg font-semibold text-foreground mb-3">
                         {classInfo?.name}
                     </h2>
                     <div className="grid grid-cols-3 gap-6">
@@ -181,7 +181,7 @@ export default function AddClassEnrollments() {
 
             <div className="flex items-center gap-3">
                 <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
                         placeholder="Search residents..."
                         value={searchTerm}
@@ -209,7 +209,7 @@ export default function AddClassEnrollments() {
                     void handleSubmit();
                 }}
             >
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="bg-card rounded-lg border border-border">
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
@@ -243,7 +243,7 @@ export default function AddClassEnrollments() {
                                     return (
                                         <TableRow
                                             key={user.id}
-                                            className={`cursor-pointer ${isSelected ? 'bg-[#E2E7EA]/30' : ''}`}
+                                            className={`cursor-pointer ${isSelected ? 'bg-muted/30' : ''}`}
                                             onClick={() => handleToggleRow(user.id)}
                                         >
                                             <TableCell onClick={(e) => e.stopPropagation()}>
@@ -252,7 +252,7 @@ export default function AddClassEnrollments() {
                                                     onCheckedChange={() => handleToggleRow(user.id)}
                                                 />
                                             </TableCell>
-                                            <TableCell className="font-medium text-[#203622]">
+                                            <TableCell className="font-medium text-foreground">
                                                 {user.name_last}, {user.name_first}
                                             </TableCell>
                                             <TableCell>{user.doc_id}</TableCell>
@@ -269,7 +269,7 @@ export default function AddClassEnrollments() {
                             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                                 Previous
                             </Button>
-                            <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+                            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
                             <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                                 Next
                             </Button>
@@ -281,8 +281,8 @@ export default function AddClassEnrollments() {
                     <div className="text-sm text-red-600 mt-2">{errorMessage}</div>
                 )}
 
-                <div className="flex items-center justify-between py-4 border-t mt-4 sticky bottom-0 bg-white">
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center justify-between py-4 border-t mt-4 sticky bottom-0 bg-card">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>
                             {selectedUsers.length} resident{selectedUsers.length === 1 ? '' : 's'} selected
                         </span>
@@ -301,7 +301,7 @@ export default function AddClassEnrollments() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
                         >
                             Enroll Residents
                         </Button>
