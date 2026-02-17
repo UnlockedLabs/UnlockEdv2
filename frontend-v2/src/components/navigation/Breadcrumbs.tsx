@@ -18,7 +18,7 @@ export default function Breadcrumbs({
     if (items.length === 0) return null;
 
     return (
-        <Breadcrumb>
+        <Breadcrumb className="mb-6">
             <BreadcrumbList>
                 {items.map((item, index) => {
                     const isLast = index === items.length - 1;
@@ -26,18 +26,23 @@ export default function Breadcrumbs({
                         <Fragment key={`${index}-${item.label}`}>
                             <BreadcrumbItem>
                                 {isLast || !item.href ? (
-                                    <BreadcrumbPage>
+                                    <BreadcrumbPage className="text-gray-900 dark:text-gray-100 font-medium">
                                         {item.label}
                                     </BreadcrumbPage>
                                 ) : (
-                                    <BreadcrumbLink asChild>
+                                    <BreadcrumbLink
+                                        asChild
+                                        className="text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-[#a8d070] hover:underline transition-colors"
+                                    >
                                         <Link to={item.href}>
                                             {item.label}
                                         </Link>
                                     </BreadcrumbLink>
                                 )}
                             </BreadcrumbItem>
-                            {!isLast && <BreadcrumbSeparator />}
+                            {!isLast && (
+                                <BreadcrumbSeparator className="text-gray-400 [&>svg]:size-4" />
+                            )}
                         </Fragment>
                     );
                 })}

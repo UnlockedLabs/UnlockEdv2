@@ -27,6 +27,7 @@ function buildClassBreadcrumbs(
     currentTab: string
 ): BreadcrumbItem[] {
     return [
+        { label: 'Dashboard', href: '/dashboard' },
         { label: 'Programs', href: '/programs' },
         {
             label: cls.program.name,
@@ -34,7 +35,7 @@ function buildClassBreadcrumbs(
         },
         {
             label: cls.name,
-            href: `/program-classes/${cls.id}/dashboard`
+            href: `/program-classes/${cls.id}/detail`
         },
         { label: currentTab }
     ];
@@ -155,6 +156,7 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
         if (resp.success) {
             program = resp.data as ProgramOverview;
             breadcrumbs = [
+                { label: 'Dashboard', href: '/dashboard' },
                 { label: 'Programs', href: '/programs' },
                 { label: program.name }
             ];
@@ -217,9 +219,10 @@ export const getProgramTitle: LoaderFunction = async ({
 
     if (isAddEnrollment && cls) {
         breadcrumbs = [
+            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Programs', href: '/programs' },
             { label: cls.program.name, href: `/programs/${cls.program.id}` },
-            { label: cls.name, href: `/program-classes/${cls.id}/dashboard` },
+            { label: cls.name, href: `/program-classes/${cls.id}/detail` },
             {
                 label: 'Enrollment',
                 href: `/program-classes/${cls.id}/enrollments`
@@ -260,6 +263,7 @@ export const getClassTitle: LoaderFunction = async ({
         let breadcrumbs: BreadcrumbItem[];
         if (isEventAttendance && date) {
             breadcrumbs = [
+                { label: 'Dashboard', href: '/dashboard' },
                 { label: 'Programs', href: '/programs' },
                 {
                     label: cls.program.name,
@@ -267,13 +271,9 @@ export const getClassTitle: LoaderFunction = async ({
                 },
                 {
                     label: cls.name,
-                    href: `/program-classes/${cls.id}/dashboard`
+                    href: `/program-classes/${cls.id}/detail`
                 },
-                {
-                    label: 'Attendance',
-                    href: `/program-classes/${cls.id}/attendance`
-                },
-                { label: `Attendance: ${date}` }
+                { label: 'Take Attendance' }
             ];
         } else {
             const tabSegment = pathParts[pathParts.length - 1];
