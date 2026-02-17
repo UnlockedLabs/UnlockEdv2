@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, isDeptAdmin } from '@/auth/useAuth';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import {
     Class,
     Program,
@@ -41,6 +42,7 @@ import {
     Filter,
     MapPin
 } from 'lucide-react';
+import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
 
 const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
     { label: 'All Status', value: 'all' },
@@ -69,6 +71,15 @@ function formatDateRangeFull(startDt: string, endDt: string): string {
 export default function ClassesPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { setBreadcrumbItems } = useBreadcrumb();
+
+    useEffect(() => {
+        setBreadcrumbItems([
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Classes' }
+        ]);
+        return () => setBreadcrumbItems([]);
+    }, [setBreadcrumbItems]);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [todayOnly, setTodayOnly] = useState(false);
@@ -77,6 +88,7 @@ export default function ClassesPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [programSearch, setProgramSearch] = useState('');
+    const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
 
     const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
         '/api/program-classes?per_page=100'
@@ -125,7 +137,7 @@ export default function ClassesPage() {
     const handleProgramSelect = (programId: number) => {
         setShowCreateModal(false);
         setProgramSearch('');
-        navigate(`/programs/${programId}`);
+        navigate(`/programs/${programId}/classes`);
     };
 
     const filteredClasses = useMemo(() => {
@@ -330,9 +342,7 @@ export default function ClassesPage() {
                                             )
                                         }
                                         onAttendance={() =>
-                                            navigate(
-                                                `/program-classes/${cls.id}/attendance`
-                                            )
+                                            setAttendanceClass(cls)
                                         }
                                     />
                                 ))
@@ -392,6 +402,17 @@ export default function ClassesPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {attendanceClass && (
+                <TakeAttendanceModal
+                    open={!!attendanceClass}
+                    onOpenChange={(open) => {
+                        if (!open) setAttendanceClass(null);
+                    }}
+                    classId={attendanceClass.id}
+                    className={attendanceClass.name}
+                />
+            )}
         </div>
     );
 }

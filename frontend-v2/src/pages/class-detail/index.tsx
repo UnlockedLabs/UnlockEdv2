@@ -1,12 +1,14 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Class } from '@/types/program';
 import { EnrollmentAttendance } from '@/types/attendance';
 import { ServerResponseOne, ServerResponseMany } from '@/types/server';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { ClassHeader } from './ClassHeader';
 import { RosterTab } from './RosterTab';
 import { SupportTab } from './SupportTab';
@@ -14,6 +16,7 @@ import { ScheduleTab } from './ScheduleTab';
 import { SessionsTab } from './SessionsTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { AuditTab } from './AuditTab';
+import { TakeAttendanceModal } from './TakeAttendanceModal';
 
 const TAB_TRIGGER_CLASS =
     'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-xs data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-[#E2E7EA] px-4 py-2.5 rounded-lg transition-all duration-200';
@@ -47,6 +50,8 @@ function LoadingSkeleton() {
 export default function ClassDetailPage() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const { setBreadcrumbItems } = useBreadcrumb();
 
     const { data: classResp, isLoading } = useSWR<ServerResponseOne<Class>>(
         class_id ? `/api/program-classes/${class_id}` : null
@@ -56,9 +61,24 @@ export default function ClassDetailPage() {
         ServerResponseMany<EnrollmentAttendance>
     >(class_id ? `/api/program-classes/${class_id}/enrollments` : null);
 
-    if (isLoading) return <LoadingSkeleton />;
-
     const cls = classResp?.data;
+
+    useEffect(() => {
+        if (cls) {
+            setBreadcrumbItems([
+                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'Programs', href: '/programs' },
+                {
+                    label: cls.program.name,
+                    href: `/programs/${cls.program.id}`
+                },
+                { label: cls.name }
+            ]);
+        }
+        return () => setBreadcrumbItems([]);
+    }, [cls, setBreadcrumbItems]);
+
+    if (isLoading) return <LoadingSkeleton />;
 
     if (!cls) {
         return (
@@ -88,15 +108,6 @@ export default function ClassDetailPage() {
         <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
-                    <Button
-                        variant="ghost"
-                        onClick={() => navigate('/classes')}
-                        className="mb-4 -ml-2 text-gray-500 hover:text-[#203622]"
-                    >
-                        <ArrowLeft className="size-4 mr-2" />
-                        Back to Classes
-                    </Button>
-
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <ClassHeader
@@ -119,19 +130,9 @@ export default function ClassDetailPage() {
                             </Button>
                             {cls.status === 'Active' && (
                                 <Button
-                                    onClick={() => {
-                                        const event = cls.events?.find(
-                                            (e) => !e.is_cancelled
-                                        );
-                                        if (event) {
-                                            const today = new Date()
-                                                .toISOString()
-                                                .split('T')[0];
-                                            navigate(
-                                                `/program-classes/${cls.id}/events/${event.id}/attendance/${today}`
-                                            );
-                                        }
-                                    }}
+                                    onClick={() =>
+                                        setShowAttendanceModal(true)
+                                    }
                                     className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]"
                                 >
                                     Take Attendance
@@ -211,6 +212,13 @@ export default function ClassDetailPage() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            <TakeAttendanceModal
+                open={showAttendanceModal}
+                onOpenChange={setShowAttendanceModal}
+                classId={cls.id}
+                className={cls.name}
+            />
         </div>
     );
 }
