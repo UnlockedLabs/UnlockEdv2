@@ -98,6 +98,17 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
     }
 }
 
+function formatDate(dt: string): string {
+    if (!dt) return '';
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return dt;
+    return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
 export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
     const schedule = useMemo(() => getClassSchedule(cls), [cls]);
     const { avgRate, atRiskCount, capacityPct } = useMemo(
@@ -138,7 +149,7 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                     </p>
                 )}
 
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
                     <InfoCard
                         label="Instructor"
                         value={cls.instructor_name || 'Unassigned'}
@@ -154,8 +165,12 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                     />
                     <InfoCard
                         label="Duration"
-                        value={cls.start_dt || 'Not set'}
-                        sub={cls.end_dt ? `to ${cls.end_dt}` : undefined}
+                        value={formatDate(cls.start_dt) || 'Not set'}
+                        sub={
+                            cls.end_dt
+                                ? `to ${formatDate(cls.end_dt)}`
+                                : undefined
+                        }
                     />
                     <InfoCard
                         label="Room"
@@ -169,7 +184,7 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Users className="size-5 text-[#556830]" />
