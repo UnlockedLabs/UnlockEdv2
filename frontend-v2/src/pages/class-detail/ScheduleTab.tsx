@@ -141,7 +141,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
             </div>
 
             <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex items-start gap-4 p-4 bg-[#E2E7EA]/60 rounded-lg">
                         <Calendar className="size-5 text-[#556830] mt-0.5" />
                         <div>

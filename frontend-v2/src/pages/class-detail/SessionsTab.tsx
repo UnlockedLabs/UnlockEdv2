@@ -171,8 +171,8 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between mb-3">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                     <div>
                         <h3 className="text-[#203622] font-semibold">
                             Session Management
@@ -181,7 +181,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             View and manage individual sessions
                         </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                         <StatButton
                             active={statusFilter === 'completed'}
                             onClick={() => setStatusFilter('completed')}
@@ -213,9 +213,9 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Filter className="size-4 text-gray-500" />
-                    <div className="flex gap-2 flex-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <Filter className="size-4 text-gray-500 hidden sm:block" />
+                    <div className="flex gap-2 flex-wrap">
                         <FilterButton
                             active={statusFilter === 'all'}
                             onClick={() => setStatusFilter('all')}
@@ -241,8 +241,8 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             Upcoming
                         </FilterButton>
                     </div>
-                    <div className="h-6 w-px bg-gray-300" />
-                    <div className="flex gap-2">
+                    <div className="h-6 w-px bg-gray-300 hidden sm:block" />
+                    <div className="flex gap-2 flex-wrap">
                         <FilterButton
                             active={timeFilter === 'week'}
                             onClick={() => setTimeFilter('week')}
@@ -272,8 +272,8 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             </div>
 
             {stats.missing > 0 && (
-                <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
+                <div className="mx-4 sm:mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
                             <div>
@@ -294,7 +294,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             size="sm"
                             variant="outline"
                             onClick={() => setStatusFilter('missing')}
-                            className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                            className="border-amber-300 text-amber-700 hover:bg-amber-100 self-start ml-8 sm:ml-0 shrink-0"
                         >
                             View Missing Sessions
                         </Button>
@@ -302,7 +302,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 </div>
             )}
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 {filtered.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                         <Calendar className="size-12 mx-auto mb-3 text-gray-500" />
@@ -434,9 +434,9 @@ function SessionRow({
     return (
         <div
             onClick={onClick}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
+            className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
         >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 {session.isCancelled ? (
                     <Calendar className="size-5 text-gray-500 flex-shrink-0" />
                 ) : session.hasAttendance ? (
@@ -446,7 +446,7 @@ function SessionRow({
                 ) : (
                     <Calendar className="size-5 text-gray-500 flex-shrink-0" />
                 )}
-                <div>
+                <div className="min-w-0">
                     <div className="text-sm font-medium text-[#203622]">
                         <span
                             className={
@@ -476,9 +476,9 @@ function SessionRow({
                     </div>
                 </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 ml-8 sm:ml-0 shrink-0 flex-wrap">
                 {session.hasAttendance && (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 whitespace-nowrap">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
                         {session.totalEnrolled > 0

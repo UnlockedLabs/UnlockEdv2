@@ -26,7 +26,7 @@ function LoadingSkeleton() {
                     <Skeleton className="h-8 w-32 mb-4" />
                     <Skeleton className="h-10 w-80 mb-3" />
                     <Skeleton className="h-5 w-48 mb-4" />
-                    <div className="grid grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <Skeleton key={i} className="h-20 rounded-lg" />
                         ))}
@@ -34,7 +34,7 @@ function LoadingSkeleton() {
                 </div>
             </div>
             <div className="max-w-7xl mx-auto px-6 py-6">
-                <div className="grid grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
                     {Array.from({ length: 3 }).map((_, i) => (
                         <Skeleton key={i} className="h-40 rounded-lg" />
                     ))}
@@ -97,14 +97,14 @@ export default function ClassDetailPage() {
                         Back to Classes
                     </Button>
 
-                    <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1 min-w-0">
                             <ClassHeader
                                 cls={cls}
                                 attendanceRecords={attendanceRecords}
                             />
                         </div>
-                        <div className="flex gap-2 ml-6 mt-1">
+                        <div className="flex gap-2 shrink-0">
                             <Button
                                 variant="outline"
                                 className="border-gray-300"
@@ -144,7 +144,7 @@ export default function ClassDetailPage() {
 
             <div className="max-w-7xl mx-auto px-6 py-6">
                 <Tabs defaultValue="roster" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
+                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 flex-wrap">
                         <TabsTrigger
                             value="roster"
                             className={TAB_TRIGGER_CLASS}
