@@ -234,8 +234,18 @@ export default function ClassManagementForm() {
             return;
         }
 
+        if (!data.instructor_id) {
+            toast.error('Instructor selection is required');
+            return;
+        }
+
         if (isNewClass && (!data.start_time || !data.end_time)) {
             toast.error('Start time and end time are required');
+            return;
+        }
+
+        if (isNewClass && data.days.length === 0) {
+            toast.error('At least one day of the week must be selected');
             return;
         }
 
@@ -245,7 +255,7 @@ export default function ClassManagementForm() {
             return;
         }
         const rrule = isNewClass
-            ? buildRRule(data.start_dt, data.start_time, data.days, data.end_dt)
+            ? buildRRule(data.start_dt, data.start_time, data.days, data.end_dt || undefined)
             : existingClass?.events?.[0]?.recurrence_rule ?? '';
 
         const payload = {
@@ -291,7 +301,8 @@ export default function ClassManagementForm() {
                 return;
             }
             toast.error(
-                isNewClass ? 'Failed to create class' : 'Failed to update class'
+                resp.message ||
+                    (isNewClass ? 'Failed to create class' : 'Failed to update class')
             );
             return;
         }
