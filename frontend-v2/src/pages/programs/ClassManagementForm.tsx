@@ -406,6 +406,11 @@ export function ClassManagementFormInner({
             return;
         }
 
+        if (!data.instructor_id) {
+            toast.error('Instructor selection is required');
+            return;
+        }
+
         if (isNewClass && (!data.start_time || !data.end_time)) {
             toast.error('Start time and end time are required');
             return;
@@ -418,6 +423,11 @@ export function ClassManagementFormInner({
             data.days.length === 0
         ) {
             toast.error('Select at least one day');
+            return;
+        }
+
+        if (isNewClass && data.days.length === 0) {
+            toast.error('At least one day of the week must be selected');
             return;
         }
 
@@ -493,7 +503,8 @@ export function ClassManagementFormInner({
                 return;
             }
             toast.error(
-                isNewClass ? 'Failed to create class' : 'Failed to update class'
+                resp.message ||
+                    (isNewClass ? 'Failed to create class' : 'Failed to update class')
             );
             return;
         }
