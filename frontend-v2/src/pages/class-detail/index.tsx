@@ -185,7 +185,7 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} />
+                        <RosterTab classId={cls.id} classStatus={cls.status} />
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">

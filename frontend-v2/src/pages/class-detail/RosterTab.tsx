@@ -16,9 +16,11 @@ import { ServerResponseMany } from '@/types/server';
 import { getEnrollmentStatusColor } from '@/lib/formatters';
 import API from '@/api/api';
 import { toast } from 'sonner';
+import { ChangeEnrollmentStatusModal } from './ChangeEnrollmentStatusModal';
 
 interface RosterTabProps {
     classId: number;
+    classStatus: string;
 }
 
 interface AttendanceStats {
@@ -69,13 +71,21 @@ function computeAttendanceByUser(
     return result;
 }
 
-export function RosterTab({ classId }: RosterTabProps) {
+function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
+    const allStatuses = Object.values(EnrollmentStatus).filter((s) => s !== currentStatus);
+    if (classStatus === 'Completed' || classStatus === 'Cancelled') return [];
+    if (classStatus === 'Scheduled') return allStatuses.filter((s) => s === EnrollmentStatus.Cancelled);
+    if (classStatus === 'Active') return allStatuses.filter((s) => s !== EnrollmentStatus.Cancelled);
+    return allStatuses;
+}
+
+export function RosterTab({ classId, classStatus }: RosterTabProps) {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-    const [showStatusChangeFor, setShowStatusChangeFor] = useState<
-        number | null
-    >(null);
+    const [changingStatus, setChangingStatus] = useState<number | null>(null);
+    const [statusModalEnrollment, setStatusModalEnrollment] =
+        useState<ClassEnrollment | null>(null);
 
     const { data: enrollmentResp, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>
@@ -124,17 +134,20 @@ export function RosterTab({ classId }: RosterTabProps) {
     };
 
     const handleBulkGraduate = async () => {
-        const ids = Array.from(selectedIds);
+        const enrollmentIds = Array.from(selectedIds);
+        const userIds = enrolledRows
+            .filter((e) => enrollmentIds.includes(e.id))
+            .map((e) => e.user_id);
         const resp = await API.patch<
             unknown,
-            { enrollment_ids: number[]; status: string }
+            { enrollment_status: string; user_ids: number[] }
         >(`program-classes/${classId}/enrollments`, {
-            enrollment_ids: ids,
-            status: EnrollmentStatus.Completed
+            enrollment_status: EnrollmentStatus.Completed,
+            user_ids: userIds
         });
         if (resp.success) {
             toast.success(
-                `${ids.length} ${ids.length === 1 ? 'resident' : 'residents'} graduated successfully`
+                `${userIds.length} ${userIds.length === 1 ? 'resident' : 'residents'} graduated successfully`
             );
             setSelectedIds(new Set());
             void mutate();
@@ -144,34 +157,34 @@ export function RosterTab({ classId }: RosterTabProps) {
     };
 
     const handleStatusChange = async (
-        enrollmentId: number,
+        enrollment: ClassEnrollment,
         newStatus: EnrollmentStatus,
-        reason?: string
+        reason: string
     ) => {
-        const resp = await API.patch<
-            unknown,
-            {
-                enrollment_ids: number[];
-                status: string;
-                change_reason?: string;
-            }
-        >(`program-classes/${classId}/enrollments`, {
-            enrollment_ids: [enrollmentId],
-            status: newStatus,
-            change_reason: reason
-        });
+        setChangingStatus(enrollment.id);
+        const body: {
+            enrollment_status: string;
+            user_ids: number[];
+            change_reason?: string;
+        } = {
+            enrollment_status: newStatus,
+            user_ids: [enrollment.user_id]
+        };
+        if (reason.trim()) {
+            body.change_reason = reason.trim();
+        }
+        const resp = await API.patch<unknown, typeof body>(
+            `program-classes/${classId}/enrollments`,
+            body
+        );
         if (resp.success) {
-            toast.success(`Enrollment status updated to ${newStatus}`);
-            setShowStatusChangeFor(null);
+            toast.success(`Status updated to ${newStatus}`);
             void mutate();
         } else {
             toast.error(resp.message || 'Failed to update status');
         }
+        setChangingStatus(null);
     };
-
-    void handleStatusChange;
-    void showStatusChangeFor;
-    void setShowStatusChangeFor;
 
     return (
         <div className="space-y-4">
@@ -310,13 +323,36 @@ export function RosterTab({ classId }: RosterTabProps) {
                                                     Needs Support
                                                 </Badge>
                                             )}
-                                            <Badge
-                                                variant="outline"
-                                                className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
-                                            >
-                                                {enrollment.enrollment_status}
-                                                <Edit className="size-3 text-current opacity-60" />
-                                            </Badge>
+                                            {(() => {
+                                                const allowed = getAllowedStatuses(classStatus, enrollment.enrollment_status);
+                                                if (allowed.length === 0) {
+                                                    return (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={getEnrollmentStatusColor(enrollment.enrollment_status)}
+                                                        >
+                                                            {enrollment.enrollment_status}
+                                                        </Badge>
+                                                    );
+                                                }
+                                                return (
+                                                    <button
+                                                        className="group"
+                                                        disabled={changingStatus === enrollment.id}
+                                                        onClick={() => setStatusModalEnrollment(enrollment)}
+                                                    >
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
+                                                        >
+                                                            {changingStatus === enrollment.id
+                                                                ? 'Updating...'
+                                                                : enrollment.enrollment_status}
+                                                            <Edit className="size-3 text-current opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                        </Badge>
+                                                    </button>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -359,6 +395,28 @@ export function RosterTab({ classId }: RosterTabProps) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {statusModalEnrollment && (
+                <ChangeEnrollmentStatusModal
+                    open={!!statusModalEnrollment}
+                    onClose={() => setStatusModalEnrollment(null)}
+                    residentDisplayId={statusModalEnrollment.doc_id ?? ''}
+                    residentName={statusModalEnrollment.name_full ?? ''}
+                    currentStatus={statusModalEnrollment.enrollment_status}
+                    allowedStatuses={getAllowedStatuses(
+                        classStatus,
+                        statusModalEnrollment.enrollment_status
+                    )}
+                    onStatusChange={(newStatus, reason) => {
+                        void handleStatusChange(
+                            statusModalEnrollment,
+                            newStatus,
+                            reason
+                        );
+                        setStatusModalEnrollment(null);
+                    }}
+                />
             )}
         </div>
     );
