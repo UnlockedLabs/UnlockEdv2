@@ -830,6 +830,10 @@ func generateEventInstances(event models.ProgramClassEvent, startDate, endDate t
 	return eventInstances
 }
 
+func GenerateEventInstances(event models.ProgramClassEvent, startDate, endDate time.Time) []models.EventInstance {
+	return generateEventInstances(event, startDate, endDate)
+}
+
 // GetClassEventInstancesWithAttendanceForRecurrence returns all occurrences for events
 // for a given class based on each event's recurrence rule (from DTSTART until UNTIL)
 // along with their associated attendance records.

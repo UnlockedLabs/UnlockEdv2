@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -41,6 +42,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
+		adminFeatureRoute("GET /api/program-classes/missing-attendance", srv.handleGetMissingAttendanceForFacility, axx),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/missing-attendance", srv.handleGetMissingAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-rate", srv.handleGetCumulativeAttendanceRate, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
@@ -329,6 +331,49 @@ func (srv *Server) handleGetMissingAttendance(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, totalMissing)
+}
+
+func (srv *Server) handleGetMissingAttendanceForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	case "":
+		facilityId = &args.FacilityID
+	default:
+		facilityId = &args.FacilityID
+	}
+
+	days := 3
+	if daysQuery := r.URL.Query().Get("days"); daysQuery != "" {
+		if parsedDays, err := strconv.Atoi(daysQuery); err == nil {
+			days = parsedDays
+		}
+	}
+
+	service := services.NewClassesService(srv.Db)
+	items, err := service.GetMissingAttendanceForFacility(&args, facilityId, days)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	args.Total = int64(len(items))
+	if !args.All {
+		start := args.CalcOffset()
+		if start < len(items) {
+			end := start + args.PerPage
+			if end > len(items) {
+				end = len(items)
+			}
+			items = items[start:end]
+		} else {
+			items = []models.MissingAttendanceItem{}
+		}
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, items, args.IntoMeta())
 }
 
 func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *http.Request, log sLog) error {

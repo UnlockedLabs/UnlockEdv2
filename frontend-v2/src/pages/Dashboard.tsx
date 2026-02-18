@@ -3,12 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, isDeptAdmin } from '@/auth/useAuth';
 import {
+    ClassMetrics,
+    MissingAttendanceItem,
     Class,
     ProgramOverview,
     ServerResponseMany,
-    SelectedClassStatus
+    SelectedClassStatus,
+    ServerResponseOne
 } from '@/types';
-import { getClassSchedule, isClassToday, formatTime12h } from '@/lib/formatters';
+import {
+    getClassSchedule,
+    isClassToday,
+    formatTime12h
+} from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,472 +24,155 @@ import {
     TooltipContent
 } from '@/components/ui/tooltip';
 import {
-    BookOpenIcon,
+    AcademicCapIcon,
     UsersIcon,
     ChartBarIcon,
-    ExclamationTriangleIcon,
     InformationCircleIcon,
-    ClockIcon,
-    FolderIcon
+    RectangleStackIcon,
+    ListBulletIcon
 } from '@heroicons/react/24/outline';
 import {
-    ClipboardList,
-    ArrowRight,
+    AlertCircle,
+    Calendar,
+    CheckCircle,
     ChevronDown,
-    ChevronUp,
-    List
+    Clock,
+    ExternalLink
 } from 'lucide-react';
 
-interface MetricCardProps {
-    icon: React.ReactNode;
-    iconBg: string;
-    label: string;
-    value: string | number;
-    tooltip: string;
-    subtitle: string;
-}
-
-function MetricCard({ icon, iconBg, label, value, tooltip, subtitle }: MetricCardProps) {
-    return (
-        <div className="bg-background rounded-lg border border-border p-4 relative">
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button className="absolute top-3 right-3 text-muted-foreground/50 hover:text-muted-foreground">
-                        <InformationCircleIcon className="size-4" />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent>{tooltip}</TooltipContent>
-            </Tooltip>
-            <div className="flex items-start gap-3">
-                <div className={cn('rounded-lg p-2 shrink-0', iconBg)}>
-                    {icon}
-                </div>
-                <div className="min-w-0">
-                    <p className="text-2xl font-semibold text-foreground leading-tight">
-                        {value}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-                </div>
-            </div>
-        </div>
+export default function Dashboard() {
+    const { user } = useAuth();
+    const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
+        '/api/program-classes?all=true'
     );
-}
-
-interface DashboardStats {
-    activeClasses: number;
-    totalEnrollment: number;
-    capacityUtilization: number;
-    attendanceConcerns: number;
-}
-
-function computeStats(classes: Class[]): DashboardStats {
-    const active = classes.filter(
-        (c) => c.status === SelectedClassStatus.Active
+    const { data: programsResp } =
+        useSWR<ServerResponseMany<ProgramOverview>>('/api/programs');
+    const allClasses = useMemo(
+        () => classesResp?.data ?? [],
+        [classesResp?.data]
     );
-    const totalEnrollment = active.reduce((sum, c) => sum + c.enrolled, 0);
-    const totalCapacity = active.reduce((sum, c) => sum + c.capacity, 0);
-    const capacityUtilization =
-        totalCapacity > 0 ? Math.round((totalEnrollment / totalCapacity) * 100) : 0;
-    const attendanceConcerns = active.filter(
-        (c) => c.enrolled > 0 && isClassToday(c)
-    ).length;
-
-    return {
-        activeClasses: active.length,
-        totalEnrollment,
-        capacityUtilization,
-        attendanceConcerns
-    };
-}
-
-function TodaysSchedule({
-    classes,
-    onNavigate
-}: {
-    classes: Class[];
-    onNavigate: (id: number) => void;
-}) {
-    const navigate = useNavigate();
-    const today = new Date();
-    const dateLabel = today.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
-
-    const todayClasses = useMemo(() => {
-        return classes
-            .filter((c) => isClassToday(c) && c.status === SelectedClassStatus.Active)
-            .sort((a, b) => {
-                const schedA = getClassSchedule(a);
-                const schedB = getClassSchedule(b);
-                return schedA.startTime.localeCompare(schedB.startTime);
-            });
-    }, [classes]);
+    const programs = useMemo(
+        () => programsResp?.data ?? [],
+        [programsResp?.data]
+    );
+    const deptAdmin = user ? isDeptAdmin(user) : false;
+    const classMetricsUrl = deptAdmin
+        ? '/api/dashboard/class-metrics?facility=all'
+        : '/api/dashboard/class-metrics';
+    const { data: classMetricsResp } =
+        useSWR<ServerResponseOne<ClassMetrics>>(classMetricsUrl);
+    const missingAttendanceUrl = deptAdmin
+        ? '/api/program-classes/missing-attendance?facility=all&days=3&all=true'
+        : '/api/program-classes/missing-attendance?days=3&all=true';
+    const { data: missingAttendanceResp, isLoading: missingAttendanceLoading } =
+        useSWR<ServerResponseMany<MissingAttendanceItem>>(missingAttendanceUrl);
+    const facilityClasses = useMemo(() => {
+        if (deptAdmin || !user) return allClasses;
+        return allClasses.filter((c) => c.facility_id === user.facility.id);
+    }, [allClasses, deptAdmin, user]);
 
     return (
-        <div className="bg-background rounded-lg border border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h3 className="text-lg font-semibold text-foreground">
-                        Today's Schedule
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{dateLabel}</p>
-                </div>
-                <button
-                    onClick={() => navigate('/schedule')}
-                    className="text-sm text-[#556830] hover:underline flex items-center gap-1"
-                >
-                    View all classes
-                    <ArrowRight className="size-3.5" />
-                </button>
+        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] -mx-6 -my-4 min-h-screen overflow-x-hidden">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {deptAdmin ? (
+                    <DeptAdminView
+                        classes={allClasses}
+                        programs={programs}
+                        metrics={classMetricsResp?.data}
+                        missingAttendance={missingAttendanceResp?.data ?? []}
+                        missingAttendanceLoading={missingAttendanceLoading}
+                    />
+                ) : (
+                    <FacilityAdminView
+                        classes={facilityClasses}
+                        facilityName={user?.facility.name ?? 'My Facility'}
+                        metrics={classMetricsResp?.data}
+                        missingAttendance={missingAttendanceResp?.data ?? []}
+                        missingAttendanceLoading={missingAttendanceLoading}
+                    />
+                )}
             </div>
-
-            {todayClasses.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-8 text-center">
-                    No classes scheduled for today.
-                </p>
-            ) : (
-                <div className="space-y-2">
-                    {todayClasses.map((cls) => {
-                        const schedule = getClassSchedule(cls);
-                        return (
-                            <div
-                                key={cls.id}
-                                className="bg-[#e5e7e3] rounded-lg px-4 py-3 flex items-center gap-4"
-                            >
-                                <div className="flex items-center gap-2 text-sm text-foreground font-medium min-w-[140px] shrink-0">
-                                    <ClockIcon className="size-4 text-muted-foreground" />
-                                    {formatTime12h(schedule.startTime)}
-                                    {schedule.endTime &&
-                                        ` - ${formatTime12h(schedule.endTime)}`}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-foreground truncate">
-                                        {cls.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                        {cls.instructor_name}
-                                    </p>
-                                </div>
-                                <p className="text-sm text-muted-foreground shrink-0 hidden sm:block">
-                                    {schedule.room || '-'}
-                                </p>
-                                <Button
-                                    size="sm"
-                                    className="bg-[#556830] text-white hover:bg-[#556830]/90 shrink-0"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onNavigate(cls.id);
-                                    }}
-                                >
-                                    <ClipboardList className="size-4" />
-                                    Take Attendance
-                                </Button>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
-}
-
-function MissingAttendanceWidget({
-    classes,
-    expandable
-}: {
-    classes: Class[];
-    expandable?: boolean;
-}) {
-    const [expanded, setExpanded] = useState(false);
-    const navigate = useNavigate();
-
-    const missingAttendance = useMemo(() => {
-        const now = new Date();
-        return classes.filter(
-            (c) =>
-                c.status === SelectedClassStatus.Active &&
-                c.enrolled > 0 &&
-                new Date(c.start_dt) <= now
-        );
-    }, [classes]);
-
-    const displayList = expandable && !expanded
-        ? missingAttendance.slice(0, 5)
-        : missingAttendance;
-
-    return (
-        <div className="bg-background rounded-lg border border-border p-6">
-            <div className="flex items-center gap-2 mb-1">
-                <ExclamationTriangleIcon className="size-5 text-[#F1B51C]" />
-                <h3 className="text-lg font-semibold text-foreground">
-                    Missing Attendance
-                </h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">Past 3 days</p>
-
-            {missingAttendance.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-4">
-                    All attendance records are up to date.
-                </p>
-            ) : (
-                <>
-                    <div className="space-y-2">
-                        {displayList.map((cls) => {
-                            const schedule = getClassSchedule(cls);
-                            return (
-                                <div
-                                    key={cls.id}
-                                    className="border border-[#F1B51C] rounded-lg px-4 py-3 flex items-center justify-between gap-3"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-medium text-foreground truncate">
-                                            {cls.name}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {schedule.days.join(', ')}
-                                            {schedule.startTime &&
-                                                ` ${formatTime12h(schedule.startTime)}`}
-                                            {cls.facility_name &&
-                                                ` - ${cls.facility_name}`}
-                                        </p>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-[#F1B51C] text-[#F1B51C] hover:bg-[#F1B51C]/10 shrink-0"
-                                        onClick={() =>
-                                            navigate('/program-classes/' + cls.id)
-                                        }
-                                    >
-                                        Take Attendance
-                                    </Button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    {expandable && missingAttendance.length > 5 && (
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            className="flex items-center gap-1 text-sm text-[#556830] mt-3 hover:underline"
-                        >
-                            {expanded ? (
-                                <>
-                                    Show less <ChevronUp className="size-4" />
-                                </>
-                            ) : (
-                                <>
-                                    Show {missingAttendance.length - 5} more{' '}
-                                    <ChevronDown className="size-4" />
-                                </>
-                            )}
-                        </button>
-                    )}
-                </>
-            )}
-        </div>
-    );
-}
-
-function QuickActions({ navigate }: { navigate: (path: string) => void }) {
-    return (
-        <div className="bg-background rounded-lg border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-                Quick Actions
-            </h3>
-            <div className="space-y-3">
-                <Button
-                    variant="outline"
-                    className="w-full justify-start gap-3 border-border text-foreground hover:bg-muted/50"
-                    onClick={() => navigate('/programs')}
-                >
-                    <FolderIcon className="size-4 text-muted-foreground" />
-                    View All Programs
-                </Button>
-                <Button
-                    variant="outline"
-                    className="w-full justify-start gap-3 border-border text-foreground hover:bg-muted/50"
-                    onClick={() => navigate('/classes')}
-                >
-                    <List className="size-4 text-muted-foreground" />
-                    Browse Classes
-                </Button>
-            </div>
-        </div>
-    );
-}
-
-interface FacilityHealthRow {
-    facilityName: string;
-    programs: number;
-    activeClasses: number;
-    enrollment: number;
-    missingAttendance: number;
-    attendanceConcerns: number;
-}
-
-function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
-    if (rows.length === 0) {
-        return (
-            <div className="bg-background rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Facility Health Overview
-                </h3>
-                <p className="text-muted-foreground text-sm text-center py-4">
-                    No facility data available.
-                </p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="bg-background rounded-lg border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-                Facility Health Overview
-            </h3>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-border">
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Facility
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Programs
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Active Classes
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Enrollment
-                            </th>
-                            <th className="text-left py-2 pr-4 text-muted-foreground font-medium">
-                                Missing Attendance
-                            </th>
-                            <th className="text-left py-2 text-muted-foreground font-medium">
-                                Attendance Concerns
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows.map((row) => (
-                            <tr
-                                key={row.facilityName}
-                                className="border-b border-border last:border-0"
-                            >
-                                <td className="py-3 pr-4 font-medium text-foreground">
-                                    {row.facilityName}
-                                </td>
-                                <td className="py-3 pr-4 text-muted-foreground">
-                                    {row.programs}
-                                </td>
-                                <td className="py-3 pr-4 text-muted-foreground">
-                                    {row.activeClasses}
-                                </td>
-                                <td className="py-3 pr-4 text-muted-foreground">
-                                    {row.enrollment}
-                                </td>
-                                <td className="py-3 pr-4">
-                                    {row.missingAttendance > 0 ? (
-                                        <span className="text-amber-600 font-medium">
-                                            {row.missingAttendance}
-                                        </span>
-                                    ) : (
-                                        <span className="text-muted-foreground">0</span>
-                                    )}
-                                </td>
-                                <td className="py-3">
-                                    {row.attendanceConcerns > 0 ? (
-                                        <span className="text-red-600 font-medium">
-                                            {row.attendanceConcerns}
-                                        </span>
-                                    ) : (
-                                        <span className="text-muted-foreground">0</span>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-}
-
-function MetricCards({ stats, subtitle }: { stats: DashboardStats; subtitle: string }) {
-    return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard
-                icon={<BookOpenIcon className="size-5 text-[#556830]" />}
-                iconBg="bg-[#e5e7e3]"
-                label="Active Classes"
-                value={stats.activeClasses}
-                tooltip="Number of classes currently in Active status"
-                subtitle={subtitle}
-            />
-            <MetricCard
-                icon={<UsersIcon className="size-5 text-[#556830]" />}
-                iconBg="bg-[#e5e7e3]"
-                label="Total Enrollment"
-                value={stats.totalEnrollment}
-                tooltip="Total students enrolled across all active classes"
-                subtitle="Across active classes"
-            />
-            <MetricCard
-                icon={<ChartBarIcon className="size-5 text-[#556830]" />}
-                iconBg="bg-[#e5e7e3]"
-                label="Capacity Utilization"
-                value={`${stats.capacityUtilization}%`}
-                tooltip="Percentage of total capacity filled across active classes"
-                subtitle="Of available seats filled"
-            />
-            <MetricCard
-                icon={<ExclamationTriangleIcon className="size-5 text-[#F1B51C]" />}
-                iconBg="bg-amber-50"
-                label="Attendance Concerns"
-                value={stats.attendanceConcerns}
-                tooltip="Active classes scheduled today that may need attendance tracking"
-                subtitle="Classes needing attention"
-            />
         </div>
     );
 }
 
 function FacilityAdminView({
     classes,
-    facilityName
+    facilityName,
+    metrics,
+    missingAttendance,
+    missingAttendanceLoading
 }: {
     classes: Class[];
     facilityName: string;
+    metrics?: ClassMetrics;
+    missingAttendance: MissingAttendanceItem[];
+    missingAttendanceLoading: boolean;
 }) {
     const navigate = useNavigate();
-    const stats = useMemo(() => computeStats(classes), [classes]);
+    const stats = useMemo(() => {
+        const base = computeStats(classes);
+        if (!metrics) return base;
+        const scheduledClasses = base.scheduledClasses;
+        const totalCapacity = metrics.total_seats;
+        const totalEnrollment = metrics.total_enrollments;
+        const capacityUtilization =
+            totalCapacity > 0
+                ? Math.round((totalEnrollment / totalCapacity) * 100)
+                : 0;
+        return {
+            scheduledClasses,
+            activeClasses: metrics.active_classes,
+            totalEnrollment,
+            totalCapacity,
+            capacityUtilization,
+            attendanceConcerns: metrics.attendance_concerns
+        };
+    }, [classes, metrics]);
+    const handleAttendanceNavigate = (cls: Class) => {
+        const eventId =
+            cls.events?.find((event) => !event.is_cancelled)?.id ??
+            cls.events?.[0]?.id;
+        if (!eventId) {
+            navigate('/program-classes/' + cls.id + '/attendance');
+            return;
+        }
+        const today = new Date();
+        const yyyy = String(today.getFullYear());
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const date = `${yyyy}-${mm}-${dd}`;
+        navigate(
+            `/program-classes/${cls.id}/events/${eventId}/attendance/${date}`
+        );
+    };
 
     return (
-        <div className="space-y-5">
-            <div>
-                <h1 className="text-2xl font-bold text-foreground">
+        <div>
+            <div className="mb-6">
+                <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
                     Facility Dashboard
                 </h1>
-                <p className="text-muted-foreground mt-1">{facilityName}</p>
+                <p className="text-gray-600 dark:text-gray-400">
+                    {facilityName}
+                </p>
             </div>
 
-            <MetricCards stats={stats} subtitle="Currently running" />
+            <MetricCards stats={stats} onNavigate={navigate} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <TodaysSchedule
                         classes={classes}
-                        onNavigate={(id) =>
-                            navigate('/program-classes/' + id + '/attendance')
-                        }
+                        onNavigate={handleAttendanceNavigate}
                     />
                 </div>
-                <div className="space-y-5">
-                    <MissingAttendanceWidget classes={classes} />
+                <div className="space-y-6">
+                    <MissingAttendanceWidget
+                        items={missingAttendance}
+                        isLoading={missingAttendanceLoading}
+                        variant="facility"
+                    />
                     <QuickActions navigate={navigate} />
                 </div>
             </div>
@@ -492,13 +182,36 @@ function FacilityAdminView({
 
 function DeptAdminView({
     classes,
-    programs
+    programs,
+    metrics,
+    missingAttendance,
+    missingAttendanceLoading
 }: {
     classes: Class[];
     programs: ProgramOverview[];
+    metrics?: ClassMetrics;
+    missingAttendance: MissingAttendanceItem[];
+    missingAttendanceLoading: boolean;
 }) {
     const navigate = useNavigate();
-    const stats = useMemo(() => computeStats(classes), [classes]);
+    const stats = useMemo(() => {
+        const base = computeStats(classes);
+        if (!metrics) return base;
+        const totalCapacity = metrics.total_seats;
+        const totalEnrollment = metrics.total_enrollments;
+        const capacityUtilization =
+            totalCapacity > 0
+                ? Math.round((totalEnrollment / totalCapacity) * 100)
+                : 0;
+        return {
+            ...base,
+            activeClasses: metrics.active_classes,
+            totalEnrollment,
+            totalCapacity,
+            capacityUtilization,
+            attendanceConcerns: metrics.attendance_concerns
+        };
+    }, [classes, metrics]);
 
     const facilityRows = useMemo((): FacilityHealthRow[] => {
         const facilityMap = new Map<
@@ -544,66 +257,605 @@ function DeptAdminView({
     }, [classes]);
 
     return (
-        <div className="space-y-5">
-            <div>
-                <h1 className="text-2xl font-bold text-foreground">
+        <div>
+            <div className="mb-6">
+                <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
                     Department Overview
                 </h1>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-gray-600 dark:text-gray-400">
                     {programs.length} programs across {facilityRows.length}{' '}
                     facilities
                 </p>
             </div>
 
-            <MetricCards stats={stats} subtitle="Across all facilities" />
+            <MetricCards stats={stats} onNavigate={navigate} />
 
-            <FacilityHealthTable rows={facilityRows} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <div className="lg:col-span-2">
-                    <MissingAttendanceWidget
-                        classes={classes}
-                        expandable
-                    />
+            <div className="space-y-6">
+                <FacilityHealthTable rows={facilityRows} />
+                <div className="flex gap-6 flex-wrap lg:flex-nowrap">
+                    <div className="flex-1 lg:flex-[2] min-w-[300px]">
+                        <MissingAttendanceWidget
+                            items={missingAttendance}
+                            isLoading={missingAttendanceLoading}
+                            variant="department"
+                        />
+                    </div>
+                    <div className="flex-1 lg:flex-[1] min-w-[250px]">
+                        <QuickActions navigate={navigate} />
+                    </div>
                 </div>
-                <QuickActions navigate={navigate} />
             </div>
         </div>
     );
 }
 
-export default function Dashboard() {
-    const { user } = useAuth();
+interface MetricCardProps {
+    icon: React.ReactNode;
+    iconBg: string;
+    label: string;
+    value: string | number;
+    tooltip: string;
+    subtitle: string;
+    tooltipAction?: React.ReactNode;
+}
 
-    const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
-        '/api/program-classes'
+function MetricCard({
+    icon,
+    iconBg,
+    label,
+    value,
+    tooltip,
+    subtitle,
+    tooltipAction
+}: MetricCardProps) {
+    return (
+        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-4">
+            <div className="flex items-center gap-3 mb-3">
+                <div className={cn('p-2 rounded', iconBg)}>{icon}</div>
+                <div className="text-2xl text-[#203622] dark:text-white">
+                    {value}
+                </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button className="ml-auto">
+                            <InformationCircleIcon className="size-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white max-w-xs">
+                        <p className={tooltipAction ? 'mb-2' : undefined}>
+                            {tooltip}
+                        </p>
+                        {tooltipAction}
+                    </TooltipContent>
+                </Tooltip>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+                {label}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                {subtitle}
+            </div>
+        </div>
     );
-    const { data: programsResp } = useSWR<ServerResponseMany<ProgramOverview>>(
-        '/api/programs'
+}
+
+interface DashboardStats {
+    activeClasses: number;
+    totalEnrollment: number;
+    totalCapacity: number;
+    capacityUtilization: number;
+    attendanceConcerns: number;
+    scheduledClasses: number;
+}
+
+function computeStats(classes: Class[]): DashboardStats {
+    const active = classes.filter(
+        (c) => c.status === SelectedClassStatus.Active
     );
+    const scheduled = classes.filter(
+        (c) => c.status === SelectedClassStatus.Scheduled
+    );
+    const totalEnrollment = active.reduce((sum, c) => sum + c.enrolled, 0);
+    const totalCapacity = active.reduce((sum, c) => sum + c.capacity, 0);
+    const capacityUtilization =
+        totalCapacity > 0
+            ? Math.round((totalEnrollment / totalCapacity) * 100)
+            : 0;
+    const attendanceConcerns = active.filter(
+        (c) => c.enrolled > 0 && isClassToday(c)
+    ).length;
 
-    const allClasses = classesResp?.data ?? [];
-    const programs = programsResp?.data ?? [];
+    return {
+        activeClasses: active.length,
+        totalEnrollment,
+        totalCapacity,
+        capacityUtilization,
+        attendanceConcerns,
+        scheduledClasses: scheduled.length
+    };
+}
 
-    const deptAdmin = user ? isDeptAdmin(user) : false;
+function TodaysSchedule({
+    classes,
+    onNavigate
+}: {
+    classes: Class[];
+    onNavigate: (cls: Class) => void;
+}) {
+    const navigate = useNavigate();
+    const today = new Date();
+    const dateLabel = today.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
 
-    const facilityClasses = useMemo(() => {
-        if (deptAdmin || !user) return allClasses;
-        return allClasses.filter((c) => c.facility_id === user.facility.id);
-    }, [allClasses, deptAdmin, user]);
+    const todayClasses = useMemo(() => {
+        return classes
+            .filter(
+                (c) =>
+                    isClassToday(c) && c.status === SelectedClassStatus.Active
+            )
+            .sort((a, b) => {
+                const schedA = getClassSchedule(a);
+                const schedB = getClassSchedule(b);
+                return schedA.startTime.localeCompare(schedB.startTime);
+            });
+    }, [classes]);
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#e5e7e3]">
-            <div className="px-16 pt-6 pb-6 space-y-5">
-                {deptAdmin ? (
-                    <DeptAdminView classes={allClasses} programs={programs} />
+        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626]">
+            <div className="border-b border-gray-200 dark:border-[#262626] px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 className="text-[#203622] dark:text-white">
+                        Today's Schedule
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {dateLabel}
+                    </p>
+                </div>
+                <button
+                    onClick={() => navigate('/classes')}
+                    className="text-sm text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-white transition-colors"
+                >
+                    View all classes &rarr;
+                </button>
+            </div>
+            <div className="p-6">
+                {todayClasses.length > 0 ? (
+                    <div className="space-y-3">
+                        {todayClasses.map((cls) => {
+                            const schedule = getClassSchedule(cls);
+                            return (
+                                <div
+                                    key={cls.id}
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#E2E7EA] dark:bg-[#262626] rounded-lg hover:bg-gray-100 dark:hover:bg-[#262626]/80 transition-colors group"
+                                >
+                                    <div
+                                        onClick={() =>
+                                            navigate(
+                                                '/program-classes/' + cls.id
+                                            )
+                                        }
+                                        className="flex items-center gap-4 flex-1 cursor-pointer min-w-0"
+                                    >
+                                        <div className="flex items-center gap-2 min-w-[80px] shrink-0">
+                                            <Clock className="size-4 text-gray-500 dark:text-gray-400" />
+                                            <span className="text-sm text-[#203622] dark:text-white">
+                                                {formatTime12h(
+                                                    schedule.startTime
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-[#203622] dark:text-white group-hover:text-[#556830] transition-colors truncate">
+                                                {cls.name}
+                                            </div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                                {cls.instructor_name}
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[160px] hidden md:block">
+                                            {schedule.room || '-'}
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigate(cls);
+                                        }}
+                                        className="bg-[#556830] hover:bg-[#203622] text-white w-full sm:w-auto"
+                                    >
+                                        Take Attendance
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                    </div>
                 ) : (
-                    <FacilityAdminView
-                        classes={facilityClasses}
-                        facilityName={user?.facility.name ?? 'My Facility'}
-                    />
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <Calendar className="size-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                        <p>No classes scheduled for today</p>
+                    </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+function MissingAttendanceWidget({
+    items,
+    isLoading,
+    variant
+}: {
+    items: MissingAttendanceItem[];
+    isLoading: boolean;
+    variant: 'department' | 'facility';
+}) {
+    const [showAll, setShowAll] = useState(false);
+    const navigate = useNavigate();
+
+    const missingAttendance = useMemo(() => items, [items]);
+
+    const sliceCount = 3;
+    const displayList = showAll
+        ? missingAttendance
+        : missingAttendance.slice(0, sliceCount);
+    const remainingCount = missingAttendance.length - sliceCount;
+
+    const isDepartment = variant === 'department';
+
+    return (
+        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
+            <div className="flex items-center gap-2 mb-4">
+                <AlertCircle className="size-5 text-[#F1B51C]" />
+                <h3 className="text-[#203622] dark:text-white">
+                    Missing Attendance
+                </h3>
+            </div>
+
+            {missingAttendance.length > 0 ? (
+                <>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        {isDepartment
+                            ? 'Past 3 days - across all facilities'
+                            : 'Past 3 days'}
+                    </p>
+                    <div className="space-y-3">
+                        {displayList.map((item) => {
+                            const dayLabel = new Date(
+                                `${item.date}T00:00:00`
+                            ).toLocaleDateString('en-US', {
+                                weekday: 'long'
+                            });
+                            return (
+                                <div
+                                    key={`${item.class_id}-${item.date}-${item.event_id}`}
+                                    className={cn(
+                                        'p-3 bg-amber-50 dark:bg-[#262626] border border-amber-200 dark:border-[#F1B51C]/30 rounded-lg',
+                                        isDepartment
+                                            ? 'hover:bg-amber-100 dark:hover:bg-[#262626]/80 transition-colors cursor-pointer'
+                                            : undefined
+                                    )}
+                                    onClick={() => {
+                                        if (isDepartment) {
+                                            navigate(
+                                                '/program-classes/' +
+                                                    item.class_id
+                                            );
+                                        }
+                                    }}
+                                >
+                                    {isDepartment && (
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                            {item.facility_name}
+                                        </div>
+                                    )}
+                                    <div className="text-sm text-[#203622] dark:text-[#F1B51C] mb-1">
+                                        {item.class_name}
+                                    </div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                        {dayLabel} -{' '}
+                                        {formatTime12h(item.start_time)}
+                                    </div>
+                                    {!isDepartment && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                navigate(
+                                                    '/program-classes/' +
+                                                        item.class_id +
+                                                        '/events/' +
+                                                        item.event_id +
+                                                        '/attendance/' +
+                                                        item.date
+                                                )
+                                            }
+                                            className="w-full text-xs border-[#F1B51C] text-[#F1B51C] hover:bg-[#F1B51C] hover:text-white dark:border-[#F1B51C] dark:text-[#F1B51C]"
+                                        >
+                                            Take Attendance
+                                        </Button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {!showAll && remainingCount > 0 && (
+                        <button
+                            onClick={() => setShowAll(true)}
+                            className="w-full mt-3 py-2 text-sm text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-white hover:bg-[#E2E7EA] dark:hover:bg-[#262626] rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                            Show {remainingCount} more{' '}
+                            <ChevronDown className="size-4" />
+                        </button>
+                    )}
+                </>
+            ) : isLoading ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                    Loading missing attendance...
+                </div>
+            ) : (
+                <div className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                    <CheckCircle className="size-8 mx-auto mb-2 text-[#556830] dark:text-[#8fb55e]" />
+                    <p className="text-center">All attendance up to date</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function QuickActions({ navigate }: { navigate: (path: string) => void }) {
+    return (
+        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
+            <h3 className="text-[#203622] dark:text-white mb-4">
+                Quick Actions
+            </h3>
+            <div className="space-y-3">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={() => navigate('/programs')}
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-[#E2E7EA] dark:hover:bg-[#262626]/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                        >
+                            <RectangleStackIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                            <span className="text-sm">View All Programs</span>
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white">
+                        <p>Browse all programs at your facility</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={() => navigate('/classes')}
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-[#E2E7EA] dark:hover:bg-[#262626]/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                        >
+                            <ListBulletIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                            <span className="text-sm">Browse Classes</span>
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white">
+                        <p>View and manage all classes</p>
+                    </TooltipContent>
+                </Tooltip>
+            </div>
+        </div>
+    );
+}
+
+interface FacilityHealthRow {
+    facilityName: string;
+    programs: number;
+    activeClasses: number;
+    enrollment: number;
+    missingAttendance: number;
+    attendanceConcerns: number;
+}
+
+function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
+    if (rows.length === 0) {
+        return (
+            <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
+                <h3 className="text-[#203622] dark:text-white mb-4">
+                    Facility Health Overview
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">
+                    No facility data available.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] overflow-hidden">
+            <h3 className="text-[#203622] dark:text-white px-6 py-4">
+                Facility Health Overview
+            </h3>
+            <table className="w-full">
+                <thead className="bg-[#E2E7EA] dark:bg-[#262626] border-b border-gray-200 dark:border-[#262626]">
+                    <tr>
+                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                            Facility
+                        </th>
+                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                            Programs
+                        </th>
+                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                            Active Classes
+                        </th>
+                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                            Enrollment
+                        </th>
+                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                            <div className="flex items-center gap-1">
+                                Missing Attendance
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button>
+                                            <InformationCircleIcon className="size-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white max-w-xs">
+                                        <p>
+                                            Classes where attendance hasn't been
+                                            recorded yet (past 3 days)
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                        </th>
+                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                            <div className="flex items-center gap-1">
+                                Attendance Concerns
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button>
+                                            <InformationCircleIcon className="size-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white max-w-xs">
+                                        <p>
+                                            Classes with patterns of high
+                                            resident absences (engagement issue)
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-[#262626]">
+                    {rows.map((row) => (
+                        <tr
+                            key={row.facilityName}
+                            className="hover:bg-[#E2E7EA]/50 dark:hover:bg-[#262626]/50 cursor-pointer transition-colors"
+                        >
+                            <td className="px-6 py-4">
+                                <div className="text-[#203622] dark:text-white hover:text-[#556830] dark:hover:text-[#8fb55e] transition-colors">
+                                    {row.facilityName}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="text-sm text-gray-700 dark:text-gray-400">
+                                    {row.programs}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="text-sm text-gray-700 dark:text-gray-400">
+                                    {row.activeClasses}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="text-sm text-gray-700 dark:text-gray-400">
+                                    {row.enrollment}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                {row.missingAttendance > 0 ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-[#F1B51C]">
+                                            {row.missingAttendance}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            classes
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1">
+                                        <CheckCircle className="size-4 text-[#556830] dark:text-[#8fb55e]" />
+                                        <span className="text-xs text-gray-500">
+                                            Up to date
+                                        </span>
+                                    </div>
+                                )}
+                            </td>
+                            <td className="px-6 py-4">
+                                {row.attendanceConcerns > 0 ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-amber-600 dark:text-[#F1B51C]">
+                                            {row.attendanceConcerns}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            classes
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1">
+                                        <CheckCircle className="size-4 text-[#556830] dark:text-[#8fb55e]" />
+                                        <span className="text-xs text-gray-500">
+                                            None
+                                        </span>
+                                    </div>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+function MetricCards({
+    stats,
+    onNavigate
+}: {
+    stats: DashboardStats;
+    onNavigate: (path: string) => void;
+}) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <MetricCard
+                icon={
+                    <AcademicCapIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                }
+                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                label="Active Classes"
+                value={stats.activeClasses}
+                tooltip="Classes currently in Active status with enrolled residents"
+                subtitle={`${stats.scheduledClasses} scheduled`}
+            />
+            <MetricCard
+                icon={
+                    <UsersIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                }
+                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                label="Total Enrollment"
+                value={stats.totalEnrollment}
+                tooltip="Number of residents enrolled across all active classes"
+                subtitle="Across all programs"
+            />
+            <MetricCard
+                icon={
+                    <ChartBarIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                }
+                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                label="Capacity Utilization"
+                value={`${stats.capacityUtilization}%`}
+                tooltip="Percentage of available seats filled across all classes"
+                subtitle={`${stats.totalEnrollment} of ${stats.totalCapacity} seats`}
+            />
+            <MetricCard
+                icon={<AlertCircle className="size-5 text-[#F1B51C]" />}
+                iconBg="bg-amber-50 dark:bg-[#262626]"
+                label="Attendance Concerns"
+                value={stats.attendanceConcerns}
+                tooltip="Classes with patterns of high absences (3+ unexcused per week)"
+                subtitle="High absence patterns"
+                tooltipAction={
+                    <button
+                        onClick={() => onNavigate('/classes')}
+                        className="text-[#F1B51C] hover:text-[#d9a419] flex items-center gap-1 text-xs"
+                    >
+                        View classes <ExternalLink className="size-3" />
+                    </button>
+                }
+            />
         </div>
     );
 }

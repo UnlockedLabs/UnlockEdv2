@@ -399,6 +399,68 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 	return missingAttendanceCount, nil
 }
 
+func (db *DB) GetActiveClassesForMissingAttendance(args *models.QueryContext, facilityID *uint) ([]models.MissingAttendanceClass, error) {
+	var missClasses []models.MissingAttendanceClass
+	classQuery := db.WithContext(args.Ctx).
+		Table("program_classes c").
+		Select("c.id, c.name, f.name as facility_name").
+		Joins("JOIN facilities f ON f.id = c.facility_id").
+		Where("c.status = ?", models.Active).
+		Where("c.archived_at IS NULL")
+	if facilityID != nil {
+		classQuery = classQuery.Where("c.facility_id = ?", *facilityID)
+	}
+	if err := classQuery.Find(&missClasses).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_classes")
+	}
+	return missClasses, nil
+}
+
+func (db *DB) GetClassEventsWithOverrides(args *models.QueryContext, classIDs []uint) ([]models.ProgramClassEvent, error) {
+	var events []models.ProgramClassEvent
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEvent{}).
+		Preload("Overrides").
+		Preload("RoomRef").
+		Where("class_id IN ?", classIDs).
+		Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	return events, nil
+}
+
+type AttendanceCount struct {
+	EventID uint   `json:"event_id"`
+	Date    string `json:"date"`
+	Count   int64  `json:"count"`
+}
+
+func (db *DB) GetAttendanceCountsForEvents(args *models.QueryContext, eventIDs []uint, dates []string) ([]AttendanceCount, error) {
+	var attendanceCounts []AttendanceCount
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEventAttendance{}).
+		Select("event_id, date, COUNT(*) as count").
+		Where("event_id IN ? AND date IN ?", eventIDs, dates).
+		Group("event_id, date").
+		Scan(&attendanceCounts).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_event_attendance")
+	}
+	return attendanceCounts, nil
+}
+
+func (db *DB) GetActiveEnrollmentsForClasses(args *models.QueryContext, classIDs []uint) ([]models.ProgramClassEnrollment, error) {
+	var enrollments []models.ProgramClassEnrollment
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEnrollment{}).
+		Select("class_id, enrolled_at, enrollment_ended_at").
+		Where("class_id IN ?", classIDs).
+		Where("enrollment_status = ?", models.Enrolled).
+		Find(&enrollments).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	return enrollments, nil
+}
+
 func (db *DB) CreateAttendanceAuditTrail(ctx context.Context, att *models.ProgramClassEventAttendance, adminID *uint, className string) error {
 
 	sessionDateParsed, err := time.ParseInLocation("2006-01-02", att.Date, time.Local)
