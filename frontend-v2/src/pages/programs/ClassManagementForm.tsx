@@ -610,9 +610,9 @@ export default function ClassManagementForm() {
                 open={showConflicts}
                 onOpenChange={setShowConflicts}
                 title="Room Scheduling Conflict"
-                description="The selected room has conflicts with existing classes."
+                description={`The selected room has ${conflicts.length} conflicts with existing classes.`}
             >
-                <div className="space-y-3">
+                <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
                     {conflicts.map((c, i) => (
                         <div key={i} className="bg-red-50 p-3 rounded-lg text-sm">
                             <p className="font-medium text-red-800">{c.class_name}</p>
@@ -621,14 +621,14 @@ export default function ClassManagementForm() {
                             </p>
                         </div>
                     ))}
-                    <div className="flex justify-end">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowConflicts(false)}
-                        >
-                            Close
-                        </Button>
-                    </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowConflicts(false)}
+                    >
+                        Close
+                    </Button>
                 </div>
             </FormModal>
 
