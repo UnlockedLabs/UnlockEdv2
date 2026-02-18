@@ -18,6 +18,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
 		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
+		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
 		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
 		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
@@ -132,6 +133,13 @@ type DashboardMetrics struct {
 	PeakLoginTimes    []models.LoginActivity `json:"peak_login_times"`
 }
 
+type ClassDashboardMetrics struct {
+	ActiveClasses      int64 `json:"active_classes"`
+	TotalEnrollments   int64 `json:"total_enrollments"`
+	TotalSeats         int64 `json:"total_seats"`
+	AttendanceConcerns int64 `json:"attendance_concerns"`
+}
+
 func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
 	facility := r.URL.Query().Get("facility")
@@ -235,6 +243,37 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 	}
 
 	return writeJsonResponse(w, http.StatusOK, cachedData)
+}
+
+func (srv *Server) handleClassDashboardMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	default:
+		facilityId = &args.FacilityID
+	}
+
+	activeClasses, totalEnrollments, totalSeats, attendanceConcerns, err := srv.Db.GetClassDashboardMetrics(&args, facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	response := struct {
+		ActiveClasses      int64 `json:"active_classes"`
+		TotalEnrollments   int64 `json:"total_enrollments"`
+		TotalSeats         int64 `json:"total_seats"`
+		AttendanceConcerns int64 `json:"attendance_concerns"`
+	}{
+		ActiveClasses:      activeClasses,
+		TotalEnrollments:   totalEnrollments,
+		TotalSeats:         totalSeats,
+		AttendanceConcerns: attendanceConcerns,
+	}
+
+	return writeJsonResponse(w, http.StatusOK, response)
 }
 
 /**
