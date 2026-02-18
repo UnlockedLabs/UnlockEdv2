@@ -255,6 +255,21 @@ type AttendanceFlag struct {
 	FlagType  AttendanceFlagType `json:"flag_type"`
 }
 
+type MissingAttendanceItem struct {
+	ClassID      uint   `json:"class_id"`
+	ClassName    string `json:"class_name"`
+	FacilityName string `json:"facility_name,omitempty"`
+	EventID      uint   `json:"event_id"`
+	Date         string `json:"date"`
+	StartTime    string `json:"start_time"`
+}
+
+type MissingAttendanceClass struct {
+	ID           uint   `json:"id"`
+	Name         string `json:"name"`
+	FacilityName string `json:"facility_name"`
+}
+
 type EventDates struct {
 	EventID   uint   `json:"event_id"`
 	Date      string `json:"date"`

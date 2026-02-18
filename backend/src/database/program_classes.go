@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
 	"gorm.io/gorm"
@@ -65,7 +66,12 @@ func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.Program
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
-	if err := tx.Preload("Events").Preload("Events.RoomRef").Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
+
+	tx = tx.Preload("Events").Preload("Events.RoomRef")
+	if !args.All {
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
+	}
+	if err := tx.Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 	return content, nil

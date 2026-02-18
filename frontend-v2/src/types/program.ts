@@ -154,6 +154,21 @@ export interface Class {
     program: Program;
 }
 
+export interface MissingAttendanceItem {
+    class_id: number;
+    class_name: string;
+    facility_name?: string;
+    event_id: number;
+    date: string;
+    start_time: string;
+}
+
+export interface ClassMetrics {
+    active_classes: number;
+    total_enrollments: number;
+    total_seats: number;
+    attendance_concerns: number;
+}
 export interface ResidentProgramOverview {
     program_name: string;
     class_name: string;
