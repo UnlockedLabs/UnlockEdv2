@@ -8,7 +8,6 @@ import {
     ProgramEffectiveStatus,
     ServerResponseMany
 } from '@/types';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,13 +18,14 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { Search, Plus, Filter, Building2 } from 'lucide-react';
+import { Search, Plus, Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const programTypeColors: Record<string, string> = {
     Educational: 'bg-blue-100 text-blue-700 border-blue-200',
     Vocational: 'bg-orange-100 text-orange-700 border-orange-200',
     Mental_Health_Behavioral: 'bg-pink-100 text-pink-700 border-pink-200',
-    Therapeutic: 'bg-teal-100 text-teal-700 border-teal-200',
+    Therapeutic: 'bg-purple-100 text-purple-700 border-purple-200',
     Life_Skills: 'bg-green-100 text-green-700 border-green-200',
     'Re-Entry': 'bg-indigo-100 text-indigo-700 border-indigo-200',
     'Religious_Faith-Based': 'bg-amber-100 text-amber-700 border-amber-200'
@@ -35,7 +35,7 @@ const statusColors: Record<ProgramEffectiveStatus, string> = {
     [ProgramEffectiveStatus.Available]:
         'bg-green-100 text-green-700 border-green-300',
     [ProgramEffectiveStatus.Inactive]:
-        'bg-muted text-foreground border-gray-300',
+        'bg-gray-100 text-gray-700 border-gray-300',
     [ProgramEffectiveStatus.Archived]: 'bg-red-100 text-red-700 border-red-300'
 };
 
@@ -156,29 +156,32 @@ export default function ProgramsPage() {
         : 'Supporting resident growth and rehabilitation';
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#e5e7e3]">
-            <div className="px-16 pt-6 pb-6 space-y-5">
-                <div className="flex items-start justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+            
+            <div className="mb-8">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-2">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">
+                        <h1 className="font-semibold text-2xl text-[#203622]">
                             Programs
                         </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-gray-600 mt-1">
                             {subtitle}
                         </p>
                     </div>
                     <Button
-                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
+                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2"
                         onClick={() => navigate('/programs/detail')}
                     >
-                        <Plus className="size-4" />
+                        <Plus className="size-5" />
                         {isDeptAdminUser
                             ? 'Create Statewide Program'
                             : 'Add Program'}
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-4">
+                {/* Stats Overview */}
+                <div className="grid grid-cols-4 gap-6 mb-8">
                     <StatCard
                         label="Active Programs"
                         value={stats.activePrograms}
@@ -187,62 +190,61 @@ export default function ProgramsPage() {
                         label="Total Classes"
                         value={stats.totalClasses}
                     />
+                    {/* TODO: check stats here and find {stats.totalCapacity} or update backend */}
                     <StatCard
                         label="Total Enrollment"
-                        value={stats.totalEnrollment}
+                        value={`${stats.totalEnrollment} enrollments of 226 capacity`}
                     />
+                    {/* TODO: check stats here and find {stats.completionRate} or update backend */}
                     <StatCard
-                        label="Capacity Utilization"
-                        value={`${stats.capacityUtilization}%`}
+                        label="Completion Rate"
+                        value={`will be a %`}
                     />
                 </div>
 
-                <div className="bg-background rounded-xl border border-border p-4">
-                    <div className="flex items-center gap-3">
+                {/* Filters */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                    <div className="flex gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
                             <Input
                                 placeholder="Search programs..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9"
+                                className="pl-10"
                             />
                         </div>
 
+                        {/* Sort Dropdown */}
                         <Select
                             value={sort}
                             onValueChange={(v) => setSort(v as SortOption)}
                         >
-                            <SelectTrigger className="w-44 bg-background">
+                            <SelectTrigger className="w-[220px]">
                                 <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="name-asc">
-                                    Name (A-Z)
-                                </SelectItem>
-                                <SelectItem value="name-desc">
-                                    Name (Z-A)
-                                </SelectItem>
-                                <SelectItem value="enrollment-desc">
-                                    Enrollment (High-Low)
-                                </SelectItem>
-                                <SelectItem value="enrollment-asc">
-                                    Enrollment (Low-High)
-                                </SelectItem>
+                            <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                            <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                            <SelectItem value="enrollment-asc">Enrollment (Low-High)</SelectItem>
+                            <SelectItem value="enrollment-desc">Enrollment (High-Low)</SelectItem>
+                            <SelectItem value="completion-asc">Completion (Low-High)</SelectItem>
+                            <SelectItem value="completion-desc">Completion (High-Low)</SelectItem>
                             </SelectContent>
                         </Select>
-
+                        {/* Program Type Filter */}
                         <Select
                             value={typeFilter}
                             onValueChange={setTypeFilter}
                         >
-                            <SelectTrigger className="w-[160px] bg-background">
+                            <SelectTrigger className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center gap-2">
-                                    <Filter className="size-3.5 text-muted-foreground" />
+                                    <Filter className="size-4 text-muted-foreground" />
                                     <SelectValue placeholder="Type" />
                                 </div>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="w-[240px] p-4">
+                                <div className="mb-3 font-medium text-sm">Filter by Program Type</div>
                                 <SelectItem value="all">Type</SelectItem>
                                 {Object.values(ProgramType).map((type) => (
                                     <SelectItem key={type} value={type}>
@@ -251,18 +253,19 @@ export default function ProgramsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-
+                        {/* Status Filter */}
                         <Select
                             value={statusFilter}
                             onValueChange={setStatusFilter}
                         >
-                            <SelectTrigger className="w-[160px] bg-background">
+                              <SelectTrigger className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center gap-2">
-                                    <Filter className="size-3.5 text-muted-foreground" />
+                                    <Filter className="size-4 text-muted-foreground" />
                                     <SelectValue placeholder="Status" />
                                 </div>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="w-[240px] p-4">
+                                <div className="mb-3 font-medium text-sm">Filter by Status</div>
                                 <SelectItem value="all">Status</SelectItem>
                                 {Object.values(ProgramEffectiveStatus).map(
                                     (status) => (
@@ -280,11 +283,11 @@ export default function ProgramsPage() {
                 </div>
 
                 {filtered.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                        No programs found matching your criteria.
+                    <div className="bg-white rounded-lg border border-gray-200 p-12">
+                        No programs found" + "Try adjusting your search or filters.
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                         {filtered.map((program) => (
                             <ProgramCard
                                 key={program.program_id}
@@ -312,10 +315,10 @@ function StatCard({
     value: string | number;
 }) {
     return (
-        <Card className="bg-background">
-            <CardContent className="p-5">
-                <p className="text-3xl font-bold text-foreground">{value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{label}</p>
+        <Card>
+            <CardContent className="p-6">
+                <p className="text-3xl text-[#203622] mb-1">{value}</p>
+                <p className="text-sm text-gray-600">{label}</p>
             </CardContent>
         </Card>
     );
@@ -339,85 +342,82 @@ function ProgramCard({
 
     return (
         <Card
-            className="cursor-pointer hover:shadow-md transition-shadow bg-background"
+            className="cursor-pointer hover:shadow-lg hover:border-[#556830] transition-all bg-white"
             onClick={onClick}
         >
-            <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <h3 className="font-semibold text-foreground text-lg leading-tight">
+            <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex-1">
+                        <h3 className="text-[#203622] mb-1 group-hover:text-[#556830] transition-colors">
                             {program.program_name}
                         </h3>
                         {program.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                                 {program.description}
                             </p>
                         )}
                     </div>
-                    <span
-                        className={cn(
-                            'text-xs px-2.5 py-0.5 rounded-full border shrink-0 font-medium',
-                            statusColors[status]
-                        )}
-                    >
-                        {status}
-                    </span>
+                     <Badge variant="outline" className={`${statusColors[status]} ml-3 shrink-0`}>
+                                    {status}
+                    </Badge>
                 </div>
 
-                {types.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                        {types.map((type) => (
-                            <span
-                                key={type}
-                                className={cn(
-                                    'text-xs px-2.5 py-0.5 rounded-full border font-medium',
-                                    programTypeColors[type] ??
-                                        'bg-muted text-foreground border-border'
-                                )}
-                            >
-                                {formatDisplayName(type)}
-                            </span>
-                        ))}
-                    </div>
-                )}
+                 {/* Category Badges */}
+                 <div className="flex flex-wrap gap-2 mb-4">
+                                {types.map((type) => (
+                                    <Badge
+                                        key={type}
+                                        variant="outline"
+                                        className={`${programTypeColors[type] || 'bg-gray-100 text-gray-700 border-gray-200'} text-xs`}
+                                    >
+                                        {formatDisplayName(type)}
+                                    </Badge>
+                                ))}
+                            </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3  mb-4">
                     <MetricBox
-                        label="Active Enrollment"
-                        value={program.total_active_enrollments ?? 0}
+                        label="Enrollment"
+                        primaryValue={program.total_active_enrollments ?? 0}
+                        primaryLabel="currently enrolled"
+                        secondaryLines={[
+                            {
+                                value: `${program.total_enrollments ?? 0} total enrollment${(program.total_enrollments ?? 0) !== 1 ? 's' : ''}`
+                            },
+                            {
+                                value: `${Math.round(program.completion_rate ?? 0)}% completion rate`
+                            }
+                        ]}
                     />
                     <MetricBox
                         label="Classes"
-                        value={program.total_classes ?? 0}
-                        subLabel={`${program.total_classes ?? 0} active`}
-                    />
-                    <MetricBox
-                        label="Completion"
-                        value={`${Math.round(program.completion_rate ?? 0)}%`}
+                        primaryValue={program.total_classes ?? 0}
+                        primaryLabel="total classes"
                     />
                 </div>
-
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {/* Credit & Funding Type */}
+                <div className="text-xs text-gray-600 mb-3 space-y-1">
                     {credits.length > 0 && (
-                        <span>
-                            Credit:{' '}
-                            {credits.map(formatDisplayName).join(', ')}
-                        </span>
+                        <div>
+                            <span className="text-gray-500">
+                                Credit:{' '}
+                                {credits.map(formatDisplayName).join(', ')}
+                            </span>
+                        </div>
                     )}
-                    {funding && <span>Funding: {funding}</span>}
+                    {funding && (
+                        <div>
+                            <span className="text-gray-500">Funding: {funding}</span>
+                        </div>
+                    )}
                 </div>
-
+                {/* Department Admin: Facility Count */}
                 {showFacilities &&
                     (program.total_active_facilities ?? 0) > 0 && (
-                        <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground border-t">
-                            <Building2 className="size-3.5" />
-                            Active in{' '}
-                            <span className="font-semibold text-foreground">
-                                {program.total_active_facilities}
-                            </span>{' '}
-                            {program.total_active_facilities === 1
-                                ? 'facility'
-                                : 'facilities'}
+                        <div className="pt-3 border-t border-gray-200">
+                            <div className="text-sm text-gray-600">
+                                Active in <span className="text-[#203622] font-medium">{program.total_active_facilities}</span> {program.total_active_facilities === 1 ? 'facility' : 'facilities'}
+                            </div>
                         </div>
                     )}
             </CardContent>
@@ -425,24 +425,28 @@ function ProgramCard({
     );
 }
 
-function MetricBox({
-    label,
-    value,
-    subLabel
-}: {
+interface MetricBoxProps {
     label: string;
-    value: string | number;
-    subLabel?: string;
-}) {
+    primaryValue: number;
+    primaryLabel: string;
+    secondaryLines?: Array<{ value: string | number }>;
+}
+
+function MetricBox({ label, primaryValue, primaryLabel, secondaryLines }: MetricBoxProps) {
     return (
-        <div className="bg-[#e5e7e3] rounded-lg p-3 border border-border">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="text-lg font-semibold text-foreground mt-0.5">
-                {value}
-            </p>
-            {subLabel && (
-                <p className="text-xs text-muted-foreground">{subLabel}</p>
-            )}
+        <div className="bg-[#E2E7EA] rounded-lg p-3">
+            <div className="text-xs text-gray-600 mb-2">{label}</div>
+            <div className="space-y-1">
+                <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl text-[#203622]">{primaryValue}</span>
+                    <span className="text-xs text-gray-500">{primaryLabel}</span>
+                </div>
+                {secondaryLines?.map((line, index) => (
+                    <div key={index} className="text-xs text-gray-500">
+                        {line.value}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

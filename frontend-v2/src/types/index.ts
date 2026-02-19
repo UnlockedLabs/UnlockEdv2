@@ -12,3 +12,25 @@ export * from './reports';
 export * from './navigation';
 export * from './websocket';
 export * from './ui';
+
+// User Role Type
+export type UserRole = 'department_admin' | 'facility_admin';
+
+// Navigation Page Type
+export type Page = 
+  | { name: 'dashboard' }
+  | { name: 'residents' }
+  | { name: 'admins' }
+  | { name: 'facilities' }
+  | { name: 'operational-insights' }
+  | { name: 'programs' }
+  | { name: 'program-detail'; programId: string }
+  | { name: 'classes'; filter?: string }
+  | { name: 'class-detail'; classId: string }
+  | { name: 'schedule' }
+  | { name: 'take-attendance'; classId: string; date: string }
+  | { name: 'learning-insights' }
+  | { name: 'learning-platforms' }
+  | { name: 'course-catalog' }
+  | { name: 'knowledge-center' }
+  | { name: 'knowledge-insights' };
