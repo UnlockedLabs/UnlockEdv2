@@ -26,6 +26,7 @@ export enum ProgramType {
     VOCATIONAL = 'Vocational'
 }
 
+
 export enum CreditType {
     COMPLETION = 'Completion',
     EARNED_TIME = 'Earned-time',
