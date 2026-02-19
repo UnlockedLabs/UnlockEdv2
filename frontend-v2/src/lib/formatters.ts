@@ -130,8 +130,34 @@ export function getClassSchedule(cls: Class): ClassScheduleInfo {
 
 export function isClassToday(cls: Class): boolean {
     const schedule = getClassSchedule(cls);
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    return schedule.days.includes(today);
+    const now = new Date();
+    const todayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    if (!schedule.days.includes(todayName)) {
+        return false;
+    }
+
+    const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+    );
+    const endOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999
+    );
+    const start = cls.start_dt ? new Date(cls.start_dt) : null;
+    const end = cls.end_dt ? new Date(cls.end_dt) : null;
+    const startOk =
+        !start || Number.isNaN(start.getTime()) || start <= endOfToday;
+    const endOk =
+        !end || Number.isNaN(end.getTime()) || end >= startOfToday;
+
+    return startOk && endOk;
 }
 
 export function getStatusColor(status: string): string {

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/teambition/rrule-go"
 )
 
 type ClassesService struct {
@@ -181,6 +183,116 @@ func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryCon
 			return items[i].StartTime > items[j].StartTime
 		}
 		return items[i].Date > items[j].Date
+	})
+
+	return items, nil
+}
+
+func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facilityID *uint) ([]models.TodaysScheduleItem, error) {
+	classes, err := svc.db.GetActiveClassesWithEvents(args, facilityID)
+	if err != nil {
+		return nil, err
+	}
+	if len(classes) == 0 {
+		return []models.TodaysScheduleItem{}, nil
+	}
+
+	loc, err := time.LoadLocation(args.Timezone)
+	if err != nil {
+		loc = time.UTC
+	}
+	nowLocal := time.Now().In(loc)
+	startOfToday := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, loc)
+	endOfToday := startOfToday.AddDate(0, 0, 1)
+
+	items := make([]models.TodaysScheduleItem, 0)
+	for _, class := range classes {
+		startDt := class.StartDt.In(loc)
+		if startDt.After(endOfToday) {
+			continue
+		}
+		if class.EndDt != nil {
+			endDt := class.EndDt.In(loc)
+			if endDt.Before(startOfToday) {
+				continue
+			}
+		}
+
+		for _, event := range class.Events {
+			rule, err := event.GetRRuleWithTimezone(args.Timezone)
+			if err != nil {
+				continue
+			}
+			firstOccurrence := rule.After(time.Time{}, false)
+			canonicalHour, canonicalMinute := getCanonicalHourAndMinute([]time.Time{firstOccurrence}, args.Timezone)
+			overrideStartTimes := make(map[string]struct{})
+			for _, override := range event.Overrides {
+				if override.IsCancelled {
+					continue
+				}
+				overrideOptions, err := rrule.StrToROption(override.OverrideRrule)
+				if err != nil {
+					continue
+				}
+				overrideOptions.Dtstart = overrideOptions.Dtstart.In(time.UTC)
+				overrideRule, err := rrule.NewRRule(*overrideOptions)
+				if err != nil {
+					continue
+				}
+				overrideOccurrences := overrideRule.Between(startOfToday.UTC(), endOfToday.UTC(), true)
+				for _, occ := range overrideOccurrences {
+					overrideStartTimes[occ.UTC().Format(time.RFC3339Nano)] = struct{}{}
+				}
+			}
+			eventInstances := database.GenerateEventInstances(event, startOfToday, endOfToday)
+			for _, inst := range eventInstances {
+				if inst.IsCancelled {
+					continue
+				}
+				localStart := inst.StartTime.In(loc)
+				localOcc := localStart
+				if _, isOverride := overrideStartTimes[inst.StartTime.UTC().Format(time.RFC3339Nano)]; !isOverride {
+					localOcc = time.Date(
+						localStart.Year(),
+						localStart.Month(),
+						localStart.Day(),
+						canonicalHour,
+						canonicalMinute,
+						0,
+						0,
+						loc,
+					)
+				}
+				if localOcc.Before(startOfToday) || !localOcc.Before(endOfToday) {
+					continue
+				}
+				facilityName := ""
+				if class.Facility != nil {
+					facilityName = class.Facility.Name
+				}
+				items = append(items, models.TodaysScheduleItem{
+					ClassID:        class.ID,
+					ClassName:      class.Name,
+					InstructorName: class.InstructorName,
+					FacilityID:     class.FacilityID,
+					FacilityName:   facilityName,
+					EventID:        inst.EventID,
+					Date:           localOcc.Format("2006-01-02"),
+					StartTime:      localOcc.Format("15:04"),
+					Room:           inst.Room,
+				})
+			}
+		}
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Date == items[j].Date { //sorting by date, time, then by name
+			if items[i].StartTime == items[j].StartTime {
+				return items[i].ClassName < items[j].ClassName
+			}
+			return items[i].StartTime < items[j].StartTime
+		}
+		return items[i].Date < items[j].Date
 	})
 
 	return items, nil

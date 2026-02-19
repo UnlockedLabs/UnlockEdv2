@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -17,6 +18,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
+		adminFeatureRoute("GET /api/program-classes/todays-schedule", srv.handleGetTodaysSchedule, axx),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
@@ -57,6 +59,40 @@ func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Reque
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, events)
+}
+
+func (srv *Server) handleGetTodaysSchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	default:
+		facilityId = &args.FacilityID
+	}
+
+	service := services.NewClassesService(srv.Db)
+	items, err := service.GetTodaysSchedule(&args, facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	args.Total = int64(len(items))
+	if !args.All {
+		start := args.CalcOffset()
+		if start < len(items) {
+			end := start + args.PerPage
+			if end > len(items) {
+				end = len(items)
+			}
+			items = items[start:end]
+		} else {
+			items = []models.TodaysScheduleItem{}
+		}
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, items, args.IntoMeta())
 }
 
 func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, log sLog) error {
