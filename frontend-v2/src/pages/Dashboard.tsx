@@ -7,12 +7,12 @@ import {
     MissingAttendanceItem,
     Class,
     ProgramOverview,
+    TodaysScheduleItem,
     ServerResponseMany,
     SelectedClassStatus,
     ServerResponseOne
 } from '@/types';
 import {
-    getClassSchedule,
     isClassToday,
     formatTime12h
 } from '@/lib/formatters';
@@ -66,6 +66,15 @@ export default function Dashboard() {
         : '/api/program-classes/missing-attendance?days=3&all=true';
     const { data: missingAttendanceResp, isLoading: missingAttendanceLoading } =
         useSWR<ServerResponseMany<MissingAttendanceItem>>(missingAttendanceUrl);
+    const todaysScheduleUrl = deptAdmin
+        ? '/api/program-classes/todays-schedule?facility=all&all=true'
+        : '/api/program-classes/todays-schedule?all=true';
+    const { data: todaysScheduleResp, isLoading: todaysScheduleLoading } =
+        useSWR<ServerResponseMany<TodaysScheduleItem>>(todaysScheduleUrl);
+    const todaysScheduleItems = useMemo<TodaysScheduleItem[]>(
+        () => todaysScheduleResp?.data ?? ([] as TodaysScheduleItem[]),
+        [todaysScheduleResp?.data]
+    );
     const facilityClasses = useMemo(() => {
         if (deptAdmin || !user) return allClasses;
         return allClasses.filter((c) => c.facility_id === user.facility.id);
@@ -89,6 +98,8 @@ export default function Dashboard() {
                         metrics={classMetricsResp?.data}
                         missingAttendance={missingAttendanceResp?.data ?? []}
                         missingAttendanceLoading={missingAttendanceLoading}
+                        todaysScheduleItems={todaysScheduleItems}
+                        todaysScheduleLoading={todaysScheduleLoading}
                     />
                 )}
             </div>
@@ -101,13 +112,17 @@ function FacilityAdminView({
     facilityName,
     metrics,
     missingAttendance,
-    missingAttendanceLoading
+    missingAttendanceLoading,
+    todaysScheduleItems,
+    todaysScheduleLoading
 }: {
     classes: Class[];
     facilityName: string;
     metrics?: ClassMetrics;
     missingAttendance: MissingAttendanceItem[];
     missingAttendanceLoading: boolean;
+    todaysScheduleItems: TodaysScheduleItem[];
+    todaysScheduleLoading: boolean;
 }) {
     const navigate = useNavigate();
     const stats = useMemo(() => {
@@ -129,21 +144,13 @@ function FacilityAdminView({
             attendanceConcerns: metrics.attendance_concerns
         };
     }, [classes, metrics]);
-    const handleAttendanceNavigate = (cls: Class) => {
-        const eventId =
-            cls.events?.find((event) => !event.is_cancelled)?.id ??
-            cls.events?.[0]?.id;
-        if (!eventId) {
-            navigate('/program-classes/' + cls.id + '/attendance');
+    const handleAttendanceNavigate = (item: TodaysScheduleItem) => {
+        if (!item.event_id) {
+            navigate('/program-classes/' + item.class_id + '/attendance');
             return;
         }
-        const today = new Date();
-        const yyyy = String(today.getFullYear());
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const date = `${yyyy}-${mm}-${dd}`;
         navigate(
-            `/program-classes/${cls.id}/events/${eventId}/attendance/${date}`
+            `/program-classes/${item.class_id}/events/${item.event_id}/attendance/${item.date}`
         );
     };
 
@@ -163,7 +170,8 @@ function FacilityAdminView({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <TodaysSchedule
-                        classes={classes}
+                        items={todaysScheduleItems}
+                        isLoading={todaysScheduleLoading}
                         onNavigate={handleAttendanceNavigate}
                     />
                 </div>
@@ -376,11 +384,13 @@ function computeStats(classes: Class[]): DashboardStats {
 }
 
 function TodaysSchedule({
-    classes,
+    items,
+    isLoading,
     onNavigate
 }: {
-    classes: Class[];
-    onNavigate: (cls: Class) => void;
+    items: TodaysScheduleItem[];
+    isLoading: boolean;
+    onNavigate: (item: TodaysScheduleItem) => void;
 }) {
     const navigate = useNavigate();
     const today = new Date();
@@ -391,18 +401,11 @@ function TodaysSchedule({
         year: 'numeric'
     });
 
-    const todayClasses = useMemo(() => {
-        return classes
-            .filter(
-                (c) =>
-                    isClassToday(c) && c.status === SelectedClassStatus.Active
-            )
-            .sort((a, b) => {
-                const schedA = getClassSchedule(a);
-                const schedB = getClassSchedule(b);
-                return schedA.startTime.localeCompare(schedB.startTime);
-            });
-    }, [classes]);
+    const todayClasses: TodaysScheduleItem[] = useMemo((): TodaysScheduleItem[] => {
+        const sorted: TodaysScheduleItem[] = items.slice();
+        sorted.sort(compareTodaysScheduleItems);
+        return sorted;
+    }, [items]);
 
     return (
         <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626]">
@@ -425,46 +428,41 @@ function TodaysSchedule({
             <div className="p-6">
                 {todayClasses.length > 0 ? (
                     <div className="space-y-3">
-                        {todayClasses.map((cls) => {
-                            const schedule = getClassSchedule(cls);
+                        {todayClasses.map((item: TodaysScheduleItem) => {
                             return (
                                 <div
-                                    key={cls.id}
+                                    key={`${item.class_id}-${item.event_id}-${item.date}-${item.start_time}`}
                                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#E2E7EA] dark:bg-[#262626] rounded-lg hover:bg-gray-100 dark:hover:bg-[#262626]/80 transition-colors group"
                                 >
                                     <div
                                         onClick={() =>
-                                            navigate(
-                                                '/program-classes/' + cls.id
-                                            )
+                                            navigate('/program-classes/' + item.class_id)
                                         }
                                         className="flex items-center gap-4 flex-1 cursor-pointer min-w-0"
                                     >
                                         <div className="flex items-center gap-2 min-w-[80px] shrink-0">
                                             <Clock className="size-4 text-gray-500 dark:text-gray-400" />
                                             <span className="text-sm text-[#203622] dark:text-white">
-                                                {formatTime12h(
-                                                    schedule.startTime
-                                                )}
+                                                {formatTime12h(item.start_time)}
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="text-[#203622] dark:text-white group-hover:text-[#556830] transition-colors truncate">
-                                                {cls.name}
+                                                {item.class_name}
                                             </div>
                                             <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                                {cls.instructor_name}
+                                                {item.instructor_name}
                                             </div>
                                         </div>
                                         <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[160px] hidden md:block">
-                                            {schedule.room || '-'}
+                                            {item.room || '-'}
                                         </div>
                                     </div>
                                     <Button
                                         size="sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onNavigate(cls);
+                                            onNavigate(item);
                                         }}
                                         className="bg-[#556830] hover:bg-[#203622] text-white w-full sm:w-auto"
                                     >
@@ -477,12 +475,26 @@ function TodaysSchedule({
                 ) : (
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                         <Calendar className="size-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                        <p>No classes scheduled for today</p>
+                        <p>
+                            {isLoading
+                                ? "Loading today's schedule..."
+                                : 'No classes scheduled for today'}
+                        </p>
                     </div>
                 )}
             </div>
         </div>
     );
+}
+
+function compareTodaysScheduleItems(
+    a: TodaysScheduleItem,
+    b: TodaysScheduleItem
+): number {
+    if (a.date === b.date) {
+        return a.start_time.localeCompare(b.start_time);
+    }
+    return a.date.localeCompare(b.date);
 }
 
 function MissingAttendanceWidget({
@@ -524,7 +536,7 @@ function MissingAttendanceWidget({
                             : 'Past 3 days'}
                     </p>
                     <div className="space-y-3">
-                        {displayList.map((item) => {
+                        {displayList.map((item: MissingAttendanceItem) => {
                             const dayLabel = new Date(
                                 `${item.date}T00:00:00`
                             ).toLocaleDateString('en-US', {

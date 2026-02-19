@@ -50,6 +50,18 @@ type ProgramClass struct {
 
 func (ProgramClass) TableName() string { return "program_classes" }
 
+type TodaysScheduleItem struct {
+	ClassID        uint   `json:"class_id"`
+	ClassName      string `json:"class_name"`
+	InstructorName string `json:"instructor_name"`
+	FacilityID     uint   `json:"facility_id"`
+	FacilityName   string `json:"facility_name"`
+	EventID        uint   `json:"event_id"`
+	Date           string `json:"date"`
+	StartTime      string `json:"start_time"`
+	Room           string `json:"room"`
+}
+
 func (c *ProgramClass) BeforeCreate(tx *gorm.DB) error {
 	if err := c.DatabaseFields.BeforeCreate(tx); err != nil {
 		return err

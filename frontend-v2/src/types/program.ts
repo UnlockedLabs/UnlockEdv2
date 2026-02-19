@@ -163,6 +163,18 @@ export interface MissingAttendanceItem {
     start_time: string;
 }
 
+export interface TodaysScheduleItem {
+    class_id: number;
+    class_name: string;
+    instructor_name: string;
+    facility_id: number;
+    facility_name: string;
+    event_id: number;
+    date: string;
+    start_time: string;
+    room: string;
+}
+
 export interface ClassMetrics {
     active_classes: number;
     total_enrollments: number;
