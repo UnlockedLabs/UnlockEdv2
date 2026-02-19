@@ -63,42 +63,43 @@ export default function AuthenticatedLayout() {
     if (!user) return null;
 
     return (
-        <div className="h-screen bg-background flex overflow-hidden">
-            <div className="hidden md:flex">
-                <Sidebar
-                    collapsed={sidebarCollapsed}
-                    onToggleCollapse={() =>
-                        setSidebarCollapsed(!sidebarCollapsed)
-                    }
-                />
-            </div>
-
-            <div className="flex-1 flex flex-col min-w-0">
-                <div className="flex items-center">
-                    <div className="md:hidden px-2">
-                        <MobileNav />
-                    </div>
-                    <div className="flex-1">
-                        <TopNav
-                            facilities={facilities}
-                            onToggleHelpCenter={() =>
-                                setHelpCenterOpen(!helpCenterOpen)
-                            }
-                        />
-                    </div>
+        <>
+            <div className="h-screen bg-background flex overflow-hidden">
+                <div className="hidden md:flex">
+                    <Sidebar
+                        collapsed={sidebarCollapsed}
+                        onToggleCollapse={() =>
+                            setSidebarCollapsed(!sidebarCollapsed)
+                        }
+                    />
                 </div>
 
-                <TitleManager />
-                <UnlockEdTour />
-                <Toaster />
+                <div className="flex-1 flex flex-col min-w-0">
+                    <div className="flex items-center shrink-0">
+                        <div className="md:hidden px-2">
+                            <MobileNav />
+                        </div>
+                        <div className="flex-1">
+                            <TopNav
+                                facilities={facilities}
+                                onToggleHelpCenter={() =>
+                                    setHelpCenterOpen(!helpCenterOpen)
+                                }
+                            />
+                        </div>
+                    </div>
+                    <TitleManager />
 
-                <div className="flex-1 overflow-y-auto px-6 py-4 bg-[#E2E7EA] dark:bg-[#0a0a0a]">
-                    {breadcrumbItems.length > 0 && (
-                        <Breadcrumbs items={breadcrumbItems} />
-                    )}
-                    <Outlet />
+                    <div className="flex-1 overflow-y-auto px-6 py-4 bg-[#E2E7EA] dark:bg-[#0a0a0a]">
+                        {breadcrumbItems.length > 0 && (
+                            <Breadcrumbs items={breadcrumbItems} />
+                        )}
+                        <Outlet />
+                    </div>
                 </div>
             </div>
-        </div>
+            <UnlockEdTour />
+            <Toaster />
+        </>
     );
 }

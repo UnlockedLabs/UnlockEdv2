@@ -193,7 +193,7 @@ export default function ProgramOverviewDashboard() {
                             </p>
                             <Select
                                 value={programStatus}
-                                onValueChange={handleProgramStatusChange}
+                                onValueChange={(v) => { void handleProgramStatusChange(v); }}
                                 disabled={!!program.archived_at}
                             >
                                 <SelectTrigger className="w-32 h-9">
@@ -291,7 +291,7 @@ export default function ProgramOverviewDashboard() {
                             canAddClass={
                                 !!program.is_active && !program.archived_at
                             }
-                            onStatusChange={handleClassStatusChange}
+                            onStatusChange={(cls, status) => { void handleClassStatusChange(cls, status); }}
                         />
                     </TabsContent>
 

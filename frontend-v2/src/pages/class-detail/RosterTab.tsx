@@ -387,7 +387,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                             <Button
                                 size="sm"
                                 className="bg-[#556830] hover:bg-[#203622]"
-                                onClick={handleBulkGraduate}
+                                onClick={() => { void handleBulkGraduate(); }}
                             >
                                 <CheckCircle className="size-4 mr-2" />
                                 Graduate Selected

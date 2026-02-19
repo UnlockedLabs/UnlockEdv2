@@ -6,10 +6,8 @@ import useSWR from 'swr';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
 import {
-    Class,
     ClassLoaderData,
     ProgClassStatus,
-    SelectedClassStatus,
     ServerResponseMany,
     Room,
     RoomConflict,
@@ -28,7 +26,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { ConfirmDialog } from '@/components/shared';
 import { FormModal } from '@/components/shared';
 
 interface ClassFormData {
@@ -249,6 +246,11 @@ export default function ClassManagementForm() {
             return;
         }
 
+        if (isNewClass && !data.room_id) {
+            toast.error('Room selection is required');
+            return;
+        }
+
         const duration = formatDuration(data.start_time, data.end_time);
         if (isNewClass && duration === '0h0m0s') {
             toast.error('End time must be after start time');
@@ -328,7 +330,7 @@ export default function ClassManagementForm() {
                 subtitle={isNewClass ? 'Set up a new class for this program' : 'Update class details'}
             />
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-6">
                 <div className="bg-card rounded-lg border border-border p-6 space-y-4">
                     <h2 className="text-lg font-semibold text-foreground">
                         Class Information
