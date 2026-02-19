@@ -416,6 +416,24 @@ func (db *DB) GetActiveClassesForMissingAttendance(args *models.QueryContext, fa
 	return missClasses, nil
 }
 
+func (db *DB) GetActiveClassesWithEvents(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
+	var classes []models.ProgramClass
+	classQuery := db.WithContext(args.Ctx).
+		Model(&models.ProgramClass{}).
+		Preload("Events.Overrides").
+		Preload("Events.RoomRef").
+		Preload("Facility").
+		Where("status = ?", models.Active).
+		Where("archived_at IS NULL")
+	if facilityID != nil {
+		classQuery = classQuery.Where("facility_id = ?", *facilityID)
+	}
+	if err := classQuery.Find(&classes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_classes")
+	}
+	return classes, nil
+}
+
 func (db *DB) GetClassEventsWithOverrides(args *models.QueryContext, classIDs []uint) ([]models.ProgramClassEvent, error) {
 	var events []models.ProgramClassEvent
 	if err := db.WithContext(args.Ctx).
