@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Calendar } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -10,6 +10,7 @@ import {
     DialogTitle
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
@@ -45,8 +46,8 @@ function buildRecentSessions(
     for (const inst of instances) {
         if (inst.is_cancelled) continue;
 
-        const dateObj = new Date(inst.date);
-        dateObj.setHours(0, 0, 0, 0);
+        const [y, m, d] = inst.date.split('-').map(Number);
+        const dateObj = new Date(y!, m! - 1, d!);
 
         if (dateObj > today || dateObj < cutoff) continue;
 
@@ -89,7 +90,23 @@ export function TakeAttendanceModal({
         return buildRecentSessions(eventsResp?.data ?? []);
     }, [eventsResp]);
 
-    const missingCount = sessions.filter((s) => !s.hasAttendance).length;
+    const todaySession = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return sessions.find(
+            (s) => s.dateObj.getTime() === today.getTime()
+        ) ?? null;
+    }, [sessions]);
+
+    const pastSessions = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return sessions.filter(
+            (s) => s.dateObj.getTime() !== today.getTime()
+        );
+    }, [sessions]);
+
+    const missingCount = pastSessions.filter((s) => !s.hasAttendance).length;
 
     const handleSelectSession = (session: SessionItem) => {
         onOpenChange(false);
@@ -129,75 +146,108 @@ export function TakeAttendanceModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="mt-2">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-[#203622]">
-                            Recent Sessions (Last 30 Days)
-                        </h4>
-                        {missingCount > 0 && (
-                            <Badge
-                                variant="outline"
-                                className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1"
+                <div className="mt-2 space-y-5">
+                    {todaySession && (
+                        <div className="rounded-lg border-2 border-[#F1B51C] p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Calendar className="size-5 text-[#203622]" />
+                                <span className="font-semibold text-[#203622]">
+                                    Today's Session
+                                </span>
+                                <Badge className="bg-[#F1B51C] text-[#203622] border-0 ml-1">
+                                    {todaySession.dateObj.toLocaleDateString(
+                                        'en-US',
+                                        {
+                                            weekday: 'long',
+                                            month: 'short',
+                                            day: 'numeric'
+                                        }
+                                    )}
+                                </Badge>
+                            </div>
+                            <Button
+                                onClick={() =>
+                                    handleSelectSession(todaySession)
+                                }
+                                className="w-full bg-[#556830] text-white hover:bg-[#203622]"
                             >
-                                <AlertCircle className="size-3" />
-                                {missingCount} missing
-                            </Badge>
-                        )}
-                    </div>
+                                {todaySession.hasAttendance
+                                    ? `Edit Today's Attendance (${todaySession.attendedCount}/${todaySession.totalRecords})`
+                                    : "Take Today's Attendance"}
+                            </Button>
+                        </div>
+                    )}
 
-                    <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
-                        {sessions.length === 0 ? (
-                            <p className="text-center text-gray-500 py-6 text-sm">
-                                No sessions in the last 30 days.
-                            </p>
-                        ) : (
-                            sessions.map((session) => (
-                                <button
-                                    key={session.date}
-                                    onClick={() =>
-                                        handleSelectSession(session)
-                                    }
-                                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
-                                        session.hasAttendance
-                                            ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
-                                            : 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
-                                    }`}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-[#203622]">
+                                Recent Sessions (Last 30 Days)
+                            </h4>
+                            {missingCount > 0 && (
+                                <Badge
+                                    variant="outline"
+                                    className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        {session.hasAttendance ? (
-                                            <CheckCircle className="size-5 text-[#556830] shrink-0" />
-                                        ) : (
-                                            <AlertCircle className="size-5 text-[#F1B51C] shrink-0" />
-                                        )}
-                                        <div>
-                                            <div className="text-sm font-medium text-[#203622]">
-                                                {session.dateObj.toLocaleDateString(
-                                                    'en-US',
-                                                    {
-                                                        weekday: 'long',
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    }
-                                                )}
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-0.5">
-                                                {session.hasAttendance
-                                                    ? `${session.attendedCount} / ${session.totalRecords} attended`
-                                                    : 'Missing attendance'}
+                                    <AlertCircle className="size-3" />
+                                    {missingCount} missing
+                                </Badge>
+                            )}
+                        </div>
+
+                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                            {pastSessions.length === 0 ? (
+                                <p className="text-center text-gray-500 py-6 text-sm">
+                                    No past sessions in the last 30 days.
+                                </p>
+                            ) : (
+                                pastSessions.map((session) => (
+                                    <button
+                                        key={session.date}
+                                        onClick={() =>
+                                            handleSelectSession(session)
+                                        }
+                                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+                                            session.hasAttendance
+                                                ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
+                                                : 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {session.hasAttendance ? (
+                                                <CheckCircle className="size-5 text-[#556830] shrink-0" />
+                                            ) : (
+                                                <AlertCircle className="size-5 text-[#F1B51C] shrink-0" />
+                                            )}
+                                            <div>
+                                                <div className="text-sm font-medium text-[#203622]">
+                                                    {session.dateObj.toLocaleDateString(
+                                                        'en-US',
+                                                        {
+                                                            weekday: 'long',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        }
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                    {session.hasAttendance
+                                                        ? `${session.attendedCount} / ${session.totalRecords} attended`
+                                                        : 'Missing attendance'}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <span className="text-sm text-gray-500">
-                                        {session.hasAttendance
-                                            ? 'Edit'
-                                            : 'Take'}
-                                    </span>
-                                </button>
-                            ))
-                        )}
+                                        <span className="text-sm text-gray-500">
+                                            {session.hasAttendance
+                                                ? 'Edit'
+                                                : 'Take'}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
+                        </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="pt-4 border-t border-gray-200">
                         <label className="text-sm text-gray-500 mb-2 block">
                             Need an older date?
                         </label>

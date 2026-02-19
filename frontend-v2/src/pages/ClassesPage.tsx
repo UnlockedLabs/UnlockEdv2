@@ -38,13 +38,16 @@ import {
     Search,
     Plus,
     Calendar,
+    CalendarOff,
     Clock,
     Filter,
     MapPin
 } from 'lucide-react';
+import { Pagination } from '@/components/shared';
 import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
+import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
 
-const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
+const STATUS_OPTIONS: { label: string; value: string }[] = [
     { label: 'All Status', value: 'all' },
     { label: 'Active', value: SelectedClassStatus.Active },
     { label: 'Scheduled', value: SelectedClassStatus.Scheduled },
@@ -89,10 +92,14 @@ export default function ClassesPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [programSearch, setProgramSearch] = useState('');
     const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
+    const [showBulkCancel, setShowBulkCancel] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
-    const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
-        '/api/program-classes?per_page=100'
-    );
+    const { data: classesResp, mutate: mutateClasses } =
+        useSWR<ServerResponseMany<Class>>(
+            '/api/program-classes?per_page=100'
+        );
     const { data: programsResp } = useSWR<ServerResponseMany<Program>>(
         showCreateModal ? '/api/programs' : null
     );
@@ -185,6 +192,15 @@ export default function ClassesPage() {
         statusFilter
     ]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, todayOnly, attendanceConcerns, programFilter, statusFilter]);
+
+    const paginatedClasses = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredClasses.slice(start, start + itemsPerPage);
+    }, [filteredClasses, currentPage, itemsPerPage]);
+
     return (
         <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="max-w-7xl mx-auto px-6 py-8">
@@ -198,13 +214,23 @@ export default function ClassesPage() {
                                 Manage and monitor all classes at your facility
                             </p>
                         </div>
-                        <Button
-                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2"
-                            onClick={() => setShowCreateModal(true)}
-                        >
-                            <Plus className="size-5" />
-                            Create New Class
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 gap-2"
+                                onClick={() => setShowBulkCancel(true)}
+                            >
+                                <CalendarOff className="size-4" />
+                                Cancel Classes by Instructor
+                            </Button>
+                            <Button
+                                className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2"
+                                onClick={() => setShowCreateModal(true)}
+                            >
+                                <Plus className="size-5" />
+                                Create New Class
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -292,11 +318,6 @@ export default function ClassesPage() {
                     </div>
                 </div>
 
-                <div className="mb-4 text-sm text-gray-600">
-                    Showing {filteredClasses.length}{' '}
-                    {filteredClasses.length === 1 ? 'class' : 'classes'}
-                </div>
-
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <table className="w-full">
                         <thead className="bg-[#E2E7EA] border-b border-gray-200">
@@ -322,7 +343,7 @@ export default function ClassesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {filteredClasses.length === 0 ? (
+                            {paginatedClasses.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={6}
@@ -332,7 +353,7 @@ export default function ClassesPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredClasses.map((cls) => (
+                                paginatedClasses.map((cls) => (
                                     <ClassRow
                                         key={cls.id}
                                         cls={cls}
@@ -349,6 +370,14 @@ export default function ClassesPage() {
                             )}
                         </tbody>
                     </table>
+                    <Pagination
+                        totalItems={filteredClasses.length}
+                        itemsPerPage={itemsPerPage}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        itemLabel="classes"
+                    />
                 </div>
             </div>
 
@@ -413,6 +442,12 @@ export default function ClassesPage() {
                     className={attendanceClass.name}
                 />
             )}
+
+            <BulkCancelClassesModal
+                open={showBulkCancel}
+                onClose={() => setShowBulkCancel(false)}
+                mutate={mutateClasses}
+            />
         </div>
     );
 }

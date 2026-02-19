@@ -30,18 +30,13 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger
-} from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseLocalDay(dateStr: string): Date {
     const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y!, m! - 1, d!);
+    return new Date(y, m - 1, d);
 }
 
 function formatTimeHM(date: Date): string {
@@ -93,7 +88,8 @@ export default function EventAttendance() {
     const [initialized, setInitialized] = useState(false);
 
     const { data, isLoading, error, mutate } = useSWR<
-        ServerResponseMany<EnrollmentAttendance>
+        ServerResponseMany<EnrollmentAttendance>,
+        Error
     >(
         `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&per_page=200`
     );
@@ -145,7 +141,7 @@ export default function EventAttendance() {
                 reason: item.reason_category ?? '',
                 check_in_at: item.check_in_at ?? (hasExisting ? '' : defaultCheckIn),
                 check_out_at: item.check_out_at ?? '',
-                showNoteField: !!(item.note && item.note.trim()),
+                showNoteField: !!(item.note?.trim()),
                 dirty: false
             };
         });
@@ -238,12 +234,12 @@ export default function EventAttendance() {
                 ? {
                       check_in_at:
                           rows.find((r) => r.user_id === userId)
-                              ?.check_in_at ||
-                          scheduledTimes.check_in_at ||
+                              ?.check_in_at ??
+                          scheduledTimes.check_in_at ??
                           formatTimeHM(new Date()),
                       check_out_at:
                           rows.find((r) => r.user_id === userId)
-                              ?.check_out_at || ''
+                              ?.check_out_at ?? ''
                   }
                 : {};
 
@@ -260,7 +256,7 @@ export default function EventAttendance() {
             }),
             reason: isPresentLike
                 ? ''
-                : current?.reason || AttendanceReason.Lockdown,
+                : current?.reason ?? AttendanceReason.Lockdown,
             showNoteField: current?.showNoteField && !!(current?.note?.trim())
         });
     }
@@ -349,7 +345,7 @@ export default function EventAttendance() {
                                 Mark All Present
                             </Button>
                             <Button
-                                onClick={handleSave}
+                                onClick={() => { void handleSave(); }}
                                 disabled={isSaving}
                                 className="bg-[#556830] hover:bg-[#203622] text-white gap-2"
                             >
@@ -452,7 +448,7 @@ export default function EventAttendance() {
                         Cancel
                     </Button>
                     <Button
-                        onClick={handleSave}
+                        onClick={() => { void handleSave(); }}
                         disabled={isSaving}
                         className="bg-[#556830] hover:bg-[#203622] text-white gap-2"
                     >
@@ -465,13 +461,13 @@ export default function EventAttendance() {
     );
 }
 
-const STATUS_BUTTONS: Array<{
+const STATUS_BUTTONS: {
     status: Attendance;
     label: string;
     icon: typeof CheckCircle;
     activeClass: string;
     hoverBorder: string;
-}> = [
+}[] = [
     {
         status: Attendance.Present,
         label: 'Present',
@@ -505,8 +501,7 @@ const STATUS_BUTTONS: Array<{
 function AttendanceRowCard({
     row,
     onStatusChange,
-    onUpdate,
-    scheduledTimes
+    onUpdate
 }: {
     row: RowState;
     onStatusChange: (userId: number, status: Attendance) => void;
@@ -553,7 +548,7 @@ function AttendanceRowCard({
                                     {btn.label}
                                 </span>
                                 <span className="sm:hidden">
-                                    {btn.label.split(' ')[0]!.split('(')[0]}
+                                    {btn.label.split(' ')[0]?.split('(')[0]}
                                 </span>
                             </button>
                         );
@@ -597,7 +592,7 @@ function AttendanceRowCard({
                                 Total Time
                             </Label>
                             <div className="h-10 flex items-center text-sm text-gray-600 px-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                {partialTime || '\u2014'}
+                                {partialTime ?? '\u2014'}
                             </div>
                         </div>
                     </div>
