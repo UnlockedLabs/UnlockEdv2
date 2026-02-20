@@ -63,7 +63,7 @@ export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { data: resp, mutate } = useSWR<ServerResponseMany<ProgramsOverviewTable>>(
-        '/api/programs/detailed-list?include_archived=true'
+        '/api/programs/detailed-list?include_archived=true&per_page=100'
     );
     const programs = resp?.data ?? [];
 
@@ -610,7 +610,7 @@ export default function ProgramsPage() {
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-6 mb-4">
                             {paginatedPrograms.map((program) => (
                                 <ProgramCard
                                     key={program.program_id}
@@ -728,8 +728,13 @@ function ProgramCard({
                     />
                     <MetricBox
                         label="Classes"
-                        primaryValue={program.total_classes ?? 0}
-                        primaryLabel="total classes"
+                        primaryValue={program.total_active_classes ?? 0}
+                        primaryLabel="active"
+                        secondaryLines={[
+                            {
+                                value: `${program.total_classes ?? 0} total class${(program.total_classes ?? 0) !== 1 ? 'es' : ''}`
+                            }
+                        ]}
                     />
                 </div>
                 {/* Credit & Funding Type */}
