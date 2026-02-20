@@ -63,7 +63,7 @@ export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { data: resp, mutate } = useSWR<ServerResponseMany<ProgramsOverviewTable>>(
-        '/api/programs/detailed-list?all=true'
+        '/api/programs/detailed-list?include_archived=true'
     );
     const programs = resp?.data ?? [];
 
