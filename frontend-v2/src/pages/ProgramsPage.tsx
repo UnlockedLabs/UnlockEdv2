@@ -230,6 +230,10 @@ export default function ProgramsPage() {
                         (b.total_active_enrollments ?? 0) -
                         (a.total_active_enrollments ?? 0)
                     );
+                case 'completion-asc':
+                    return (a.completion_rate ?? 0) - (b.completion_rate ?? 0);
+                case 'completion-desc':
+                    return (b.completion_rate ?? 0) - (a.completion_rate ?? 0);
             }
         });
 
