@@ -1,13 +1,27 @@
-import { ProgramType, CreditType, FundingType } from '@/types';
+import { ProgramType, CreditType, FundingType, ProgramEffectiveStatus } from '@/types';
+
+export type SortOption =
+    | 'name-asc'
+    | 'name-desc'
+    | 'enrollment-asc'
+    | 'enrollment-desc';
 
 export const programTypeColors: Record<string, string> = {
     Educational: 'bg-blue-100 text-blue-700 border-blue-200',
     Vocational: 'bg-orange-100 text-orange-700 border-orange-200',
     Mental_Health_Behavioral: 'bg-pink-100 text-pink-700 border-pink-200',
-    Therapeutic: 'bg-teal-100 text-teal-700 border-teal-200',
+    Therapeutic: 'bg-purple-100 text-purple-700 border-purple-200',
     Life_Skills: 'bg-green-100 text-green-700 border-green-200',
     'Re-Entry': 'bg-indigo-100 text-indigo-700 border-indigo-200',
     'Religious_Faith-Based': 'bg-amber-100 text-amber-700 border-amber-200'
+};
+
+export const statusColors: Record<ProgramEffectiveStatus, string> = {
+    [ProgramEffectiveStatus.Available]:
+        'bg-green-100 text-green-700 border-green-300',
+    [ProgramEffectiveStatus.Inactive]:
+        'bg-gray-100 text-gray-700 border-gray-300',
+    [ProgramEffectiveStatus.Archived]: 'bg-red-100 text-red-700 border-red-300'
 };
 
 export const ALL_PROGRAM_TYPES: ProgramType[] = [
