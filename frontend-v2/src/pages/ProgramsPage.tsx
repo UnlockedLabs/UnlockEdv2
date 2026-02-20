@@ -26,6 +26,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Plus, Filter, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/Pagination';
 
 const programTypeColors: Record<string, string> = {
     Educational: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -76,7 +77,7 @@ export default function ProgramsPage() {
     const navigate = useNavigate();
     const { data: resp } =
         useSWR<ServerResponseMany<ProgramsOverviewTable>>(
-            '/api/programs/detailed-list'
+            '/api/programs/detailed-list?all=true'
         );
     const programs = resp?.data ?? [];
 
@@ -85,7 +86,9 @@ export default function ProgramsPage() {
     const [selectedTypes, setSelectedTypes] = useState<ProgramType[]>([]);
     const [selectedStatuses, setSelectedStatuses] = useState<ProgramEffectiveStatus[]>([]);
 
-    // Toggle filter selection
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     const toggleTypeFilter = (type: ProgramType) => {
         setSelectedTypes(prev =>
             prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
@@ -98,7 +101,6 @@ export default function ProgramsPage() {
         );
     };
 
-    // Clear all filters
     const clearFilters = () => {
         setSelectedTypes([]);
         setSelectedStatuses([]);
@@ -149,6 +151,8 @@ export default function ProgramsPage() {
 
         return result;
     }, [programs, search, sort, selectedTypes, selectedStatuses]);
+
+    const paginatedPrograms = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const stats = useMemo(() => {
         const active = programs.filter((p) => p.status && !p.archived_at);
@@ -330,20 +334,34 @@ export default function ProgramsPage() {
                         <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-6">
-                        {filtered.map((program) => (
-                            <ProgramCard
-                                key={program.program_id}
-                                program={program}
-                                showFacilities={isDeptAdminUser}
-                                onClick={() =>
-                                    navigate(
-                                        '/programs/' + program.program_id
-                                    )
-                                }
+                    <>
+                        <div className="grid grid-cols-2 gap-6">
+                            {paginatedPrograms.map((program) => (
+                                <ProgramCard
+                                    key={program.program_id}
+                                    program={program}
+                                    showFacilities={isDeptAdminUser}
+                                    onClick={() =>
+                                        navigate(
+                                            '/programs/' + program.program_id
+                                        )
+                                    }
+                                />
+                            ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {filtered.length > itemsPerPage && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={filtered.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                                onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
+                                itemLabel="programs"
                             />
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
