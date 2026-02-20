@@ -770,7 +770,10 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		tx = tx.Order(args.OrderClause("programs.created_at desc"))
 	}
 
-	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
+	if !args.All {
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
+	}
+	if err := tx.Scan(&programsTable).Error; err != nil {
 		return programsTable, newGetRecordsDBError(err, "programs table")
 	}
 
