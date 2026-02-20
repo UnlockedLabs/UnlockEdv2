@@ -4,7 +4,9 @@ export type SortOption =
     | 'name-asc'
     | 'name-desc'
     | 'enrollment-asc'
-    | 'enrollment-desc';
+    | 'enrollment-desc'
+    | 'completion-asc'
+    | 'completion-desc';
 
 export const programTypeColors: Record<string, string> = {
     Educational: 'bg-blue-100 text-blue-700 border-blue-200',
