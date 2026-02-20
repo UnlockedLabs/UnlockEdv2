@@ -577,6 +577,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
+			mr.total_active_classes AS total_active_classes,
 			mr.total_capacity AS total_capacity,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
@@ -595,6 +596,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
+			mr.total_active_classes AS total_active_classes,
 			mr.total_capacity AS total_capacity,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
@@ -614,6 +616,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
+					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
 					COALESCE(SUM(CASE WHEN pc.status != 'Cancelled' THEN pc.capacity ELSE 0 END), 0) AS total_capacity
 				FROM programs p
 				JOIN facilities_programs fp ON fp.program_id = p.id
@@ -632,6 +635,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
+					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
 					COALESCE(SUM(CASE WHEN pc.status != 'Cancelled' THEN pc.capacity ELSE 0 END), 0) AS total_capacity
 				FROM programs p
 				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
