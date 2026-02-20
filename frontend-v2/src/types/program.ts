@@ -177,10 +177,22 @@ export interface TodaysScheduleItem {
 
 export interface ClassMetrics {
     active_classes: number;
+    scheduled_classes: number;
     total_enrollments: number;
     total_seats: number;
     attendance_concerns: number;
 }
+
+export interface FacilityHealthSummary {
+    facility_id: number;
+    facility_name: string;
+    programs: number;
+    active_classes: number;
+    enrollment: number;
+    missing_attendance: number;
+    attendance_concerns: number;
+}
+
 export interface ResidentProgramOverview {
     program_name: string;
     class_name: string;

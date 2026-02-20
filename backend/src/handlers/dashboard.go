@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	return []routeDef{
 		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
 		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
+		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
 		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
 		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
@@ -131,13 +133,6 @@ type DashboardMetrics struct {
 	Facility          string                 `json:"facility,omitempty"`
 	NewResidentsAdded int64                  `json:"new_residents_added"`
 	PeakLoginTimes    []models.LoginActivity `json:"peak_login_times"`
-}
-
-type ClassDashboardMetrics struct {
-	ActiveClasses      int64 `json:"active_classes"`
-	TotalEnrollments   int64 `json:"total_enrollments"`
-	TotalSeats         int64 `json:"total_seats"`
-	AttendanceConcerns int64 `json:"attendance_concerns"`
 }
 
 func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -256,24 +251,47 @@ func (srv *Server) handleClassDashboardMetrics(w http.ResponseWriter, r *http.Re
 		facilityId = &args.FacilityID
 	}
 
-	activeClasses, totalEnrollments, totalSeats, attendanceConcerns, err := srv.Db.GetClassDashboardMetrics(&args, facilityId)
+	metrics, err := srv.Db.GetClassDashboardMetrics(&args, facilityId)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 
-	response := struct {
-		ActiveClasses      int64 `json:"active_classes"`
-		TotalEnrollments   int64 `json:"total_enrollments"`
-		TotalSeats         int64 `json:"total_seats"`
-		AttendanceConcerns int64 `json:"attendance_concerns"`
-	}{
-		ActiveClasses:      activeClasses,
-		TotalEnrollments:   totalEnrollments,
-		TotalSeats:         totalSeats,
-		AttendanceConcerns: attendanceConcerns,
+	return writeJsonResponse(w, http.StatusOK, metrics)
+}
+
+func (srv *Server) handleFacilityHealthSummary(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facility := r.URL.Query().Get("facility")
+	var facilityID *uint
+	switch facility {
+	case "all":
+		facilityID = nil
+	case "":
+		facilityID = &claims.FacilityID
+	default:
+		facilityIDInt, err := strconv.Atoi(facility)
+		if err != nil {
+			return newInvalidIdServiceError(err, "facility")
+		}
+		ref := uint(facilityIDInt)
+		facilityID = &ref
 	}
 
-	return writeJsonResponse(w, http.StatusOK, response)
+	days := 3
+	if daysQuery := r.URL.Query().Get("days"); daysQuery != "" {
+		if parsedDays, err := strconv.Atoi(daysQuery); err == nil {
+			days = parsedDays
+		}
+	}
+
+	service := services.NewClassesService(srv.Db)
+	summaries, err := service.GetFacilityHealthSummaries(&args, facilityID, days)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, summaries)
 }
 
 /**
