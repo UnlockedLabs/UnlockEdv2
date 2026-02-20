@@ -18,7 +18,13 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { Search, Plus, Filter } from 'lucide-react';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Plus, Filter, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const programTypeColors: Record<string, string> = {
@@ -76,8 +82,27 @@ export default function ProgramsPage() {
 
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<SortOption>('name-asc');
-    const [typeFilter, setTypeFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedTypes, setSelectedTypes] = useState<ProgramType[]>([]);
+    const [selectedStatuses, setSelectedStatuses] = useState<ProgramEffectiveStatus[]>([]);
+
+    // Toggle filter selection
+    const toggleTypeFilter = (type: ProgramType) => {
+        setSelectedTypes(prev =>
+            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+        );
+    };
+
+    const toggleStatusFilter = (status: ProgramEffectiveStatus) => {
+        setSelectedStatuses(prev =>
+            prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+        );
+    };
+
+    // Clear all filters
+    const clearFilters = () => {
+        setSelectedTypes([]);
+        setSelectedStatuses([]);
+    };
 
     const filtered = useMemo(() => {
         let result = programs;
@@ -89,17 +114,18 @@ export default function ProgramsPage() {
             );
         }
 
-        if (typeFilter !== 'all') {
+        if (selectedTypes.length > 0) {
             result = result.filter((p) => {
                 const types = parseCommaSeparated(p.program_types);
-                return types.includes(typeFilter);
+                return types.some(type => selectedTypes.includes(type as ProgramType));
             });
         }
 
-        if (statusFilter !== 'all') {
-            result = result.filter(
-                (p) => getEffectiveStatus(p) === statusFilter
-            );
+        if (selectedStatuses.length > 0) {
+            result = result.filter((p) => {
+                const status = getEffectiveStatus(p);
+                return selectedStatuses.includes(status);
+            });
         }
 
         result = [...result].sort((a, b) => {
@@ -122,7 +148,7 @@ export default function ProgramsPage() {
         });
 
         return result;
-    }, [programs, search, sort, typeFilter, statusFilter]);
+    }, [programs, search, sort, selectedTypes, selectedStatuses]);
 
     const stats = useMemo(() => {
         const active = programs.filter((p) => p.status && !p.archived_at);
@@ -192,13 +218,13 @@ export default function ProgramsPage() {
                     />
                     {/* TODO: check stats here and find {stats.totalCapacity} or update backend */}
                     <StatCard
-                        label="Total Enrollment"
-                        value={`${stats.totalEnrollment} enrollments of 226 capacity`}
+                        label="enrollments of 226 capacity"
+                        value={stats.totalEnrollment}
                     />
                     {/* TODO: check stats here and find {stats.completionRate} or update backend */}
                     <StatCard
                         label="Completion Rate"
-                        value={`will be a %`}
+                        value={` 12%`}
                     />
                 </div>
 
@@ -233,58 +259,75 @@ export default function ProgramsPage() {
                             </SelectContent>
                         </Select>
                         {/* Program Type Filter */}
-                        <Select
-                            value={typeFilter}
-                            onValueChange={setTypeFilter}
-                        >
-                            <SelectTrigger className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
-                                <div className="flex items-center gap-2">
-                                    <Filter className="size-4 text-muted-foreground" />
-                                    <SelectValue placeholder="Type" />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent className="w-[240px] p-4">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <Filter className="size-4" />
+                                        <span>Type {selectedTypes.length > 0 && `(${selectedTypes.length})`}</span>
+                                    </div>
+                                    <ChevronDown className="size-4" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[240px] p-4">
                                 <div className="mb-3 font-medium text-sm">Filter by Program Type</div>
-                                <SelectItem value="all">Type</SelectItem>
-                                {Object.values(ProgramType).map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                        {formatDisplayName(type)}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {/* Status Filter */}
-                        <Select
-                            value={statusFilter}
-                            onValueChange={setStatusFilter}
-                        >
-                              <SelectTrigger className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
-                                <div className="flex items-center gap-2">
-                                    <Filter className="size-4 text-muted-foreground" />
-                                    <SelectValue placeholder="Status" />
+                                <div className="space-y-3">
+                                    {Object.values(ProgramType).map((type) => (
+                                        <label key={type} className="flex items-center gap-2 cursor-pointer">
+                                            <Checkbox
+                                                checked={selectedTypes.includes(type)}
+                                                onCheckedChange={() => toggleTypeFilter(type)}
+                                            />
+                                            <span className="text-sm">{formatDisplayName(type)}</span>
+                                        </label>
+                                    ))}
                                 </div>
-                            </SelectTrigger>
-                            <SelectContent className="w-[240px] p-4">
+                            </PopoverContent>
+                        </Popover>
+                        {/* Status Filter */}
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <Filter className="size-4" />
+                                        <span>Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}</span>
+                                    </div>
+                                    <ChevronDown className="size-4" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[240px] p-4">
                                 <div className="mb-3 font-medium text-sm">Filter by Status</div>
-                                <SelectItem value="all">Status</SelectItem>
-                                {Object.values(ProgramEffectiveStatus).map(
-                                    (status) => (
-                                        <SelectItem
-                                            key={status}
-                                            value={status}
-                                        >
-                                            {status}
-                                        </SelectItem>
-                                    )
-                                )}
-                            </SelectContent>
-                        </Select>
+                                <div className="space-y-3 mb-4">
+                                    {Object.values(ProgramEffectiveStatus).map(
+                                        (status) => (
+                                            <label key={status} className="flex items-center gap-2 cursor-pointer">
+                                                <Checkbox
+                                                    checked={selectedStatuses.includes(status)}
+                                                    onCheckedChange={() => toggleStatusFilter(status)}
+                                                />
+                                                <span className="text-sm">{status}</span>
+                                            </label>
+                                        )
+                                    )}
+                                </div>
+                                {selectedTypes.length > 0 || selectedStatuses.length > 0 ? (
+                                    <Button
+                                        className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        onClick={clearFilters}
+                                        size="sm"
+                                    >
+                                        Clear All Filters
+                                    </Button>
+                                ) : null}
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
 
                 {filtered.length === 0 ? (
-                    <div className="bg-white rounded-lg border border-gray-200 p-12">
-                        No programs found" + "Try adjusting your search or filters.
+                    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                        <p className="text-gray-600 mb-2">No programs found</p>
+                        <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 gap-6">
