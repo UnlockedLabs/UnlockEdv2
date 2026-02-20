@@ -13,10 +13,8 @@ export * from './navigation';
 export * from './websocket';
 export * from './ui';
 
-// User Role Type
 export type UserRole = 'department_admin' | 'facility_admin';
 
-// Navigation Page Type
 export type Page = 
   | { name: 'dashboard' }
   | { name: 'residents' }
