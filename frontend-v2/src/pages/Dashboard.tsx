@@ -1,21 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { useAuth, isDeptAdmin } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
     ClassMetrics,
+    FacilityHealthSummary,
     MissingAttendanceItem,
-    Class,
-    ProgramOverview,
     TodaysScheduleItem,
     ServerResponseMany,
-    SelectedClassStatus,
     ServerResponseOne
 } from '@/types';
-import {
-    isClassToday,
-    formatTime12h
-} from '@/lib/formatters';
+import { formatTime12h } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,58 +37,48 @@ import {
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
-        '/api/program-classes?all=true'
+    const deptAdmin = user ? canSwitchFacility(user) : false;
+    const { data: classMetricsResp } = useSWR<ServerResponseOne<ClassMetrics>>(
+        deptAdmin
+            ? '/api/dashboard/class-metrics?facility=all'
+            : '/api/dashboard/class-metrics'
     );
-    const { data: programsResp } =
-        useSWR<ServerResponseMany<ProgramOverview>>('/api/programs');
-    const allClasses = useMemo(
-        () => classesResp?.data ?? [],
-        [classesResp?.data]
-    );
-    const programs = useMemo(
-        () => programsResp?.data ?? [],
-        [programsResp?.data]
-    );
-    const deptAdmin = user ? isDeptAdmin(user) : false;
-    const classMetricsUrl = deptAdmin
-        ? '/api/dashboard/class-metrics?facility=all'
-        : '/api/dashboard/class-metrics';
-    const { data: classMetricsResp } =
-        useSWR<ServerResponseOne<ClassMetrics>>(classMetricsUrl);
-    const missingAttendanceUrl = deptAdmin
-        ? '/api/program-classes/missing-attendance?facility=all&days=3&all=true'
-        : '/api/program-classes/missing-attendance?days=3&all=true';
     const { data: missingAttendanceResp, isLoading: missingAttendanceLoading } =
-        useSWR<ServerResponseMany<MissingAttendanceItem>>(missingAttendanceUrl);
-    const todaysScheduleUrl = deptAdmin
-        ? '/api/program-classes/todays-schedule?facility=all&all=true'
-        : '/api/program-classes/todays-schedule?all=true';
+        useSWR<ServerResponseMany<MissingAttendanceItem>>(
+            deptAdmin
+                ? '/api/program-classes/missing-attendance?facility=all&days=3&all=true'
+                : '/api/program-classes/missing-attendance?days=3&all=true'
+        );
+    const { data: facilityHealthResp } = useSWR<
+        ServerResponseOne<FacilityHealthSummary[]>
+    >(
+        deptAdmin
+            ? '/api/dashboard/facility-health?facility=all&days=3'
+            : '/api/dashboard/facility-health?days=3'
+    );
     const { data: todaysScheduleResp, isLoading: todaysScheduleLoading } =
-        useSWR<ServerResponseMany<TodaysScheduleItem>>(todaysScheduleUrl);
+        useSWR<ServerResponseMany<TodaysScheduleItem>>(
+            deptAdmin
+                ? '/api/program-classes/todays-schedule?facility=all&all=true'
+                : '/api/program-classes/todays-schedule?all=true'
+        );
     const todaysScheduleItems = useMemo<TodaysScheduleItem[]>(
         () => todaysScheduleResp?.data ?? ([] as TodaysScheduleItem[]),
         [todaysScheduleResp?.data]
     );
-    const facilityClasses = useMemo(() => {
-        if (deptAdmin || !user) return allClasses;
-        return allClasses.filter((c) => c.facility_id === user.facility.id);
-    }, [allClasses, deptAdmin, user]);
 
     return (
         <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] -mx-6 -my-4 min-h-screen overflow-x-hidden">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {deptAdmin ? (
                     <DeptAdminView
-                        classes={allClasses}
-                        programs={programs}
                         metrics={classMetricsResp?.data}
                         missingAttendance={missingAttendanceResp?.data ?? []}
                         missingAttendanceLoading={missingAttendanceLoading}
+                        facilityHealthSummaries={facilityHealthResp?.data ?? []}
                     />
                 ) : (
                     <FacilityAdminView
-                        classes={facilityClasses}
                         facilityName={user?.facility.name ?? 'My Facility'}
                         metrics={classMetricsResp?.data}
                         missingAttendance={missingAttendanceResp?.data ?? []}
@@ -108,7 +93,6 @@ export default function Dashboard() {
 }
 
 function FacilityAdminView({
-    classes,
     facilityName,
     metrics,
     missingAttendance,
@@ -116,7 +100,6 @@ function FacilityAdminView({
     todaysScheduleItems,
     todaysScheduleLoading
 }: {
-    classes: Class[];
     facilityName: string;
     metrics?: ClassMetrics;
     missingAttendance: MissingAttendanceItem[];
@@ -126,24 +109,8 @@ function FacilityAdminView({
 }) {
     const navigate = useNavigate();
     const stats = useMemo(() => {
-        const base = computeStats(classes);
-        if (!metrics) return base;
-        const scheduledClasses = base.scheduledClasses;
-        const totalCapacity = metrics.total_seats;
-        const totalEnrollment = metrics.total_enrollments;
-        const capacityUtilization =
-            totalCapacity > 0
-                ? Math.round((totalEnrollment / totalCapacity) * 100)
-                : 0;
-        return {
-            scheduledClasses,
-            activeClasses: metrics.active_classes,
-            totalEnrollment,
-            totalCapacity,
-            capacityUtilization,
-            attendanceConcerns: metrics.attendance_concerns
-        };
-    }, [classes, metrics]);
+        return buildStats(metrics);
+    }, [metrics]);
     const handleAttendanceNavigate = (item: TodaysScheduleItem) => {
         if (!item.event_id) {
             navigate('/program-classes/' + item.class_id + '/attendance');
@@ -189,80 +156,25 @@ function FacilityAdminView({
 }
 
 function DeptAdminView({
-    classes,
-    programs,
     metrics,
     missingAttendance,
-    missingAttendanceLoading
+    missingAttendanceLoading,
+    facilityHealthSummaries
 }: {
-    classes: Class[];
-    programs: ProgramOverview[];
     metrics?: ClassMetrics;
     missingAttendance: MissingAttendanceItem[];
     missingAttendanceLoading: boolean;
+    facilityHealthSummaries: FacilityHealthSummary[];
 }) {
     const navigate = useNavigate();
     const stats = useMemo(() => {
-        const base = computeStats(classes);
-        if (!metrics) return base;
-        const totalCapacity = metrics.total_seats;
-        const totalEnrollment = metrics.total_enrollments;
-        const capacityUtilization =
-            totalCapacity > 0
-                ? Math.round((totalEnrollment / totalCapacity) * 100)
-                : 0;
-        return {
-            ...base,
-            activeClasses: metrics.active_classes,
-            totalEnrollment,
-            totalCapacity,
-            capacityUtilization,
-            attendanceConcerns: metrics.attendance_concerns
-        };
-    }, [classes, metrics]);
+        return buildStats(metrics);
+    }, [metrics]);
 
-    const facilityRows = useMemo((): FacilityHealthRow[] => {
-        const facilityMap = new Map<
-            number,
-            { name: string; classes: Class[]; programIds: Set<number> }
-        >();
-
-        for (const cls of classes) {
-            const existing = facilityMap.get(cls.facility_id);
-            if (existing) {
-                existing.classes.push(cls);
-                existing.programIds.add(cls.program_id);
-            } else {
-                facilityMap.set(cls.facility_id, {
-                    name: cls.facility_name,
-                    classes: [cls],
-                    programIds: new Set([cls.program_id])
-                });
-            }
-        }
-
-        return Array.from(facilityMap.values()).map((facility) => {
-            const active = facility.classes.filter(
-                (c) => c.status === SelectedClassStatus.Active
-            );
-            const enrollment = active.reduce((sum, c) => sum + c.enrolled, 0);
-            const missing = active.filter(
-                (c) => c.enrolled > 0 && new Date(c.start_dt) <= new Date()
-            ).length;
-            const concerns = active.filter(
-                (c) => c.enrolled > 0 && isClassToday(c)
-            ).length;
-
-            return {
-                facilityName: facility.name,
-                programs: facility.programIds.size,
-                activeClasses: active.length,
-                enrollment,
-                missingAttendance: missing,
-                attendanceConcerns: concerns
-            };
-        });
-    }, [classes]);
+    const facilityRows = useMemo(
+        () => facilityHealthSummaries,
+        [facilityHealthSummaries]
+    );
 
     return (
         <div>
@@ -270,16 +182,17 @@ function DeptAdminView({
                 <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
                     Department Overview
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {programs.length} programs across {facilityRows.length}{' '}
-                    facilities
-                </p>
             </div>
 
             <MetricCards stats={stats} onNavigate={navigate} />
 
             <div className="space-y-6">
-                <FacilityHealthTable rows={facilityRows} />
+                <div>
+                    <h2 className="text-[#203622] dark:text-white mb-4">
+                        Facility Health Overview
+                    </h2>
+                    <FacilityHealthTable rows={facilityRows} />
+                </div>
                 <div className="flex gap-6 flex-wrap lg:flex-nowrap">
                     <div className="flex-1 lg:flex-[2] min-w-[300px]">
                         <MissingAttendanceWidget
@@ -356,30 +269,32 @@ interface DashboardStats {
     scheduledClasses: number;
 }
 
-function computeStats(classes: Class[]): DashboardStats {
-    const active = classes.filter(
-        (c) => c.status === SelectedClassStatus.Active
-    );
-    const scheduled = classes.filter(
-        (c) => c.status === SelectedClassStatus.Scheduled
-    );
-    const totalEnrollment = active.reduce((sum, c) => sum + c.enrolled, 0);
-    const totalCapacity = active.reduce((sum, c) => sum + c.capacity, 0);
+function buildStats(metrics?: ClassMetrics): DashboardStats {
+    if (!metrics) {
+        return {
+            activeClasses: 0,
+            totalEnrollment: 0,
+            totalCapacity: 0,
+            capacityUtilization: 0,
+            attendanceConcerns: 0,
+            scheduledClasses: 0
+        };
+    }
+
+    const totalCapacity = metrics.total_seats;
+    const totalEnrollment = metrics.total_enrollments;
     const capacityUtilization =
         totalCapacity > 0
             ? Math.round((totalEnrollment / totalCapacity) * 100)
             : 0;
-    const attendanceConcerns = active.filter(
-        (c) => c.enrolled > 0 && isClassToday(c)
-    ).length;
 
     return {
-        activeClasses: active.length,
+        activeClasses: metrics.active_classes,
         totalEnrollment,
         totalCapacity,
         capacityUtilization,
-        attendanceConcerns,
-        scheduledClasses: scheduled.length
+        attendanceConcerns: metrics.attendance_concerns,
+        scheduledClasses: metrics.scheduled_classes ?? 0
     };
 }
 
@@ -401,11 +316,12 @@ function TodaysSchedule({
         year: 'numeric'
     });
 
-    const todayClasses: TodaysScheduleItem[] = useMemo((): TodaysScheduleItem[] => {
-        const sorted: TodaysScheduleItem[] = items.slice();
-        sorted.sort(compareTodaysScheduleItems);
-        return sorted;
-    }, [items]);
+    const todayClasses: TodaysScheduleItem[] =
+        useMemo((): TodaysScheduleItem[] => {
+            const sorted: TodaysScheduleItem[] = items.slice();
+            sorted.sort(compareTodaysScheduleItems);
+            return sorted;
+        }, [items]);
 
     return (
         <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626]">
@@ -436,7 +352,10 @@ function TodaysSchedule({
                                 >
                                     <div
                                         onClick={() =>
-                                            navigate('/program-classes/' + item.class_id)
+                                            navigate(
+                                                '/program-classes/' +
+                                                    item.class_id
+                                            )
                                         }
                                         className="flex items-center gap-4 flex-1 cursor-pointer min-w-0"
                                     >
@@ -660,22 +579,10 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
     );
 }
 
-interface FacilityHealthRow {
-    facilityName: string;
-    programs: number;
-    activeClasses: number;
-    enrollment: number;
-    missingAttendance: number;
-    attendanceConcerns: number;
-}
-
-function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
+function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
     if (rows.length === 0) {
         return (
             <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
-                <h3 className="text-[#203622] dark:text-white mb-4">
-                    Facility Health Overview
-                </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">
                     No facility data available.
                 </p>
@@ -685,9 +592,6 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
 
     return (
         <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] overflow-hidden">
-            <h3 className="text-[#203622] dark:text-white px-6 py-4">
-                Facility Health Overview
-            </h3>
             <table className="w-full">
                 <thead className="bg-[#E2E7EA] dark:bg-[#262626] border-b border-gray-200 dark:border-[#262626]">
                     <tr>
@@ -744,12 +648,12 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                 <tbody className="divide-y divide-gray-200 dark:divide-[#262626]">
                     {rows.map((row) => (
                         <tr
-                            key={row.facilityName}
+                            key={row.facility_id}
                             className="hover:bg-[#E2E7EA]/50 dark:hover:bg-[#262626]/50 cursor-pointer transition-colors"
                         >
                             <td className="px-6 py-4">
                                 <div className="text-[#203622] dark:text-white hover:text-[#556830] dark:hover:text-[#8fb55e] transition-colors">
-                                    {row.facilityName}
+                                    {row.facility_name}
                                 </div>
                             </td>
                             <td className="px-6 py-4">
@@ -759,7 +663,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                             </td>
                             <td className="px-6 py-4">
                                 <div className="text-sm text-gray-700 dark:text-gray-400">
-                                    {row.activeClasses}
+                                    {row.active_classes}
                                 </div>
                             </td>
                             <td className="px-6 py-4">
@@ -768,10 +672,10 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                                 </div>
                             </td>
                             <td className="px-6 py-4">
-                                {row.missingAttendance > 0 ? (
+                                {row.missing_attendance > 0 ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm text-[#F1B51C]">
-                                            {row.missingAttendance}
+                                            {row.missing_attendance}
                                         </span>
                                         <span className="text-xs text-gray-500">
                                             classes
@@ -787,10 +691,10 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthRow[] }) {
                                 )}
                             </td>
                             <td className="px-6 py-4">
-                                {row.attendanceConcerns > 0 ? (
+                                {row.attendance_concerns > 0 ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm text-amber-600 dark:text-[#F1B51C]">
-                                            {row.attendanceConcerns}
+                                            {row.attendance_concerns}
                                         </span>
                                         <span className="text-xs text-gray-500">
                                             classes

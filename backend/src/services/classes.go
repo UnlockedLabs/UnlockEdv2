@@ -18,6 +18,43 @@ func NewClassesService(db *database.DB) *ClassesService {
 	return &ClassesService{db: db}
 }
 
+func (svc *ClassesService) GetFacilityHealthSummaries(args *models.QueryContext, facilityID *uint, days int) ([]models.FacilityHealthSummary, error) {
+	summaries, err := svc.db.GetFacilityHealthSummaries(args, facilityID)
+	if err != nil {
+		return nil, err
+	}
+
+	attendanceConcerns, err := svc.db.GetFacilityAttendanceConcerns(args, facilityID)
+	if err != nil {
+		return nil, err
+	}
+
+	missingByFacility := make(map[uint]int64, len(summaries))
+	for _, summary := range summaries {
+		facilityRef := summary.FacilityID
+		items, err := svc.GetMissingAttendanceForFacility(args, &facilityRef, days)
+		if err != nil {
+			return nil, err
+		}
+		if len(items) == 0 {
+			continue
+		}
+		classIDs := make(map[uint]struct{}, len(items))
+		for _, item := range items {
+			classIDs[item.ClassID] = struct{}{}
+		}
+		missingByFacility[facilityRef] = int64(len(classIDs))
+	}
+
+	for i := range summaries {
+		facilityRef := summaries[i].FacilityID
+		summaries[i].AttendanceConcerns = attendanceConcerns[facilityRef]
+		summaries[i].MissingAttendance = missingByFacility[facilityRef]
+	}
+
+	return summaries, nil
+}
+
 // duplicate, but will remove once we fully removed all business logic from database layer
 func getCanonicalHourAndMinute(occurrences []time.Time, timezone string) (int, int) {
 	if len(occurrences) == 0 {

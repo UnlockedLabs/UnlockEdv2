@@ -90,7 +90,15 @@ func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sL
 
 func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
-	classes, err := srv.Db.GetClassesForFacility(&args)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityParam := r.URL.Query().Get("facility")
+	var facilityID *uint
+	if facilityParam == "all" && claims.canSwitchFacility() {
+		facilityID = nil
+	} else {
+		facilityID = &args.FacilityID
+	}
+	classes, err := srv.Db.GetClasses(&args, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
