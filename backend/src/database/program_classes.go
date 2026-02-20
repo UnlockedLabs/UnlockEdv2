@@ -58,8 +58,15 @@ func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 }
 
 func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.ProgramClass, error) {
+	return db.GetClasses(args, &args.FacilityID)
+}
+
+func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
 	content := []models.ProgramClass{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{}).Where("facility_id = ?", args.FacilityID)
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{})
+	if facilityID != nil {
+		tx = tx.Where("facility_id = ?", *facilityID)
+	}
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ?", args.SearchQuery())
 	}
