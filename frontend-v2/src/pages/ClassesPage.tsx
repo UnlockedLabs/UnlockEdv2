@@ -49,6 +49,7 @@ import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
 
 const STATUS_OPTIONS: { label: string; value: string }[] = [
     { label: 'All Status', value: 'all' },
+    { label: 'Active & Scheduled', value: 'active_scheduled' },
     { label: 'Active', value: SelectedClassStatus.Active },
     { label: 'Scheduled', value: SelectedClassStatus.Scheduled },
     { label: 'Completed', value: SelectedClassStatus.Completed },
@@ -178,7 +179,13 @@ export default function ClassesPage() {
             result = result.filter((cls) => cls.program_id === pid);
         }
 
-        if (statusFilter !== 'all') {
+        if (statusFilter === 'active_scheduled') {
+            result = result.filter(
+                (cls) =>
+                    cls.status === SelectedClassStatus.Active ||
+                    cls.status === SelectedClassStatus.Scheduled
+            );
+        } else if (statusFilter !== 'all') {
             result = result.filter((cls) => cls.status === statusFilter);
         }
 
@@ -211,7 +218,9 @@ export default function ClassesPage() {
                                 Classes
                             </h1>
                             <p className="text-gray-600 mt-1">
-                                Manage and monitor all classes at your facility
+                                {deptAdmin
+                                    ? 'Manage and monitor classes across all facilities'
+                                    : 'Manage and monitor all classes at your facility'}
                             </p>
                         </div>
                         <div className="flex gap-2">
@@ -534,11 +543,11 @@ function ClassRow({
                         value={enrollPct}
                         className="h-2 bg-gray-200"
                         indicatorClassName={cn(
-                            enrollPct >= 75
+                            enrollPct >= 80
                                 ? 'bg-[#556830]'
-                                : enrollPct >= 40
+                                : enrollPct >= 50
                                   ? 'bg-[#F1B51C]'
-                                  : 'bg-red-500'
+                                  : 'bg-gray-400'
                         )}
                     />
                 </div>
