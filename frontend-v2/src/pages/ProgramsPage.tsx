@@ -65,7 +65,6 @@ export default function ProgramsPage() {
     const { data: resp, mutate } = useSWR<ServerResponseMany<ProgramsOverviewTable>>(
         '/api/programs/detailed-list?include_archived=true&per_page=100'
     );
-    const programs = resp?.data ?? [];
 
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<SortOption>('name-asc');
@@ -135,7 +134,7 @@ export default function ProgramsPage() {
                 status: ProgramEffectiveStatus.Available,
             });
 
-            mutate();
+            void mutate();
 
         } catch {
             toast.error('Failed to create program');
@@ -191,6 +190,7 @@ export default function ProgramsPage() {
     ];
 
     const filtered = useMemo(() => {
+        const programs = resp?.data ?? [];
         let result = programs;
 
         if (search) {
@@ -240,7 +240,7 @@ export default function ProgramsPage() {
         });
 
         return result;
-    }, [programs, search, sort, selectedTypes, selectedStatuses]);
+    }, [resp?.data, search, sort, selectedTypes, selectedStatuses]);
 
     const paginatedPrograms = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -601,7 +601,7 @@ export default function ProgramsPage() {
                             </Button>
                             <Button
                                 className="bg-[#556830] hover:bg-[#203622] text-white"
-                                onClick={handleCreateProgram}
+                                onClick={() => void handleCreateProgram()}
                                 disabled={!programFormData.name.trim() || isSubmitting}
                             >
                                 {isSubmitting ? 'Creating...' : 'Create Program'}
@@ -758,7 +758,7 @@ function ProgramCard({ program, showFacilities, onClick }: { program: ProgramsOv
     );
 }
 
-function MetricBox({ label, primaryValue, primaryLabel, secondaryLines }: { label: string; primaryValue: number; primaryLabel: string; secondaryLines?: Array<{ value: string | number }> }) {
+function MetricBox({ label, primaryValue, primaryLabel, secondaryLines }: { label: string; primaryValue: number; primaryLabel: string; secondaryLines?: { value: string | number }[] }) {
     return (
         <div className="bg-[#E2E7EA] rounded-lg p-3">
             <div className="text-xs text-gray-600 mb-2">{label}</div>
