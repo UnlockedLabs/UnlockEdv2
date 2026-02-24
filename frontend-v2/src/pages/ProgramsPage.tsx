@@ -245,25 +245,25 @@ export default function ProgramsPage() {
     const paginatedPrograms = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const stats = useMemo(() => {
-        const active = programs.filter((p) => p.status && !p.archived_at);
-        const totalEnrollment = programs.reduce(
+        const active = filtered.filter((p) => p.status && !p.archived_at);
+        const totalEnrollment = filtered.reduce(
             (sum, p) => sum + (p.total_active_enrollments ?? 0),
             0
         );
-        const totalClasses = programs.reduce(
+        const totalClasses = filtered.reduce(
             (sum, p) => sum + (p.total_classes ?? 0),
             0
         );
-        const totalCapacity = programs.reduce(
+        const totalCapacity = filtered.reduce(
             (sum, p) => sum + (p.total_capacity ?? 0),
             0
         );
 
-        const completedEnrollmentsSum = programs.reduce(
+        const completedEnrollmentsSum = filtered.reduce(
             (sum, p) => sum + ((p.completion_rate ?? 0) * (p.total_enrollments - (p.total_active_enrollments ?? 0)) / 100),
             0
         );
-        const totalCompletedEnrollments = programs.reduce(
+        const totalCompletedEnrollments = filtered.reduce(
             (sum, p) => sum + (p.total_enrollments - (p.total_active_enrollments ?? 0)),
             0
         );
@@ -283,7 +283,7 @@ export default function ProgramsPage() {
             completionRate,
             capacityUtilization: utilization
         };
-    }, [programs]);
+    }, [filtered]);
 
     const isDeptAdminUser = user ? isDeptAdmin(user) : false;
     const subtitle = isDeptAdminUser
