@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ClassEventInstance } from '@/types/events';
+import { Attendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
 
 interface TakeAttendanceModalProps {
@@ -47,7 +48,7 @@ function buildRecentSessions(
         if (inst.is_cancelled) continue;
 
         const [y, m, d] = inst.date.split('-').map(Number);
-        const dateObj = new Date(y!, m! - 1, d!);
+        const dateObj = new Date(y, m - 1, d);
 
         if (dateObj > today || dateObj < cutoff) continue;
 
@@ -55,8 +56,8 @@ function buildRecentSessions(
         const hasAttendance = records.length > 0;
         const attendedCount = records.filter(
             (r) =>
-                r.attendance_status === 'present' ||
-                r.attendance_status === 'partial'
+                r.attendance_status === Attendance.Present ||
+                r.attendance_status === Attendance.Partial
         ).length;
 
         sessions.push({

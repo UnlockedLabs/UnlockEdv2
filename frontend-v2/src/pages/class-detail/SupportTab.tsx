@@ -3,7 +3,7 @@ import useSWR from 'swr';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { EnrollmentAttendance, EnrollmentStatus } from '@/types/attendance';
+import { Attendance, EnrollmentAttendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
 
 interface SupportTabProps {
@@ -27,7 +27,7 @@ function computeAtRiskResidents(
     const byUser = new Map<number, EnrollmentAttendance[]>();
 
     for (const r of records) {
-        if (r.enrollment_status !== EnrollmentStatus.Enrolled) continue;
+        if (r.enrollment_status !== 'Enrolled') continue;
         const existing = byUser.get(r.user_id) ?? [];
         existing.push(r);
         byUser.set(r.user_id, existing);
@@ -42,8 +42,8 @@ function computeAtRiskResidents(
 
         const attended = withStatus.filter(
             (r) =>
-                r.attendance_status === 'present' ||
-                r.attendance_status === 'partial'
+                r.attendance_status === Attendance.Present ||
+                r.attendance_status === Attendance.Partial
         ).length;
 
         const rate = Math.round((attended / total) * 100);
@@ -56,8 +56,8 @@ function computeAtRiskResidents(
         for (let i = sorted.length - 1; i >= 0; i--) {
             const s = sorted[i];
             if (
-                s?.attendance_status === 'absent_excused' ||
-                s?.attendance_status === 'absent_unexcused'
+                s?.attendance_status === Attendance.Absent_Excused ||
+                s?.attendance_status === Attendance.Absent_Unexcused
             ) {
                 consecutive++;
             } else {

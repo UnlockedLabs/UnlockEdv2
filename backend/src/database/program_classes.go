@@ -39,7 +39,7 @@ func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -169,7 +169,9 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
+	existingID := existing.ID
 	models.UpdateStruct(existing, content)
+	existing.ID = existingID
 
 	instructorIDChanged := false
 	if originalInstructorID == nil && content.InstructorID != nil {
@@ -185,7 +187,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		existing.InstructorName = content.InstructorName
 	}
 
-	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Updates(&existing).Error; err != nil {
+	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Updates(existing).Error; err != nil {
 		trans.Rollback()
 		return nil, nil, newUpdateDBError(err, "program classes")
 	}

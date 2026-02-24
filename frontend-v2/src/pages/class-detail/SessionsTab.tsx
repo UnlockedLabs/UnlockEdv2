@@ -5,13 +5,18 @@ import {
     Calendar,
     AlertCircle,
     CheckCircle,
-    Filter
+    Filter,
+    CalendarClock,
+    X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Class } from '@/types/program';
 import { ClassEventInstance } from '@/types/events';
+import { Attendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
+import { CancelSessionModal } from './CancelSessionModal';
+import { RescheduleSessionModal } from './RescheduleSessionModal';
 
 type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
 type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
@@ -40,34 +45,39 @@ function buildSessionDisplays(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return instances.map((inst) => {
-        const dateObj = new Date(inst.date);
-        dateObj.setHours(0, 0, 0, 0);
-        const isToday = dateObj.getTime() === today.getTime();
-        const isPast = dateObj < today;
-        const isUpcoming = dateObj > today;
+    return instances
+        .map((inst) => {
+            const dateObj = new Date(inst.date);
+            dateObj.setHours(0, 0, 0, 0);
+            const isToday = dateObj.getTime() === today.getTime();
+            const isPast = dateObj < today;
+            const isUpcoming = dateObj > today;
 
-        const attendedCount = inst.attendance_records?.filter(
-            (r) =>
-                r.attendance_status === 'present' ||
-                r.attendance_status === 'partial'
-        ).length ?? 0;
+            const attendedCount =
+                inst.attendance_records?.filter(
+                    (r) =>
+                        r.attendance_status === Attendance.Present ||
+                        r.attendance_status === Attendance.Partial
+                ).length ?? 0;
 
-        const hasAttendance = (inst.attendance_records?.length ?? 0) > 0;
+            const hasAttendance = (inst.attendance_records?.length ?? 0) > 0;
 
-        return {
-            instance: inst,
-            dateObj,
-            dayName: dateObj.toLocaleDateString('en-US', { weekday: 'long' }),
-            isToday,
-            isPast,
-            isUpcoming,
-            hasAttendance,
-            isCancelled: inst.is_cancelled,
-            attendedCount,
-            totalEnrolled: enrolled
-        };
-    }).sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+            return {
+                instance: inst,
+                dateObj,
+                dayName: dateObj.toLocaleDateString('en-US', {
+                    weekday: 'long'
+                }),
+                isToday,
+                isPast,
+                isUpcoming,
+                hasAttendance,
+                isCancelled: inst.is_cancelled,
+                attendedCount,
+                totalEnrolled: enrolled
+            };
+        })
+        .sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
 }
 
 function FilterButton({
@@ -98,8 +108,13 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
     const [showAllPast, setShowAllPast] = useState(false);
+    const [cancelTarget, setCancelTarget] = useState<SessionDisplay | null>(
+        null
+    );
+    const [rescheduleTarget, setRescheduleTarget] =
+        useState<SessionDisplay | null>(null);
 
-    const { data: instancesResp } = useSWR<
+    const { data: instancesResp, mutate } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(`/api/program-classes/${cls.id}/events`);
 
@@ -320,12 +335,16 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                 count={pastAndToday.length}
                                 sessions={displayedPast}
                                 onSessionClick={navigateToAttendance}
+                                onCancel={setCancelTarget}
+                                onReschedule={setRescheduleTarget}
                             />
                         )}
                         {pastAndToday.length > 15 && (
                             <div className="text-sm text-gray-500 text-center">
                                 <button
-                                    onClick={() => setShowAllPast(!showAllPast)}
+                                    onClick={() =>
+                                        setShowAllPast(!showAllPast)
+                                    }
                                     className="text-[#556830] hover:text-[#203622] underline"
                                 >
                                     {showAllPast ? 'Show Less' : 'Show All'}
@@ -339,11 +358,53 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                 count={upcoming.length}
                                 sessions={upcoming}
                                 onSessionClick={navigateToAttendance}
+                                onCancel={setCancelTarget}
+                                onReschedule={setRescheduleTarget}
                             />
                         )}
                     </div>
                 )}
             </div>
+
+            {cancelTarget && (
+                <CancelSessionModal
+                    open={!!cancelTarget}
+                    onClose={() => setCancelTarget(null)}
+                    classId={cls.id}
+                    eventId={
+                        cancelTarget.instance.event_id ??
+                        cancelTarget.instance.id
+                    }
+                    date={cancelTarget.instance.date}
+                    dateLabel={cancelTarget.dateObj.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric'
+                    })}
+                    onCancelled={() => void mutate()}
+                />
+            )}
+
+            {rescheduleTarget && (
+                <RescheduleSessionModal
+                    open={!!rescheduleTarget}
+                    onClose={() => setRescheduleTarget(null)}
+                    classId={cls.id}
+                    eventId={
+                        rescheduleTarget.instance.event_id ??
+                        rescheduleTarget.instance.id
+                    }
+                    dateLabel={rescheduleTarget.dateObj.toLocaleDateString(
+                        'en-US',
+                        {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric'
+                        }
+                    )}
+                    onRescheduled={() => void mutate()}
+                />
+            )}
         </div>
     );
 }
@@ -363,7 +424,9 @@ function StatButton({
         <button
             onClick={onClick}
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                active ? `${colorClass} font-medium` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                active
+                    ? `${colorClass} font-medium`
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             }`}
         >
             {children}
@@ -376,13 +439,17 @@ function SessionGroup({
     subtitle,
     count,
     sessions,
-    onSessionClick
+    onSessionClick,
+    onCancel,
+    onReschedule
 }: {
     title: string;
     subtitle: string;
     count: number;
     sessions: SessionDisplay[];
     onSessionClick: (s: SessionDisplay) => void;
+    onCancel: (s: SessionDisplay) => void;
+    onReschedule: (s: SessionDisplay) => void;
 }) {
     return (
         <div>
@@ -401,6 +468,8 @@ function SessionGroup({
                         key={session.instance.date + '-' + session.instance.id}
                         session={session}
                         onClick={() => onSessionClick(session)}
+                        onCancel={() => onCancel(session)}
+                        onReschedule={() => onReschedule(session)}
                     />
                 ))}
             </div>
@@ -410,10 +479,14 @@ function SessionGroup({
 
 function SessionRow({
     session,
-    onClick
+    onClick,
+    onCancel,
+    onReschedule
 }: {
     session: SessionDisplay;
     onClick: () => void;
+    onCancel: () => void;
+    onReschedule: () => void;
 }) {
     const dateLabel = session.dateObj.toLocaleDateString('en-US', {
         month: 'long',
@@ -513,6 +586,34 @@ function SessionRow({
                     >
                         {session.hasAttendance ? 'Edit' : 'Take'} Attendance
                     </Button>
+                )}
+                {session.isUpcoming && !session.isCancelled && (
+                    <>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onReschedule();
+                            }}
+                            className="border-gray-300 hover:bg-gray-50"
+                        >
+                            <CalendarClock className="size-4 mr-1.5" />
+                            Reschedule
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCancel();
+                            }}
+                            className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                        >
+                            <X className="size-4 mr-1.5" />
+                            Cancel
+                        </Button>
+                    </>
                 )}
             </div>
         </div>
