@@ -30,6 +30,7 @@ import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
+import { EditClassModal } from './EditClassModal';
 
 const TAB_TRIGGER_CLASS =
     'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
@@ -65,6 +66,7 @@ export default function ClassDetailPage() {
     const navigate = useNavigate();
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const {
         data: classResp,
@@ -136,11 +138,7 @@ export default function ClassDetailPage() {
                             <Button
                                 variant="outline"
                                 className="border-gray-300"
-                                onClick={() =>
-                                    navigate(
-                                        `/program-classes/${cls.id}/dashboard`
-                                    )
-                                }
+                                onClick={() => setShowEditModal(true)}
                             >
                                 <Edit className="size-4 mr-2" />
                                 Edit Class
@@ -242,7 +240,7 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} classStatus={cls.status} />
+                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} />
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
@@ -286,6 +284,13 @@ export default function ClassDetailPage() {
                 onDeleted={() =>
                     navigate(`/programs/${cls.program_id}`)
                 }
+            />
+
+            <EditClassModal
+                open={showEditModal}
+                onOpenChange={setShowEditModal}
+                cls={cls}
+                onUpdated={() => void mutate()}
             />
         </div>
     );

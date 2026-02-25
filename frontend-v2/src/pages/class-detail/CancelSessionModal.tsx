@@ -55,18 +55,14 @@ export function CancelSessionModal({
 
     const handleCancel = async () => {
         setIsSubmitting(true);
-        const resp = await API.patch<
-            unknown,
+        const resp = await API.patch(
+            `program-classes/${classId}/events/${eventId}`,
             {
-                date: string;
-                is_cancelled: boolean;
-                cancellation_reason: string;
+                date,
+                is_cancelled: true,
+                reason: isOther ? note.trim() : reason
             }
-        >(`program-classes/${classId}/events/${eventId}`, {
-            date,
-            is_cancelled: true,
-            cancellation_reason: isOther ? note.trim() : reason
-        });
+        );
         if (resp.success) {
             toast.success('Session cancelled successfully');
             onClose();

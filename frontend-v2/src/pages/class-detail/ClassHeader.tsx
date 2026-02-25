@@ -237,7 +237,13 @@ export function StatCards({ cls, attendanceRecords }: StatCardsProps) {
                 <Progress
                     value={capacityPct}
                     className="h-2 mb-3"
-                    indicatorClassName="bg-[#556830]"
+                    indicatorClassName={
+                        capacityPct >= 80
+                            ? 'bg-[#556830]'
+                            : capacityPct >= 50
+                              ? 'bg-[#F1B51C]'
+                              : 'bg-gray-400'
+                    }
                 />
                 <div className="text-sm text-gray-600">
                     {spotsAvailable}{' '}

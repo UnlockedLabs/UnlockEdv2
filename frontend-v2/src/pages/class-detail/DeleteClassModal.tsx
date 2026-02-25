@@ -47,9 +47,9 @@ export function DeleteClassModal({
             archived_at: new Date().toISOString()
         });
         if (resp.success) {
-            toast.success(`Class "${className}" has been deleted`);
             handleClose();
             onDeleted();
+            toast.success(`Class "${className}" has been deleted`);
         } else {
             toast.error(resp.message || 'Failed to delete class');
         }

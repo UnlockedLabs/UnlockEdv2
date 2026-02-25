@@ -65,7 +65,7 @@ interface RowState {
     doc_id: string;
     name_last: string;
     name_first: string;
-    status: Attendance;
+    status: Attendance | '';
     note: string;
     reason: string;
     check_in_at: string;
@@ -134,7 +134,7 @@ export default function EventAttendance() {
                 doc_id: item.doc_id ?? '',
                 name_last: item.name_last,
                 name_first: item.name_first,
-                status: item.attendance_status ?? Attendance.Present,
+                status: item.attendance_status ?? '',
                 note: item.note ?? '',
                 reason: item.reason_category ?? '',
                 check_in_at: item.check_in_at ?? (hasExisting ? '' : defaultCheckIn),
@@ -278,6 +278,12 @@ export default function EventAttendance() {
         const dirtyRows = rows.filter((r) => r.dirty);
         if (dirtyRows.length === 0) {
             toast.info('No changes to save');
+            return;
+        }
+
+        const missingStatus = dirtyRows.find((r) => r.status === '');
+        if (missingStatus) {
+            toast.error('All modified residents must have a status selected');
             return;
         }
 

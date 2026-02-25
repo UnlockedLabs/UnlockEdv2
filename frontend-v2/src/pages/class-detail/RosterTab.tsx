@@ -39,10 +39,14 @@ import { toast } from 'sonner';
 import { ChangeEnrollmentStatusModal } from './ChangeEnrollmentStatusModal';
 import { UnenrollResidentModal } from './UnenrollResidentModal';
 import { BulkGraduateModal } from './BulkGraduateModal';
+import { EnrollResidentsModal } from './EnrollResidentsModal';
 
 interface RosterTabProps {
     classId: number;
     classStatus: string;
+    className: string;
+    capacity: number;
+    enrolled: number;
 }
 
 interface AttendanceStats {
@@ -60,8 +64,8 @@ function computeAttendanceByUser(
 
     for (const inst of instances) {
         if (inst.is_cancelled) continue;
-        const instDate = new Date(inst.date);
-        instDate.setHours(0, 0, 0, 0);
+        const [y, m, d] = inst.date.split('-').map(Number);
+        const instDate = new Date(y, m - 1, d);
         if (instDate > today) continue;
 
         for (const record of inst.attendance_records ?? []) {
@@ -101,7 +105,7 @@ function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus
     return allStatuses;
 }
 
-export function RosterTab({ classId, classStatus }: RosterTabProps) {
+export function RosterTab({ classId, classStatus, className, capacity, enrolled }: RosterTabProps) {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -111,24 +115,21 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
         useState<ClassEnrollment | null>(null);
     const [unenrollTarget, setUnenrollTarget] = useState<ClassEnrollment | null>(null);
     const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
 
+    const enrollmentStatus =
+        statusFilter === 'all' ? EnrollmentStatus.Enrolled : statusFilter;
     const { data: enrollmentResp, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>
-    >(`/api/program-classes/${classId}/enrollments`);
+    >(
+        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(enrollmentStatus)}`
+    );
 
     const { data: eventsResp } = useSWR<
         ServerResponseMany<ClassEventInstance>
-    >(`/api/program-classes/${classId}/events`);
+    >(`/api/program-classes/${classId}/events?all=true`);
 
-    const enrolledRows = useMemo(() => {
-        const all = enrollmentResp?.data ?? [];
-        if (statusFilter === 'all') {
-            return all.filter(
-                (e) => e.enrollment_status === EnrollmentStatus.Enrolled
-            );
-        }
-        return all.filter((e) => (e.enrollment_status as string) === statusFilter);
-    }, [enrollmentResp, statusFilter]);
+    const enrolledRows = enrollmentResp?.data ?? [];
 
     const attendanceMap = useMemo(() => {
         return computeAttendanceByUser(eventsResp?.data ?? []);
@@ -246,11 +247,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                         <Button
                             variant="outline"
                             className="border-gray-300 self-start sm:self-auto ml-7 sm:ml-0"
-                            onClick={() =>
-                                navigate(
-                                    `/program-classes/${classId}/enrollments/add`
-                                )
-                            }
+                            onClick={() => setShowEnrollModal(true)}
                         >
                             <Plus className="size-4 mr-2" />
                             Enroll Resident
@@ -322,11 +319,11 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                                 aria-label={`Select ${enrollment.doc_id}`}
                                                 className="shrink-0"
                                             />
-                                            <div className="min-w-[100px] shrink-0">
+                                            <div className="w-[140px] shrink-0">
                                                 <div className="text-[#203622] font-medium">
                                                     {enrollment.doc_id}
                                                 </div>
-                                                <div className="text-sm text-gray-600 mt-0.5">
+                                                <div className="text-sm text-gray-600 mt-0.5 truncate">
                                                     {enrollment.name_full}
                                                 </div>
                                             </div>
@@ -547,6 +544,16 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                 onClose={() => setShowBulkGraduateModal(false)}
                 count={selectedIds.size}
                 onConfirm={handleBulkGraduate}
+            />
+
+            <EnrollResidentsModal
+                open={showEnrollModal}
+                onOpenChange={setShowEnrollModal}
+                classId={classId}
+                className={className}
+                capacity={capacity}
+                enrolled={enrolled}
+                onEnrolled={() => void mutate()}
             />
         </div>
     );

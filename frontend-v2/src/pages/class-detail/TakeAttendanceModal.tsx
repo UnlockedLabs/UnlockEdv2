@@ -85,7 +85,7 @@ export function TakeAttendanceModal({
 
     const { data: eventsResp } = useSWR<
         ServerResponseMany<ClassEventInstance>
-    >(open ? `/api/program-classes/${classId}/events` : null);
+    >(open ? `/api/program-classes/${classId}/events?all=true` : null);
 
     const sessions = useMemo(() => {
         return buildRecentSessions(eventsResp?.data ?? []);
