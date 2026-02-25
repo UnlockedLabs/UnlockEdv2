@@ -4,12 +4,10 @@ import { RRule } from 'rrule';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Class } from '@/types/program';
-import {
-    Attendance,
-    EnrollmentAttendance,
-    SelectedClassStatus
-} from '@/types/attendance';
+import { Attendance, SelectedClassStatus } from '@/types/attendance';
+import { ClassEventInstance } from '@/types/events';
 import { getClassSchedule, getStatusColor } from '@/lib/formatters';
+import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import { ChangeClassStatusModal } from './ChangeClassStatusModal';
 
 interface ClassHeaderProps {
@@ -19,49 +17,45 @@ interface ClassHeaderProps {
 
 interface StatCardsProps {
     cls: Class;
-    attendanceRecords: EnrollmentAttendance[];
+    eventInstances: ClassEventInstance[];
 }
 
-function computeStats(cls: Class, records: EnrollmentAttendance[]) {
-    const enrolledRecords = records.filter(
-        (r) => r.enrollment_status === 'Enrolled'
-    );
-
-    const byUser = new Map<number, EnrollmentAttendance[]>();
-    for (const r of enrolledRecords) {
-        const arr = byUser.get(r.user_id) ?? [];
-        arr.push(r);
-        byUser.set(r.user_id, arr);
-    }
+function computeStats(cls: Class, instances: ClassEventInstance[]) {
+    const attendanceMap = computeAttendanceByUser(instances);
 
     let totalRate = 0;
     let userCount = 0;
     let atRiskCount = 0;
 
-    byUser.forEach((userRecords) => {
-        const withStatus = userRecords.filter((r) => r.attendance_status);
-        const total = withStatus.length;
-        if (total === 0) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-        const attended = withStatus.filter(
-            (r) =>
-                r.attendance_status === Attendance.Present ||
-                r.attendance_status === Attendance.Partial
-        ).length;
-
-        const rate = Math.round((attended / total) * 100);
-        totalRate += rate;
+    attendanceMap.forEach((stats, userId) => {
+        if (stats.total === 0) return;
+        totalRate += stats.rate;
         userCount++;
 
-        const sorted = [...withStatus].sort((a, b) =>
-            (a.date ?? '').localeCompare(b.date ?? '')
-        );
         let consecutive = 0;
-        for (let i = sorted.length - 1; i >= 0; i--) {
-            const s = sorted[i];
+        const userRecords: { date: string; status: Attendance }[] = [];
+        for (const inst of instances) {
+            if (inst.is_cancelled) continue;
+            const [y, m, d] = inst.date.split('-').map(Number);
+            if (new Date(y, m - 1, d) > today) continue;
+            for (const rec of inst.attendance_records ?? []) {
+                if (rec.user_id === userId) {
+                    userRecords.push({
+                        date: inst.date,
+                        status: rec.attendance_status
+                    });
+                }
+            }
+        }
+        userRecords.sort((a, b) => a.date.localeCompare(b.date));
+        for (let i = userRecords.length - 1; i >= 0; i--) {
+            const s = userRecords[i];
             if (
-                s?.attendance_status === Attendance.Absent_Excused ||
-                s?.attendance_status === Attendance.Absent_Unexcused
+                s?.status === Attendance.Absent_Excused ||
+                s?.status === Attendance.Absent_Unexcused
             ) {
                 consecutive++;
             } else {
@@ -69,7 +63,7 @@ function computeStats(cls: Class, records: EnrollmentAttendance[]) {
             }
         }
 
-        if (rate < 75 || consecutive >= 2) {
+        if (stats.rate < 75 || consecutive >= 2) {
             atRiskCount++;
         }
     });
@@ -183,11 +177,12 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 />
                 <InfoCard
                     label="Duration"
-                    value={formatDate(cls.start_dt) || 'Not set'}
-                    sub={
-                        cls.end_dt
-                            ? `to ${formatDate(cls.end_dt)}`
-                            : undefined
+                    value={
+                        cls.start_dt
+                            ? cls.end_dt
+                                ? `${formatDate(cls.start_dt)} - ${formatDate(cls.end_dt)}`
+                                : formatDate(cls.start_dt)
+                            : 'Not set'
                     }
                 />
                 <InfoCard
@@ -215,10 +210,10 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     );
 }
 
-export function StatCards({ cls, attendanceRecords }: StatCardsProps) {
+export function StatCards({ cls, eventInstances }: StatCardsProps) {
     const { avgRate, atRiskCount, capacityPct } = useMemo(
-        () => computeStats(cls, attendanceRecords),
-        [cls, attendanceRecords]
+        () => computeStats(cls, eventInstances),
+        [cls, eventInstances]
     );
     const spotsAvailable = cls.capacity - cls.enrolled;
 

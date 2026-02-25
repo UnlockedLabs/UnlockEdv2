@@ -1,20 +1,96 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import { Calendar } from 'lucide-react';
+import { ServerResponseMany } from '@/types/server';
 
-interface AuditEntry {
-    id: number;
+interface HistoryEntry {
+    action: string;
     created_at: string;
-    description: string;
-    actor_name: string;
+    field_name: string | null;
+    old_value: string | null;
+    new_value: string | null;
+    admin_username: string | null;
 }
 
 interface AuditTabProps {
     classId: number;
 }
 
+function parseDateFromRRule(rrule: string): string | null {
+    const match = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(rrule);
+    if (!match) return null;
+    const [, y, m, d] = match;
+    return `${Number(m)}/${Number(d)}/${y}`;
+}
+
+function formatFieldLabel(name: string): string {
+    return name.replace(/_/g, ' ');
+}
+
+function formatEntry(entry: HistoryEntry): string {
+    const actor = entry.admin_username ?? 'System';
+    const field = entry.field_name ?? '';
+
+    if (field === 'class' || field === 'program') {
+        return `Class created by ${actor}`;
+    }
+
+    if (field === 'event_rescheduled') {
+        const origDate = entry.old_value
+            ? parseDateFromRRule(entry.old_value)
+            : null;
+        const newVal = entry.new_value ?? '';
+        if (origDate) {
+            return `Event on ${origDate} moved to ${newVal} by ${actor}`;
+        }
+        return `Event rescheduled to ${newVal} by ${actor}`;
+    }
+
+    if (field === 'event_cancelled') {
+        const date = entry.new_value
+            ? parseDateFromRRule(entry.new_value)
+            : null;
+        return date
+            ? `Event on ${date} cancelled by ${actor}`
+            : `Event cancelled by ${actor}`;
+    }
+
+    if (field === 'event_restored') {
+        const date = entry.old_value
+            ? parseDateFromRRule(entry.old_value)
+            : null;
+        return date
+            ? `${actor} restored event on ${date}`
+            : `Event restored by ${actor}`;
+    }
+
+    if (field === 'event_rescheduled_series') {
+        return `Schedule series updated by ${actor}`;
+    }
+
+    if (field === 'event_substitute_instructor') {
+        return `Substitute instructor set to ${entry.new_value ?? ''} by ${actor}`;
+    }
+
+    if (field === 'event_room_changed') {
+        return `Room changed to ${entry.new_value ?? ''} by ${actor}`;
+    }
+
+    const label = formatFieldLabel(field);
+    if (entry.old_value && entry.new_value) {
+        return `${label} changed from ${entry.old_value} to ${entry.new_value} by ${actor}`;
+    }
+    if (entry.new_value) {
+        return `${label} set to ${entry.new_value} by ${actor}`;
+    }
+    if (entry.old_value) {
+        return `${label} removed (was ${entry.old_value}) by ${actor}`;
+    }
+    return `${label} updated by ${actor}`;
+}
+
 export function AuditTab({ classId }: AuditTabProps) {
-    const { data: auditResp } = useSWR<{ data: AuditEntry[] }>(
+    const { data: auditResp } = useSWR<ServerResponseMany<HistoryEntry>>(
         `/api/program-classes/${classId}/history`
     );
     const [expanded, setExpanded] = useState(false);
@@ -35,9 +111,12 @@ export function AuditTab({ classId }: AuditTabProps) {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {displayEntries.map((entry) => (
-                        <div key={entry.id} className="flex flex-col sm:flex-row gap-1 sm:gap-3 text-sm">
-                            <div className="text-gray-500 sm:shrink-0">
+                    {displayEntries.map((entry, idx) => (
+                        <div
+                            key={`${entry.created_at}-${entry.field_name}-${idx}`}
+                            className="flex gap-3 text-sm"
+                        >
+                            <div className="text-gray-500 min-w-[100px] shrink-0">
                                 {new Date(entry.created_at).toLocaleDateString(
                                     'en-US',
                                     {
@@ -47,16 +126,8 @@ export function AuditTab({ classId }: AuditTabProps) {
                                     }
                                 )}
                             </div>
-                            <div className="flex-1 text-[#203622]">
-                                {entry.description}
-                                {entry.actor_name && (
-                                    <>
-                                        {' by '}
-                                        <span className="font-medium">
-                                            {entry.actor_name}
-                                        </span>
-                                    </>
-                                )}
+                            <div className="flex-1 text-gray-700">
+                                {formatEntry(entry)}
                             </div>
                         </div>
                     ))}
@@ -65,7 +136,9 @@ export function AuditTab({ classId }: AuditTabProps) {
                             onClick={() => setExpanded(!expanded)}
                             className="text-sm text-[#556830] hover:text-[#203622] underline"
                         >
-                            {expanded ? 'Show Less' : `Show All (${entries.length})`}
+                            {expanded
+                                ? 'Show Less'
+                                : `Show All (${entries.length})`}
                         </button>
                     )}
                 </div>

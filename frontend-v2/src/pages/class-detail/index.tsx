@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/tooltip';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { Class } from '@/types/program';
-import { EnrollmentAttendance, SelectedClassStatus } from '@/types/attendance';
+import { SelectedClassStatus } from '@/types/attendance';
+import { ClassEventInstance } from '@/types/events';
 import { ServerResponseOne, ServerResponseMany } from '@/types/server';
 import { BreadcrumbItem } from '@/types';
 import { ClassHeader, StatCards } from './ClassHeader';
@@ -76,9 +77,9 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
-    const { data: attendanceResp } = useSWR<
-        ServerResponseMany<EnrollmentAttendance>
-    >(class_id ? `/api/program-classes/${class_id}/enrollments` : null);
+    const { data: eventsResp } = useSWR<
+        ServerResponseMany<ClassEventInstance>
+    >(class_id ? `/api/program-classes/${class_id}/events?all=true` : null);
 
     const cls = classResp?.data;
 
@@ -119,7 +120,7 @@ export default function ClassDetailPage() {
         );
     }
 
-    const attendanceRecords = attendanceResp?.data ?? [];
+    const eventInstances = eventsResp?.data ?? [];
 
     return (
         <div className="-mx-6 -mt-4 -mb-4 bg-[#E2E7EA]">
@@ -196,7 +197,7 @@ export default function ClassDetailPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
                 <StatCards
                     cls={cls}
-                    attendanceRecords={attendanceRecords}
+                    eventInstances={eventInstances}
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">

@@ -26,14 +26,11 @@ import {
     TooltipContent,
     TooltipTrigger
 } from '@/components/ui/tooltip';
-import {
-    Attendance,
-    ClassEnrollment,
-    EnrollmentStatus
-} from '@/types/attendance';
+import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
 import { getEnrollmentStatusColor } from '@/lib/formatters';
+import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { ChangeEnrollmentStatusModal } from './ChangeEnrollmentStatusModal';
@@ -47,54 +44,6 @@ interface RosterTabProps {
     className: string;
     capacity: number;
     enrolled: number;
-}
-
-interface AttendanceStats {
-    attended: number;
-    total: number;
-    rate: number;
-}
-
-function computeAttendanceByUser(
-    instances: ClassEventInstance[]
-): Map<number, AttendanceStats> {
-    const byUser = new Map<number, { attended: number; total: number }>();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (const inst of instances) {
-        if (inst.is_cancelled) continue;
-        const [y, m, d] = inst.date.split('-').map(Number);
-        const instDate = new Date(y, m - 1, d);
-        if (instDate > today) continue;
-
-        for (const record of inst.attendance_records ?? []) {
-            const existing = byUser.get(record.user_id) ?? {
-                attended: 0,
-                total: 0
-            };
-            existing.total++;
-            if (
-                record.attendance_status === Attendance.Present ||
-                record.attendance_status === Attendance.Partial
-            ) {
-                existing.attended++;
-            }
-            byUser.set(record.user_id, existing);
-        }
-    }
-
-    const result = new Map<number, AttendanceStats>();
-    byUser.forEach((stats, userId) => {
-        result.set(userId, {
-            ...stats,
-            rate:
-                stats.total > 0
-                    ? Math.round((stats.attended / stats.total) * 100)
-                    : 100
-        });
-    });
-    return result;
 }
 
 function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
@@ -297,7 +246,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                         filteredRows.map((enrollment) => {
                             const stats = attendanceMap.get(
                                 enrollment.user_id
-                            ) ?? { attended: 0, total: 0, rate: 100 };
+                            ) ?? { attended: 0, total: 0, rate: 0 };
                             const needsSupport = stats.rate < 75;
 
                             return (
@@ -516,14 +465,13 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                         classStatus,
                         statusModalEnrollment.enrollment_status
                     )}
-                    onStatusChange={(newStatus, reason) => {
-                        void handleStatusChange(
+                    onStatusChange={(newStatus, reason) =>
+                        handleStatusChange(
                             statusModalEnrollment,
                             newStatus,
                             reason
-                        );
-                        setStatusModalEnrollment(null);
-                    }}
+                        )
+                    }
                 />
             )}
 

@@ -525,9 +525,12 @@ function AttendanceRowCard({
     return (
         <div className="px-4 sm:px-6 py-5 hover:bg-[#E2E7EA]/30 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                <div className="min-w-[70px] sm:min-w-[100px] flex items-center gap-2 shrink-0">
+                <div className="min-w-[70px] sm:min-w-[100px] shrink-0">
                     <div className="text-[#203622] font-medium">
-                        {row.doc_id || `${row.name_last}, ${row.name_first}`}
+                        {row.doc_id}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-0.5">
+                        {row.name_last}, {row.name_first}
                     </div>
                 </div>
 

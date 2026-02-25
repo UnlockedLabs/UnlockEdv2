@@ -198,10 +198,13 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         let result = allSessions;
         const cutoff = getTimeCutoff(timeFilter);
 
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
         if (statusFilter === 'all') {
             if (cutoff) {
                 result = result.filter(
-                    (s) => s.isUpcoming || s.dateObj >= cutoff
+                    (s) => s.dateObj >= cutoff && s.dateObj <= today
                 );
             }
         } else if (statusFilter === 'completed') {
