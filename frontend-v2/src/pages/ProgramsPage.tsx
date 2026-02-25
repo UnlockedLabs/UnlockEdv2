@@ -991,7 +991,7 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                                                 <span className="font-medium text-[#203622]">{program.total_active_enrollments ?? 0}</span>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span className="text-gray-500 cursor-help"> current</span>
+                                                        <span className="text-gray-500 cursor-help"> currently</span>
                                                     </TooltipTrigger>
                                                     <TooltipContent className="bg-[#203622] text-white max-w-xs">
                                                         Residents currently enrolled in this program. A single resident can be enrolled in more than one class.
@@ -1000,7 +1000,7 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                                             </div>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">{historicalEnrollments} historical</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">{historicalEnrollments} all-time</div>
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-[#203622] text-white max-w-xs">
                                                     Past enrollments including completed, withdrawn, and dropped
