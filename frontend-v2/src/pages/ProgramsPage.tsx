@@ -888,6 +888,7 @@ function getPercentageColorClass(percentage: number): string {
 }
 
 function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTable[]; onRowClick: (programId: number) => void }) {
+    const navigate = useNavigate();
     return (
         <TooltipProvider>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -909,8 +910,7 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                             const utilizationRate = getUtilizationRate(program);
                             const historicalEnrollments = getHistoricalEnrollments(program);
                             const completionRate = Math.round(program.completion_rate ?? 0);
-                            // Attendance rate - using 85% as default since backend doesn't provide it
-                            const attendanceRate = 85;
+                            const attendanceRate = Math.round(program.attendance_rate ?? 0);
 
                             return (
                                 <TableRow
@@ -955,9 +955,15 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                                             {(program.total_active_facilities ?? 0) > 0 && (
                                                 <>
                                                     <span className="text-gray-300">•</span>
-                                                    <span className="text-xs text-gray-500">
+                                                    <button
+                                                        className="text-xs text-[#556830] hover:underline font-medium"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/facilities?program=${program.program_id}`);
+                                                        }}
+                                                    >
                                                         {program.total_active_facilities} {program.total_active_facilities === 1 ? 'facility' : 'facilities'}
-                                                    </span>
+                                                    </button>
                                                 </>
                                             )}
                                         </div>
