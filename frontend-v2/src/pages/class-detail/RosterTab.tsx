@@ -246,14 +246,14 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                         </div>
                         <Button
                             variant="outline"
-                            className="border-gray-300 self-start sm:self-auto ml-7 sm:ml-0"
+                            className="border-gray-300 self-start sm:self-auto sm:ml-0"
                             onClick={() => setShowEnrollModal(true)}
                         >
                             <Plus className="size-4 mr-2" />
                             Enroll Resident
                         </Button>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
                             <Input
@@ -268,7 +268,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                             value={statusFilter}
                             onValueChange={setStatusFilter}
                         >
-                            <SelectTrigger className="w-48">
+                            <SelectTrigger className="w-full sm:w-48">
                                 <SelectValue placeholder="Filter by status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -319,7 +319,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                 aria-label={`Select ${enrollment.doc_id}`}
                                                 className="shrink-0"
                                             />
-                                            <div className="w-[140px] shrink-0">
+                                            <div className="w-[100px] sm:w-[140px] shrink-0">
                                                 <div className="text-[#203622] font-medium">
                                                     {enrollment.doc_id}
                                                 </div>
@@ -351,7 +351,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 sm:gap-3 ml-7 sm:ml-0 flex-wrap">
+                                        <div className="flex items-center gap-2 sm:gap-3 sm:ml-0 flex-wrap">
                                             <span className="text-sm text-gray-500">
                                                 Enrolled:{' '}
                                                 {new Date(
@@ -471,8 +471,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
             </div>
 
             {selectedIds.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
-                    <div className="flex items-center gap-6">
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-4 sm:px-6 py-4 z-50 max-w-[calc(100vw-2rem)]">
+                    <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
                         <div className="text-sm">
                             <span className="font-semibold text-[#203622]">
                                 {selectedIds.size}

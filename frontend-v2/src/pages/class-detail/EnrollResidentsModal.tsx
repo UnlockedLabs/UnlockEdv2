@@ -232,7 +232,7 @@ export function EnrollResidentsModal({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-gray-600 px-1">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm text-gray-600 px-1">
                     <div className="flex gap-4">
                         <span>
                             Enrolled:{' '}

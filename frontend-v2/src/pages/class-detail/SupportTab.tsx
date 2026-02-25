@@ -95,7 +95,7 @@ export function SupportTab({ classId }: SupportTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
                 <h3 className="text-[#203622] font-semibold">
                     At-Risk Residents ({atRisk.length})
                 </h3>
@@ -119,11 +119,11 @@ export function SupportTab({ classId }: SupportTabProps) {
                     {atRisk.map((resident) => (
                         <div
                             key={resident.userId}
-                            className="px-6 py-4 bg-amber-50/20"
+                            className="px-4 sm:px-6 py-4 bg-amber-50/20"
                         >
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-6 flex-1">
-                                    <div className="min-w-[80px]">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                <div className="flex items-start gap-3 sm:gap-6 flex-1">
+                                    <div className="min-w-[60px] sm:min-w-[80px]">
                                         <div className="text-[#203622] font-medium">
                                             {resident.docId}
                                         </div>
@@ -147,7 +147,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                         </div>
                                         <Progress
                                             value={resident.attendanceRate}
-                                            className="h-2 w-64 mb-2"
+                                            className="h-2 w-full max-w-64 mb-2"
                                             indicatorClassName="bg-[#F1B51C]"
                                         />
                                         <div className="flex gap-4 text-xs text-gray-500">

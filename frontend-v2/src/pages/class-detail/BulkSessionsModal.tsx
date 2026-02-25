@@ -252,7 +252,7 @@ export function BulkSessionsModal({
                     <Label className="text-sm font-medium text-[#203622] mb-3 block">
                         Select by Date Range
                     </Label>
-                    <div className="flex gap-3 items-end">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                         <div className="flex-1 space-y-1">
                             <Label
                                 htmlFor="bulk-start"

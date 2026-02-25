@@ -440,7 +440,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             size="sm"
                             variant="outline"
                             onClick={() => handleStatusChange('missing')}
-                            className="border-amber-300 text-amber-700 hover:bg-amber-100 self-start ml-8 sm:ml-0 shrink-0"
+                            className="border-amber-300 text-amber-700 hover:bg-amber-100 self-start sm:ml-0 shrink-0"
                         >
                             View Missing Sessions
                         </Button>
@@ -497,7 +497,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             ))}
                         </div>
                         {totalPages > 1 && (
-                            <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2 pt-4 mt-4 border-t border-gray-200">
                                 <p className="text-sm text-gray-500">
                                     Showing {safePage * PAGE_SIZE + 1}-
                                     {Math.min(
@@ -687,7 +687,7 @@ function SessionRow({
                     </div>
                 </div>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 ml-8 sm:ml-0 shrink-0 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-4 sm:ml-0 shrink-0 flex-wrap">
                 {session.hasAttendance && (
                     <div className="text-sm text-gray-500 whitespace-nowrap">
                         {session.attendedCount} / {session.totalEnrolled}{' '}

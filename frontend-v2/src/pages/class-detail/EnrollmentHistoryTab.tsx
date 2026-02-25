@@ -70,8 +70,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between mb-4">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <div>
                         <h3 className="text-[#203622] font-semibold">
                             Enrollment History ({historicalEnrollments.length})
@@ -157,11 +157,11 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                     {filtered.map((enrollment) => (
                         <div
                             key={enrollment.id}
-                            className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                            className="px-4 sm:px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
                         >
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-6 flex-1">
-                                    <div className="min-w-[100px]">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div className="flex items-start gap-3 sm:gap-6 flex-1">
+                                    <div className="min-w-[70px] sm:min-w-[100px]">
                                         <div className="text-[#203622] font-medium">
                                             {enrollment.doc_id}
                                         </div>

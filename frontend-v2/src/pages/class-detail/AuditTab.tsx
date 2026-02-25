@@ -23,7 +23,7 @@ export function AuditTab({ classId }: AuditTabProps) {
     const displayEntries = expanded ? entries : entries.slice(0, 20);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h3 className="text-[#203622] mb-6 font-semibold">Audit History</h3>
             {entries.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
@@ -36,8 +36,8 @@ export function AuditTab({ classId }: AuditTabProps) {
             ) : (
                 <div className="space-y-3">
                     {displayEntries.map((entry) => (
-                        <div key={entry.id} className="flex gap-3 text-sm">
-                            <div className="text-gray-500 min-w-[100px]">
+                        <div key={entry.id} className="flex flex-col sm:flex-row gap-1 sm:gap-3 text-sm">
+                            <div className="text-gray-500 sm:shrink-0">
                                 {new Date(entry.created_at).toLocaleDateString(
                                     'en-US',
                                     {

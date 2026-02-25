@@ -247,7 +247,7 @@ export function EditClassModal({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Instructor</Label>
                                 <Controller
@@ -338,7 +338,7 @@ export function EditClassModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-capacity">Capacity</Label>
                                 <Input
@@ -408,7 +408,7 @@ export function EditClassModal({
                         <h3 className="text-sm font-semibold text-foreground">
                             Class Period
                         </h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-start-dt">
                                     Start Date
@@ -529,7 +529,7 @@ export function EditClassModal({
                 title="Add Instructor"
             >
                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="edit-inst-first">First Name</Label>
                             <Input

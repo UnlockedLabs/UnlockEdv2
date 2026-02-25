@@ -127,7 +127,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h3 className="text-[#203622] mb-1 font-semibold">
@@ -187,7 +187,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             >
                                 <ChevronLeft className="size-4" />
                             </Button>
-                            <h4 className="text-[#203622] font-medium min-w-[180px] text-center">
+                            <h4 className="text-[#203622] font-medium min-w-[140px] sm:min-w-[180px] text-center">
                                 {monthLabel}
                             </h4>
                             <Button
@@ -203,7 +203,8 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                         </p>
                     </div>
 
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                    <div className="min-w-[500px] border border-gray-200 rounded-lg overflow-hidden">
                         <div className="grid grid-cols-7 bg-gray-100">
                             {DAY_HEADERS.map((d) => (
                                 <div
@@ -249,6 +250,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                 ))}
                             </div>
                         ))}
+                    </div>
                     </div>
 
                     {selectedDay && (

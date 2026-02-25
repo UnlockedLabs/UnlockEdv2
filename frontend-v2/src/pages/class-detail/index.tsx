@@ -39,19 +39,19 @@ function LoadingSkeleton() {
     return (
         <div className="-mx-6 -mt-4 -mb-4 bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
                     <Skeleton className="h-8 w-32 mb-4" />
                     <Skeleton className="h-10 w-80 mb-3" />
                     <Skeleton className="h-5 w-48 mb-4" />
-                    <div className="grid grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <Skeleton key={i} className="h-20 rounded-lg" />
                         ))}
                     </div>
                 </div>
             </div>
-            <div className="max-w-7xl mx-auto px-6 py-6">
-                <div className="grid grid-cols-3 gap-6 mb-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
                     {Array.from({ length: 3 }).map((_, i) => (
                         <Skeleton key={i} className="h-40 rounded-lg" />
                     ))}
@@ -124,7 +124,7 @@ export default function ClassDetailPage() {
     return (
         <div className="-mx-6 -mt-4 -mb-4 bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
                     <Breadcrumbs items={breadcrumbItems} />
 
                     <div className="flex items-start justify-between">
@@ -134,7 +134,7 @@ export default function ClassDetailPage() {
                                 onMutate={() => void mutate()}
                             />
                         </div>
-                        <div className="flex gap-2 ml-6 shrink-0">
+                        <div className="flex gap-2 ml-4 sm:ml-6 shrink-0 flex-wrap">
                             <Button
                                 variant="outline"
                                 className="border-gray-300"
@@ -193,14 +193,15 @@ export default function ClassDetailPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
                 <StatCards
                     cls={cls}
                     attendanceRecords={attendanceRecords}
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
+                    <div className="overflow-x-auto -mx-1 px-1">
+                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 w-max min-w-full">
                         <TabsTrigger
                             value="roster"
                             className={TAB_TRIGGER_CLASS}
@@ -238,6 +239,7 @@ export default function ClassDetailPage() {
                             Audit History
                         </TabsTrigger>
                     </TabsList>
+                    </div>
 
                     <TabsContent value="roster" className="space-y-4">
                         <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} />

@@ -164,13 +164,13 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 }
 
 type patchEventOverrideRequest struct {
-	Date           string `json:"date"`
-	IsCancelled    bool   `json:"is_cancelled"`
-	Reason         string `json:"reason"`
-	RoomID         *uint  `json:"room_id"`
-	InstructorID   *uint  `json:"instructor_id"`
-	NewDate        string `json:"new_date"`
-	NewStartTime   string `json:"new_start_time"`
+	Date         string `json:"date"`
+	IsCancelled  bool   `json:"is_cancelled"`
+	Reason       string `json:"reason"`
+	RoomID       *uint  `json:"room_id"`
+	InstructorID *uint  `json:"instructor_id"`
+	NewDate      string `json:"new_date"`
+	NewStartTime string `json:"new_start_time"`
 }
 
 func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
