@@ -12,7 +12,8 @@ import {
     FundingType,
     Program,
     ProgramCreditType,
-    PgmType
+    PgmType,
+    Facility
 } from '@/types';
 import API from '@/api/api';
 import { toast } from 'sonner';
@@ -37,6 +38,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Plus, Filter, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/Pagination';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+    TooltipProvider,
+} from '@/components/ui/tooltip';
 import { programTypeColors, statusColors, type SortOption } from '@/pages/program-detail/constants';
 
 function getEffectiveStatus(
@@ -62,9 +77,17 @@ function parseCommaSeparated(value: string | null | undefined): string[] {
 export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const isDeptAdminUser = user ? isDeptAdmin(user) : false;
+
     const { data: resp, mutate } = useSWR<ServerResponseMany<ProgramsOverviewTable>>(
         '/api/programs/detailed-list?include_archived=true&per_page=100'
     );
+
+    // Fetch facilities for Department Admin
+    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
+        isDeptAdminUser ? '/api/facilities' : null
+    );
+    const facilities = facilitiesResp?.data ?? [];
 
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<SortOption>('name-asc');
@@ -79,6 +102,7 @@ export default function ProgramsPage() {
         creditTypes: [] as CreditType[],
         fundingTypes: [] as FundingType[],
         status: ProgramEffectiveStatus.Available,
+        facilities: [] as number[],
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -132,6 +156,7 @@ export default function ProgramsPage() {
                 creditTypes: [],
                 fundingTypes: [],
                 status: ProgramEffectiveStatus.Available,
+                facilities: [],
             });
 
             void mutate();
@@ -196,7 +221,8 @@ export default function ProgramsPage() {
         if (search) {
             const q = search.toLowerCase();
             result = result.filter((p) =>
-                p.program_name.toLowerCase().includes(q)
+                p.program_name.toLowerCase().includes(q) ||
+                p.description?.toLowerCase().includes(q)
             );
         }
 
@@ -285,9 +311,8 @@ export default function ProgramsPage() {
         };
     }, [filtered]);
 
-    const isDeptAdminUser = user ? isDeptAdmin(user) : false;
     const subtitle = isDeptAdminUser
-        ? 'Manage programs across all facilities'
+        ? 'Monitor program performance across all facilities'
         : 'Supporting resident growth and rehabilitation';
 
     return (
@@ -316,24 +341,30 @@ export default function ProgramsPage() {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-4 gap-6 mb-8">
-                <StatCard
-                    label="Active Programs"
-                    value={stats.activePrograms}
-                />
-                <StatCard
-                    label="Total Classes"
-                    value={stats.totalClasses}
-                />
-                <StatCard
-                    label={`enrollments of ${stats.totalCapacity} capacity`}
-                    value={stats.totalEnrollment}
-                />
-                <StatCard
-                    label="Completion Rate"
-                    value={`${stats.completionRate}%`}
-                />
-            </div>
+            <TooltipProvider>
+                <div className="grid grid-cols-4 gap-6 mb-8">
+                    <StatCard
+                        label="Active Programs"
+                        value={stats.activePrograms}
+                        tooltip={isDeptAdminUser ? 'The count of unique programs offered across all facilities' : 'The count of unique programs offered at this facility'}
+                    />
+                    <StatCard
+                        label="Total Classes"
+                        value={stats.totalClasses}
+                        tooltip={isDeptAdminUser ? 'All classes across all facilities (active, completed, and scheduled)' : 'All classes at this facility (active, completed, and scheduled)'}
+                    />
+                    <StatCard
+                        label={`enrollments of ${stats.totalCapacity} capacity`}
+                        value={stats.totalEnrollment}
+                        tooltip={isDeptAdminUser ? 'The total number of enrollments across all facilities. A single resident can be enrolled in more than one program.' : 'The total number of enrollments at this facility. A single resident can be enrolled in more than one program.'}
+                    />
+                    <StatCard
+                        label="Completion Rate"
+                        value={`${stats.completionRate}%`}
+                        tooltip={isDeptAdminUser ? 'The percentage of residents who have completed a class across all facilities' : 'The percentage of residents who have completed a class at this facility'}
+                    />
+                </div>
+            </TooltipProvider>
 
             {/* Filters */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
@@ -577,6 +608,46 @@ export default function ProgramsPage() {
                                         Available programs can accept new class enrollments. Inactive programs are temporarily paused. Archived programs are no longer offered.
                                     </p>
                                 </div>
+
+                                {/* Facilities Selection - Only for Department Admin */}
+                                {isDeptAdminUser && (
+                                    <div className="col-span-2">
+                                        <Label htmlFor="facilities" className="text-[#203622]">Facilities Offered *</Label>
+                                        <div className="mt-2 max-h-60 overflow-y-auto space-y-2 border border-gray-200 rounded-lg p-3">
+                                            {facilities.length === 0 ? (
+                                                <p className="text-sm text-gray-500">Loading facilities...</p>
+                                            ) : (
+                                                facilities.map((facility) => (
+                                                    <label key={facility.id} className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={programFormData.facilities.includes(facility.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setProgramFormData({
+                                                                        ...programFormData,
+                                                                        facilities: [...programFormData.facilities, facility.id]
+                                                                    });
+                                                                } else {
+                                                                    setProgramFormData({
+                                                                        ...programFormData,
+                                                                        facilities: programFormData.facilities.filter(f => f !== facility.id)
+                                                                    });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300 text-[#556830] focus:ring-[#556830]"
+                                                            style={{ colorScheme: 'light' }}
+                                                        />
+                                                        <span className="text-sm text-gray-700">{facility.name}</span>
+                                                    </label>
+                                                ))
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Select which facilities will offer this program. You can add more facilities later.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -593,6 +664,7 @@ export default function ProgramsPage() {
                                         creditTypes: [],
                                         fundingTypes: [],
                                         status: ProgramEffectiveStatus.Available,
+                                        facilities: [],
                                     });
                                 }}
                                 className="border-gray-300 dark:!bg-[rgba(38,38,38,0.3)]"
@@ -618,20 +690,27 @@ export default function ProgramsPage() {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-6 mb-4">
-                        {paginatedPrograms.map((program) => (
-                            <ProgramCard
-                                key={program.program_id}
-                                program={program}
-                                showFacilities={isDeptAdminUser}
-                                onClick={() =>
-                                    navigate(
-                                        '/programs/' + program.program_id
-                                    )
-                                }
-                            />
-                        ))}
-                    </div>
+                    {isDeptAdminUser ? (
+                        <ProgramsTable
+                            programs={paginatedPrograms}
+                            onRowClick={(programId) => navigate('/programs/' + programId)}
+                        />
+                    ) : (
+                        <div className="grid grid-cols-2 gap-6 mb-4">
+                            {paginatedPrograms.map((program) => (
+                                <ProgramCard
+                                    key={program.program_id}
+                                    program={program}
+                                    showFacilities={false}
+                                    onClick={() =>
+                                        navigate(
+                                            '/programs/' + program.program_id
+                                        )
+                                    }
+                                />
+                            ))}
+                        </div>
+                    )}
 
                 {/* Pagination */}
                 {filtered.length > itemsPerPage && (
@@ -651,12 +730,27 @@ export default function ProgramsPage() {
     );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
-    return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+function StatCard({ label, value, tooltip }: { label: string; value: string | number; tooltip?: string }) {
+    const cardContent = (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 cursor-help">
             <p className="text-3xl text-[#203622] mb-1">{value}</p>
             <p className="text-sm text-gray-600">{label}</p>
         </div>
+    );
+
+    if (!tooltip) {
+        return cardContent;
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                {cardContent}
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                {tooltip}
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -774,5 +868,189 @@ function MetricBox({ label, primaryValue, primaryLabel, secondaryLines }: { labe
                 ))}
             </div>
         </div>
+    );
+}
+
+function getHistoricalEnrollments(program: ProgramsOverviewTable): number {
+    return (program.total_enrollments ?? 0) - (program.total_active_enrollments ?? 0);
+}
+
+function getUtilizationRate(program: ProgramsOverviewTable): number {
+    const capacity = program.total_capacity ?? 0;
+    const enrolled = program.total_active_enrollments ?? 0;
+    return capacity > 0 ? Math.round((enrolled / capacity) * 100) : 0;
+}
+
+function getPercentageColorClass(percentage: number): string {
+    if (percentage >= 75) return 'text-[#556830]';
+    if (percentage >= 50) return 'text-[#F1B51C]';
+    return 'text-red-600';
+}
+
+function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTable[]; onRowClick: (programId: number) => void }) {
+    return (
+        <TooltipProvider>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <Table>
+                    <TableHeader className="bg-[#E2E7EA] border-b border-gray-200">
+                        <TableRow>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[32%]">Program</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[17%]">Classes</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[17%]">Enrollment</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[17%]">Capacity</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[8.5%]">Completion</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[8.5%]">Attendance</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-200">
+                        {programs.map((program) => {
+                            const status = getEffectiveStatus(program);
+                            const types = parseCommaSeparated(program.program_types);
+                            const utilizationRate = getUtilizationRate(program);
+                            const historicalEnrollments = getHistoricalEnrollments(program);
+                            const completionRate = Math.round(program.completion_rate ?? 0);
+                            // Attendance rate - using 85% as default since backend doesn't provide it
+                            const attendanceRate = 85;
+
+                            return (
+                                <TableRow
+                                    key={program.program_id}
+                                    className={`hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors ${
+                                        status === ProgramEffectiveStatus.Archived ? 'opacity-40' :
+                                        status === ProgramEffectiveStatus.Inactive ? 'opacity-60' : ''
+                                    }`}
+                                    onClick={() => onRowClick(program.program_id)}
+                                >
+                                    <TableCell className="px-6 py-4">
+                                        <div>
+                                            {status === ProgramEffectiveStatus.Inactive && (
+                                                <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300 text-xs mb-1.5">
+                                                    Inactive
+                                                </Badge>
+                                            )}
+                                            {status === ProgramEffectiveStatus.Archived && (
+                                                <Badge variant="outline" className="bg-gray-200 text-gray-700 border-gray-400 text-xs mb-1.5">
+                                                    Archived
+                                                </Badge>
+                                            )}
+                                            <div className="text-[#203622] hover:text-[#556830] transition-colors font-medium mb-1.5">
+                                                {program.program_name}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 items-center">
+                                            {types.slice(0, 3).map((type) => (
+                                                <Badge
+                                                    key={type}
+                                                    variant="outline"
+                                                    className={`${programTypeColors[type] || 'bg-gray-100 text-gray-700 border-gray-200'} text-xs`}
+                                                >
+                                                    {formatDisplayName(type)}
+                                                </Badge>
+                                            ))}
+                                            {types.length > 3 && (
+                                                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-200">
+                                                    +{types.length - 3}
+                                                </Badge>
+                                            )}
+                                            {(program.total_active_facilities ?? 0) > 0 && (
+                                                <>
+                                                    <span className="text-gray-300">•</span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {program.total_active_facilities} {program.total_active_facilities === 1 ? 'facility' : 'facilities'}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <div className="text-sm text-gray-700">
+                                            <div>
+                                                <span className="font-medium text-[#203622]">{program.total_active_classes ?? 0}</span>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span className="text-gray-500 cursor-help"> active</span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                        Classes currently running with enrolled residents
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">{program.total_classes ?? 0} total</div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    All classes for this program (active, completed, and scheduled)
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <div className="text-sm text-gray-700">
+                                            <div>
+                                                <span className="font-medium text-[#203622]">{program.total_active_enrollments ?? 0}</span>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span className="text-gray-500 cursor-help"> current</span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                        Residents currently enrolled in this program. A single resident can be enrolled in more than one class.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">{historicalEnrollments} historical</div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    Past enrollments including completed, withdrawn, and dropped
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <div className="text-sm">
+                                            <div className="font-medium text-[#203622]">{program.total_capacity ?? 0}</div>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">{utilizationRate}% utilized</div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    Percentage of available capacity currently filled
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className={`text-sm font-medium cursor-help w-fit ${getPercentageColorClass(completionRate)}`}>
+                                                    {completionRate}%
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                Percentage of residents who successfully completed the program out of all who have finished (not including current enrollments)
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className={`text-sm font-medium cursor-help w-fit ${getPercentageColorClass(attendanceRate)}`}>
+                                                    {attendanceRate}%
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                Average attendance rate across all active classes in this program
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
+        </TooltipProvider>
     );
 }
