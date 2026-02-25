@@ -16,7 +16,7 @@ export function CancelSubmitRow({
     action?: string;
 }) {
     return (
-        <form method="dialog" className="flex flex-row justify-between">
+        <form method="dialog" className="flex flex-row justify-end gap-4">
             <CancelButton onClick={onCancel} />
             {type === TextModalType.Delete ? (
                 <DeleteButton onClick={onSubmit} />
