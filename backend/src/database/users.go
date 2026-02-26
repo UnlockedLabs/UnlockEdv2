@@ -584,7 +584,7 @@ func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, r
 	classCategoryFields := map[string][]string{
 		"info":     {"name", "description", "instructor_name", "class"},
 		"status":   {"status", "archived_at"},
-		"schedule": {"start_date", "end_date", "start_dt", "end_dt", "meeting_days", "meeting_times", "event_rescheduled_series", "event_rescheduled", "event_cancelled", "event_restored"},
+		"schedule": {"start_date", "end_date", "start_dt", "end_dt", "meeting_days", "meeting_times", "event_rescheduled_series", "event_rescheduled", "event_cancelled", "event_restored", "event_substitute_instructor", "event_room_changed"},
 		"settings": {"capacity", "location", "credit_hours"},
 	}
 
