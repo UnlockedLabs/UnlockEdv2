@@ -27,6 +27,8 @@ import { RosterTab } from './RosterTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { SessionsTab } from './SessionsTab';
 import { ScheduleTab } from './ScheduleTab';
+import { SupportTab } from './SupportTab';
+import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
 import { EditClassModal } from './EditClassModal';
@@ -224,6 +226,18 @@ export default function ClassDetailPage() {
                         >
                             Schedule
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="support"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Support
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="audit"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Audit
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
@@ -243,6 +257,14 @@ export default function ClassDetailPage() {
 
                     <TabsContent value="schedule" className="space-y-4">
                         <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
+                    </TabsContent>
+
+                    <TabsContent value="support" className="space-y-4">
+                        <SupportTab classId={cls.id} />
+                    </TabsContent>
+
+                    <TabsContent value="audit" className="space-y-4">
+                        <AuditTab classId={cls.id} />
                     </TabsContent>
                 </Tabs>
             </div>
