@@ -189,6 +189,14 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		}
 	}
 
+	existing, err := srv.Db.GetClassByID(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if existing.CannotUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
+	}
+
 	if instructorIDProvided {
 		if class.InstructorID == nil || *class.InstructorID == 0 {
 			class.InstructorID = nil
@@ -202,17 +210,8 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 			class.InstructorName = instructorName
 		}
 	} else {
-
-		existing, err := srv.Db.GetClassByID(id)
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
 		class.InstructorID = existing.InstructorID
 		class.InstructorName = existing.InstructorName
-	}
-
-	if class.CannotUpdateClass() {
-		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
