@@ -25,21 +25,19 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
     const { data: enrollmentResp } = useSWR<ServerResponseMany<ClassEnrollment>>(
-        `/api/program-classes/${classId}/enrollments?status=all`
+        `/api/program-classes/${classId}/enrollments?status=not_enrolled&per_page=1000`
     );
 
     const historicalEnrollments = useMemo(() => {
-        return (enrollmentResp?.data ?? [])
-            .filter((e) => e.enrollment_status !== EnrollmentStatus.Enrolled)
-            .sort((a, b) => {
-                const dateA = a.completion_dt
-                    ? new Date(a.completion_dt).getTime()
-                    : 0;
-                const dateB = b.completion_dt
-                    ? new Date(b.completion_dt).getTime()
-                    : 0;
-                return dateB - dateA;
-            });
+        return (enrollmentResp?.data ?? []).sort((a, b) => {
+            const dateA = new Date(
+                a.enrollment_ended_at ?? a.completion_dt ?? a.updated_at
+            ).getTime();
+            const dateB = new Date(
+                b.enrollment_ended_at ?? b.completion_dt ?? b.updated_at
+            ).getTime();
+            return dateB - dateA;
+        });
     }, [enrollmentResp]);
 
     const filtered = useMemo(() => {
@@ -60,8 +58,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
             };
             cutoff.setDate(cutoff.getDate() - (daysMap[timeFilter] ?? 0));
             result = result.filter((e) => {
-                if (!e.completion_dt) return false;
-                return new Date(e.completion_dt) >= cutoff;
+                const dt =
+                    e.enrollment_ended_at ?? e.completion_dt ?? e.updated_at;
+                return new Date(dt) >= cutoff;
             });
         }
 
@@ -70,8 +69,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between mb-4">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <div>
                         <h3 className="text-[#203622] font-semibold">
                             Enrollment History ({historicalEnrollments.length})
@@ -157,11 +156,11 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                     {filtered.map((enrollment) => (
                         <div
                             key={enrollment.id}
-                            className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                            className="px-4 sm:px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
                         >
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-6 flex-1">
-                                    <div className="min-w-[100px]">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div className="flex items-start gap-3 sm:gap-6 flex-1">
+                                    <div className="min-w-[70px] sm:min-w-[100px]">
                                         <div className="text-[#203622] font-medium">
                                             {enrollment.doc_id}
                                         </div>
@@ -193,7 +192,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     </span>
                                                 </div>
                                             )}
-                                            {enrollment.completion_dt && (
+                                            {(enrollment.enrollment_ended_at ??
+                                                enrollment.completion_dt) && (
                                                 <div className="flex gap-2">
                                                     <span className="font-medium">
                                                         {enrollment.enrollment_status ===
@@ -203,7 +203,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     </span>
                                                     <span>
                                                         {new Date(
-                                                            enrollment.completion_dt
+                                                            enrollment.enrollment_ended_at ??
+                                                                enrollment.completion_dt!
                                                         ).toLocaleDateString()}
                                                     </span>
                                                 </div>
