@@ -25,21 +25,19 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
     const { data: enrollmentResp } = useSWR<ServerResponseMany<ClassEnrollment>>(
-        `/api/program-classes/${classId}/enrollments?status=all`
+        `/api/program-classes/${classId}/enrollments?status=not_enrolled&per_page=1000`
     );
 
     const historicalEnrollments = useMemo(() => {
-        return (enrollmentResp?.data ?? [])
-            .filter((e) => e.enrollment_status !== EnrollmentStatus.Enrolled)
-            .sort((a, b) => {
-                const dateA = a.completion_dt
-                    ? new Date(a.completion_dt).getTime()
-                    : 0;
-                const dateB = b.completion_dt
-                    ? new Date(b.completion_dt).getTime()
-                    : 0;
-                return dateB - dateA;
-            });
+        return (enrollmentResp?.data ?? []).sort((a, b) => {
+            const dateA = new Date(
+                a.enrollment_ended_at ?? a.completion_dt ?? a.updated_at
+            ).getTime();
+            const dateB = new Date(
+                b.enrollment_ended_at ?? b.completion_dt ?? b.updated_at
+            ).getTime();
+            return dateB - dateA;
+        });
     }, [enrollmentResp]);
 
     const filtered = useMemo(() => {
@@ -60,8 +58,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
             };
             cutoff.setDate(cutoff.getDate() - (daysMap[timeFilter] ?? 0));
             result = result.filter((e) => {
-                if (!e.completion_dt) return false;
-                return new Date(e.completion_dt) >= cutoff;
+                const dt =
+                    e.enrollment_ended_at ?? e.completion_dt ?? e.updated_at;
+                return new Date(dt) >= cutoff;
             });
         }
 
@@ -193,7 +192,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     </span>
                                                 </div>
                                             )}
-                                            {enrollment.completion_dt && (
+                                            {(enrollment.enrollment_ended_at ??
+                                                enrollment.completion_dt) && (
                                                 <div className="flex gap-2">
                                                     <span className="font-medium">
                                                         {enrollment.enrollment_status ===
@@ -203,7 +203,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     </span>
                                                     <span>
                                                         {new Date(
-                                                            enrollment.completion_dt
+                                                            enrollment.enrollment_ended_at ??
+                                                                enrollment.completion_dt!
                                                         ).toLocaleDateString()}
                                                     </span>
                                                 </div>
