@@ -166,10 +166,12 @@ type ProgramClassEventOverride struct {
 	RoomID                *uint  `json:"room_id"`
 	Reason                string `json:"reason"`
 	LinkedOverrideEventID *uint  `json:"linked_override_event_id"`
+	InstructorID          *uint  `json:"instructor_id"`
 
 	/* Foreign keys */
-	Event   *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
-	RoomRef *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Event         *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	RoomRef       *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	InstructorRef *User              `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
 }
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }

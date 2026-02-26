@@ -45,6 +45,7 @@ export interface ProgramClassEventOverride {
     room_ref?: Room;
     is_cancelled: boolean;
     reason: string;
+    instructor_id?: number;
 }
 
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
