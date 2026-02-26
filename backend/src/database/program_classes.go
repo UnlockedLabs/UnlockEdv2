@@ -74,7 +74,7 @@ func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 
-	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program")
+	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Facility")
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
