@@ -25,6 +25,8 @@ import { BreadcrumbItem } from '@/types';
 import { ClassHeader, StatCards } from './ClassHeader';
 import { RosterTab } from './RosterTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
+import { SessionsTab } from './SessionsTab';
+import { ScheduleTab } from './ScheduleTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
 import { EditClassModal } from './EditClassModal';
@@ -211,6 +213,18 @@ export default function ClassDetailPage() {
                         >
                             Enrollment History
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="sessions"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Sessions
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="schedule"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Schedule
+                        </TabsTrigger>
                     </TabsList>
                     </div>
 
@@ -223,6 +237,14 @@ export default function ClassDetailPage() {
                         className="space-y-4"
                     >
                         <EnrollmentHistoryTab classId={cls.id} />
+                    </TabsContent>
+
+                    <TabsContent value="sessions" className="space-y-4">
+                        <SessionsTab cls={cls} />
+                    </TabsContent>
+
+                    <TabsContent value="schedule" className="space-y-4">
+                        <ScheduleTab cls={cls} />
                     </TabsContent>
                 </Tabs>
             </div>
