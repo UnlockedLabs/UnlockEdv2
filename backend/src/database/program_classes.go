@@ -39,7 +39,7 @@ func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -73,13 +73,25 @@ func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
-
-	tx = tx.Preload("Events").Preload("Events.RoomRef")
+	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program")
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
 	if err := tx.Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
+	}
+	for i := range content {
+		var enrollments, completed int
+		for _, e := range content[i].Enrollments {
+			switch e.EnrollmentStatus {
+			case models.Enrolled:
+				enrollments++
+			case models.EnrollmentCompleted:
+				completed++
+			}
+		}
+		content[i].Enrolled = int64(enrollments)
+		content[i].Completed = int64(completed)
 	}
 	return content, nil
 }
@@ -165,6 +177,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
+	existingID := existing.ID
 	models.UpdateStruct(existing, content)
 	existing.ID = existingID
 
