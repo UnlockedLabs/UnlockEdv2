@@ -1,60 +1,61 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, Calendar, AlertCircle, Clock, MapPin } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Users, Calendar, AlertCircle, Edit, MapPin } from 'lucide-react';
+import { RRule } from 'rrule';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Class } from '@/types/program';
-import { EnrollmentAttendance, EnrollmentStatus } from '@/types/attendance';
+import { Attendance, SelectedClassStatus } from '@/types/attendance';
+import { ClassEventInstance } from '@/types/events';
 import { getClassSchedule, getStatusColor } from '@/lib/formatters';
+import { computeAttendanceByUser } from '@/lib/attendance-utils';
+import { ChangeClassStatusModal } from './ChangeClassStatusModal';
 
 interface ClassHeaderProps {
     cls: Class;
-    attendanceRecords: EnrollmentAttendance[];
+    onMutate: () => void;
 }
 
-function computeStats(
-    cls: Class,
-    records: EnrollmentAttendance[]
-) {
-    const enrolledRecords = records.filter(
-        (r) => r.enrollment_status === EnrollmentStatus.Enrolled
-    );
+interface StatCardsProps {
+    cls: Class;
+    eventInstances: ClassEventInstance[];
+}
 
-    const byUser = new Map<number, EnrollmentAttendance[]>();
-    for (const r of enrolledRecords) {
-        const arr = byUser.get(r.user_id) ?? [];
-        arr.push(r);
-        byUser.set(r.user_id, arr);
-    }
+function computeStats(cls: Class, instances: ClassEventInstance[]) {
+    const attendanceMap = computeAttendanceByUser(instances);
 
     let totalRate = 0;
     let userCount = 0;
     let atRiskCount = 0;
 
-    byUser.forEach((userRecords) => {
-        const withStatus = userRecords.filter((r) => r.attendance_status);
-        const total = withStatus.length;
-        if (total === 0) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-        const attended = withStatus.filter(
-            (r) =>
-                r.attendance_status === 'present' ||
-                r.attendance_status === 'partial'
-        ).length;
-
-        const rate = Math.round((attended / total) * 100);
-        totalRate += rate;
+    attendanceMap.forEach((stats, userId) => {
+        if (stats.total === 0) return;
+        totalRate += stats.rate;
         userCount++;
 
-        const sorted = [...withStatus].sort((a, b) =>
-            (a.date ?? '').localeCompare(b.date ?? '')
-        );
         let consecutive = 0;
-        for (let i = sorted.length - 1; i >= 0; i--) {
-            const s = sorted[i];
+        const userRecords: { date: string; status: Attendance }[] = [];
+        for (const inst of instances) {
+            if (inst.is_cancelled) continue;
+            const [y, m, d] = inst.date.split('-').map(Number);
+            if (new Date(y, m - 1, d) > today) continue;
+            for (const rec of inst.attendance_records ?? []) {
+                if (rec.user_id === userId) {
+                    userRecords.push({
+                        date: inst.date,
+                        status: rec.attendance_status
+                    });
+                }
+            }
+        }
+        userRecords.sort((a, b) => a.date.localeCompare(b.date));
+        for (let i = userRecords.length - 1; i >= 0; i--) {
+            const s = userRecords[i];
             if (
-                s?.attendance_status === 'absent_excused' ||
-                s?.attendance_status === 'absent_unexcused'
+                s?.status === Attendance.Absent_Excused ||
+                s?.status === Attendance.Absent_Unexcused
             ) {
                 consecutive++;
             } else {
@@ -62,162 +63,231 @@ function computeStats(
             }
         }
 
-        if (rate < 75 || consecutive >= 2) {
+        if (stats.rate < 75 || consecutive >= 2) {
             atRiskCount++;
         }
     });
 
     const avgRate = userCount > 0 ? Math.round(totalRate / userCount) : 0;
-    const capacityPct = cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
+    const capacityPct =
+        cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
 
     return { avgRate, atRiskCount, capacityPct };
 }
 
-export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
-    const schedule = useMemo(() => getClassSchedule(cls), [cls]);
-    const { avgRate, atRiskCount, capacityPct } = useMemo(
-        () => computeStats(cls, attendanceRecords),
-        [cls, attendanceRecords]
-    );
+function getNextClassDate(cls: Class): { date: string; time: string } | null {
+    const event = cls.events?.find((e) => !e.is_cancelled);
+    if (!event) return null;
+    try {
+        const cleaned = event.recurrence_rule.replace(
+            /DTSTART;TZID=[^:]+:/,
+            'DTSTART:'
+        );
+        const rule = RRule.fromString(cleaned);
+        const now = new Date();
+        const next = rule.after(now, true);
+        if (!next) return null;
+        const date = next.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+        const h = String(next.getUTCHours()).padStart(2, '0');
+        const m = String(next.getUTCMinutes()).padStart(2, '0');
+        return { date, time: `${h}:${m}` };
+    } catch {
+        return null;
+    }
+}
 
+function formatDate(dt: string): string {
+    if (!dt) return '';
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return dt;
+    return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
+export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const schedule = useMemo(() => getClassSchedule(cls), [cls]);
+    const nextClass = useMemo(() => getNextClassDate(cls), [cls]);
+
+    const isTerminal =
+        cls.status === SelectedClassStatus.Completed ||
+        cls.status === SelectedClassStatus.Cancelled;
+
+    return (
+        <div>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <h1 className="text-[#203622] break-words">
+                    {cls.name}
+                </h1>
+                {isTerminal ? (
+                    <Badge
+                        variant="outline"
+                        className={getStatusColor(cls.status)}
+                    >
+                        {cls.status}
+                    </Badge>
+                ) : (
+                    <button onClick={() => setShowStatusModal(true)}>
+                        <Badge
+                            variant="outline"
+                            className={`${getStatusColor(cls.status)} cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5`}
+                        >
+                            {cls.status}
+                            <Edit className="size-3" />
+                        </Badge>
+                    </button>
+                )}
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+                <MapPin className="size-4 text-gray-500" />
+                <span className="text-sm text-gray-700">
+                    <span className="font-medium">
+                        {cls.facility?.name ?? cls.facility_name ?? 'Unknown Facility'}
+                    </span>
+                </span>
+            </div>
+
+            {cls.description && (
+                <p className="text-gray-600 mb-4 max-w-3xl">
+                    {cls.description}
+                </p>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                <InfoCard
+                    label="Instructor"
+                    value={cls.instructor_name || 'Unassigned'}
+                />
+                <InfoCard
+                    label="Schedule"
+                    value={schedule.days.join(', ') || 'Not set'}
+                    sub={
+                        schedule.startTime
+                            ? `${schedule.startTime} - ${schedule.endTime}`
+                            : undefined
+                    }
+                />
+                <InfoCard
+                    label="Duration"
+                    value={
+                        cls.start_dt
+                            ? cls.end_dt
+                                ? `${formatDate(cls.start_dt)} - ${formatDate(cls.end_dt)}`
+                                : formatDate(cls.start_dt)
+                            : 'Not set'
+                    }
+                />
+                <InfoCard
+                    label="Room"
+                    value={schedule.room || 'Not assigned'}
+                />
+                <InfoCard
+                    label="Next Class"
+                    value={nextClass?.date ?? 'None scheduled'}
+                    sub={nextClass?.time}
+                />
+            </div>
+
+            <ChangeClassStatusModal
+                open={showStatusModal}
+                onClose={() => setShowStatusModal(false)}
+                classId={cls.id}
+                programId={cls.program_id}
+                className={cls.name}
+                currentStatus={cls.status}
+                capacity={cls.capacity}
+                onStatusChanged={onMutate}
+            />
+        </div>
+    );
+}
+
+export function StatCards({ cls, eventInstances }: StatCardsProps) {
+    const { avgRate, atRiskCount, capacityPct } = useMemo(
+        () => computeStats(cls, eventInstances),
+        [cls, eventInstances]
+    );
     const spotsAvailable = cls.capacity - cls.enrolled;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between">
-                <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                        <h1 className="text-2xl font-bold text-foreground">
-                            {cls.name}
-                        </h1>
-                        <Badge
-                            variant="outline"
-                            className={getStatusColor(cls.status)}
-                        >
-                            {cls.status}
-                        </Badge>
-                    </div>
-
-                    <div className="mb-4">
-                        <Link
-                            to={`/programs/${cls.program_id}`}
-                            className="text-[#556830] hover:text-foreground hover:underline inline-flex items-center gap-1"
-                        >
-                            Part of: {cls.program?.name ?? 'Program'} →
-                        </Link>
-                    </div>
-
-                    {cls.description && (
-                        <p className="text-muted-foreground mb-4 max-w-3xl">
-                            {cls.description}
-                        </p>
-                    )}
-
-                    <div className="grid grid-cols-5 gap-4">
-                        <InfoCard
-                            label="Instructor"
-                            value={cls.instructor_name}
-                        />
-                        <div className="bg-muted rounded-lg p-3">
-                            <div className="text-sm text-muted-foreground mb-1">
-                                Schedule
-                            </div>
-                            <div className="text-foreground text-sm">
-                                {schedule.days.join(', ') || 'Not set'}
-                            </div>
-                            {schedule.startTime && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    {schedule.startTime} - {schedule.endTime}
-                                </div>
-                            )}
-                        </div>
-                        <InfoCard
-                            label="Duration"
-                            value={`${cls.start_dt} to ${cls.end_dt || 'Ongoing'}`}
-                        />
-                        <InfoCard
-                            label="Room"
-                            value={schedule.room || 'Not assigned'}
-                            icon={<MapPin className="size-3 inline mr-1" />}
-                        />
-                        <InfoCard
-                            label="Credit Hours"
-                            value={
-                                cls.credit_hours > 0
-                                    ? `${cls.credit_hours}`
-                                    : 'N/A'
-                            }
-                            icon={<Clock className="size-3 inline mr-1" />}
-                        />
-                    </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <Users className="size-5 text-[#556830] shrink-0" />
+                    <h3 className="text-[#203622] truncate">
+                        Enrollment
+                    </h3>
+                </div>
+                <div className="text-2xl sm:text-3xl text-[#203622] mb-2">
+                    {cls.enrolled} / {cls.capacity}
+                </div>
+                <Progress
+                    value={capacityPct}
+                    className="h-2 mb-3"
+                    indicatorClassName={
+                        capacityPct >= 80
+                            ? 'bg-[#556830]'
+                            : capacityPct >= 50
+                              ? 'bg-[#F1B51C]'
+                              : 'bg-gray-400'
+                    }
+                />
+                <div className="text-sm text-gray-600">
+                    {spotsAvailable}{' '}
+                    {spotsAvailable === 1 ? 'spot' : 'spots'} available
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
-                <div className="bg-card rounded-lg border border-border p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Users className="size-5 text-[#556830]" />
-                        <h3 className="text-foreground font-semibold">
-                            Enrollment
-                        </h3>
-                    </div>
-                    <div className="text-3xl text-foreground mb-2">
-                        {cls.enrolled} / {cls.capacity}
-                    </div>
-                    <Progress
-                        value={capacityPct}
-                        className="h-2 mb-3"
-                        indicatorClassName="bg-[#556830]"
-                    />
-                    <div className="text-sm text-muted-foreground">
-                        {spotsAvailable}{' '}
-                        {spotsAvailable === 1 ? 'spot' : 'spots'} available
-                    </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <Calendar className="size-5 text-[#556830] shrink-0" />
+                    <h3 className="text-[#203622] truncate">
+                        Attendance
+                    </h3>
                 </div>
-
-                <div className="bg-card rounded-lg border border-border p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Calendar className="size-5 text-[#556830]" />
-                        <h3 className="text-foreground font-semibold">
-                            Attendance
-                        </h3>
-                    </div>
-                    <div className="text-3xl text-foreground mb-2">
-                        {avgRate}%
-                    </div>
-                    <Progress
-                        value={avgRate}
-                        className="h-2 mb-3"
-                        indicatorClassName={
-                            avgRate >= 85 ? 'bg-[#556830]' : 'bg-[#F1B51C]'
-                        }
-                    />
-                    <div className="text-sm text-muted-foreground">
-                        Average attendance rate
-                    </div>
+                <div className="text-2xl sm:text-3xl text-[#203622] mb-2">
+                    {avgRate}%
                 </div>
+                <Progress
+                    value={avgRate}
+                    className="h-2 mb-3"
+                    indicatorClassName={
+                        avgRate >= 85 ? 'bg-[#556830]' : 'bg-[#F1B51C]'
+                    }
+                />
+                <div className="text-sm text-gray-600">
+                    Average attendance rate
+                </div>
+            </div>
 
-                <div className="bg-card rounded-lg border border-border p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <AlertCircle className="size-5 text-[#F1B51C]" />
-                        <h3 className="text-foreground font-semibold">
-                            At-Risk Residents
-                        </h3>
-                    </div>
-                    <div className="text-3xl text-foreground mb-2">
-                        {atRiskCount}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                        {atRiskCount === 0 ? (
-                            <span className="text-[#556830]">
-                                All residents engaged
-                            </span>
-                        ) : (
-                            <span>
-                                Low attendance or consecutive absences
-                            </span>
-                        )}
-                    </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <AlertCircle className="size-5 text-[#F1B51C] shrink-0" />
+                    <h3 className="text-[#203622] truncate">
+                        At-Risk Residents
+                    </h3>
+                </div>
+                <div className="text-2xl sm:text-3xl text-[#203622] mb-2">
+                    {atRiskCount}
+                </div>
+                <div className="text-sm text-gray-600">
+                    {atRiskCount === 0 ? (
+                        <span className="text-[#556830]">
+                            All residents engaged
+                        </span>
+                    ) : (
+                        <span>
+                            Low attendance or consecutive absences
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
@@ -227,19 +297,19 @@ export function ClassHeader({ cls, attendanceRecords }: ClassHeaderProps) {
 function InfoCard({
     label,
     value,
-    icon
+    sub
 }: {
     label: string;
     value: string;
-    icon?: React.ReactNode;
+    sub?: string;
 }) {
     return (
-        <div className="bg-muted rounded-lg p-3">
-            <div className="text-sm text-muted-foreground mb-1">{label}</div>
-            <div className="text-foreground text-sm">
-                {icon}
-                {value}
-            </div>
+        <div className="bg-[#E2E7EA] rounded-lg p-3 min-w-0 overflow-hidden">
+            <div className="text-sm text-gray-600 mb-1">{label}</div>
+            <div className="text-[#203622] break-words">{value}</div>
+            {sub && (
+                <div className="text-xs text-gray-600 mt-1">{sub}</div>
+            )}
         </div>
     );
 }
