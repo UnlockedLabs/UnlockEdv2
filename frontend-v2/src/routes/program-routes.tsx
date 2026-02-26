@@ -83,6 +83,18 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
             handle: { title: 'Program Overview Dashboard' }
         },
         {
+            path: 'programs/:program_id/detail',
+            loader: getProgramData,
+            element: <ProgramOverviewDashboard />, // TODO: Replace with ProgramDetail when integrated
+            handle: { title: 'Program Detail' }
+        },
+        {
+            path: 'programs/:program_id/statewide',
+            loader: getProgramData,
+            element: <ProgramOverviewDashboard />, // TODO: Replace with ProgramDetailStatewide when integrated
+            handle: { title: 'Statewide Program View' }
+        },
+        {
             path: 'programs/:id/classes/:class_id?',
             loader: getProgramTitle,
             element: <ClassManagementForm />,
