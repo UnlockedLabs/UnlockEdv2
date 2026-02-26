@@ -35,7 +35,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Filter, ChevronDown } from 'lucide-react';
+import { Search, Plus, Filter, ChevronDown, Edit, Trash2, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/Pagination';
 import {
@@ -52,6 +52,7 @@ import {
     TooltipTrigger,
     TooltipProvider,
 } from '@/components/ui/tooltip';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { programTypeColors, statusColors, type SortOption } from '@/pages/program-detail/constants';
 
 function getEffectiveStatus(
@@ -105,6 +106,26 @@ export default function ProgramsPage() {
         facilities: [] as number[],
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editingProgram, setEditingProgram] = useState<ProgramsOverviewTable | null>(null);
+
+    const handleEditClick = (program: ProgramsOverviewTable) => {
+        // Parse program types, credit types, funding type from program data
+        const types = parseCommaSeparated(program.program_types) as ProgramType[];
+        const creditTypes = parseCommaSeparated(program.credit_types) as CreditType[];
+        const fundingTypes = program.funding_type ? [program.funding_type as FundingType] : [];
+
+        setProgramFormData({
+            name: program.program_name,
+            description: program.description || '',
+            types,
+            creditTypes,
+            fundingTypes,
+            status: getEffectiveStatus(program),
+            facilities: [],
+        });
+        setEditingProgram(program);
+        setShowAddProgram(true);
+    };
 
     const handleCreateProgram = async () => {
         if (programFormData.types.length === 0) {
@@ -122,6 +143,8 @@ export default function ProgramsPage() {
 
         setIsSubmitting(true);
 
+        const isEditing = editingProgram !== null;
+
         try {
             const payload = {
                 name: programFormData.name,
@@ -136,19 +159,25 @@ export default function ProgramsPage() {
                 is_active: programFormData.status === ProgramEffectiveStatus.Available,
             };
 
-            const resp = await API.post<Program, typeof payload>(
-                'programs',
-                payload
-            ) as ServerResponseOne<Program>;
+            const resp = isEditing
+                ? await API.patch<Program, typeof payload>(
+                    `programs/${editingProgram.program_id}`,
+                    payload
+                  ) as ServerResponseOne<Program>
+                : await API.post<Program, typeof payload>(
+                    'programs',
+                    payload
+                  ) as ServerResponseOne<Program>;
 
             if (!resp.success) {
-                toast.error('Failed to create program');
+                toast.error(isEditing ? 'Failed to update program' : 'Failed to create program');
                 return;
             }
 
-            toast.success('Program created successfully');
+            toast.success(isEditing ? 'Program updated successfully' : 'Program created successfully');
 
             setShowAddProgram(false);
+            setEditingProgram(null);
             setProgramFormData({
                 name: '',
                 description: '',
@@ -162,7 +191,7 @@ export default function ProgramsPage() {
             void mutate();
 
         } catch {
-            toast.error('Failed to create program');
+            toast.error(isEditing ? 'Failed to update program' : 'Failed to create program');
         } finally {
             setIsSubmitting(false);
         }
@@ -465,7 +494,14 @@ export default function ProgramsPage() {
             {/* Add Program Form */}
             {showAddProgram && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                    <h3 className="text-[#203622] mb-4">{isDeptAdminUser ? 'Create Statewide Program' : 'Add New Program'}</h3>
+                    <h3 className="text-[#203622] mb-4">
+                        {editingProgram
+                            ? 'Edit Program'
+                            : isDeptAdminUser
+                                ? 'Create Statewide Program'
+                                : 'Add New Program'
+                        }
+                    </h3>
                     <div className="space-y-6">
                         {/* Basic Information */}
                         <div>
@@ -656,6 +692,7 @@ export default function ProgramsPage() {
                                 variant="outline"
                                 onClick={() => {
                                     setShowAddProgram(false);
+                                    setEditingProgram(null);
                                     // Reset form
                                     setProgramFormData({
                                         name: '',
@@ -676,7 +713,10 @@ export default function ProgramsPage() {
                                 onClick={() => void handleCreateProgram()}
                                 disabled={!programFormData.name.trim() || isSubmitting}
                             >
-                                {isSubmitting ? 'Creating...' : 'Create Program'}
+                                {isSubmitting
+                                    ? (editingProgram ? 'Saving...' : 'Creating...')
+                                    : (editingProgram ? 'Save Changes' : 'Create Program')
+                                }
                             </Button>
                         </div>
                     </div>
@@ -693,7 +733,8 @@ export default function ProgramsPage() {
                     {isDeptAdminUser ? (
                         <ProgramsTable
                             programs={paginatedPrograms}
-                            onRowClick={(programId) => navigate('/programs/' + programId)}
+                            onRowClick={(programId) => navigate('/programs/' + programId + '/detail')}
+                            onEditClick={handleEditClick}
                         />
                     ) : (
                         <div className="grid grid-cols-2 gap-6 mb-4">
@@ -887,20 +928,45 @@ function getPercentageColorClass(percentage: number): string {
     return 'text-red-600';
 }
 
-function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTable[]; onRowClick: (programId: number) => void }) {
+function ProgramsTable({ programs, onRowClick, onEditClick }: {
+    programs: ProgramsOverviewTable[];
+    onRowClick: (programId: number) => void;
+    onEditClick: (program: ProgramsOverviewTable) => void;
+}) {
     const navigate = useNavigate();
+    const [deleteConfirmProgram, setDeleteConfirmProgram] = useState<ProgramsOverviewTable | null>(null);
+
+    const handleDelete = async () => {
+        if (!deleteConfirmProgram) return;
+
+        try {
+            const resp = await API.delete(`programs/${deleteConfirmProgram.program_id}`);
+            if (resp.success) {
+                toast.success('Program deleted successfully');
+                // Note: mutate will be called by parent component via SWR revalidation
+            } else {
+                toast.error(resp.message || 'Failed to delete program');
+            }
+        } catch {
+            toast.error('Failed to delete program');
+        } finally {
+            setDeleteConfirmProgram(null);
+        }
+    };
+
     return (
         <TooltipProvider>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <Table>
                     <TableHeader className="bg-[#E2E7EA] border-b border-gray-200">
                         <TableRow>
-                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[32%]">Program</TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[17%]">Classes</TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[17%]">Enrollment</TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[17%]">Capacity</TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[8.5%]">Completion</TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[8.5%]">Attendance</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[30%]">Program</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[16%]">Classes</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[16%]">Enrollment</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[16%]">Capacity</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[8%]">Completion</TableHead>
+                            <TableHead className="text-left px-6 py-4 text-sm text-[#203622] w-[8%]">Attendance</TableHead>
+                            <TableHead className="text-right px-6 py-4 text-sm text-[#203622] w-[6%]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-200">
@@ -915,7 +981,7 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                             return (
                                 <TableRow
                                     key={program.program_id}
-                                    className={`hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors ${
+                                    className={`hover:bg-[#E2E7EA]/50 transition-colors cursor-pointer ${
                                         status === ProgramEffectiveStatus.Archived ? 'opacity-40' :
                                         status === ProgramEffectiveStatus.Inactive ? 'opacity-60' : ''
                                     }`}
@@ -923,14 +989,9 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                                 >
                                     <TableCell className="px-6 py-4">
                                         <div>
-                                            {status === ProgramEffectiveStatus.Inactive && (
-                                                <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300 text-xs mb-1.5">
-                                                    Inactive
-                                                </Badge>
-                                            )}
-                                            {status === ProgramEffectiveStatus.Archived && (
-                                                <Badge variant="outline" className="bg-gray-200 text-gray-700 border-gray-400 text-xs mb-1.5">
-                                                    Archived
+                                            {(status === ProgramEffectiveStatus.Inactive || status === ProgramEffectiveStatus.Archived) && (
+                                                <Badge variant="outline" className={`${statusColors[status]} text-xs mb-1.5`}>
+                                                    {status}
                                                 </Badge>
                                             )}
                                             <div className="text-[#203622] hover:text-[#556830] transition-colors font-medium mb-1.5">
@@ -1051,12 +1112,80 @@ function ProgramsTable({ programs, onRowClick }: { programs: ProgramsOverviewTab
                                             </TooltipContent>
                                         </Tooltip>
                                     </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate('/programs/' + program.program_id + '/statewide');
+                                                        }}
+                                                        className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                                                    >
+                                                        <Eye className="size-4 text-gray-600" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>View program</TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onEditClick(program);
+                                                        }}
+                                                        className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                                                    >
+                                                        <Edit className="size-4 text-gray-600" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Edit program</TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeleteConfirmProgram(program);
+                                                        }}
+                                                        disabled={program.total_active_classes > 0}
+                                                        className={`p-1.5 rounded transition-colors ${
+                                                            program.total_active_classes > 0
+                                                                ? 'opacity-50 cursor-not-allowed'
+                                                                : 'hover:bg-red-50'
+                                                        }`}
+                                                    >
+                                                        <Trash2 className="size-4 text-gray-600" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                {program.total_active_classes > 0 ? (
+                                                    <TooltipContent>Cannot delete programs with active classes</TooltipContent>
+                                                ) : (
+                                                    <TooltipContent>Delete program</TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             );
                         })}
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                open={!!deleteConfirmProgram}
+                onOpenChange={(open) => !open && setDeleteConfirmProgram(null)}
+                title="Delete Program"
+                description={`Are you sure you want to delete "${deleteConfirmProgram?.program_name}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                onConfirm={() => void handleDelete()}
+                variant="destructive"
+            />
         </TooltipProvider>
     );
 }
