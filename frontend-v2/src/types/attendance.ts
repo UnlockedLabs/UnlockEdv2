@@ -71,6 +71,7 @@ export interface ClassEnrollment {
     doc_id: string;
     completion_dt?: string;
     enrolled_at?: string;
+    enrollment_ended_at?: string;
 }
 
 export interface AttendanceFlag {
