@@ -45,6 +45,7 @@ export default function AccountHistoryFilter({
                 onSelectionChange={setSelectedCategories}
                 onBlurSearch={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
                 small={true}
+                openUpwards={true}
             />
         </div>
     );
