@@ -758,6 +758,7 @@ export interface ProgramOverview extends Program {
     completions: number;
     total_enrollments: number;
     completion_rate: number;
+    attendance_rate: number;
     active_class_facility_ids: number[];
 }
 
