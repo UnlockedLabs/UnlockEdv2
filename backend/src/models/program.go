@@ -171,6 +171,7 @@ type ProgramsOverviewTable struct {
 	CreditTypes            string   `json:"credit_types"`
 	FundingType            string   `json:"funding_type"`
 	Status                 bool     `json:"status"`
+	MatchingClasses        *string  `json:"matching_classes,omitempty"`
 }
 
 type ProgramOverviewResponse struct {
