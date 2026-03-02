@@ -208,6 +208,8 @@ type ResidentProgramClassInfo struct {
 	CreditTypes          string                  `json:"credit_types"`
 	UpdatedAt            string                  `json:"updated_at"`
 	ChangeReason         string                  `json:"change_reason"`
+	Schedule             string                  `json:"schedule"`
+	RecurrenceRule       string                  `json:"-"`
 }
 
 // calculates the attendance percentage, sets the feild AttendancePercentage and returns it's value
@@ -223,6 +225,30 @@ func (rpc *ResidentProgramClassInfo) CalculateAttendancePercentage() string {
 		rpc.AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
 	}
 	return rpc.AttendancePercentage
+}
+
+type UserNote struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"`
+	AdminID   uint      `json:"admin_id" gorm:"not null"`
+	Note      string    `json:"note" gorm:"not null"`
+	CreatedAt time.Time `json:"created_at"`
+
+	Admin *User `json:"admin,omitempty" gorm:"foreignKey:AdminID;references:ID"`
+}
+
+func (UserNote) TableName() string { return "user_notes" }
+
+type UserNoteResponse struct {
+	ID    uint      `json:"id"`
+	Date  time.Time `json:"date"`
+	Admin string    `json:"admin"`
+	Note  string    `json:"note"`
+}
+
+type WeeklyAttendanceTrend struct {
+	Week string  `json:"week"`
+	Rate float64 `json:"rate"`
 }
 
 type ResidentTransferProgramConflicts struct {
