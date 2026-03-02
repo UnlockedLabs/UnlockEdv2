@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { useAuth, isUserDeactivated, isDeptAdmin } from '@/auth/useAuth';
+import { useAuth, isUserDeactivated, canSwitchFacility } from '@/auth/useAuth';
 import {
     ServerResponseOne,
     ServerResponseMany,
@@ -26,6 +26,11 @@ import { DetailedAttendanceDialog } from './resident-profile/DetailedAttendanceD
 import { CompletedPrograms } from './resident-profile/CompletedPrograms';
 import { IncompleteEnrollments } from './resident-profile/IncompleteEnrollments';
 import { HistoricalNotes } from './resident-profile/HistoricalNotes';
+import { EditProfileDialog } from './resident-profile/EditProfileDialog';
+import { ResetPasswordDialog } from './resident-profile/ResetPasswordDialog';
+import { DeactivateDialog } from './resident-profile/DeactivateDialog';
+import { DeleteDialog } from './resident-profile/DeleteDialog';
+import { TransferDialog } from './resident-profile/TransferDialog';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
@@ -35,7 +40,8 @@ export default function ResidentProfile() {
     const {
         data: profileResp,
         error,
-        isLoading
+        isLoading,
+        mutate: mutateProfile
     } = useSWR<ServerResponseOne<ResidentEngagementProfile>, Error>(
         `/api/users/${residentId}/profile`
     );
@@ -110,9 +116,18 @@ export default function ResidentProfile() {
         []
     );
 
-    const noop = useCallback(() => {
-        /* PR 4 wires up real dialogs */
-    }, []);
+    const [editOpen, setEditOpen] = useState(false);
+    const [resetPwOpen, setResetPwOpen] = useState(false);
+    const [deactivateOpen, setDeactivateOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [transferOpen, setTransferOpen] = useState(false);
+
+    const handleActionSuccess = useCallback(() => {
+        void mutateProfile();
+    }, [mutateProfile]);
+
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    const noop = useCallback(() => {}, []);
 
     if (error || !user) return null;
 
@@ -137,7 +152,7 @@ export default function ResidentProfile() {
     const residentUser = profileData.user;
     const engagement = profileData.activity_engagement;
     const isDeactivated = isUserDeactivated(residentUser);
-    const userIsDeptAdmin = isDeptAdmin(user);
+    const userIsDeptAdmin = canSwitchFacility(user);
 
     return (
         <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
@@ -166,11 +181,11 @@ export default function ResidentProfile() {
                     lastActiveDate={engagement?.last_active_date ?? ''}
                     isDeactivated={isDeactivated}
                     isDeptAdmin={userIsDeptAdmin}
-                    onEditProfile={noop}
-                    onResetPassword={noop}
-                    onDeactivate={noop}
-                    onTransfer={noop}
-                    onDelete={noop}
+                    onEditProfile={() => setEditOpen(true)}
+                    onResetPassword={() => setResetPwOpen(true)}
+                    onDeactivate={() => setDeactivateOpen(true)}
+                    onTransfer={() => setTransferOpen(true)}
+                    onDelete={() => setDeleteOpen(true)}
                 />
 
                 <ResidentMetrics
@@ -208,6 +223,35 @@ export default function ResidentProfile() {
                     notes={[]}
                     isDeactivated={isDeactivated}
                     onAddNote={noop}
+                />
+
+                <EditProfileDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    user={residentUser}
+                    onSuccess={handleActionSuccess}
+                />
+                <ResetPasswordDialog
+                    open={resetPwOpen}
+                    onOpenChange={setResetPwOpen}
+                    user={residentUser}
+                />
+                <DeactivateDialog
+                    open={deactivateOpen}
+                    onOpenChange={setDeactivateOpen}
+                    user={residentUser}
+                    onSuccess={handleActionSuccess}
+                />
+                <DeleteDialog
+                    open={deleteOpen}
+                    onOpenChange={setDeleteOpen}
+                    user={residentUser}
+                />
+                <TransferDialog
+                    open={transferOpen}
+                    onOpenChange={setTransferOpen}
+                    user={residentUser}
+                    onSuccess={handleActionSuccess}
                 />
             </div>
         </div>
