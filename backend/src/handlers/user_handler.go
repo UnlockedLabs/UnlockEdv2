@@ -23,6 +23,9 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	return []routeDef{
 		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
 		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		validatedRoute("GET /api/users/{id}/attendance-trend", srv.handleGetUserAttendanceTrend, resolver),
+		validatedRoute("GET /api/users/{id}/notes", srv.handleGetUserNotes, resolver),
+		validatedAdminRoute("POST /api/users/{id}/notes", srv.handleCreateUserNote, FacilityAdminResolver("users", "id")),
 		/* admin */
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
@@ -489,8 +492,68 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 	}
 	for i := range userPrograms {
 		userPrograms[i].CalculateAttendancePercentage()
+		userPrograms[i].Schedule = models.FormatScheduleFromRRule(userPrograms[i].RecurrenceRule)
 	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
+}
+
+func (srv *Server) handleGetUserAttendanceTrend(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	weeks := 8
+	if wk := r.URL.Query().Get("weeks"); wk != "" {
+		if parsed, err := strconv.Atoi(wk); err == nil && parsed > 0 {
+			weeks = parsed
+		}
+	}
+	trends, err := srv.Db.GetUserWeeklyAttendanceTrend(r.Context(), userId, weeks)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, trends)
+}
+
+func (srv *Server) handleGetUserNotes(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	notes, err := srv.Db.GetUserNotes(r.Context(), uint(userId))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, notes)
+}
+
+func (srv *Server) handleCreateUserNote(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var body struct {
+		Note string `json:"note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return newBadRequestServiceError(err, "invalid request body")
+	}
+	if strings.TrimSpace(body.Note) == "" {
+		return newBadRequestServiceError(errors.New("note is required"), "note cannot be empty")
+	}
+	note := &models.UserNote{
+		UserID:  uint(userId),
+		AdminID: claims.UserID,
+		Note:    strings.TrimSpace(body.Note),
+	}
+	if err := srv.Db.CreateUserNote(r.Context(), note); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, "Note added successfully")
 }
 
 func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log sLog) error {
