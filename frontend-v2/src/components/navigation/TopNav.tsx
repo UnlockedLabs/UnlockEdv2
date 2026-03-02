@@ -2,7 +2,8 @@ import {
     useAuth,
     isAdministrator,
     canSwitchFacility,
-    handleLogout
+    handleLogout,
+    isDeptAdmin
 } from '@/auth/useAuth';
 import { Facility } from '@/types';
 import { useTheme } from 'next-themes';
@@ -52,9 +53,11 @@ export default function TopNav({
                 <h1 className="text-xl font-semibold text-foreground truncate">
                     {pageTitle}
                 </h1>
-                <span className="text-sm text-muted-foreground truncate">
-                    {user.facility.name}
-                </span>
+                {!isDeptAdmin(user) && (
+                    <span className="text-sm text-muted-foreground truncate">
+                        {user.facility.name}
+                    </span>
+                )}
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">

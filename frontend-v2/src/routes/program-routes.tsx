@@ -72,7 +72,7 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
             element: <ProgramsPage />,
             loader: getFilterDropdowns,
             handle: {
-                title: 'Programs Management',
+                title: 'Programs',
                 path: ['programs']
             }
         },
