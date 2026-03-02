@@ -11,6 +11,22 @@ export function formatDate(dateStr?: string): string {
     });
 }
 
+export function formatRelativeTime(dateStr?: string): string {
+    if (!dateStr) return '-';
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return formatDate(dateStr);
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return formatDate(dateStr);
+}
+
 export function formatDateTime(dateStr: string): string {
     const dt = new Date(dateStr);
     const date = dt.toLocaleDateString('en-US', {
