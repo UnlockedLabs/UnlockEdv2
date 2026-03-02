@@ -61,22 +61,6 @@ interface LocalRowData {
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 type FormData = Record<string, string>;
 
-const diffMinutes = (start?: string, end?: string) => {
-    if (!start || !end) return undefined;
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
-    if (
-        Number.isNaN(sh) ||
-        Number.isNaN(sm) ||
-        Number.isNaN(eh) ||
-        Number.isNaN(em)
-    ) {
-        return undefined;
-    }
-    const diff = eh * 60 + em - (sh * 60 + sm);
-    return diff > 0 ? diff : undefined;
-};
-
 export default function EventAttendance() {
     const { class_id, event_id, date } = useParams<{
         event_id: string;
@@ -159,18 +143,6 @@ export default function EventAttendance() {
 
     const isPresentLike = (status?: Attendance) =>
         status === Attendance.Present || status === Attendance.Partial;
-
-    const getAttendedMinutes = (row: LocalRowData) => {
-        if (!isPresentLike(row.attendance_status)) {
-            return null;
-        }
-        const computed = diffMinutes(row.check_in_at, row.check_out_at);
-        const capped =
-            computed && row.scheduled_minutes
-                ? Math.min(computed, row.scheduled_minutes)
-                : computed;
-        return capped ?? row.minutes_attended ?? null;
-    };
 
     useEffect(() => {
         if (!data?.data) {
@@ -321,7 +293,8 @@ export default function EventAttendance() {
                         : undefined,
                 check_out_at:
                     newStatus === Attendance.Present
-                        ? prev[user_id]?.check_out_at ?? currentRow.check_out_at
+                        ? prev[user_id]?.check_out_at ??
+                          getDefaultTimes(currentRow).check_out_at
                         : undefined,
                 minutes_attended: isPresentLike(newStatus)
                     ? prev[user_id]?.minutes_attended ??
@@ -582,40 +555,24 @@ export default function EventAttendance() {
                 >
                     <div className="relative w-full overflow-x-auto">
                         <table
-                            className="table-2 table-fixed w-full min-w-[1500px] mb-5 border-separate border-spacing-0"
+                            className="table-2 table-fixed w-full mb-5 border-separate"
                             style={{ display: 'table' }}
                         >
                             <colgroup>
                                 <col className="w-[10%]" />
-                                <col className="w-[8%]" />
-                                <col className="w-[26%]" />
-                                <col className="w-[15%]" />
-                                <col className="w-[11%]" />
-                                <col className="w-[11%]" />
-                                <col className="w-[7%]" />
-                                <col className="w-[12%]" />
+                                <col className="w-[30%]" />
+                                <col className="w-[20%]" />
+                                <col className="w-[20%]" />
                             </colgroup>
                             <thead style={{ display: 'table-header-group' }}>
-                                <tr
-                                    className="text-left table-row border-b border-grey-2"
-                                    style={{ display: 'table-row' }}
-                                >
-                                    <th className="px-3">Name</th>
-                                    <th className="px-3">Resident ID</th>
+                                <tr className="text-left !table-row">
+                                    <th className="px-3">Resident</th>
                                     <th className="px-3">Status</th>
-                                    <th className="px-3">Reason</th>
-                                    <th className="px-3">Check-in</th>
-                                    <th className="px-3">Check-out</th>
-                                    <th className="px-3">
-                                        Time in class (minutes)
-                                    </th>
+                                    <th className="px-3">Details</th>
                                     <th className="px-3">Note</th>
                                 </tr>
                             </thead>
-                            <tbody
-                                className="table-row-group"
-                                style={{ display: 'table-row-group' }}
-                            >
+                            <tbody className="!table-row-group">
                                 {rows.length === 0 ? (
                                     <tr style={{ display: 'table-row' }}>
                                         <td
@@ -643,13 +600,11 @@ export default function EventAttendance() {
                                                 style={{ display: 'table-row' }}
                                             >
                                                 <td className="px-3 py-2 truncate">
-                                                    {row.name_last},{' '}
-                                                    {row.name_first}
-                                                </td>
-                                                <td className="px-3 py-2 whitespace-nowrap">
-                                                    {row.doc_id == ''
-                                                        ? ' '
-                                                        : `${row.doc_id}`}
+                                                    <div>
+                                                        {row.name_last},{' '}
+                                                        {row.name_first}
+                                                    </div>
+                                                    <div>ID: {row.doc_id}</div>
                                                 </td>
                                                 <td className="px-3 py-2 min-w-[200px]">
                                                     <AttendanceStatusToggle
@@ -668,106 +623,131 @@ export default function EventAttendance() {
                                                         disabled={blockEdits}
                                                     />
                                                 </td>
-                                                <td className="px-3 py-2 min-w-[150px]">
-                                                    <DropdownInput
-                                                        label=""
-                                                        interfaceRef={`reason_${row.user_id}`}
-                                                        required={
-                                                            !blockEdits &&
-                                                            row.selected &&
-                                                            !isPresentLike(
-                                                                row.attendance_status
-                                                            )
-                                                        }
-                                                        errors={errors}
-                                                        register={register}
-                                                        enumType={
-                                                            AttendanceReason
-                                                        }
-                                                        defaultValue={
-                                                            isPresentLike(
-                                                                row.attendance_status
-                                                            )
-                                                                ? ''
-                                                                : row.reason_category
-                                                        }
-                                                        disabled={
-                                                            blockEdits ||
-                                                            !row.attendance_status ||
-                                                            isPresentLike(
-                                                                row.attendance_status
-                                                            )
-                                                        }
-                                                        selectClassName={`h-10 min-h-[2.5rem] text-base ${
-                                                            blockEdits ||
-                                                            !row.attendance_status ||
-                                                            row.attendance_status ===
-                                                                Attendance.Present
-                                                                ? 'opacity-40'
-                                                                : ''
-                                                        } w-full max-w-[10rem]`}
-                                                        onChange={(e) =>
-                                                            handleReasonChange(
-                                                                row.user_id,
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2 whitespace-nowrap">
-                                                    <input
-                                                        type="time"
-                                                        className="input input-bordered w-full"
-                                                        value={
-                                                            row.check_in_at ??
-                                                            ''
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleTimeChange(
-                                                                row.user_id,
-                                                                'check_in_at',
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            blockEdits ||
-                                                            !isPresentLike(
-                                                                row.attendance_status
-                                                            )
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2 whitespace-nowrap">
-                                                    <input
-                                                        type="time"
-                                                        className="input input-bordered w-full"
-                                                        value={
-                                                            row.check_out_at ??
-                                                            ''
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleTimeChange(
-                                                                row.user_id,
-                                                                'check_out_at',
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        onFocus={() =>
-                                                            handleCheckoutFocus(
-                                                                row.user_id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            blockEdits ||
-                                                            !isPresentLike(
-                                                                row.attendance_status
-                                                            )
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2 whitespace-nowrap text-center">
-                                                    {getAttendedMinutes(row) ??
-                                                        '—'}
+                                                <td className="px-3 py-2">
+                                                    {row.attendance_status ===
+                                                    null ? (
+                                                        <></>
+                                                    ) : row.attendance_status !==
+                                                      Attendance.Present ? (
+                                                        <div className="flex pt-2 gap-2">
+                                                            <label className="my-auto">
+                                                                Reason:
+                                                            </label>
+                                                            <DropdownInput
+                                                                label=""
+                                                                interfaceRef={`reason_${row.user_id}`}
+                                                                required={
+                                                                    !blockEdits &&
+                                                                    row.selected &&
+                                                                    !isPresentLike(
+                                                                        row.attendance_status
+                                                                    )
+                                                                }
+                                                                errors={errors}
+                                                                register={
+                                                                    register
+                                                                }
+                                                                enumType={
+                                                                    AttendanceReason
+                                                                }
+                                                                defaultValue={
+                                                                    isPresentLike(
+                                                                        row.attendance_status
+                                                                    )
+                                                                        ? ''
+                                                                        : row.reason_category
+                                                                }
+                                                                disabled={
+                                                                    blockEdits ||
+                                                                    !row.attendance_status ||
+                                                                    isPresentLike(
+                                                                        row.attendance_status
+                                                                    )
+                                                                }
+                                                                selectClassName={`select-sm text-xs${
+                                                                    blockEdits ||
+                                                                    !row.attendance_status
+                                                                        ? 'opacity-40'
+                                                                        : ''
+                                                                } `}
+                                                                onChange={(e) =>
+                                                                    handleReasonChange(
+                                                                        row.user_id,
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col pt-2 gap-2">
+                                                            <div className="flex">
+                                                                <label className="w-20 my-auto">
+                                                                    Time In:{' '}
+                                                                </label>
+                                                                <input
+                                                                    type="time"
+                                                                    className="input input-bordered input-sm w-full"
+                                                                    value={
+                                                                        row.check_in_at ??
+                                                                        ''
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        handleTimeChange(
+                                                                            row.user_id,
+                                                                            'check_in_at',
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        blockEdits ||
+                                                                        !isPresentLike(
+                                                                            row.attendance_status
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            <div className="flex">
+                                                                <label className="w-20 my-auto">
+                                                                    Time Out:{' '}
+                                                                </label>
+                                                                <input
+                                                                    type="time"
+                                                                    className="input input-bordered input-sm w-full"
+                                                                    value={
+                                                                        row.check_out_at ??
+                                                                        ''
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        handleTimeChange(
+                                                                            row.user_id,
+                                                                            'check_out_at',
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    onFocus={() =>
+                                                                        handleCheckoutFocus(
+                                                                            row.user_id
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        blockEdits ||
+                                                                        !isPresentLike(
+                                                                            row.attendance_status
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-3 py-2">
                                                     <TextInput
