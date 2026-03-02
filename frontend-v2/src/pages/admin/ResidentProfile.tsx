@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, isUserDeactivated, isDeptAdmin } from '@/auth/useAuth';
@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/breadcrumb';
 import { ResidentHeader } from './resident-profile/ResidentHeader';
 import { ResidentMetrics } from './resident-profile/ResidentMetrics';
+import { ActiveEnrollmentsTable } from './resident-profile/ActiveEnrollmentsTable';
+import { AttendanceTrendChart } from './resident-profile/AttendanceTrendChart';
+import { DetailedAttendanceDialog } from './resident-profile/DetailedAttendanceDialog';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
@@ -81,6 +84,20 @@ export default function ResidentProfile() {
             navigate('/error');
         }
     }, [error, navigate]);
+
+    const [selectedEnrollment, setSelectedEnrollment] =
+        useState<ResidentProgramOverview | null>(null);
+    const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+
+    const chartData: { week: string; rate: number }[] = [];
+
+    const handleViewDetails = useCallback(
+        (enrollment: ResidentProgramOverview) => {
+            setSelectedEnrollment(enrollment);
+            setAttendanceDialogOpen(true);
+        },
+        []
+    );
 
     const noop = useCallback(() => {
         /* PR 4 wires up real dialogs */
@@ -151,6 +168,20 @@ export default function ResidentProfile() {
                     totalSessions={attendanceStats.totalSessions}
                     activeEnrollments={activeEnrollments.length}
                     completedPrograms={completedPrograms.length}
+                />
+
+                <AttendanceTrendChart data={chartData} />
+
+                <ActiveEnrollmentsTable
+                    enrollments={activeEnrollments}
+                    onViewDetails={handleViewDetails}
+                />
+
+                <DetailedAttendanceDialog
+                    open={attendanceDialogOpen}
+                    onOpenChange={setAttendanceDialogOpen}
+                    enrollment={selectedEnrollment}
+                    residentId={residentId ?? ''}
                 />
             </div>
         </div>
