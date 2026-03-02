@@ -114,6 +114,7 @@ export function ActiveEnrollmentsTable({
                         return (
                             <TableRow
                                 key={`${enrollment.program_id}-${enrollment.class_id}`}
+                                className="hover:bg-gray-50"
                             >
                                 <TableCell>
                                     <div className="font-medium text-[#203622]">
