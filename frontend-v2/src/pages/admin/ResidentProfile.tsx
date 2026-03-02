@@ -16,6 +16,9 @@ import { ResidentMetrics } from './resident-profile/ResidentMetrics';
 import { ActiveEnrollmentsTable } from './resident-profile/ActiveEnrollmentsTable';
 import { AttendanceTrendChart } from './resident-profile/AttendanceTrendChart';
 import { DetailedAttendanceDialog } from './resident-profile/DetailedAttendanceDialog';
+import { CompletedPrograms } from './resident-profile/CompletedPrograms';
+import { IncompleteEnrollments } from './resident-profile/IncompleteEnrollments';
+import { HistoricalNotes } from './resident-profile/HistoricalNotes';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
@@ -37,38 +40,46 @@ export default function ResidentProfile() {
     const profileData = profileResp?.data;
     const programs = useMemo(() => programsResp?.data ?? [], [programsResp]);
 
-    const { activeEnrollments, completedPrograms, attendanceStats } =
-        useMemo(() => {
-            const active = programs.filter(
-                (p) => p.enrollment_status === EnrollmentStatus.Enrolled
-            );
-            const completed = programs.filter(
-                (p) => p.enrollment_status === EnrollmentStatus.Completed
-            );
-            const totalAttended = programs.reduce(
-                (sum, p) => sum + (p.present_attendance ?? 0),
-                0
-            );
-            const totalAbsent = programs.reduce(
-                (sum, p) => sum + (p.absent_attendance ?? 0),
-                0
-            );
-            const totalSessions = totalAttended + totalAbsent;
-            const overallPercent =
-                totalSessions > 0
-                    ? Math.round((totalAttended / totalSessions) * 100)
-                    : 0;
+    const {
+        activeEnrollments,
+        completedPrograms,
+        incompleteEnrollments,
+        attendanceStats
+    } = useMemo(() => {
+        const active = programs.filter(
+            (p) => p.enrollment_status === EnrollmentStatus.Enrolled
+        );
+        const completed = programs.filter(
+            (p) => p.enrollment_status === EnrollmentStatus.Completed
+        );
+        const incomplete = programs.filter((p) =>
+            p.enrollment_status?.startsWith('Incomplete:')
+        );
+        const totalAttended = programs.reduce(
+            (sum, p) => sum + (p.present_attendance ?? 0),
+            0
+        );
+        const totalAbsent = programs.reduce(
+            (sum, p) => sum + (p.absent_attendance ?? 0),
+            0
+        );
+        const totalSessions = totalAttended + totalAbsent;
+        const overallPercent =
+            totalSessions > 0
+                ? Math.round((totalAttended / totalSessions) * 100)
+                : 0;
 
-            return {
-                activeEnrollments: active,
-                completedPrograms: completed,
-                attendanceStats: {
-                    totalAttended,
-                    totalSessions,
-                    overallPercent
-                }
-            };
-        }, [programs]);
+        return {
+            activeEnrollments: active,
+            completedPrograms: completed,
+            incompleteEnrollments: incomplete,
+            attendanceStats: {
+                totalAttended,
+                totalSessions,
+                overallPercent
+            }
+        };
+    }, [programs]);
 
     useEffect(() => {
         if (error?.message === 'Not Found') {
@@ -172,6 +183,21 @@ export default function ResidentProfile() {
                     onOpenChange={setAttendanceDialogOpen}
                     enrollment={selectedEnrollment}
                     residentId={residentId ?? ''}
+                />
+
+                <CompletedPrograms
+                    programs={completedPrograms}
+                    onViewDetails={handleViewDetails}
+                />
+
+                <IncompleteEnrollments
+                    enrollments={incompleteEnrollments}
+                />
+
+                <HistoricalNotes
+                    notes={[]}
+                    isDeactivated={isDeactivated}
+                    onAddNote={noop}
                 />
             </div>
         </div>
