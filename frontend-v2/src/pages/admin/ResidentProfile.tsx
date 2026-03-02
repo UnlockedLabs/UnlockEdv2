@@ -24,6 +24,7 @@ import { ResetPasswordDialog } from './resident-profile/ResetPasswordDialog';
 import { DeactivateDialog } from './resident-profile/DeactivateDialog';
 import { DeleteDialog } from './resident-profile/DeleteDialog';
 import { TransferDialog } from './resident-profile/TransferDialog';
+import { AddNoteDialog } from './resident-profile/AddNoteDialog';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
@@ -95,11 +96,21 @@ export default function ResidentProfile() {
         }
     }, [error, navigate]);
 
+    const { data: trendResp } = useSWR<
+        ServerResponseOne<{ week: string; rate: number }[]>
+    >(residentId ? `/api/users/${residentId}/attendance-trend?weeks=8` : null);
+    const chartData = useMemo(() => trendResp?.data ?? [], [trendResp]);
+
+    const { data: notesResp, mutate: mutateNotes } = useSWR<
+        ServerResponseOne<
+            { id: number; date: string; admin: string; note: string }[]
+        >
+    >(residentId ? `/api/users/${residentId}/notes` : null);
+    const notes = useMemo(() => notesResp?.data ?? [], [notesResp]);
+
     const [selectedEnrollment, setSelectedEnrollment] =
         useState<ResidentProgramOverview | null>(null);
     const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
-
-    const chartData: { week: string; rate: number }[] = [];
 
     const handleViewDetails = useCallback(
         (enrollment: ResidentProgramOverview) => {
@@ -114,13 +125,11 @@ export default function ResidentProfile() {
     const [deactivateOpen, setDeactivateOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
+    const [addNoteOpen, setAddNoteOpen] = useState(false);
 
     const handleActionSuccess = useCallback(() => {
         void mutateProfile();
     }, [mutateProfile]);
-
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    const noop = useCallback(() => {}, []);
 
     if (error || !user) return null;
 
@@ -210,9 +219,9 @@ export default function ResidentProfile() {
                 />
 
                 <HistoricalNotes
-                    notes={[]}
+                    notes={notes}
                     isDeactivated={isDeactivated}
-                    onAddNote={noop}
+                    onAddNote={() => setAddNoteOpen(true)}
                 />
 
                 <EditProfileDialog
@@ -242,6 +251,13 @@ export default function ResidentProfile() {
                     onOpenChange={setTransferOpen}
                     user={residentUser}
                     onSuccess={handleActionSuccess}
+                />
+                <AddNoteDialog
+                    open={addNoteOpen}
+                    onOpenChange={setAddNoteOpen}
+                    residentId={residentId ?? ''}
+                    residentName={residentUser.name_first}
+                    onSuccess={() => void mutateNotes()}
                 />
             </div>
         </div>
