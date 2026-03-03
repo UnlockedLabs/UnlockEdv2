@@ -712,7 +712,7 @@ export default function ProgramsPage() {
                         itemsPerPage={itemsPerPage}
                         onPageChange={setCurrentPage}
                         onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
-                        itemLabel="programs"
+                        itemLabel="items"
                     />
                 )}
                 </>
