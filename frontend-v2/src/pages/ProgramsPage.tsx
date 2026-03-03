@@ -605,7 +605,7 @@ export default function ProgramsPage() {
                                 {isDeptAdminUser && (
                                     <div className="col-span-2">
                                         <Label htmlFor="facilities" className="text-[#203622]">Facilities Offered *</Label>
-                                        <div className="mt-2 max-h-60 overflow-y-auto space-y-2 rounded-lg p-3">
+                                        <div className="mt-2 max-h-60 overflow-y-auto space-y-2 p-3">
                                             {facilities.length === 0 ? (
                                                 <p className="text-sm text-gray-500">Loading facilities...</p>
                                             ) : (
@@ -947,7 +947,7 @@ function ProgramsTable({ programs, onRowClick }: {
                                                 <>
                                                     <span className="text-gray-300">•</span>
                                                     <button
-                                                        className="text-xs text-gray-500 font-medium"
+                                                        className="text-xs text-gray-500 font-medium hover:text-gray-500 no-underline"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             navigate(`/facilities?program=${program.program_id}`);
