@@ -268,6 +268,7 @@ type MissingAttendanceClass struct {
 	ID           uint   `json:"id"`
 	Name         string `json:"name"`
 	FacilityName string `json:"facility_name"`
+	FacilityID   uint   `json:"facility_id"`
 }
 
 type EventDates struct {
