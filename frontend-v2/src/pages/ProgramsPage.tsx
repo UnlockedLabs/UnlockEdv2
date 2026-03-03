@@ -947,7 +947,7 @@ function ProgramsTable({ programs, onRowClick }: {
                                                 <>
                                                     <span className="text-gray-300">•</span>
                                                     <button
-                                                        className="text-xs text-[#556830] hover:underline font-medium"
+                                                        className="text-xs text-gray-500 font-medium"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             navigate(`/facilities?program=${program.program_id}`);
