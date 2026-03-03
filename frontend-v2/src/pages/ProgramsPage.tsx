@@ -596,33 +596,20 @@ export default function ProgramsPage() {
                                 </div>
 
                                 <div className="col-span-2">
-                                    <Label htmlFor="fundingTypes" className="text-[#203622]">Funding Types *</Label>
-                                    <div className="mt-2 grid grid-cols-2 gap-2">
-                                        {fundingTypes.map((type) => (
-                                            <label key={type.value} className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={programFormData.fundingTypes.includes(type.value)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setProgramFormData({
-                                                                ...programFormData,
-                                                                fundingTypes: [...programFormData.fundingTypes, type.value]
-                                                            });
-                                                        } else {
-                                                            setProgramFormData({
-                                                                ...programFormData,
-                                                                fundingTypes: programFormData.fundingTypes.filter(t => t !== type.value)
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="rounded border-gray-300 text-[#556830] focus:ring-[#556830]"
-                                                    style={{ colorScheme: 'light' }}
-                                                />
-                                                <span className="text-sm text-gray-700">{type.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
+                                    <Label htmlFor="fundingType" className="text-[#203622]">Funding Type *</Label>
+                                    <Select
+                                        value={programFormData.fundingTypes[0] ?? ''}
+                                        onValueChange={(value) => setProgramFormData({ ...programFormData, fundingTypes: [value as FundingType] })}
+                                    >
+                                        <SelectTrigger id="fundingType" className="dark:!bg-[rgba(38,38,38,0.3)]">
+                                            <SelectValue placeholder="Select funding type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {fundingTypes.map((type) => (
+                                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="col-span-2">
