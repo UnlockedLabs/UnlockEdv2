@@ -360,7 +360,7 @@ export default function ProgramsPage() {
                         </p>
                     </div>
                     <Button
-                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2"
+                        className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2 cursor-default"
                         onClick={() => setShowAddProgram(!showAddProgram)}
                     >
                         <Plus className="size-5" />
@@ -413,7 +413,7 @@ export default function ProgramsPage() {
                         value={sort}
                         onValueChange={(v) => setSort(v as SortOption)}
                     >
-                        <SelectTrigger className="w-[220px] dark:!bg-[rgba(38,38,38,0.3)]">
+                        <SelectTrigger className="w-[220px] dark:!bg-[rgba(38,38,38,0.3)] cursor-default">
                             <SelectValue placeholder="Sort By" />
                         </SelectTrigger>
                         <SelectContent>
@@ -428,7 +428,7 @@ export default function ProgramsPage() {
                     {/* Program Type Filter */}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default">
                                 <div className="flex items-center gap-2">
                                     <Filter className="size-4" />
                                     <span>Type {selectedTypes.length > 0 && `(${selectedTypes.length})`}</span>
@@ -454,7 +454,7 @@ export default function ProgramsPage() {
                     {/* Status Filter */}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default">
                                 <div className="flex items-center gap-2">
                                     <Filter className="size-4" />
                                     <span>Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}</span>
