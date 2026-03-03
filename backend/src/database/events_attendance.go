@@ -403,7 +403,7 @@ func (db *DB) GetActiveClassesForMissingAttendance(args *models.QueryContext, fa
 	var missClasses []models.MissingAttendanceClass
 	classQuery := db.WithContext(args.Ctx).
 		Table("program_classes c").
-		Select("c.id, c.name, f.name as facility_name").
+		Select("c.id, c.name, f.name as facility_name, c.facility_id").
 		Joins("JOIN facilities f ON f.id = c.facility_id").
 		Where("c.status = ?", models.Active).
 		Where("c.archived_at IS NULL")
