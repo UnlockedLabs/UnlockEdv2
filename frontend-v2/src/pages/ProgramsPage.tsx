@@ -904,10 +904,7 @@ export default function ProgramsPage() {
                                 <Button
                                     className="bg-[#556830] hover:bg-[#203622] text-white"
                                     onClick={() => void handleCreateProgram()}
-                                    disabled={
-                                        !programFormData.name.trim() ||
-                                        isSubmitting
-                                    }
+                                    disabled={isSubmitting}
                                 >
                                     {isSubmitting
                                         ? 'Creating...'
