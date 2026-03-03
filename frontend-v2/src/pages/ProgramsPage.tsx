@@ -524,7 +524,7 @@ export default function ProgramsPage() {
                                         placeholder="Brief description of the program and its goals"
                                         value={programFormData.description}
                                         onChange={(e) => setProgramFormData({ ...programFormData, description: e.target.value })}
-                                        rows={3}
+                                        rows={2}
                                         className="min-h-0 focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
                                     />
                                 </div>
