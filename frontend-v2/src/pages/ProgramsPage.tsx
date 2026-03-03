@@ -431,7 +431,7 @@ export default function ProgramsPage() {
                             value={sort}
                             onValueChange={(v) => setSort(v as SortOption)}
                         >
-                            <SelectTrigger className="w-[220px] dark:!bg-[rgba(38,38,38,0.3)] cursor-default">
+                            <SelectTrigger className="w-[220px] focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)] cursor-default">
                                 <SelectValue placeholder="Sort By" />
                             </SelectTrigger>
                             <SelectContent>
@@ -458,7 +458,7 @@ export default function ProgramsPage() {
                         {/* Program Type Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default">
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -499,7 +499,7 @@ export default function ProgramsPage() {
                         {/* Status Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default">
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -572,7 +572,7 @@ export default function ProgramsPage() {
                                     <div>
                                         <Label
                                             htmlFor="programName"
-                                            className="text-[#203622]"
+                                            className="text-black"
                                         >
                                             Program Name *
                                         </Label>
@@ -592,7 +592,7 @@ export default function ProgramsPage() {
                                     <div className="col-span-2">
                                         <Label
                                             htmlFor="programDescription"
-                                            className="text-[#203622]"
+                                            className="text-black"
                                         >
                                             Description
                                         </Label>
@@ -622,7 +622,7 @@ export default function ProgramsPage() {
                                     <div>
                                         <Label
                                             htmlFor="category"
-                                            className="text-[#203622]"
+                                            className="text-black"
                                         >
                                             Category (Program Types) *
                                         </Label>
@@ -669,7 +669,7 @@ export default function ProgramsPage() {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="creditTypes">
+                                        <Label htmlFor="creditTypes" className="text-black">
                                             Credit Types *
                                         </Label>
                                         <div className="mt-2 space-y-2">
@@ -718,7 +718,7 @@ export default function ProgramsPage() {
                                     <div className="col-span-2">
                                         <Label
                                             htmlFor="fundingType"
-                                            className="text-[#203622]"
+                                            className="text-black"
                                         >
                                             Funding Type *
                                         </Label>
@@ -738,7 +738,7 @@ export default function ProgramsPage() {
                                         >
                                             <SelectTrigger
                                                 id="fundingType"
-                                                className="dark:!bg-[rgba(38,38,38,0.3)]"
+                                                className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
                                             >
                                                 <SelectValue placeholder="Select funding type" />
                                             </SelectTrigger>
@@ -758,7 +758,7 @@ export default function ProgramsPage() {
                                     <div className="col-span-2">
                                         <Label
                                             htmlFor="programStatus"
-                                            className="text-[#203622]"
+                                            className="text-black"
                                         >
                                             Program Availability *
                                         </Label>
@@ -773,7 +773,7 @@ export default function ProgramsPage() {
                                         >
                                             <SelectTrigger
                                                 id="programStatus"
-                                                className="dark:!bg-[rgba(38,38,38,0.3)]"
+                                                className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
                                             >
                                                 <SelectValue placeholder="Select program status" />
                                             </SelectTrigger>
@@ -814,7 +814,7 @@ export default function ProgramsPage() {
                                         <div className="col-span-2">
                                             <Label
                                                 htmlFor="facilities"
-                                                className="text-[#203622]"
+                                                className="text-black"
                                             >
                                                 Facilities Offered *
                                             </Label>
