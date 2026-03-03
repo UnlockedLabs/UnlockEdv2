@@ -77,7 +77,7 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
-    const { data: eventsResp } = useSWR<
+    const { data: eventsResp, mutate: mutateEvents } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(class_id ? `/api/program-classes/${class_id}/events?all=true` : null);
 
@@ -209,10 +209,10 @@ export default function ClassDetailPage() {
                             Roster ({cls.enrolled})
                         </TabsTrigger>
                         <TabsTrigger
-                            value="enrollment-history"
+                            value="support"
                             className={TAB_TRIGGER_CLASS}
                         >
-                            Enrollment History
+                            At-Risk
                         </TabsTrigger>
                         <TabsTrigger
                             value="sessions"
@@ -227,16 +227,16 @@ export default function ClassDetailPage() {
                             Schedule
                         </TabsTrigger>
                         <TabsTrigger
-                            value="support"
+                            value="enrollment-history"
                             className={TAB_TRIGGER_CLASS}
                         >
-                            Support
+                            Enrollment History
                         </TabsTrigger>
                         <TabsTrigger
                             value="audit"
                             className={TAB_TRIGGER_CLASS}
                         >
-                            Audit
+                            Audit History
                         </TabsTrigger>
                     </TabsList>
 
@@ -291,7 +291,10 @@ export default function ClassDetailPage() {
                 open={showEditModal}
                 onOpenChange={setShowEditModal}
                 cls={cls}
-                onUpdated={() => void mutate()}
+                onUpdated={() => {
+                    void mutate();
+                    void mutateEvents();
+                }}
             />
         </div>
     );
