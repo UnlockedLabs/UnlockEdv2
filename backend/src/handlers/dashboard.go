@@ -264,18 +264,10 @@ func (srv *Server) handleFacilityHealthSummary(w http.ResponseWriter, r *http.Re
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	facility := r.URL.Query().Get("facility")
 	var facilityID *uint
-	switch facility {
-	case "all":
+	if facility == "all" && claims.canSwitchFacility() {
 		facilityID = nil
-	case "":
-		facilityID = &claims.FacilityID
-	default:
-		facilityIDInt, err := strconv.Atoi(facility)
-		if err != nil {
-			return newInvalidIdServiceError(err, "facility")
-		}
-		ref := uint(facilityIDInt)
-		facilityID = &ref
+	} else {
+		facilityID = &args.FacilityID
 	}
 
 	days := 3

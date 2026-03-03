@@ -166,7 +166,7 @@ func (db *DB) GetFacilityAttendanceConcerns(ctx *models.QueryContext, facilityID
 		JOIN program_class_enrollments e ON e.class_id = c.id
 		WHERE c.status = ?
 		AND c.archived_at IS NULL
-		AND e.enrollment_status = ?`
+		AND e.enrollment_status = ? `
 	args := []any{models.Active, models.Enrolled}
 	if facilityID != nil {
 		attendanceSQL += "AND c.facility_id = ? "
