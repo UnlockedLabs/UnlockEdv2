@@ -617,13 +617,18 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
-					COALESCE(SUM(CASE WHEN pc.status != 'Cancelled' THEN pc.capacity ELSE 0 END), 0) AS total_capacity
+					class_stats.total_capacity
 				FROM programs p
 				JOIN facilities_programs fp ON fp.program_id = p.id
 				LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = %d
 				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+				LEFT JOIN (
+					SELECT pc2.program_id, COALESCE(SUM(CASE WHEN pc2.status = 'Active' THEN pc2.capacity ELSE 0 END), 0) AS total_capacity
+					FROM program_classes pc2
+					GROUP BY pc2.program_id
+				) AS class_stats ON class_stats.program_id = p.id
 				WHERE fp.facility_id = %d
-				GROUP BY p.id
+				GROUP BY p.id, class_stats.total_capacity
 			) AS mr ON mr.program_id = programs.id
 		`, args.FacilityID, args.FacilityID)
 	} else {
@@ -636,12 +641,17 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
-					COALESCE(SUM(CASE WHEN pc.status != 'Cancelled' THEN pc.capacity ELSE 0 END), 0) AS total_capacity
+					class_stats.total_capacity
 				FROM programs p
 				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
 				LEFT JOIN program_classes pc ON pc.program_id = p.id
 				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
-				GROUP BY p.id
+				LEFT JOIN (
+					SELECT pc2.program_id, COALESCE(SUM(CASE WHEN pc2.status = 'Active' THEN pc2.capacity ELSE 0 END), 0) AS total_capacity
+					FROM program_classes pc2
+					GROUP BY pc2.program_id
+				) AS class_stats ON class_stats.program_id = p.id
+				GROUP BY p.id, class_stats.total_capacity
 			) AS mr ON mr.program_id = programs.id
 		`
 	}
