@@ -8,13 +8,24 @@ import {
     Filter,
     CalendarClock,
     CalendarOff,
+    Clock,
     X,
     Users,
-    MapPin
+    MapPin,
+    Undo2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle
+} from '@/components/ui/sheet';
+import API from '@/api/api';
+import { toast } from 'sonner';
 import { Class } from '@/types/program';
 import { ClassEventInstance } from '@/types/events';
 import { Attendance } from '@/types/attendance';
@@ -35,7 +46,7 @@ type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
 type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
 
 const PAST_DISPLAY_LIMIT = 15;
-const UPCOMING_DISPLAY_LIMIT = 10;
+
 const TIME_FILTER_DAYS: Record<Exclude<TimeFilter, 'all'>, number> = {
     week: 7,
     '2weeks': 14,
@@ -57,6 +68,11 @@ interface SessionDisplay {
     isCancelled: boolean;
     attendedCount: number;
     totalEnrolled: number;
+    room: string;
+    isRescheduledFrom: boolean;
+    isRescheduledTo: boolean;
+    rescheduledToDate?: string;
+    rescheduledFromDate?: string;
 }
 
 function parseLocalDate(dateStr: string): Date {
@@ -66,7 +82,8 @@ function parseLocalDate(dateStr: string): Date {
 
 function buildSessionDisplays(
     instances: ClassEventInstance[],
-    enrolled: number
+    enrolled: number,
+    defaultRoom: string
 ): SessionDisplay[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -87,6 +104,10 @@ function buildSessionDisplays(
 
             const hasAttendance = (inst.attendance_records?.length ?? 0) > 0;
 
+            const isRescheduledFrom =
+                inst.is_rescheduled === true && inst.is_cancelled;
+            const isRescheduledTo = !!inst.rescheduled_from_date;
+
             return {
                 instance: inst,
                 dateObj,
@@ -99,7 +120,12 @@ function buildSessionDisplays(
                 hasAttendance,
                 isCancelled: inst.is_cancelled,
                 attendedCount,
-                totalEnrolled: enrolled
+                totalEnrolled: enrolled,
+                room: inst.room_ref?.name ?? defaultRoom,
+                isRescheduledFrom,
+                isRescheduledTo,
+                rescheduledToDate: inst.rescheduled_to_date,
+                rescheduledFromDate: inst.rescheduled_from_date
             };
         })
         .sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
@@ -141,10 +167,38 @@ function FilterButton({
     );
 }
 
+function StatButton({
+    active,
+    onClick,
+    colorClass,
+    children
+}: {
+    active: boolean;
+    onClick: () => void;
+    colorClass: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                active
+                    ? `${colorClass} font-medium`
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+        >
+            {children}
+        </button>
+    );
+}
+
 export function SessionsTab({ cls }: SessionsTabProps) {
     const navigate = useNavigate();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+    const [showAllPast, setShowAllPast] = useState(false);
+    const [selectedSession, setSelectedSession] =
+        useState<SessionDisplay | null>(null);
     const [cancelTarget, setCancelTarget] = useState<SessionDisplay | null>(
         null
     );
@@ -160,7 +214,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     const [changeRoomSessions, setChangeRoomSessions] = useState<
         ChangeRoomSession[]
     >([]);
-    const [showAllPast, setShowAllPast] = useState(false);
+    const defaultRoom = cls.events?.[0]?.room_ref?.name ?? '';
 
     const { data: instancesResp, mutate } = useSWR<
         ServerResponseMany<ClassEventInstance>
@@ -168,12 +222,17 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     const allSessions = useMemo(() => {
         if (!instancesResp?.data) return [];
-        return buildSessionDisplays(instancesResp.data, cls.enrolled);
-    }, [instancesResp, cls.enrolled]);
+        return buildSessionDisplays(
+            instancesResp.data,
+            cls.enrolled,
+            defaultRoom
+        );
+    }, [instancesResp, cls.enrolled, defaultRoom]);
 
     const stats = useMemo(() => {
         const completed = allSessions.filter(
-            (s) => (s.isPast || s.isToday) && s.hasAttendance && !s.isCancelled
+            (s) =>
+                (s.isPast || s.isToday) && s.hasAttendance && !s.isCancelled
         ).length;
         const missing = allSessions.filter(
             (s) => s.isPast && !s.hasAttendance && !s.isCancelled
@@ -189,6 +248,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     const handleStatusChange = (newStatus: StatusFilter) => {
         setStatusFilter(newStatus);
+        setShowAllPast(false);
         setSelectedDates(new Set());
         if (newStatus === 'upcoming') {
             setTimeFilter('all');
@@ -197,6 +257,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     const handleTimeChange = (newTime: TimeFilter) => {
         setTimeFilter(newTime);
+        setShowAllPast(false);
         setSelectedDates(new Set());
     };
 
@@ -211,13 +272,17 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     const buildSessionPayload = (
         session: SessionDisplay
-    ): { date: string; dateLabel: string; eventId: number; classTime: string } => ({
+    ): {
+        date: string;
+        dateLabel: string;
+        eventId: number;
+        classTime: string;
+    } => ({
         date: session.instance.date,
         dateLabel: session.dateObj.toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'long',
-            day: 'numeric',
-            year: 'numeric'
+            day: 'numeric'
         }),
         eventId: session.instance.event_id ?? session.instance.id,
         classTime: session.instance.class_time
@@ -231,6 +296,18 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     const openChangeRoom = (sessions: SessionDisplay[]) => {
         setChangeRoomSessions(sessions.map(buildSessionPayload));
         setShowChangeRoom(true);
+    };
+
+    const handleUndoReschedule = async (overrideId: number) => {
+        const resp = await API.delete(
+            `program-classes/${cls.id}/events/${overrideId}`
+        );
+        if (resp.success) {
+            toast.success('Reschedule undone');
+            void mutate();
+        } else {
+            toast.error(resp.message || 'Failed to undo reschedule');
+        }
     };
 
     const selectedUpcomingSessions = useMemo(
@@ -270,7 +347,10 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             }
         } else if (statusFilter === 'completed') {
             result = result.filter(
-                (s) => (s.isPast || s.isToday) && s.hasAttendance && !s.isCancelled
+                (s) =>
+                    (s.isPast || s.isToday) &&
+                    s.hasAttendance &&
+                    !s.isCancelled
             );
             if (cutoff) {
                 result = result.filter((s) => s.dateObj >= cutoff);
@@ -300,27 +380,85 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         [filtered]
     );
 
-    const upcomingSessions = useMemo(
-        () =>
-            filtered
-                .filter((s) => s.isUpcoming)
-                .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime()),
-        [filtered]
-    );
+    const upcomingSessions = useMemo(() => {
+        const upcoming = filtered.filter((s) => s.isUpcoming);
+        return [...upcoming].reverse().slice(0, 10);
+    }, [filtered]);
 
-    const displayedPast = showAllPast
+    const displayedPastSessions = showAllPast
         ? pastAndTodaySessions
         : pastAndTodaySessions.slice(0, PAST_DISPLAY_LIMIT);
-
-    const displayedUpcoming = upcomingSessions.slice(
-        0,
-        UPCOMING_DISPLAY_LIMIT
-    );
 
     const navigateToAttendance = (session: SessionDisplay) => {
         const eventId = session.instance.event_id ?? session.instance.id;
         navigate(
             `/program-classes/${cls.id}/events/${eventId}/attendance/${session.instance.date}`
+        );
+    };
+
+    const canModifySession = (session: SessionDisplay) =>
+        !session.hasAttendance &&
+        !session.isCancelled &&
+        !session.isRescheduledFrom;
+
+    const getSessionStatusBadge = (session: SessionDisplay) => {
+        if (session.isRescheduledFrom) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-gray-100 text-gray-600 border-gray-300"
+                >
+                    Rescheduled
+                </Badge>
+            );
+        }
+        if (session.isRescheduledTo) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-blue-100 text-blue-800 border-blue-300"
+                >
+                    Rescheduled Class
+                </Badge>
+            );
+        }
+        if (session.isCancelled) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-gray-100 text-gray-700 border-gray-300"
+                >
+                    Cancelled
+                </Badge>
+            );
+        }
+        if (session.hasAttendance) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-green-50 text-[#556830] border-green-200"
+                >
+                    Completed
+                </Badge>
+            );
+        }
+        if (session.isUpcoming) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-gray-50 text-gray-600 border-gray-200"
+                >
+                    Scheduled
+                </Badge>
+            );
+        }
+        return (
+            <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-200"
+            >
+                Missing Attendance
+            </Badge>
         );
     };
 
@@ -334,88 +472,80 @@ export function SessionsTab({ cls }: SessionsTabProps) {
               ? 'Last 2 Weeks'
               : 'Last Week';
 
-    const renderSessionRow = (session: SessionDisplay) => (
-        <SessionRow
-            key={session.instance.date + '-' + session.instance.id}
-            session={session}
-            selected={selectedDates.has(session.instance.date)}
-            onToggle={() => toggleSession(session.instance.date)}
-            onClick={() => navigateToAttendance(session)}
-            onCancel={() => setCancelTarget(session)}
-            onReschedule={() => setRescheduleTarget(session)}
-        />
-    );
-
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between mb-3">
-                    <div>
-                        <h3 className="text-[#203622]">Session Management</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                            View, cancel, or reschedule individual sessions
-                        </p>
+        <>
+            <div className="bg-white rounded-lg border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 className="text-[#203622]">
+                                Session Management
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                                View, cancel, or reschedule individual sessions
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex gap-2">
+                                <StatButton
+                                    active={statusFilter === 'completed'}
+                                    onClick={() =>
+                                        handleStatusChange(
+                                            statusFilter === 'completed'
+                                                ? 'all'
+                                                : 'completed'
+                                        )
+                                    }
+                                    colorClass="bg-green-100 text-[#556830]"
+                                >
+                                    {stats.completed} Completed
+                                </StatButton>
+                                <StatButton
+                                    active={statusFilter === 'missing'}
+                                    onClick={() =>
+                                        handleStatusChange(
+                                            statusFilter === 'missing'
+                                                ? 'all'
+                                                : 'missing'
+                                        )
+                                    }
+                                    colorClass="bg-amber-100 text-amber-700"
+                                >
+                                    {stats.missing} Missing
+                                </StatButton>
+                                <StatButton
+                                    active={statusFilter === 'upcoming'}
+                                    onClick={() =>
+                                        handleStatusChange(
+                                            statusFilter === 'upcoming'
+                                                ? 'all'
+                                                : 'upcoming'
+                                        )
+                                    }
+                                    colorClass="bg-blue-100 text-blue-700"
+                                >
+                                    {stats.upcoming} Upcoming
+                                </StatButton>
+                                <StatButton
+                                    active={statusFilter === 'cancelled'}
+                                    onClick={() =>
+                                        handleStatusChange(
+                                            statusFilter === 'cancelled'
+                                                ? 'all'
+                                                : 'cancelled'
+                                        )
+                                    }
+                                    colorClass="bg-gray-100 text-gray-700"
+                                >
+                                    {stats.cancelled} Cancelled
+                                </StatButton>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <StatButton
-                            active={statusFilter === 'completed'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'completed'
-                                        ? 'all'
-                                        : 'completed'
-                                )
-                            }
-                            colorClass="bg-green-100 text-[#556830]"
-                        >
-                            {stats.completed} Completed
-                        </StatButton>
-                        <StatButton
-                            active={statusFilter === 'missing'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'missing'
-                                        ? 'all'
-                                        : 'missing'
-                                )
-                            }
-                            colorClass="bg-amber-100 text-amber-700"
-                        >
-                            {stats.missing} Missing
-                        </StatButton>
-                        <StatButton
-                            active={statusFilter === 'upcoming'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'upcoming'
-                                        ? 'all'
-                                        : 'upcoming'
-                                )
-                            }
-                            colorClass="bg-blue-100 text-blue-700"
-                        >
-                            {stats.upcoming} Upcoming
-                        </StatButton>
-                        <StatButton
-                            active={statusFilter === 'cancelled'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'cancelled'
-                                        ? 'all'
-                                        : 'cancelled'
-                                )
-                            }
-                            colorClass="bg-gray-100 text-gray-700"
-                        >
-                            {stats.cancelled} Cancelled
-                        </StatButton>
-                    </div>
-                </div>
 
-                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Filter className="size-4 text-gray-400" />
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-1">
                             <FilterButton
                                 active={statusFilter === 'all'}
                                 onClick={() => handleStatusChange('all')}
@@ -441,159 +571,480 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                 Upcoming
                             </FilterButton>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-2">
                         <div className="h-6 w-px bg-gray-300" />
-                        <FilterButton
-                            active={timeFilter === 'week'}
-                            onClick={() => handleTimeChange('week')}
-                            disabled={hideTimeFilter}
-                        >
-                            Last Week
-                        </FilterButton>
-                        <FilterButton
-                            active={timeFilter === '2weeks'}
-                            onClick={() => handleTimeChange('2weeks')}
-                            disabled={hideTimeFilter}
-                        >
-                            Last 2 Weeks
-                        </FilterButton>
-                        <FilterButton
-                            active={timeFilter === 'month'}
-                            onClick={() => handleTimeChange('month')}
-                            disabled={hideTimeFilter}
-                        >
-                            Last Month
-                        </FilterButton>
-                        <FilterButton
-                            active={timeFilter === 'all'}
-                            onClick={() => handleTimeChange('all')}
-                            disabled={hideTimeFilter}
-                        >
-                            All Time
-                        </FilterButton>
+                        <div className="flex gap-2">
+                            <FilterButton
+                                active={timeFilter === 'week'}
+                                onClick={() => handleTimeChange('week')}
+                                disabled={hideTimeFilter}
+                            >
+                                Last Week
+                            </FilterButton>
+                            <FilterButton
+                                active={timeFilter === '2weeks'}
+                                onClick={() => handleTimeChange('2weeks')}
+                                disabled={hideTimeFilter}
+                            >
+                                Last 2 Weeks
+                            </FilterButton>
+                            <FilterButton
+                                active={timeFilter === 'month'}
+                                onClick={() => handleTimeChange('month')}
+                                disabled={hideTimeFilter}
+                            >
+                                Last Month
+                            </FilterButton>
+                            <FilterButton
+                                active={timeFilter === 'all'}
+                                onClick={() => handleTimeChange('all')}
+                                disabled={hideTimeFilter}
+                            >
+                                All Time
+                            </FilterButton>
+                        </div>
                     </div>
+                </div>
+
+                {stats.missing > 0 && (
+                    <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <div className="font-medium text-[#203622]">
+                                        {stats.missing}{' '}
+                                        {stats.missing === 1
+                                            ? 'Session'
+                                            : 'Sessions'}{' '}
+                                        Missing Attendance Records
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Please review and complete attendance
+                                        for past sessions
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusChange('missing')}
+                                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                            >
+                                View Missing Sessions
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="p-6">
+                    {filtered.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <Calendar className="size-12 mx-auto mb-3 text-gray-300" />
+                            <p>No sessions match your filters</p>
+                            <p className="text-sm mt-1">
+                                Try adjusting your filter selection
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            {pastAndTodaySessions.length > 0 &&
+                                statusFilter !== 'upcoming' && (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <h4 className="text-[#203622] font-medium">
+                                                    Past & Today
+                                                </h4>
+                                                <p className="text-sm text-gray-600 mt-0.5">
+                                                    Recent sessions requiring
+                                                    action or review
+                                                    {timeLabel &&
+                                                        ` - ${timeLabel}`}
+                                                </p>
+                                            </div>
+                                            <span className="text-sm text-gray-600">
+                                                {pastAndTodaySessions.length}{' '}
+                                                {pastAndTodaySessions.length ===
+                                                1
+                                                    ? 'session'
+                                                    : 'sessions'}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {displayedPastSessions.map(
+                                                (session) => (
+                                                    <SessionRow
+                                                        key={
+                                                            session.instance
+                                                                .date +
+                                                            '-' +
+                                                            session.instance.id
+                                                        }
+                                                        session={session}
+                                                        selected={selectedDates.has(
+                                                            session.instance.date
+                                                        )}
+                                                        onToggle={() =>
+                                                            toggleSession(
+                                                                session.instance
+                                                                    .date
+                                                            )
+                                                        }
+                                                        onClick={() =>
+                                                            setSelectedSession(
+                                                                session
+                                                            )
+                                                        }
+                                                        onAttendance={() =>
+                                                            navigateToAttendance(
+                                                                session
+                                                            )
+                                                        }
+                                                        onUndoReschedule={
+                                                            session.isRescheduledFrom &&
+                                                            session.instance
+                                                                .override_id
+                                                                ? () =>
+                                                                      void handleUndoReschedule(
+                                                                          session
+                                                                              .instance
+                                                                              .override_id!
+                                                                      )
+                                                                : undefined
+                                                        }
+                                                    />
+                                                )
+                                            )}
+                                        </div>
+                                        {pastAndTodaySessions.length >
+                                            PAST_DISPLAY_LIMIT && (
+                                            <div className="pt-4 text-center">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setShowAllPast(
+                                                            (prev) => !prev
+                                                        )
+                                                    }
+                                                >
+                                                    {showAllPast
+                                                        ? 'Show Less'
+                                                        : `Show All ${pastAndTodaySessions.length} Sessions`}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                            {upcomingSessions.length > 0 &&
+                                statusFilter !== 'completed' &&
+                                statusFilter !== 'missing' &&
+                                statusFilter !== 'cancelled' && (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <h4 className="text-[#203622] font-medium">
+                                                    Upcoming Sessions
+                                                </h4>
+                                                <p className="text-sm text-gray-600 mt-0.5">
+                                                    Next{' '}
+                                                    {upcomingSessions.length}{' '}
+                                                    scheduled{' '}
+                                                    {upcomingSessions.length ===
+                                                    1
+                                                        ? 'session'
+                                                        : 'sessions'}
+                                                </p>
+                                            </div>
+                                            {stats.upcoming > 10 && (
+                                                <span className="text-xs text-gray-500">
+                                                    Showing next 10 of{' '}
+                                                    {stats.upcoming} total
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            {upcomingSessions.map((session) => (
+                                                <SessionRow
+                                                    key={
+                                                        session.instance.date +
+                                                        '-' +
+                                                        session.instance.id
+                                                    }
+                                                    session={session}
+                                                    selected={selectedDates.has(
+                                                        session.instance.date
+                                                    )}
+                                                    onToggle={() =>
+                                                        toggleSession(
+                                                            session.instance.date
+                                                        )
+                                                    }
+                                                    onClick={() =>
+                                                        setSelectedSession(
+                                                            session
+                                                        )
+                                                    }
+                                                    onReschedule={() =>
+                                                        setRescheduleTarget(
+                                                            session
+                                                        )
+                                                    }
+                                                    onCancel={() =>
+                                                        setCancelTarget(session)
+                                                    }
+                                                    onUndoReschedule={
+                                                        session.isRescheduledFrom &&
+                                                        session.instance
+                                                            .override_id
+                                                            ? () =>
+                                                                  void handleUndoReschedule(
+                                                                      session
+                                                                          .instance
+                                                                          .override_id!
+                                                                  )
+                                                            : undefined
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {stats.missing > 0 && (
-                <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                            <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
-                            <div>
-                                <div className="font-medium text-[#203622]">
-                                    {stats.missing}{' '}
-                                    {stats.missing === 1
-                                        ? 'Session'
-                                        : 'Sessions'}{' '}
-                                    Missing Attendance Records
+            <Sheet
+                open={!!selectedSession}
+                onOpenChange={(open) => !open && setSelectedSession(null)}
+            >
+                <SheetContent className="w-[400px] sm:w-[500px] p-0">
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>Session Details</SheetTitle>
+                        <SheetDescription>
+                            View and manage this session
+                        </SheetDescription>
+                    </SheetHeader>
+                    {selectedSession && (
+                        <>
+                            <div className="border-b border-gray-200 px-6 py-4">
+                                <h3
+                                    className={`text-[#203622] mb-2 ${selectedSession.isCancelled ? 'line-through' : ''}`}
+                                >
+                                    {selectedSession.dateObj.toLocaleDateString(
+                                        'en-US',
+                                        {
+                                            weekday: 'long',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        }
+                                    )}
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    {getSessionStatusBadge(selectedSession)}
+                                    {selectedSession.isToday && (
+                                        <span className="text-sm text-blue-600">
+                                            Today&apos;s class
+                                        </span>
+                                    )}
                                 </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    Please review and complete attendance for
-                                    past sessions
-                                </p>
                             </div>
-                        </div>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleStatusChange('missing')}
-                            className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                        >
-                            View Missing Sessions
-                        </Button>
-                    </div>
-                </div>
-            )}
 
-            <div className="p-6">
-                {filtered.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                        <Calendar className="size-12 mx-auto mb-3 text-gray-300" />
-                        <p>No sessions match your filters</p>
-                        <p className="text-sm mt-1">
-                            Try adjusting your filter selection
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-8">
-                        {pastAndTodaySessions.length > 0 && (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h4 className="text-[#203622] font-medium">
-                                            Past & Today
-                                        </h4>
-                                        <p className="text-sm text-gray-600 mt-0.5">
-                                            Recent sessions requiring action or
-                                            review
-                                            {timeLabel &&
-                                                ` - ${timeLabel}`}
-                                        </p>
+                            <div className="px-6 py-6 space-y-6">
+                                <div>
+                                    <h4 className="text-sm text-gray-700 mb-3">
+                                        Class Details
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-start gap-3">
+                                            <Calendar className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-gray-600 mb-0.5">
+                                                    Class
+                                                </div>
+                                                <div className="text-[#203622]">
+                                                    {cls.name}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <Clock className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-gray-600 mb-0.5">
+                                                    Time
+                                                </div>
+                                                <div
+                                                    className={`text-[#203622] ${selectedSession.isCancelled ? 'line-through' : ''}`}
+                                                >
+                                                    {
+                                                        selectedSession.instance
+                                                            .class_time
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <MapPin className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-gray-600 mb-0.5">
+                                                    Room
+                                                </div>
+                                                <div
+                                                    className={`text-[#203622] ${selectedSession.isCancelled ? 'line-through' : ''}`}
+                                                >
+                                                    {selectedSession.room ||
+                                                        'Not assigned'}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span className="text-sm text-gray-600">
-                                        {pastAndTodaySessions.length}{' '}
-                                        {pastAndTodaySessions.length === 1
-                                            ? 'session'
-                                            : 'sessions'}
-                                    </span>
                                 </div>
-                                <div className="space-y-2">
-                                    {displayedPast.map(renderSessionRow)}
-                                </div>
-                                {pastAndTodaySessions.length >
-                                    PAST_DISPLAY_LIMIT && (
-                                    <div className="pt-4 text-center">
+
+                                {selectedSession.hasAttendance && (
+                                    <div className="pt-6 border-t border-gray-200">
+                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="size-4 text-[#556830] mt-0.5 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-[#556830] mb-1">
+                                                        Attendance Taken
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">
+                                                        {
+                                                            selectedSession.attendedCount
+                                                        }{' '}
+                                                        /{' '}
+                                                        {
+                                                            selectedSession.totalEnrolled
+                                                        }{' '}
+                                                        attended (
+                                                        {selectedSession.totalEnrolled >
+                                                        0
+                                                            ? Math.round(
+                                                                  (selectedSession.attendedCount /
+                                                                      selectedSession.totalEnrolled) *
+                                                                      100
+                                                              )
+                                                            : 0}
+                                                        %)
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <Button
                                             variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                setShowAllPast(!showAllPast)
-                                            }
+                                            className="w-full mt-3 border-gray-300"
+                                            onClick={() => {
+                                                navigateToAttendance(
+                                                    selectedSession
+                                                );
+                                                setSelectedSession(null);
+                                            }}
                                         >
-                                            {showAllPast
-                                                ? 'Show Less'
-                                                : `Show All ${pastAndTodaySessions.length} Sessions`}
+                                            Edit Attendance
                                         </Button>
                                     </div>
                                 )}
-                            </div>
-                        )}
 
-                        {upcomingSessions.length > 0 && (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h4 className="text-[#203622] font-medium">
-                                            Upcoming Sessions
-                                        </h4>
-                                        <p className="text-sm text-gray-600 mt-0.5">
-                                            Next{' '}
-                                            {Math.min(
-                                                upcomingSessions.length,
-                                                UPCOMING_DISPLAY_LIMIT
-                                            )}{' '}
-                                            scheduled{' '}
-                                            {upcomingSessions.length === 1
-                                                ? 'session'
-                                                : 'session(s)'}
-                                        </p>
+                                {selectedSession.isCancelled && (
+                                    <div className="pt-6 border-t border-gray-200">
+                                        <div className="flex items-start gap-2">
+                                            <CalendarOff className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                            <div className="text-sm text-gray-900">
+                                                This session has been cancelled.
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span className="text-sm text-gray-600">
-                                        {upcomingSessions.length > UPCOMING_DISPLAY_LIMIT
-                                            ? `Showing next ${UPCOMING_DISPLAY_LIMIT} of ${upcomingSessions.length} total`
-                                            : `${upcomingSessions.length} ${upcomingSessions.length === 1 ? 'session' : 'sessions'}`}
-                                    </span>
-                                </div>
-                                <div className="space-y-2">
-                                    {displayedUpcoming.map(renderSessionRow)}
-                                </div>
+                                )}
+
+                                {canModifySession(selectedSession) && (
+                                    <div className="pt-6 border-t border-gray-200">
+                                        <h4 className="text-sm text-gray-700 mb-3">
+                                            Actions
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {(selectedSession.isPast ||
+                                                selectedSession.isToday) &&
+                                                !selectedSession.hasAttendance && (
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            navigateToAttendance(
+                                                                selectedSession
+                                                            );
+                                                            setSelectedSession(
+                                                                null
+                                                            );
+                                                        }}
+                                                        className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                                    >
+                                                        <CheckCircle className="size-4 mr-2" />
+                                                        Take Attendance
+                                                    </Button>
+                                                )}
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setRescheduleTarget(
+                                                        selectedSession
+                                                    );
+                                                    setSelectedSession(null);
+                                                }}
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <CalendarClock className="size-4 mr-2" />
+                                                Reschedule This Class
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setCancelTarget(
+                                                        selectedSession
+                                                    );
+                                                    setSelectedSession(null);
+                                                }}
+                                                className="w-full justify-start border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                                            >
+                                                <CalendarOff className="size-4 mr-2" />
+                                                Cancel This Class
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    openChangeInstructor([
+                                                        selectedSession
+                                                    ]);
+                                                    setSelectedSession(null);
+                                                }}
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <Users className="size-4 mr-2" />
+                                                Change Instructor
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    openChangeRoom([
+                                                        selectedSession
+                                                    ]);
+                                                    setSelectedSession(null);
+                                                }}
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <MapPin className="size-4 mr-2" />
+                                                Change Room
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
 
             {cancelTarget && (
                 <CancelSessionModal
@@ -623,6 +1074,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                         rescheduleTarget.instance.event_id ??
                         rescheduleTarget.instance.id
                     }
+                    currentDate={rescheduleTarget.instance.date}
                     dateLabel={rescheduleTarget.dateObj.toLocaleDateString(
                         'en-US',
                         {
@@ -631,8 +1083,11 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             day: 'numeric'
                         }
                     )}
-                    currentRoom={cls.events?.[0]?.room_ref?.name}
-                    onRescheduled={() => void mutate()}
+                    currentRoomId={rescheduleTarget.instance.room_id}
+                    currentRoom={rescheduleTarget.room}
+                    onRescheduled={() => {
+                        void mutate();
+                    }}
                 />
             )}
 
@@ -670,7 +1125,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             />
 
             {selectedDates.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4">
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 z-50">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">
                             <span className="font-semibold text-[#203622]">
@@ -695,7 +1150,9 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                    if (selectedUpcomingSessions.length === 1) {
+                                    if (
+                                        selectedUpcomingSessions.length === 1
+                                    ) {
                                         setCancelTarget(
                                             selectedUpcomingSessions[0]
                                         );
@@ -733,32 +1190,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-function StatButton({
-    active,
-    onClick,
-    colorClass,
-    children
-}: {
-    active: boolean;
-    onClick: () => void;
-    colorClass: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                active
-                    ? `${colorClass} font-medium`
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-        >
-            {children}
-        </button>
+        </>
     );
 }
 
@@ -767,15 +1199,19 @@ function SessionRow({
     selected,
     onToggle,
     onClick,
+    onAttendance,
+    onReschedule,
     onCancel,
-    onReschedule
+    onUndoReschedule
 }: {
     session: SessionDisplay;
     selected: boolean;
     onToggle: () => void;
     onClick: () => void;
-    onCancel: () => void;
-    onReschedule: () => void;
+    onAttendance?: () => void;
+    onReschedule?: () => void;
+    onCancel?: () => void;
+    onUndoReschedule?: () => void;
 }) {
     const dateLabel = session.dateObj.toLocaleDateString('en-US', {
         month: 'long',
@@ -783,31 +1219,42 @@ function SessionRow({
         year: 'numeric'
     });
 
-    const borderClass = session.isCancelled
-        ? 'border-gray-300 bg-gray-100 hover:bg-gray-200'
-        : session.isToday
-          ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
-          : session.hasAttendance
-            ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
-            : session.isPast
-              ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
-              : 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
+    const borderClass = session.isRescheduledFrom
+        ? 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100'
+        : session.isRescheduledTo
+          ? 'border-blue-300 bg-blue-50 hover:bg-blue-100'
+          : session.isCancelled
+            ? 'border-gray-300 bg-gray-100 hover:bg-gray-200'
+            : session.isToday
+              ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
+              : session.hasAttendance
+                ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
+                : session.isPast
+                  ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
+                  : 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
 
     return (
         <div
             onClick={onClick}
             className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
         >
-            <div className="flex items-center gap-4 min-w-0">
-                {session.isUpcoming && !session.isCancelled && (
-                    <Checkbox
-                        checked={selected}
-                        onCheckedChange={() => onToggle()}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                )}
-                {session.isCancelled ? (
-                    <Calendar className="size-5 text-gray-500 flex-shrink-0" />
+            <div className="flex items-center gap-4">
+                {session.isUpcoming &&
+                    !session.isCancelled &&
+                    !session.isRescheduledFrom && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                                checked={selected}
+                                onCheckedChange={() => onToggle()}
+                            />
+                        </div>
+                    )}
+                {session.isRescheduledFrom ? (
+                    <CalendarClock className="size-5 text-gray-400 flex-shrink-0" />
+                ) : session.isRescheduledTo ? (
+                    <CalendarClock className="size-5 text-blue-700 flex-shrink-0" />
+                ) : session.isCancelled ? (
+                    <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
                 ) : session.hasAttendance ? (
                     <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
                 ) : session.isPast ? (
@@ -815,11 +1262,14 @@ function SessionRow({
                 ) : (
                     <Calendar className="size-5 text-gray-400 flex-shrink-0" />
                 )}
-                <div className="min-w-0">
+                <div>
                     <div className="text-sm font-medium text-[#203622]">
                         <span
                             className={
-                                session.isCancelled ? 'line-through' : ''
+                                session.isCancelled ||
+                                session.isRescheduledFrom
+                                    ? 'line-through'
+                                    : ''
                             }
                         >
                             {session.dayName}, {dateLabel}
@@ -829,28 +1279,77 @@ function SessionRow({
                                 Today
                             </Badge>
                         )}
-                        {session.isCancelled && (
+                        {session.isCancelled &&
+                            !session.isRescheduledFrom && (
+                                <Badge
+                                    variant="outline"
+                                    className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
+                                >
+                                    Cancelled
+                                </Badge>
+                            )}
+                        {session.isRescheduledFrom && (
                             <Badge
                                 variant="outline"
                                 className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
                             >
-                                Cancelled
+                                Rescheduled
+                            </Badge>
+                        )}
+                        {session.isRescheduledTo && (
+                            <Badge
+                                variant="outline"
+                                className="ml-2 bg-blue-100 text-blue-800 border-blue-300"
+                            >
+                                Rescheduled Class
                             </Badge>
                         )}
                     </div>
-                    <div
-                        className={`text-xs text-gray-600 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
-                    >
-                        {session.instance.class_time}
-                    </div>
+                    {session.isRescheduledFrom &&
+                    session.rescheduledToDate ? (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                            Moved to{' '}
+                            {parseLocalDate(
+                                session.rescheduledToDate
+                            ).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                            })}
+                        </div>
+                    ) : session.isRescheduledTo &&
+                      session.rescheduledFromDate ? (
+                        <div className="text-xs text-blue-700 mt-0.5">
+                            Originally{' '}
+                            {parseLocalDate(
+                                session.rescheduledFromDate
+                            ).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                            })}
+                        </div>
+                    ) : (
+                        <div
+                            className={`text-xs text-gray-600 mt-0.5 ${session.isCancelled || session.isRescheduledFrom ? 'line-through' : ''}`}
+                        >
+                            {session.instance.class_time}
+                        </div>
+                    )}
+                    {session.isUpcoming &&
+                        session.room &&
+                        !session.isRescheduledFrom && (
+                            <div
+                                className={`text-xs text-gray-500 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
+                            >
+                                {session.room}
+                            </div>
+                        )}
                 </div>
             </div>
-            <div
-                className="flex items-center gap-4"
-                onClick={(e) => e.stopPropagation()}
-            >
+            <div className="flex items-center gap-4">
                 {session.hasAttendance && (
-                    <div className="text-sm text-gray-600 whitespace-nowrap">
+                    <div className="text-sm text-gray-600">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
                         {session.totalEnrolled > 0
@@ -873,38 +1372,64 @@ function SessionRow({
                             Missing
                         </Badge>
                     )}
-                {!session.isCancelled && !session.isUpcoming && (
+                {!session.isCancelled && !session.isUpcoming && onAttendance && (
                     <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onClick()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAttendance();
+                        }}
                         className="border-gray-300"
                     >
                         {session.hasAttendance ? 'Edit' : 'Take'} Attendance
                     </Button>
                 )}
-                {session.isUpcoming && !session.isCancelled && (
-                    <>
+                {session.isRescheduledFrom && onUndoReschedule && (
+                    <div
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => onReschedule()}
+                            onClick={() => onUndoReschedule()}
                             className="border-gray-300 hover:bg-gray-50"
                         >
-                            <CalendarClock className="size-4 mr-1.5" />
-                            Reschedule
+                            <Undo2 className="size-4 mr-1.5" />
+                            Undo
                         </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onCancel()}
-                            className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                        >
-                            <X className="size-4 mr-1.5" />
-                            Cancel
-                        </Button>
-                    </>
+                    </div>
                 )}
+                {session.isUpcoming &&
+                    !session.isCancelled &&
+                    !session.isRescheduledFrom &&
+                    onReschedule &&
+                    onCancel && (
+                        <div
+                            className="flex items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onReschedule()}
+                                className="border-gray-300 hover:bg-gray-50"
+                            >
+                                <CalendarClock className="size-4 mr-1.5" />
+                                Reschedule
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onCancel()}
+                                className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                            >
+                                <X className="size-4 mr-1.5" />
+                                Cancel
+                            </Button>
+                        </div>
+                    )}
             </div>
         </div>
     );

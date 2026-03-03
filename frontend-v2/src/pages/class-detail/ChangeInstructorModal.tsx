@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import { CheckCircle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -100,29 +101,33 @@ export function ChangeInstructorModal({
         setIsSubmitting(false);
     };
 
-    const isSingle = sessions.length === 1;
+    const selectedInstructor = instructors.find(
+        (i) => String(i.id) === selectedInstructorId
+    );
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
                         Change Instructor
                     </DialogTitle>
                     <DialogDescription>
-                        {isSingle
-                            ? `Change the instructor for the class scheduled for ${sessions[0]?.dateLabel}`
-                            : `Change the instructor for ${sessions.length} sessions`}
+                        Select a new instructor for {sessions.length}{' '}
+                        {sessions.length === 1 ? 'session' : 'sessions'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>New Instructor</Label>
+                    <div>
+                        <Label htmlFor="newInstructor">New Instructor</Label>
                         <Select
                             value={selectedInstructorId}
                             onValueChange={setSelectedInstructorId}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger
+                                id="newInstructor"
+                                className="mt-2"
+                            >
                                 <SelectValue placeholder="Select instructor" />
                             </SelectTrigger>
                             <SelectContent>
@@ -154,25 +159,48 @@ export function ChangeInstructorModal({
                         </Select>
                     </div>
 
-                    {!isSingle && sessions.length > 0 && (
-                        <div>
-                            <Label className="text-sm text-gray-600 mb-2 block">
-                                Sessions to Update
-                            </Label>
-                            <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
-                                {sessions.map((s) => (
-                                    <div
-                                        key={s.date}
-                                        className="text-sm text-gray-700"
-                                    >
-                                        {s.dateLabel}
-                                    </div>
-                                ))}
+                    <div>
+                        <Label className="text-sm font-medium text-[#203622] mb-2 block">
+                            Sessions to Update
+                        </Label>
+                        <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
+                            {sessions.map((s) => (
+                                <div
+                                    key={s.date}
+                                    className="text-sm text-gray-700"
+                                >
+                                    {s.dateLabel}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedInstructor && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex gap-3">
+                                <CheckCircle className="size-5 text-blue-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm text-blue-900 font-medium mb-1">
+                                        Preview
+                                    </p>
+                                    <p className="text-sm text-blue-700">
+                                        <strong>
+                                            {selectedInstructor.name_first}{' '}
+                                            {selectedInstructor.name_last}
+                                        </strong>{' '}
+                                        will be assigned as the instructor for{' '}
+                                        {sessions.length}{' '}
+                                        {sessions.length === 1
+                                            ? 'session'
+                                            : 'sessions'}
+                                        .
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex justify-end gap-3">
                     <Button
                         variant="outline"
                         onClick={onClose}
@@ -187,7 +215,8 @@ export function ChangeInstructorModal({
                         disabled={!selectedInstructorId || isSubmitting}
                         className="bg-[#556830] hover:bg-[#203622] text-white"
                     >
-                        {isSubmitting ? 'Updating...' : 'Change Instructor'}
+                        <Users className="size-4 mr-2" />
+                        Change Instructor
                     </Button>
                 </div>
             </DialogContent>

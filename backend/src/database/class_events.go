@@ -113,6 +113,12 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 	if override.LinkedOverrideEventID != nil {
 		eventIDs = append(eventIDs, *override.LinkedOverrideEventID)
 	}
+	var reverseLinked []models.ProgramClassEventOverride
+	if err := trans.Where("linked_override_event_id = ?", override.ID).Find(&reverseLinked).Error; err == nil {
+		for _, rl := range reverseLinked {
+			eventIDs = append(eventIDs, rl.ID)
+		}
+	}
 
 	eventDate, err = override.GetFormattedOverrideDate("2006-01-02")
 	if err != nil {
@@ -170,6 +176,15 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 	for _, overrideEvent := range overrideEvents {
 		if !overrideEvent.IsCancelled && linkedOverrideID != nil {
 			overrideEvent.LinkedOverrideEventID = linkedOverrideID
+		}
+		if overrideEvent.ID == 0 {
+			var existing models.ProgramClassEventOverride
+			if err := trans.Unscoped().
+				Where("event_id = ? AND override_rrule = ? AND deleted_at IS NULL",
+					overrideEvent.EventID, overrideEvent.OverrideRrule).
+				First(&existing).Error; err == nil {
+				overrideEvent.ID = existing.ID
+			}
 		}
 		isOverrideUpdate = overrideEvent.ID > 0
 		if err := trans.Clauses(clause.OnConflict{
@@ -1008,11 +1023,7 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			0,
 			loc,
 		)
-		isCancelled, isRescheduled, _ := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
-
-		if isCancelled && isRescheduled { //skip occurrence
-			continue
-		}
+		isCancelled, isRescheduled, overrideID := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
 
 		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
 			return att.Date == occDateStr
@@ -1024,6 +1035,21 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			Date:              occDateStr,
 			AttendanceRecords: relevantAttendance,
 			IsCancelled:       isCancelled,
+			IsRescheduled:     isRescheduled,
+		}
+		if isCancelled {
+			eventInstance.OverrideID = overrideID
+		}
+		if isCancelled && isRescheduled {
+			for _, other := range event.Overrides {
+				if !other.IsCancelled && other.LinkedOverrideEventID != nil && *other.LinkedOverrideEventID == overrideID {
+					rRule, err := rrule.StrToRRule(other.OverrideRrule)
+					if err == nil && len(rRule.All()) > 0 {
+						eventInstance.RescheduledToDate = rRule.All()[0].In(loc).Format("2006-01-02")
+					}
+					break
+				}
+			}
 		}
 		eventInstances = append(eventInstances, eventInstance)
 	}
@@ -1053,12 +1079,26 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
 			return att.Date == overrideDateStr
 		})
+		rescheduledFromDate := ""
+		if override.LinkedOverrideEventID != nil {
+			for _, other := range event.Overrides {
+				if other.ID == *override.LinkedOverrideEventID && other.IsCancelled {
+					otherRule, err := rrule.StrToRRule(other.OverrideRrule)
+					if err == nil && len(otherRule.All()) > 0 {
+						rescheduledFromDate = otherRule.All()[0].In(loc).Format("2006-01-02")
+					}
+					break
+				}
+			}
+		}
 		rescheduledInstance := models.ClassEventInstance{
-			EventID:           event.ID,
-			ClassTime:         overrideClassTime,
-			Date:              overrideDateStr,
-			AttendanceRecords: relevantAttendance,
-			IsCancelled:       false,
+			EventID:             event.ID,
+			ClassTime:           overrideClassTime,
+			Date:                overrideDateStr,
+			AttendanceRecords:   relevantAttendance,
+			IsCancelled:         false,
+			RescheduledFromDate: rescheduledFromDate,
+			OverrideID:          override.ID,
 		}
 		eventInstances = append(eventInstances, rescheduledInstance)
 	}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import { CheckCircle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -98,29 +99,33 @@ export function ChangeRoomModal({
         setIsSubmitting(false);
     };
 
-    const isSingle = sessions.length === 1;
+    const selectedRoom = rooms.find(
+        (r) => String(r.id) === selectedRoomId
+    );
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
                         Change Room
                     </DialogTitle>
                     <DialogDescription>
-                        {isSingle
-                            ? `Change the room for the class scheduled for ${sessions[0]?.dateLabel}`
-                            : `Change the room for ${sessions.length} sessions`}
+                        Select a new room for {sessions.length}{' '}
+                        {sessions.length === 1 ? 'session' : 'sessions'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>New Room</Label>
+                    <div>
+                        <Label htmlFor="change-room">New Room</Label>
                         <Select
                             value={selectedRoomId}
                             onValueChange={setSelectedRoomId}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger
+                                id="change-room"
+                                className="mt-2"
+                            >
                                 <SelectValue placeholder="Select room" />
                             </SelectTrigger>
                             <SelectContent>
@@ -152,25 +157,47 @@ export function ChangeRoomModal({
                         </Select>
                     </div>
 
-                    {!isSingle && sessions.length > 0 && (
-                        <div>
-                            <Label className="text-sm text-gray-600 mb-2 block">
-                                Sessions to Update
-                            </Label>
-                            <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
-                                {sessions.map((s) => (
-                                    <div
-                                        key={s.date}
-                                        className="text-sm text-gray-700"
-                                    >
-                                        {s.dateLabel}
-                                    </div>
-                                ))}
+                    <div>
+                        <Label className="text-sm font-medium text-[#203622] mb-2 block">
+                            Sessions to Update
+                        </Label>
+                        <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
+                            {sessions.map((s) => (
+                                <div
+                                    key={s.date}
+                                    className="text-sm text-gray-700"
+                                >
+                                    {s.dateLabel}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedRoom && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex gap-3">
+                                <CheckCircle className="size-5 text-blue-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm text-blue-900 font-medium mb-1">
+                                        Preview
+                                    </p>
+                                    <p className="text-sm text-blue-700">
+                                        <strong>
+                                            {selectedRoom.name}
+                                        </strong>{' '}
+                                        will be assigned as the location for{' '}
+                                        {sessions.length}{' '}
+                                        {sessions.length === 1
+                                            ? 'session'
+                                            : 'sessions'}
+                                        .
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex justify-end gap-3">
                     <Button
                         variant="outline"
                         onClick={onClose}
@@ -185,7 +212,8 @@ export function ChangeRoomModal({
                         disabled={!selectedRoomId || isSubmitting}
                         className="bg-[#556830] hover:bg-[#203622] text-white"
                     >
-                        {isSubmitting ? 'Updating...' : 'Change Room'}
+                        <MapPin className="size-4 mr-2" />
+                        Change Room
                     </Button>
                 </div>
             </DialogContent>
