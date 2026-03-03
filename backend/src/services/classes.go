@@ -29,20 +29,24 @@ func (svc *ClassesService) GetFacilityHealthSummaries(args *models.QueryContext,
 		return nil, err
 	}
 
-	missingByFacility := make(map[uint]int64, len(summaries))
-	for _, summary := range summaries {
-		facilityRef := summary.FacilityID
-		items, err := svc.GetMissingAttendanceForFacility(args, &facilityRef, days)
-		if err != nil {
-			return nil, err
-		}
-		if len(items) == 0 {
+	items, classByID, err := svc.getMissingAttendanceForFacilityData(args, facilityID, days)
+	if err != nil {
+		return nil, err
+	}
+
+	missingByFacilityClasses := make(map[uint]map[uint]struct{})
+	for _, item := range items {
+		classInfo, ok := classByID[item.ClassID]
+		if !ok {
 			continue
 		}
-		classIDs := make(map[uint]struct{}, len(items))
-		for _, item := range items {
-			classIDs[item.ClassID] = struct{}{}
+		if _, exists := missingByFacilityClasses[classInfo.FacilityID]; !exists {
+			missingByFacilityClasses[classInfo.FacilityID] = make(map[uint]struct{})
 		}
+		missingByFacilityClasses[classInfo.FacilityID][item.ClassID] = struct{}{}
+	}
+	missingByFacility := make(map[uint]int64, len(missingByFacilityClasses))
+	for facilityRef, classIDs := range missingByFacilityClasses {
 		missingByFacility[facilityRef] = int64(len(classIDs))
 	}
 
@@ -70,15 +74,23 @@ func getCanonicalHourAndMinute(occurrences []time.Time, timezone string) (int, i
 }
 
 func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryContext, facilityID *uint, days int) ([]models.MissingAttendanceItem, error) {
+	items, _, err := svc.getMissingAttendanceForFacilityData(args, facilityID, days)
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (svc *ClassesService) getMissingAttendanceForFacilityData(args *models.QueryContext, facilityID *uint, days int) ([]models.MissingAttendanceItem, map[uint]models.MissingAttendanceClass, error) {
 	if days <= 0 {
 		days = 3
 	}
 	classes, err := svc.db.GetActiveClassesForMissingAttendance(args, facilityID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(classes) == 0 {
-		return []models.MissingAttendanceItem{}, nil
+		return []models.MissingAttendanceItem{}, map[uint]models.MissingAttendanceClass{}, nil
 	}
 
 	loc, err := time.LoadLocation(args.Timezone)
@@ -98,7 +110,7 @@ func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryCon
 
 	events, err := svc.db.GetClassEventsWithOverrides(args, classIDs)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	type eventInstance struct {
@@ -146,7 +158,7 @@ func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryCon
 		}
 	}
 	if len(instances) == 0 {
-		return []models.MissingAttendanceItem{}, nil
+		return []models.MissingAttendanceItem{}, classByID, nil
 	}
 
 	eventIDs := make([]uint, 0, len(eventIDSet))
@@ -160,7 +172,7 @@ func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryCon
 
 	attendanceCounts, err := svc.db.GetAttendanceCountsForEvents(args, eventIDs, dates)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	attendanceMap := make(map[string]int64, len(attendanceCounts))
 	for _, attendance := range attendanceCounts {
@@ -174,7 +186,7 @@ func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryCon
 	}
 	enrollments, err := svc.db.GetActiveEnrollmentsForClasses(args, classIDs)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	enrollmentsByClass := make(map[uint][]enrollmentWindow, len(classIDs))
 	for _, enrollment := range enrollments {
@@ -222,7 +234,7 @@ func (svc *ClassesService) GetMissingAttendanceForFacility(args *models.QueryCon
 		return items[i].Date > items[j].Date
 	})
 
-	return items, nil
+	return items, classByID, nil
 }
 
 func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facilityID *uint) ([]models.TodaysScheduleItem, error) {
