@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 /*
@@ -112,23 +113,10 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 	if override.LinkedOverrideEventID != nil {
 		eventIDs = append(eventIDs, *override.LinkedOverrideEventID)
 	}
-
-	if undoAppliedFuture {
-		var appliedFutureOverrides []models.ProgramClassEventOverride
-		if err := trans.Where("event_id = ? AND reason = 'applied_future' AND deleted_at IS NULL", override.EventID).Find(&appliedFutureOverrides).Error; err == nil {
-			cancelledIDs := make([]uint, 0, len(appliedFutureOverrides))
-			for _, af := range appliedFutureOverrides {
-				eventIDs = append(eventIDs, af.ID)
-				cancelledIDs = append(cancelledIDs, af.ID)
-			}
-			if len(cancelledIDs) > 0 {
-				var linkedOverrides []models.ProgramClassEventOverride
-				if err := trans.Where("linked_override_event_id IN (?) AND deleted_at IS NULL", cancelledIDs).Find(&linkedOverrides).Error; err == nil {
-					for _, lo := range linkedOverrides {
-						eventIDs = append(eventIDs, lo.ID)
-					}
-				}
-			}
+	var reverseLinked []models.ProgramClassEventOverride
+	if err := trans.Where("linked_override_event_id = ?", override.ID).Find(&reverseLinked).Error; err == nil {
+		for _, rl := range reverseLinked {
+			eventIDs = append(eventIDs, rl.ID)
 		}
 	}
 
@@ -189,28 +177,22 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		if !overrideEvent.IsCancelled && linkedOverrideID != nil {
 			overrideEvent.LinkedOverrideEventID = linkedOverrideID
 		}
-		var existing models.ProgramClassEventOverride
-		findErr := trans.Where("event_id = ? AND override_rrule = ? AND deleted_at IS NULL", overrideEvent.EventID, overrideEvent.OverrideRrule).First(&existing).Error
-		if findErr == nil {
-			overrideEvent.ID = existing.ID
-			isOverrideUpdate = true
-			if err := trans.Model(&existing).Updates(map[string]interface{}{
-				"duration":                 overrideEvent.Duration,
-				"is_cancelled":             overrideEvent.IsCancelled,
-				"room_id":                  overrideEvent.RoomID,
-				"reason":                   overrideEvent.Reason,
-				"linked_override_event_id": overrideEvent.LinkedOverrideEventID,
-				"instructor_id":            overrideEvent.InstructorID,
-			}).Error; err != nil {
-				trans.Rollback()
-				return newCreateDBError(err, "program_class_event_overrides")
+		if overrideEvent.ID == 0 {
+			var existing models.ProgramClassEventOverride
+			if err := trans.Unscoped().
+				Where("event_id = ? AND override_rrule = ? AND deleted_at IS NULL",
+					overrideEvent.EventID, overrideEvent.OverrideRrule).
+				First(&existing).Error; err == nil {
+				overrideEvent.ID = existing.ID
 			}
-		} else {
-			isOverrideUpdate = overrideEvent.ID > 0
-			if err := trans.Create(&overrideEvent).Error; err != nil {
-				trans.Rollback()
-				return newCreateDBError(err, "program_class_event_overrides")
-			}
+		}
+		isOverrideUpdate = overrideEvent.ID > 0
+		if err := trans.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room_id", "reason", "linked_override_event_id", "instructor_id"}),
+		}).Create(&overrideEvent).Error; err != nil {
+			trans.Rollback()
+			return newCreateDBError(err, "program_class_event_overrides")
 		}
 		if overrideEvent.IsCancelled && len(overrideEvents) < 2 {
 			changeLogEntry.FieldName = "event_cancelled"
@@ -896,7 +878,7 @@ func GenerateEventInstances(event models.ProgramClassEvent, startDate, endDate t
 // GetClassEventInstancesWithAttendanceForRecurrence returns all occurrences for events
 // for a given class based on each event's recurrence rule (from DTSTART until UNTIL)
 // along with their associated attendance records.
-func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext, month, year string, userId *int, allInstances ...bool) ([]models.ClassEventInstance, error) {
+func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext, month, year string, userId *int, allInstances bool) ([]models.ClassEventInstance, error) {
 	loc, err := time.LoadLocation(qryCtx.Timezone)
 	if err != nil {
 		logrus.Error("failed to load timezone")
@@ -940,7 +922,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 			}
 		} else {
 			startTime = rRule.GetDTStart()
-			if len(allInstances) > 0 && allInstances[0] {
+			if allInstances {
 				// rrule-go's GetUntil() returns a far-future date (~year 2318) instead of zero
 				// when no UNTIL is present, so check the raw string for an explicit UNTIL clause
 				hasExplicitUntil := strings.Contains(event.RecurrenceRule, "UNTIL=")
@@ -1051,43 +1033,7 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		attendanceByDate[attendances[i].Date] = append(attendanceByDate[attendances[i].Date], attendances[i])
 	}
 
-	// Pre-compute cancelled dates from overrides once for O(1) lookup per occurrence,
-	// instead of re-parsing every override rrule for every occurrence (O(occurrences * overrides))
-	cancelledDates := make(map[int64]bool)
-	for _, override := range event.Overrides {
-		if !override.IsCancelled {
-			continue
-		}
-		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
-		if err != nil {
-			logrus.Warnf("unable to parse cancelled override rule: %s", override.OverrideRrule)
-			continue
-		}
-		allOccs := parsedRule.All()
-		if len(allOccs) == 0 {
-			continue
-		}
-		overrideDate := allOccs[0]
-
-		//START day light savings time fix here
-		localOverrideTime := overrideDate.In(loc)
-		canonicalOverrideHour := localOverrideTime.Hour()
-		canonicalOverrideMinute := localOverrideTime.Minute()
-		consistentOverrideDate := time.Date(
-			localOverrideTime.Year(),
-			localOverrideTime.Month(),
-			localOverrideTime.Day(),
-			canonicalOverrideHour,
-			canonicalOverrideMinute,
-			0, 0,
-			loc,
-		)
-		//END day light savings time fix here
-		cancelledDates[consistentOverrideDate.Unix()] = true
-	}
-
 	eventInstances := make([]models.ClassEventInstance, 0, len(occurrences))
-	emittedDateTimes := make(map[string]bool, len(occurrences))
 	//daylight saving time fix (VIP) prevents the time shift
 	for _, occ := range occurrences {
 		occDateStr := occ.In(loc).Format("2006-01-02")
@@ -1101,18 +1047,34 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			0,
 			loc,
 		)
+		isCancelled, isRescheduled, overrideID := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
 
-		eventInstances = append(eventInstances, models.ClassEventInstance{
+		eventInstance := models.ClassEventInstance{
 			EventID:           event.ID,
 			ClassTime:         classTime,
 			Date:              occDateStr,
 			AttendanceRecords: attendanceByDate[occDateStr],
-			IsCancelled:       cancelledDates[consistentOccurrence.Unix()],
-		})
-		emittedDateTimes[occDateStr+"|"+classTime] = true
+			IsCancelled:       isCancelled,
+			IsRescheduled:     isRescheduled,
+		}
+		if isCancelled {
+			eventInstance.OverrideID = overrideID
+		}
+		if isCancelled && isRescheduled {
+			for _, other := range event.Overrides {
+				if !other.IsCancelled && other.LinkedOverrideEventID != nil && *other.LinkedOverrideEventID == overrideID {
+					rRule, err := rrule.StrToRRule(other.OverrideRrule)
+					if err == nil && len(rRule.All()) > 0 {
+						eventInstance.RescheduledToDate = rRule.All()[0].In(loc).Format("2006-01-02")
+					}
+					break
+				}
+			}
+		}
+		eventInstances = append(eventInstances, eventInstance)
 	}
-	for _, override := range event.Overrides { //adding rescheduled-to dates as instances
-		if override.IsCancelled || override.LinkedOverrideEventID == nil {
+	for _, override := range event.Overrides { //adding the rescheduled ones to instances slice
+		if override.IsCancelled { //skip cancelled ones
 			continue
 		}
 		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
@@ -1134,16 +1096,27 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		}
 		overrideEnd := overrideDate.Add(duration)
 		overrideClassTime := overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
-		if emittedDateTimes[overrideDateStr+"|"+overrideClassTime] {
-			continue
-		}
 
+		rescheduledFromDate := ""
+		if override.LinkedOverrideEventID != nil {
+			for _, other := range event.Overrides {
+				if other.ID == *override.LinkedOverrideEventID && other.IsCancelled {
+					otherRule, err := rrule.StrToRRule(other.OverrideRrule)
+					if err == nil && len(otherRule.All()) > 0 {
+						rescheduledFromDate = otherRule.All()[0].In(loc).Format("2006-01-02")
+					}
+					break
+				}
+			}
+		}
 		eventInstances = append(eventInstances, models.ClassEventInstance{
-			EventID:           event.ID,
-			ClassTime:         overrideClassTime,
-			Date:              overrideDateStr,
-			AttendanceRecords: attendanceByDate[overrideDateStr],
-			IsCancelled:       false,
+			EventID:             event.ID,
+			ClassTime:           overrideClassTime,
+			Date:                overrideDateStr,
+			AttendanceRecords:   attendanceByDate[overrideDateStr],
+			IsCancelled:         false,
+			RescheduledFromDate: rescheduledFromDate,
+			OverrideID:          override.ID,
 		})
 	}
 	slices.SortFunc(eventInstances, func(a, b models.ClassEventInstance) int {

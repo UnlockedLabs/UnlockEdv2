@@ -256,11 +256,15 @@ type AttendanceRecordResponse struct {
 }
 
 type ClassEventInstance struct {
-	EventID           uint                          `json:"event_id"`
-	ClassTime         string                        `json:"class_time"` // e.g. "12:00-14:00"
-	Date              string                        `json:"date"`
-	AttendanceRecords []ProgramClassEventAttendance `json:"attendance_records"`
-	IsCancelled       bool                          `json:"is_cancelled"`
+	EventID             uint                          `json:"event_id"`
+	ClassTime           string                        `json:"class_time"` // e.g. "12:00-14:00"
+	Date                string                        `json:"date"`
+	AttendanceRecords   []ProgramClassEventAttendance `json:"attendance_records"`
+	IsCancelled         bool                          `json:"is_cancelled"`
+	IsRescheduled       bool                          `json:"is_rescheduled"`
+	RescheduledToDate   string                        `json:"rescheduled_to_date,omitempty"`
+	RescheduledFromDate string                        `json:"rescheduled_from_date,omitempty"`
+	OverrideID          uint                          `json:"override_id,omitempty"`
 }
 
 type EnrollmentAttendance struct {
