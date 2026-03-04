@@ -283,7 +283,9 @@ func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	historyEvents = append(historyEvents, createdByDetails)
+	if createdByDetails.Action != "" {
+		historyEvents = append(historyEvents, createdByDetails)
+	}
 	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
 }
 

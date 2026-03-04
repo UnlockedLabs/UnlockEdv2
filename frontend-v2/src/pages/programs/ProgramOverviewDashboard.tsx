@@ -72,6 +72,7 @@ import {
     TooltipContent,
     TooltipTrigger
 } from '@/components/ui/tooltip';
+import { Pagination } from '@/components/Pagination';
 
 type HeroIcon = React.ForwardRefExoticComponent<
     React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> & {
@@ -98,7 +99,8 @@ export default function ProgramOverviewDashboard() {
     const navigate = useNavigate();
     const { program_id } = useParams<{ program_id: string }>();
     const [activeTab, setActiveTab] = useState('classes');
-    const [historyPage] = useState(1);
+    const [historyPage, setHistoryPage] = useState(1);
+    const [historyPerPage, setHistoryPerPage] = useState(20);
     const [statusModalOpen, setStatusModalOpen] = useState(false);
     const [selectedClass, setSelectedClass] = useState<Class | null>(null);
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -122,10 +124,11 @@ export default function ProgramOverviewDashboard() {
 
     const { data: historyResp } = useSWR<ServerResponseMany<ChangeLogEntry>>(
         activeTab === 'history'
-            ? `/api/programs/${program_id}/history?page=${historyPage}&per_page=100`
+            ? `/api/programs/${program_id}/history?page=${historyPage}&per_page=${historyPerPage}`
             : null
     );
     const history = historyResp?.data ?? [];
+    const historyTotal = historyResp?.meta?.total ?? history.length;
 
     const nonArchivedClasses = useMemo(
         () => classes.filter((c) => !c.archived_at),
@@ -467,7 +470,17 @@ export default function ProgramOverviewDashboard() {
                         </TabsContent>
 
                         <TabsContent value="history" className="mt-4">
-                            <AuditHistoryTab entries={history} />
+                            <AuditHistoryTab
+                                entries={history}
+                                totalItems={historyTotal}
+                                currentPage={historyPage}
+                                itemsPerPage={historyPerPage}
+                                onPageChange={setHistoryPage}
+                                onItemsPerPageChange={(val) => {
+                                    setHistoryPerPage(val);
+                                    setHistoryPage(1);
+                                }}
+                            />
                         </TabsContent>
                     </Tabs>
                 </div>
@@ -1082,7 +1095,7 @@ function PerformanceTab({
                             className="h-2"
                             indicatorClassName="bg-[#556830]"
                         />
-                        <p className="text-xs text-gray-500 mt-2">Mock data</p>
+                        <p className="text-xs text-gray-500 mt-2">&nbsp;</p>
                     </div>
                 </div>
             </CardContent>
@@ -1090,7 +1103,21 @@ function PerformanceTab({
     );
 }
 
-function AuditHistoryTab({ entries }: { entries: ChangeLogEntry[] }) {
+function AuditHistoryTab({
+    entries,
+    totalItems,
+    currentPage,
+    itemsPerPage,
+    onPageChange,
+    onItemsPerPageChange
+}: {
+    entries: ChangeLogEntry[];
+    totalItems: number;
+    currentPage: number;
+    itemsPerPage: number;
+    onPageChange: (page: number) => void;
+    onItemsPerPageChange: (itemsPerPage: number) => void;
+}) {
     const { user } = useAuth();
     return (
         <Card className="bg-background p-0">
@@ -1126,6 +1153,16 @@ function AuditHistoryTab({ entries }: { entries: ChangeLogEntry[] }) {
                     </div>
                 )}
             </CardContent>
+            {totalItems > itemsPerPage && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={onPageChange}
+                    onItemsPerPageChange={onItemsPerPageChange}
+                    itemLabel="entries"
+                />
+            )}
         </Card>
     );
 }

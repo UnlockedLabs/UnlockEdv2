@@ -331,7 +331,7 @@ export default function EditProgramDialog({
                         </Button>
                         <Button
                             className="bg-[#556830] hover:bg-[#203622] text-white"
-                            onClick={void handleSave}
+                            onClick={() => void handleSave()}
                             disabled={saving}
                         >
                             {saving ? 'Saving...' : 'Save Changes'}
