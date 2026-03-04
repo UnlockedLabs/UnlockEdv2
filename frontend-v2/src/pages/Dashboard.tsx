@@ -50,7 +50,7 @@ export default function Dashboard() {
                 : '/api/program-classes/missing-attendance?days=3&all=true'
         );
     const { data: facilityHealthResp } = useSWR<
-        ServerResponseMany<FacilityHealthSummary>
+        ServerResponseOne<FacilityHealthSummary[]>
     >(
         deptAdmin
             ? '/api/dashboard/facility-health?facility=all&days=3'

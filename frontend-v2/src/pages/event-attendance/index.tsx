@@ -14,7 +14,7 @@ import {
     FilterResidentNames
 } from '@/types';
 import { ClassEventInstance } from '@/types/events';
-import { isCompletedCancelledOrArchived } from '@/pages/programs/ProgramOverviewDashboard';
+import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
 import { ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

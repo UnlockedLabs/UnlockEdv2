@@ -1,4 +1,4 @@
-import { Outlet, useMatches } from 'react-router-dom';
+import { Outlet, useLocation, useMatches } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Facility, RouteTitleHandler, TitleHandler } from '@/types';
 import { useAuth, isAdministrator, canSwitchFacility } from '@/auth/useAuth';
@@ -22,6 +22,7 @@ export default function AuthenticatedLayout() {
     const [helpCenterOpen, setHelpCenterOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const matches = useMatches();
+    const location = useLocation();
     const currentRoute = matches[matches.length - 1];
     const routeData = currentRoute?.data as TitleHandler;
     const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
@@ -31,6 +32,7 @@ export default function AuthenticatedLayout() {
     const routeBreadcrumbs = useBreadcrumbsFromRoutes();
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
+    const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
 
     useEffect(() => {
         if (pageTitle) {
@@ -62,8 +64,15 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
+    const rootClass = isProgramDetail
+        ? 'min-h-screen bg-background flex'
+        : 'h-screen bg-background flex overflow-hidden';
+    const contentClass = isProgramDetail
+        ? 'flex-1 overflow-x-hidden'
+        : 'flex-1 overflow-y-auto overflow-x-hidden';
+
     return (
-        <div className="h-screen bg-background flex overflow-hidden">
+        <div className={rootClass}>
             <div className="hidden md:flex">
                 <Sidebar
                     collapsed={sidebarCollapsed}
@@ -92,13 +101,26 @@ export default function AuthenticatedLayout() {
                 <UnlockEdTour />
                 <Toaster />
 
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                    {breadcrumbItems.length > 0 && (
-                        <div className="mb-4">
-                            <Breadcrumbs items={breadcrumbItems} />
+                <div className={contentClass}>
+                    {isProgramDetail ? (
+                        <div className="py-4">
+                            {breadcrumbItems.length > 0 && (
+                                <div className="max-w-7xl mx-auto px-6 mb-4">
+                                    <Breadcrumbs items={breadcrumbItems} />
+                                </div>
+                            )}
+                            <Outlet />
+                        </div>
+                    ) : (
+                        <div className="max-w-7xl mx-auto px-6 py-4">
+                            {breadcrumbItems.length > 0 && (
+                                <div className="mb-4">
+                                    <Breadcrumbs items={breadcrumbItems} />
+                                </div>
+                            )}
+                            <Outlet />
                         </div>
                     )}
-                    <Outlet />
                 </div>
             </div>
         </div>

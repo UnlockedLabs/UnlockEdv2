@@ -151,6 +151,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	allChanges = append(allChanges, classLogEntries...)
 
 	originalInstructorID := existing.InstructorID
+	existingID := existing.ID
 
 	var needsRoomUpdate bool
 	var newRoomID *uint
@@ -165,6 +166,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	}
 
 	models.UpdateStruct(existing, content)
+	existing.ID = existingID
 
 	instructorIDChanged := false
 	if originalInstructorID == nil && content.InstructorID != nil {
@@ -180,7 +182,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		existing.InstructorName = content.InstructorName
 	}
 
-	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Updates(&existing).Error; err != nil {
+	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Model(&models.ProgramClass{}).Where("id = ?", existing.ID).Updates(existing).Error; err != nil {
 		trans.Rollback()
 		return nil, nil, newUpdateDBError(err, "program classes")
 	}
