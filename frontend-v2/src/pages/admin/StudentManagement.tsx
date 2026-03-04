@@ -44,7 +44,14 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { Pagination } from '@/components/Pagination';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious
+} from '@/components/ui/pagination';
 import {
     Search,
     Plus,
@@ -53,7 +60,7 @@ import {
     Users as UsersIcon
 } from 'lucide-react';
 
-type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
+type SortField = 'name_last' | 'username' | 'doc_id' | 'last_login';
 type SortDir = 'asc' | 'desc';
 
 interface StudentFormData {
@@ -74,7 +81,7 @@ export default function StudentManagement() {
     const navigate = useNavigate();
     const { toaster } = useToast();
     const { user } = useAuth();
-    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
+    const { page, perPage, setPage } = useUrlPagination(1, 20);
 
     const showFacilityColumn = user ? canSwitchFacility(user) : false;
 
@@ -109,7 +116,7 @@ export default function StudentManagement() {
     const facilities = facilitiesResp?.data ?? [];
 
     const userData = data?.data ?? [];
-    const totalItems = data?.meta?.total ?? 0;
+    const totalPages = data?.meta?.last_page ?? 1;
 
     const addForm = useForm<StudentFormData>();
 
@@ -186,7 +193,8 @@ export default function StudentManagement() {
     const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
 
     return (
-        <div className="py-4">
+        <div className="bg-[#E2E7EA] min-h-full">
+            <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Header */}
                 <div className="mb-8">
                     {user && !showFacilityColumn && (
@@ -196,7 +204,7 @@ export default function StudentManagement() {
                     )}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-[#203622]">
+                            <h1 className="text-2xl font-semibold text-[#203622]">
                                 Residents
                             </h1>
                             <p className="text-gray-600 mt-1">
@@ -215,12 +223,6 @@ export default function StudentManagement() {
                             <Button
                                 onClick={() => {
                                     addForm.reset();
-                                    if (showFacilityColumn && user) {
-                                        addForm.setValue(
-                                            'facility_id',
-                                            user.facility_id
-                                        );
-                                    }
                                     setAddDialogOpen(true);
                                 }}
                                 className="gap-2 bg-[#556830] hover:bg-[#203622]"
@@ -273,7 +275,7 @@ export default function StudentManagement() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-white rounded-lg p-4">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="text-sm text-gray-600 mb-1">
                             Total Residents
                         </div>
@@ -281,7 +283,7 @@ export default function StudentManagement() {
                             {stats?.total ?? '\u2014'}
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg p-4">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="text-sm text-gray-600 mb-1">
                             Active Accounts
                         </div>
@@ -289,7 +291,7 @@ export default function StudentManagement() {
                             {stats?.active ?? '\u2014'}
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg p-4">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="text-sm text-gray-600 mb-1">
                             Inactive Accounts
                         </div>
@@ -305,13 +307,13 @@ export default function StudentManagement() {
                         Failed to load residents.
                     </div>
                 ) : isLoading ? (
-                    <div className="bg-white rounded-lg p-4 space-y-3">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <Skeleton key={i} className="h-10 w-full" />
                         ))}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-lg">
+                    <div className="bg-white rounded-lg border border-gray-200">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -325,9 +327,7 @@ export default function StudentManagement() {
                                         Resident ID
                                     </SortableHeader>
                                     {showFacilityColumn && (
-                                        <SortableHeader field="facility_id">
-                                            Facility
-                                        </SortableHeader>
+                                        <TableHead>Facility</TableHead>
                                     )}
                                     <SortableHeader field="last_login">
                                         Last Active
@@ -419,14 +419,79 @@ export default function StudentManagement() {
                             </TableBody>
                         </Table>
 
-                        <Pagination
-                            currentPage={page}
-                            totalItems={totalItems}
-                            itemsPerPage={perPage}
-                            onPageChange={setPage}
-                            onItemsPerPageChange={setPerPage}
-                            itemLabel="residents"
-                        />
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="border-t border-gray-200 px-4 py-3">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                onClick={() =>
+                                                    page > 1 &&
+                                                    setPage(page - 1)
+                                                }
+                                                className={
+                                                    page <= 1
+                                                        ? 'pointer-events-none opacity-50'
+                                                        : 'cursor-pointer'
+                                                }
+                                            />
+                                        </PaginationItem>
+                                        {Array.from(
+                                            {
+                                                length: Math.min(totalPages, 5)
+                                            },
+                                            (_, i) => {
+                                                let pageNum: number;
+                                                if (totalPages <= 5) {
+                                                    pageNum = i + 1;
+                                                } else if (page <= 3) {
+                                                    pageNum = i + 1;
+                                                } else if (
+                                                    page >=
+                                                    totalPages - 2
+                                                ) {
+                                                    pageNum =
+                                                        totalPages - 4 + i;
+                                                } else {
+                                                    pageNum = page - 2 + i;
+                                                }
+                                                return (
+                                                    <PaginationItem
+                                                        key={pageNum}
+                                                    >
+                                                        <PaginationLink
+                                                            onClick={() =>
+                                                                setPage(pageNum)
+                                                            }
+                                                            isActive={
+                                                                pageNum === page
+                                                            }
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {pageNum}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                );
+                                            }
+                                        )}
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                onClick={() =>
+                                                    page < totalPages &&
+                                                    setPage(page + 1)
+                                                }
+                                                className={
+                                                    page >= totalPages
+                                                        ? 'pointer-events-none opacity-50'
+                                                        : 'cursor-pointer'
+                                                }
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -446,100 +511,84 @@ export default function StudentManagement() {
                                     (d) => void handleAddUser(d)
                                 )(e);
                             }}
+                            className="space-y-4 py-4"
                         >
-                            <div className="space-y-4 py-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="add-first">
-                                            First Name
-                                        </Label>
-                                        <Input
-                                            id="add-first"
-                                            placeholder="First name"
-                                            {...addForm.register('name_first', {
-                                                required: true
-                                            })}
-                                            className="mt-2"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="add-last">
-                                            Last Name
-                                        </Label>
-                                        <Input
-                                            id="add-last"
-                                            placeholder="Last name"
-                                            {...addForm.register('name_last', {
-                                                required: true
-                                            })}
-                                            className="mt-2"
-                                        />
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="add-username">
-                                        Username
+                                    <Label htmlFor="add-first">
+                                        First Name
                                     </Label>
                                     <Input
-                                        id="add-username"
-                                        placeholder="Enter username for login"
-                                        {...addForm.register('username', {
+                                        id="add-first"
+                                        placeholder="First name"
+                                        {...addForm.register('name_first', {
                                             required: true
                                         })}
                                         className="mt-2"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="add-doc-id">
-                                        Resident ID
-                                    </Label>
+                                    <Label htmlFor="add-last">Last Name</Label>
                                     <Input
-                                        id="add-doc-id"
-                                        placeholder="e.g., R001"
-                                        {...addForm.register('doc_id')}
+                                        id="add-last"
+                                        placeholder="Last name"
+                                        {...addForm.register('name_last', {
+                                            required: true
+                                        })}
                                         className="mt-2"
                                     />
                                 </div>
-                                {showFacilityColumn && (
-                                    <div>
-                                        <Label htmlFor="add-facility">
-                                            Facility
-                                        </Label>
-                                        <Select
-                                            value={
-                                                addForm.watch('facility_id')
-                                                    ? String(
-                                                          addForm.watch(
-                                                              'facility_id'
-                                                          )
-                                                      )
-                                                    : undefined
-                                            }
-                                            onValueChange={(v) =>
-                                                addForm.setValue(
-                                                    'facility_id',
-                                                    Number(v)
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger className="mt-2">
-                                                <SelectValue placeholder="Select facility" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {facilities.map((f) => (
-                                                    <SelectItem
-                                                        key={f.id}
-                                                        value={String(f.id)}
-                                                    >
-                                                        {f.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
                             </div>
-                            <DialogFooter className="pt-2">
+                            <div>
+                                <Label htmlFor="add-username">Username</Label>
+                                <Input
+                                    id="add-username"
+                                    placeholder="Enter username for login"
+                                    {...addForm.register('username', {
+                                        required: true
+                                    })}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="add-doc-id">Resident ID</Label>
+                                <Input
+                                    id="add-doc-id"
+                                    placeholder="e.g., R001"
+                                    {...addForm.register('doc_id')}
+                                    className="mt-2"
+                                />
+                            </div>
+                            {showFacilityColumn && (
+                                <div>
+                                    <Label htmlFor="add-facility">
+                                        Facility
+                                    </Label>
+                                    <Select
+                                        onValueChange={(v) =>
+                                            addForm.setValue(
+                                                'facility_id',
+                                                Number(v)
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger className="mt-2">
+                                            <SelectValue placeholder="Select facility" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {facilities.map((f) => (
+                                                <SelectItem
+                                                    key={f.id}
+                                                    value={String(f.id)}
+                                                >
+                                                    {f.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                            <DialogFooter>
                                 <Button
                                     variant="outline"
                                     type="button"
@@ -558,6 +607,7 @@ export default function StudentManagement() {
                         </form>
                     </DialogContent>
                 </Dialog>
+            </div>
         </div>
     );
 }
