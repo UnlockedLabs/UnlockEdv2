@@ -663,7 +663,7 @@ function ClassesTab({
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-4">
                 <div>
                     <h2 className="text-[#203622]">Classes</h2>
                     <p className="text-sm text-gray-600 mt-1">
@@ -678,7 +678,7 @@ function ClassesTab({
                     }}
                     className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
                 >
-                    <Plus className="size-4" />
+                    <Plus className="size-5" />
                     {showCreateForm ? 'Cancel' : 'Create New Class'}
                 </Button>
             </div>
