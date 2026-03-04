@@ -27,6 +27,7 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { FormModal } from '@/components/shared';
+import { AlertCircle, X } from 'lucide-react';
 
 interface ClassFormData {
     name: string;
@@ -86,6 +87,7 @@ function buildRRule(
     days: string[],
     endDt?: string,
     cadence: ClassFormData['cadence'] = 'weekly',
+    customInterval?: number,
     timezone?: string
 ): string {
     const dtStart = `${startDt.replace(/-/g, '')}T${startTime.replace(/:/g, '')}00`;
@@ -96,6 +98,12 @@ function buildRRule(
     }
     if (cadence === 'daily') {
         rule += 'FREQ=DAILY';
+    } else if (cadence === 'custom') {
+        const interval = Math.max(1, customInterval ?? 1);
+        rule += `FREQ=WEEKLY;INTERVAL=${interval}`;
+        if (days.length > 0) {
+            rule += `;BYDAY=${days.join(',')}`;
+        }
     } else if (cadence === 'monthly') {
         rule += `FREQ=MONTHLY;BYMONTHDAY=${startDt.split('-')[2]}`;
     } else {
@@ -143,6 +151,9 @@ export function ClassManagementFormInner({
     });
     const [roomSelectValue, setRoomSelectValue] = useState('');
     const [pendingRoomId, setPendingRoomId] = useState<number | null>(null);
+    const [showCustomRecurrence, setShowCustomRecurrence] = useState(false);
+    const [customRecurrenceInterval, setCustomRecurrenceInterval] =
+        useState(1);
 
     const { data: instructorsResp, mutate: mutateInstructors } = useSWR<
         ServerResponseMany<User>
@@ -188,6 +199,7 @@ export function ClassManagementFormInner({
 
     const watchedDays = watch('days') ?? [];
     const watchedCadence = watch('cadence');
+    const watchedEndDate = watch('end_dt');
     const watchedRoomId = watch('room_id');
 
     useEffect(() => {
@@ -284,6 +296,35 @@ export function ClassManagementFormInner({
         return eh * 60 + em > sh * 60 + sm;
     }
 
+    function getSelectedDayLabels(days: string[]) {
+        return WEEKDAY_OPTIONS.filter((opt) => days.includes(opt.value)).map(
+            (opt) => opt.label
+        );
+    }
+
+    function getCustomRecurrencePreview() {
+        const interval = Math.max(1, customRecurrenceInterval);
+        const dayLabels = getSelectedDayLabels(watchedDays);
+        let preview = `Every ${interval > 1 ? `${interval} ` : ''}${
+            interval === 1 ? 'week' : 'weeks'
+        }`;
+        if (dayLabels.length > 0) {
+            preview += ` on ${dayLabels.join(', ')}`;
+        }
+        if (watchedEndDate) {
+            preview += `, ending on ${new Date(
+                watchedEndDate
+            ).toLocaleDateString()}`;
+        } else {
+            preview += ', no end date';
+        }
+        return preview;
+    }
+
+    function isCustomRecurrenceValid() {
+        return watchedDays.length > 0;
+    }
+
     function cadenceHelpText(value: ClassFormData['cadence']) {
         switch (value) {
             case 'weekly':
@@ -297,7 +338,9 @@ export function ClassManagementFormInner({
             case 'no-repeat':
                 return 'Class is a one-time event';
             case 'custom':
-                return 'Define a custom recurrence pattern';
+                return isCustomRecurrenceValid()
+                    ? getCustomRecurrencePreview()
+                    : '';
             default:
                 return '';
         }
@@ -369,7 +412,9 @@ export function ClassManagementFormInner({
         }
         if (
             isNewClass &&
-            (data.cadence === 'weekly' || data.cadence === 'biweekly') &&
+            (data.cadence === 'weekly' ||
+                data.cadence === 'biweekly' ||
+                data.cadence === 'custom') &&
             data.days.length === 0
         ) {
             toast.error('Select at least one day');
@@ -391,6 +436,7 @@ export function ClassManagementFormInner({
                   data.days,
                   data.end_dt,
                   data.cadence,
+                  customRecurrenceInterval,
                   user?.timezone
               )
             : (existingClass?.events?.[0]?.recurrence_rule ?? '');
@@ -667,42 +713,6 @@ export function ClassManagementFormInner({
                                 Schedule
                             </h4>
                             <div className="space-y-4">
-                                <div>
-                                    <Label>Days of Week *</Label>
-                                    <input
-                                        type="hidden"
-                                        {...register('days', {
-                                            validate: (value) =>
-                                                (value?.length ?? 0) > 0 ||
-                                                'Days of week is required'
-                                        })}
-                                    />
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {WEEKDAY_OPTIONS.map((day) => (
-                                            <button
-                                                key={day.value}
-                                                type="button"
-                                                onClick={() =>
-                                                    toggleDay(day.value)
-                                                }
-                                                className={`px-4 py-2 rounded-lg border transition-colors ${
-                                                    watchedDays.includes(
-                                                        day.value
-                                                    )
-                                                        ? 'bg-[#556830] text-white border-[#556830]'
-                                                        : 'bg-white text-gray-700 border-gray-300 hover:border-[#556830]'
-                                                } ${focusRingButton}`}
-                                            >
-                                                {day.label.slice(0, 3)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {errors.days && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {String(errors.days.message)}
-                                        </p>
-                                    )}
-                                </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <Label htmlFor="start_time">
@@ -809,13 +819,39 @@ export function ClassManagementFormInner({
                                             </p>
                                         )}
                                         {showAddRoom && (
-                                            <div className="mt-2">
-                                                <Label htmlFor="new-room-name">
-                                                    Custom Room Name
-                                                </Label>
+                                            <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <Label
+                                                            htmlFor="new-room-name"
+                                                            className="text-sm font-medium"
+                                                        >
+                                                            Custom Room Name
+                                                        </Label>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Room names should
+                                                            be specific (e.g.,
+                                                            "Library - Room 3A")
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setShowAddRoom(
+                                                                false
+                                                            );
+                                                            setNewRoomName('');
+                                                        }}
+                                                        className="h-6 w-6 p-0 -mt-1"
+                                                        type="button"
+                                                    >
+                                                        <X className="size-4" />
+                                                    </Button>
+                                                </div>
                                                 <Input
                                                     id="new-room-name"
-                                                    placeholder="Enter room name"
+                                                    placeholder="e.g., Education Wing - Room 205"
                                                     value={newRoomName}
                                                     onChange={(e) =>
                                                         setNewRoomName(
@@ -823,17 +859,53 @@ export function ClassManagementFormInner({
                                                         )
                                                     }
                                                     className={focusRing}
+                                                    autoFocus
                                                 />
-                                                <Button
-                                                    variant="outline"
-                                                    className={`mt-2 ${focusRingButton}`}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        void handleAddRoom()
-                                                    }
-                                                >
-                                                    Add Room
-                                                </Button>
+                                                {newRoomName &&
+                                                    rooms.some(
+                                                        (room) =>
+                                                            room.name.toLowerCase() ===
+                                                            newRoomName.trim().toLowerCase()
+                                                    ) && (
+                                                        <div className="flex items-center gap-2 text-sm text-orange-600">
+                                                            <AlertCircle className="size-4" />
+                                                            <span>
+                                                                This room name
+                                                                already exists
+                                                                in the list
+                                                                above
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setShowAddRoom(
+                                                                false
+                                                            );
+                                                            setNewRoomName('');
+                                                        }}
+                                                        className="flex-1"
+                                                        type="button"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            void handleAddRoom()
+                                                        }
+                                                        disabled={
+                                                            !newRoomName.trim()
+                                                        }
+                                                        className="flex-1 bg-[#556830] hover:bg-[#203622]"
+                                                        type="button"
+                                                    >
+                                                        Add Room
+                                                    </Button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -876,7 +948,18 @@ export function ClassManagementFormInner({
                                         render={({ field }) => (
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    if (value === 'custom') {
+                                                        setShowCustomRecurrence(
+                                                            true
+                                                        );
+                                                    } else {
+                                                        setShowCustomRecurrence(
+                                                            false
+                                                        );
+                                                    }
+                                                }}
                                             >
                                                 <SelectTrigger
                                                     id="cadence"
@@ -912,7 +995,218 @@ export function ClassManagementFormInner({
                                             watchedCadence ?? 'weekly'
                                         )}
                                     </p>
+                                    {watchedCadence === 'custom' &&
+                                        !showCustomRecurrence && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setShowCustomRecurrence(
+                                                        true
+                                                    )
+                                                }
+                                                className="mt-1 h-7 text-xs text-[#556830] hover:text-[#203622] px-2"
+                                                type="button"
+                                            >
+                                                Edit pattern
+                                            </Button>
+                                        )}
+                                    {showCustomRecurrence && (
+                                        <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-sm font-medium text-gray-700">
+                                                    Custom Recurrence Pattern
+                                                </Label>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setShowCustomRecurrence(
+                                                            false
+                                                        );
+                                                        setValue(
+                                                            'cadence',
+                                                            'weekly',
+                                                            {
+                                                                shouldDirty:
+                                                                    true,
+                                                                shouldValidate:
+                                                                    true
+                                                            }
+                                                        );
+                                                    }}
+                                                    className="h-6 w-6 p-0 -mt-1"
+                                                    type="button"
+                                                >
+                                                    <X className="size-4" />
+                                                </Button>
+                                            </div>
+                                            <div>
+                                                <Label
+                                                    htmlFor="customInterval"
+                                                    className="text-xs"
+                                                >
+                                                    Repeats every X weeks
+                                                </Label>
+                                                <Select
+                                                    value={String(
+                                                        customRecurrenceInterval
+                                                    )}
+                                                    onValueChange={(value) =>
+                                                        setCustomRecurrenceInterval(
+                                                            Number(value)
+                                                        )
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id="customInterval"
+                                                        className={`bg-white ${focusRing}`}
+                                                    >
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {[
+                                                            1, 2, 3, 4, 5, 6, 7,
+                                                            8
+                                                        ].map((num) => (
+                                                            <SelectItem
+                                                                key={num}
+                                                                value={String(
+                                                                    num
+                                                                )}
+                                                            >
+                                                                {num}{' '}
+                                                                {num === 1
+                                                                    ? 'week'
+                                                                    : 'weeks'}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Use the "Days of Week"
+                                                    selector below to choose
+                                                    which days
+                                                </p>
+                                            </div>
+                                            <div className="pt-3 border-t border-gray-200">
+                                                <Label className="text-xs text-gray-600">
+                                                    Preview
+                                                </Label>
+                                                <p className="text-sm text-gray-700 mt-1">
+                                                    {getCustomRecurrencePreview()}
+                                                </p>
+                                            </div>
+                                            {!isCustomRecurrenceValid() && (
+                                                <div className="flex items-center gap-2 text-sm text-red-600">
+                                                    <AlertCircle className="size-4" />
+                                                    <span>
+                                                        Please select at least
+                                                        one day of the week
+                                                        below
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="flex gap-2 pt-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setShowCustomRecurrence(
+                                                            false
+                                                        );
+                                                        setValue(
+                                                            'cadence',
+                                                            'weekly',
+                                                            {
+                                                                shouldDirty:
+                                                                    true,
+                                                                shouldValidate:
+                                                                    true
+                                                            }
+                                                        );
+                                                    }}
+                                                    className="flex-1"
+                                                    type="button"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (
+                                                            isCustomRecurrenceValid()
+                                                        ) {
+                                                            setValue(
+                                                                'cadence',
+                                                                'custom',
+                                                                {
+                                                                    shouldDirty:
+                                                                        true,
+                                                                    shouldValidate:
+                                                                        true
+                                                                }
+                                                            );
+                                                            setShowCustomRecurrence(
+                                                                false
+                                                            );
+                                                            toast.success(
+                                                                'Custom recurrence pattern applied'
+                                                            );
+                                                        }
+                                                    }}
+                                                    disabled={
+                                                        !isCustomRecurrenceValid()
+                                                    }
+                                                    className="flex-1 bg-[#556830] hover:bg-[#203622]"
+                                                    type="button"
+                                                >
+                                                    Apply Pattern
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+                                {(watchedCadence === 'weekly' ||
+                                    watchedCadence === 'biweekly' ||
+                                    watchedCadence === 'custom') && (
+                                    <div className="!mt-0">
+                                        <Label>Days of Week *</Label>
+                                        <input
+                                            type="hidden"
+                                            {...register('days', {
+                                                validate: (value) =>
+                                                    (value?.length ?? 0) > 0 ||
+                                                    'Days of week is required'
+                                            })}
+                                        />
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {WEEKDAY_OPTIONS.map((day) => (
+                                                <button
+                                                    key={day.value}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        toggleDay(day.value)
+                                                    }
+                                                    className={`px-4 py-2 rounded-lg border transition-colors ${
+                                                        watchedDays.includes(
+                                                            day.value
+                                                        )
+                                                            ? 'bg-[#556830] text-white border-[#556830]'
+                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#556830]'
+                                                    } ${focusRingButton}`}
+                                                >
+                                                    {day.label.slice(0, 3)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {errors.days && (
+                                            <p className="text-sm text-red-600 mt-1">
+                                                {String(errors.days.message)}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
