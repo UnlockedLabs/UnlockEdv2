@@ -67,7 +67,8 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	args := srv.getQueryContext(r)
-	classes, err := srv.Db.GetProgramClassDetailsByID(id, &args)
+	service := services.NewClassesService(srv.Db)
+	classes, err := service.GetProgramClassDetailsForProgram(&args, id)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)

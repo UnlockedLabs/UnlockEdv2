@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/models"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/teambition/rrule-go"
@@ -345,4 +346,143 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 	})
 
 	return items, nil
+}
+
+func (svc *ClassesService) GetProgramClassDetailsForProgram(args *models.QueryContext, programID int) ([]models.ProgramClassDetail, error) {
+	classes, err := svc.db.GetProgramClassDetailsByID(programID, args)
+	if err != nil {
+		return nil, err
+	}
+	if len(classes) == 0 {
+		return classes, nil
+	}
+
+	classIDs := make([]uint, 0, len(classes))
+	for _, cls := range classes {
+		classIDs = append(classIDs, cls.ID)
+	}
+	attendanceByClass, err := svc.db.GetCumulativeAttendanceRatesForClasses(args.Ctx, classIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range classes {
+		schedule, room := formatClassScheduleAndRoom(classes[i].Events, args.Timezone)
+		classes[i].Schedule = schedule
+		if room != "" {
+			classes[i].Room = room
+		}
+		classes[i].AttendanceRate = attendanceByClass[classes[i].ID]
+	}
+
+	return classes, nil
+}
+
+func formatClassScheduleAndRoom(events []models.ProgramClassEvent, timezone string) (string, string) {
+	var event *models.ProgramClassEvent
+	if len(events) > 0 {
+		event = &events[0]
+	}
+	if event == nil {
+		return "", ""
+	}
+
+	roomName := ""
+	if event.RoomRef != nil {
+		roomName = event.RoomRef.Name
+	}
+
+	rule, err := event.GetRRuleWithTimezone(timezone)
+	if err != nil {
+		return "", roomName
+	}
+	opts := rule.Options
+	if opts.Dtstart.IsZero() {
+		return "", roomName
+	}
+
+	loc := time.UTC
+	if timezone != "" {
+		if tz, err := time.LoadLocation(timezone); err == nil {
+			loc = tz
+		}
+	}
+
+	startTime := opts.Dtstart.In(loc)
+	duration, err := time.ParseDuration(event.Duration)
+	if err != nil {
+		return "", roomName
+	}
+	endTime := startTime.Add(duration)
+
+	days := formatWeekdays(opts.Byweekday, startTime.Weekday())
+	timeRange := fmt.Sprintf("%s - %s", startTime.Format("3:04 PM"), endTime.Format("3:04 PM"))
+	if len(days) == 0 {
+		return timeRange, roomName
+	}
+	return fmt.Sprintf("%s • %s", strings.Join(days, ", "), timeRange), roomName
+}
+
+func formatWeekdays(days []rrule.Weekday, fallback time.Weekday) []string {
+	if len(days) == 0 {
+		return []string{fullWeekdayName(fallback)}
+	}
+	unique := make(map[int]rrule.Weekday, len(days))
+	for _, day := range days {
+		unique[day.Day()] = day
+	}
+	ordered := make([]rrule.Weekday, 0, len(unique))
+	for _, day := range unique {
+		ordered = append(ordered, day)
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		return ordered[i].Day() < ordered[j].Day()
+	})
+	names := make([]string, 0, len(ordered))
+	for _, day := range ordered {
+		names = append(names, fullWeekdayNameFromRRule(day.Day()))
+	}
+	return names
+}
+
+func fullWeekdayName(day time.Weekday) string {
+	switch day {
+	case time.Monday:
+		return "Monday"
+	case time.Tuesday:
+		return "Tuesday"
+	case time.Wednesday:
+		return "Wednesday"
+	case time.Thursday:
+		return "Thursday"
+	case time.Friday:
+		return "Friday"
+	case time.Saturday:
+		return "Saturday"
+	case time.Sunday:
+		return "Sunday"
+	default:
+		return ""
+	}
+}
+
+func fullWeekdayNameFromRRule(day int) string {
+	switch day {
+	case 0:
+		return "Monday"
+	case 1:
+		return "Tuesday"
+	case 2:
+		return "Wednesday"
+	case 3:
+		return "Thursday"
+	case 4:
+		return "Friday"
+	case 5:
+		return "Saturday"
+	case 6:
+		return "Sunday"
+	default:
+		return ""
+	}
 }

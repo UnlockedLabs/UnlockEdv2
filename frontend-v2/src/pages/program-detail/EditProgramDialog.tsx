@@ -327,12 +327,12 @@ export default function EditProgramDialog({
                         <Button
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="border-gray-300"
+                            className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                         >
                             Cancel
                         </Button>
                         <Button
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-[#556830] hover:bg-[#203622] text-white focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                             onClick={() => void handleSave()}
                             disabled={saving}
                         >

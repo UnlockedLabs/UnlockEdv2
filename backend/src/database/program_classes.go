@@ -241,12 +241,12 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	query := db.WithContext(args.Ctx).Table("program_classes ps").
 		Select(`ps.*,
 		fac.name as facility_name,
-		count(pse.id) as enrolled
+		count(CASE WHEN pse.enrollment_status = 'Enrolled' THEN 1 END) as enrolled,
+		count(CASE WHEN pse.enrollment_status = 'Completed' THEN 1 END) as completed
 		`).
 		Joins(`join facilities fac on fac.id = ps.facility_id
 			AND fac.deleted_at IS NULL`).
-		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id
-			and enrollment_status = 'Enrolled'`). //TODO Enrolled may change here
+		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id`). //TODO Enrollment statuses may change here
 		Where(`ps.program_id = ?
 			and ps.facility_id = ?`, id, args.FacilityID).
 		Group("ps.id,fac.name")
@@ -265,7 +265,12 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		classIDs = append(classIDs, detail.ID)
 	}
 	events := []models.ProgramClassEvent{}
-	if err := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id IN (?)", classIDs).Find(&events).Error; err != nil {
+	if err := db.Model(&models.ProgramClassEvent{}).
+		Preload("RoomRef").
+		Preload("Overrides").
+		Preload("Overrides.RoomRef").
+		Where("class_id IN (?)", classIDs).
+		Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 	eventMap := make(map[uint][]models.ProgramClassEvent)

@@ -529,3 +529,49 @@ func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID i
 	}
 	return attendanceRate, nil
 }
+
+func (db *DB) GetCumulativeAttendanceRatesForClasses(ctx context.Context, classIDs []uint) (map[uint]float64, error) {
+	if len(classIDs) == 0 {
+		return map[uint]float64{}, nil
+	}
+	today := time.Now().Format("2006-01-02")
+	sql := `
+	WITH attendance_credits AS (
+		SELECT
+			pce.class_id,
+			CASE
+				WHEN pcea.attendance_status = 'present' THEN 1.0
+				WHEN pcea.attendance_status = 'partial' THEN LEAST(
+					COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric /
+					NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0),
+					1
+				)
+				ELSE 0
+			END as credit
+		FROM program_class_event_attendance pcea
+		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
+		WHERE pce.class_id IN ? AND pcea.date <= ?
+	)
+	SELECT class_id,
+		COALESCE(
+			SUM(credit) * 100.0 / NULLIF(COUNT(*), 0),
+			0
+		) as attendance_percentage
+	FROM attendance_credits
+	GROUP BY class_id`
+
+	type row struct {
+		ClassID         uint    `gorm:"column:class_id"`
+		AttendanceRate float64 `gorm:"column:attendance_percentage"`
+	}
+	rows := []row{}
+	if err := db.WithContext(ctx).Raw(sql, classIDs, today).Scan(&rows).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program_class_event_attendance")
+	}
+
+	out := make(map[uint]float64, len(classIDs))
+	for _, r := range rows {
+		out[r.ClassID] = r.AttendanceRate
+	}
+	return out, nil
+}
