@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 import { toast } from 'sonner';
 import API from '@/api/api';
@@ -41,7 +41,7 @@ interface EditProgramFormData {
     program_types: ProgramType[];
     credit_types: CreditType[];
     funding_type: FundingType;
-    is_active: boolean;
+    status: 'Available' | 'Inactive' | 'Archived';
 }
 
 interface EditProgramDialogProps {
@@ -51,13 +51,18 @@ interface EditProgramDialogProps {
 }
 
 function buildInitialFormData(program: ProgramOverview): EditProgramFormData {
+    const status = program.archived_at
+        ? 'Archived'
+        : program.is_active
+          ? 'Available'
+          : 'Inactive';
     return {
         name: program.name,
         description: program.description,
         program_types: program.program_types.map((pt) => pt.program_type),
         credit_types: program.credit_types.map((ct) => ct.credit_type),
         funding_type: program.funding_type,
-        is_active: program.is_active
+        status
     };
 }
 
@@ -70,6 +75,11 @@ export default function EditProgramDialog({
         buildInitialFormData(program)
     );
     const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (!open) return;
+        setFormData(buildInitialFormData(program));
+    }, [open, program]);
 
     function handleCheckboxToggle<T>(
         field: 'program_types' | 'credit_types',
@@ -99,17 +109,38 @@ export default function EditProgramDialog({
                 (ct): ProgramCreditType => ({ credit_type: ct })
             ),
             funding_type: formData.funding_type,
-            is_active: formData.is_active
+            is_active: formData.status === 'Available'
         };
-        const resp = await API.put('programs/' + program.id, payload);
-        setSaving(false);
+        const resp = await API.patch('programs/' + program.id, payload);
         if (resp.success) {
+            if (formData.status === 'Archived' && !program.archived_at) {
+                const archiveResp = await API.patch<
+                    {
+                        updated?: boolean;
+                        message?: string;
+                    },
+                    Record<string, string>
+                >(`programs/${program.id}/status`, {
+                    archived_at: new Date().toISOString()
+                });
+                const archiveUpdated =
+                    !Array.isArray(archiveResp.data) &&
+                    archiveResp.data?.updated !== false;
+                if (!archiveResp.success || !archiveUpdated) {
+                    toast.error(
+                        archiveResp.message || 'Unable to archive program'
+                    );
+                    setSaving(false);
+                    return;
+                }
+            }
             toast.success('Program updated successfully');
             await mutate('/api/programs/' + program.id);
             onOpenChange(false);
         } else {
             toast.error(resp.message || 'Failed to update program');
         }
+        setSaving(false);
     }
 
     return (
@@ -124,16 +155,17 @@ export default function EditProgramDialog({
 
                 <div className="space-y-6">
                     <div>
-                        <h4 className="text-sm text-foreground mb-3">
+                        <h4 className="text-sm text-gray-700 mb-3">
                             Basic Information
                         </h4>
                         <div className="space-y-4">
                             <div>
                                 <Label htmlFor="programName">
-                                    Program Name
+                                    Program Name *
                                 </Label>
                                 <Input
                                     id="programName"
+                                    placeholder="Program name"
                                     value={formData.name}
                                     onChange={(e) =>
                                         setFormData({
@@ -141,6 +173,7 @@ export default function EditProgramDialog({
                                             name: e.target.value
                                         })
                                     }
+                                    className="focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                 />
                             </div>
                             <div>
@@ -149,6 +182,7 @@ export default function EditProgramDialog({
                                 </Label>
                                 <Textarea
                                     id="programDescription"
+                                    placeholder="Brief description of the program"
                                     value={formData.description}
                                     onChange={(e) =>
                                         setFormData({
@@ -157,18 +191,19 @@ export default function EditProgramDialog({
                                         })
                                     }
                                     rows={3}
+                                    className="focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-border">
-                        <h4 className="text-sm text-foreground mb-3">
+                    <div className="pt-4 border-t border-gray-200">
+                        <h4 className="text-sm text-gray-700 mb-3">
                             Categorization
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Program Types</Label>
+                                <Label>Category (Program Types) *</Label>
                                 <div className="mt-2 space-y-2">
                                     {ALL_PROGRAM_TYPES.map((type) => (
                                         <label
@@ -176,6 +211,7 @@ export default function EditProgramDialog({
                                             className="flex items-center gap-2 cursor-pointer"
                                         >
                                             <Checkbox
+                                                className="border-gray-300 data-[state=checked]:bg-[#556830] data-[state=checked]:border-[#556830] focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                                 checked={formData.program_types.includes(
                                                     type
                                                 )}
@@ -187,7 +223,7 @@ export default function EditProgramDialog({
                                                     )
                                                 }
                                             />
-                                            <span className="text-sm text-foreground">
+                                            <span className="text-sm text-gray-700">
                                                 {type.replace(/_/g, ' ')}
                                             </span>
                                         </label>
@@ -196,7 +232,7 @@ export default function EditProgramDialog({
                             </div>
 
                             <div>
-                                <Label>Credit Types</Label>
+                                <Label>Credit Types *</Label>
                                 <div className="mt-2 space-y-2">
                                     {ALL_CREDIT_TYPES.map((type) => (
                                         <label
@@ -204,6 +240,7 @@ export default function EditProgramDialog({
                                             className="flex items-center gap-2 cursor-pointer"
                                         >
                                             <Checkbox
+                                                className="border-gray-300 data-[state=checked]:bg-[#556830] data-[state=checked]:border-[#556830] focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                                 checked={formData.credit_types.includes(
                                                     type
                                                 )}
@@ -215,7 +252,7 @@ export default function EditProgramDialog({
                                                     )
                                                 }
                                             />
-                                            <span className="text-sm text-foreground">
+                                            <span className="text-sm text-gray-700">
                                                 {type}
                                             </span>
                                         </label>
@@ -223,8 +260,8 @@ export default function EditProgramDialog({
                                 </div>
                             </div>
 
-                            <div>
-                                <Label>Funding Type</Label>
+                            <div className="col-span-2">
+                                <Label>Funding Types *</Label>
                                 <Select
                                     value={formData.funding_type}
                                     onValueChange={(value) =>
@@ -234,8 +271,8 @@ export default function EditProgramDialog({
                                         })
                                     }
                                 >
-                                    <SelectTrigger className="mt-2">
-                                        <SelectValue />
+                                    <SelectTrigger className="mt-2 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50">
+                                        <SelectValue placeholder="Select funding type" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {ALL_FUNDING_TYPES.map((ft) => (
@@ -247,33 +284,39 @@ export default function EditProgramDialog({
                                 </Select>
                             </div>
 
-                            <div>
-                                <Label>Status</Label>
+                            <div className="col-span-2">
+                                <Label>Program Availability *</Label>
                                 <Select
-                                    value={
-                                        formData.is_active
-                                            ? 'active'
-                                            : 'inactive'
-                                    }
+                                    value={formData.status}
                                     onValueChange={(value) =>
                                         setFormData({
                                             ...formData,
-                                            is_active: value === 'active'
+                                            status: value as EditProgramFormData['status']
                                         })
                                     }
+                                    disabled={!!program.archived_at}
                                 >
-                                    <SelectTrigger className="mt-2">
-                                        <SelectValue />
+                                    <SelectTrigger className="mt-2 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50">
+                                        <SelectValue placeholder="Select program status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">
-                                            Active
+                                        <SelectItem value="Available">
+                                            Available
                                         </SelectItem>
-                                        <SelectItem value="inactive">
+                                        <SelectItem value="Inactive">
                                             Inactive
+                                        </SelectItem>
+                                        <SelectItem value="Archived">
+                                            Archived
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Available programs can accept new class
+                                    enrollments. Inactive programs are
+                                    temporarily paused. Archived programs are no
+                                    longer offered.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -288,7 +331,7 @@ export default function EditProgramDialog({
                         </Button>
                         <Button
                             className="bg-[#556830] hover:bg-[#203622] text-white"
-                            onClick={handleSave}
+                            onClick={void handleSave}
                             disabled={saving}
                         >
                             {saving ? 'Saving...' : 'Save Changes'}

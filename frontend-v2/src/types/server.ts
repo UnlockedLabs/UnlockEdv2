@@ -1,3 +1,5 @@
+import type { ActivityHistoryAction } from './insights';
+
 export interface PaginationMeta {
     total: number;
     current_page: number;
@@ -35,4 +37,12 @@ export interface ChangeLogEntry {
     created_at: string;
     user_id: number;
     username: string;
+    action?: ActivityHistoryAction;
+    user_username?: string;
+    admin_username?: string;
+    facility_name?: string;
+    program_classes_history_id?: number;
+    attendance_status?: string;
+    class_name?: string;
+    session_date?: string;
 }

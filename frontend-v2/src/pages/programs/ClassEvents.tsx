@@ -9,7 +9,7 @@ import {
     ServerResponseOne
 } from '@/types';
 import { ClassEventInstance } from '@/types/events';
-import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
 import { StatusBadge } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import {

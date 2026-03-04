@@ -15,7 +15,7 @@ import {
     FilterResidentNames
 } from '@/types';
 import { getEnrollmentStatusColor } from '@/lib/formatters';
-import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
 import { ConfirmDialog, FormModal } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

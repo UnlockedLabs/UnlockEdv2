@@ -155,6 +155,7 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
         if (resp.success) {
             program = resp.data as ProgramOverview;
             breadcrumbs = [
+                { label: 'Dashboard', href: '/dashboard' },
                 { label: 'Programs', href: '/programs' },
                 { label: program.name }
             ];
