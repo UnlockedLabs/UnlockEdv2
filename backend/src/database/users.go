@@ -45,7 +45,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	validUserOrderByFields := []string{"name_last", "created_at", "last_login"}
+	validUserOrderByFields := []string{"name_last", "created_at", "last_login", "doc_id", "username"}
 	if !slices.Contains(validUserOrderByFields, args.OrderBy) {
 		args.OrderBy = "name_last"
 	}
@@ -63,6 +63,25 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	return users, nil
+}
+
+type UserStats struct {
+	Total    int64 `json:"total"`
+	Active   int64 `json:"active"`
+	Inactive int64 `json:"inactive"`
+}
+
+func (db *DB) GetUserStats(ctx context.Context, facilityID uint) (*UserStats, error) {
+	var stats UserStats
+	tx := db.WithContext(ctx).Model(&models.User{}).Where("role = ? AND facility_id = ?", models.Student, facilityID)
+	if err := tx.Count(&stats.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	if err := tx.Where("deactivated_at IS NULL").Count(&stats.Active).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	stats.Inactive = stats.Total - stats.Active
+	return &stats, nil
 }
 
 func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int) (*models.User, error) {
