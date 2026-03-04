@@ -46,11 +46,32 @@ import {
 } from '@/components/ui/select';
 import { Pagination } from '@/components/Pagination';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+    EditResidentDialog,
+    ResetPasswordConfirmDialog,
+    ResetPasswordResultDialog,
+    DeactivateDialog,
+    DeleteDialog,
+    TransferDialog
+} from '@/components/residents/ResidentModals';
+import {
     Search,
     Plus,
     Upload,
     ArrowUpDown,
-    Users as UsersIcon
+    Users as UsersIcon,
+    Edit,
+    KeyRound,
+    MoreVertical,
+    UserX,
+    Trash2,
+    ArrowRightLeft
 } from 'lucide-react';
 
 type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
@@ -83,6 +104,14 @@ export default function StudentManagement() {
     const [sortField, setSortField] = useState<SortField>('name_last');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     const [addDialogOpen, setAddDialogOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [editOpen, setEditOpen] = useState(false);
+    const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+    const [resetResultOpen, setResetResultOpen] = useState(false);
+    const [tempPassword, setTempPassword] = useState('');
+    const [deactivateOpen, setDeactivateOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [transferOpen, setTransferOpen] = useState(false);
 
     const facilityParam =
         showFacilityColumn && facilityFilter !== 'all'
@@ -156,6 +185,23 @@ export default function StudentManagement() {
                 ToastState.error
             );
         }
+    };
+
+    const handleMutate = () => {
+        void mutate();
+    };
+
+    const openAction = (
+        targetUser: User,
+        setter: (open: boolean) => void
+    ) => {
+        setSelectedUser(targetUser);
+        setter(true);
+    };
+
+    const handleResetSuccess = (password: string) => {
+        setTempPassword(password);
+        setResetResultOpen(true);
     };
 
     const SortableHeader = ({
@@ -408,9 +454,90 @@ export default function StudentManagement() {
                                                         No actions available
                                                     </span>
                                                 ) : (
-                                                    <span className="text-sm text-muted-foreground">
-                                                        --
-                                                    </span>
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                openAction(
+                                                                    resident,
+                                                                    setEditOpen
+                                                                )
+                                                            }
+                                                        >
+                                                            <Edit className="size-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                openAction(
+                                                                    resident,
+                                                                    setResetConfirmOpen
+                                                                )
+                                                            }
+                                                        >
+                                                            <KeyRound className="size-4" />
+                                                        </Button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                >
+                                                                    <MoreVertical className="size-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        openAction(
+                                                                            resident,
+                                                                            setDeactivateOpen
+                                                                        )
+                                                                    }
+                                                                    className="text-orange-600"
+                                                                >
+                                                                    <UserX className="size-4 mr-2" />
+                                                                    Deactivate
+                                                                    Account
+                                                                </DropdownMenuItem>
+                                                                {showFacilityColumn && (
+                                                                    <>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem
+                                                                            onClick={() =>
+                                                                                openAction(
+                                                                                    resident,
+                                                                                    setTransferOpen
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <ArrowRightLeft className="size-4 mr-2" />
+                                                                            Transfer
+                                                                            Resident
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        openAction(
+                                                                            resident,
+                                                                            setDeleteOpen
+                                                                        )
+                                                                    }
+                                                                    className="text-red-600"
+                                                                >
+                                                                    <Trash2 className="size-4 mr-2" />
+                                                                    Delete
+                                                                    Resident
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -558,6 +685,52 @@ export default function StudentManagement() {
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Action Dialogs */}
+                {selectedUser && (
+                    <>
+                        <EditResidentDialog
+                            open={editOpen}
+                            onOpenChange={setEditOpen}
+                            resident={selectedUser}
+                            onSuccess={handleMutate}
+                        />
+                        <ResetPasswordConfirmDialog
+                            open={resetConfirmOpen}
+                            onOpenChange={setResetConfirmOpen}
+                            resident={selectedUser}
+                            onSuccess={handleResetSuccess}
+                        />
+                        <ResetPasswordResultDialog
+                            open={resetResultOpen}
+                            onOpenChange={setResetResultOpen}
+                            residentName={`${selectedUser.name_first} ${selectedUser.name_last}`}
+                            tempPassword={tempPassword}
+                        />
+                        <DeactivateDialog
+                            open={deactivateOpen}
+                            onOpenChange={setDeactivateOpen}
+                            resident={selectedUser}
+                            onSuccess={handleMutate}
+                        />
+                        <DeleteDialog
+                            open={deleteOpen}
+                            onOpenChange={setDeleteOpen}
+                            resident={selectedUser}
+                            onSuccess={handleMutate}
+                        />
+                        {showFacilityColumn && (
+                            <TransferDialog
+                                open={transferOpen}
+                                onOpenChange={setTransferOpen}
+                                resident={selectedUser}
+                                facilities={facilities}
+                                onSuccess={handleMutate}
+                            />
+                        )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }
