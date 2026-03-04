@@ -946,7 +946,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
                 </h3>
 
                 <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Description</p>
+                    <p className="text-sm text-gray-600">Description</p>
                     <p className="text-foreground">
                         {program.description || 'No description provided.'}
                     </p>
@@ -954,7 +954,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
 
                 <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-gray-600">
                             Program Types
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -973,7 +973,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-gray-600">
                             Credit Types
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -988,7 +988,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-gray-600">
                             Funding Types
                         </p>
                         <p className="text-foreground">
@@ -998,7 +998,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
                         </p>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Status</p>
+                        <p className="text-sm text-gray-600">Status</p>
                         <Badge
                             variant="outline"
                             className={

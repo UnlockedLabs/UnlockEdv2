@@ -190,7 +190,7 @@ export default function EditProgramDialog({
                                             description: e.target.value
                                         })
                                     }
-                                    rows={3}
+                                    rows={2}
                                     className="focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                 />
                             </div>
@@ -211,7 +211,8 @@ export default function EditProgramDialog({
                                             className="flex items-center gap-2 cursor-pointer"
                                         >
                                             <Checkbox
-                                                className="border-gray-300 data-[state=checked]:bg-[#556830] data-[state=checked]:border-[#556830] focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
+                                                size="sm"
+                                                className="rounded border-gray-400 bg-white data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                                 checked={formData.program_types.includes(
                                                     type
                                                 )}
@@ -240,7 +241,8 @@ export default function EditProgramDialog({
                                             className="flex items-center gap-2 cursor-pointer"
                                         >
                                             <Checkbox
-                                                className="border-gray-300 data-[state=checked]:bg-[#556830] data-[state=checked]:border-[#556830] focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
+                                                size="sm"
+                                                className="rounded border-gray-400 bg-white data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 data-[state=checked]:text-white focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                                                 checked={formData.credit_types.includes(
                                                     type
                                                 )}
@@ -296,7 +298,7 @@ export default function EditProgramDialog({
                                     }
                                     disabled={!!program.archived_at}
                                 >
-                                    <SelectTrigger className="mt-2 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50">
+                                    <SelectTrigger className="mt-0 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50">
                                         <SelectValue placeholder="Select program status" />
                                     </SelectTrigger>
                                     <SelectContent>
