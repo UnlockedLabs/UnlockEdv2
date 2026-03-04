@@ -2,7 +2,14 @@ import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { Plus, Edit, MoreVertical, Trash2, AlertCircle } from 'lucide-react';
+import {
+    Plus,
+    Edit,
+    MoreVertical,
+    Trash2,
+    AlertCircle,
+    BookOpen
+} from 'lucide-react';
 import {
     AcademicCapIcon,
     WrenchScrewdriverIcon,
@@ -405,7 +412,7 @@ export default function ProgramOverviewDashboard() {
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-6">
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="bg-white border border-gray-200 px-1 py-1 h-auto mb-7 rounded-xl shadow-sm gap-1.5">
+                        <TabsList className="bg-white border border-gray-200 p-1 h-auto mb-2 gap-1">
                             <TabsTrigger
                                 value="classes"
                                 className={TAB_TRIGGER_CLASSES}
@@ -445,11 +452,11 @@ export default function ProgramOverviewDashboard() {
                             />
                         </TabsContent>
 
-                        <TabsContent value="details">
+                        <TabsContent value="details" className="mt-4">
                             <ProgramDetailsTab program={program} />
                         </TabsContent>
 
-                        <TabsContent value="performance">
+                        <TabsContent value="performance" className="mt-4">
                             <PerformanceTab
                                 totalEnrolled={totalEnrolled}
                                 totalCapacity={totalCapacity}
@@ -459,7 +466,7 @@ export default function ProgramOverviewDashboard() {
                             />
                         </TabsContent>
 
-                        <TabsContent value="history">
+                        <TabsContent value="history" className="mt-4">
                             <AuditHistoryTab entries={history} />
                         </TabsContent>
                     </Tabs>
@@ -696,21 +703,25 @@ function ClassesTab({
                     Loading classes...
                 </p>
             ) : classes.length === 0 ? (
-                <p className="text-gray-600 text-center py-8">
-                    No classes found for this program.
-                </p>
+                <div className="p-12 text-center text-gray-500 bg-white rounded-lg border border-gray-200">
+                    <BookOpen className="size-12 mx-auto mb-3 text-gray-300" />
+                    <p>No classes yet</p>
+                    <p className="text-sm mt-1">
+                        Create the first class for this program
+                    </p>
+                </div>
             ) : (
                 <div className="bg-white rounded-lg border border-gray-200">
                     {activeScheduledClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                            <div className="px-6 py-4 bg-gray-50">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Active &amp; Scheduled Classes (
                                     {activeScheduledClasses.length})
                                 </h3>
                             </div>
                             {activeScheduledClasses.map((cls) => (
-                                <ClassCard
+                                <ClassRow
                                     key={cls.id}
                                     cls={cls}
                                     onOpenStatusModal={onOpenStatusModal}
@@ -719,7 +730,9 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/dashboard`
                                         )
                                     }
-                                    className="rounded-none border-0 shadow-none hover:shadow-none"
+                                    className="hover:bg-[#E2E7EA]/50"
+                                    editableStatus
+                                    showEnrollment
                                 />
                             ))}
                         </div>
@@ -734,7 +747,7 @@ function ClassesTab({
                                 </h3>
                             </div>
                             {completedClasses.map((cls) => (
-                                <ClassCard
+                                <ClassRow
                                     key={cls.id}
                                     cls={cls}
                                     onOpenStatusModal={onOpenStatusModal}
@@ -743,7 +756,7 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/dashboard`
                                         )
                                     }
-                                    className="rounded-none border-0 shadow-none hover:shadow-none bg-gray-50/50"
+                                    className="hover:bg-gray-100 bg-gray-50/50"
                                 />
                             ))}
                         </div>
@@ -758,7 +771,7 @@ function ClassesTab({
                                 </h3>
                             </div>
                             {cancelledClasses.map((cls) => (
-                                <ClassCard
+                                <ClassRow
                                     key={cls.id}
                                     cls={cls}
                                     onOpenStatusModal={onOpenStatusModal}
@@ -767,7 +780,7 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/dashboard`
                                         )
                                     }
-                                    className="rounded-none border-0 shadow-none hover:shadow-none bg-gray-50/50"
+                                    className="hover:bg-gray-100 bg-gray-50/50"
                                 />
                             ))}
                         </div>
@@ -781,7 +794,7 @@ function ClassesTab({
                                 </h3>
                             </div>
                             {pausedClasses.map((cls) => (
-                                <ClassCard
+                                <ClassRow
                                     key={cls.id}
                                     cls={cls}
                                     onOpenStatusModal={onOpenStatusModal}
@@ -790,7 +803,8 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/dashboard`
                                         )
                                     }
-                                    className="rounded-none border-0 shadow-none hover:shadow-none bg-gray-50/50"
+                                    className="hover:bg-gray-100 bg-gray-50/50"
+                                    editableStatus
                                 />
                             ))}
                         </div>
@@ -801,96 +815,94 @@ function ClassesTab({
     );
 }
 
-function ClassCard({
+function ClassRow({
     cls,
     onOpenStatusModal,
     onClick,
-    className
+    className,
+    editableStatus,
+    showEnrollment
 }: {
     cls: Class;
     onOpenStatusModal: (cls: Class) => void;
     onClick: () => void;
     className?: string;
+    editableStatus?: boolean;
+    showEnrollment?: boolean;
 }) {
     const schedule = getClassSchedule(cls);
     const enrollPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
-    const isTerminal =
-        cls.status === SelectedClassStatus.Completed ||
-        cls.status === SelectedClassStatus.Cancelled;
 
-    const scheduleText = [
-        schedule.days.join(', '),
+    const scheduleParts = [
+        schedule.days.length > 0 ? schedule.days.join(', ') : '',
         schedule.startTime && schedule.endTime
             ? `${schedule.startTime} - ${schedule.endTime}`
             : ''
-    ]
-        .filter(Boolean)
-        .join('  ');
+    ].filter(Boolean);
+    const scheduleText = scheduleParts.join(' • ');
+    const metaItems = [cls.instructor_name, scheduleText, schedule.room].filter(
+        Boolean
+    );
 
     return (
-        <Card
+        <div
             className={cn(
-                'cursor-pointer transition-colors bg-white hover:bg-[#E2E7EA]/50',
-                className
+                'p-6 cursor-pointer transition-colors',
+                className ?? ''
             )}
             onClick={onClick}
         >
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-foreground">
-                                {cls.name}
-                            </h3>
-                            {isTerminal ? (
-                                <Badge
-                                    variant="outline"
-                                    className={getStatusColor(cls.status)}
-                                >
-                                    {cls.status}
-                                </Badge>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onOpenStatusModal(cls);
-                                    }}
-                                    className="inline-flex"
-                                >
-                                    <Badge
-                                        variant="outline"
-                                        className={cn(
-                                            getStatusColor(cls.status),
-                                            'cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5'
-                                        )}
-                                    >
-                                        {cls.status}
-                                        <Edit className="size-3" />
-                                    </Badge>
-                                </button>
-                            )}
-                        </div>
-                        {cls.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-1">
-                                {cls.description}
-                            </p>
+            <div className="flex items-start justify-between">
+                <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                        <h4 className="text-[#203622] hover:text-[#556830] transition-colors">
+                            {cls.name}
+                        </h4>
+                        {editableStatus ? (
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    getStatusColor(cls.status),
+                                    'cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5'
+                                )}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenStatusModal(cls);
+                                }}
+                            >
+                                {cls.status}
+                                <Edit className="size-3" />
+                            </Badge>
+                        ) : (
+                            <Badge
+                                variant="outline"
+                                className={getStatusColor(cls.status)}
+                            >
+                                {cls.status}
+                            </Badge>
                         )}
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                            {cls.instructor_name && (
-                                <span>{cls.instructor_name}</span>
-                            )}
-                            {scheduleText && <span>{scheduleText}</span>}
-                            {schedule.room && <span>{schedule.room}</span>}
-                        </div>
                     </div>
-                    <div className="shrink-0 w-40 text-right space-y-1">
-                        <div className="flex items-baseline justify-between">
-                            <span className="text-xs text-muted-foreground">
+                    {cls.description && (
+                        <p className="text-sm text-gray-600 mb-3">
+                            {cls.description}
+                        </p>
+                    )}
+                    {metaItems.length > 0 && (
+                        <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
+                            {metaItems.map((item, index) => (
+                                <span key={`${item}-${index}`}>{item}</span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                {showEnrollment && (
+                    <div className="ml-6 min-w-[200px]">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">
                                 Enrollment
                             </span>
-                            <span className="text-sm font-semibold text-foreground">
+                            <span className="text-sm text-[#203622]">
                                 {cls.enrolled} / {cls.capacity}
                             </span>
                         </div>
@@ -900,9 +912,9 @@ function ClassCard({
                             indicatorClassName="bg-[#556830]"
                         />
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -914,7 +926,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
           : 'Inactive';
 
     return (
-        <Card className="bg-background">
+        <Card className="bg-background p-0">
             <CardContent className="p-6 space-y-6">
                 <h3 className="text-[#203622] mb-6 font-normal">
                     Program Details
@@ -1014,7 +1026,7 @@ function PerformanceTab({
         activeClassCount > 0 ? Math.round(totalEnrolled / activeClassCount) : 0;
 
     return (
-        <Card className="bg-background">
+        <Card className="bg-background p-0">
             <CardContent className="p-6 space-y-4">
                 <h3 className="text-[#203622] mb-6 font-normal">
                     Performance Metrics
@@ -1070,7 +1082,7 @@ function PerformanceTab({
                             className="h-2"
                             indicatorClassName="bg-[#556830]"
                         />
-                        <p className="text-xs text-gray-500 mt-2"></p>
+                        <p className="text-xs text-gray-500 mt-2">Mock data</p>
                     </div>
                 </div>
             </CardContent>
@@ -1081,7 +1093,7 @@ function PerformanceTab({
 function AuditHistoryTab({ entries }: { entries: ChangeLogEntry[] }) {
     const { user } = useAuth();
     return (
-        <Card className="bg-background">
+        <Card className="bg-background p-0">
             <CardContent className="p-6 space-y-4">
                 <h3 className="text-[#203622] mb-6 font-normal">
                     Audit History
