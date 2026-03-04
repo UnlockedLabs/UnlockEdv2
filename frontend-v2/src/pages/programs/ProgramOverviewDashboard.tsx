@@ -310,7 +310,7 @@ export default function ProgramOverviewDashboard() {
                                             }}
                                             disabled={!!program.archived_at}
                                         >
-                                            <SelectTrigger className="w-[140px] h-9">
+                                            <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -325,7 +325,7 @@ export default function ProgramOverviewDashboard() {
                                     </div>
                                     <Button
                                         variant="outline"
-                                        className="border-gray-300 mt-5"
+                                        className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                                         onClick={() => setShowEditDialog(true)}
                                     >
                                         <Edit className="size-4 mr-2" />
