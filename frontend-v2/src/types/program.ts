@@ -154,6 +154,9 @@ export interface Class {
     events: ProgramClassEvent[];
     created_at: Date;
     program: Program;
+    schedule?: string;
+    room?: string;
+    attendance_rate?: number;
 }
 
 export interface MissingAttendanceItem {

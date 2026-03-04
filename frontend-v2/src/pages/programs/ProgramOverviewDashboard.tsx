@@ -29,7 +29,7 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import { getClassSchedule, getStatusColor } from '@/lib/formatters';
+import { getStatusColor } from '@/lib/formatters';
 import {
     programTypeColors,
     TAB_TRIGGER_CLASSES
@@ -675,7 +675,7 @@ function ClassesTab({
     );
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-6">
             <div className="flex items-center justify-between mt-4">
                 <div>
                     <h2 className="text-[#203622]">Classes</h2>
@@ -709,6 +709,9 @@ function ClassesTab({
                         embedded
                     />
                 </div>
+            )}
+            {showCreateForm && (
+                <div className="mt-5 bg-transparent" aria-hidden="true" />
             )}
 
             {loading ? (
@@ -843,20 +846,40 @@ function ClassRow({
     editableStatus?: boolean;
     showEnrollment?: boolean;
 }) {
-    const schedule = getClassSchedule(cls);
     const enrollPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
 
-    const scheduleParts = [
-        schedule.days.length > 0 ? schedule.days.join(', ') : '',
-        schedule.startTime && schedule.endTime
-            ? `${schedule.startTime} - ${schedule.endTime}`
-            : ''
-    ].filter(Boolean);
-    const scheduleText = scheduleParts.join(' • ');
-    const metaItems = [cls.instructor_name, scheduleText, schedule.room].filter(
-        Boolean
+    const scheduleText = String(cls.schedule ?? '');
+    const roomText = String(cls.room ?? '');
+    const metaItems = [cls.instructor_name, scheduleText, roomText].filter(
+        (item): item is string => Boolean(item)
     );
+    const attendanceRate =
+        typeof cls.attendance_rate === 'number'
+            ? Math.round(cls.attendance_rate)
+            : null;
+    const attendanceClass =
+        attendanceRate !== null
+            ? attendanceRate >= 85
+                ? 'text-[#556830]'
+                : attendanceRate >= 70
+                  ? 'text-[#F1B51C]'
+                  : 'text-gray-700'
+            : 'text-gray-500';
+    const showCompletion = cls.status === SelectedClassStatus.Completed;
+    const completionBase = cls.completed + cls.enrolled;
+    const completionRate =
+        showCompletion && completionBase > 0
+            ? Math.round((cls.completed / completionBase) * 100)
+            : null;
+    const completionClass =
+        completionRate !== null
+            ? completionRate >= 85
+                ? 'text-[#556830]'
+                : completionRate >= 70
+                  ? 'text-[#F1B51C]'
+                  : 'text-gray-700'
+            : 'text-gray-500';
 
     return (
         <div
@@ -908,6 +931,30 @@ function ClassRow({
                             ))}
                         </div>
                     )}
+                    <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-gray-600">Attendance:</span>
+                            <span className={`font-medium ${attendanceClass}`}>
+                                {attendanceRate !== null
+                                    ? `${attendanceRate}%`
+                                    : '—'}
+                            </span>
+                        </div>
+                        {showCompletion && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-600">
+                                    Completion:
+                                </span>
+                                <span
+                                    className={`font-medium ${completionClass}`}
+                                >
+                                    {completionRate !== null
+                                        ? `${completionRate}%`
+                                        : '—'}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 {showEnrollment && (
                     <div className="ml-6 min-w-[200px]">
@@ -954,9 +1001,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
 
                 <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <p className="text-sm text-gray-600">
-                            Program Types
-                        </p>
+                        <p className="text-sm text-gray-600">Program Types</p>
                         <div className="flex flex-wrap gap-1.5">
                             {program.program_types?.map((pt) => (
                                 <span
@@ -973,9 +1018,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-gray-600">
-                            Credit Types
-                        </p>
+                        <p className="text-sm text-gray-600">Credit Types</p>
                         <div className="flex flex-wrap gap-2">
                             {program.credit_types?.map((ct) => (
                                 <span
@@ -988,9 +1031,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-sm text-gray-600">
-                            Funding Types
-                        </p>
+                        <p className="text-sm text-gray-600">Funding Types</p>
                         <p className="text-foreground">
                             {program.funding_type
                                 ? formatEnum(String(program.funding_type))
