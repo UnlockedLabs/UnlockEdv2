@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ChangeLogEntry } from '@/types';
 import { parseRRule } from '../helperFunctions';
 
@@ -25,76 +26,148 @@ function formatAttendanceStatus(status: string): string {
 export function formatHistoryEntry(
     entry: ChangeLogEntry,
     timezone?: string
-): string | null {
+): React.ReactNode | null {
     const adminName = entry.admin_username ?? entry.username ?? '';
     const userName = entry.user_username ?? entry.username ?? '';
     const newValue = entry.new_value ?? '';
     const oldValue = entry.old_value ?? '';
     const safeTimezone = timezone ?? 'UTC';
+    const emphasize = (value: string) =>
+        React.createElement('span', { className: 'font-medium' }, value);
 
     const getProgramClassesHistoryEventText = () => {
-        let text;
+        let text: React.ReactNode;
         switch (entry.field_name) {
             case 'capacity':
-                text = `Capacity set to ${newValue} by ${adminName}`;
+                text = [
+                    'Capacity set to ',
+                    emphasize(newValue),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'class':
-                text = `Class created by ${adminName}`;
+                text = ['Class created by ', emphasize(adminName)];
                 break;
             case 'program':
-                text = `Program created by ${adminName}`;
+                text = ['Program created by ', emphasize(adminName)];
                 break;
             case 'name':
-                text = `Name set to ${newValue} by ${adminName}`;
+                text = [
+                    'Name set to ',
+                    emphasize(newValue),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'instructor_name':
-                text = `Instructor name set to ${newValue} by ${adminName}`;
+                text = [
+                    'Instructor name set to ',
+                    emphasize(newValue),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'description':
-                text = `Description set by ${adminName}`;
+                text = ['Description set by ', emphasize(adminName)];
                 break;
             case 'status':
-                text = `Status set to ${newValue} by ${adminName}`;
+                text = [
+                    'Status set to ',
+                    emphasize(newValue),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'archived_at':
-                text = `Archived by ${adminName}`;
+                text = ['Archived by ', emphasize(adminName)];
                 break;
             case 'credit_hours':
-                text = `Credit hours set to ${newValue} by ${adminName}`;
+                text = [
+                    'Credit hours set to ',
+                    emphasize(newValue),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'funding_type':
-                text = `Funding type set to ${formatValue(newValue)} by ${adminName}`;
+                text = [
+                    'Funding type set to ',
+                    emphasize(formatValue(newValue)),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'is_active':
-                text = `Program set to ${
-                    newValue == 'true' ? 'available' : 'inactive'
-                } by ${adminName}`;
+                text = [
+                    'Program set to ',
+                    emphasize(newValue == 'true' ? 'available' : 'inactive'),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'credit_type':
-                text = `Credit type ${
-                    !newValue
-                        ? `${formatValue(oldValue)} removed `
-                        : `set to ${formatValue(newValue)}`
-                } by ${adminName}`;
+                text = !newValue
+                    ? [
+                          'Credit type ',
+                          emphasize(formatValue(oldValue)),
+                          ' removed by ',
+                          emphasize(adminName)
+                      ]
+                    : [
+                          'Credit type set to ',
+                          emphasize(formatValue(newValue)),
+                          ' by ',
+                          emphasize(adminName)
+                      ];
                 break;
             case 'program_type':
-                text = `Program type ${
-                    !newValue
-                        ? `${formatValue(oldValue)} removed `
-                        : `set to ${formatValue(newValue)}`
-                } by ${adminName}`;
+                text = !newValue
+                    ? [
+                          'Program type ',
+                          emphasize(formatValue(oldValue)),
+                          ' removed by ',
+                          emphasize(adminName)
+                      ]
+                    : [
+                          'Program type set to ',
+                          emphasize(formatValue(newValue)),
+                          ' by ',
+                          emphasize(adminName)
+                      ];
                 break;
             case 'event_cancelled':
-                text = `Event on ${parseRRule(newValue, safeTimezone)} cancelled by ${adminName}`;
+                text = [
+                    'Event on ',
+                    emphasize(parseRRule(newValue, safeTimezone)),
+                    ' cancelled by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'event_rescheduled':
-                text = `Event on ${parseRRule(oldValue, safeTimezone)} moved to ${newValue} by ${adminName}`;
+                text = [
+                    'Event on ',
+                    emphasize(parseRRule(oldValue, safeTimezone)),
+                    ' moved to ',
+                    emphasize(newValue),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'event_rescheduled_series':
-                text = `All future sessions rescheduled starting ${parseRRule(newValue, safeTimezone, true)} by ${adminName}`;
+                text = [
+                    'All future sessions rescheduled starting ',
+                    emphasize(parseRRule(newValue, safeTimezone, true)),
+                    ' by ',
+                    emphasize(adminName)
+                ];
                 break;
             case 'event_restored':
-                text = `${adminName} restored event on ${parseRRule(oldValue, safeTimezone)}`;
+                text = [
+                    emphasize(adminName),
+                    ' restored event on ',
+                    emphasize(parseRRule(oldValue, safeTimezone))
+                ];
         }
         return text;
     };
@@ -102,19 +175,27 @@ export function formatHistoryEntry(
     let introText;
     switch (entry.action) {
         case 'account_creation':
-            introText = `Account created by ${adminName}`;
+            introText = ['Account created by ', emphasize(adminName)];
             break;
         case 'user_deactivated':
-            introText = `Account deactivated by ${adminName}`;
+            introText = ['Account deactivated by ', emphasize(adminName)];
             break;
         case 'facility_transfer':
-            introText = `Account assigned to ${entry.facility_name} by ${adminName}`;
+            introText = [
+                'Account assigned to ',
+                emphasize(entry.facility_name ?? ''),
+                ' by ',
+                emphasize(adminName)
+            ];
             break;
         case 'set_password':
-            introText = `New password set by ${userName}`;
+            introText = ['New password set by ', emphasize(userName)];
             break;
         case 'reset_password':
-            introText = `Password reset initiated by ${adminName}`;
+            introText = [
+                'Password reset initiated by ',
+                emphasize(adminName)
+            ];
             break;
         case 'progclass_history':
             introText = getProgramClassesHistoryEventText();
@@ -129,7 +210,16 @@ export function formatHistoryEntry(
             const formattedStatus = entry.attendance_status
                 ? formatAttendanceStatus(entry.attendance_status)
                 : '';
-            introText = `Resident marked ${formattedStatus} - ${entry.class_name}, ${sessionDate} by ${adminName}`;
+            introText = [
+                'Resident marked ',
+                emphasize(formattedStatus),
+                ' - ',
+                emphasize(entry.class_name ?? ''),
+                ', ',
+                emphasize(sessionDate),
+                ' by ',
+                emphasize(adminName)
+            ];
             break;
         }
     }
