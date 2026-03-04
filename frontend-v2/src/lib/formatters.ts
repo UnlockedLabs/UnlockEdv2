@@ -26,6 +26,36 @@ export function formatDateTime(dateStr: string): string {
     return `${date} - ${time}`;
 }
 
+export function formatLastActive(dateStr?: string | null): string {
+    if (!dateStr) return '\u2014';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${Math.max(diffMins, 1)}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) {
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
 export function getVideoErrorMessage(video: Video): string | undefined {
     return video.video_download_attempts.find(
         (attempt) => attempt.error_message !== ''
