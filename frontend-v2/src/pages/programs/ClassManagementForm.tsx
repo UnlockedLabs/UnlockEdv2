@@ -286,7 +286,7 @@ export function ClassManagementFormInner({
     const focusRing =
         'focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50';
     const focusRingButton =
-        'focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-[1px] focus-visible:outline-none';
+        'focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-[1px] focus-visible:outline-hidden';
 
     function endTimeIsAfterStart(startTime: string, endTime: string): boolean {
         const [sh, sm] = startTime.split(':').map(Number);

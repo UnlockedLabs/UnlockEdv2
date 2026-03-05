@@ -290,7 +290,7 @@ export function RosterTab({ classId, enrollments }: RosterTabProps) {
                                         )}
                                         <Badge
                                             variant="outline"
-                                            className={`${getEnrollmentStatusColor(row.enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
+                                            className={`${getEnrollmentStatusColor(row.enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-xs hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
                                         >
                                             {row.enrollment.enrollment_status}
                                             <Edit className="size-3 text-current opacity-60" />
