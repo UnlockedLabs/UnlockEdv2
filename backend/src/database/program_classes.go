@@ -177,7 +177,6 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
-	existingID := existing.ID
 	models.UpdateStruct(existing, content)
 	existing.ID = existingID
 
