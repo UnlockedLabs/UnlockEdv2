@@ -99,6 +99,11 @@ export default function EditProgramDialog({
 
     async function handleSave() {
         setSaving(true);
+        const currentStatus = program.archived_at
+            ? 'Archived'
+            : program.is_active
+              ? 'Available'
+              : 'Inactive';
         const payload = {
             name: formData.name,
             description: formData.description,
@@ -113,15 +118,19 @@ export default function EditProgramDialog({
         };
         const resp = await API.patch('programs/' + program.id, payload);
         if (resp.success) {
-            if (formData.status === 'Archived' && !program.archived_at) {
+            if (
+                formData.status === 'Archived' &&
+                currentStatus !== 'Archived'
+            ) {
                 const archiveResp = await API.patch<
                     {
                         updated?: boolean;
                         message?: string;
                     },
-                    Record<string, string>
+                    Record<string, unknown>
                 >(`programs/${program.id}/status`, {
-                    archived_at: new Date().toISOString()
+                    archived_at: new Date().toISOString(),
+                    is_active: false
                 });
                 const archiveUpdated =
                     !Array.isArray(archiveResp.data) &&
@@ -129,6 +138,30 @@ export default function EditProgramDialog({
                 if (!archiveResp.success || !archiveUpdated) {
                     toast.error(
                         archiveResp.message || 'Unable to archive program'
+                    );
+                    setSaving(false);
+                    return;
+                }
+            } else if (
+                currentStatus === 'Archived' &&
+                formData.status !== 'Archived'
+            ) {
+                const unarchiveResp = await API.patch<
+                    {
+                        updated?: boolean;
+                        message?: string;
+                    },
+                    Record<string, unknown>
+                >(`programs/${program.id}/status`, {
+                    archived_at: null,
+                    is_active: formData.status === 'Available'
+                });
+                const unarchiveUpdated =
+                    !Array.isArray(unarchiveResp.data) &&
+                    unarchiveResp.data?.updated !== false;
+                if (!unarchiveResp.success || !unarchiveUpdated) {
+                    toast.error(
+                        unarchiveResp.message || 'Unable to update program status'
                     );
                     setSaving(false);
                     return;
@@ -296,7 +329,6 @@ export default function EditProgramDialog({
                                             status: value as EditProgramFormData['status']
                                         })
                                     }
-                                    disabled={!!program.archived_at}
                                 >
                                     <SelectTrigger className="mt-0 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50">
                                         <SelectValue placeholder="Select program status" />
