@@ -121,24 +121,46 @@ export default function ProgramDetail() {
 
     useEffect(() => {
         if (!program) return;
-        setProgramStatus(program.is_active ? 'Available' : 'Inactive');
+        setProgramStatus(
+            program.archived_at
+                ? 'Archived'
+                : program.is_active
+                  ? 'Available'
+                  : 'Inactive'
+        );
     }, [program]);
 
     async function handleProgramStatusChange(newStatus: string) {
         if (!program) return;
         setProgramStatus(newStatus);
+        const body: Record<string, unknown> = {};
+        if (newStatus === 'Archived') {
+            body.archived_at = new Date().toISOString();
+            body.is_active = false;
+        } else {
+            body.is_active = newStatus === 'Available';
+            if (program.archived_at) {
+                body.archived_at = null;
+            }
+        }
         const resp = await API.patch<
             { updated: boolean; message: string },
             Record<string, unknown>
-        >(`programs/${program.id}/status`, {
-            is_active: newStatus === 'Available'
-        });
-        if (resp.success) {
+        >(`programs/${program.id}/status`, body);
+        const statusUpdated =
+            !Array.isArray(resp.data) && resp.data?.updated !== false;
+        if (resp.success && statusUpdated) {
             toast.success('Program status updated');
             void mutate('/api/programs/' + programId);
         } else {
-            toast.error('Failed to update program status');
-            setProgramStatus(program.is_active ? 'Available' : 'Inactive');
+            toast.error(resp.message || 'Failed to update program status');
+            setProgramStatus(
+                program.archived_at
+                    ? 'Archived'
+                    : program.is_active
+                      ? 'Available'
+                      : 'Inactive'
+            );
         }
     }
 
@@ -228,6 +250,9 @@ export default function ProgramDetail() {
                                             </SelectItem>
                                             <SelectItem value="Inactive">
                                                 Inactive
+                                            </SelectItem>
+                                            <SelectItem value="Archived">
+                                                Archived
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
