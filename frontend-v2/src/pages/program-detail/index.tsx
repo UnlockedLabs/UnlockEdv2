@@ -306,7 +306,7 @@ export default function ProgramDetail() {
 
             <div className="px-6 py-6 bg-[#E2E7EA] min-h-[50vh]">
                 <Tabs defaultValue="classes" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 rounded-lg shadow-sm">
+                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 rounded-lg shadow-xs">
                         <TabsTrigger
                             value="classes"
                             className={TAB_TRIGGER_CLASSES}

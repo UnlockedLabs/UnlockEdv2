@@ -20,7 +20,7 @@ function ContentCard({ content }: { content: OpenContentItem }) {
 
     return (
         <div
-            className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border cursor-pointer hover:shadow-sm transition-shadow"
+            className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border cursor-pointer hover:shadow-xs transition-shadow"
             onClick={handleClick}
         >
             <img
