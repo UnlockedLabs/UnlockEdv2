@@ -458,7 +458,7 @@ export default function ProgramsPage() {
                         {/* Program Type Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-hidden focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -499,7 +499,7 @@ export default function ProgramsPage() {
                         {/* Status Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-hidden focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -657,7 +657,7 @@ export default function ProgramsPage() {
                                                                     });
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
+                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-hidden focus-visible:outline-hidden"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -704,7 +704,7 @@ export default function ProgramsPage() {
                                                                     });
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
+                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-hidden focus-visible:outline-hidden"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -858,7 +858,7 @@ export default function ProgramsPage() {
                                                                                 });
                                                                             }
                                                                         }}
-                                                                        className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
+                                                                        className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-hidden focus-visible:outline-hidden"
                                                                     />
                                                                 </span>
                                                                 <span className="text-sm text-gray-700">
