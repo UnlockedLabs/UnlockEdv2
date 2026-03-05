@@ -160,20 +160,28 @@ export default function ProgramOverviewDashboard() {
 
     async function handleProgramStatusChange(newStatus: string) {
         if (!program) return;
-        const body: Record<string, unknown> =
-            newStatus === 'Available'
-                ? { is_active: true }
-                : { is_active: false };
+        const body: Record<string, unknown> = {};
+        if (newStatus === 'Archived') {
+            body.archived_at = new Date().toISOString();
+            body.is_active = false;
+        } else {
+            body.is_active = newStatus === 'Available';
+            if (program.archived_at) {
+                body.archived_at = null;
+            }
+        }
 
         const resp = await API.patch<
             { updated: boolean; message: string },
             Record<string, unknown>
         >(`programs/${program.id}/status`, body);
-        if (resp.success) {
+        const statusUpdated =
+            !Array.isArray(resp.data) && resp.data?.updated !== false;
+        if (resp.success && statusUpdated) {
             toast.success('Program status updated');
             void mutateProgram();
         } else {
-            toast.error('Failed to update program status');
+            toast.error(resp.message || 'Failed to update program status');
         }
     }
 
@@ -311,7 +319,6 @@ export default function ProgramOverviewDashboard() {
                                                     value
                                                 );
                                             }}
-                                            disabled={!!program.archived_at}
                                         >
                                             <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
                                                 <SelectValue />
@@ -320,12 +327,15 @@ export default function ProgramOverviewDashboard() {
                                                 <SelectItem value="Available">
                                                     Available
                                                 </SelectItem>
-                                                <SelectItem value="Inactive">
-                                                    Inactive
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                            <SelectItem value="Inactive">
+                                                Inactive
+                                            </SelectItem>
+                                            <SelectItem value="Archived">
+                                                Archived
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                     <Button
                                         variant="outline"
                                         className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
