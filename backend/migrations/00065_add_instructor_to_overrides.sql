@@ -1,6 +1,6 @@
 -- +goose Up
-ALTER TABLE program_class_event_overrides
-  ADD COLUMN instructor_id INTEGER REFERENCES users(id);
+ALTER TABLE public.program_class_event_overrides
+  ADD COLUMN instructor_id INTEGER REFERENCES public.users(id);
 
 -- +goose Down
-ALTER TABLE program_class_event_overrides DROP COLUMN IF EXISTS instructor_id;
+ALTER TABLE public.program_class_event_overrides DROP COLUMN IF EXISTS instructor_id;
