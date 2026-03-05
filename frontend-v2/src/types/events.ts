@@ -102,6 +102,9 @@ export interface InstructorClassData {
     enrolledCount: number;
     upcomingSessions: number;
     cancelledSessions: number;
+    startTime: string;
+    duration: string;
+    room: string;
 }
 
 export interface BulkCancelSessionsResponse {

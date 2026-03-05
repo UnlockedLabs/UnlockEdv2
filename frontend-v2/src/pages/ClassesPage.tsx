@@ -90,8 +90,6 @@ export default function ClassesPage() {
         useState<number | null>(null);
     const [facilitySearch, setFacilitySearch] = useState('');
     const [programSearch, setProgramSearch] = useState('');
-    const [programPage, setProgramPage] = useState(1);
-    const [programPerPage, setProgramPerPage] = useState(10);
     const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
     const [showBulkCancel, setShowBulkCancel] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -109,7 +107,7 @@ export default function ClassesPage() {
         useSWR<ServerResponseMany<Class>>(classesUrl);
     const programsUrl =
         showCreateModal || showFacilityModal
-            ? `/api/programs?page=${programPage}&per_page=${programPerPage}${programSearch ? `&search=${encodeURIComponent(programSearch)}` : ''}${selectedFacilityForClass ? `&facility_id=${selectedFacilityForClass}` : ''}`
+            ? `/api/programs?per_page=100${programSearch ? `&search=${encodeURIComponent(programSearch)}` : ''}${selectedFacilityForClass ? `&facility_id=${selectedFacilityForClass}` : ''}`
             : null;
     const { data: programsResp } =
         useSWR<ServerResponseMany<Program>>(programsUrl);
@@ -156,7 +154,6 @@ export default function ClassesPage() {
     const handleProgramSelect = (programId: number) => {
         setShowCreateModal(false);
         setProgramSearch('');
-        setProgramPage(1);
         setSelectedFacilityForClass(null);
         navigate(`/programs/${programId}/classes`);
     };
@@ -456,7 +453,8 @@ export default function ClassesPage() {
                     <DialogHeader>
                         <DialogTitle>Create New Class</DialogTitle>
                         <DialogDescription>
-                            Which facility is this class for?
+                            Classes are organized within Programs. Which
+                            facility is this class for?
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 mt-4">
@@ -511,8 +509,7 @@ export default function ClassesPage() {
                     setShowCreateModal(open);
                     if (!open) {
                         setProgramSearch('');
-                        setProgramPage(1);
-                        setSelectedFacilityForClass(null);
+                                        setSelectedFacilityForClass(null);
                     }
                 }}
             >
@@ -562,8 +559,7 @@ export default function ClassesPage() {
                                 value={programSearch}
                                 onChange={(e) => {
                                     setProgramSearch(e.target.value);
-                                    setProgramPage(1);
-                                }}
+                                                            }}
                                 className="pl-10"
                             />
                         </div>
@@ -597,19 +593,6 @@ export default function ClassesPage() {
                                 ))
                             )}
                         </div>
-                        {programsResp?.meta && (
-                            <Pagination
-                                totalItems={programsResp.meta.total}
-                                itemsPerPage={programPerPage}
-                                currentPage={programPage}
-                                onPageChange={setProgramPage}
-                                onItemsPerPageChange={(val) => {
-                                    setProgramPerPage(val);
-                                    setProgramPage(1);
-                                }}
-                                itemLabel="programs"
-                            />
-                        )}
                     </div>
                 </DialogContent>
             </Dialog>

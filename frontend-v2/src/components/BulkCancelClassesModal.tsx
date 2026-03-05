@@ -33,7 +33,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { AlertCircle, Users, XCircle } from 'lucide-react';
+import { AlertCircle, Clock, MapPin, Users, XCircle } from 'lucide-react';
 
 interface BulkCancelClassesModalProps {
     open: boolean;
@@ -51,6 +51,9 @@ interface PreviewData {
         upcomingSessions: number;
         cancelledSessions: number;
         studentCount: number;
+        startTime: string;
+        duration: string;
+        room: string;
     }[];
 }
 
@@ -79,6 +82,24 @@ export function BulkCancelClassesModal({
         const list = instructorsResp?.data ?? [];
         return list.filter((i) => i.id !== 0);
     }, [instructorsResp]);
+
+    const previewUrl =
+        selectedInstructor && dateRange.start && dateRange.end
+            ? `/api/instructors/${selectedInstructor}/classes?start_date=${dateRange.start}&end_date=${dateRange.end}`
+            : null;
+    const { data: previewResp } =
+        useSWR<ServerResponseMany<InstructorClassData>>(previewUrl);
+    const inlinePreview = useMemo(() => {
+        const classes = previewResp?.data ?? [];
+        const totalSessions = classes.reduce(
+            (sum, c) => sum + c.upcomingSessions,
+            0
+        );
+        const totalClasses = classes.filter(
+            (c) => c.upcomingSessions > 0
+        ).length;
+        return { totalSessions, totalClasses };
+    }, [previewResp]);
 
     const isOther = reason === CancelEventReason['Other (add note)'];
     const finalReason = isOther ? customReason.trim() : reason;
@@ -148,7 +169,10 @@ export function BulkCancelClassesModal({
                 className: c.name,
                 upcomingSessions: c.upcomingSessions,
                 cancelledSessions: c.cancelledSessions,
-                studentCount: c.enrolledCount
+                studentCount: c.enrolledCount,
+                startTime: c.startTime,
+                duration: c.duration,
+                room: c.room
             }))
         });
         setShowConfirmation(true);
@@ -325,6 +349,21 @@ export function BulkCancelClassesModal({
                                 </div>
                             )}
 
+                            {selectedInstructor && dateRange.start && dateRange.end && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle className="size-4 text-blue-700 mt-0.5 flex-shrink-0" />
+                                        <div className="text-sm text-blue-900">
+                                            <strong>Preview:</strong> This will affect{' '}
+                                            <strong>{inlinePreview.totalSessions}</strong>{' '}
+                                            {inlinePreview.totalSessions === 1 ? 'session' : 'sessions'} across{' '}
+                                            <strong>{inlinePreview.totalClasses}</strong>{' '}
+                                            {inlinePreview.totalClasses === 1 ? 'class' : 'classes'}.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex gap-2 justify-end pt-4 border-t">
                                 <Button
                                     variant="outline"
@@ -417,45 +456,60 @@ export function BulkCancelClassesModal({
                             </div>
 
                             {preview && preview.classes.length > 0 && (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <Label className="text-sm font-medium text-[#203622]">
                                         Affected Classes (
                                         {preview.classCount})
                                     </Label>
-                                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-200">
-                                        {preview.classes
-                                            .filter(
-                                                (c) =>
-                                                    c.upcomingSessions > 0
-                                            )
-                                            .map((cls) => (
-                                                <div
-                                                    key={cls.classId}
-                                                    className="p-3 hover:bg-gray-50"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-[#203622] text-sm">
-                                                            {cls.className}
-                                                        </span>
-                                                        <Badge className="bg-red-100 text-red-700 border-red-300">
-                                                            {
-                                                                cls.upcomingSessions
-                                                            }{' '}
-                                                            {cls.upcomingSessions ===
-                                                            1
-                                                                ? 'session'
-                                                                : 'sessions'}
-                                                        </Badge>
+                                    <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-md">
+                                        <div className="divide-y divide-gray-200">
+                                            {preview.classes
+                                                .filter(
+                                                    (c) =>
+                                                        c.upcomingSessions > 0
+                                                )
+                                                .map((cls) => (
+                                                    <div
+                                                        key={cls.classId}
+                                                        className="p-4 hover:bg-gray-50"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <h4 className="font-medium text-[#203622]">
+                                                                {cls.className}
+                                                            </h4>
+                                                            <Badge className="bg-red-100 text-red-700 border-red-300 flex-shrink-0">
+                                                                {cls.upcomingSessions}{' '}
+                                                                {cls.upcomingSessions === 1
+                                                                    ? 'session'
+                                                                    : 'sessions'}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="space-y-1.5 text-xs text-gray-600">
+                                                            {cls.startTime && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Clock className="size-3.5 flex-shrink-0" />
+                                                                    <span>
+                                                                        {cls.startTime}
+                                                                        {cls.duration ? ` (${cls.duration})` : ''}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {cls.room && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <MapPin className="size-3.5 flex-shrink-0" />
+                                                                    <span>{cls.room}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Users className="size-3.5 flex-shrink-0" />
+                                                                <span>
+                                                                    {cls.studentCount} residents enrolled
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                                                        <Users className="size-3" />
-                                                        <span>
-                                                            {cls.studentCount}{' '}
-                                                            enrolled
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}

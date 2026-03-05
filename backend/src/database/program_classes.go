@@ -460,6 +460,28 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 		classes[i].SessionCount = totalSessions
 		classes[i].UpcomingSessions = upcomingSessions
 		classes[i].CancelledSessions = cancelledSessions
+
+		var event struct {
+			RecurrenceRule string `gorm:"column:recurrence_rule"`
+			Duration       string `gorm:"column:duration"`
+			RoomName       string `gorm:"column:room_name"`
+		}
+		db.Table("program_class_events pce").
+			Select("pce.recurrence_rule, pce.duration, COALESCE(r.name, '') as room_name").
+			Joins("LEFT JOIN rooms r ON r.id = pce.room_id").
+			Where("pce.class_id = ?", classes[i].ID).
+			Order("pce.created_at ASC").
+			Limit(1).
+			Scan(&event)
+
+		if event.RecurrenceRule != "" {
+			rule, rErr := rrule.StrToRRule(event.RecurrenceRule)
+			if rErr == nil {
+				classes[i].StartTime = rule.GetDTStart().Format("15:04")
+			}
+		}
+		classes[i].Duration = event.Duration
+		classes[i].Room = event.RoomName
 	}
 
 	return classes, nil
