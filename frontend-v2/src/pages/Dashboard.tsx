@@ -68,7 +68,7 @@ export default function Dashboard() {
     );
 
     return (
-        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] -mx-6 -my-4 min-h-screen overflow-x-hidden">
+        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-screen overflow-x-hidden">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {deptAdmin ? (
                     <DeptAdminView
