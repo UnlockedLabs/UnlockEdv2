@@ -344,7 +344,7 @@ export default function ProgramsPage() {
         : 'Supporting resident growth and rehabilitation';
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA] dark:bg-[#0a0a0a]">
+        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] dark:bg-[#0a0a0a]">
             <div className="max-w-7xl mx-auto px-6 pt-[34px] pb-8">
                 {/* Header */}
                 <div className="mb-8">

@@ -33,6 +33,10 @@ export default function AuthenticatedLayout() {
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
+    const isDashboard = location.pathname.startsWith('/dashboard');
+    const isProgramsList = location.pathname === '/programs';
+    const isFullBleed = isProgramDetail || isDashboard || isProgramsList;
+    const fullBleedWrapperClass = isDashboard || isProgramsList ? 'py-0' : 'py-4';
 
     useEffect(() => {
         if (pageTitle) {
@@ -102,8 +106,8 @@ export default function AuthenticatedLayout() {
                 <Toaster />
 
                 <div className={contentClass}>
-                    {isProgramDetail ? (
-                        <div className="py-4">
+                    {isFullBleed ? (
+                        <div className={fullBleedWrapperClass}>
                             {breadcrumbItems.length > 0 && (
                                 <div className="max-w-7xl mx-auto px-6 mb-4">
                                     <Breadcrumbs items={breadcrumbItems} />
