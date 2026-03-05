@@ -13,7 +13,6 @@ import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
-import { Toaster } from '@/components/ui/sonner';
 import WebsocketSession from '@/session/websocket';
 
 export default function AuthenticatedLayout() {
@@ -72,8 +71,8 @@ export default function AuthenticatedLayout() {
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
     const contentClass = isProgramDetail
-        ? 'flex-1 overflow-x-hidden'
-        : 'flex-1 overflow-y-auto overflow-x-hidden';
+        ? 'flex-1 overflow-x-hidden bg-[#E2E7EA]'
+        : 'flex-1 overflow-y-auto overflow-x-hidden bg-[#E2E7EA]';
 
     return (
         <div className={rootClass}>
@@ -103,7 +102,6 @@ export default function AuthenticatedLayout() {
 
                 <TitleManager />
                 <UnlockEdTour />
-                <Toaster />
 
                 <div className={contentClass}>
                     {isFullBleed ? (
