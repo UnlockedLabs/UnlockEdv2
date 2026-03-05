@@ -79,6 +79,10 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			return newDatabaseServiceError(err)
 		}
 	default:
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if (claims.Role == models.DepartmentAdmin || claims.Role == models.SystemAdmin) && r.URL.Query().Get("facility_id") == "" {
+			args.FacilityID = 0
+		}
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 		if err != nil {
 			log.add("facility_id", args.FacilityID)
@@ -91,13 +95,16 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 
 func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	facilityID := claims.FacilityID
+	var facilityID *uint
 	if fid := r.URL.Query().Get("facility_id"); fid != "" {
 		id, err := strconv.Atoi(fid)
 		if err != nil {
 			return newInvalidIdServiceError(err, "facility ID")
 		}
-		facilityID = uint(id)
+		ref := uint(id)
+		facilityID = &ref
+	} else if claims.Role != models.DepartmentAdmin && claims.Role != models.SystemAdmin {
+		facilityID = &claims.FacilityID
 	}
 	stats, err := srv.Db.GetUserStats(r.Context(), facilityID)
 	if err != nil {
