@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, isDeptAdmin, isSysAdmin } from '@/auth/useAuth';
-import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import {
     Class,
     Facility,
@@ -41,6 +40,7 @@ import {
     Calendar,
     CalendarOff,
     Clock,
+    AlertCircle,
     Filter,
     MapPin,
     Users
@@ -50,8 +50,8 @@ import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
 import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
 
 const STATUS_OPTIONS: { label: string; value: string }[] = [
-    { label: 'All Status', value: 'all' },
     { label: 'Active & Scheduled', value: 'active_scheduled' },
+    { label: 'All Status', value: 'all' },
     { label: 'Active', value: SelectedClassStatus.Active },
     { label: 'Scheduled', value: SelectedClassStatus.Scheduled },
     { label: 'Completed', value: SelectedClassStatus.Completed },
@@ -77,21 +77,12 @@ function formatDateRangeFull(startDt: string, endDt: string): string {
 export default function ClassesPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { setBreadcrumbItems } = useBreadcrumb();
-
-    useEffect(() => {
-        setBreadcrumbItems([
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Classes' }
-        ]);
-        return () => setBreadcrumbItems([]);
-    }, [setBreadcrumbItems]);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [todayOnly, setTodayOnly] = useState(false);
     const [attendanceConcerns, setAttendanceConcerns] = useState(false);
     const [programFilter, setProgramFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('active_scheduled');
     const [facilityFilter, setFacilityFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showFacilityModal, setShowFacilityModal] = useState(false);
@@ -118,7 +109,7 @@ export default function ClassesPage() {
         useSWR<ServerResponseMany<Class>>(classesUrl);
     const programsUrl =
         showCreateModal || showFacilityModal
-            ? `/api/programs?page=${programPage}&per_page=${programPerPage}${programSearch ? `&search=${encodeURIComponent(programSearch)}` : ''}`
+            ? `/api/programs?page=${programPage}&per_page=${programPerPage}${programSearch ? `&search=${encodeURIComponent(programSearch)}` : ''}${selectedFacilityForClass ? `&facility_id=${selectedFacilityForClass}` : ''}`
             : null;
     const { data: programsResp } =
         useSWR<ServerResponseMany<Program>>(programsUrl);
@@ -149,12 +140,18 @@ export default function ClassesPage() {
         const programs = programsResp?.data ?? [];
         return programs.filter((p) => {
             if (!p.is_active) return false;
+            if (selectedFacilityForClass) {
+                if (!p.facilities?.length) return false;
+                return p.facilities.some(
+                    (f) => f.id === selectedFacilityForClass
+                );
+            }
             if (crossFacility) return true;
             const facilityId = user?.facility?.id;
             if (!facilityId || !p.facilities?.length) return true;
             return p.facilities.some((f) => f.id === facilityId);
         });
-    }, [programsResp, crossFacility, user]);
+    }, [programsResp, crossFacility, user, selectedFacilityForClass]);
 
     const handleProgramSelect = (programId: number) => {
         setShowCreateModal(false);
@@ -225,21 +222,19 @@ export default function ClassesPage() {
     }, [filteredClasses, currentPage, itemsPerPage]);
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="text-2xl font-bold text-[#203622]">
+                            <h1 className="text-[#203622]">
                                 Classes
                             </h1>
-                            {!crossFacility && (
-                                <p className="text-gray-600 mt-1">
-                                    {user?.facility?.name}
-                                </p>
-                            )}
+                            <p className="text-gray-600 mt-1">
+                                Manage and monitor all classes at your facility
+                            </p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                             <Button
                                 variant="outline"
                                 className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 gap-2"
@@ -303,7 +298,7 @@ export default function ClassesPage() {
                                 setAttendanceConcerns(!attendanceConcerns)
                             }
                         >
-                            <Clock className="size-4 mr-2" />
+                            <AlertCircle className="size-4 mr-2" />
                             Attendance Concerns
                         </Button>
                         {crossFacility && (
@@ -662,7 +657,7 @@ function ClassRow({
         >
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
-                    {today && (
+                    {today && cls.status === SelectedClassStatus.Active && (
                         <div className="w-2 h-2 bg-[#F1B51C] rounded-full flex-shrink-0" />
                     )}
                     <div>
@@ -729,7 +724,7 @@ function ClassRow({
                     </div>
                     <Progress
                         value={enrollPct}
-                        className="h-2 bg-gray-200"
+                        className="h-1.5"
                         indicatorClassName={cn(
                             enrollPct >= 80
                                 ? 'bg-[#556830]'

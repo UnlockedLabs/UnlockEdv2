@@ -160,7 +160,7 @@ export default function EventAttendance() {
 
     if (datesLoading || isLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] -mx-6 -mt-4 -mb-4 flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
                 <div className="text-gray-500">Loading...</div>
             </div>
         );
@@ -168,7 +168,7 @@ export default function EventAttendance() {
 
     if (error) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] -mx-6 -mt-4 -mb-4 flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
                 <div className="text-red-600">Error loading attendance data</div>
             </div>
         );
@@ -181,7 +181,7 @@ export default function EventAttendance() {
 
     if (!scheduled) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] -mx-6 -mt-4 -mb-4 flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
                 <div className="text-red-600">
                     No class session was scheduled for this date.
                 </div>
@@ -191,7 +191,7 @@ export default function EventAttendance() {
 
     if (isFutureDay) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] -mx-6 -mt-4 -mb-4 flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
                 <div className="text-red-600">
                     This session is scheduled for a future date. Attendance
                     will be available after it occurs.
@@ -323,7 +323,7 @@ export default function EventAttendance() {
     }
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] -mx-6 -mt-4 -mb-4">
+        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-5xl mx-auto px-6 py-6">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

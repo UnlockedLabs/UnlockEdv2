@@ -156,6 +156,7 @@ export function BulkCancelClassesModal({
 
     async function handleConfirm() {
         if (!preview) return;
+        toast.dismiss();
         setLoading(true);
 
         const request: BulkCancelSessionsRequest = {
