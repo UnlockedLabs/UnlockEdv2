@@ -22,7 +22,7 @@ func calcOffset(page, perPage int) int {
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(models.User{}).
 		Preload("LoginMetrics").
-		Where("facility_id = ?", args.FacilityID)
+		Preload("Facility")
 
 	if !args.IncludeDeactivated {
 		tx = tx.Where("deactivated_at IS NULL")
@@ -30,13 +30,20 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 
 	switch role {
 	case "system_admin":
-		tx = tx.Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("facility_id = ?", args.FacilityID).
+			Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "department_admin":
-		tx = tx.Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("facility_id = ?", args.FacilityID).
+			Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "facility_admin":
-		tx = tx.Where("facility_id = ? and role = 'facility_admin'", args.FacilityID)
+		tx = tx.Where("facility_id = ? AND role = 'facility_admin'", args.FacilityID)
 	case "student":
-		tx = tx.Where("facility_id = ? and role = 'student'", args.FacilityID)
+		tx = tx.Where("role = 'student'")
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
+	default:
+		tx = tx.Where("facility_id = ?", args.FacilityID)
 	}
 	if args.Search != "" {
 		tx = fuzzySearchUsers(tx, args)
@@ -71,9 +78,12 @@ type UserStats struct {
 	Inactive int64 `json:"inactive"`
 }
 
-func (db *DB) GetUserStats(ctx context.Context, facilityID uint) (*UserStats, error) {
+func (db *DB) GetUserStats(ctx context.Context, facilityID *uint) (*UserStats, error) {
 	var stats UserStats
-	tx := db.WithContext(ctx).Model(&models.User{}).Where("role = ? AND facility_id = ?", models.Student, facilityID)
+	tx := db.WithContext(ctx).Model(&models.User{}).Where("role = ?", models.Student)
+	if facilityID != nil {
+		tx = tx.Where("facility_id = ?", *facilityID)
+	}
 	if err := tx.Count(&stats.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
