@@ -539,7 +539,7 @@ export default function StudentManagement() {
                                     </div>
                                 )}
                             </div>
-                            <DialogFooter className="pt-2">
+                            <DialogFooter className="pt-4">
                                 <Button
                                     variant="outline"
                                     type="button"
