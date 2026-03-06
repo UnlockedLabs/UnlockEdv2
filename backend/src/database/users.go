@@ -80,14 +80,21 @@ type UserStats struct {
 
 func (db *DB) GetUserStats(ctx context.Context, facilityID *uint) (*UserStats, error) {
 	var stats UserStats
-	tx := db.WithContext(ctx).Model(&models.User{}).Where("role = ?", models.Student)
+	baseTx := db.WithContext(ctx).Model(&models.User{}).Where("role = ?", models.Student)
 	if facilityID != nil {
-		tx = tx.Where("facility_id = ?", *facilityID)
+		baseTx = baseTx.Where("facility_id = ?", *facilityID)
 	}
-	if err := tx.Count(&stats.Total).Error; err != nil {
+	if err := baseTx.Count(&stats.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
-	if err := tx.Where("deactivated_at IS NULL").Count(&stats.Active).Error; err != nil {
+	daysAgo := time.Now().AddDate(0, 0, -30)
+	activeTx := db.WithContext(ctx).Model(&models.User{}).
+		Where("role = ?", models.Student).
+		Joins("JOIN login_metrics ON users.id = login_metrics.user_id AND login_metrics.last_login > ?", daysAgo)
+	if facilityID != nil {
+		activeTx = activeTx.Where("facility_id = ?", *facilityID)
+	}
+	if err := activeTx.Count(&stats.Active).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	stats.Inactive = stats.Total - stats.Active
