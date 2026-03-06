@@ -80,7 +80,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		}
 	default:
 		claims := r.Context().Value(ClaimsKey).(*Claims)
-		if (claims.Role == models.DepartmentAdmin || claims.Role == models.SystemAdmin) && r.URL.Query().Get("facility_id") == "" {
+		if claims.canSwitchFacility() && r.URL.Query().Get("facility_id") == "" {
 			args.FacilityID = 0
 		}
 		users, err = srv.Db.GetCurrentUsers(&args, role)
@@ -103,7 +103,7 @@ func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, lo
 		}
 		ref := uint(id)
 		facilityID = &ref
-	} else if claims.Role != models.DepartmentAdmin && claims.Role != models.SystemAdmin {
+	} else if !claims.canSwitchFacility() {
 		facilityID = &claims.FacilityID
 	}
 	stats, err := srv.Db.GetUserStats(r.Context(), facilityID)
