@@ -53,7 +53,7 @@ import {
     Users as UsersIcon
 } from 'lucide-react';
 
-type SortField = 'name_last' | 'username' | 'doc_id' | 'last_login';
+type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
 type SortDir = 'asc' | 'desc';
 
 interface StudentFormData {
@@ -186,7 +186,7 @@ export default function StudentManagement() {
     const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
 
     return (
-        <div>
+        <div className="py-4">
                 {/* Header */}
                 <div className="mb-8">
                     {user && !showFacilityColumn && (
@@ -196,7 +196,7 @@ export default function StudentManagement() {
                     )}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-semibold text-[#203622]">
+                            <h1 className="text-[#203622]">
                                 Residents
                             </h1>
                             <p className="text-gray-600 mt-1">
@@ -240,7 +240,7 @@ export default function StudentManagement() {
                             placeholder="Search by name, username, or ID..."
                             value={searchTerm}
                             onChange={(e) => handleSearchChange(e.target.value)}
-                            className="pl-10 focus-visible:border-gray-400 focus-visible:ring-gray-400/50"
+                            className="pl-10"
                         />
                     </div>
                     {showFacilityColumn && (
@@ -251,7 +251,7 @@ export default function StudentManagement() {
                                 setPage(1);
                             }}
                         >
-                            <SelectTrigger className="w-64 focus:border-gray-400 focus:ring-gray-400/50">
+                            <SelectTrigger className="w-64">
                                 <SelectValue placeholder="Filter by facility" />
                             </SelectTrigger>
                             <SelectContent>
@@ -325,7 +325,9 @@ export default function StudentManagement() {
                                         Resident ID
                                     </SortableHeader>
                                     {showFacilityColumn && (
-                                        <TableHead>Facility</TableHead>
+                                        <SortableHeader field="facility_id">
+                                            Facility
+                                        </SortableHeader>
                                     )}
                                     <SortableHeader field="last_login">
                                         Last Active
@@ -417,16 +419,14 @@ export default function StudentManagement() {
                             </TableBody>
                         </Table>
 
-                        {totalItems > perPage && (
-                            <Pagination
-                                currentPage={page}
-                                totalItems={totalItems}
-                                itemsPerPage={perPage}
-                                onPageChange={setPage}
-                                onItemsPerPageChange={setPerPage}
-                                itemLabel="residents"
-                            />
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalItems={totalItems}
+                            itemsPerPage={perPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={setPerPage}
+                            itemLabel="residents"
+                        />
                     </div>
                 )}
 
@@ -459,7 +459,7 @@ export default function StudentManagement() {
                                             {...addForm.register('name_first', {
                                                 required: true
                                             })}
-                                            className="mt-2 focus-visible:border-gray-400 focus-visible:ring-gray-400/50"
+                                            className="mt-2"
                                         />
                                     </div>
                                     <div>
@@ -472,7 +472,7 @@ export default function StudentManagement() {
                                             {...addForm.register('name_last', {
                                                 required: true
                                             })}
-                                            className="mt-2 focus-visible:border-gray-400 focus-visible:ring-gray-400/50"
+                                            className="mt-2"
                                         />
                                     </div>
                                 </div>
@@ -486,7 +486,7 @@ export default function StudentManagement() {
                                         {...addForm.register('username', {
                                             required: true
                                         })}
-                                        className="mt-2 focus-visible:border-gray-400 focus-visible:ring-gray-400/50"
+                                        className="mt-2"
                                     />
                                 </div>
                                 <div>
@@ -497,7 +497,7 @@ export default function StudentManagement() {
                                         id="add-doc-id"
                                         placeholder="e.g., R001"
                                         {...addForm.register('doc_id')}
-                                        className="mt-2 focus-visible:border-gray-400 focus-visible:ring-gray-400/50"
+                                        className="mt-2"
                                     />
                                 </div>
                                 {showFacilityColumn && (
@@ -522,7 +522,7 @@ export default function StudentManagement() {
                                                 )
                                             }
                                         >
-                                            <SelectTrigger className="mt-2 focus:border-gray-400 focus:ring-gray-400/50">
+                                            <SelectTrigger className="mt-2">
                                                 <SelectValue placeholder="Select facility" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -539,7 +539,7 @@ export default function StudentManagement() {
                                     </div>
                                 )}
                             </div>
-                            <DialogFooter>
+                            <DialogFooter className="pt-2">
                                 <Button
                                     variant="outline"
                                     type="button"
