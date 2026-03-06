@@ -53,7 +53,7 @@ import {
     Users as UsersIcon
 } from 'lucide-react';
 
-type SortField = 'name_last' | 'username' | 'doc_id' | 'last_login';
+type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
 type SortDir = 'asc' | 'desc';
 
 interface StudentFormData {
@@ -186,7 +186,7 @@ export default function StudentManagement() {
     const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
 
     return (
-        <div>
+        <div className="py-4">
                 {/* Header */}
                 <div className="mb-8">
                     {user && !showFacilityColumn && (
@@ -196,7 +196,7 @@ export default function StudentManagement() {
                     )}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-semibold text-[#203622]">
+                            <h1 className="text-[#203622]">
                                 Residents
                             </h1>
                             <p className="text-gray-600 mt-1">
@@ -325,7 +325,9 @@ export default function StudentManagement() {
                                         Resident ID
                                     </SortableHeader>
                                     {showFacilityColumn && (
-                                        <TableHead>Facility</TableHead>
+                                        <SortableHeader field="facility_id">
+                                            Facility
+                                        </SortableHeader>
                                     )}
                                     <SortableHeader field="last_login">
                                         Last Active
@@ -417,16 +419,14 @@ export default function StudentManagement() {
                             </TableBody>
                         </Table>
 
-                        {totalItems > perPage && (
-                            <Pagination
-                                currentPage={page}
-                                totalItems={totalItems}
-                                itemsPerPage={perPage}
-                                onPageChange={setPage}
-                                onItemsPerPageChange={setPerPage}
-                                itemLabel="residents"
-                            />
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalItems={totalItems}
+                            itemsPerPage={perPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={setPerPage}
+                            itemLabel="residents"
+                        />
                     </div>
                 )}
 
@@ -539,7 +539,7 @@ export default function StudentManagement() {
                                     </div>
                                 )}
                             </div>
-                            <DialogFooter>
+                            <DialogFooter className="pt-2">
                                 <Button
                                     variant="outline"
                                     type="button"
