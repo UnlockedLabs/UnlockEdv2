@@ -26,4 +26,4 @@ jar
 /tmp
 /csvs/zims/*.zim
 /.claude
-frontend-v2/node_modules/*
+/frontend-v2/node_modules/
