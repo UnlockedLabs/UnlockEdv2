@@ -22,7 +22,7 @@ func calcOffset(page, perPage int) int {
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(models.User{}).
 		Preload("LoginMetrics").
-		Where("facility_id = ?", args.FacilityID)
+		Preload("Facility")
 
 	if !args.IncludeDeactivated {
 		tx = tx.Where("deactivated_at IS NULL")
@@ -30,13 +30,20 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 
 	switch role {
 	case "system_admin":
-		tx = tx.Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("facility_id = ?", args.FacilityID).
+			Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "department_admin":
-		tx = tx.Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("facility_id = ?", args.FacilityID).
+			Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "facility_admin":
-		tx = tx.Where("facility_id = ? and role = 'facility_admin'", args.FacilityID)
+		tx = tx.Where("facility_id = ? AND role = 'facility_admin'", args.FacilityID)
 	case "student":
-		tx = tx.Where("facility_id = ? and role = 'student'", args.FacilityID)
+		tx = tx.Where("role = 'student'")
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
+	default:
+		tx = tx.Where("facility_id = ?", args.FacilityID)
 	}
 	if args.Search != "" {
 		tx = fuzzySearchUsers(tx, args)
@@ -45,7 +52,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	validUserOrderByFields := []string{"name_last", "created_at", "last_login"}
+	validUserOrderByFields := []string{"name_last", "created_at", "last_login", "doc_id", "username"}
 	if !slices.Contains(validUserOrderByFields, args.OrderBy) {
 		args.OrderBy = "name_last"
 	}
@@ -63,6 +70,35 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	return users, nil
+}
+
+type UserStats struct {
+	Total    int64 `json:"total"`
+	Active   int64 `json:"active"`
+	Inactive int64 `json:"inactive"`
+}
+
+func (db *DB) GetUserStats(ctx context.Context, facilityID *uint) (*UserStats, error) {
+	var stats UserStats
+	baseTx := db.WithContext(ctx).Model(&models.User{}).Where("role = ?", models.Student)
+	if facilityID != nil {
+		baseTx = baseTx.Where("facility_id = ?", *facilityID)
+	}
+	if err := baseTx.Count(&stats.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	daysAgo := time.Now().AddDate(0, 0, -30)
+	activeTx := db.WithContext(ctx).Model(&models.User{}).
+		Where("role = ?", models.Student).
+		Joins("JOIN login_metrics ON users.id = login_metrics.user_id AND login_metrics.last_login > ?", daysAgo)
+	if facilityID != nil {
+		activeTx = activeTx.Where("facility_id = ?", *facilityID)
+	}
+	if err := activeTx.Count(&stats.Active).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	stats.Inactive = stats.Total - stats.Active
+	return &stats, nil
 }
 
 func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int) (*models.User, error) {

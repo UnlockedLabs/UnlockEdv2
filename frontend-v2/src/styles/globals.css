@@ -134,50 +134,50 @@
 @layer base {
     :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
         h1 {
-            font-size: var(--text-2xl);
-            font-weight: var(--font-weight-medium);
+            font-size: 1.5rem;
+            font-weight: 500;
             line-height: 1.5;
         }
 
         h2 {
-            font-size: var(--text-xl);
-            font-weight: var(--font-weight-medium);
+            font-size: 1.25rem;
+            font-weight: 500;
             line-height: 1.5;
         }
 
         h3 {
-            font-size: var(--text-lg);
-            font-weight: var(--font-weight-medium);
+            font-size: 1.125rem;
+            font-weight: 500;
             line-height: 1.5;
         }
 
         h4 {
-            font-size: var(--text-base);
-            font-weight: var(--font-weight-medium);
+            font-size: 1rem;
+            font-weight: 500;
             line-height: 1.5;
         }
 
         p {
-            font-size: var(--text-base);
-            font-weight: var(--font-weight-normal);
+            font-size: 1rem;
+            font-weight: 400;
             line-height: 1.5;
         }
 
         label {
-            font-size: var(--text-base);
-            font-weight: var(--font-weight-medium);
+            font-size: 1rem;
+            font-weight: 500;
             line-height: 1.5;
         }
 
         button {
-            font-size: var(--text-base);
-            font-weight: var(--font-weight-medium);
+            font-size: 1rem;
+            font-weight: 500;
             line-height: 1.5;
         }
 
         input {
-            font-size: var(--text-base);
-            font-weight: var(--font-weight-normal);
+            font-size: 1rem;
+            font-weight: 400;
             line-height: 1.5;
         }
     }
