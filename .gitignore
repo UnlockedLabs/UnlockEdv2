@@ -3,6 +3,7 @@
 .claude
 .idea
 .claude/*
+node_modules/
 frontend-v2/dist/
 Claude.md
 AGENTS.md
