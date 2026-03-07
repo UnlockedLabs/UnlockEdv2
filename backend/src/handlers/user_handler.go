@@ -24,6 +24,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
 		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
 		/* admin */
+		newAdminRoute("GET /api/users/stats", srv.handleGetUserStats),
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
@@ -78,6 +79,10 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			return newDatabaseServiceError(err)
 		}
 	default:
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() && r.URL.Query().Get("facility_id") == "" {
+			args.FacilityID = 0
+		}
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 		if err != nil {
 			log.add("facility_id", args.FacilityID)
@@ -86,6 +91,26 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
+}
+
+func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var facilityID *uint
+	if fid := r.URL.Query().Get("facility_id"); fid != "" {
+		id, err := strconv.Atoi(fid)
+		if err != nil {
+			return newInvalidIdServiceError(err, "facility ID")
+		}
+		ref := uint(id)
+		facilityID = &ref
+	} else if !claims.canSwitchFacility() {
+		facilityID = &claims.FacilityID
+	}
+	stats, err := srv.Db.GetUserStats(r.Context(), facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, stats)
 }
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
