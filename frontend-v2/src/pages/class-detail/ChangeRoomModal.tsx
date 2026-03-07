@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -17,7 +16,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { AlertCircle } from 'lucide-react';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
@@ -37,6 +35,14 @@ interface ChangeRoomModalProps {
     onChanged: () => void;
 }
 
+const CHANGE_REASONS = [
+    'Room Unavailable',
+    'Maintenance',
+    'Capacity Issue',
+    'Equipment Needed',
+    'Other'
+];
+
 export function ChangeRoomModal({
     open,
     onClose,
@@ -45,6 +51,7 @@ export function ChangeRoomModal({
     onChanged
 }: ChangeRoomModalProps) {
     const [selectedRoomId, setSelectedRoomId] = useState('');
+    const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
@@ -55,6 +62,7 @@ export function ChangeRoomModal({
     useEffect(() => {
         if (open) {
             setSelectedRoomId('');
+            setReason('');
         }
     }, [open]);
 
@@ -90,31 +98,30 @@ export function ChangeRoomModal({
         setIsSubmitting(false);
     };
 
-    const selectedRoom = rooms.find((r) => String(r.id) === selectedRoomId);
     const isSingle = sessions.length === 1;
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent>
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
                         Change Room
                     </DialogTitle>
                     <DialogDescription>
                         {isSingle
-                            ? `Change the room for ${sessions[0]?.dateLabel}`
+                            ? `Change the room for the class scheduled for ${sessions[0]?.dateLabel}`
                             : `Change the room for ${sessions.length} sessions`}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div>
+                    <div className="space-y-2">
                         <Label>New Room</Label>
                         <Select
                             value={selectedRoomId}
                             onValueChange={setSelectedRoomId}
                         >
-                            <SelectTrigger className="mt-1">
-                                <SelectValue placeholder="Select a room" />
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select room" />
                             </SelectTrigger>
                             <SelectContent>
                                 {rooms.map((room) => (
@@ -129,39 +136,37 @@ export function ChangeRoomModal({
                         </Select>
                     </div>
 
-                    {sessions.length > 0 && (
+                    <div className="space-y-2">
+                        <Label>Reason for Change</Label>
+                        <Select value={reason} onValueChange={setReason}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a reason" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CHANGE_REASONS.map((r) => (
+                                    <SelectItem key={r} value={r}>
+                                        {r}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {!isSingle && sessions.length > 0 && (
                         <div>
                             <Label className="text-sm text-gray-600 mb-2 block">
-                                Affected Sessions
+                                Sessions to Update
                             </Label>
-                            <div className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-48 overflow-y-auto">
+                            <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
                                 {sessions.map((s) => (
                                     <div
                                         key={s.date}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm"
+                                        className="text-sm text-gray-700"
                                     >
-                                        <Clock className="size-3 text-gray-400" />
-                                        <span className="text-[#203622]">
-                                            {s.dateLabel}
-                                        </span>
-                                        <span className="text-gray-500">
-                                            {s.classTime}
-                                        </span>
+                                        {s.dateLabel}
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-
-                    {selectedRoom && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                            <AlertCircle className="size-4 text-blue-700 mt-0.5 shrink-0" />
-                            <p className="text-sm text-blue-900">
-                                This will change the room to{' '}
-                                <strong>{selectedRoom.name}</strong> for{' '}
-                                {sessions.length}{' '}
-                                {sessions.length === 1 ? 'session' : 'sessions'}.
-                            </p>
                         </div>
                     )}
                 </div>
