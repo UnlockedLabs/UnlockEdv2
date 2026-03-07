@@ -353,7 +353,7 @@ type EnrollmentDetails struct {
 func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, classId int, status string) ([]EnrollmentDetails, error) {
 	content := make([]EnrollmentDetails, 0, args.PerPage)
 	search := args.SearchQuery()
-	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ', ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_first || ' ' || u.name_last as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
 		Joins("JOIN program_classes c ON pse.class_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN users u ON pse.user_id = u.id AND u.deleted_at IS NULL").
 		Joins("LEFT JOIN program_completions pc ON pc.user_id = pse.user_id AND pc.program_class_id = ?", classId).
