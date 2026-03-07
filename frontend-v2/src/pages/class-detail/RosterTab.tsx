@@ -1,19 +1,11 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle, Plus, Edit, MoreVertical, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -55,9 +47,7 @@ function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus
 }
 
 export function RosterTab({ classId, classStatus, className, capacity, enrolled }: RosterTabProps) {
-    const navigate = useNavigate();
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [changingStatus, setChangingStatus] = useState<number | null>(null);
     const [statusModalEnrollment, setStatusModalEnrollment] =
@@ -66,12 +56,10 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
     const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
 
-    const enrollmentStatus =
-        statusFilter === 'all' ? EnrollmentStatus.Enrolled : statusFilter;
     const { data: enrollmentResp, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>
     >(
-        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(enrollmentStatus)}`
+        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(EnrollmentStatus.Enrolled)}`
     );
 
     const { data: eventsResp } = useSWR<
@@ -180,15 +168,15 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                 aria-label="Select all residents"
                             />
                             <div>
-                                <h3 className="text-[#203622] font-semibold">
+                                <h3 className="text-[#203622]">
                                     Enrolled Residents ({enrolledRows.length})
                                     {selectedIds.size > 0 && (
-                                        <span className="ml-2 text-[#556830] font-normal">
+                                        <span className="ml-2 text-[#556830]">
                                             - {selectedIds.size} selected
                                         </span>
                                     )}
                                 </h3>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-gray-600 mt-1">
                                     View enrollment and track engagement
                                 </p>
                             </div>
@@ -202,35 +190,15 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                             Enroll Resident
                         </Button>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
-                            <Input
-                                type="text"
-                                placeholder="Search by resident ID or name..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-10 w-full"
-                            />
-                        </div>
-                        <Select
-                            value={statusFilter}
-                            onValueChange={setStatusFilter}
-                        >
-                            <SelectTrigger className="w-full sm:w-48">
-                                <SelectValue placeholder="Filter by status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Enrolled (default)
-                                </SelectItem>
-                                {Object.values(EnrollmentStatus).map((s) => (
-                                    <SelectItem key={s} value={s}>
-                                        {s}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+                        <Input
+                            type="text"
+                            placeholder="Search by resident ID or name..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-10 w-full"
+                        />
                     </div>
                 </div>
                 <div className="divide-y divide-gray-200">
@@ -369,15 +337,6 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                         <Edit className="size-4 mr-2" />
                                                         Change Status
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            navigate(
-                                                                `/program-classes/${classId}/enrollments`
-                                                            )
-                                                        }
-                                                    >
-                                                        View Attendance History
-                                                    </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
@@ -466,7 +425,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                         statusModalEnrollment.enrollment_status
                     )}
                     onStatusChange={(newStatus, reason) =>
-                        handleStatusChange(
+                        void handleStatusChange(
                             statusModalEnrollment,
                             newStatus,
                             reason
