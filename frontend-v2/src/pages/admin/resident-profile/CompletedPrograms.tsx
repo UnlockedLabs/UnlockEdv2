@@ -46,12 +46,9 @@ export function CompletedPrograms({
                                     <div className="font-medium text-[#203622]">
                                         {program.program_name}
                                     </div>
-                                    <div className="text-sm text-gray-600">
-                                        {program.class_name}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-sm text-gray-600 mt-1">
                                         Completed{' '}
-                                        {formatDate(program.end_date)} -{' '}
+                                        {formatDate(program.end_date)} &bull;{' '}
                                         {present}/{total} sessions attended (
                                         {rate}%)
                                     </div>
