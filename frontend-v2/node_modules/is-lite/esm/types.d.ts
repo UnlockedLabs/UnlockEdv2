@@ -1,3 +1,0 @@
-export declare type Class<T = unknown> = new (...arguments_: any[]) => T;
-export declare type PlainObject = Record<number | string | symbol, unknown>;
-export declare type Primitive = null | undefined | string | number | boolean | symbol | bigint;
