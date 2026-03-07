@@ -16,9 +16,23 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { CancelEventReason } from '@/types/program';
 import API from '@/api/api';
 import { toast } from 'sonner';
+
+const CANCEL_REASONS = [
+    { value: 'instructor_unavailable', label: 'Instructor Unavailable' },
+    { value: 'instructor_illness', label: 'Instructor Illness' },
+    {
+        value: 'facility_issue_or_lockdown',
+        label: 'Facility Issue or Lockdown'
+    },
+    {
+        value: 'holiday_or_scheduled_break',
+        label: 'Holiday or Scheduled Break'
+    },
+    { value: 'technology_issue', label: 'Technology Issue' },
+    { value: 'other', label: 'Other' }
+];
 
 interface CancelSessionModalProps {
     open: boolean;
@@ -50,24 +64,25 @@ export function CancelSessionModal({
         }
     }, [open]);
 
-    const isOther = reason === String(CancelEventReason['Other (add note)']);
+    const isOther = reason === 'other';
     const canSubmit = reason && (!isOther || note.trim().length > 0);
 
     const handleReasonChange = (value: string) => {
         setReason(value);
-        if (value !== String(CancelEventReason['Other (add note)'])) {
+        if (value !== 'other') {
             setNote('');
         }
     };
 
     const handleCancel = async () => {
         setIsSubmitting(true);
+        const reasonValue = isOther ? note.trim() : reason;
         const resp = await API.patch(
             `program-classes/${classId}/events/${eventId}`,
             {
                 date,
                 is_cancelled: true,
-                reason: isOther ? note.trim() : reason
+                reason: reasonValue
             }
         );
         if (resp.success) {
@@ -93,17 +108,20 @@ export function CancelSessionModal({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="cancelReason">
+                        <Label htmlFor="cancel-reason">
                             Reason for Cancellation *
                         </Label>
-                        <Select value={reason} onValueChange={handleReasonChange}>
-                            <SelectTrigger id="cancelReason">
+                        <Select
+                            value={reason}
+                            onValueChange={handleReasonChange}
+                        >
+                            <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.values(CancelEventReason).map((r) => (
-                                    <SelectItem key={r} value={r}>
-                                        {r}
+                                {CANCEL_REASONS.map((r) => (
+                                    <SelectItem key={r.value} value={r.value}>
+                                        {r.label}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -111,9 +129,11 @@ export function CancelSessionModal({
                     </div>
                     {isOther && (
                         <div className="space-y-2">
-                            <Label htmlFor="cancelNote">Please specify *</Label>
+                            <Label htmlFor="cancel-note">
+                                Please specify *
+                            </Label>
                             <Textarea
-                                id="cancelNote"
+                                id="cancel-note"
                                 placeholder="Enter the specific reason for cancellation..."
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}

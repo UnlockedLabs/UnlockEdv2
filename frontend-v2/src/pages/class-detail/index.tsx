@@ -27,6 +27,8 @@ import { RosterTab } from './RosterTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { SessionsTab } from './SessionsTab';
 import { ScheduleTab } from './ScheduleTab';
+import { SupportTab } from './SupportTab';
+import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
 import { EditClassModal } from './EditClassModal';
@@ -75,7 +77,7 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
-    const { data: eventsResp } = useSWR<
+    const { data: eventsResp, mutate: mutateEvents } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(class_id ? `/api/program-classes/${class_id}/events?all=true` : null);
 
@@ -98,7 +100,7 @@ export default function ClassDetailPage() {
 
     if (!cls) {
         return (
-            <div className="-mx-6 -mt-4 -mb-4 bg-[#E2E7EA] flex items-center justify-center">
+            <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
                 <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
                     <h2 className="text-xl font-semibold text-[#203622] mb-2">
                         Class Not Found
@@ -199,8 +201,7 @@ export default function ClassDetailPage() {
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">
-                    <div className="overflow-x-auto -mx-1 px-1">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 w-max min-w-full">
+                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
                         <TabsTrigger
                             value="roster"
                             className={TAB_TRIGGER_CLASS}
@@ -208,10 +209,10 @@ export default function ClassDetailPage() {
                             Roster ({cls.enrolled})
                         </TabsTrigger>
                         <TabsTrigger
-                            value="enrollment-history"
+                            value="support"
                             className={TAB_TRIGGER_CLASS}
                         >
-                            Enrollment History
+                            At-Risk
                         </TabsTrigger>
                         <TabsTrigger
                             value="sessions"
@@ -225,8 +226,19 @@ export default function ClassDetailPage() {
                         >
                             Schedule
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="enrollment-history"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Enrollment History
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="audit"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Audit History
+                        </TabsTrigger>
                     </TabsList>
-                    </div>
 
                     <TabsContent value="roster" className="space-y-4">
                         <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} />
@@ -245,6 +257,14 @@ export default function ClassDetailPage() {
 
                     <TabsContent value="schedule" className="space-y-4">
                         <ScheduleTab cls={cls} />
+                    </TabsContent>
+
+                    <TabsContent value="support" className="space-y-4">
+                        <SupportTab classId={cls.id} />
+                    </TabsContent>
+
+                    <TabsContent value="audit" className="space-y-4">
+                        <AuditTab classId={cls.id} />
                     </TabsContent>
                 </Tabs>
             </div>
@@ -271,7 +291,10 @@ export default function ClassDetailPage() {
                 open={showEditModal}
                 onOpenChange={setShowEditModal}
                 cls={cls}
-                onUpdated={() => void mutate()}
+                onUpdated={() => {
+                    void mutate();
+                    void mutateEvents();
+                }}
             />
         </div>
     );
