@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -17,7 +16,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import API from '@/api/api';
 import { toast } from 'sonner';
@@ -38,6 +36,14 @@ interface ChangeInstructorModalProps {
     onChanged: () => void;
 }
 
+const CHANGE_REASONS = [
+    'Instructor Unavailable',
+    'Illness',
+    'Scheduling Conflict',
+    'Personal Emergency',
+    'Other'
+];
+
 export function ChangeInstructorModal({
     open,
     onClose,
@@ -47,6 +53,7 @@ export function ChangeInstructorModal({
 }: ChangeInstructorModalProps) {
     const { user } = useAuth();
     const [selectedInstructorId, setSelectedInstructorId] = useState('');
+    const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
@@ -57,6 +64,7 @@ export function ChangeInstructorModal({
     useEffect(() => {
         if (open) {
             setSelectedInstructorId('');
+            setReason('');
         }
     }, [open]);
 
@@ -92,33 +100,30 @@ export function ChangeInstructorModal({
         setIsSubmitting(false);
     };
 
-    const selectedInstructor = instructors.find(
-        (i) => String(i.id) === selectedInstructorId
-    );
     const isSingle = sessions.length === 1;
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent>
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
                         Change Instructor
                     </DialogTitle>
                     <DialogDescription>
                         {isSingle
-                            ? `Assign a substitute instructor for ${sessions[0]?.dateLabel}`
-                            : `Assign a substitute instructor for ${sessions.length} sessions`}
+                            ? `Change the instructor for the class scheduled for ${sessions[0]?.dateLabel}`
+                            : `Change the instructor for ${sessions.length} sessions`}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div>
-                        <Label>Substitute Instructor</Label>
+                    <div className="space-y-2">
+                        <Label>New Instructor</Label>
                         <Select
                             value={selectedInstructorId}
                             onValueChange={setSelectedInstructorId}
                         >
-                            <SelectTrigger className="mt-1">
-                                <SelectValue placeholder="Select an instructor" />
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select instructor" />
                             </SelectTrigger>
                             <SelectContent>
                                 {instructors.map((inst) => (
@@ -133,42 +138,37 @@ export function ChangeInstructorModal({
                         </Select>
                     </div>
 
-                    {sessions.length > 0 && (
+                    <div className="space-y-2">
+                        <Label>Reason for Change</Label>
+                        <Select value={reason} onValueChange={setReason}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a reason" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CHANGE_REASONS.map((r) => (
+                                    <SelectItem key={r} value={r}>
+                                        {r}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {!isSingle && sessions.length > 0 && (
                         <div>
                             <Label className="text-sm text-gray-600 mb-2 block">
-                                Affected Sessions
+                                Sessions to Update
                             </Label>
-                            <div className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-48 overflow-y-auto">
+                            <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
                                 {sessions.map((s) => (
                                     <div
                                         key={s.date}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm"
+                                        className="text-sm text-gray-700"
                                     >
-                                        <Clock className="size-3 text-gray-400" />
-                                        <span className="text-[#203622]">
-                                            {s.dateLabel}
-                                        </span>
-                                        <span className="text-gray-500">
-                                            {s.classTime}
-                                        </span>
+                                        {s.dateLabel}
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-
-                    {selectedInstructor && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                            <AlertCircle className="size-4 text-blue-700 mt-0.5 shrink-0" />
-                            <p className="text-sm text-blue-900">
-                                This will assign{' '}
-                                <strong>
-                                    {selectedInstructor.name_first}{' '}
-                                    {selectedInstructor.name_last}
-                                </strong>{' '}
-                                as substitute for {sessions.length}{' '}
-                                {sessions.length === 1 ? 'session' : 'sessions'}.
-                            </p>
                         </div>
                     )}
                 </div>
