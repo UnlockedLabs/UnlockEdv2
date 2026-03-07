@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { AlertCircle } from 'lucide-react';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
 import { FormModal } from '@/components/shared';
-import { StatusBadge } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { SelectedClassStatus } from '@/types/attendance';
 import {
     Class,
     Room,
@@ -41,6 +42,117 @@ interface EditClassFormData {
     start_dt: string;
     end_dt: string;
     room_id: number | null;
+    start_time: string;
+    end_time: string;
+    status: string;
+}
+
+const ALL_DAYS = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+];
+
+const DAY_FULL_TO_RRULE: Record<string, string> = {
+    Monday: 'MO',
+    Tuesday: 'TU',
+    Wednesday: 'WE',
+    Thursday: 'TH',
+    Friday: 'FR',
+    Saturday: 'SA',
+    Sunday: 'SU'
+};
+
+const DAY_RRULE_TO_FULL: Record<string, string> = {
+    MO: 'Monday',
+    TU: 'Tuesday',
+    WE: 'Wednesday',
+    TH: 'Thursday',
+    FR: 'Friday',
+    SA: 'Saturday',
+    SU: 'Sunday'
+};
+
+function parseScheduleFromEvent(
+    recurrenceRule: string,
+    duration: string
+): { days: string[]; startTime: string; endTime: string } {
+    let startTime = '';
+    let endTime = '';
+    let days: string[] = [];
+
+    const dtMatch = /T(\d{2})(\d{2})/.exec(recurrenceRule);
+    if (dtMatch) {
+        startTime = `${dtMatch[1]}:${dtMatch[2]}`;
+    }
+
+    const byDayMatch = /BYDAY=([A-Z,]+)/.exec(recurrenceRule);
+    if (byDayMatch) {
+        days = byDayMatch[1]
+            .split(',')
+            .map((code) => DAY_RRULE_TO_FULL[code] ?? code);
+    }
+
+    if (duration && startTime) {
+        const durationMatch = /(\d+)h(\d+)m/.exec(duration);
+        if (durationMatch) {
+            const [, hours, mins] = durationMatch;
+            const [sh, sm] = startTime.split(':').map(Number);
+            const totalMin =
+                (sh ?? 0) * 60 +
+                (sm ?? 0) +
+                Number(hours) * 60 +
+                Number(mins);
+            const eh = Math.floor(totalMin / 60) % 24;
+            const em = totalMin % 60;
+            endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+        }
+    }
+
+    return { days, startTime, endTime };
+}
+
+function buildRecurrenceRule(
+    originalRule: string,
+    startDate: string,
+    startTime: string,
+    days: string[]
+): string {
+    const tzMatch = /DTSTART;TZID=([^:]+):/.exec(originalRule);
+    const tz = tzMatch?.[1] ?? 'Local';
+
+    const dtStart = `${startDate.replace(/-/g, '')}T${startTime.replace(/:/g, '')}00`;
+    let rule = `DTSTART;TZID=${tz}:${dtStart}\nRRULE:FREQ=WEEKLY`;
+
+    if (days.length > 0) {
+        const rruleDays = days
+            .map((d) => DAY_FULL_TO_RRULE[d])
+            .filter(Boolean);
+        rule += `;BYDAY=${rruleDays.join(',')}`;
+    }
+
+    const untilMatch = /UNTIL=([^;\s]+)/.exec(originalRule);
+    if (untilMatch) {
+        rule += `;UNTIL=${untilMatch[1]}`;
+    }
+
+    return rule;
+}
+
+function formatDuration(startTime: string, endTime: string): string {
+    if (!startTime || !endTime) return '0h0m0s';
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    const totalMin =
+        (eh ?? 0) * 60 + (em ?? 0) - ((sh ?? 0) * 60 + (sm ?? 0));
+    if (totalMin <= 0) return '0h0m0s';
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    return `${hours}h${minutes}m0s`;
 }
 
 export function EditClassModal({
@@ -61,6 +173,7 @@ export function EditClassModal({
         name_last: '',
         username: ''
     });
+    const [scheduleDays, setScheduleDays] = useState<string[]>([]);
 
     const { data: instructorsResp, mutate: mutateInstructors } =
         useSWR<ServerResponseMany<User>>(
@@ -94,13 +207,23 @@ export function EditClassModal({
             credit_hours: 0,
             start_dt: '',
             end_dt: '',
-            room_id: null
+            room_id: null,
+            start_time: '',
+            end_time: '',
+            status: ''
         }
     });
 
     useEffect(() => {
         if (cls && open) {
             const event = cls.events?.[0];
+            const schedule = event
+                ? parseScheduleFromEvent(
+                      event.recurrence_rule,
+                      event.duration
+                  )
+                : { days: [], startTime: '', endTime: '' };
+
             reset({
                 name: cls.name,
                 description: cls.description,
@@ -111,16 +234,30 @@ export function EditClassModal({
                 end_dt: cls.end_dt
                     ? new Date(cls.end_dt).toISOString().split('T')[0]
                     : '',
-                room_id: event?.room_id ?? null
+                room_id: event?.room_id ?? null,
+                start_time: schedule.startTime,
+                end_time: schedule.endTime,
+                status: cls.status
             });
+            setScheduleDays(schedule.days);
             setConflicts([]);
         }
     }, [cls, open, reset]);
 
     const watchedCapacity = watch('capacity');
+    const watchedStatus = watch('status');
+    const watchedStartDt = watch('start_dt');
     const capacityBelowEnrolled =
         watchedCapacity !== undefined &&
         Number(watchedCapacity) < cls.enrolled;
+
+    const toggleDay = (day: string) => {
+        setScheduleDays((prev) =>
+            prev.includes(day)
+                ? prev.filter((d) => d !== day)
+                : [...prev, day]
+        );
+    };
 
     async function handleAddRoom() {
         if (!newRoomName.trim()) return;
@@ -141,7 +278,8 @@ export function EditClassModal({
 
     async function handleAddInstructor() {
         const { name_first, name_last, username } = newInstructor;
-        if (!name_first.trim() || !name_last.trim() || !username.trim()) return;
+        if (!name_first.trim() || !name_last.trim() || !username.trim())
+            return;
         const resp = await API.post<object, object>('users', {
             user: {
                 name_first: name_first.trim(),
@@ -162,6 +300,15 @@ export function EditClassModal({
     }
 
     async function onSubmit(data: EditClassFormData) {
+        const event = cls.events[0];
+        const newRule = buildRecurrenceRule(
+            event.recurrence_rule,
+            data.start_dt,
+            data.start_time,
+            scheduleDays
+        );
+        const newDuration = formatDuration(data.start_time, data.end_time);
+
         const payload = {
             id: cls.id,
             name: data.name,
@@ -174,17 +321,18 @@ export function EditClassModal({
                 Number(data.credit_hours) > 0
                     ? Number(data.credit_hours)
                     : null,
+            status: data.status,
             start_dt: new Date(data.start_dt),
             end_dt: data.end_dt ? new Date(data.end_dt) : null,
             events: [
                 {
-                    id: cls.events[0].id,
-                    class_id: cls.events[0].class_id,
-                    duration: cls.events[0].duration,
-                    recurrence_rule: cls.events[0].recurrence_rule,
+                    id: event.id,
+                    class_id: event.class_id,
+                    duration: newDuration,
+                    recurrence_rule: newRule,
                     room_id: data.room_id
                         ? Number(data.room_id)
-                        : cls.events[0].room_id
+                        : event.room_id
                 },
                 ...cls.events.slice(1)
             ]
@@ -215,6 +363,7 @@ export function EditClassModal({
                 open={open}
                 onOpenChange={onOpenChange}
                 title="Edit Class"
+                description="Make changes to the class details."
                 className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
             >
                 <form
@@ -224,12 +373,17 @@ export function EditClassModal({
                     className="space-y-6"
                 >
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-foreground">
+                        <h4 className="font-medium text-[#203622]">
                             Class Details
-                        </h3>
+                        </h4>
 
                         <div className="space-y-2">
-                            <Label htmlFor="edit-name">Name</Label>
+                            <Label
+                                htmlFor="edit-name"
+                                className="text-sm font-medium"
+                            >
+                                Class Name
+                            </Label>
                             <Input
                                 id="edit-name"
                                 {...register('name', {
@@ -247,9 +401,11 @@ export function EditClassModal({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Instructor</Label>
+                                <Label className="text-sm font-medium">
+                                    Instructor
+                                </Label>
                                 <Controller
                                     name="instructor_id"
                                     control={control}
@@ -268,7 +424,7 @@ export function EditClassModal({
                                                 field.onChange(Number(v));
                                             }}
                                         >
-                                            <SelectTrigger>
+                                            <SelectTrigger id="edit-instructor">
                                                 <SelectValue placeholder="Select instructor" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -294,7 +450,9 @@ export function EditClassModal({
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Room</Label>
+                                <Label className="text-sm font-medium">
+                                    Room
+                                </Label>
                                 <Controller
                                     name="room_id"
                                     control={control}
@@ -313,7 +471,7 @@ export function EditClassModal({
                                                 field.onChange(Number(v));
                                             }}
                                         >
-                                            <SelectTrigger>
+                                            <SelectTrigger id="edit-room">
                                                 <SelectValue placeholder="Select room" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -338,9 +496,14 @@ export function EditClassModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-capacity">Capacity</Label>
+                                <Label
+                                    htmlFor="edit-capacity"
+                                    className="text-sm font-medium"
+                                >
+                                    Capacity
+                                </Label>
                                 <Input
                                     id="edit-capacity"
                                     type="number"
@@ -359,15 +522,22 @@ export function EditClassModal({
                                     </p>
                                 )}
                                 {capacityBelowEnrolled && (
-                                    <p className="text-sm text-amber-600">
-                                        Capacity is below current enrollment (
-                                        {cls.enrolled})
+                                    <p className="text-sm text-amber-600 flex items-start gap-1">
+                                        <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                        <span>
+                                            Warning: Capacity is below current
+                                            enrollment ({cls.enrolled}{' '}
+                                            students)
+                                        </span>
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="edit-credit-hours">
+                                <Label
+                                    htmlFor="edit-credit-hours"
+                                    className="text-sm font-medium"
+                                >
                                     Credit Hours
                                 </Label>
                                 <Input
@@ -380,37 +550,102 @@ export function EditClassModal({
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-foreground">
+                    <div className="space-y-2">
+                        <Label
+                            htmlFor="edit-description"
+                            className="text-sm font-medium"
+                        >
                             Description
-                        </h3>
+                        </Label>
+                        <Textarea
+                            id="edit-description"
+                            rows={3}
+                            className="resize-none"
+                            {...register('description', {
+                                required: 'Description is required',
+                                maxLength: {
+                                    value: 255,
+                                    message: 'Max 255 characters'
+                                }
+                            })}
+                        />
+                        {errors.description && (
+                            <p className="text-sm text-red-600">
+                                {errors.description.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        <h4 className="font-medium text-[#203622]">
+                            Schedule
+                        </h4>
+
                         <div className="space-y-2">
-                            <Textarea
-                                id="edit-description"
-                                rows={3}
-                                {...register('description', {
-                                    required: 'Description is required',
-                                    maxLength: {
-                                        value: 255,
-                                        message: 'Max 255 characters'
-                                    }
+                            <Label className="text-sm font-medium">Days</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {ALL_DAYS.map((day) => {
+                                    const isSelected =
+                                        scheduleDays.includes(day);
+                                    return (
+                                        <button
+                                            key={day}
+                                            type="button"
+                                            onClick={() => toggleDay(day)}
+                                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                                isSelected
+                                                    ? 'bg-[#556830] text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {day.slice(0, 3)}
+                                        </button>
+                                    );
                                 })}
-                            />
-                            {errors.description && (
-                                <p className="text-sm text-red-600">
-                                    {errors.description.message}
-                                </p>
-                            )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="edit-start-time"
+                                    className="text-sm font-medium"
+                                >
+                                    Start Time
+                                </Label>
+                                <Input
+                                    id="edit-start-time"
+                                    type="time"
+                                    {...register('start_time')}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="edit-end-time"
+                                    className="text-sm font-medium"
+                                >
+                                    End Time
+                                </Label>
+                                <Input
+                                    id="edit-end-time"
+                                    type="time"
+                                    {...register('end_time')}
+                                />
+                            </div>
                         </div>
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-foreground">
+                        <h4 className="font-medium text-[#203622]">
                             Class Period
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-start-dt">
+                                <Label
+                                    htmlFor="edit-start-dt"
+                                    className="text-sm font-medium"
+                                >
                                     Start Date
                                 </Label>
                                 <Input
@@ -425,9 +660,27 @@ export function EditClassModal({
                                         {errors.start_dt.message}
                                     </p>
                                 )}
+                                {cls.status === SelectedClassStatus.Active &&
+                                    watchedStartDt !==
+                                        new Date(cls.start_dt)
+                                            .toISOString()
+                                            .split('T')[0] && (
+                                        <p className="text-sm text-amber-600 flex items-start gap-1">
+                                            <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                            <span>
+                                                Warning: Class has already
+                                                started
+                                            </span>
+                                        </p>
+                                    )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-end-dt">End Date</Label>
+                                <Label
+                                    htmlFor="edit-end-dt"
+                                    className="text-sm font-medium"
+                                >
+                                    End Date
+                                </Label>
                                 <Input
                                     id="edit-end-dt"
                                     type="date"
@@ -437,11 +690,79 @@ export function EditClassModal({
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-foreground">
-                            Status
-                        </h3>
-                        <StatusBadge status={cls.status} variant="class" />
+                    <div className="space-y-4">
+                        <h4 className="font-medium text-[#203622]">Status</h4>
+                        <div className="space-y-2">
+                            <Controller
+                                name="status"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem
+                                                value={
+                                                    SelectedClassStatus.Scheduled
+                                                }
+                                            >
+                                                Scheduled
+                                            </SelectItem>
+                                            <SelectItem
+                                                value={
+                                                    SelectedClassStatus.Active
+                                                }
+                                            >
+                                                Active
+                                            </SelectItem>
+                                            <SelectItem
+                                                value={
+                                                    SelectedClassStatus.Paused
+                                                }
+                                            >
+                                                Paused
+                                            </SelectItem>
+                                            <SelectItem
+                                                value={
+                                                    SelectedClassStatus.Completed
+                                                }
+                                            >
+                                                Completed
+                                            </SelectItem>
+                                            <SelectItem
+                                                value={
+                                                    SelectedClassStatus.Cancelled
+                                                }
+                                            >
+                                                Cancelled
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {watchedStatus === 'Paused' && (
+                                <p className="text-sm text-gray-600 flex items-start gap-1">
+                                    <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                    <span>
+                                        Pausing will hide this class from daily
+                                        attendance views
+                                    </span>
+                                </p>
+                            )}
+                            {watchedStatus === 'Cancelled' && (
+                                <p className="text-sm text-gray-600 flex items-start gap-1">
+                                    <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                    <span>
+                                        Cancelling will end this class and
+                                        update all enrollments
+                                    </span>
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     {conflicts.length > 0 && (
@@ -471,19 +792,18 @@ export function EditClassModal({
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-2 pt-2">
+                    <div className="mt-6 flex justify-end gap-2">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="border-gray-300"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
+                            className="bg-[#556830] hover:bg-[#203622] text-white"
                         >
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </Button>

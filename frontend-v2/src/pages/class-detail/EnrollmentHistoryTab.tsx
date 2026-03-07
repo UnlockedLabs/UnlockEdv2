@@ -188,7 +188,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     <span>
                                                         {new Date(
                                                             enrollment.enrolled_at
-                                                        ).toLocaleDateString()}
+                                                        ).toLocaleDateString(
+                                                            'en-CA'
+                                                        )}
                                                     </span>
                                                 </div>
                                             )}
@@ -205,7 +207,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                         {new Date(
                                                             enrollment.enrollment_ended_at ??
                                                                 enrollment.completion_dt!
-                                                        ).toLocaleDateString()}
+                                                        ).toLocaleDateString(
+                                                            'en-CA'
+                                                        )}
                                                     </span>
                                                 </div>
                                             )}
