@@ -200,7 +200,7 @@ func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Req
 }
 
 func (srv *Server) handleGetProgramClassEnrollmentsAttendance(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("enrollment_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}

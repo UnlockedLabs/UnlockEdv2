@@ -245,6 +245,14 @@ func (p *ProgramClassEventAttendance) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+type AttendanceRecordResponse struct {
+	UserID           uint   `json:"user_id"`
+	Date             string `json:"date"`
+	AttendanceStatus string `json:"attendance_status"`
+	Note             string `json:"note"`
+	MarkedBy         string `json:"marked_by"`
+}
+
 type ClassEventInstance struct {
 	EventID           uint                          `json:"event_id"`
 	ClassTime         string                        `json:"class_time"` // e.g. "12:00-14:00"

@@ -56,7 +56,7 @@ export function ActiveEnrollmentsTable({
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
                     {enrollments.length} active class
-                    {enrollments.length !== 1 ? 'es' : ''}
+                    {enrollments.length !== 1 ? 'es' : ''} &bull; All time
                 </p>
             </div>
             <Table>
