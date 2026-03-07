@@ -30,20 +30,30 @@ interface ChangeClassStatusModalProps {
     onStatusChanged: () => void;
 }
 
-const STATUS_TRANSITIONS: Record<string, SelectedClassStatus[]> = {
-    [SelectedClassStatus.Scheduled]: [
-        SelectedClassStatus.Active,
-        SelectedClassStatus.Cancelled
-    ],
-    [SelectedClassStatus.Active]: [
-        SelectedClassStatus.Paused,
-        SelectedClassStatus.Completed
-    ],
-    [SelectedClassStatus.Paused]: [
-        SelectedClassStatus.Active,
-        SelectedClassStatus.Cancelled
-    ]
-};
+const ALL_STATUSES: SelectedClassStatus[] = [
+    SelectedClassStatus.Active,
+    SelectedClassStatus.Scheduled,
+    SelectedClassStatus.Paused,
+    SelectedClassStatus.Completed,
+    SelectedClassStatus.Cancelled
+];
+
+function getStatusDescription(status: SelectedClassStatus): string {
+    switch (status) {
+        case SelectedClassStatus.Active:
+            return 'Class is currently running and accepting attendance.';
+        case SelectedClassStatus.Scheduled:
+            return 'Class is scheduled to begin in the future.';
+        case SelectedClassStatus.Paused:
+            return 'Class is temporarily paused and hidden from daily attendance.';
+        case SelectedClassStatus.Completed:
+            return 'Class has finished and is now archived.';
+        case SelectedClassStatus.Cancelled:
+            return 'Class has been cancelled and will not take place.';
+        default:
+            return '';
+    }
+}
 
 export function ChangeClassStatusModal({
     open,
@@ -57,8 +67,6 @@ export function ChangeClassStatusModal({
 }: ChangeClassStatusModalProps) {
     const [newStatus, setNewStatus] = useState<SelectedClassStatus>(currentStatus);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const allowedStatuses = STATUS_TRANSITIONS[currentStatus] ?? [];
 
     useEffect(() => {
         if (open) {
@@ -109,16 +117,16 @@ export function ChangeClassStatusModal({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={currentStatus}>
-                                    {currentStatus} (current)
-                                </SelectItem>
-                                {allowedStatuses.map((s) => (
+                                {ALL_STATUSES.map((s) => (
                                     <SelectItem key={s} value={s}>
                                         {s}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
+                        <p className="text-xs text-gray-500 mt-2">
+                            {getStatusDescription(newStatus)}
+                        </p>
                     </div>
                     <div className="flex gap-2 justify-end pt-4">
                         <Button
