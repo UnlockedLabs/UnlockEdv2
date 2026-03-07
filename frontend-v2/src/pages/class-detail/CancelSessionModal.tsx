@@ -85,22 +85,19 @@ export function CancelSessionModal({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
-                        Cancel Session
+                        Cancel Class
                     </DialogTitle>
                     <DialogDescription>
-                        Cancel the session scheduled for {dateLabel}
+                        Cancel the class scheduled for {dateLabel}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div>
+                    <div className="space-y-2">
                         <Label htmlFor="cancelReason">
-                            Cancellation Reason
+                            Reason for Cancellation *
                         </Label>
                         <Select value={reason} onValueChange={handleReasonChange}>
-                            <SelectTrigger
-                                id="cancelReason"
-                                className="mt-1"
-                            >
+                            <SelectTrigger id="cancelReason">
                                 <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
                             <SelectContent>
@@ -113,15 +110,14 @@ export function CancelSessionModal({
                         </Select>
                     </div>
                     {isOther && (
-                        <div>
-                            <Label htmlFor="cancelNote">Note *</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="cancelNote">Please specify *</Label>
                             <Textarea
                                 id="cancelNote"
-                                placeholder="Provide details for the cancellation..."
+                                placeholder="Enter the specific reason for cancellation..."
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 rows={3}
-                                className="mt-1"
                             />
                         </div>
                     )}
@@ -132,7 +128,7 @@ export function CancelSessionModal({
                         onClick={onClose}
                         disabled={isSubmitting}
                     >
-                        Keep Session
+                        Cancel
                     </Button>
                     <Button
                         onClick={() => {
@@ -141,7 +137,7 @@ export function CancelSessionModal({
                         disabled={!canSubmit || isSubmitting}
                         className="bg-red-600 hover:bg-red-700 text-white"
                     >
-                        {isSubmitting ? 'Cancelling...' : 'Cancel Session'}
+                        {isSubmitting ? 'Cancelling...' : 'Cancel Class'}
                     </Button>
                 </div>
             </DialogContent>

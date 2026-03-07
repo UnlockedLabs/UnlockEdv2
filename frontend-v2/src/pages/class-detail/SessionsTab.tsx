@@ -9,9 +9,6 @@ import {
     CalendarClock,
     CalendarOff,
     X,
-    ChevronLeft,
-    ChevronRight,
-    Zap,
     Users,
     MapPin
 } from 'lucide-react';
@@ -24,7 +21,10 @@ import { Attendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
 import { CancelSessionModal } from './CancelSessionModal';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
-import { BulkSessionsModal, BulkSession } from './BulkSessionsModal';
+import {
+    BulkCancelSessionsModal,
+    BulkCancelSession
+} from './BulkCancelSessionsModal';
 import {
     ChangeInstructorModal,
     ChangeInstructorSession
@@ -34,7 +34,8 @@ import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
 type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
 type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
 
-const PAGE_SIZE = 15;
+const PAST_DISPLAY_LIMIT = 15;
+const UPCOMING_DISPLAY_LIMIT = 10;
 const TIME_FILTER_DAYS: Record<Exclude<TimeFilter, 'all'>, number> = {
     week: 7,
     '2weeks': 14,
@@ -132,7 +133,7 @@ function FilterButton({
                     ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                     : active
                       ? 'bg-[#556830] text-white'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
         >
             {children}
@@ -144,13 +145,12 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     const navigate = useNavigate();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-    const [page, setPage] = useState(0);
     const [cancelTarget, setCancelTarget] = useState<SessionDisplay | null>(
         null
     );
     const [rescheduleTarget, setRescheduleTarget] =
         useState<SessionDisplay | null>(null);
-    const [showBulkModal, setShowBulkModal] = useState(false);
+    const [showBulkCancel, setShowBulkCancel] = useState(false);
     const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
     const [showChangeInstructor, setShowChangeInstructor] = useState(false);
     const [showChangeRoom, setShowChangeRoom] = useState(false);
@@ -160,6 +160,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     const [changeRoomSessions, setChangeRoomSessions] = useState<
         ChangeRoomSession[]
     >([]);
+    const [showAllPast, setShowAllPast] = useState(false);
 
     const { data: instancesResp, mutate } = useSWR<
         ServerResponseMany<ClassEventInstance>
@@ -184,24 +185,10 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         return { completed, missing, upcoming, cancelled };
     }, [allSessions]);
 
-    const bulkSessions = useMemo<BulkSession[]>(() => {
-        const room = cls.events?.[0]?.room_ref?.name ?? '';
-        return allSessions
-            .filter((s) => s.isUpcoming && !s.isCancelled)
-            .map((s) => ({
-                instance: s.instance,
-                dateObj: s.dateObj,
-                dayName: s.dayName,
-                classTime: s.instance.class_time,
-                room
-            }));
-    }, [allSessions, cls.events]);
-
     const hideTimeFilter = statusFilter === 'upcoming';
 
     const handleStatusChange = (newStatus: StatusFilter) => {
         setStatusFilter(newStatus);
-        setPage(0);
         setSelectedDates(new Set());
         if (newStatus === 'upcoming') {
             setTimeFilter('all');
@@ -210,7 +197,6 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     const handleTimeChange = (newTime: TimeFilter) => {
         setTimeFilter(newTime);
-        setPage(0);
         setSelectedDates(new Set());
     };
 
@@ -258,6 +244,17 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         [allSessions, selectedDates]
     );
 
+    const bulkCancelSessions = useMemo<BulkCancelSession[]>(
+        () =>
+            selectedUpcomingSessions.map((s) => ({
+                date: s.instance.date,
+                dateObj: s.dateObj,
+                dayName: s.dayName,
+                eventId: s.instance.event_id ?? s.instance.id
+            })),
+        [selectedUpcomingSessions]
+    );
+
     const filtered = useMemo(() => {
         let result = allSessions;
         const cutoff = getTimeCutoff(timeFilter);
@@ -298,11 +295,26 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         return result;
     }, [allSessions, statusFilter, timeFilter]);
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(page, totalPages - 1);
-    const paginatedSessions = filtered.slice(
-        safePage * PAGE_SIZE,
-        (safePage + 1) * PAGE_SIZE
+    const pastAndTodaySessions = useMemo(
+        () => filtered.filter((s) => s.isPast || s.isToday),
+        [filtered]
+    );
+
+    const upcomingSessions = useMemo(
+        () =>
+            filtered
+                .filter((s) => s.isUpcoming)
+                .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime()),
+        [filtered]
+    );
+
+    const displayedPast = showAllPast
+        ? pastAndTodaySessions
+        : pastAndTodaySessions.slice(0, PAST_DISPLAY_LIMIT);
+
+    const displayedUpcoming = upcomingSessions.slice(
+        0,
+        UPCOMING_DISPLAY_LIMIT
     );
 
     const navigateToAttendance = (session: SessionDisplay) => {
@@ -312,44 +324,39 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         );
     };
 
-    const groupTitle = (() => {
-        switch (statusFilter) {
-            case 'completed':
-                return 'Completed Sessions';
-            case 'missing':
-                return 'Sessions Missing Attendance';
-            case 'upcoming':
-                return 'Upcoming Sessions';
-            case 'cancelled':
-                return 'Cancelled Sessions';
-            default:
-                return 'All Sessions';
-        }
-    })();
-
     const timeLabel = hideTimeFilter
         ? ''
         : timeFilter === 'all'
           ? 'All Time'
           : timeFilter === 'month'
-            ? 'Last 4 Weeks'
+            ? 'Last Month'
             : timeFilter === '2weeks'
               ? 'Last 2 Weeks'
               : 'Last Week';
 
+    const renderSessionRow = (session: SessionDisplay) => (
+        <SessionRow
+            key={session.instance.date + '-' + session.instance.id}
+            session={session}
+            selected={selectedDates.has(session.instance.date)}
+            onToggle={() => toggleSession(session.instance.date)}
+            onClick={() => navigateToAttendance(session)}
+            onCancel={() => setCancelTarget(session)}
+            onReschedule={() => setRescheduleTarget(session)}
+        />
+    );
+
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <div className="border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h3 className="text-[#203622] font-semibold">
-                            Session Management
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                            View and manage individual sessions
+                        <h3 className="text-[#203622]">Session Management</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                            View, cancel, or reschedule individual sessions
                         </p>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2">
                         <StatButton
                             active={statusFilter === 'completed'}
                             onClick={() =>
@@ -398,60 +405,45 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                         : 'cancelled'
                                 )
                             }
-                            colorClass="bg-gray-100 text-[#203622]"
+                            colorClass="bg-gray-100 text-gray-700"
                         >
                             {stats.cancelled} Cancelled
                         </StatButton>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-300"
-                            onClick={() => setShowBulkModal(true)}
-                        >
-                            <Zap className="size-4 mr-1.5" />
-                            Bulk Actions
-                        </Button>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                    <Filter className="size-4 text-gray-500 hidden sm:block" />
-                    <div className="flex gap-2 flex-wrap">
-                        <FilterButton
-                            active={statusFilter === 'all'}
-                            onClick={() => handleStatusChange('all')}
-                        >
-                            All Sessions
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'completed'}
-                            onClick={() => handleStatusChange('completed')}
-                        >
-                            Completed
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'missing'}
-                            onClick={() => handleStatusChange('missing')}
-                        >
-                            Missing
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'upcoming'}
-                            onClick={() => handleStatusChange('upcoming')}
-                        >
-                            Upcoming
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'cancelled'}
-                            onClick={() => handleStatusChange('cancelled')}
-                        >
-                            Cancelled
-                        </FilterButton>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Filter className="size-4 text-gray-400" />
+                        <div className="flex gap-2">
+                            <FilterButton
+                                active={statusFilter === 'all'}
+                                onClick={() => handleStatusChange('all')}
+                            >
+                                All Sessions
+                            </FilterButton>
+                            <FilterButton
+                                active={statusFilter === 'completed'}
+                                onClick={() => handleStatusChange('completed')}
+                            >
+                                Completed
+                            </FilterButton>
+                            <FilterButton
+                                active={statusFilter === 'missing'}
+                                onClick={() => handleStatusChange('missing')}
+                            >
+                                Missing
+                            </FilterButton>
+                            <FilterButton
+                                active={statusFilter === 'upcoming'}
+                                onClick={() => handleStatusChange('upcoming')}
+                            >
+                                Upcoming
+                            </FilterButton>
+                        </div>
                     </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <div className="h-6 w-px bg-gray-300 hidden sm:block" />
+                    <div className="flex items-center gap-2">
+                        <div className="h-6 w-px bg-gray-300" />
                         <FilterButton
                             active={timeFilter === 'week'}
                             onClick={() => handleTimeChange('week')}
@@ -471,7 +463,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             onClick={() => handleTimeChange('month')}
                             disabled={hideTimeFilter}
                         >
-                            Last 4 Weeks
+                            Last Month
                         </FilterButton>
                         <FilterButton
                             active={timeFilter === 'all'}
@@ -484,9 +476,9 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 </div>
             </div>
 
-            {stats.missing > 0 && statusFilter !== 'missing' && (
-                <div className="mx-4 sm:mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            {stats.missing > 0 && (
+                <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
                             <div>
@@ -497,7 +489,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                         : 'Sessions'}{' '}
                                     Missing Attendance Records
                                 </div>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-gray-600 mt-1">
                                     Please review and complete attendance for
                                     past sessions
                                 </p>
@@ -507,7 +499,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             size="sm"
                             variant="outline"
                             onClick={() => handleStatusChange('missing')}
-                            className="border-amber-300 text-amber-700 hover:bg-amber-100 self-start sm:ml-0 shrink-0"
+                            className="border-amber-300 text-amber-700 hover:bg-amber-100"
                         >
                             View Missing Sessions
                         </Button>
@@ -515,102 +507,87 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 </div>
             )}
 
-            <div className="p-4 sm:p-6">
+            <div className="p-6">
                 {filtered.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
-                        <Calendar className="size-12 mx-auto mb-3 text-gray-500" />
+                        <Calendar className="size-12 mx-auto mb-3 text-gray-300" />
                         <p>No sessions match your filters</p>
                         <p className="text-sm mt-1">
                             Try adjusting your filter selection
                         </p>
                     </div>
                 ) : (
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="space-y-8">
+                        {pastAndTodaySessions.length > 0 && (
                             <div>
-                                <h4 className="text-[#203622] font-medium">
-                                    {groupTitle}
-                                </h4>
-                                {timeLabel && (
-                                    <p className="text-sm text-gray-500 mt-0.5">
-                                        {timeLabel}
-                                    </p>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h4 className="text-[#203622] font-medium">
+                                            Past & Today
+                                        </h4>
+                                        <p className="text-sm text-gray-600 mt-0.5">
+                                            Recent sessions requiring action or
+                                            review
+                                            {timeLabel &&
+                                                ` - ${timeLabel}`}
+                                        </p>
+                                    </div>
+                                    <span className="text-sm text-gray-600">
+                                        {pastAndTodaySessions.length}{' '}
+                                        {pastAndTodaySessions.length === 1
+                                            ? 'session'
+                                            : 'sessions'}
+                                    </span>
+                                </div>
+                                <div className="space-y-2">
+                                    {displayedPast.map(renderSessionRow)}
+                                </div>
+                                {pastAndTodaySessions.length >
+                                    PAST_DISPLAY_LIMIT && (
+                                    <div className="pt-4 text-center">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                setShowAllPast(!showAllPast)
+                                            }
+                                        >
+                                            {showAllPast
+                                                ? 'Show Less'
+                                                : `Show All ${pastAndTodaySessions.length} Sessions`}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
-                            <span className="text-sm text-gray-500">
-                                {filtered.length}{' '}
-                                {filtered.length === 1
-                                    ? 'session'
-                                    : 'sessions'}
-                            </span>
-                        </div>
-                        <div className="space-y-2">
-                            {paginatedSessions.map((session) => (
-                                <SessionRow
-                                    key={
-                                        session.instance.date +
-                                        '-' +
-                                        session.instance.id
-                                    }
-                                    session={session}
-                                    selected={selectedDates.has(
-                                        session.instance.date
-                                    )}
-                                    onToggle={() =>
-                                        toggleSession(session.instance.date)
-                                    }
-                                    onClick={() =>
-                                        navigateToAttendance(session)
-                                    }
-                                    onCancel={() => setCancelTarget(session)}
-                                    onReschedule={() =>
-                                        setRescheduleTarget(session)
-                                    }
-                                    onChangeInstructor={() =>
-                                        openChangeInstructor([session])
-                                    }
-                                    onChangeRoom={() =>
-                                        openChangeRoom([session])
-                                    }
-                                />
-                            ))}
-                        </div>
-                        {totalPages > 1 && (
-                            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2 pt-4 mt-4 border-t border-gray-200">
-                                <p className="text-sm text-gray-500">
-                                    Showing {safePage * PAGE_SIZE + 1}-
-                                    {Math.min(
-                                        (safePage + 1) * PAGE_SIZE,
-                                        filtered.length
-                                    )}{' '}
-                                    of {filtered.length}
-                                </p>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={safePage === 0}
-                                        onClick={() =>
-                                            setPage(safePage - 1)
-                                        }
-                                    >
-                                        <ChevronLeft className="size-4" />
-                                    </Button>
-                                    <span className="flex items-center text-sm text-gray-600 px-2">
-                                        {safePage + 1} / {totalPages}
+                        )}
+
+                        {upcomingSessions.length > 0 && (
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h4 className="text-[#203622] font-medium">
+                                            Upcoming Sessions
+                                        </h4>
+                                        <p className="text-sm text-gray-600 mt-0.5">
+                                            Next{' '}
+                                            {Math.min(
+                                                upcomingSessions.length,
+                                                UPCOMING_DISPLAY_LIMIT
+                                            )}{' '}
+                                            scheduled{' '}
+                                            {upcomingSessions.length === 1
+                                                ? 'session'
+                                                : 'session(s)'}
+                                        </p>
+                                    </div>
+                                    <span className="text-sm text-gray-600">
+                                        {upcomingSessions.length > UPCOMING_DISPLAY_LIMIT
+                                            ? `Showing next ${UPCOMING_DISPLAY_LIMIT} of ${upcomingSessions.length} total`
+                                            : `${upcomingSessions.length} ${upcomingSessions.length === 1 ? 'session' : 'sessions'}`}
                                     </span>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            safePage >= totalPages - 1
-                                        }
-                                        onClick={() =>
-                                            setPage(safePage + 1)
-                                        }
-                                    >
-                                        <ChevronRight className="size-4" />
-                                    </Button>
+                                </div>
+                                <div className="space-y-2">
+                                    {displayedUpcoming.map(renderSessionRow)}
                                 </div>
                             </div>
                         )}
@@ -654,16 +631,20 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             day: 'numeric'
                         }
                     )}
+                    currentRoom={cls.events?.[0]?.room_ref?.name}
                     onRescheduled={() => void mutate()}
                 />
             )}
 
-            <BulkSessionsModal
-                open={showBulkModal}
-                onOpenChange={setShowBulkModal}
+            <BulkCancelSessionsModal
+                open={showBulkCancel}
+                onOpenChange={setShowBulkCancel}
                 classId={cls.id}
-                sessions={bulkSessions}
-                onComplete={() => mutate()}
+                sessions={bulkCancelSessions}
+                onCancelled={() => {
+                    setSelectedDates(new Set());
+                    void mutate();
+                }}
             />
 
             <ChangeInstructorModal
@@ -719,7 +700,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                             selectedUpcomingSessions[0]
                                         );
                                     } else {
-                                        setShowBulkModal(true);
+                                        setShowBulkCancel(true);
                                     }
                                 }}
                             >
@@ -773,7 +754,7 @@ function StatButton({
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
                 active
                     ? `${colorClass} font-medium`
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
         >
             {children}
@@ -787,9 +768,7 @@ function SessionRow({
     onToggle,
     onClick,
     onCancel,
-    onReschedule,
-    onChangeInstructor,
-    onChangeRoom
+    onReschedule
 }: {
     session: SessionDisplay;
     selected: boolean;
@@ -797,8 +776,6 @@ function SessionRow({
     onClick: () => void;
     onCancel: () => void;
     onReschedule: () => void;
-    onChangeInstructor: () => void;
-    onChangeRoom: () => void;
 }) {
     const dateLabel = session.dateObj.toLocaleDateString('en-US', {
         month: 'long',
@@ -819,9 +796,9 @@ function SessionRow({
     return (
         <div
             onClick={onClick}
-            className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
+            className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
         >
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-4 min-w-0">
                 {session.isUpcoming && !session.isCancelled && (
                     <Checkbox
                         checked={selected}
@@ -836,7 +813,7 @@ function SessionRow({
                 ) : session.isPast ? (
                     <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
                 ) : (
-                    <Calendar className="size-5 text-gray-500 flex-shrink-0" />
+                    <Calendar className="size-5 text-gray-400 flex-shrink-0" />
                 )}
                 <div className="min-w-0">
                     <div className="text-sm font-medium text-[#203622]">
@@ -855,22 +832,25 @@ function SessionRow({
                         {session.isCancelled && (
                             <Badge
                                 variant="outline"
-                                className="ml-2 bg-gray-100 text-gray-500 border-gray-300"
+                                className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
                             >
                                 Cancelled
                             </Badge>
                         )}
                     </div>
                     <div
-                        className={`text-xs text-gray-500 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
+                        className={`text-xs text-gray-600 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
                     >
                         {session.instance.class_time}
                     </div>
                 </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4 sm:ml-0 shrink-0 flex-wrap">
+            <div
+                className="flex items-center gap-4"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {session.hasAttendance && (
-                    <div className="text-sm text-gray-500 whitespace-nowrap">
+                    <div className="text-sm text-gray-600 whitespace-nowrap">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
                         {session.totalEnrolled > 0
@@ -897,10 +877,7 @@ function SessionRow({
                     <Button
                         size="sm"
                         variant="outline"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onClick();
-                        }}
+                        onClick={() => onClick()}
                         className="border-gray-300"
                     >
                         {session.hasAttendance ? 'Edit' : 'Take'} Attendance
@@ -911,34 +888,7 @@ function SessionRow({
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onChangeInstructor();
-                            }}
-                            className="border-gray-300 hover:bg-gray-50"
-                        >
-                            <Users className="size-4 mr-1.5" />
-                            Instructor
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onChangeRoom();
-                            }}
-                            className="border-gray-300 hover:bg-gray-50"
-                        >
-                            <MapPin className="size-4 mr-1.5" />
-                            Room
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onReschedule();
-                            }}
+                            onClick={() => onReschedule()}
                             className="border-gray-300 hover:bg-gray-50"
                         >
                             <CalendarClock className="size-4 mr-1.5" />
@@ -947,10 +897,7 @@ function SessionRow({
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onCancel();
-                            }}
+                            onClick={() => onCancel()}
                             className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
                         >
                             <X className="size-4 mr-1.5" />
