@@ -6,8 +6,11 @@ import (
 	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
@@ -20,6 +23,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
 		adminFeatureRoute("GET /api/program-classes/todays-schedule", srv.handleGetTodaysSchedule, axx),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/events/{event_id}", srv.handlePatchEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
@@ -157,6 +161,124 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Override(s) created successfully")
+}
+
+type patchEventOverrideRequest struct {
+	Date         string `json:"date"`
+	IsCancelled  bool   `json:"is_cancelled"`
+	Reason       string `json:"reason"`
+	RoomID       *uint  `json:"room_id"`
+	InstructorID *uint  `json:"instructor_id"`
+	NewDate      string `json:"new_date"`
+	NewStartTime string `json:"new_start_time"`
+}
+
+func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
+	eventId, err := strconv.Atoi(r.PathValue("event_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event_id")
+	}
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	cannotCreateOverride, err := srv.cannotUpdateEvent(classID)
+	if err != nil {
+		return err
+	}
+	if cannotCreateOverride {
+		return newBadRequestServiceError(errors.New("cannot create an event override for a completed or cancelled class"), "cannot create event override")
+	}
+	var req patchEventOverrideRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if req.Date == "" {
+		return newBadRequestServiceError(errors.New("date is required"), "date is required")
+	}
+	ctx := srv.getQueryContext(r)
+	facilityLoc, err := time.LoadLocation(ctx.Timezone)
+	if err != nil {
+		return newBadRequestServiceError(err, "invalid facility timezone")
+	}
+	event, err := srv.Db.GetEventById(eventId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	eventRule, err := event.GetRRuleWithTimezone(ctx.Timezone)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	eventStartLocal := eventRule.OrigOptions.Dtstart.In(facilityLoc)
+	canonicalHour := eventStartLocal.Hour()
+	canonicalMinute := eventStartLocal.Minute()
+
+	buildRRule := func(dateStr string, optionalTime string) (string, error) {
+		dateOnly, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return "", err
+		}
+		hour, minute := canonicalHour, canonicalMinute
+		if optionalTime != "" {
+			parts := strings.Split(optionalTime, ":")
+			if len(parts) == 2 {
+				hour, _ = strconv.Atoi(parts[0])
+				minute, _ = strconv.Atoi(parts[1])
+			}
+		}
+		cleanDate := dateOnly.Format("20060102")
+		return fmt.Sprintf("DTSTART;TZID=%s:%sT%02d%02d00\nRRULE:FREQ=DAILY;COUNT=1",
+			ctx.Timezone, cleanDate, hour, minute), nil
+	}
+
+	originalRRule, err := buildRRule(req.Date, "")
+	if err != nil {
+		return newBadRequestServiceError(err, "invalid date format")
+	}
+
+	if req.NewDate != "" {
+		newRRule, err := buildRRule(req.NewDate, req.NewStartTime)
+		if err != nil {
+			return newBadRequestServiceError(err, "invalid new_date format")
+		}
+		overrides := []*models.ProgramClassEventOverride{
+			{
+				EventID:       uint(eventId),
+				ClassID:       uint(classID),
+				Duration:      event.Duration,
+				OverrideRrule: originalRRule,
+				IsCancelled:   true,
+				Reason:        "rescheduled",
+			},
+			{
+				EventID:       uint(eventId),
+				ClassID:       uint(classID),
+				Duration:      event.Duration,
+				OverrideRrule: newRRule,
+				IsCancelled:   false,
+				RoomID:        event.RoomID,
+			},
+		}
+		if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, overrides); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		return writeJsonResponse(w, http.StatusOK, "Event rescheduled successfully")
+	}
+
+	override := &models.ProgramClassEventOverride{
+		EventID:       uint(eventId),
+		ClassID:       uint(classID),
+		Duration:      event.Duration,
+		OverrideRrule: originalRRule,
+		IsCancelled:   req.IsCancelled,
+		Reason:        req.Reason,
+		RoomID:        req.RoomID,
+		InstructorID:  req.InstructorID,
+	}
+	if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, []*models.ProgramClassEventOverride{override}); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Override created successfully")
 }
 
 func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
