@@ -29,6 +29,7 @@ export function EditProfileDialog({
 }: EditProfileDialogProps) {
     const [firstName, setFirstName] = useState(user.name_first);
     const [lastName, setLastName] = useState(user.name_last);
+    const [username, setUsername] = useState(user.username);
     const [docId, setDocId] = useState(user.doc_id ?? '');
     const [submitting, setSubmitting] = useState(false);
 
@@ -36,6 +37,7 @@ export function EditProfileDialog({
         if (open) {
             setFirstName(user.name_first);
             setLastName(user.name_last);
+            setUsername(user.username);
             setDocId(user.doc_id ?? '');
         }
     }, [open, user]);
@@ -44,7 +46,7 @@ export function EditProfileDialog({
         setSubmitting(true);
         const resp = await API.patch<User, Partial<User>>(
             `users/${user.id}`,
-            { name_first: firstName, name_last: lastName, doc_id: docId }
+            { name_first: firstName, name_last: lastName, username, doc_id: docId }
         );
         setSubmitting(false);
         if (resp.success) {
@@ -92,9 +94,9 @@ export function EditProfileDialog({
                         <Label htmlFor="edit-username">Username</Label>
                         <Input
                             id="edit-username"
-                            value={user.username}
-                            disabled
-                            className="mt-2 bg-gray-50"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="mt-2"
                         />
                     </div>
                     <div>

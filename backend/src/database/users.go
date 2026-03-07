@@ -636,6 +636,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	base := db.WithContext(args.Ctx).
 		Table("program_class_enrollments AS pce").
 		Select(`
+            pce.id                   AS enrollment_id,
             pce.enrollment_status   AS enrollment_status,
             p.name                   AS program_name,
             p.id                     AS program_id,
@@ -679,7 +680,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		).
 		Where("pce.user_id = ?", userId).
 		Group(`
-            pce.enrollment_status,
+            pce.id, pce.enrollment_status,
             p.name, p.id,
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at,
 			pce.created_at, pce.change_reason`).Order(args.OrderClause("pce.created_at desc"))

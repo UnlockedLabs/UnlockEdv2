@@ -67,42 +67,42 @@ export function DeactivateDialog({
                 <div className="py-4 space-y-4">
                     <ul className="space-y-2 text-sm text-gray-700">
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident will be withdrawn from all active
                                 classes and programs.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident's account will be locked and marked
                                 as Deactivated.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 Staff will no longer be able to edit this
                                 resident's account.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident will not be able to log in or
                                 enroll in new programs.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The time this account was deactivated will be
                                 recorded.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident's account history and favorites
                                 will be preserved and remain searchable.

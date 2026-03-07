@@ -42,9 +42,9 @@ export function HistoricalNotes({
                             key={note.id}
                             className="border-l-4 border-blue-300 pl-4 py-2"
                         >
-                            <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                                <FileText className="size-3.5" />
-                                <span className="font-medium text-gray-700">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                                <FileText className="size-4" />
+                                <span className="font-medium">
                                     {note.admin}
                                 </span>
                                 <span>&#183;</span>
