@@ -1,4 +1,5 @@
 import { Download } from 'lucide-react';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,11 +10,27 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/components/ui/table';
 import { useToast } from '@/contexts/ToastContext';
-import { ToastState } from '@/types';
+import { ToastState, ServerResponseMany } from '@/types';
 import API from '@/api/api';
 import { ResidentProgramOverview } from '@/types';
-import { getEngagementIndicator } from './engagement-utils';
+import { formatDate } from '@/lib/formatters';
+
+interface AttendanceRecord {
+    user_id: number;
+    date: string;
+    attendance_status: string;
+    note: string;
+    marked_by: string;
+}
 
 interface DetailedAttendanceDialogProps {
     open: boolean;
@@ -21,6 +38,25 @@ interface DetailedAttendanceDialogProps {
     enrollment: ResidentProgramOverview | null;
     residentId: string;
 }
+
+const STATUS_DISPLAY: Record<string, { label: string; className: string }> = {
+    present: {
+        label: 'Present',
+        className: 'bg-green-100 text-green-800 border-green-300'
+    },
+    partial: {
+        label: 'Partial',
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    },
+    absent_excused: {
+        label: 'Excused',
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    },
+    absent_unexcused: {
+        label: 'Absent',
+        className: 'bg-red-100 text-red-800 border-red-300'
+    }
+};
 
 export function DetailedAttendanceDialog({
     open,
@@ -30,13 +66,16 @@ export function DetailedAttendanceDialog({
 }: DetailedAttendanceDialogProps) {
     const { toaster } = useToast();
 
-    if (!enrollment) return null;
+    const { data: attendanceResp } = useSWR<
+        ServerResponseMany<AttendanceRecord>
+    >(
+        open && enrollment
+            ? `/api/programs/${enrollment.program_id}/classes/${enrollment.class_id}/enrollments/${enrollment.enrollment_id}/attendance`
+            : null
+    );
+    const records = attendanceResp?.data ?? [];
 
-    const present = enrollment.present_attendance ?? 0;
-    const absent = enrollment.absent_attendance ?? 0;
-    const total = present + absent;
-    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-    const indicator = getEngagementIndicator(present, total);
+    if (!enrollment) return null;
 
     const handleExport = async () => {
         try {
@@ -73,20 +112,7 @@ export function DetailedAttendanceDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                    <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div>
-                            <div className="font-medium text-[#203622]">
-                                {present} of {total} sessions attended
-                            </div>
-                            <div className="text-sm text-gray-600">
-                                {rate}% overall attendance
-                            </div>
-                        </div>
-                        <Badge className={indicator.className}>
-                            {indicator.label}
-                        </Badge>
-                    </div>
-                    <div className="flex justify-end">
+                    <div className="mb-4 flex justify-end">
                         <Button
                             variant="outline"
                             size="sm"
@@ -95,6 +121,67 @@ export function DetailedAttendanceDialog({
                             <Download className="size-4 mr-2" />
                             Export to CSV
                         </Button>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Marked By</TableHead>
+                                    <TableHead>Notes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {records.length > 0 ? (
+                                    records.map((record, i) => {
+                                        const display =
+                                            STATUS_DISPLAY[
+                                                record.attendance_status
+                                            ];
+                                        return (
+                                            <TableRow key={i}>
+                                                <TableCell>
+                                                    {formatDate(record.date)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {display ? (
+                                                        <Badge
+                                                            className={
+                                                                display.className
+                                                            }
+                                                        >
+                                                            {display.label}
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline">
+                                                            {
+                                                                record.attendance_status
+                                                            }
+                                                        </Badge>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {record.marked_by || '\u2014'}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {record.note || '\u2014'}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={4}
+                                            className="text-center text-sm text-gray-500 py-8"
+                                        >
+                                            No attendance records available
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
                 <DialogFooter>

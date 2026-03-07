@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -635,6 +636,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	base := db.WithContext(args.Ctx).
 		Table("program_class_enrollments AS pce").
 		Select(`
+            pce.id                   AS enrollment_id,
             pce.enrollment_status   AS enrollment_status,
             p.name                   AS program_name,
             p.id                     AS program_id,
@@ -663,7 +665,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             -- count everything else as absent
             COALESCE(SUM(
               CASE WHEN pcea.attendance_status NOT IN ('present','partial') THEN 1 ELSE 0 END
-            ), 0)  AS absent_attendance, pce.change_reason
+            ), 0)  AS absent_attendance, pce.change_reason,
+			STRING_AGG(DISTINCT e.recurrence_rule, '|') AS recurrence_rule
         `).
 		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
@@ -677,7 +680,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		).
 		Where("pce.user_id = ?", userId).
 		Group(`
-            pce.enrollment_status,
+            pce.id, pce.enrollment_status,
             p.name, p.id,
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at,
 			pce.created_at, pce.change_reason`).Order(args.OrderClause("pce.created_at desc"))
@@ -696,6 +699,59 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 
 	}
 	return userEnrollments, nil
+}
+
+func (db *DB) GetUserWeeklyAttendanceTrend(ctx context.Context, userID, weeks int) ([]models.WeeklyAttendanceTrend, error) {
+	type weekRow struct {
+		WeekStart    time.Time
+		PresentCount float64
+		TotalCount   float64
+	}
+	var rows []weekRow
+	query := `
+		SELECT DATE_TRUNC('week', date::date) AS week_start,
+			COALESCE(SUM(CASE WHEN attendance_status IN ('present','partial') THEN 1 ELSE 0 END), 0) AS present_count,
+			COUNT(*) AS total_count
+		FROM program_class_event_attendance
+		WHERE user_id = ? AND date::date >= NOW() - INTERVAL '1 week' * ?
+		GROUP BY week_start
+		ORDER BY week_start ASC`
+	if err := db.WithContext(ctx).Raw(query, userID, weeks).Scan(&rows).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "weekly_attendance_trend")
+	}
+	trends := make([]models.WeeklyAttendanceTrend, 0, len(rows))
+	for _, r := range rows {
+		rate := 0.0
+		if r.TotalCount > 0 {
+			rate = r.PresentCount / r.TotalCount * 100
+		}
+		trends = append(trends, models.WeeklyAttendanceTrend{
+			Week: fmt.Sprintf("%s %d", r.WeekStart.Format("Jan"), r.WeekStart.Day()),
+			Rate: rate,
+		})
+	}
+	return trends, nil
+}
+
+func (db *DB) GetUserNotes(ctx context.Context, userID uint) ([]models.UserNoteResponse, error) {
+	var notes []models.UserNoteResponse
+	if err := db.WithContext(ctx).
+		Table("user_notes un").
+		Select("un.id, un.created_at AS date, un.note, CONCAT(u.name_first, ' ', u.name_last) AS admin").
+		Joins("INNER JOIN users u ON u.id = un.admin_id").
+		Where("un.user_id = ?", userID).
+		Order("un.created_at DESC").
+		Scan(&notes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "user_notes")
+	}
+	return notes, nil
+}
+
+func (db *DB) CreateUserNote(ctx context.Context, note *models.UserNote) error {
+	if err := db.WithContext(ctx).Create(note).Error; err != nil {
+		return newCreateDBError(err, "user_notes")
+	}
+	return nil
 }
 
 func adjustUserOrderBy(arg string) string {

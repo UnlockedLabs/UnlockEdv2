@@ -32,6 +32,38 @@ func (a Attendance) HumanReadable() string {
 	}
 }
 
+var rruleDayAbbrev = map[string]string{
+	"MO": "M", "TU": "T", "WE": "W", "TH": "Th", "FR": "F", "SA": "Sa", "SU": "Su",
+}
+
+func FormatScheduleFromRRule(rruleStr string) string {
+	if rruleStr == "" {
+		return ""
+	}
+	opts, err := rrule.StrToROption(rruleStr)
+	if err != nil {
+		return ""
+	}
+	days := make([]string, 0, len(opts.Byweekday))
+	for _, wd := range opts.Byweekday {
+		full := strings.ToUpper(wd.String()[:2])
+		if abbr, ok := rruleDayAbbrev[full]; ok {
+			days = append(days, abbr)
+		}
+	}
+	timeStr := ""
+	if !opts.Dtstart.IsZero() {
+		timeStr = opts.Dtstart.Format("3:04 PM")
+	}
+	if len(days) > 0 && timeStr != "" {
+		return strings.Join(days, "/") + " " + timeStr
+	}
+	if len(days) > 0 {
+		return strings.Join(days, "/")
+	}
+	return timeStr
+}
+
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
@@ -211,6 +243,14 @@ func (p *ProgramClassEventAttendance) BeforeCreate(tx *gorm.DB) error {
 		return err
 	}
 	return nil
+}
+
+type AttendanceRecordResponse struct {
+	UserID           uint   `json:"user_id"`
+	Date             string `json:"date"`
+	AttendanceStatus string `json:"attendance_status"`
+	Note             string `json:"note"`
+	MarkedBy         string `json:"marked_by"`
 }
 
 type ClassEventInstance struct {
