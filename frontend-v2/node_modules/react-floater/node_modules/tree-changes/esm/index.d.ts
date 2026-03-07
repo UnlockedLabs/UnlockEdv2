@@ -1,3 +1,0 @@
-import { Data, KeyType, TreeChanges } from './types';
-export default function treeChanges<P extends Data, D extends Data, K = KeyType<P, D>>(previousData: P, data: D): TreeChanges<K>;
-export * from './types';
