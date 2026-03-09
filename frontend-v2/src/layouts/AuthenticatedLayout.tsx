@@ -34,14 +34,15 @@ export default function AuthenticatedLayout() {
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
     const isResidentProfile = /^\/residents\/\w+$/.test(location.pathname);
+    const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
     const isClassesPage = location.pathname === '/classes';
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isClassesPage || isDashboard || isProgramsList || isFacilities;
+        isProgramDetail || isResidentProfile || isClassDetail || isClassesPage || isDashboard || isProgramsList || isFacilities;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassesPage ? 'py-0' : 'py-4';
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassDetail || isClassesPage ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile;
     const isFacilityView =
         isProgramDetail &&
@@ -88,7 +89,7 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsScrollableRoot = isProgramDetail;
+    const needsScrollableRoot = isProgramDetail || isClassDetail;
     const needsGrayBg = isResidentProfile || isClassesPage || (isProgramDetail && canSwitchFacility(user));
     const rootClass = needsScrollableRoot
         ? 'min-h-screen bg-background flex'
