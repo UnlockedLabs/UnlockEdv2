@@ -33,10 +33,11 @@ export default function AuthenticatedLayout() {
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
+    const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
-    const isFullBleed = isProgramDetail || isDashboard || isProgramsList || isFacilities;
+    const isFullBleed = isProgramDetail || isClassDetail || isDashboard || isProgramsList || isFacilities;
     const fullBleedWrapperClass = isDashboard || isProgramsList || isFacilities ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
     const isFacilityView =
@@ -84,12 +85,13 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const rootClass = isProgramDetail
+    const needsScrollBreakout = isProgramDetail || isClassDetail;
+    const rootClass = needsScrollBreakout
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
-    const contentClass = isProgramDetail
+    const contentClass = needsScrollBreakout
         ? `flex-1 overflow-x-hidden ${
-              canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
+              isProgramDetail && canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
           }`.trim()
         : 'flex-1 overflow-y-auto overflow-x-hidden';
 

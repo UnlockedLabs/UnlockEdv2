@@ -156,8 +156,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
     return (
         <div className="space-y-4">
             <div className="bg-white rounded-lg border border-gray-200">
-                <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <div className="border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
                             <Checkbox
                                 checked={
@@ -183,7 +183,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                         </div>
                         <Button
                             variant="outline"
-                            className="border-gray-300 self-start sm:self-auto sm:ml-0"
+                            className="border-gray-300"
                             onClick={() => setShowEnrollModal(true)}
                         >
                             <Plus className="size-4 mr-2" />
@@ -220,10 +220,10 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                             return (
                                 <div
                                     key={enrollment.id}
-                                    className="px-4 sm:px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                                    className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
                                 >
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between">
-                                        <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-6 flex-1">
                                             <Checkbox
                                                 checked={selectedIds.has(
                                                     enrollment.id
@@ -236,15 +236,15 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                 aria-label={`Select ${enrollment.doc_id}`}
                                                 className="shrink-0"
                                             />
-                                            <div className="w-[100px] sm:w-[140px] shrink-0">
+                                            <div className="min-w-[80px]">
                                                 <div className="text-[#203622] font-medium">
                                                     {enrollment.doc_id}
                                                 </div>
-                                                <div className="text-sm text-gray-600 mt-0.5 truncate">
+                                                <div className="text-sm text-gray-600 mt-0.5">
                                                     {enrollment.name_full}
                                                 </div>
                                             </div>
-                                            <div className="flex-1 min-w-0 hidden md:block">
+                                            <div className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="text-sm text-gray-600">
                                                         Attendance:
@@ -259,7 +259,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                 </div>
                                                 <Progress
                                                     value={stats.rate}
-                                                    className="h-2 max-w-64 bg-gray-200"
+                                                    className="h-2 w-64"
                                                     indicatorClassName={
                                                         needsSupport
                                                             ? 'bg-[#F1B51C]'
@@ -268,7 +268,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 sm:gap-3 sm:ml-0 flex-wrap">
+                                        <div className="flex items-center gap-3">
                                             <span className="text-sm text-gray-500">
                                                 Enrolled:{' '}
                                                 {new Date(
@@ -379,8 +379,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
             </div>
 
             {selectedIds.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-4 sm:px-6 py-4 z-50 max-w-[calc(100vw-2rem)]">
-                    <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
+                    <div className="flex items-center gap-6">
                         <div className="text-sm">
                             <span className="font-semibold text-[#203622]">
                                 {selectedIds.size}
