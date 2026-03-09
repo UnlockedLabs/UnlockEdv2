@@ -730,7 +730,6 @@ export default function StudentManagement() {
                         )}
                     </>
                 )}
-            </div>
         </div>
     );
 }
