@@ -34,6 +34,11 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { AlertCircle, Clock, MapPin, Users, XCircle } from 'lucide-react';
+import {
+    formatTime12h,
+    timeToMinutes,
+    parseDurationToMs
+} from '@/lib/formatters';
 
 interface BulkCancelClassesModalProps {
     open: boolean;
@@ -54,7 +59,21 @@ interface PreviewData {
         startTime: string;
         duration: string;
         room: string;
+        sessionDates: string[];
     }[];
+}
+
+function formatTimeRange(startTime: string, duration: string): string {
+    if (!startTime) return '';
+    const start = formatTime12h(startTime);
+    if (!duration) return start;
+    const durationMs = parseDurationToMs(duration);
+    if (durationMs <= 0) return start;
+    const startMinutes = timeToMinutes(startTime);
+    const totalMinutes = startMinutes + durationMs / 60000;
+    const endH = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
+    const endM = String(Math.floor(totalMinutes % 60)).padStart(2, '0');
+    return `${start} - ${formatTime12h(`${endH}:${endM}`)}`;
 }
 
 export function BulkCancelClassesModal({
@@ -172,7 +191,8 @@ export function BulkCancelClassesModal({
                 studentCount: c.enrolledCount,
                 startTime: c.startTime,
                 duration: c.duration,
-                room: c.room
+                room: c.room,
+                sessionDates: c.sessionDates ?? []
             }))
         });
         setShowConfirmation(true);
@@ -489,8 +509,7 @@ export function BulkCancelClassesModal({
                                                                 <div className="flex items-center gap-1.5">
                                                                     <Clock className="size-3.5 flex-shrink-0" />
                                                                     <span>
-                                                                        {cls.startTime}
-                                                                        {cls.duration ? ` (${cls.duration})` : ''}
+                                                                        {formatTimeRange(cls.startTime, cls.duration)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -507,6 +526,20 @@ export function BulkCancelClassesModal({
                                                                 </span>
                                                             </div>
                                                         </div>
+                                                        {cls.sessionDates.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1 mt-3">
+                                                                {cls.sessionDates.slice(0, 5).map((date) => (
+                                                                    <span key={date} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                                                        {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                    </span>
+                                                                ))}
+                                                                {cls.sessionDates.length > 5 && (
+                                                                    <span className="text-xs text-gray-500 px-2 py-1">
+                                                                        +{cls.sessionDates.length - 5} more
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                         </div>

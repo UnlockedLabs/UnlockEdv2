@@ -105,6 +105,7 @@ export interface InstructorClassData {
     startTime: string;
     duration: string;
     room: string;
+    sessionDates: string[];
 }
 
 export interface BulkCancelSessionsResponse {

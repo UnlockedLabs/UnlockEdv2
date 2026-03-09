@@ -356,13 +356,14 @@ type Instructor struct {
 }
 
 type InstructorClassData struct {
-	ID                int    `json:"id"`
-	Name              string `json:"name"`
-	SessionCount      int    `json:"sessionCount"`
-	EnrolledCount     int    `json:"enrolledCount"`
-	UpcomingSessions  int    `json:"upcomingSessions"`
-	CancelledSessions int    `json:"cancelledSessions"`
-	StartTime         string `json:"startTime"`
-	Duration          string `json:"duration"`
-	Room              string `json:"room"`
+	ID                int      `json:"id"`
+	Name              string   `json:"name"`
+	SessionCount      int      `json:"sessionCount"`
+	EnrolledCount     int      `json:"enrolledCount"`
+	UpcomingSessions  int      `json:"upcomingSessions"`
+	CancelledSessions int      `json:"cancelledSessions"`
+	StartTime         string   `json:"startTime"`
+	Duration          string   `json:"duration"`
+	Room              string   `json:"room"`
+	SessionDates      []string `json:"sessionDates" gorm:"-"`
 }
