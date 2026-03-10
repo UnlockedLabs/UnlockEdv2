@@ -17,7 +17,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { CancelEventReason } from '@/types/program';
 import API from '@/api/api';
 import { toast } from 'sonner';
 
@@ -54,16 +53,8 @@ export function BulkCancelSessionsModal({
         }
     }, [open]);
 
-    const isOther = reason === String(CancelEventReason['Other (add note)']);
     const canSubmit =
-        reason && (!isOther || note.trim().length > 0) && !isSubmitting;
-
-    const handleReasonChange = (value: string) => {
-        setReason(value);
-        if (value !== String(CancelEventReason['Other (add note)'])) {
-            setNote('');
-        }
-    };
+        reason && (reason !== 'other' || note.trim().length > 0) && !isSubmitting;
 
     const handleCancel = async () => {
         setIsSubmitting(true);
@@ -76,7 +67,7 @@ export function BulkCancelSessionsModal({
                 {
                     date: s.date,
                     is_cancelled: true,
-                    reason: isOther ? note.trim() : reason
+                    reason: reason === 'other' ? note.trim() : reason
                 }
             );
             if (resp.success) ok++;
@@ -144,28 +135,44 @@ export function BulkCancelSessionsModal({
                         </Label>
                         <Select
                             value={reason}
-                            onValueChange={handleReasonChange}
+                            onValueChange={(value) => {
+                                setReason(value);
+                                if (value !== 'other') {
+                                    setNote('');
+                                }
+                            }}
                         >
                             <SelectTrigger className="w-full mt-2">
                                 <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.values(CancelEventReason).map((r) => (
-                                    <SelectItem key={r} value={r}>
-                                        {r}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="instructor_unavailable">
+                                    Instructor Unavailable
+                                </SelectItem>
+                                <SelectItem value="instructor_illness">
+                                    Instructor Illness
+                                </SelectItem>
+                                <SelectItem value="facility_issue_or_lockdown">
+                                    Facility Issue or Lockdown
+                                </SelectItem>
+                                <SelectItem value="holiday_or_scheduled_break">
+                                    Holiday or Scheduled Break
+                                </SelectItem>
+                                <SelectItem value="technology_issue">
+                                    Technology Issue
+                                </SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {isOther && (
+                    {reason === 'other' && (
                         <div>
-                            <Label htmlFor="bulkCancelNote">
+                            <Label htmlFor="cancelNote">
                                 Please specify *
                             </Label>
                             <Textarea
-                                id="bulkCancelNote"
+                                id="cancelNote"
                                 placeholder="Enter the specific reason for cancellation..."
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
@@ -194,7 +201,11 @@ export function BulkCancelSessionsModal({
                 <div className="flex justify-end gap-3">
                     <Button
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
+                        onClick={() => {
+                            onOpenChange(false);
+                            setNote('');
+                            setReason('');
+                        }}
                         disabled={isSubmitting}
                     >
                         Cancel

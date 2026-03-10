@@ -45,6 +45,7 @@ export interface ProgramClassEventOverride {
     room_ref?: Room;
     is_cancelled: boolean;
     reason: string;
+    linked_override_event_id?: number;
     instructor_id?: number;
 }
 

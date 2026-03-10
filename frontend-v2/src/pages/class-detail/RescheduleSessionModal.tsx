@@ -26,6 +26,7 @@ interface RescheduleSessionModalProps {
     onClose: () => void;
     classId: number;
     eventId: number;
+    originalDate: string;
     dateLabel: string;
     currentRoom?: string;
     onRescheduled: () => void;
@@ -36,6 +37,7 @@ export function RescheduleSessionModal({
     onClose,
     classId,
     eventId,
+    originalDate,
     dateLabel,
     currentRoom,
     onRescheduled
@@ -62,9 +64,12 @@ export function RescheduleSessionModal({
 
     const handleReschedule = async () => {
         setIsSubmitting(true);
-        const body: Record<string, unknown> = { date: newDate };
-        if (newStartTime) body.start_time = newStartTime;
-        if (newEndTime) body.end_time = newEndTime;
+        const body: Record<string, unknown> = {
+            date: originalDate,
+            new_date: newDate
+        };
+        if (newStartTime) body.new_start_time = newStartTime;
+        if (newEndTime) body.new_end_time = newEndTime;
         if (newRoom) body.room_id = Number(newRoom);
         const resp = await API.patch(
             `program-classes/${classId}/events/${eventId}`,
@@ -117,7 +122,9 @@ export function RescheduleSessionModal({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="rescheduleEndTime">New End Time (optional)</Label>
+                        <Label htmlFor="rescheduleEndTime">
+                            New End Time (optional)
+                        </Label>
                         <Input
                             id="rescheduleEndTime"
                             type="time"
