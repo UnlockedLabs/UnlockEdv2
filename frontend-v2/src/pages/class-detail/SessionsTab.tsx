@@ -530,18 +530,17 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                 </div>
                                 {pastAndTodaySessions.length >
                                     PAST_DISPLAY_LIMIT && (
-                                    <div className="pt-4 text-center">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
+                                    <div className="text-sm text-gray-500 text-center mt-2">
+                                        <button
                                             onClick={() =>
                                                 setShowAllPast(!showAllPast)
                                             }
+                                            className="text-[#556830] hover:text-[#203622] underline"
                                         >
                                             {showAllPast
                                                 ? 'Show Less'
-                                                : `Show All ${pastAndTodaySessions.length} Sessions`}
-                                        </Button>
+                                                : 'Show All'}
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -793,7 +792,7 @@ function SessionRow({
                     />
                 )}
                 {session.isCancelled ? (
-                    <Calendar className="size-5 text-gray-500 flex-shrink-0" />
+                    <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
                 ) : session.hasAttendance ? (
                     <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
                 ) : session.isPast ? (
