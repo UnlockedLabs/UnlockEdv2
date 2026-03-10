@@ -324,16 +324,6 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         );
     };
 
-    const timeLabel = hideTimeFilter
-        ? ''
-        : timeFilter === 'all'
-          ? 'All Time'
-          : timeFilter === 'month'
-            ? 'Last Month'
-            : timeFilter === '2weeks'
-              ? 'Last 2 Weeks'
-              : 'Last Week';
-
     const renderSessionRow = (session: SessionDisplay) => (
         <SessionRow
             key={session.instance.date + '-' + session.instance.id}
@@ -526,8 +516,6 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                         <p className="text-sm text-gray-600 mt-0.5">
                                             Recent sessions requiring action or
                                             review
-                                            {timeLabel &&
-                                                ` - ${timeLabel}`}
                                         </p>
                                     </div>
                                     <span className="text-sm text-gray-600">
@@ -575,14 +563,14 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                             scheduled{' '}
                                             {upcomingSessions.length === 1
                                                 ? 'session'
-                                                : 'session(s)'}
+                                                : 'sessions'}
                                         </p>
                                     </div>
-                                    <span className="text-sm text-gray-600">
-                                        {upcomingSessions.length > UPCOMING_DISPLAY_LIMIT
-                                            ? `Showing next ${UPCOMING_DISPLAY_LIMIT} of ${upcomingSessions.length} total`
-                                            : `${upcomingSessions.length} ${upcomingSessions.length === 1 ? 'session' : 'sessions'}`}
-                                    </span>
+                                    {upcomingSessions.length > UPCOMING_DISPLAY_LIMIT && (
+                                        <span className="text-xs text-gray-500">
+                                            Showing next {UPCOMING_DISPLAY_LIMIT} of {upcomingSessions.length} total
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     {displayedUpcoming.map(renderSessionRow)}
