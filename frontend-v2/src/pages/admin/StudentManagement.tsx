@@ -61,6 +61,11 @@ import {
     TransferDialog
 } from '@/components/residents/ResidentModals';
 import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
     Search,
     Plus,
     Upload,
@@ -70,8 +75,7 @@ import {
     KeyRound,
     MoreVertical,
     UserX,
-    Trash2,
-    ArrowRightLeft
+    Trash2
 } from 'lucide-react';
 
 type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
@@ -455,41 +459,56 @@ export default function StudentManagement() {
                                                     </span>
                                                 ) : (
                                                     <div className="flex items-center justify-end gap-1">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                openAction(
-                                                                    resident,
-                                                                    setEditOpen
-                                                                )
-                                                            }
-                                                        >
-                                                            <Edit className="size-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                openAction(
-                                                                    resident,
-                                                                    setResetConfirmOpen
-                                                                )
-                                                            }
-                                                        >
-                                                            <KeyRound className="size-4" />
-                                                        </Button>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
-                                                            >
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
+                                                                    onClick={() =>
+                                                                        openAction(
+                                                                            resident,
+                                                                            setEditOpen
+                                                                        )
+                                                                    }
                                                                 >
-                                                                    <MoreVertical className="size-4" />
+                                                                    <Edit className="size-4" />
                                                                 </Button>
-                                                            </DropdownMenuTrigger>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Edit Profile</TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        openAction(
+                                                                            resident,
+                                                                            setResetConfirmOpen
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <KeyRound className="size-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Reset Password</TooltipContent>
+                                                        </Tooltip>
+                                                        <DropdownMenu>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <DropdownMenuTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                        >
+                                                                            <MoreVertical className="size-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>More Actions</TooltipContent>
+                                                            </Tooltip>
                                                             <DropdownMenuContent align="end">
                                                                 <DropdownMenuItem
                                                                     onClick={() =>
@@ -515,7 +534,7 @@ export default function StudentManagement() {
                                                                                 )
                                                                             }
                                                                         >
-                                                                            <ArrowRightLeft className="size-4 mr-2" />
+                                                                            <UsersIcon className="size-4 mr-2" />
                                                                             Transfer
                                                                             Resident
                                                                         </DropdownMenuItem>
