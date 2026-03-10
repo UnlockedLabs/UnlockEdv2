@@ -10,16 +10,22 @@ import {
     CalendarOff,
     X,
     Users,
-    MapPin
+    MapPin,
+    Undo2
 } from 'lucide-react';
+import API from '@/api/api';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Class } from '@/types/program';
-import { ClassEventInstance } from '@/types/events';
+import {
+    ClassEventInstance,
+    ProgramClassEvent,
+    ProgramClassEventOverride
+} from '@/types/events';
 import { Attendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
-import { CancelSessionModal } from './CancelSessionModal';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
 import {
     BulkCancelSessionsModal,
@@ -30,6 +36,7 @@ import {
     ChangeInstructorSession
 } from './ChangeInstructorModal';
 import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
+import { SessionDetailSheet } from './SessionDetailSheet';
 
 type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
 type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
@@ -44,9 +51,10 @@ const TIME_FILTER_DAYS: Record<Exclude<TimeFilter, 'all'>, number> = {
 
 interface SessionsTabProps {
     cls: Class;
+    onClassMutate: () => void;
 }
 
-interface SessionDisplay {
+export interface SessionDisplay {
     instance: ClassEventInstance;
     dateObj: Date;
     dayName: string;
@@ -55,8 +63,19 @@ interface SessionDisplay {
     isUpcoming: boolean;
     hasAttendance: boolean;
     isCancelled: boolean;
+    isRescheduledFrom: boolean;
+    isRescheduledTo: boolean;
+    rescheduledDate?: string;
+    rescheduleOverrideId?: number;
     attendedCount: number;
     totalEnrolled: number;
+}
+
+interface RescheduleLink {
+    date: string;
+    overrideId: number;
+    eventId: number;
+    startTime?: string;
 }
 
 function parseLocalDate(dateStr: string): Date {
@@ -64,9 +83,109 @@ function parseLocalDate(dateStr: string): Date {
     return new Date(y, m - 1, d);
 }
 
+function parseOverrideDate(rrule: string): string | null {
+    const match = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(rrule);
+    if (!match) return null;
+    return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function parseOverrideStartTime(rrule: string): string | undefined {
+    const match = /DTSTART[^:]*:\d{8}T(\d{2})(\d{2})/.exec(rrule);
+    if (!match) return undefined;
+    return `${match[1]}:${match[2]}`;
+}
+
+function formatShortDate(dateStr: string): string {
+    const d = parseLocalDate(dateStr);
+    return d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function buildRescheduleMaps(events: ProgramClassEvent[]): {
+    fromTo: Map<string, RescheduleLink>;
+    toFrom: Map<string, RescheduleLink>;
+} {
+    const fromTo = new Map<string, RescheduleLink>();
+    const toFrom = new Map<string, RescheduleLink>();
+
+    for (const event of events) {
+        const cancelledOverrides = new Map<
+            number,
+            { date: string; override: ProgramClassEventOverride }
+        >();
+        const rescheduledOverrides = new Map<
+            number,
+            { date: string; override: ProgramClassEventOverride }
+        >();
+
+        for (const override of event.overrides ?? []) {
+            const date = parseOverrideDate(override.override_rrule);
+            if (!date) continue;
+
+            if (override.is_cancelled && override.reason === 'rescheduled') {
+                cancelledOverrides.set(override.id, { date, override });
+            } else if (
+                !override.is_cancelled &&
+                override.linked_override_event_id
+            ) {
+                rescheduledOverrides.set(
+                    override.linked_override_event_id,
+                    { date, override }
+                );
+            }
+        }
+
+        for (const [cancelledId, cancelled] of cancelledOverrides) {
+            const rescheduled = rescheduledOverrides.get(cancelledId);
+            if (rescheduled) {
+                const startTime = parseOverrideStartTime(
+                    rescheduled.override.override_rrule
+                );
+                fromTo.set(cancelled.date, {
+                    date: rescheduled.date,
+                    overrideId: rescheduled.override.id,
+                    eventId: event.id
+                });
+                toFrom.set(rescheduled.date, {
+                    date: cancelled.date,
+                    overrideId: rescheduled.override.id,
+                    eventId: event.id,
+                    startTime
+                });
+            }
+        }
+    }
+
+    return { fromTo, toFrom };
+}
+
+function findCancelOverrideId(
+    events: ProgramClassEvent[],
+    date: string
+): number | undefined {
+    const dateCompact = date.replace(/-/g, '');
+    for (const event of events) {
+        for (const override of event.overrides ?? []) {
+            if (
+                override.is_cancelled &&
+                override.reason !== 'rescheduled' &&
+                override.override_rrule.includes(dateCompact)
+            ) {
+                return override.id;
+            }
+        }
+    }
+    return undefined;
+}
+
 function buildSessionDisplays(
     instances: ClassEventInstance[],
-    enrolled: number
+    enrolled: number,
+    fromTo: Map<string, RescheduleLink>,
+    toFrom: Map<string, RescheduleLink>
 ): SessionDisplay[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -87,6 +206,16 @@ function buildSessionDisplays(
 
             const hasAttendance = (inst.attendance_records?.length ?? 0) > 0;
 
+            const rescheduleFrom = fromTo.get(inst.date);
+            const rescheduleTo = toFrom.get(inst.date);
+            const isRescheduledFrom =
+                rescheduleFrom != null && inst.is_cancelled;
+            const isRescheduledTo =
+                rescheduleTo != null &&
+                !inst.is_cancelled &&
+                (!rescheduleTo.startTime ||
+                    inst.class_time.startsWith(rescheduleTo.startTime));
+
             return {
                 instance: inst,
                 dateObj,
@@ -97,7 +226,19 @@ function buildSessionDisplays(
                 isPast,
                 isUpcoming,
                 hasAttendance,
-                isCancelled: inst.is_cancelled,
+                isCancelled: inst.is_cancelled && !isRescheduledFrom,
+                isRescheduledFrom,
+                isRescheduledTo,
+                rescheduledDate: isRescheduledFrom
+                    ? rescheduleFrom.date
+                    : isRescheduledTo
+                      ? rescheduleTo.date
+                      : undefined,
+                rescheduleOverrideId: isRescheduledFrom
+                    ? rescheduleFrom.overrideId
+                    : isRescheduledTo
+                      ? rescheduleTo.overrideId
+                      : undefined,
                 attendedCount,
                 totalEnrolled: enrolled
             };
@@ -141,16 +282,16 @@ function FilterButton({
     );
 }
 
-export function SessionsTab({ cls }: SessionsTabProps) {
+export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     const navigate = useNavigate();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-    const [cancelTarget, setCancelTarget] = useState<SessionDisplay | null>(
-        null
+    const [cancelSessions, setCancelSessions] = useState<BulkCancelSession[]>(
+        []
     );
+    const [showCancelModal, setShowCancelModal] = useState(false);
     const [rescheduleTarget, setRescheduleTarget] =
         useState<SessionDisplay | null>(null);
-    const [showBulkCancel, setShowBulkCancel] = useState(false);
     const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
     const [showChangeInstructor, setShowChangeInstructor] = useState(false);
     const [showChangeRoom, setShowChangeRoom] = useState(false);
@@ -161,27 +302,49 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         ChangeRoomSession[]
     >([]);
     const [showAllPast, setShowAllPast] = useState(false);
+    const [selectedSession, setSelectedSession] =
+        useState<SessionDisplay | null>(null);
 
     const { data: instancesResp, mutate } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(`/api/program-classes/${cls.id}/events?all=true`);
 
+    const rescheduleMaps = useMemo(
+        () => buildRescheduleMaps(cls.events ?? []),
+        [cls.events]
+    );
+
     const allSessions = useMemo(() => {
         if (!instancesResp?.data) return [];
-        return buildSessionDisplays(instancesResp.data, cls.enrolled);
-    }, [instancesResp, cls.enrolled]);
+        return buildSessionDisplays(
+            instancesResp.data,
+            cls.enrolled,
+            rescheduleMaps.fromTo,
+            rescheduleMaps.toFrom
+        );
+    }, [instancesResp, cls.enrolled, rescheduleMaps]);
 
     const stats = useMemo(() => {
         const completed = allSessions.filter(
-            (s) => (s.isPast || s.isToday) && s.hasAttendance && !s.isCancelled
+            (s) =>
+                (s.isPast || s.isToday) &&
+                s.hasAttendance &&
+                !s.isCancelled &&
+                !s.isRescheduledFrom
         ).length;
         const missing = allSessions.filter(
-            (s) => s.isPast && !s.hasAttendance && !s.isCancelled
+            (s) =>
+                s.isPast &&
+                !s.hasAttendance &&
+                !s.isCancelled &&
+                !s.isRescheduledFrom
         ).length;
         const upcoming = allSessions.filter(
-            (s) => s.isUpcoming && !s.isCancelled
+            (s) => s.isUpcoming && !s.isCancelled && !s.isRescheduledFrom
         ).length;
-        const cancelled = allSessions.filter((s) => s.isCancelled).length;
+        const cancelled = allSessions.filter(
+            (s) => s.isCancelled && !s.isRescheduledFrom
+        ).length;
         return { completed, missing, upcoming, cancelled };
     }, [allSessions]);
 
@@ -211,7 +374,14 @@ export function SessionsTab({ cls }: SessionsTabProps) {
 
     const buildSessionPayload = (
         session: SessionDisplay
-    ): { date: string; dateLabel: string; eventId: number; classTime: string } => ({
+    ): {
+        date: string;
+        dateLabel: string;
+        eventId: number;
+        classTime: string;
+        dateObj: Date;
+        dayName: string;
+    } => ({
         date: session.instance.date,
         dateLabel: session.dateObj.toLocaleDateString('en-US', {
             weekday: 'long',
@@ -220,7 +390,9 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             year: 'numeric'
         }),
         eventId: session.instance.event_id ?? session.instance.id,
-        classTime: session.instance.class_time
+        classTime: session.instance.class_time,
+        dateObj: session.dateObj,
+        dayName: session.dayName
     });
 
     const openChangeInstructor = (sessions: SessionDisplay[]) => {
@@ -239,20 +411,10 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 (s) =>
                     s.isUpcoming &&
                     !s.isCancelled &&
+                    !s.isRescheduledFrom &&
                     selectedDates.has(s.instance.date)
             ),
         [allSessions, selectedDates]
-    );
-
-    const bulkCancelSessions = useMemo<BulkCancelSession[]>(
-        () =>
-            selectedUpcomingSessions.map((s) => ({
-                date: s.instance.date,
-                dateObj: s.dateObj,
-                dayName: s.dayName,
-                eventId: s.instance.event_id ?? s.instance.id
-            })),
-        [selectedUpcomingSessions]
     );
 
     const filtered = useMemo(() => {
@@ -270,23 +432,35 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             }
         } else if (statusFilter === 'completed') {
             result = result.filter(
-                (s) => (s.isPast || s.isToday) && s.hasAttendance && !s.isCancelled
+                (s) =>
+                    (s.isPast || s.isToday) &&
+                    s.hasAttendance &&
+                    !s.isCancelled &&
+                    !s.isRescheduledFrom
             );
             if (cutoff) {
                 result = result.filter((s) => s.dateObj >= cutoff);
             }
         } else if (statusFilter === 'missing') {
             result = result.filter(
-                (s) => s.isPast && !s.hasAttendance && !s.isCancelled
+                (s) =>
+                    s.isPast &&
+                    !s.hasAttendance &&
+                    !s.isCancelled &&
+                    !s.isRescheduledFrom
             );
             if (cutoff) {
                 result = result.filter((s) => s.dateObj >= cutoff);
             }
         } else if (statusFilter === 'upcoming') {
-            result = result.filter((s) => s.isUpcoming && !s.isCancelled);
+            result = result.filter(
+                (s) => s.isUpcoming && !s.isCancelled && !s.isRescheduledFrom
+            );
             result = [...result].reverse();
         } else if (statusFilter === 'cancelled') {
-            result = result.filter((s) => s.isCancelled);
+            result = result.filter(
+                (s) => s.isCancelled && !s.isRescheduledFrom
+            );
             if (cutoff) {
                 result = result.filter((s) => s.dateObj >= cutoff);
             }
@@ -317,11 +491,42 @@ export function SessionsTab({ cls }: SessionsTabProps) {
         UPCOMING_DISPLAY_LIMIT
     );
 
+    const refreshData = () => {
+        void mutate();
+        onClassMutate();
+    };
+
     const navigateToAttendance = (session: SessionDisplay) => {
         const eventId = session.instance.event_id ?? session.instance.id;
         navigate(
             `/program-classes/${cls.id}/events/${eventId}/attendance/${session.instance.date}`
         );
+    };
+
+    const handleUndo = async (session: SessionDisplay) => {
+        let overrideId: number | undefined;
+
+        if (session.rescheduleOverrideId) {
+            overrideId = session.rescheduleOverrideId;
+        } else if (session.isCancelled) {
+            overrideId = findCancelOverrideId(
+                cls.events ?? [],
+                session.instance.date
+            );
+        }
+
+        if (!overrideId) return;
+        const resp = await API.delete(
+            `program-classes/${cls.id}/events/${overrideId}`
+        );
+        if (resp.success) {
+            toast.success(
+                session.isRescheduledFrom || session.isRescheduledTo
+                    ? 'Reschedule undone'
+                    : 'Cancellation undone'
+            );
+        }
+        refreshData();
     };
 
     const renderSessionRow = (session: SessionDisplay) => (
@@ -330,9 +535,22 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             session={session}
             selected={selectedDates.has(session.instance.date)}
             onToggle={() => toggleSession(session.instance.date)}
-            onClick={() => navigateToAttendance(session)}
-            onCancel={() => setCancelTarget(session)}
+            onClick={() => setSelectedSession(session)}
+            onNavigateToAttendance={() => navigateToAttendance(session)}
+            onCancel={() => {
+                setCancelSessions([
+                    {
+                        date: session.instance.date,
+                        dateObj: session.dateObj,
+                        dayName: session.dayName,
+                        eventId:
+                            session.instance.event_id ?? session.instance.id
+                    }
+                ]);
+                setShowCancelModal(true);
+            }}
             onReschedule={() => setRescheduleTarget(session)}
+            onUndo={() => void handleUndo(session)}
         />
     );
 
@@ -565,9 +783,11 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                                 : 'sessions'}
                                         </p>
                                     </div>
-                                    {upcomingSessions.length > UPCOMING_DISPLAY_LIMIT && (
+                                    {upcomingSessions.length >
+                                        UPCOMING_DISPLAY_LIMIT && (
                                         <span className="text-xs text-gray-500">
-                                            Showing next {UPCOMING_DISPLAY_LIMIT} of {upcomingSessions.length} total
+                                            Showing next {UPCOMING_DISPLAY_LIMIT}{' '}
+                                            of {upcomingSessions.length} total
                                         </span>
                                     )}
                                 </div>
@@ -580,25 +800,6 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 )}
             </div>
 
-            {cancelTarget && (
-                <CancelSessionModal
-                    open={!!cancelTarget}
-                    onClose={() => setCancelTarget(null)}
-                    classId={cls.id}
-                    eventId={
-                        cancelTarget.instance.event_id ??
-                        cancelTarget.instance.id
-                    }
-                    date={cancelTarget.instance.date}
-                    dateLabel={cancelTarget.dateObj.toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric'
-                    })}
-                    onCancelled={() => void mutate()}
-                />
-            )}
-
             {rescheduleTarget && (
                 <RescheduleSessionModal
                     open={!!rescheduleTarget}
@@ -608,6 +809,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                         rescheduleTarget.instance.event_id ??
                         rescheduleTarget.instance.id
                     }
+                    originalDate={rescheduleTarget.instance.date}
                     dateLabel={rescheduleTarget.dateObj.toLocaleDateString(
                         'en-US',
                         {
@@ -617,18 +819,19 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                         }
                     )}
                     currentRoom={cls.events?.[0]?.room_ref?.name}
-                    onRescheduled={() => void mutate()}
+                    onRescheduled={() => refreshData()}
                 />
             )}
 
             <BulkCancelSessionsModal
-                open={showBulkCancel}
-                onOpenChange={setShowBulkCancel}
+                open={showCancelModal}
+                onOpenChange={setShowCancelModal}
                 classId={cls.id}
-                sessions={bulkCancelSessions}
+                sessions={cancelSessions}
                 onCancelled={() => {
                     setSelectedDates(new Set());
-                    void mutate();
+                    setCancelSessions([]);
+                    refreshData();
                 }}
             />
 
@@ -639,8 +842,9 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 sessions={changeInstructorSessions}
                 onChanged={() => {
                     setSelectedDates(new Set());
-                    void mutate();
+                    refreshData();
                 }}
+                showSessionsList
             />
 
             <ChangeRoomModal
@@ -650,7 +854,21 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 sessions={changeRoomSessions}
                 onChanged={() => {
                     setSelectedDates(new Set());
-                    void mutate();
+                    refreshData();
+                }}
+                showSessionsList
+            />
+
+            <SessionDetailSheet
+                session={selectedSession}
+                onClose={() => setSelectedSession(null)}
+                className={cls.name}
+                classTime={cls.events?.[0]?.duration ?? ''}
+                room={cls.events?.[0]?.room_ref?.name ?? 'TBD'}
+                classId={cls.id}
+                onMutate={() => refreshData()}
+                onUndo={() => {
+                    if (selectedSession) void handleUndo(selectedSession);
                 }}
             />
 
@@ -680,13 +898,17 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                    if (selectedUpcomingSessions.length === 1) {
-                                        setCancelTarget(
-                                            selectedUpcomingSessions[0]
-                                        );
-                                    } else {
-                                        setShowBulkCancel(true);
-                                    }
+                                    setCancelSessions(
+                                        selectedUpcomingSessions.map((s) => ({
+                                            date: s.instance.date,
+                                            dateObj: s.dateObj,
+                                            dayName: s.dayName,
+                                            eventId:
+                                                s.instance.event_id ??
+                                                s.instance.id
+                                        }))
+                                    );
+                                    setShowCancelModal(true);
                                 }}
                             >
                                 <CalendarOff className="size-4 mr-2" />
@@ -752,15 +974,19 @@ function SessionRow({
     selected,
     onToggle,
     onClick,
+    onNavigateToAttendance,
     onCancel,
-    onReschedule
+    onReschedule,
+    onUndo
 }: {
     session: SessionDisplay;
     selected: boolean;
     onToggle: () => void;
     onClick: () => void;
+    onNavigateToAttendance: () => void;
     onCancel: () => void;
     onReschedule: () => void;
+    onUndo: () => void;
 }) {
     const dateLabel = session.dateObj.toLocaleDateString('en-US', {
         month: 'long',
@@ -768,53 +994,86 @@ function SessionRow({
         year: 'numeric'
     });
 
-    const borderClass = session.isCancelled
-        ? 'border-gray-300 bg-gray-100 hover:bg-gray-200'
-        : session.isToday
-          ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
-          : session.hasAttendance
-            ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
-            : session.isPast
-              ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
-              : 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
+    const {
+        isCancelled,
+        isRescheduledFrom,
+        isRescheduledTo,
+        isToday,
+        hasAttendance,
+        isPast,
+        isUpcoming,
+        rescheduledDate
+    } = session;
+
+    const getBorderClass = () => {
+        if (isRescheduledFrom)
+            return 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100';
+        if (isRescheduledTo)
+            return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
+        if (isCancelled)
+            return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
+        if (isToday) return 'border-blue-200 bg-blue-50 hover:bg-blue-100';
+        if (hasAttendance) return 'border-gray-200 hover:bg-[#E2E7EA]/30';
+        if (isPast)
+            return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50';
+        return 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
+    };
+
+    const getIcon = () => {
+        if (isRescheduledFrom)
+            return (
+                <CalendarClock className="size-5 text-gray-400 flex-shrink-0" />
+            );
+        if (isRescheduledTo)
+            return (
+                <CalendarClock className="size-5 text-blue-700 flex-shrink-0" />
+            );
+        if (isCancelled)
+            return (
+                <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
+            );
+        if (hasAttendance)
+            return (
+                <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
+            );
+        if (isPast)
+            return (
+                <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
+            );
+        return <Calendar className="size-5 text-gray-400 flex-shrink-0" />;
+    };
+
+    const showCheckbox =
+        isUpcoming && !isCancelled && !isRescheduledFrom;
+    const showLineThrough = isCancelled || isRescheduledFrom;
 
     return (
         <div
             onClick={onClick}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
+            className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${getBorderClass()}`}
         >
             <div className="flex items-center gap-4 min-w-0">
-                {session.isUpcoming && !session.isCancelled && (
+                {showCheckbox && (
                     <Checkbox
                         checked={selected}
                         onCheckedChange={() => onToggle()}
                         onClick={(e) => e.stopPropagation()}
                     />
                 )}
-                {session.isCancelled ? (
-                    <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
-                ) : session.hasAttendance ? (
-                    <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
-                ) : session.isPast ? (
-                    <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
-                ) : (
-                    <Calendar className="size-5 text-gray-400 flex-shrink-0" />
-                )}
+                {getIcon()}
                 <div className="min-w-0">
                     <div className="text-sm font-medium text-[#203622]">
                         <span
-                            className={
-                                session.isCancelled ? 'line-through' : ''
-                            }
+                            className={showLineThrough ? 'line-through' : ''}
                         >
                             {session.dayName}, {dateLabel}
                         </span>
-                        {session.isToday && (
+                        {isToday && (
                             <Badge className="ml-2 bg-blue-500 text-white">
                                 Today
                             </Badge>
                         )}
-                        {session.isCancelled && (
+                        {isCancelled && (
                             <Badge
                                 variant="outline"
                                 className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
@@ -822,19 +1081,46 @@ function SessionRow({
                                 Cancelled
                             </Badge>
                         )}
+                        {isRescheduledFrom && (
+                            <Badge
+                                variant="outline"
+                                className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
+                            >
+                                Rescheduled
+                            </Badge>
+                        )}
+                        {isRescheduledTo && (
+                            <Badge
+                                variant="outline"
+                                className="ml-2 bg-blue-100 text-blue-800 border-blue-300"
+                            >
+                                Rescheduled Class
+                            </Badge>
+                        )}
                     </div>
-                    <div
-                        className={`text-xs text-gray-600 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
-                    >
-                        {session.instance.class_time}
-                    </div>
+                    {isRescheduledFrom && rescheduledDate ? (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                            &rarr; Moved to {formatShortDate(rescheduledDate)}
+                        </div>
+                    ) : isRescheduledTo && rescheduledDate ? (
+                        <div className="text-xs text-blue-700 mt-0.5">
+                            &larr; Originally{' '}
+                            {formatShortDate(rescheduledDate)}
+                        </div>
+                    ) : (
+                        <div
+                            className={`text-xs text-gray-600 mt-0.5 ${showLineThrough ? 'line-through' : ''}`}
+                        >
+                            {session.instance.class_time}
+                        </div>
+                    )}
                 </div>
             </div>
             <div
                 className="flex items-center gap-4"
                 onClick={(e) => e.stopPropagation()}
             >
-                {session.hasAttendance && (
+                {hasAttendance && !isRescheduledFrom && (
                     <div className="text-sm text-gray-600 whitespace-nowrap">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
@@ -848,9 +1134,10 @@ function SessionRow({
                         %)
                     </div>
                 )}
-                {session.isPast &&
-                    !session.hasAttendance &&
-                    !session.isCancelled && (
+                {isPast &&
+                    !hasAttendance &&
+                    !isCancelled &&
+                    !isRescheduledFrom && (
                         <Badge
                             variant="outline"
                             className="bg-amber-50 text-amber-700 border-amber-200"
@@ -858,38 +1145,87 @@ function SessionRow({
                             Missing
                         </Badge>
                     )}
-                {!session.isCancelled && !session.isUpcoming && (
+                {!isCancelled &&
+                    !isUpcoming &&
+                    !isRescheduledFrom && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onNavigateToAttendance()}
+                            className="border-gray-300"
+                        >
+                            {hasAttendance ? 'Edit' : 'Take'} Attendance
+                        </Button>
+                    )}
+                {isCancelled && isUpcoming && (
                     <Button
-                        size="sm"
                         variant="outline"
-                        onClick={() => onClick()}
-                        className="border-gray-300"
+                        size="sm"
+                        onClick={() => onUndo()}
+                        className="border-gray-300 hover:bg-gray-50"
                     >
-                        {session.hasAttendance ? 'Edit' : 'Take'} Attendance
+                        <Undo2 className="size-4 mr-1.5" />
+                        Undo
                     </Button>
                 )}
-                {session.isUpcoming && !session.isCancelled && (
+                {isRescheduledFrom && isUpcoming && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onUndo()}
+                        className="border-amber-300 hover:bg-amber-50"
+                    >
+                        <Undo2 className="size-4 mr-1.5" />
+                        Undo
+                    </Button>
+                )}
+                {isRescheduledTo && isUpcoming && (
                     <>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => onReschedule()}
-                            className="border-gray-300 hover:bg-gray-50"
+                            className="border-blue-300 hover:bg-blue-50"
                         >
                             <CalendarClock className="size-4 mr-1.5" />
                             Reschedule
                         </Button>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={() => onCancel()}
-                            className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                            onClick={() => onUndo()}
+                            className="hover:bg-blue-100"
+                            title="Undo reschedule"
                         >
-                            <X className="size-4 mr-1.5" />
-                            Cancel
+                            <Undo2 className="size-4" />
                         </Button>
                     </>
                 )}
+                {isUpcoming &&
+                    !isCancelled &&
+                    !isRescheduledFrom &&
+                    !isRescheduledTo && (
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onReschedule()}
+                                className="border-gray-300 hover:bg-gray-50"
+                            >
+                                <CalendarClock className="size-4 mr-1.5" />
+                                Reschedule
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onCancel()}
+                                className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                            >
+                                <X className="size-4 mr-1.5" />
+                                Cancel
+                            </Button>
+                        </>
+                    )}
             </div>
         </div>
     );

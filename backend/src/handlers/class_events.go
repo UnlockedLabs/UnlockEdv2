@@ -171,6 +171,7 @@ type patchEventOverrideRequest struct {
 	InstructorID *uint  `json:"instructor_id"`
 	NewDate      string `json:"new_date"`
 	NewStartTime string `json:"new_start_time"`
+	NewEndTime   string `json:"new_end_time"`
 }
 
 func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -241,6 +242,21 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		if err != nil {
 			return newBadRequestServiceError(err, "invalid new_date format")
 		}
+		newDuration := event.Duration
+		if req.NewStartTime != "" && req.NewEndTime != "" {
+			startParts := strings.Split(req.NewStartTime, ":")
+			endParts := strings.Split(req.NewEndTime, ":")
+			if len(startParts) == 2 && len(endParts) == 2 {
+				sh, _ := strconv.Atoi(startParts[0])
+				sm, _ := strconv.Atoi(startParts[1])
+				eh, _ := strconv.Atoi(endParts[0])
+				em, _ := strconv.Atoi(endParts[1])
+				dur := time.Duration(eh-sh)*time.Hour + time.Duration(em-sm)*time.Minute
+				if dur > 0 {
+					newDuration = dur.String()
+				}
+			}
+		}
 		overrides := []*models.ProgramClassEventOverride{
 			{
 				EventID:       uint(eventId),
@@ -253,7 +269,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 			{
 				EventID:       uint(eventId),
 				ClassID:       uint(classID),
-				Duration:      event.Duration,
+				Duration:      newDuration,
 				OverrideRrule: newRRule,
 				IsCancelled:   false,
 				RoomID:        event.RoomID,
