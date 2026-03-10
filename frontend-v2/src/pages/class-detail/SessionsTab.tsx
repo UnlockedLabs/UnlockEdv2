@@ -27,6 +27,7 @@ import {
 import { Attendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
+import { CancelSessionModal } from './CancelSessionModal';
 import {
     BulkCancelSessionsModal,
     BulkCancelSession
@@ -66,6 +67,7 @@ export interface SessionDisplay {
     isRescheduledFrom: boolean;
     isRescheduledTo: boolean;
     rescheduledDate?: string;
+    rescheduledClassTime?: string;
     rescheduleOverrideId?: number;
     attendedCount: number;
     totalEnrolled: number;
@@ -95,6 +97,21 @@ function parseOverrideStartTime(rrule: string): string | undefined {
     return `${match[1]}:${match[2]}`;
 }
 
+function buildRoomOverrideMap(
+    events: ProgramClassEvent[]
+): Map<string, string> {
+    const map = new Map<string, string>();
+    for (const event of events) {
+        for (const override of event.overrides ?? []) {
+            if (!override.is_cancelled && override.room_id && override.room_ref) {
+                const date = parseOverrideDate(override.override_rrule);
+                if (date) map.set(date, override.room_ref.name);
+            }
+        }
+    }
+    return map;
+}
+
 function formatShortDate(dateStr: string): string {
     const d = parseLocalDate(dateStr);
     return d.toLocaleDateString('en-US', {
@@ -107,9 +124,11 @@ function formatShortDate(dateStr: string): string {
 function buildRescheduleMaps(events: ProgramClassEvent[]): {
     fromTo: Map<string, RescheduleLink>;
     toFrom: Map<string, RescheduleLink>;
+    appliedFutureDates: Set<string>;
 } {
     const fromTo = new Map<string, RescheduleLink>();
     const toFrom = new Map<string, RescheduleLink>();
+    const appliedFutureDates = new Set<string>();
 
     for (const event of events) {
         const cancelledOverrides = new Map<
@@ -125,7 +144,15 @@ function buildRescheduleMaps(events: ProgramClassEvent[]): {
             const date = parseOverrideDate(override.override_rrule);
             if (!date) continue;
 
-            if (override.is_cancelled && override.reason === 'rescheduled') {
+            if (
+                override.is_cancelled &&
+                override.reason === 'applied_future'
+            ) {
+                appliedFutureDates.add(date);
+            } else if (
+                override.is_cancelled &&
+                override.reason === 'rescheduled'
+            ) {
                 cancelledOverrides.set(override.id, { date, override });
             } else if (
                 !override.is_cancelled &&
@@ -159,7 +186,7 @@ function buildRescheduleMaps(events: ProgramClassEvent[]): {
         }
     }
 
-    return { fromTo, toFrom };
+    return { fromTo, toFrom, appliedFutureDates };
 }
 
 function findCancelOverrideId(
@@ -185,12 +212,44 @@ function buildSessionDisplays(
     instances: ClassEventInstance[],
     enrolled: number,
     fromTo: Map<string, RescheduleLink>,
-    toFrom: Map<string, RescheduleLink>
+    toFrom: Map<string, RescheduleLink>,
+    appliedFutureDates: Set<string>
 ): SessionDisplay[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return instances
+    const activeDatesWithDifferentTime = new Set<string>();
+    for (const inst of instances) {
+        if (!inst.is_cancelled) {
+            for (const other of instances) {
+                if (
+                    other.is_cancelled &&
+                    other.date === inst.date &&
+                    other.class_time !== inst.class_time
+                ) {
+                    activeDatesWithDifferentTime.add(inst.date);
+                }
+            }
+        }
+    }
+
+    const sessions = instances
+        .filter((inst) => {
+            if (
+                inst.is_cancelled &&
+                appliedFutureDates.has(inst.date)
+            ) {
+                return false;
+            }
+            if (
+                inst.is_cancelled &&
+                activeDatesWithDifferentTime.has(inst.date) &&
+                !fromTo.has(inst.date)
+            ) {
+                return false;
+            }
+            return true;
+        })
         .map((inst) => {
             const dateObj = parseLocalDate(inst.date);
             const isToday = dateObj.getTime() === today.getTime();
@@ -244,6 +303,16 @@ function buildSessionDisplays(
             };
         })
         .sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+
+    const byDate = new Map(sessions.map((s) => [s.instance.date, s]));
+    for (const s of sessions) {
+        if (s.isRescheduledFrom && s.rescheduledDate) {
+            const target = byDate.get(s.rescheduledDate);
+            if (target) s.rescheduledClassTime = target.instance.class_time;
+        }
+    }
+
+    return sessions;
 }
 
 function getTimeCutoff(tf: TimeFilter): Date | null {
@@ -289,7 +358,10 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     const [cancelSessions, setCancelSessions] = useState<BulkCancelSession[]>(
         []
     );
-    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showBulkCancelModal, setShowBulkCancelModal] = useState(false);
+    const [quickCancelSession, setQuickCancelSession] =
+        useState<SessionDisplay | null>(null);
+    const [showQuickCancel, setShowQuickCancel] = useState(false);
     const [rescheduleTarget, setRescheduleTarget] =
         useState<SessionDisplay | null>(null);
     const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
@@ -314,13 +386,19 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         [cls.events]
     );
 
+    const roomOverrides = useMemo(
+        () => buildRoomOverrideMap(cls.events ?? []),
+        [cls.events]
+    );
+
     const allSessions = useMemo(() => {
         if (!instancesResp?.data) return [];
         return buildSessionDisplays(
             instancesResp.data,
             cls.enrolled,
             rescheduleMaps.fromTo,
-            rescheduleMaps.toFrom
+            rescheduleMaps.toFrom,
+            rescheduleMaps.appliedFutureDates
         );
     }, [instancesResp, cls.enrolled, rescheduleMaps]);
 
@@ -491,8 +569,8 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         UPCOMING_DISPLAY_LIMIT
     );
 
-    const refreshData = () => {
-        void mutate();
+    const refreshData = async () => {
+        await mutate();
         onClassMutate();
     };
 
@@ -516,38 +594,36 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         }
 
         if (!overrideId) return;
-        const resp = await API.delete(
-            `program-classes/${cls.id}/events/${overrideId}`
-        );
+        const hasAppliedFuture =
+            rescheduleMaps.appliedFutureDates.size > 0 &&
+            (session.isRescheduledFrom || session.isRescheduledTo);
+        const url = hasAppliedFuture
+            ? `program-classes/${cls.id}/events/${overrideId}?undo_applied_future=true`
+            : `program-classes/${cls.id}/events/${overrideId}`;
+        const resp = await API.delete(url);
         if (resp.success) {
             toast.success(
                 session.isRescheduledFrom || session.isRescheduledTo
-                    ? 'Reschedule undone'
+                    ? hasAppliedFuture
+                        ? 'Reschedule and future changes undone'
+                        : 'Reschedule undone'
                     : 'Cancellation undone'
             );
         }
-        refreshData();
+        await refreshData();
     };
 
     const renderSessionRow = (session: SessionDisplay) => (
         <SessionRow
-            key={session.instance.date + '-' + session.instance.id}
+            key={session.instance.date + '-' + (session.instance.event_id ?? session.instance.id)}
             session={session}
             selected={selectedDates.has(session.instance.date)}
             onToggle={() => toggleSession(session.instance.date)}
             onClick={() => setSelectedSession(session)}
             onNavigateToAttendance={() => navigateToAttendance(session)}
             onCancel={() => {
-                setCancelSessions([
-                    {
-                        date: session.instance.date,
-                        dateObj: session.dateObj,
-                        dayName: session.dayName,
-                        eventId:
-                            session.instance.event_id ?? session.instance.id
-                    }
-                ]);
-                setShowCancelModal(true);
+                setQuickCancelSession(session);
+                setShowQuickCancel(true);
             }}
             onReschedule={() => setRescheduleTarget(session)}
             onUndo={() => void handleUndo(session)}
@@ -819,19 +895,49 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                         }
                     )}
                     currentRoom={cls.events?.[0]?.room_ref?.name}
-                    onRescheduled={() => refreshData()}
+                    classTime={rescheduleTarget.instance.class_time}
+                    onRescheduled={() => void refreshData()}
+                />
+            )}
+
+            {showQuickCancel && quickCancelSession && (
+                <CancelSessionModal
+                    open={showQuickCancel}
+                    onClose={() => {
+                        setShowQuickCancel(false);
+                        setQuickCancelSession(null);
+                    }}
+                    classId={cls.id}
+                    eventId={
+                        quickCancelSession.instance.event_id ??
+                        quickCancelSession.instance.id
+                    }
+                    date={quickCancelSession.instance.date}
+                    dateLabel={quickCancelSession.dateObj.toLocaleDateString(
+                        'en-US',
+                        {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric'
+                        }
+                    )}
+                    onCancelled={() => {
+                        setShowQuickCancel(false);
+                        setQuickCancelSession(null);
+                        void refreshData();
+                    }}
                 />
             )}
 
             <BulkCancelSessionsModal
-                open={showCancelModal}
-                onOpenChange={setShowCancelModal}
+                open={showBulkCancelModal}
+                onOpenChange={setShowBulkCancelModal}
                 classId={cls.id}
                 sessions={cancelSessions}
                 onCancelled={() => {
                     setSelectedDates(new Set());
                     setCancelSessions([]);
-                    refreshData();
+                    void refreshData();
                 }}
             />
 
@@ -842,7 +948,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 sessions={changeInstructorSessions}
                 onChanged={() => {
                     setSelectedDates(new Set());
-                    refreshData();
+                    void refreshData();
                 }}
                 showSessionsList
             />
@@ -854,7 +960,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 sessions={changeRoomSessions}
                 onChanged={() => {
                     setSelectedDates(new Set());
-                    refreshData();
+                    void refreshData();
                 }}
                 showSessionsList
             />
@@ -863,13 +969,24 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 session={selectedSession}
                 onClose={() => setSelectedSession(null)}
                 className={cls.name}
-                classTime={cls.events?.[0]?.duration ?? ''}
-                room={cls.events?.[0]?.room_ref?.name ?? 'TBD'}
+                classTime={
+                    selectedSession?.instance.class_time ??
+                    cls.events?.[0]?.duration ??
+                    ''
+                }
+                room={
+                    (selectedSession
+                        ? roomOverrides.get(selectedSession.instance.date)
+                        : undefined) ??
+                    cls.events?.[0]?.room_ref?.name ??
+                    'TBD'
+                }
                 classId={cls.id}
-                onMutate={() => refreshData()}
+                onMutate={() => void refreshData()}
                 onUndo={() => {
                     if (selectedSession) void handleUndo(selectedSession);
                 }}
+                allSessions={allSessions}
             />
 
             {selectedDates.size > 0 && (
@@ -908,7 +1025,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                                                 s.instance.id
                                         }))
                                     );
-                                    setShowCancelModal(true);
+                                    setShowBulkCancelModal(true);
                                 }}
                             >
                                 <CalendarOff className="size-4 mr-2" />
@@ -1002,7 +1119,8 @@ function SessionRow({
         hasAttendance,
         isPast,
         isUpcoming,
-        rescheduledDate
+        rescheduledDate,
+        rescheduledClassTime
     } = session;
 
     const getBorderClass = () => {
@@ -1101,6 +1219,8 @@ function SessionRow({
                     {isRescheduledFrom && rescheduledDate ? (
                         <div className="text-xs text-gray-500 mt-0.5">
                             &rarr; Moved to {formatShortDate(rescheduledDate)}
+                            {rescheduledClassTime &&
+                                ` at ${rescheduledClassTime}`}
                         </div>
                     ) : isRescheduledTo && rescheduledDate ? (
                         <div className="text-xs text-blue-700 mt-0.5">

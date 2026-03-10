@@ -19,6 +19,11 @@ import {
 import API from '@/api/api';
 import { toast } from 'sonner';
 
+export interface CancelFutureSession {
+    date: string;
+    eventId: number;
+}
+
 interface CancelSessionModalProps {
     open: boolean;
     onClose: () => void;
@@ -27,6 +32,9 @@ interface CancelSessionModalProps {
     date: string;
     dateLabel: string;
     onCancelled: () => void;
+    applyToFuture?: boolean;
+    setApplyToFuture?: (apply: boolean) => void;
+    futureSessions?: CancelFutureSession[];
 }
 
 export function CancelSessionModal({
@@ -36,7 +44,10 @@ export function CancelSessionModal({
     eventId,
     date,
     dateLabel,
-    onCancelled
+    onCancelled,
+    applyToFuture,
+    setApplyToFuture,
+    futureSessions = []
 }: CancelSessionModalProps) {
     const [reason, setReason] = useState('');
     const [note, setNote] = useState('');
@@ -54,21 +65,40 @@ export function CancelSessionModal({
 
     const handleCancel = async () => {
         setIsSubmitting(true);
-        const resp = await API.patch(
-            `program-classes/${classId}/events/${eventId}`,
-            {
-                date,
-                is_cancelled: true,
-                reason: reason === 'other' ? note.trim() : reason
-            }
-        );
-        if (resp.success) {
-            toast.success('Session cancelled successfully');
-            onClose();
-            onCancelled();
-        } else {
-            toast.error(resp.message || 'Failed to cancel session');
+        const cancelReason = reason === 'other' ? note.trim() : reason;
+
+        const sessionsToCancel = [
+            { date, eventId },
+            ...(applyToFuture ? futureSessions : [])
+        ];
+
+        let ok = 0;
+        let fail = 0;
+        for (const s of sessionsToCancel) {
+            const resp = await API.patch(
+                `program-classes/${classId}/events/${s.eventId}`,
+                {
+                    date: s.date,
+                    is_cancelled: true,
+                    reason: cancelReason
+                }
+            );
+            if (resp.success) ok++;
+            else fail++;
         }
+
+        if (ok) {
+            toast.success(
+                ok === 1
+                    ? 'Session cancelled successfully'
+                    : `${ok} sessions cancelled successfully`
+            );
+        }
+        if (fail) {
+            toast.error(`Failed to cancel ${fail} session${fail === 1 ? '' : 's'}`);
+        }
+        onClose();
+        onCancelled();
         setIsSubmitting(false);
     };
 
@@ -134,6 +164,25 @@ export function CancelSessionModal({
                             />
                         </div>
                     )}
+                    {setApplyToFuture && (
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="apply-cancel-to-future"
+                                checked={applyToFuture}
+                                onChange={(e) =>
+                                    setApplyToFuture(e.target.checked)
+                                }
+                                className="size-4 rounded border-gray-300"
+                            />
+                            <Label
+                                htmlFor="apply-cancel-to-future"
+                                className="text-sm font-normal cursor-pointer"
+                            >
+                                Apply this change to all future sessions
+                            </Label>
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-2 justify-end">
                     <Button
@@ -142,6 +191,7 @@ export function CancelSessionModal({
                             onClose();
                             setNote('');
                             setReason('');
+                            if (setApplyToFuture) setApplyToFuture(false);
                         }}
                         disabled={isSubmitting}
                     >
