@@ -1293,7 +1293,7 @@ function SessionRow({
                         variant="outline"
                         size="sm"
                         onClick={() => onUndo()}
-                        className="border-amber-300 hover:bg-amber-50"
+                        className="border-gray-300 hover:bg-gray-50"
                     >
                         <Undo2 className="size-4 mr-1.5" />
                         Undo
@@ -1305,16 +1305,16 @@ function SessionRow({
                             variant="outline"
                             size="sm"
                             onClick={() => onReschedule()}
-                            className="border-blue-300 hover:bg-blue-50"
+                            className="border-gray-300 hover:bg-gray-50"
                         >
                             <CalendarClock className="size-4 mr-1.5" />
                             Reschedule
                         </Button>
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => onUndo()}
-                            className="hover:bg-blue-100"
+                            className="border-gray-300 hover:bg-gray-50"
                             title="Undo reschedule"
                         >
                             <Undo2 className="size-4" />
