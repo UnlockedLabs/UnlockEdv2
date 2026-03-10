@@ -242,10 +242,10 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="text-[#203622] mb-1 font-semibold">
+                    <h3 className="text-[#203622] mb-1">
                         Recurring Schedule Pattern
                     </h3>
                     <p className="text-sm text-gray-600">
@@ -256,11 +256,11 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
             </div>
 
             <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA]/60 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA] rounded-lg">
                         <Calendar className="size-5 text-[#556830] mt-0.5" />
                         <div>
-                            <div className="text-[#203622] mb-1 font-medium">
+                            <div className="text-[#203622] mb-1">
                                 Regular Sessions
                             </div>
                             <div className="text-sm text-gray-600">
@@ -274,10 +274,10 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             )}
                         </div>
                     </div>
-                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA]/60 rounded-lg">
+                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA] rounded-lg">
                         <Clock className="size-5 text-[#556830] mt-0.5" />
                         <div>
-                            <div className="text-[#203622] mb-1 font-medium">
+                            <div className="text-[#203622] mb-1">
                                 Duration
                             </div>
                             <div className="text-sm text-gray-600">
