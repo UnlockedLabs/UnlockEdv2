@@ -332,37 +332,59 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             </div>
                             {calendarWeeks.map((week, wi) => (
                                 <div key={wi} className="grid grid-cols-7">
-                                    {week.map((day) => (
-                                        <button
-                                            key={day.dateStr}
-                                            onClick={() => {
-                                                if (day.isClassDay)
-                                                    setSelectedDay(day);
-                                            }}
-                                            disabled={!day.isClassDay}
-                                            className={cn(
-                                                'h-12 text-sm border-t border-r border-gray-200 last:border-r-0 flex items-center justify-center relative transition-colors',
-                                                !day.isCurrentMonth &&
-                                                    'text-gray-400',
-                                                day.isCurrentMonth &&
-                                                    !day.isClassDay &&
-                                                    'text-gray-700',
-                                                day.isClassDay &&
-                                                    !day.isCancelled &&
-                                                    'bg-green-50 text-[#556830] font-medium hover:bg-green-100 cursor-pointer',
-                                                day.isClassDay &&
-                                                    day.isCancelled &&
-                                                    'bg-gray-100 text-gray-500 line-through cursor-pointer hover:bg-gray-200',
-                                                day.isToday &&
-                                                    'ring-2 ring-inset ring-blue-400',
-                                                selectedDay?.dateStr ===
-                                                    day.dateStr &&
-                                                    'ring-2 ring-inset ring-[#556830]'
-                                            )}
-                                        >
-                                            {day.dayNum}
-                                        </button>
-                                    ))}
+                                    {week.map((day) => {
+                                        const showAsClass = day.isClassDay && !day.isCancelled;
+                                        const isClickable = day.isClassDay && day.isCurrentMonth;
+
+                                        return (
+                                            <div
+                                                key={day.dateStr}
+                                                onClick={() => {
+                                                    if (isClickable)
+                                                        setSelectedDay(day);
+                                                }}
+                                                className={cn(
+                                                    'min-h-[80px] p-2 border-t border-r border-gray-200 last:border-r-0 transition-all',
+                                                    !day.isCurrentMonth && 'bg-gray-50',
+                                                    day.isToday && 'bg-blue-50',
+                                                    showAsClass && day.isCurrentMonth && 'bg-green-50',
+                                                    isClickable && 'cursor-pointer hover:ring-2 hover:ring-[#556830] hover:ring-inset',
+                                                    selectedDay?.dateStr === day.dateStr && 'ring-2 ring-inset ring-[#556830]'
+                                                )}
+                                            >
+                                                <div className="flex flex-col h-full">
+                                                    <span className={cn(
+                                                        'text-sm',
+                                                        !day.isCurrentMonth && 'text-gray-400',
+                                                        day.isCurrentMonth && !day.isClassDay && 'text-gray-700',
+                                                        day.isToday && 'font-bold text-blue-700'
+                                                    )}>
+                                                        {day.dayNum}
+                                                    </span>
+
+                                                    {day.isCancelled && day.isCurrentMonth && (
+                                                        <div className="mt-1">
+                                                            <div className="text-xs bg-gray-200 text-gray-500 rounded px-1.5 py-0.5 inline-block line-through">
+                                                                Class
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mt-1">Cancelled</div>
+                                                        </div>
+                                                    )}
+
+                                                    {showAsClass && day.isCurrentMonth && (
+                                                        <div className="mt-1">
+                                                            <div className="text-xs bg-[#556830] text-white rounded px-1.5 py-0.5 inline-block">
+                                                                Class
+                                                            </div>
+                                                            <div className="text-xs text-gray-600 mt-1">
+                                                                {classTime}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ))}
                         </div>
