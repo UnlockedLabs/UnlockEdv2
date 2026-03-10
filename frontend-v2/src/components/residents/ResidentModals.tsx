@@ -137,7 +137,7 @@ export function EditResidentDialog({
                             className="mt-2"
                         />
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="mt-6">
                         <Button
                             variant="outline"
                             type="button"
@@ -363,42 +363,42 @@ export function DeactivateDialog({
                 <div className="py-4 space-y-4">
                     <ul className="space-y-2 text-sm text-gray-700">
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident will be withdrawn from all active
                                 classes and programs.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident&apos;s account will be locked and
                                 marked as Deactivated.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 Staff will no longer be able to edit this
                                 resident&apos;s account.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident will not be able to log in or
                                 enroll in new programs.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The time this account was deactivated will be
                                 recorded.
                             </span>
                         </li>
                         <li className="flex gap-2">
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400">&bull;</span>
                             <span>
                                 The resident&apos;s account history and
                                 favorites will be preserved and remain
@@ -566,7 +566,10 @@ export function TransferDialog({
             ? `/api/users/resident-verify?user_id=${resident.id}&facility_id=${transferFacilityId}&doc_id=${encodeURIComponent(resident.doc_id ?? '')}`
             : null
     );
-    const programConflicts = verifyResp?.data?.program_names ?? [];
+    const rawConflicts = verifyResp?.data?.program_names ?? [];
+    const programConflicts = [
+        ...new Set(rawConflicts.map((c) => c.program_name))
+    ];
 
     const handleTransfer = async () => {
         setLoading(true);
@@ -676,14 +679,13 @@ export function TransferDialog({
                                     </div>
                                     <div className="space-y-2">
                                         {programConflicts.map(
-                                            (conflict, idx) => (
+                                            (name, idx) => (
                                                 <div
                                                     key={idx}
                                                     className="text-sm text-gray-600 flex items-center gap-2"
                                                 >
                                                     <div className="size-1.5 rounded-full bg-gray-400" />
-                                                    {conflict.program_name} -{' '}
-                                                    {conflict.class_name}
+                                                    {name}
                                                 </div>
                                             )
                                         )}
