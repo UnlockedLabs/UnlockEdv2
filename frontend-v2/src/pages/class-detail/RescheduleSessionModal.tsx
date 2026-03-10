@@ -21,6 +21,11 @@ import API from '@/api/api';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
 
+export interface RescheduleFutureSession {
+    date: string;
+    eventId: number;
+}
+
 interface RescheduleSessionModalProps {
     open: boolean;
     onClose: () => void;
@@ -29,7 +34,11 @@ interface RescheduleSessionModalProps {
     originalDate: string;
     dateLabel: string;
     currentRoom?: string;
+    classTime?: string;
     onRescheduled: () => void;
+    applyToFuture?: boolean;
+    setApplyToFuture?: (apply: boolean) => void;
+    futureSessions?: RescheduleFutureSession[];
 }
 
 export function RescheduleSessionModal({
@@ -40,8 +49,13 @@ export function RescheduleSessionModal({
     originalDate,
     dateLabel,
     currentRoom,
-    onRescheduled
+    classTime,
+    onRescheduled,
+    applyToFuture,
+    setApplyToFuture,
+    futureSessions = []
 }: RescheduleSessionModalProps) {
+    const [startTime, endTime] = classTime?.split(' - ') ?? [];
     const [newDate, setNewDate] = useState('');
     const [newStartTime, setNewStartTime] = useState('');
     const [newEndTime, setNewEndTime] = useState('');
@@ -66,7 +80,7 @@ export function RescheduleSessionModal({
         setIsSubmitting(true);
         const body: Record<string, unknown> = {
             date: originalDate,
-            new_date: newDate
+            new_date: newDate || originalDate
         };
         if (newStartTime) body.new_start_time = newStartTime;
         if (newEndTime) body.new_end_time = newEndTime;
@@ -75,13 +89,50 @@ export function RescheduleSessionModal({
             `program-classes/${classId}/events/${eventId}`,
             body
         );
-        if (resp.success) {
-            toast.success('Session rescheduled successfully');
-            onClose();
-            onRescheduled();
-        } else {
+        if (!resp.success) {
             toast.error(resp.message || 'Failed to reschedule session');
+            setIsSubmitting(false);
+            return;
         }
+
+        if (applyToFuture && futureSessions.length > 0) {
+            const hasTimeOrRoom = newStartTime || newEndTime || newRoom;
+            if (hasTimeOrRoom) {
+                let ok = 0;
+                let fail = 0;
+                for (const s of futureSessions) {
+                    const futureBody: Record<string, unknown> = {
+                        date: s.date,
+                        new_date: s.date,
+                        reason: 'applied_future'
+                    };
+                    if (newStartTime) futureBody.new_start_time = newStartTime;
+                    if (newEndTime) futureBody.new_end_time = newEndTime;
+                    if (newRoom) futureBody.room_id = Number(newRoom);
+                    const futureResp = await API.patch(
+                        `program-classes/${classId}/events/${s.eventId}`,
+                        futureBody
+                    );
+                    if (futureResp.success) ok++;
+                    else fail++;
+                }
+                if (fail) {
+                    toast.error(
+                        `Failed to update ${fail} future session${fail === 1 ? '' : 's'}`
+                    );
+                }
+                toast.success(
+                    `Rescheduled session and updated ${ok} future session${ok === 1 ? '' : 's'}`
+                );
+            } else {
+                toast.success('Session rescheduled successfully');
+            }
+        } else {
+            toast.success('Session rescheduled successfully');
+        }
+
+        onClose();
+        onRescheduled();
         setIsSubmitting(false);
     };
 
@@ -119,6 +170,7 @@ export function RescheduleSessionModal({
                             type="time"
                             value={newStartTime}
                             onChange={(e) => setNewStartTime(e.target.value)}
+                            placeholder={startTime}
                         />
                     </div>
                     <div className="space-y-2">
@@ -130,6 +182,7 @@ export function RescheduleSessionModal({
                             type="time"
                             value={newEndTime}
                             onChange={(e) => setNewEndTime(e.target.value)}
+                            placeholder={endTime}
                         />
                     </div>
                     <div className="space-y-2">
@@ -161,11 +214,37 @@ export function RescheduleSessionModal({
                             Leave time and room blank to keep current values.
                         </p>
                     </div>
+                    {setApplyToFuture && (
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="apply-to-future"
+                                checked={applyToFuture}
+                                onChange={(e) =>
+                                    setApplyToFuture(e.target.checked)
+                                }
+                                className="size-4 rounded border-gray-300"
+                            />
+                            <Label
+                                htmlFor="apply-to-future"
+                                className="text-sm font-normal cursor-pointer"
+                            >
+                                Apply this change to all future sessions
+                            </Label>
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-2 justify-end">
                     <Button
                         variant="outline"
-                        onClick={onClose}
+                        onClick={() => {
+                            onClose();
+                            setNewDate('');
+                            setNewStartTime('');
+                            setNewEndTime('');
+                            setNewRoom('');
+                            if (setApplyToFuture) setApplyToFuture(false);
+                        }}
                         disabled={isSubmitting}
                     >
                         Cancel
@@ -174,7 +253,10 @@ export function RescheduleSessionModal({
                         onClick={() => {
                             void handleReschedule();
                         }}
-                        disabled={!newDate || isSubmitting}
+                        disabled={
+                            (!newDate && !newStartTime && !newEndTime && !newRoom) ||
+                            isSubmitting
+                        }
                         className="bg-[#556830] hover:bg-[#203622] text-white"
                     >
                         {isSubmitting

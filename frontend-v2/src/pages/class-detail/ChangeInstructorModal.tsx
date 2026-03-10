@@ -76,7 +76,11 @@ export function ChangeInstructorModal({
         let ok = 0;
         let fail = 0;
 
-        for (const s of sessions) {
+        const allSessions = applyToFuture && futureSessions.length > 0
+            ? [...sessions, ...futureSessions]
+            : sessions;
+
+        for (const s of allSessions) {
             const resp = await API.patch(
                 `program-classes/${classId}/events/${s.eventId}`,
                 {
@@ -235,10 +239,10 @@ export function ChangeInstructorModal({
                                             key={s.date}
                                             className="text-sm text-gray-700"
                                         >
-                                            {s.dayName ?? ''},{' '}
                                             {s.dateObj?.toLocaleDateString(
                                                 'en-US',
                                                 {
+                                                    weekday: 'long',
                                                     month: 'long',
                                                     day: 'numeric',
                                                     year: 'numeric'
