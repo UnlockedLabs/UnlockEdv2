@@ -248,7 +248,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                     <h3 className="text-[#203622] mb-1 font-semibold">
                         Recurring Schedule Pattern
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-600">
                         Reference for the regular class schedule. To manage
                         specific sessions, use the Sessions tab.
                     </p>
@@ -263,12 +263,12 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             <div className="text-[#203622] mb-1 font-medium">
                                 Regular Sessions
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-600">
                                 {schedule.days.join(', ')} at{' '}
                                 {schedule.startTime} - {schedule.endTime}
                             </div>
                             {schedule.room && (
-                                <div className="text-sm text-gray-500 mt-1">
+                                <div className="text-sm text-gray-600 mt-1">
                                     {schedule.room}
                                 </div>
                             )}
@@ -280,11 +280,11 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             <div className="text-[#203622] mb-1 font-medium">
                                 Duration
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-600">
                                 {cls.start_dt} to {cls.end_dt || 'Ongoing'}
                             </div>
                             {cls.credit_hours > 0 && (
-                                <div className="text-sm text-gray-500 mt-1">
+                                <div className="text-sm text-gray-600 mt-1">
                                     {cls.credit_hours} total credit hours
                                 </div>
                             )}
@@ -313,7 +313,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                 <ChevronRight className="size-4" />
                             </Button>
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-600">
                             Click any class day to view details
                         </p>
                     </div>
@@ -324,7 +324,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                 {DAY_HEADERS.map((d) => (
                                     <div
                                         key={d}
-                                        className="py-2 text-center text-xs font-medium text-gray-500"
+                                        className="py-2 text-center text-xs font-medium text-gray-600"
                                     >
                                         {d}
                                     </div>
@@ -343,10 +343,10 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                             className={cn(
                                                 'h-12 text-sm border-t border-r border-gray-200 last:border-r-0 flex items-center justify-center relative transition-colors',
                                                 !day.isCurrentMonth &&
-                                                    'text-gray-500',
+                                                    'text-gray-400',
                                                 day.isCurrentMonth &&
                                                     !day.isClassDay &&
-                                                    'text-gray-500',
+                                                    'text-gray-700',
                                                 day.isClassDay &&
                                                     !day.isCancelled &&
                                                     'bg-green-50 text-[#556830] font-medium hover:bg-green-100 cursor-pointer',
@@ -368,7 +368,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                         </div>
                     </div>
 
-                    <div className="flex gap-4 mt-3 text-sm text-gray-500">
+                    <div className="flex gap-4 mt-3 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-green-50 border border-green-200 rounded" />
                             <span>Class Day</span>
