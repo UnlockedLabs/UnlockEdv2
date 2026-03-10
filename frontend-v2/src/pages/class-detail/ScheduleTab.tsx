@@ -314,7 +314,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             </Button>
                         </div>
                         <p className="text-sm text-gray-600">
-                            Click any class day to view details
+                            Click any date to view or modify that session
                         </p>
                     </div>
 
@@ -371,15 +371,23 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                     <div className="flex gap-4 mt-3 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-green-50 border border-green-200 rounded" />
-                            <span>Class Day</span>
+                            <span>Regular Class Day</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-blue-400 rounded" />
+                            <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded" />
                             <span>Today</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded" />
                             <span>Cancelled</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded" />
+                            <span>Attendance Recorded</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-gray-100 border border-gray-300 border-dashed rounded" />
+                            <span>Rescheduled</span>
                         </div>
                     </div>
                 </div>
