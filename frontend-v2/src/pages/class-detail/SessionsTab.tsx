@@ -412,38 +412,36 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Filter className="size-4 text-gray-400" />
-                        <div className="flex gap-2">
-                            <FilterButton
-                                active={statusFilter === 'all'}
-                                onClick={() => handleStatusChange('all')}
-                            >
-                                All Sessions
-                            </FilterButton>
-                            <FilterButton
-                                active={statusFilter === 'completed'}
-                                onClick={() => handleStatusChange('completed')}
-                            >
-                                Completed
-                            </FilterButton>
-                            <FilterButton
-                                active={statusFilter === 'missing'}
-                                onClick={() => handleStatusChange('missing')}
-                            >
-                                Missing
-                            </FilterButton>
-                            <FilterButton
-                                active={statusFilter === 'upcoming'}
-                                onClick={() => handleStatusChange('upcoming')}
-                            >
-                                Upcoming
-                            </FilterButton>
-                        </div>
+                <div className="flex items-center gap-3">
+                    <Filter className="size-4 text-gray-400" />
+                    <div className="flex gap-2 flex-1">
+                        <FilterButton
+                            active={statusFilter === 'all'}
+                            onClick={() => handleStatusChange('all')}
+                        >
+                            All Sessions
+                        </FilterButton>
+                        <FilterButton
+                            active={statusFilter === 'completed'}
+                            onClick={() => handleStatusChange('completed')}
+                        >
+                            Completed
+                        </FilterButton>
+                        <FilterButton
+                            active={statusFilter === 'missing'}
+                            onClick={() => handleStatusChange('missing')}
+                        >
+                            Missing
+                        </FilterButton>
+                        <FilterButton
+                            active={statusFilter === 'upcoming'}
+                            onClick={() => handleStatusChange('upcoming')}
+                        >
+                            Upcoming
+                        </FilterButton>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="h-6 w-px bg-gray-300" />
+                    <div className="h-6 w-px bg-gray-300" />
+                    <div className="flex gap-2">
                         <FilterButton
                             active={timeFilter === 'week'}
                             onClick={() => handleTimeChange('week')}
