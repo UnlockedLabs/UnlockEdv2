@@ -4,8 +4,6 @@ import {
     Calendar,
     Clock,
     MapPin,
-    ChevronLeft,
-    ChevronRight,
     CalendarOff,
     CalendarClock,
     CheckCircle
@@ -127,7 +125,7 @@ const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function ScheduleTab({ cls }: ScheduleTabProps) {
     const schedule = useMemo(() => getClassSchedule(cls), [cls]);
-    const [viewDate, setViewDate] = useState(() => new Date());
+    const [viewDate] = useState(() => new Date());
     const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
     const [cancelTarget, setCancelTarget] = useState<CalendarDay | null>(null);
     const [rescheduleTarget, setRescheduleTarget] =
@@ -164,20 +162,6 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
         month: 'long',
         year: 'numeric'
     });
-
-    const goToPrevMonth = () => {
-        setViewDate(
-            (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-        );
-        setSelectedDay(null);
-    };
-
-    const goToNextMonth = () => {
-        setViewDate(
-            (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-        );
-        setSelectedDay(null);
-    };
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -294,25 +278,9 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
 
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={goToPrevMonth}
-                            >
-                                <ChevronLeft className="size-4" />
-                            </Button>
-                            <h4 className="text-[#203622] font-medium min-w-[140px] sm:min-w-[180px] text-center">
-                                {monthLabel}
-                            </h4>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={goToNextMonth}
-                            >
-                                <ChevronRight className="size-4" />
-                            </Button>
-                        </div>
+                        <h4 className="text-[#203622]">
+                            {monthLabel}
+                        </h4>
                         <p className="text-sm text-gray-600">
                             Click any date to view or modify that session
                         </p>
