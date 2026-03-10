@@ -238,7 +238,7 @@ export default function ClassDetailPage() {
                     </TabsContent>
 
                     <TabsContent value="sessions" className="space-y-4">
-                        <SessionsTab cls={cls} />
+                        <SessionsTab cls={cls} onClassMutate={() => void mutate()} />
                     </TabsContent>
 
                     <TabsContent value="schedule" className="space-y-4">

@@ -994,6 +994,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 
 func createEventInstances(event models.ProgramClassEvent, occurrences []time.Time, loc *time.Location, classTime string, attendances []models.ProgramClassEventAttendance, canonicalHour, canonicalMinute int) []models.ClassEventInstance {
 	var eventInstances []models.ClassEventInstance
+	emittedDateTimes := make(map[string]bool)
 	//daylight saving time fix (VIP) prevents the time shift
 	for _, occ := range occurrences {
 		occInLoc := occ.In(loc)
@@ -1008,11 +1009,7 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			0,
 			loc,
 		)
-		isCancelled, isRescheduled, _ := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
-
-		if isCancelled && isRescheduled { //skip occurrence
-			continue
-		}
+		isCancelled, _, _ := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
 
 		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
 			return att.Date == occDateStr
@@ -1026,9 +1023,10 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			IsCancelled:       isCancelled,
 		}
 		eventInstances = append(eventInstances, eventInstance)
+		emittedDateTimes[occDateStr+"|"+classTime] = true
 	}
-	for _, override := range event.Overrides { //adding the rescheduled ones to instances slice
-		if override.IsCancelled { //skip cancelled ones
+	for _, override := range event.Overrides { //adding rescheduled-to dates as instances
+		if override.IsCancelled || override.LinkedOverrideEventID == nil {
 			continue
 		}
 		rRule, err := rrule.StrToRRule(override.OverrideRrule)
@@ -1049,6 +1047,9 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		}
 		overrideEnd := overrideDate.Add(duration)
 		overrideClassTime := overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
+		if emittedDateTimes[overrideDateStr+"|"+overrideClassTime] {
+			continue
+		}
 
 		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
 			return att.Date == overrideDateStr

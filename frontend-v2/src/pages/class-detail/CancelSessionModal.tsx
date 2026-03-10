@@ -16,7 +16,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import { CancelEventReason } from '@/types/program';
 import API from '@/api/api';
 import { toast } from 'sonner';
 
@@ -50,15 +49,8 @@ export function CancelSessionModal({
         }
     }, [open]);
 
-    const isOther = reason === String(CancelEventReason['Other (add note)']);
-    const canSubmit = reason && (!isOther || note.trim().length > 0);
-
-    const handleReasonChange = (value: string) => {
-        setReason(value);
-        if (value !== String(CancelEventReason['Other (add note)'])) {
-            setNote('');
-        }
-    };
+    const canSubmit =
+        reason && (reason !== 'other' || note.trim().length > 0);
 
     const handleCancel = async () => {
         setIsSubmitting(true);
@@ -67,7 +59,7 @@ export function CancelSessionModal({
             {
                 date,
                 is_cancelled: true,
-                reason: isOther ? note.trim() : reason
+                reason: reason === 'other' ? note.trim() : reason
             }
         );
         if (resp.success) {
@@ -93,27 +85,48 @@ export function CancelSessionModal({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="cancelReason">
+                        <Label htmlFor="cancel-reason">
                             Reason for Cancellation *
                         </Label>
-                        <Select value={reason} onValueChange={handleReasonChange}>
-                            <SelectTrigger id="cancelReason">
+                        <Select
+                            value={reason}
+                            onValueChange={(value) => {
+                                setReason(value);
+                                if (value !== 'other') {
+                                    setNote('');
+                                }
+                            }}
+                        >
+                            <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.values(CancelEventReason).map((r) => (
-                                    <SelectItem key={r} value={r}>
-                                        {r}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="instructor_unavailable">
+                                    Instructor Unavailable
+                                </SelectItem>
+                                <SelectItem value="instructor_illness">
+                                    Instructor Illness
+                                </SelectItem>
+                                <SelectItem value="facility_issue_or_lockdown">
+                                    Facility Issue or Lockdown
+                                </SelectItem>
+                                <SelectItem value="holiday_or_scheduled_break">
+                                    Holiday or Scheduled Break
+                                </SelectItem>
+                                <SelectItem value="technology_issue">
+                                    Technology Issue
+                                </SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
-                    {isOther && (
+                    {reason === 'other' && (
                         <div className="space-y-2">
-                            <Label htmlFor="cancelNote">Please specify *</Label>
+                            <Label htmlFor="cancel-note">
+                                Please specify *
+                            </Label>
                             <Textarea
-                                id="cancelNote"
+                                id="cancel-note"
                                 placeholder="Enter the specific reason for cancellation..."
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
@@ -125,7 +138,11 @@ export function CancelSessionModal({
                 <div className="flex gap-2 justify-end">
                     <Button
                         variant="outline"
-                        onClick={onClose}
+                        onClick={() => {
+                            onClose();
+                            setNote('');
+                            setReason('');
+                        }}
                         disabled={isSubmitting}
                     >
                         Cancel

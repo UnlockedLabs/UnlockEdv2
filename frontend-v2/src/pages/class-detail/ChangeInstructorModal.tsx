@@ -26,6 +26,8 @@ export interface ChangeInstructorSession {
     dateLabel: string;
     eventId: number;
     classTime: string;
+    dateObj?: Date;
+    dayName?: string;
 }
 
 interface ChangeInstructorModalProps {
@@ -34,22 +36,22 @@ interface ChangeInstructorModalProps {
     classId: number;
     sessions: ChangeInstructorSession[];
     onChanged: () => void;
+    applyToFuture?: boolean;
+    setApplyToFuture?: (apply: boolean) => void;
+    futureSessions?: ChangeInstructorSession[];
+    showSessionsList?: boolean;
 }
-
-const CHANGE_REASONS = [
-    'Instructor Unavailable',
-    'Illness',
-    'Scheduling Conflict',
-    'Personal Emergency',
-    'Other'
-];
 
 export function ChangeInstructorModal({
     open,
     onClose,
     classId,
     sessions,
-    onChanged
+    onChanged,
+    applyToFuture,
+    setApplyToFuture,
+    futureSessions = [],
+    showSessionsList = false
 }: ChangeInstructorModalProps) {
     const { user } = useAuth();
     const [selectedInstructorId, setSelectedInstructorId] = useState('');
@@ -100,29 +102,29 @@ export function ChangeInstructorModal({
         setIsSubmitting(false);
     };
 
-    const isSingle = sessions.length === 1;
+    const useBulkLayout = showSessionsList || sessions.length > 1;
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent>
+            <DialogContent className={useBulkLayout ? 'max-w-2xl' : ''}>
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
                         Change Instructor
                     </DialogTitle>
                     <DialogDescription>
-                        {isSingle
-                            ? `Change the instructor for the class scheduled for ${sessions[0]?.dateLabel}`
-                            : `Change the instructor for ${sessions.length} sessions`}
+                        {useBulkLayout
+                            ? `Select a new instructor for ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`
+                            : `Change the instructor for the class scheduled for ${sessions[0]?.dateLabel}`}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>New Instructor</Label>
+                        <Label htmlFor="newInstructor">New Instructor</Label>
                         <Select
                             value={selectedInstructorId}
                             onValueChange={setSelectedInstructorId}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger id="newInstructor">
                                 <SelectValue placeholder="Select instructor" />
                             </SelectTrigger>
                             <SelectContent>
@@ -139,35 +141,111 @@ export function ChangeInstructorModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Reason for Change</Label>
+                        <Label htmlFor="change-reason">
+                            Reason for Change
+                        </Label>
                         <Select value={reason} onValueChange={setReason}>
-                            <SelectTrigger>
+                            <SelectTrigger id="change-reason">
                                 <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
                             <SelectContent>
-                                {CHANGE_REASONS.map((r) => (
-                                    <SelectItem key={r} value={r}>
-                                        {r}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="instructor_unavailable">
+                                    Instructor Unavailable
+                                </SelectItem>
+                                <SelectItem value="instructor_illness">
+                                    Instructor Illness
+                                </SelectItem>
+                                <SelectItem value="scheduling_conflict">
+                                    Scheduling Conflict
+                                </SelectItem>
+                                <SelectItem value="personal_emergency">
+                                    Personal Emergency
+                                </SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {!isSingle && sessions.length > 0 && (
+                    {setApplyToFuture && (
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="apply-instructor-to-future"
+                                checked={applyToFuture}
+                                onChange={(e) =>
+                                    setApplyToFuture(e.target.checked)
+                                }
+                                className="size-4 rounded border-gray-300"
+                            />
+                            <Label
+                                htmlFor="apply-instructor-to-future"
+                                className="text-sm font-normal cursor-pointer"
+                            >
+                                Apply this change to all future sessions
+                            </Label>
+                        </div>
+                    )}
+
+                    {applyToFuture && futureSessions.length > 0 && (
                         <div>
                             <Label className="text-sm font-medium text-[#203622] mb-2 block">
                                 Sessions to Update
                             </Label>
                             <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
-                                {sessions.map((s) => (
-                                    <div
-                                        key={s.date}
-                                        className="text-sm text-gray-700"
-                                    >
-                                        {s.dateLabel}
-                                    </div>
-                                ))}
+                                {[...futureSessions]
+                                    .sort(
+                                        (a, b) =>
+                                            (a.dateObj?.getTime() ?? 0) -
+                                            (b.dateObj?.getTime() ?? 0)
+                                    )
+                                    .map((sess) => (
+                                        <div
+                                            key={sess.date}
+                                            className="text-sm text-gray-700"
+                                        >
+                                            {sess.dayName ?? ''},{' '}
+                                            {sess.dateObj?.toLocaleDateString(
+                                                'en-US',
+                                                {
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                }
+                                            ) ?? sess.dateLabel}
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {useBulkLayout && sessions.length > 0 && (
+                        <div>
+                            <Label className="text-sm font-medium text-[#203622] mb-2 block">
+                                Sessions to Update
+                            </Label>
+                            <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">
+                                {[...sessions]
+                                    .sort(
+                                        (a, b) =>
+                                            (a.dateObj?.getTime() ?? 0) -
+                                            (b.dateObj?.getTime() ?? 0)
+                                    )
+                                    .map((s) => (
+                                        <div
+                                            key={s.date}
+                                            className="text-sm text-gray-700"
+                                        >
+                                            {s.dayName ?? ''},{' '}
+                                            {s.dateObj?.toLocaleDateString(
+                                                'en-US',
+                                                {
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                }
+                                            ) ?? s.dateLabel}
+                                        </div>
+                                    ))}
                             </div>
                         </div>
                     )}
@@ -175,7 +253,12 @@ export function ChangeInstructorModal({
                 <div className="flex justify-end gap-3">
                     <Button
                         variant="outline"
-                        onClick={onClose}
+                        onClick={() => {
+                            onClose();
+                            setSelectedInstructorId('');
+                            setReason('');
+                            if (setApplyToFuture) setApplyToFuture(false);
+                        }}
                         disabled={isSubmitting}
                     >
                         Cancel
