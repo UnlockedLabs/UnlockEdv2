@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Calendar,
     Clock,
@@ -35,6 +35,7 @@ interface SessionDetailSheetProps {
     classId: number;
     onMutate: () => void;
     onUndo: () => void;
+    allSessions?: SessionDisplay[];
 }
 
 export function SessionDetailSheet({
@@ -45,12 +46,40 @@ export function SessionDetailSheet({
     room,
     classId,
     onMutate,
-    onUndo
+    onUndo,
+    allSessions = []
 }: SessionDetailSheetProps) {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showRescheduleModal, setShowRescheduleModal] = useState(false);
     const [showChangeInstructor, setShowChangeInstructor] = useState(false);
     const [showChangeRoom, setShowChangeRoom] = useState(false);
+    const [applyToFuture, setApplyToFuture] = useState(false);
+
+    const futureSessions = useMemo(() => {
+        if (!session) return [];
+        return allSessions
+            .filter(
+                (s) =>
+                    s.isUpcoming &&
+                    !s.isCancelled &&
+                    !s.isRescheduledFrom &&
+                    s.instance.date !== session.instance.date
+            )
+            .map((s) => ({
+                date: s.instance.date,
+                dateLabel: s.dateObj.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                eventId: s.instance.event_id ?? s.instance.id,
+                classTime: s.instance.class_time,
+                dateObj: s.dateObj,
+                dayName: s.dateObj.toLocaleDateString('en-US', {
+                    weekday: 'long'
+                })
+            }));
+    }, [allSessions, session]);
 
     if (!session) return null;
 
@@ -62,7 +91,6 @@ export function SessionDetailSheet({
         isRescheduledTo,
         rescheduledDate,
         hasAttendance,
-        isPast,
         isToday
     } = session;
 
@@ -87,6 +115,16 @@ export function SessionDetailSheet({
     });
 
     const getStatusBadge = () => {
+        if (isCancelled) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-gray-100 text-gray-700 border-gray-300"
+                >
+                    Cancelled
+                </Badge>
+            );
+        }
         if (isRescheduledFrom) {
             return (
                 <Badge
@@ -104,16 +142,6 @@ export function SessionDetailSheet({
                     className="bg-blue-50 text-blue-700 border-blue-300"
                 >
                     Rescheduled Class
-                </Badge>
-            );
-        }
-        if (isCancelled) {
-            return (
-                <Badge
-                    variant="outline"
-                    className="bg-gray-100 text-gray-700 border-gray-300"
-                >
-                    Cancelled
                 </Badge>
             );
         }
@@ -152,31 +180,34 @@ export function SessionDetailSheet({
         onClose();
     };
 
-    const buildSessionPayload = (): {
-        date: string;
-        dateLabel: string;
-        eventId: number;
-        classTime: string;
-    } => ({
-        date: instance.date,
-        dateLabel: shortDateLabel,
-        eventId,
-        classTime: instance.class_time
+    const buildPayload = (s: SessionDisplay) => ({
+        date: s.instance.date,
+        dateLabel: s.dateObj.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+        }),
+        eventId: s.instance.event_id ?? s.instance.id,
+        classTime: s.instance.class_time,
+        dateObj: s.dateObj,
+        dayName: s.dateObj.toLocaleDateString('en-US', { weekday: 'long' })
     });
 
+    const currentPayload = buildPayload(session);
+
     const changeInstructorSessions: ChangeInstructorSession[] = [
-        buildSessionPayload()
+        currentPayload
     ];
-    const changeRoomSessions: ChangeRoomSession[] = [buildSessionPayload()];
+    const changeRoomSessions: ChangeRoomSession[] = [currentPayload];
 
     return (
         <>
             <Sheet open={!!session} onOpenChange={onClose}>
                 <SheetContent className="w-[400px] sm:w-[500px] p-0">
                     <SheetHeader className="sr-only">
-                        <SheetTitle>Session Details</SheetTitle>
+                        <SheetTitle>Class Instance Details</SheetTitle>
                         <SheetDescription>
-                            View and manage this session
+                            View and manage this class instance
                         </SheetDescription>
                     </SheetHeader>
 
@@ -417,9 +448,16 @@ export function SessionDetailSheet({
                     date={instance.date}
                     dateLabel={shortDateLabel}
                     onCancelled={() => {
+                        setApplyToFuture(false);
                         onClose();
                         onMutate();
                     }}
+                    applyToFuture={applyToFuture}
+                    setApplyToFuture={setApplyToFuture}
+                    futureSessions={futureSessions.map((s) => ({
+                        date: s.date,
+                        eventId: s.eventId
+                    }))}
                 />
             )}
 
@@ -432,10 +470,18 @@ export function SessionDetailSheet({
                     originalDate={instance.date}
                     dateLabel={shortDateLabel}
                     currentRoom={room}
+                    classTime={classTime}
                     onRescheduled={() => {
+                        setApplyToFuture(false);
                         onClose();
                         onMutate();
                     }}
+                    applyToFuture={applyToFuture}
+                    setApplyToFuture={setApplyToFuture}
+                    futureSessions={futureSessions.map((s) => ({
+                        date: s.date,
+                        eventId: s.eventId
+                    }))}
                 />
             )}
 
@@ -444,10 +490,14 @@ export function SessionDetailSheet({
                 onClose={() => setShowChangeInstructor(false)}
                 classId={classId}
                 sessions={changeInstructorSessions}
+                futureSessions={futureSessions}
                 onChanged={() => {
+                    setApplyToFuture(false);
                     onClose();
                     onMutate();
                 }}
+                applyToFuture={applyToFuture}
+                setApplyToFuture={setApplyToFuture}
             />
 
             <ChangeRoomModal
@@ -455,10 +505,14 @@ export function SessionDetailSheet({
                 onClose={() => setShowChangeRoom(false)}
                 classId={classId}
                 sessions={changeRoomSessions}
+                futureSessions={futureSessions}
                 onChanged={() => {
+                    setApplyToFuture(false);
                     onClose();
                     onMutate();
                 }}
+                applyToFuture={applyToFuture}
+                setApplyToFuture={setApplyToFuture}
             />
         </>
     );
