@@ -18,7 +18,7 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
-import { AlertCircle, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle, Download } from 'lucide-react';
 
 interface BulkDialogProps {
     open: boolean;
@@ -27,49 +27,8 @@ interface BulkDialogProps {
     onSuccess: () => void;
 }
 
-function ResidentList({ residents }: { residents: User[] }) {
-    return (
-        <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-            {residents.map((r) => (
-                <div
-                    key={r.id}
-                    className="flex items-center justify-between px-3 py-2 text-sm"
-                >
-                    <span className="font-medium text-gray-900">
-                        {r.name_last}, {r.name_first}
-                    </span>
-                    <span className="text-gray-500">{r.doc_id ?? ''}</span>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function CountConfirmInput({
-    count,
-    value,
-    onChange,
-    label
-}: {
-    count: number;
-    value: string;
-    onChange: (v: string) => void;
-    label?: string;
-}) {
-    return (
-        <div>
-            <Label>
-                {label ?? 'To confirm, type the number of residents'}:{' '}
-                <strong>{count}</strong>
-            </Label>
-            <Input
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={`Type ${count} to confirm`}
-                className="mt-2"
-            />
-        </div>
-    );
+function formatNameLastFirst(r: User) {
+    return `${r.name_last}, ${r.name_first}`;
 }
 
 export function BulkResetPasswordDialog({
@@ -80,12 +39,12 @@ export function BulkResetPasswordDialog({
 }: BulkDialogProps) {
     const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState<BulkPasswordResult[] | null>(null);
+    const [results, setResults] = useState<BulkPasswordResult[]>([]);
 
     useEffect(() => {
         if (!open) {
             setConfirmInput('');
-            setResults(null);
+            setResults([]);
         }
     }, [open]);
 
@@ -103,7 +62,7 @@ export function BulkResetPasswordDialog({
     };
 
     const handleDownload = () => {
-        if (!results) return;
+        if (results.length === 0) return;
         const header = 'Resident ID,Name,Username,Temporary Password';
         const rows = results.map(
             (r) => `${r.doc_id},${r.name},${r.username},${r.temp_password}`
@@ -119,7 +78,7 @@ export function BulkResetPasswordDialog({
     };
 
     const handleClose = (value: boolean) => {
-        if (!value && results) {
+        if (!value && results.length > 0) {
             onSuccess();
         }
         onOpenChange(value);
@@ -127,50 +86,63 @@ export function BulkResetPasswordDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Reset Passwords</DialogTitle>
+                    <DialogTitle>Bulk Reset Passwords</DialogTitle>
                     <DialogDescription>
-                        {results
-                            ? `Passwords generated for ${results.length} resident(s)`
-                            : `Generate temporary passwords for ${residents.length} resident(s)`}
+                        Generate new temporary passwords for{' '}
+                        {residents.length} selected resident
+                        {residents.length > 1 ? 's' : ''}
                     </DialogDescription>
                 </DialogHeader>
-                {results ? (
-                    <div className="py-4 space-y-4">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
-                            Temporary passwords have been generated.
-                            Download the password file to share with
-                            residents securely.
+
+                {results.length === 0 ? (
+                    <>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                    <div className="font-medium text-sm text-blue-900 mb-1">
+                                        Selected Residents
+                                    </div>
+                                    <p className="text-sm text-blue-800 mb-2">
+                                        New temporary passwords will be
+                                        generated for:
+                                    </p>
+                                    <div className="bg-white border border-blue-200 rounded p-3 max-h-48 overflow-y-auto">
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            {residents.map((r) => (
+                                                <li key={r.id}>
+                                                    {'\u2022'}{' '}
+                                                    {formatNameLastFirst(r)} (
+                                                    {r.doc_id ?? ''})
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <Button
-                            onClick={handleDownload}
-                            className="w-full gap-2 bg-[#556830] hover:bg-[#203622]"
-                        >
-                            <Download className="size-4" />
-                            Download Password File
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="py-4 space-y-4">
-                        <ResidentList residents={residents} />
-                        <CountConfirmInput
-                            count={residents.length}
-                            value={confirmInput}
-                            onChange={setConfirmInput}
-                        />
-                    </div>
-                )}
-                <DialogFooter>
-                    {results ? (
-                        <Button
-                            onClick={() => handleClose(false)}
-                            className="bg-[#556830] hover:bg-[#203622]"
-                        >
-                            Done
-                        </Button>
-                    ) : (
-                        <>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="bulk-reset-confirm">
+                                Type{' '}
+                                <span className="font-mono font-semibold">
+                                    {residents.length}
+                                </span>{' '}
+                                to confirm
+                            </Label>
+                            <Input
+                                id="bulk-reset-confirm"
+                                value={confirmInput}
+                                onChange={(e) =>
+                                    setConfirmInput(e.target.value)
+                                }
+                                placeholder={`Type ${residents.length}`}
+                            />
+                        </div>
+
+                        <DialogFooter>
                             <Button
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
@@ -187,9 +159,37 @@ export function BulkResetPasswordDialog({
                             >
                                 Generate Passwords
                             </Button>
-                        </>
-                    )}
-                </DialogFooter>
+                        </DialogFooter>
+                    </>
+                ) : (
+                    <>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle className="size-5 text-green-600" />
+                                <div>
+                                    <div className="font-medium text-sm text-green-900">
+                                        Passwords Generated!
+                                    </div>
+                                    <p className="text-sm text-green-700 mt-1">
+                                        {results.length} temporary passwords
+                                        have been created. Download the CSV
+                                        file to distribute to residents.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                onClick={handleDownload}
+                                className="bg-[#556830] hover:bg-[#203622]"
+                            >
+                                <Download className="size-4 mr-2" />
+                                Download Password File
+                            </Button>
+                        </DialogFooter>
+                    </>
+                )}
             </DialogContent>
         </Dialog>
     );
@@ -226,9 +226,12 @@ export function BulkDeactivateDialog({
             const { success_count, failed_count } = response.data;
             const msg =
                 failed_count > 0
-                    ? `${success_count} resident(s) deactivated, ${failed_count} failed`
-                    : `${success_count} resident(s) deactivated`;
-            toaster(msg, failed_count > 0 ? ToastState.error : ToastState.success);
+                    ? `${success_count} resident${success_count > 1 ? 's' : ''} deactivated, ${failed_count} failed`
+                    : `${success_count} resident${success_count > 1 ? 's' : ''} deactivated`;
+            toaster(
+                msg,
+                failed_count > 0 ? ToastState.error : ToastState.success
+            );
             onOpenChange(false);
             onSuccess();
         } else {
@@ -245,26 +248,49 @@ export function BulkDeactivateDialog({
                 <DialogHeader>
                     <DialogTitle>Deactivate Residents</DialogTitle>
                     <DialogDescription>
-                        You are about to deactivate {residents.length}{' '}
-                        resident(s).
+                        Deactivate {residents.length} selected resident
+                        {residents.length > 1 ? 's' : ''}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex gap-3">
-                        <AlertCircle className="size-5 text-orange-600 shrink-0 mt-0.5" />
-                        <div className="text-sm text-orange-800">
-                            All selected residents will be withdrawn from
-                            active classes and programs. Their accounts will
-                            be locked and marked as Deactivated.
+
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="size-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <div className="font-medium text-sm text-orange-900 mb-1">
+                                This will deactivate these accounts
+                            </div>
+                            <div className="bg-white border border-orange-200 rounded p-3 max-h-48 overflow-y-auto mt-2">
+                                <ul className="text-sm text-gray-700 space-y-1">
+                                    {residents.map((r) => (
+                                        <li key={r.id}>
+                                            {'\u2022'}{' '}
+                                            {formatNameLastFirst(r)} (
+                                            {r.doc_id ?? ''})
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                    <ResidentList residents={residents} />
-                    <CountConfirmInput
-                        count={residents.length}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="bulk-deactivate-confirm">
+                        Type{' '}
+                        <span className="font-mono font-semibold">
+                            {residents.length}
+                        </span>{' '}
+                        to confirm
+                    </Label>
+                    <Input
+                        id="bulk-deactivate-confirm"
                         value={confirmInput}
-                        onChange={setConfirmInput}
+                        onChange={(e) => setConfirmInput(e.target.value)}
+                        placeholder={`Type ${residents.length}`}
                     />
                 </div>
+
                 <DialogFooter>
                     <Button
                         variant="outline"
@@ -280,7 +306,7 @@ export function BulkDeactivateDialog({
                         }
                         className="bg-orange-600 hover:bg-orange-700"
                     >
-                        Deactivate {residents.length} Resident(s)
+                        Deactivate {residents.length} Accounts
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -319,9 +345,12 @@ export function BulkDeleteDialog({
             const { success_count, failed_count } = response.data;
             const msg =
                 failed_count > 0
-                    ? `${success_count} resident(s) deleted, ${failed_count} failed`
-                    : `${success_count} resident(s) deleted`;
-            toaster(msg, failed_count > 0 ? ToastState.error : ToastState.success);
+                    ? `${success_count} resident${success_count > 1 ? 's' : ''} deleted, ${failed_count} failed`
+                    : `${success_count} resident${success_count > 1 ? 's' : ''} deleted`;
+            toaster(
+                msg,
+                failed_count > 0 ? ToastState.error : ToastState.success
+            );
             onOpenChange(false);
             onSuccess();
         } else {
@@ -338,22 +367,53 @@ export function BulkDeleteDialog({
                 <DialogHeader>
                     <DialogTitle>Delete Residents</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete {residents.length}{' '}
-                        resident(s)?
+                        Permanently delete {residents.length} selected
+                        resident{residents.length > 1 ? 's' : ''}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <p className="text-sm text-red-600 font-medium">
-                        This action cannot be undone. All data associated
-                        with these residents will be permanently deleted.
-                    </p>
-                    <ResidentList residents={residents} />
-                    <CountConfirmInput
-                        count={residents.length}
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <div className="font-medium text-sm text-red-900 mb-1">
+                                This action cannot be undone
+                            </div>
+                            <p className="text-sm text-red-800 mb-2">
+                                These resident accounts and all associated
+                                data will be permanently deleted:
+                            </p>
+                            <div className="bg-white border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
+                                <ul className="text-sm text-gray-700 space-y-1">
+                                    {residents.map((r) => (
+                                        <li key={r.id}>
+                                            {'\u2022'}{' '}
+                                            {formatNameLastFirst(r)} (
+                                            {r.doc_id ?? ''})
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="bulk-delete-confirm">
+                        Type{' '}
+                        <span className="font-mono font-semibold">
+                            {residents.length}
+                        </span>{' '}
+                        to confirm deletion
+                    </Label>
+                    <Input
+                        id="bulk-delete-confirm"
                         value={confirmInput}
-                        onChange={setConfirmInput}
+                        onChange={(e) => setConfirmInput(e.target.value)}
+                        placeholder={`Type ${residents.length}`}
                     />
                 </div>
+
                 <DialogFooter>
                     <Button
                         variant="outline"
@@ -367,9 +427,9 @@ export function BulkDeleteDialog({
                             confirmInput !== String(residents.length) ||
                             loading
                         }
-                        variant="destructive"
+                        className="bg-red-600 hover:bg-red-700"
                     >
-                        Delete {residents.length} Resident(s)
+                        Delete {residents.length} Residents
                     </Button>
                 </DialogFooter>
             </DialogContent>
