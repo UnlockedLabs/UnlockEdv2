@@ -1,4 +1,4 @@
-import { useState, startTransition } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +44,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Pagination } from '@/components/Pagination';
 import {
     DropdownMenu,
@@ -60,6 +61,11 @@ import {
     DeleteDialog,
     TransferDialog
 } from '@/components/residents/ResidentModals';
+import {
+    BulkResetPasswordDialog,
+    BulkDeactivateDialog,
+    BulkDeleteDialog
+} from '@/components/residents/BulkActionDialogs';
 import {
     Tooltip,
     TooltipContent,
@@ -116,6 +122,15 @@ export default function StudentManagement() {
     const [deactivateOpen, setDeactivateOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
+
+    const [selectedResidents, setSelectedResidents] = useState<Set<number>>(new Set());
+    const [bulkResetOpen, setBulkResetOpen] = useState(false);
+    const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+    useEffect(() => {
+        setSelectedResidents(new Set());
+    }, [searchTerm, facilityFilter, sortField, sortDir]);
 
     const facilityParam =
         showFacilityColumn && facilityFilter !== 'all'
@@ -192,6 +207,44 @@ export default function StudentManagement() {
     };
 
     const handleMutate = () => {
+        void mutate();
+    };
+
+    const activeResidents = userData.filter((r) => !r.deactivated_at);
+
+    const allPageSelected =
+        activeResidents.length > 0 &&
+        activeResidents.every((r) => selectedResidents.has(r.id));
+
+    const toggleSelectAll = () => {
+        setSelectedResidents((prev) => {
+            const next = new Set(prev);
+            if (allPageSelected) {
+                activeResidents.forEach((r) => next.delete(r.id));
+            } else {
+                activeResidents.forEach((r) => next.add(r.id));
+            }
+            return next;
+        });
+    };
+
+    const toggleSelectResident = (id: number) => {
+        setSelectedResidents((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const getSelectedUsers = () =>
+        userData.filter((r) => selectedResidents.has(r.id));
+
+    const handleBulkSuccess = () => {
+        setSelectedResidents(new Set());
         void mutate();
     };
 
@@ -365,6 +418,12 @@ export default function StudentManagement() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-12">
+                                        <Checkbox
+                                            checked={allPageSelected}
+                                            onCheckedChange={toggleSelectAll}
+                                        />
+                                    </TableHead>
                                     <SortableHeader field="name_last">
                                         Name
                                     </SortableHeader>
@@ -392,7 +451,7 @@ export default function StudentManagement() {
                                     <TableRow>
                                         <TableCell
                                             colSpan={
-                                                showFacilityColumn ? 6 : 5
+                                                showFacilityColumn ? 7 : 6
                                             }
                                             className="text-center py-12"
                                         >
@@ -415,6 +474,24 @@ export default function StudentManagement() {
                                                 )
                                             }
                                         >
+                                            <TableCell
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
+                                                {!resident.deactivated_at && (
+                                                    <Checkbox
+                                                        checked={selectedResidents.has(
+                                                            resident.id
+                                                        )}
+                                                        onCheckedChange={() =>
+                                                            toggleSelectResident(
+                                                                resident.id
+                                                            )
+                                                        }
+                                                    />
+                                                )}
+                                            </TableCell>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     {resident.name_last},{' '}
@@ -747,6 +824,86 @@ export default function StudentManagement() {
                             />
                         )}
                     </>
+                )}
+
+                {/* Bulk Action Dialogs */}
+                <BulkResetPasswordDialog
+                    open={bulkResetOpen}
+                    onOpenChange={setBulkResetOpen}
+                    residents={getSelectedUsers()}
+                    onSuccess={handleBulkSuccess}
+                />
+                <BulkDeactivateDialog
+                    open={bulkDeactivateOpen}
+                    onOpenChange={setBulkDeactivateOpen}
+                    residents={getSelectedUsers()}
+                    onSuccess={handleBulkSuccess}
+                />
+                <BulkDeleteDialog
+                    open={bulkDeleteOpen}
+                    onOpenChange={setBulkDeleteOpen}
+                    residents={getSelectedUsers()}
+                    onSuccess={handleBulkSuccess}
+                />
+
+                {/* Bulk Action Bar */}
+                {selectedResidents.size > 0 && (
+                    <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+                    <div className="bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
+                        <div className="flex items-center gap-6">
+                            <div className="text-sm">
+                                <span className="font-semibold text-[#203622]">
+                                    {selectedResidents.size}
+                                </span>
+                                <span className="text-gray-600 ml-1">
+                                    {selectedResidents.size === 1
+                                        ? 'resident'
+                                        : 'residents'}{' '}
+                                    selected
+                                </span>
+                            </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setSelectedResidents(new Set())
+                                    }
+                                >
+                                    Clear Selection
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setBulkResetOpen(true)}
+                                >
+                                    <KeyRound className="size-4 mr-2" />
+                                    Reset Passwords
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setBulkDeactivateOpen(true)
+                                    }
+                                    className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                >
+                                    <UserX className="size-4 mr-2" />
+                                    Deactivate
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setBulkDeleteOpen(true)}
+                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                >
+                                    <UsersIcon className="size-4 mr-2" />
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
                 )}
         </div>
     );
