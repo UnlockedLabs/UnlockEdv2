@@ -43,6 +43,9 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 		newAdminRoute("POST /api/users/bulk/upload", srv.handleBulkUpload),
 		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
+		newAdminRoute("POST /api/users/bulk/reset-password", srv.handleBulkResetPassword),
+		newAdminRoute("POST /api/users/bulk/deactivate", srv.handleBulkDeactivateUsers),
+		newAdminRoute("POST /api/users/bulk/delete", srv.handleBulkDeleteUsers),
 		validatedAdminRoute("POST /api/users/{id}/deactivate", srv.handleDeactivateUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/usage-report", srv.handleGenerateUsageReportPDF, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/attendance-export", srv.handleExportResidentAttendanceCSV, UserRoleResolver("id")),
@@ -829,4 +832,174 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 	log.info("Exported resident attendance CSV")
 
 	return nil
+}
+
+func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var req struct {
+		UserIDs []uint `json:"user_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.UserIDs) == 0 {
+		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
+	}
+	var users []models.User
+	if err := srv.Db.Where("id IN ?", req.UserIDs).Find(&users).Error; err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if !claims.canSwitchFacility() {
+		filtered := users[:0]
+		for _, u := range users {
+			if u.FacilityID == claims.FacilityID {
+				filtered = append(filtered, u)
+			}
+		}
+		users = filtered
+	}
+	type resultEntry struct {
+		UserID       uint   `json:"user_id"`
+		Username     string `json:"username"`
+		Name         string `json:"name"`
+		DocID        string `json:"doc_id"`
+		TempPassword string `json:"temp_password"`
+	}
+	var results []resultEntry
+	for i := range users {
+		user := &users[i]
+		lockedStatus, err := srv.Db.IsAccountLocked(user.ID)
+		if err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk reset: error checking locked status")
+			continue
+		}
+		if lockedStatus.IsLocked {
+			if err := srv.Db.ResetFailedLoginAttempts(user.ID); err != nil {
+				log.add("user_id", user.ID)
+				log.error("bulk reset: error resetting failed login attempts")
+				continue
+			}
+		}
+		newPass, err := user.CreateTempPassword()
+		if err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk reset: error creating temp password")
+			continue
+		}
+		if user.KratosID == "" {
+			if err := srv.HandleCreateUserKratos(user.Username, newPass); err != nil {
+				log.add("user_id", user.ID)
+				log.error("bulk reset: error creating user in kratos")
+				continue
+			}
+		} else {
+			kratosC := claimsFromUser(user)
+			kratosC.PasswordReset = true
+			if err := srv.handleUpdatePasswordKratos(kratosC, newPass, true); err != nil {
+				log.add("user_id", user.ID)
+				log.error("bulk reset: error updating password in kratos")
+				continue
+			}
+		}
+		resetPw := models.NewUserAccountHistory(user.ID, models.ResetPassword, &claims.UserID, nil, nil)
+		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), resetPw); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk reset: error inserting account history")
+		}
+		results = append(results, resultEntry{
+			UserID:       user.ID,
+			Username:     user.Username,
+			Name:         user.NameFirst + " " + user.NameLast,
+			DocID:        user.DocID,
+			TempPassword: newPass,
+		})
+	}
+	return writeJsonResponse(w, http.StatusOK, results)
+}
+
+func (srv *Server) handleBulkDeactivateUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var req struct {
+		UserIDs []uint `json:"user_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.UserIDs) == 0 {
+		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
+	}
+	var users []models.User
+	if err := srv.Db.Where("id IN ?", req.UserIDs).Find(&users).Error; err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if !claims.canSwitchFacility() {
+		filtered := users[:0]
+		for _, u := range users {
+			if u.FacilityID == claims.FacilityID {
+				filtered = append(filtered, u)
+			}
+		}
+		users = filtered
+	}
+	var successCount, failedCount int
+	for _, user := range users {
+		if err := srv.Db.DeactivateUser(r.Context(), user.ID, &claims.UserID); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk deactivate: error deactivating user")
+			failedCount++
+			continue
+		}
+		successCount++
+	}
+	return writeJsonResponse(w, http.StatusOK, map[string]int{
+		"success_count": successCount,
+		"failed_count":  failedCount,
+	})
+}
+
+func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var req struct {
+		UserIDs []uint `json:"user_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.UserIDs) == 0 {
+		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
+	}
+	var users []models.User
+	if err := srv.Db.Where("id IN ?", req.UserIDs).Find(&users).Error; err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if !claims.canSwitchFacility() {
+		filtered := users[:0]
+		for _, u := range users {
+			if u.FacilityID == claims.FacilityID {
+				filtered = append(filtered, u)
+			}
+		}
+		users = filtered
+	}
+	var successCount, failedCount int
+	for _, user := range users {
+		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk delete: error deleting identity in kratos")
+			failedCount++
+			continue
+		}
+		if err := srv.WithUserContext(r).DeleteUser(int(user.ID)); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk delete: error deleting user")
+			failedCount++
+			continue
+		}
+		successCount++
+	}
+	return writeJsonResponse(w, http.StatusOK, map[string]int{
+		"success_count": successCount,
+		"failed_count":  failedCount,
+	})
 }
