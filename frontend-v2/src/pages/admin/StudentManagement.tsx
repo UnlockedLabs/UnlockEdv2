@@ -180,7 +180,7 @@ export default function StudentManagement() {
 
         if (response.success) {
             setAddDialogOpen(false);
-            toaster('Resident added successfully', ToastState.success);
+            toaster(`Resident ${formData.name_first} ${formData.name_last} added successfully`, ToastState.success);
             addForm.reset();
             void mutate();
         } else {
@@ -464,6 +464,7 @@ export default function StudentManagement() {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
+                                                                    className="h-8 w-8 p-0"
                                                                     onClick={() =>
                                                                         openAction(
                                                                             resident,
@@ -474,13 +475,14 @@ export default function StudentManagement() {
                                                                     <Edit className="size-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Edit Profile</TooltipContent>
+                                                            <TooltipContent>Edit resident</TooltipContent>
                                                         </Tooltip>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
+                                                                    className="h-8 w-8 p-0"
                                                                     onClick={() =>
                                                                         openAction(
                                                                             resident,
@@ -491,24 +493,21 @@ export default function StudentManagement() {
                                                                     <KeyRound className="size-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Reset Password</TooltipContent>
+                                                            <TooltipContent>Reset password</TooltipContent>
                                                         </Tooltip>
                                                         <DropdownMenu>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <DropdownMenuTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                        >
-                                                                            <MoreVertical className="size-4" />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>More Actions</TooltipContent>
-                                                            </Tooltip>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0"
+                                                                >
+                                                                    <MoreVertical className="size-4" />
+                                                                    <span className="sr-only">More actions</span>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
                                                                 <DropdownMenuItem
                                                                     onClick={() =>
