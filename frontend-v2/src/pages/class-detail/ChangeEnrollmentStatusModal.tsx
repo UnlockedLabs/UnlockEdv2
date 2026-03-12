@@ -90,7 +90,7 @@ export function ChangeEnrollmentStatusModal({
                                 setNewStatus(value as EnrollmentStatus)
                             }
                         >
-                            <SelectTrigger id="status" className="mt-1">
+                            <SelectTrigger id="status">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

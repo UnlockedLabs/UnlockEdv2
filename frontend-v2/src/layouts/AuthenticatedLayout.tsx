@@ -35,12 +35,13 @@ export default function AuthenticatedLayout() {
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
     const isResidentProfile = /^\/residents\/\w+$/.test(location.pathname);
     const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
+    const isEventAttendance = /^\/program-classes\/\d+\/events\/\d+\/attendance\//.test(location.pathname);
     const isClassesPage = location.pathname === '/classes';
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isClassDetail || isClassesPage || isDashboard || isProgramsList || isFacilities;
+        isProgramDetail || isResidentProfile || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities;
     const fullBleedWrapperClass =
         isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassDetail || isClassesPage ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile;
@@ -130,14 +131,18 @@ export default function AuthenticatedLayout() {
 
                 <div className={contentClass}>
                     {isFullBleed ? (
-                        <div className={`${fullBleedWrapperClass} h-full`}>
-                            {showBreadcrumbs && (
-                                <div className="max-w-7xl mx-auto px-6 mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
-                                </div>
-                            )}
+                        isClassDetail || isEventAttendance ? (
                             <Outlet />
-                        </div>
+                        ) : (
+                            <div className={`${fullBleedWrapperClass} h-full`}>
+                                {showBreadcrumbs && (
+                                    <div className="max-w-7xl mx-auto px-6 mb-4">
+                                        <Breadcrumbs items={breadcrumbItems} />
+                                    </div>
+                                )}
+                                <Outlet />
+                            </div>
+                        )
                     ) : (
                         <div className="max-w-7xl mx-auto px-6 py-4">
                             {showBreadcrumbs && (
