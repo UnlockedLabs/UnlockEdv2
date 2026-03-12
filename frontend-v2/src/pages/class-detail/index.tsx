@@ -27,6 +27,8 @@ import { RosterTab } from './RosterTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { SessionsTab } from './SessionsTab';
 import { ScheduleTab } from './ScheduleTab';
+import { SupportTab } from './SupportTab';
+import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
 import { EditClassModal } from './EditClassModal';
@@ -75,7 +77,7 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
-    const { data: eventsResp } = useSWR<
+    const { data: eventsResp, mutate: mutateEvents } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(class_id ? `/api/program-classes/${class_id}/events?all=true` : null);
 
@@ -207,10 +209,10 @@ export default function ClassDetailPage() {
                             Roster ({cls.enrolled})
                         </TabsTrigger>
                         <TabsTrigger
-                            value="enrollment-history"
+                            value="support"
                             className={TAB_TRIGGER_CLASS}
                         >
-                            Enrollment History
+                            At-Risk
                         </TabsTrigger>
                         <TabsTrigger
                             value="sessions"
@@ -223,6 +225,18 @@ export default function ClassDetailPage() {
                             className={TAB_TRIGGER_CLASS}
                         >
                             Schedule
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="enrollment-history"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Enrollment History
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="audit"
+                            className={TAB_TRIGGER_CLASS}
+                        >
+                            Audit History
                         </TabsTrigger>
                     </TabsList>
 
@@ -243,6 +257,14 @@ export default function ClassDetailPage() {
 
                     <TabsContent value="schedule" className="space-y-4">
                         <ScheduleTab cls={cls} />
+                    </TabsContent>
+
+                    <TabsContent value="support" className="space-y-4">
+                        <SupportTab classId={cls.id} />
+                    </TabsContent>
+
+                    <TabsContent value="audit" className="space-y-4">
+                        <AuditTab classId={cls.id} />
                     </TabsContent>
                 </Tabs>
             </div>
@@ -269,7 +291,10 @@ export default function ClassDetailPage() {
                 open={showEditModal}
                 onOpenChange={setShowEditModal}
                 cls={cls}
-                onUpdated={() => void mutate()}
+                onUpdated={() => {
+                    void mutate();
+                    void mutateEvents();
+                }}
             />
         </div>
     );
