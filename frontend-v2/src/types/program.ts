@@ -214,6 +214,7 @@ export interface ResidentProgramOverview {
     absent_attendance?: number;
     attendance_percentage?: number;
     change_reason?: string;
+    schedule?: string;
 }
 
 export interface ProgramCompletion {

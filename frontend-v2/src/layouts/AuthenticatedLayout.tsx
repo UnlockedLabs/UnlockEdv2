@@ -67,8 +67,8 @@ export default function AuthenticatedLayout() {
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
     const contentClass = isProgramDetail
-        ? 'flex-1 overflow-x-hidden'
-        : 'flex-1 overflow-y-auto overflow-x-hidden';
+        ? 'flex-1 overflow-x-hidden bg-[#E2E7EA]'
+        : 'flex-1 overflow-y-auto overflow-x-hidden bg-[#E2E7EA]';
 
     return (
         <div className={rootClass}>
