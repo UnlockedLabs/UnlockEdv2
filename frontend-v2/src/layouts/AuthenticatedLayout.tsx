@@ -32,6 +32,11 @@ export default function AuthenticatedLayout() {
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
+    const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
+    const isEventAttendance = /^\/program-classes\/\d+\/events\/\d+\/attendance\//.test(location.pathname);
+    const isDashboard = location.pathname.startsWith('/dashboard');
+    const isProgramsList = location.pathname === '/programs';
+    const isFullBleed = isProgramDetail || isClassDetail || isEventAttendance || isDashboard || isProgramsList;
 
     useEffect(() => {
         if (pageTitle) {
@@ -63,10 +68,10 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const rootClass = isProgramDetail
+    const rootClass = isFullBleed
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
-    const contentClass = isProgramDetail
+    const contentClass = isFullBleed
         ? 'flex-1 overflow-x-hidden'
         : 'flex-1 overflow-y-auto overflow-x-hidden';
 
@@ -100,12 +105,18 @@ export default function AuthenticatedLayout() {
                 <UnlockEdTour />
 
                 <div className={contentClass}>
-                    {breadcrumbItems.length > 0 && (
-                        <div className="max-w-7xl mx-auto px-6 mb-4">
-                            <Breadcrumbs items={breadcrumbItems} />
+                    {isFullBleed ? (
+                        <Outlet />
+                    ) : (
+                        <div className="max-w-7xl mx-auto px-6 py-4">
+                            {breadcrumbItems.length > 0 && (
+                                <div className="mb-4">
+                                    <Breadcrumbs items={breadcrumbItems} />
+                                </div>
+                            )}
+                            <Outlet />
                         </div>
                     )}
-                    <Outlet />
                 </div>
             </div>
         </div>

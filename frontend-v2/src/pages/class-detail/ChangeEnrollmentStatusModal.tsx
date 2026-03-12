@@ -28,14 +28,14 @@ interface ChangeEnrollmentStatusModalProps {
     onStatusChange: (newStatus: EnrollmentStatus, reason: string) => void;
 }
 
-const NEEDS_REASON_STATUSES = new Set([
+const STATUSES_IN_ORDER: EnrollmentStatus[] = [
+    EnrollmentStatus.Enrolled,
+    EnrollmentStatus.Completed,
     EnrollmentStatus.Withdrawn,
     EnrollmentStatus.Dropped,
     EnrollmentStatus.Segregated,
-    EnrollmentStatus['Failed To Complete'],
-    EnrollmentStatus.Transfered,
-    EnrollmentStatus.Cancelled
-]);
+    EnrollmentStatus['Failed To Complete']
+];
 
 export function ChangeEnrollmentStatusModal({
     open,
@@ -56,7 +56,9 @@ export function ChangeEnrollmentStatusModal({
         }
     }, [open, currentStatus]);
 
-    const needsReason = NEEDS_REASON_STATUSES.has(newStatus);
+    const needsReason =
+        newStatus !== EnrollmentStatus.Enrolled &&
+        newStatus !== EnrollmentStatus.Completed;
     const canSubmit =
         newStatus !== currentStatus && (!needsReason || reason.trim().length > 0);
 
@@ -64,6 +66,10 @@ export function ChangeEnrollmentStatusModal({
         onStatusChange(newStatus, reason);
         onClose();
     };
+
+    const displayStatuses = STATUSES_IN_ORDER.filter(
+        (s) => s === currentStatus || allowedStatuses.includes(s)
+    );
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -84,14 +90,11 @@ export function ChangeEnrollmentStatusModal({
                                 setNewStatus(value as EnrollmentStatus)
                             }
                         >
-                            <SelectTrigger id="status" className="mt-1">
+                            <SelectTrigger id="status">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={currentStatus}>
-                                    {currentStatus}
-                                </SelectItem>
-                                {allowedStatuses.map((status) => (
+                                {displayStatuses.map((status) => (
                                     <SelectItem key={status} value={status}>
                                         {status}
                                     </SelectItem>
@@ -102,11 +105,11 @@ export function ChangeEnrollmentStatusModal({
                     {needsReason && (
                         <div>
                             <Label htmlFor="reason">
-                                Reason for Status Change *
+                                Reason for Incompletion *
                             </Label>
                             <Textarea
                                 id="reason"
-                                placeholder="Explain why this resident's status is being changed..."
+                                placeholder="Explain why this resident did not complete the class..."
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
                                 rows={4}
