@@ -174,12 +174,12 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 		isOverrideUpdate = overrideEvent.ID > 0
 		if err := trans.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room_id", "reason", "linked_override_event_id"}),
+			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room_id", "reason", "linked_override_event_id", "instructor_id"}),
 		}).Create(&overrideEvent).Error; err != nil {
 			trans.Rollback()
 			return newCreateDBError(err, "program_class_event_overrides")
 		}
-		if overrideEvent.IsCancelled && len(overrideEvents) < 2 { //only add log for cancelled event
+		if overrideEvent.IsCancelled && len(overrideEvents) < 2 {
 			changeLogEntry.FieldName = "event_cancelled"
 			changeLogEntry.OldValue = models.StringPtr("")
 			changeLogEntry.ParentRefID = overrideEvent.ClassID
@@ -193,9 +193,29 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 			changeLogEntry.FieldName = "event_rescheduled"
 			changeLogEntry.ParentRefID = overrideEvent.ClassID
 			changeLogEntry.NewValue = eventSummary
-		} else if overrideEvent.IsCancelled { //not logging the cancelled one from rescheduling action
+		} else if overrideEvent.IsCancelled {
 			linkedOverrideID = &overrideEvent.ID
 			changeLogEntry.OldValue = &overrideEvent.OverrideRrule
+		}
+		if !overrideEvent.IsCancelled && overrideEvent.InstructorID != nil {
+			var instructor models.User
+			if err := trans.Select("name_first", "name_last").First(&instructor, *overrideEvent.InstructorID).Error; err == nil {
+				eventDate, _ := overrideEvent.GetFormattedOverrideDate("1/02/2006")
+				summary := instructor.NameFirst + " " + instructor.NameLast + " on " + *eventDate
+				changeLogEntry.FieldName = "event_substitute_instructor"
+				changeLogEntry.ParentRefID = overrideEvent.ClassID
+				changeLogEntry.NewValue = &summary
+			}
+		}
+		if !overrideEvent.IsCancelled && overrideEvent.RoomID != nil && len(overrideEvents) == 1 {
+			var room models.Room
+			if err := trans.Select("name").First(&room, *overrideEvent.RoomID).Error; err == nil {
+				eventDate, _ := overrideEvent.GetFormattedOverrideDate("1/02/2006")
+				summary := room.Name + " on " + *eventDate
+				changeLogEntry.FieldName = "event_room_changed"
+				changeLogEntry.ParentRefID = overrideEvent.ClassID
+				changeLogEntry.NewValue = &summary
+			}
 		}
 		if overrideEvent.IsCancelled || isOverrideUpdate { //delete attendance
 			eventDate, err = overrideEvent.GetFormattedOverrideDate("2006-01-02")
@@ -880,8 +900,8 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 				untilTime = enrollment.UpdatedAt.AddDate(0, 0, 1).Truncate(24 * time.Hour)
 			}
 		} else {
-			startTime = time.Now().Add(time.Hour * 24 * -14)
-			untilTime = startTime.AddDate(0, 1, 0)
+			startTime = rRule.GetDTStart()
+			untilTime = time.Now().AddDate(0, 1, 0).Truncate(24 * time.Hour)
 		}
 	} else {
 		yearInt, err := strconv.Atoi(year)
@@ -957,14 +977,16 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	eventInstances := createEventInstances(event, occurrences, loc, classTime, attendances, canonicalHour, canonicalMinute)
 
 	qryCtx.Total = int64(len(eventInstances))
-	offset := qryCtx.CalcOffset()
-	end := offset + qryCtx.PerPage
-	if offset >= len(eventInstances) {
-		eventInstances = []models.ClassEventInstance{}
-	} else if end > len(eventInstances) {
-		eventInstances = eventInstances[offset:]
-	} else {
-		eventInstances = eventInstances[offset:end]
+	if !qryCtx.All {
+		offset := qryCtx.CalcOffset()
+		end := offset + qryCtx.PerPage
+		if offset >= len(eventInstances) {
+			eventInstances = []models.ClassEventInstance{}
+		} else if end > len(eventInstances) {
+			eventInstances = eventInstances[offset:]
+		} else {
+			eventInstances = eventInstances[offset:end]
+		}
 	}
 
 	return eventInstances, nil
