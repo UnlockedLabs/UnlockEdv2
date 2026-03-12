@@ -85,7 +85,7 @@ function FilterButton({
             className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
                 active
                     ? 'bg-[#556830] text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             }`}
         >
             {children}
@@ -170,18 +170,18 @@ export function SessionsTab({ cls }: SessionsTabProps) {
     };
 
     return (
-        <div className="bg-card rounded-lg border border-border">
-            <div className="border-b border-border px-6 py-4">
-                <div className="flex items-center justify-between mb-3">
+        <div className="bg-white rounded-lg border border-gray-200">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                     <div>
-                        <h3 className="text-foreground font-semibold">
+                        <h3 className="text-[#203622] font-semibold">
                             Session Management
                         </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-gray-500 mt-1">
                             View and manage individual sessions
                         </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                         <StatButton
                             active={statusFilter === 'completed'}
                             onClick={() => setStatusFilter('completed')}
@@ -206,16 +206,16 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                         <StatButton
                             active={statusFilter === 'cancelled'}
                             onClick={() => setStatusFilter('cancelled')}
-                            colorClass="bg-muted text-foreground"
+                            colorClass="bg-gray-100 text-[#203622]"
                         >
                             {stats.cancelled} Cancelled
                         </StatButton>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Filter className="size-4 text-muted-foreground" />
-                    <div className="flex gap-2 flex-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <Filter className="size-4 text-gray-500 hidden sm:block" />
+                    <div className="flex gap-2 flex-wrap">
                         <FilterButton
                             active={statusFilter === 'all'}
                             onClick={() => setStatusFilter('all')}
@@ -241,8 +241,8 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             Upcoming
                         </FilterButton>
                     </div>
-                    <div className="h-6 w-px bg-gray-300" />
-                    <div className="flex gap-2">
+                    <div className="h-6 w-px bg-gray-300 hidden sm:block" />
+                    <div className="flex gap-2 flex-wrap">
                         <FilterButton
                             active={timeFilter === 'week'}
                             onClick={() => setTimeFilter('week')}
@@ -272,19 +272,19 @@ export function SessionsTab({ cls }: SessionsTabProps) {
             </div>
 
             {stats.missing > 0 && (
-                <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
+                <div className="mx-4 sm:mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
                             <div>
-                                <div className="font-medium text-foreground">
+                                <div className="font-medium text-[#203622]">
                                     {stats.missing}{' '}
                                     {stats.missing === 1
                                         ? 'Session'
                                         : 'Sessions'}{' '}
                                     Missing Attendance Records
                                 </div>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-sm text-gray-500 mt-1">
                                     Please review and complete attendance for
                                     past sessions
                                 </p>
@@ -294,7 +294,7 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             size="sm"
                             variant="outline"
                             onClick={() => setStatusFilter('missing')}
-                            className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                            className="border-amber-300 text-amber-700 hover:bg-amber-100 self-start ml-8 sm:ml-0 shrink-0"
                         >
                             View Missing Sessions
                         </Button>
@@ -302,10 +302,10 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                 </div>
             )}
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 {filtered.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                        <Calendar className="size-12 mx-auto mb-3 text-muted-foreground" />
+                    <div className="text-center py-12 text-gray-500">
+                        <Calendar className="size-12 mx-auto mb-3 text-gray-500" />
                         <p>No sessions match your filters</p>
                         <p className="text-sm mt-1">
                             Try adjusting your filter selection
@@ -323,10 +323,10 @@ export function SessionsTab({ cls }: SessionsTabProps) {
                             />
                         )}
                         {pastAndToday.length > 15 && (
-                            <div className="text-sm text-muted-foreground text-center">
+                            <div className="text-sm text-gray-500 text-center">
                                 <button
                                     onClick={() => setShowAllPast(!showAllPast)}
-                                    className="text-[#556830] hover:text-foreground underline"
+                                    className="text-[#556830] hover:text-[#203622] underline"
                                 >
                                     {showAllPast ? 'Show Less' : 'Show All'}
                                 </button>
@@ -363,7 +363,7 @@ function StatButton({
         <button
             onClick={onClick}
             className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                active ? `${colorClass} font-medium` : 'bg-muted text-muted-foreground hover:bg-muted'
+                active ? `${colorClass} font-medium` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             }`}
         >
             {children}
@@ -388,10 +388,10 @@ function SessionGroup({
         <div>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h4 className="text-foreground font-medium">{title}</h4>
-                    <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+                    <h4 className="text-[#203622] font-medium">{title}</h4>
+                    <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
                 </div>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-gray-500">
                     {count} {count === 1 ? 'session' : 'sessions'}
                 </span>
             </div>
@@ -422,32 +422,32 @@ function SessionRow({
     });
 
     const borderClass = session.isCancelled
-        ? 'border-gray-300 bg-muted hover:bg-muted'
+        ? 'border-gray-300 bg-gray-100 hover:bg-gray-200'
         : session.isToday
           ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
           : session.hasAttendance
-            ? 'border-border hover:bg-muted/30'
+            ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
             : session.isPast
               ? 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
-              : 'border-border bg-muted hover:bg-muted/30';
+              : 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
 
     return (
         <div
             onClick={onClick}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
+            className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg border transition-colors cursor-pointer ${borderClass}`}
         >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 {session.isCancelled ? (
-                    <Calendar className="size-5 text-muted-foreground flex-shrink-0" />
+                    <Calendar className="size-5 text-gray-500 flex-shrink-0" />
                 ) : session.hasAttendance ? (
                     <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
                 ) : session.isPast ? (
                     <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
                 ) : (
-                    <Calendar className="size-5 text-muted-foreground flex-shrink-0" />
+                    <Calendar className="size-5 text-gray-500 flex-shrink-0" />
                 )}
-                <div>
-                    <div className="text-sm font-medium text-foreground">
+                <div className="min-w-0">
+                    <div className="text-sm font-medium text-[#203622]">
                         <span
                             className={
                                 session.isCancelled ? 'line-through' : ''
@@ -463,22 +463,22 @@ function SessionRow({
                         {session.isCancelled && (
                             <Badge
                                 variant="outline"
-                                className="ml-2 bg-muted text-muted-foreground border-gray-300"
+                                className="ml-2 bg-gray-100 text-gray-500 border-gray-300"
                             >
                                 Cancelled
                             </Badge>
                         )}
                     </div>
                     <div
-                        className={`text-xs text-muted-foreground mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
+                        className={`text-xs text-gray-500 mt-0.5 ${session.isCancelled ? 'line-through' : ''}`}
                     >
                         {session.instance.class_time}
                     </div>
                 </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 ml-8 sm:ml-0 shrink-0 flex-wrap">
                 {session.hasAttendance && (
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-gray-500 whitespace-nowrap">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
                         {session.totalEnrolled > 0

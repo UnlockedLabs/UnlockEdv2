@@ -561,7 +561,7 @@ func (db *DB) GetCumulativeAttendanceRatesForClasses(ctx context.Context, classI
 	GROUP BY class_id`
 
 	type row struct {
-		ClassID         uint    `gorm:"column:class_id"`
+		ClassID        uint    `gorm:"column:class_id"`
 		AttendanceRate float64 `gorm:"column:attendance_percentage"`
 	}
 	rows := []row{}

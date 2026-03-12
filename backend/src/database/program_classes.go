@@ -74,12 +74,25 @@ func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 
-	tx = tx.Preload("Events").Preload("Events.RoomRef")
+	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Facility")
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
 	if err := tx.Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
+	}
+	for i := range content {
+		var enrollments, completed int
+		for _, e := range content[i].Enrollments {
+			switch e.EnrollmentStatus {
+			case models.Enrolled:
+				enrollments++
+			case models.EnrollmentCompleted:
+				completed++
+			}
+		}
+		content[i].Enrolled = int64(enrollments)
+		content[i].Completed = int64(completed)
 	}
 	return content, nil
 }
@@ -439,7 +452,7 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 	}
 
 	for i := range classes {
-		totalSessions, upcomingSessions, cancelledSessions, err := db.calculateSessionCounts(classes[i].ID, start, end)
+		totalSessions, upcomingSessions, cancelledSessions, sessionDates, err := db.calculateSessionCounts(classes[i].ID, start, end)
 		if err != nil {
 			return nil, err
 		}
@@ -447,12 +460,35 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 		classes[i].SessionCount = totalSessions
 		classes[i].UpcomingSessions = upcomingSessions
 		classes[i].CancelledSessions = cancelledSessions
+		classes[i].SessionDates = sessionDates
+
+		var event struct {
+			RecurrenceRule string `gorm:"column:recurrence_rule"`
+			Duration       string `gorm:"column:duration"`
+			RoomName       string `gorm:"column:room_name"`
+		}
+		db.Table("program_class_events pce").
+			Select("pce.recurrence_rule, pce.duration, COALESCE(r.name, '') as room_name").
+			Joins("LEFT JOIN rooms r ON r.id = pce.room_id").
+			Where("pce.class_id = ?", classes[i].ID).
+			Order("pce.created_at ASC").
+			Limit(1).
+			Scan(&event)
+
+		if event.RecurrenceRule != "" {
+			rule, rErr := rrule.StrToRRule(event.RecurrenceRule)
+			if rErr == nil {
+				classes[i].StartTime = rule.GetDTStart().Format("15:04")
+			}
+		}
+		classes[i].Duration = event.Duration
+		classes[i].Room = event.RoomName
 	}
 
 	return classes, nil
 }
 
-func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) (int, int, int, error) {
+func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) (int, int, int, []string, error) {
 
 	var events []struct {
 		models.ProgramClassEvent
@@ -460,10 +496,11 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 	}
 
 	if err := db.Preload("Overrides").Where("class_id = ?", classID).Find(&events).Error; err != nil {
-		return 0, 0, 0, newGetRecordsDBError(err, "class events")
+		return 0, 0, 0, nil, newGetRecordsDBError(err, "class events")
 	}
 
 	var totalSessions, upcomingSessions, cancelledSessions int
+	var sessionDates []string
 
 	for _, event := range events {
 		rule, err := rrule.StrToRRule(event.RecurrenceRule)
@@ -494,8 +531,10 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 
 		actualUpcoming := 0
 		for _, occurrence := range occurrences {
-			if !cancelledDates[occurrence.Format("2006-01-02")] {
+			dateStr := occurrence.Format("2006-01-02")
+			if !cancelledDates[dateStr] {
 				actualUpcoming++
+				sessionDates = append(sessionDates, dateStr)
 			}
 		}
 		upcomingSessions += actualUpcoming
@@ -503,7 +542,7 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 		cancelledSessions += cancelledInDateRange
 	}
 
-	return totalSessions, upcomingSessions, cancelledSessions, nil
+	return totalSessions, upcomingSessions, cancelledSessions, sessionDates, nil
 }
 
 func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facilityID int, claims BulkCancelClaims) (*models.BulkCancelSessionsResponse, error) {

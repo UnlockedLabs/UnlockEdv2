@@ -137,6 +137,7 @@ export interface Class {
     program_id: number;
     facility_id: number;
     facility_name: string;
+    facility?: Facility;
     instructor_name: string;
     instructor_id?: number | null;
     instructor?: User | null;
