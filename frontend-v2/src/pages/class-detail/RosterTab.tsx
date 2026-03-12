@@ -449,7 +449,18 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
             <BulkGraduateModal
                 open={showBulkGraduateModal}
                 onClose={() => setShowBulkGraduateModal(false)}
-                count={selectedIds.size}
+                selectedResidents={Array.from(selectedIds)
+                    .map((enrollmentId) => {
+                        const e = enrolledRows.find((r) => r.id === enrollmentId);
+                        return e
+                            ? {
+                                  id: e.id,
+                                  displayId: e.doc_id ?? '',
+                                  name: e.name_full ?? ''
+                              }
+                            : null;
+                    })
+                    .filter((r): r is NonNullable<typeof r> => r !== null)}
                 onConfirm={handleBulkGraduate}
             />
 
