@@ -79,9 +79,8 @@ export function Pagination({
               value={itemsPerPage}
               onChange={(e) => {
                 onItemsPerPageChange(Number(e.target.value));
-                onPageChange(1); // Reset to first page when changing items per page
               }}
-              className="bg-white dark:bg-[#262626] text-gray-900 dark:text-white px-3 py-1.5 rounded border border-gray-200 dark:border-[#404040] text-sm focus:outline-hidden focus:ring-2 focus:ring-[#556830] dark:focus:ring-[#8fb55e]"
+              className="bg-white dark:bg-[#262626] text-gray-900 dark:text-white px-3 py-1.5 rounded border border-gray-200 dark:border-[#404040] text-sm outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             >
               <option value={20}>20</option>
               <option value={40}>40</option>
@@ -96,7 +95,7 @@ export function Pagination({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 rounded-lg border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-lg border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             aria-label="Previous page"
           >
             <ChevronLeftIcon className="size-5" />
@@ -123,7 +122,7 @@ export function Pagination({
                 <button
                   key={pageNum}
                   onClick={() => onPageChange(pageNum)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${
                     isActive
                       ? 'bg-[#556830] dark:bg-[#556830] text-white'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626]'
@@ -139,7 +138,7 @@ export function Pagination({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-2 rounded-lg border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-lg border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             aria-label="Next page"
           >
             <ChevronRightIcon className="size-5" />
