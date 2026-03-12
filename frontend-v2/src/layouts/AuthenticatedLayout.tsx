@@ -13,7 +13,6 @@ import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
-import { Toaster } from '@/components/ui/sonner';
 import WebsocketSession from '@/session/websocket';
 
 export default function AuthenticatedLayout() {
@@ -33,10 +32,6 @@ export default function AuthenticatedLayout() {
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
-    const isDashboard = location.pathname.startsWith('/dashboard');
-    const isProgramsList = location.pathname === '/programs';
-    const isFullBleed = isProgramDetail || isDashboard || isProgramsList;
-    const fullBleedWrapperClass = isDashboard || isProgramsList ? 'py-0' : 'py-4';
 
     useEffect(() => {
         if (pageTitle) {
@@ -103,28 +98,14 @@ export default function AuthenticatedLayout() {
 
                 <TitleManager />
                 <UnlockEdTour />
-                <Toaster />
 
                 <div className={contentClass}>
-                    {isFullBleed ? (
-                        <div className={fullBleedWrapperClass}>
-                            {breadcrumbItems.length > 0 && (
-                                <div className="max-w-7xl mx-auto px-6 mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
-                                </div>
-                            )}
-                            <Outlet />
-                        </div>
-                    ) : (
-                        <div className="max-w-7xl mx-auto px-6 py-4">
-                            {breadcrumbItems.length > 0 && (
-                                <div className="mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
-                                </div>
-                            )}
-                            <Outlet />
+                    {breadcrumbItems.length > 0 && (
+                        <div className="max-w-7xl mx-auto px-6 mb-4">
+                            <Breadcrumbs items={breadcrumbItems} />
                         </div>
                     )}
+                    <Outlet />
                 </div>
             </div>
         </div>

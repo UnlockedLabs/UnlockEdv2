@@ -231,10 +231,10 @@ func IsTerminalEnrollment(s ProgramEnrollmentStatus) bool {
 
 type ProgramClassDetail struct {
 	ProgramClass
-	FacilityName string `json:"facility_name"`
-	Enrolled     int    `json:"enrolled"`
-	Schedule     string `json:"schedule"`
-	Room         string `json:"room"`
+	FacilityName   string  `json:"facility_name"`
+	Enrolled       int     `json:"enrolled"`
+	Schedule       string  `json:"schedule"`
+	Room           string  `json:"room"`
 	AttendanceRate float64 `json:"attendance_rate"`
 }
 
@@ -356,10 +356,14 @@ type Instructor struct {
 }
 
 type InstructorClassData struct {
-	ID                int    `json:"id"`
-	Name              string `json:"name"`
-	SessionCount      int    `json:"sessionCount"`
-	EnrolledCount     int    `json:"enrolledCount"`
-	UpcomingSessions  int    `json:"upcomingSessions"`
-	CancelledSessions int    `json:"cancelledSessions"`
+	ID                int      `json:"id"`
+	Name              string   `json:"name"`
+	SessionCount      int      `json:"sessionCount"`
+	EnrolledCount     int      `json:"enrolledCount"`
+	UpcomingSessions  int      `json:"upcomingSessions"`
+	CancelledSessions int      `json:"cancelledSessions"`
+	StartTime         string   `json:"startTime"`
+	Duration          string   `json:"duration"`
+	Room              string   `json:"room"`
+	SessionDates      []string `json:"sessionDates" gorm:"-"`
 }
