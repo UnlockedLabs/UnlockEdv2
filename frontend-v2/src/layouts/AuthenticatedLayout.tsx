@@ -34,10 +34,11 @@ export default function AuthenticatedLayout() {
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
     const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
+    const isEventAttendance = /^\/program-classes\/\d+\/events\/\d+\/attendance\//.test(location.pathname);
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
-    const isFullBleed = isProgramDetail || isClassDetail || isDashboard || isProgramsList || isFacilities;
+    const isFullBleed = isProgramDetail || isClassDetail || isEventAttendance || isDashboard || isProgramsList || isFacilities;
     const fullBleedWrapperClass = isDashboard || isProgramsList || isFacilities ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
     const isFacilityView =
@@ -85,11 +86,10 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsScrollBreakout = isProgramDetail || isClassDetail;
-    const rootClass = needsScrollBreakout
+    const rootClass = isFullBleed
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
-    const contentClass = needsScrollBreakout
+    const contentClass = isFullBleed
         ? `flex-1 overflow-x-hidden ${
               isProgramDetail && canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
           }`.trim()
@@ -127,14 +127,18 @@ export default function AuthenticatedLayout() {
 
                 <div className={contentClass}>
                     {isFullBleed ? (
-                        <div className={`${fullBleedWrapperClass} h-full`}>
-                            {showBreadcrumbs && (
-                                <div className="max-w-7xl mx-auto px-6 mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
-                                </div>
-                            )}
+                        isClassDetail || isEventAttendance ? (
                             <Outlet />
-                        </div>
+                        ) : (
+                            <div className={`${fullBleedWrapperClass} h-full`}>
+                                {showBreadcrumbs && (
+                                    <div className="max-w-7xl mx-auto px-6 mb-4">
+                                        <Breadcrumbs items={breadcrumbItems} />
+                                    </div>
+                                )}
+                                <Outlet />
+                            </div>
+                        )
                     ) : (
                         <div className="max-w-7xl mx-auto px-6 py-4">
                             {showBreadcrumbs && (
