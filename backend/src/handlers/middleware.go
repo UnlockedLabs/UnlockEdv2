@@ -260,8 +260,12 @@ func FacilityAdminResolver(table string, param string) RouteResolver {
 		}
 		id := r.PathValue(param)
 		var facID uint
+		columnName := "facility_id"
+		if table == "facilities" {
+			columnName = "id"
+		}
 		err := tx.Table(table).
-			Select("facility_id").
+			Select(columnName).
 			Where("id = ?", id).
 			Limit(1).Scan(&facID).Error
 		return err == nil && claims.FacilityID == facID
