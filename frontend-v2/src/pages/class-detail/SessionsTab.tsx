@@ -941,29 +941,33 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 }}
             />
 
-            <ChangeInstructorModal
-                open={showChangeInstructor}
-                onClose={() => setShowChangeInstructor(false)}
-                classId={cls.id}
-                sessions={changeInstructorSessions}
-                onChanged={() => {
-                    setSelectedDates(new Set());
-                    void refreshData();
-                }}
-                showSessionsList
-            />
+            {showChangeInstructor && (
+                <ChangeInstructorModal
+                    open={showChangeInstructor}
+                    onClose={() => setShowChangeInstructor(false)}
+                    classId={cls.id}
+                    sessions={changeInstructorSessions}
+                    onChanged={() => {
+                        setSelectedDates(new Set());
+                        void refreshData();
+                    }}
+                    showSessionsList
+                />
+            )}
 
-            <ChangeRoomModal
-                open={showChangeRoom}
-                onClose={() => setShowChangeRoom(false)}
-                classId={cls.id}
-                sessions={changeRoomSessions}
-                onChanged={() => {
-                    setSelectedDates(new Set());
-                    void refreshData();
-                }}
-                showSessionsList
-            />
+            {showChangeRoom && (
+                <ChangeRoomModal
+                    open={showChangeRoom}
+                    onClose={() => setShowChangeRoom(false)}
+                    classId={cls.id}
+                    sessions={changeRoomSessions}
+                    onChanged={() => {
+                        setSelectedDates(new Set());
+                        void refreshData();
+                    }}
+                    showSessionsList
+                />
+            )}
 
             <SessionDetailSheet
                 session={selectedSession}

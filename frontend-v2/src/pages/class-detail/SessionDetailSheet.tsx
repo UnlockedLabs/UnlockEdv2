@@ -485,35 +485,39 @@ export function SessionDetailSheet({
                 />
             )}
 
-            <ChangeInstructorModal
-                open={showChangeInstructor}
-                onClose={() => setShowChangeInstructor(false)}
-                classId={classId}
-                sessions={changeInstructorSessions}
-                futureSessions={futureSessions}
-                onChanged={() => {
-                    setApplyToFuture(false);
-                    onClose();
-                    onMutate();
-                }}
-                applyToFuture={applyToFuture}
-                setApplyToFuture={setApplyToFuture}
-            />
+            {showChangeInstructor && (
+                <ChangeInstructorModal
+                    open={showChangeInstructor}
+                    onClose={() => setShowChangeInstructor(false)}
+                    classId={classId}
+                    sessions={changeInstructorSessions}
+                    futureSessions={futureSessions}
+                    onChanged={() => {
+                        setApplyToFuture(false);
+                        onClose();
+                        onMutate();
+                    }}
+                    applyToFuture={applyToFuture}
+                    setApplyToFuture={setApplyToFuture}
+                />
+            )}
 
-            <ChangeRoomModal
-                open={showChangeRoom}
-                onClose={() => setShowChangeRoom(false)}
-                classId={classId}
-                sessions={changeRoomSessions}
-                futureSessions={futureSessions}
-                onChanged={() => {
-                    setApplyToFuture(false);
-                    onClose();
-                    onMutate();
-                }}
-                applyToFuture={applyToFuture}
-                setApplyToFuture={setApplyToFuture}
-            />
+            {showChangeRoom && (
+                <ChangeRoomModal
+                    open={showChangeRoom}
+                    onClose={() => setShowChangeRoom(false)}
+                    classId={classId}
+                    sessions={changeRoomSessions}
+                    futureSessions={futureSessions}
+                    onChanged={() => {
+                        setApplyToFuture(false);
+                        onClose();
+                        onMutate();
+                    }}
+                    applyToFuture={applyToFuture}
+                    setApplyToFuture={setApplyToFuture}
+                />
+            )}
         </>
     );
 }
