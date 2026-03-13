@@ -627,8 +627,9 @@ export default function EventAttendance() {
                                                     {row.attendance_status ===
                                                     null ? (
                                                         <></>
-                                                    ) : row.attendance_status !==
-                                                      Attendance.Present ? (
+                                                    ) : !isPresentLike(
+                                                          row.attendance_status
+                                                      ) ? (
                                                         <div className="flex pt-2 gap-2">
                                                             <label className="my-auto">
                                                                 Reason:
