@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Dialog,
     DialogContent,
@@ -56,6 +57,7 @@ export function ChangeInstructorModal({
     const { user } = useAuth();
     const [selectedInstructorId, setSelectedInstructorId] = useState('');
     const [reason, setReason] = useState('');
+    const [note, setNote] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
@@ -67,6 +69,7 @@ export function ChangeInstructorModal({
         if (open) {
             setSelectedInstructorId('');
             setReason('');
+            setNote('');
         }
     }, [open]);
 
@@ -110,7 +113,10 @@ export function ChangeInstructorModal({
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className={useBulkLayout ? 'max-w-2xl' : ''}>
+            <DialogContent
+                className={useBulkLayout ? 'max-w-2xl' : ''}
+                onPointerDownOutside={(e) => e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle className="text-[#203622]">
                         Change Instructor
@@ -148,7 +154,13 @@ export function ChangeInstructorModal({
                         <Label htmlFor="change-reason">
                             Reason for Change
                         </Label>
-                        <Select value={reason} onValueChange={setReason}>
+                        <Select
+                            value={reason}
+                            onValueChange={(value) => {
+                                setReason(value);
+                                if (value !== 'other') setNote('');
+                            }}
+                        >
                             <SelectTrigger id="change-reason">
                                 <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
@@ -169,6 +181,21 @@ export function ChangeInstructorModal({
                             </SelectContent>
                         </Select>
                     </div>
+
+                    {reason === 'other' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="instructor-change-note">
+                                Please specify *
+                            </Label>
+                            <Textarea
+                                id="instructor-change-note"
+                                placeholder="Enter the specific reason for the change..."
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    )}
 
                     {setApplyToFuture && (
                         <div className="flex items-center space-x-2">
@@ -261,6 +288,7 @@ export function ChangeInstructorModal({
                             onClose();
                             setSelectedInstructorId('');
                             setReason('');
+                            setNote('');
                             if (setApplyToFuture) setApplyToFuture(false);
                         }}
                         disabled={isSubmitting}
@@ -271,7 +299,11 @@ export function ChangeInstructorModal({
                         onClick={() => {
                             void handleApply();
                         }}
-                        disabled={!selectedInstructorId || isSubmitting}
+                        disabled={
+                            !selectedInstructorId ||
+                            isSubmitting ||
+                            (reason === 'other' && !note.trim())
+                        }
                         className="bg-[#556830] hover:bg-[#203622] text-white"
                     >
                         {isSubmitting ? 'Updating...' : 'Change Instructor'}

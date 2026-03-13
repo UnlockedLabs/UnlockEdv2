@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ export function ChangeRoomModal({
 }: ChangeRoomModalProps) {
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
@@ -65,6 +67,7 @@ export function ChangeRoomModal({
     if (open) {
       setSelectedRoomId('');
       setReason('');
+      setNote('');
     }
   }, [open]);
 
@@ -108,7 +111,10 @@ export function ChangeRoomModal({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className={useBulkLayout ? 'max-w-2xl' : ''}>
+      <DialogContent
+        className={useBulkLayout ? 'max-w-2xl' : ''}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-[#203622]">
             Change Room
@@ -146,7 +152,13 @@ export function ChangeRoomModal({
             <Label htmlFor="room-change-reason">
               Reason for Change
             </Label>
-            <Select value={reason} onValueChange={setReason}>
+            <Select
+              value={reason}
+              onValueChange={(value) => {
+                setReason(value);
+                if (value !== 'other') setNote('');
+              }}
+            >
               <SelectTrigger id="room-change-reason">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
@@ -167,6 +179,21 @@ export function ChangeRoomModal({
               </SelectContent>
             </Select>
           </div>
+
+          {reason === 'other' && (
+            <div className="space-y-2">
+              <Label htmlFor="room-change-note">
+                Please specify *
+              </Label>
+              <Textarea
+                id="room-change-note"
+                placeholder="Enter the specific reason for the change..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+              />
+            </div>
+          )}
 
           {setApplyToFuture && (
             <div className="flex items-center space-x-2">
@@ -259,6 +286,7 @@ export function ChangeRoomModal({
               onClose();
               setSelectedRoomId('');
               setReason('');
+              setNote('');
               if (setApplyToFuture) setApplyToFuture(false);
             }}
             disabled={isSubmitting}
@@ -269,7 +297,11 @@ export function ChangeRoomModal({
             onClick={() => {
               void handleApply();
             }}
-            disabled={!selectedRoomId || isSubmitting}
+            disabled={
+              !selectedRoomId ||
+              isSubmitting ||
+              (reason === 'other' && !note.trim())
+            }
             className="bg-[#556830] hover:bg-[#203622] text-white"
           >
             {isSubmitting ? 'Updating...' : 'Change Room'}
