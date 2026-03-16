@@ -1,16 +1,22 @@
 import { Link } from 'react-router-dom';
-import { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 export default function Breadcrumbs({
-    items
+    items,
+    className
 }: {
     items: BreadcrumbItemType[];
+    className?: string;
 }) {
     if (items.length === 0) return null;
 
+    const baseClassName = className ?? 'mb-6 mt-2';
+
     return (
-        <nav className="flex items-center gap-2 text-[14px] leading-5 mb-6 mt-2">
+        <nav
+            className={`flex items-center gap-2 text-[14px] leading-5 ${baseClassName}`.trim()}
+        >
             {items.map((item, index) => {
                 const isLast = index === items.length - 1;
                 return (

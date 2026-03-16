@@ -100,7 +100,13 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 	}
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	facility_id := claims.FacilityID
+	facilityID := claims.FacilityID
+	args := srv.getQueryContext(r)
+	if args.Params.Get("facility_id") != "" {
+		facilityID = args.FacilityID
+	} else if claims.canSwitchFacility() {
+		facilityID = 0
+	}
 
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
@@ -108,7 +114,7 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 
-	overview, err := srv.Db.FetchEnrollmentMetrics(id, facility_id)
+	overview, err := srv.Db.FetchEnrollmentMetrics(id, facilityID)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)

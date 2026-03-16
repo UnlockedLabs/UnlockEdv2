@@ -255,14 +255,21 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		Select(`ps.*,
 		fac.name as facility_name,
 		count(CASE WHEN pse.enrollment_status = 'Enrolled' THEN 1 END) as enrolled,
-		count(CASE WHEN pse.enrollment_status = 'Completed' THEN 1 END) as completed
+		count(CASE WHEN pse.enrollment_status = 'Completed' THEN 1 END) as completed,
+		count(CASE WHEN pse.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') THEN 1 END) as historical_enrollments
 		`).
 		Joins(`join facilities fac on fac.id = ps.facility_id
 			AND fac.deleted_at IS NULL`).
 		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id`). //TODO Enrollment statuses may change here
-		Where(`ps.program_id = ?
-			and ps.facility_id = ?`, id, args.FacilityID).
-		Group("ps.id,fac.name")
+		Where("ps.program_id = ?", id)
+
+	if args.Params.Get("facility_id") != "" {
+		query = query.Where("ps.facility_id = ?", args.FacilityID)
+	} else if !args.CanSwitchFacility {
+		query = query.Where("ps.facility_id = ?", args.FacilityID)
+	}
+
+	query = query.Group("ps.id,fac.name")
 	if args.Search != "" {
 		query = query.Where("LOWER(ps.name) LIKE ? OR LOWER(ps.description) LIKE ?", args.SearchQuery(), args.SearchQuery())
 	}

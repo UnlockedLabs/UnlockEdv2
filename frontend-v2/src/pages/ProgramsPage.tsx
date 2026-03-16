@@ -458,7 +458,7 @@ export default function ProgramsPage() {
                         {/* Program Type Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-hidden focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -499,7 +499,7 @@ export default function ProgramsPage() {
                         {/* Status Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-hidden focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
+                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -639,25 +639,35 @@ export default function ProgramsPage() {
                                                                 type.value
                                                             )}
                                                             onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setProgramFormData({
-                                                                        ...programFormData,
-                                                                        types: [
-                                                                            ...programFormData.types,
-                                                                            type.value
-                                                                        ]
-                                                                    });
+                                                                if (
+                                                                    e.target
+                                                                        .checked
+                                                                ) {
+                                                                    setProgramFormData(
+                                                                        {
+                                                                            ...programFormData,
+                                                                            types: [
+                                                                                ...programFormData.types,
+                                                                                type.value
+                                                                            ]
+                                                                        }
+                                                                    );
                                                                 } else {
-                                                                    setProgramFormData({
-                                                                        ...programFormData,
-                                                                        types: programFormData.types.filter(
-                                                                            (t) =>
-                                                                                t !== type.value
-                                                                        )
-                                                                    });
+                                                                    setProgramFormData(
+                                                                        {
+                                                                            ...programFormData,
+                                                                            types: programFormData.types.filter(
+                                                                                (
+                                                                                    t
+                                                                                ) =>
+                                                                                    t !==
+                                                                                    type.value
+                                                                            )
+                                                                        }
+                                                                    );
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-hidden focus-visible:outline-hidden"
+                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -669,7 +679,10 @@ export default function ProgramsPage() {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="creditTypes" className="text-black">
+                                        <Label
+                                            htmlFor="creditTypes"
+                                            className="text-black"
+                                        >
                                             Credit Types *
                                         </Label>
                                         <div className="mt-2 space-y-2">
@@ -685,26 +698,37 @@ export default function ProgramsPage() {
                                                                 type.value
                                                             )}
                                                             onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setProgramFormData({
-                                                                        ...programFormData,
-                                                                        creditTypes: [
-                                                                            ...programFormData.creditTypes,
-                                                                            type.value
-                                                                        ]
-                                                                    });
+                                                                if (
+                                                                    e.target
+                                                                        .checked
+                                                                ) {
+                                                                    setProgramFormData(
+                                                                        {
+                                                                            ...programFormData,
+                                                                            creditTypes:
+                                                                                [
+                                                                                    ...programFormData.creditTypes,
+                                                                                    type.value
+                                                                                ]
+                                                                        }
+                                                                    );
                                                                 } else {
-                                                                    setProgramFormData({
-                                                                        ...programFormData,
-                                                                        creditTypes:
-                                                                            programFormData.creditTypes.filter(
-                                                                                (t) =>
-                                                                                    t !== type.value
-                                                                            )
-                                                                    });
+                                                                    setProgramFormData(
+                                                                        {
+                                                                            ...programFormData,
+                                                                            creditTypes:
+                                                                                programFormData.creditTypes.filter(
+                                                                                    (
+                                                                                        t
+                                                                                    ) =>
+                                                                                        t !==
+                                                                                        type.value
+                                                                                )
+                                                                        }
+                                                                    );
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-hidden focus-visible:outline-hidden"
+                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -838,27 +862,41 @@ export default function ProgramsPage() {
                                                                         checked={programFormData.facilities.includes(
                                                                             facility.id
                                                                         )}
-                                                                        onChange={(e) => {
-                                                                            if (e.target.checked) {
-                                                                                setProgramFormData({
-                                                                                    ...programFormData,
-                                                                                    facilities: [
-                                                                                        ...programFormData.facilities,
-                                                                                        facility.id
-                                                                                    ]
-                                                                                });
+                                                                        onChange={(
+                                                                            e
+                                                                        ) => {
+                                                                            if (
+                                                                                e
+                                                                                    .target
+                                                                                    .checked
+                                                                            ) {
+                                                                                setProgramFormData(
+                                                                                    {
+                                                                                        ...programFormData,
+                                                                                        facilities:
+                                                                                            [
+                                                                                                ...programFormData.facilities,
+                                                                                                facility.id
+                                                                                            ]
+                                                                                    }
+                                                                                );
                                                                             } else {
-                                                                                setProgramFormData({
-                                                                                    ...programFormData,
-                                                                                    facilities:
-                                                                                        programFormData.facilities.filter(
-                                                                                            (f) =>
-                                                                                                f !== facility.id
-                                                                                        )
-                                                                                });
+                                                                                setProgramFormData(
+                                                                                    {
+                                                                                        ...programFormData,
+                                                                                        facilities:
+                                                                                            programFormData.facilities.filter(
+                                                                                                (
+                                                                                                    f
+                                                                                                ) =>
+                                                                                                    f !==
+                                                                                                    facility.id
+                                                                                            )
+                                                                                    }
+                                                                                );
                                                                             }
                                                                         }}
-                                                                        className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-hidden focus-visible:outline-hidden"
+                                                                        className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
                                                                     />
                                                                 </span>
                                                                 <span className="text-sm text-gray-700">
@@ -928,9 +966,7 @@ export default function ProgramsPage() {
                             <ProgramsTable
                                 programs={paginatedPrograms}
                                 onRowClick={(programId) =>
-                                    navigate(
-                                        '/programs/' + programId + '/detail'
-                                    )
+                                    navigate('/programs/' + programId)
                                 }
                             />
                         ) : (
@@ -1371,8 +1407,9 @@ function ProgramsTable({
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-[#203622] text-white max-w-xs">
                                                     Past enrollments including
-                                                    completed, withdrawn, and
-                                                    dropped
+                                                    completed, withdrawn,
+                                                    dropped, failed to complete,
+                                                    and transfered
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>

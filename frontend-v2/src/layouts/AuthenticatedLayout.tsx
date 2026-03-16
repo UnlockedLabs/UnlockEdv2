@@ -37,12 +37,27 @@ export default function AuthenticatedLayout() {
     const isProgramsList = location.pathname === '/programs';
     const isFullBleed = isProgramDetail || isDashboard || isProgramsList;
     const fullBleedWrapperClass = isDashboard || isProgramsList ? 'py-0' : 'py-4';
+    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
+    const isFacilityView =
+        isProgramDetail &&
+        user !== undefined &&
+        canSwitchFacility(user) &&
+        new URLSearchParams(location.search).has('facility_id');
 
     useEffect(() => {
-        if (pageTitle) {
+        if (!user) return;
+        if (isProgramDetail) {
+            if (isFacilityView) {
+                setPageTitle('');
+            } else if (canSwitchFacility(user)) {
+                setPageTitle('Statewide Program View');
+            } else {
+                setPageTitle('Program Details');
+            }
+        } else if (pageTitle) {
             setPageTitle(pageTitle);
         }
-    }, [pageTitle, setPageTitle]);
+    }, [isFacilityView, isProgramDetail, pageTitle, setPageTitle, user]);
 
     useEffect(() => {
         if (user && canSwitchFacility(user)) {
@@ -72,7 +87,9 @@ export default function AuthenticatedLayout() {
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
     const contentClass = isProgramDetail
-        ? 'flex-1 overflow-x-hidden'
+        ? `flex-1 overflow-x-hidden ${
+              canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
+          }`.trim()
         : 'flex-1 overflow-y-auto overflow-x-hidden';
 
     return (
@@ -108,8 +125,8 @@ export default function AuthenticatedLayout() {
                 <div className={contentClass}>
                     {isFullBleed ? (
                         <div className={fullBleedWrapperClass}>
-                            {breadcrumbItems.length > 0 && (
-                                <div className="max-w-7xl mx-auto px-6 mt-2 mb-4">
+                            {showBreadcrumbs && (
+                                <div className="max-w-7xl mx-auto px-6 mb-4">
                                     <Breadcrumbs items={breadcrumbItems} />
                                 </div>
                             )}
@@ -117,7 +134,7 @@ export default function AuthenticatedLayout() {
                         </div>
                     ) : (
                         <div className="max-w-7xl mx-auto px-6 py-4">
-                            {breadcrumbItems.length > 0 && (
+                            {showBreadcrumbs && (
                                 <div className="mb-4">
                                     <Breadcrumbs items={breadcrumbItems} />
                                 </div>

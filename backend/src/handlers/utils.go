@@ -107,6 +107,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 		OrderBy:            orderBy,
 		Order:              order,
 		IsAdmin:            claims.isAdmin(),
+		CanSwitchFacility:  claims.canSwitchFacility(),
 		Search:             search,
 		Tags:               tags,
 		All:                all,

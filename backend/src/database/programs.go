@@ -35,22 +35,54 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
 		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
 		CASE
-			WHEN COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) = 0 THEN 0
-			WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN 1 END) = 0
-				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END)
-			THEN 100
-			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) * 100
+			WHEN COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) = 0 THEN 0
+			ELSE COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrollment_status = 'Completed' THEN 1 END) * 1.0
+				/ COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) * 100
 		END AS completion_rate
 	`
 
-	if err := db.Table("program_class_enrollments pce").
+	tx := db.Table("program_class_enrollments pce").
 		Select(query).
 		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
-		Where("pc.program_id = ?", programID).
-		Where("pc.facility_id = ?", facilityId).
-		Scan(&metrics).Error; err != nil {
+		Where("pc.program_id = ?", programID)
+	if facilityId != 0 {
+		tx = tx.Where("pc.facility_id = ?", facilityId)
+	}
+
+	if err := tx.Scan(&metrics).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
+
+	partialAttendanceSQL := buildPartialAttendanceSQL(db.Name(), "pcea")
+	attendanceQuery := fmt.Sprintf(`
+		SELECT
+			COALESCE(SUM(
+				CASE
+					WHEN pcea.attendance_status = 'present' THEN 1
+					WHEN pcea.attendance_status = 'partial' THEN %s
+					ELSE 0
+				END
+			) * 100.0 /
+				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END), 0), 0) AS attendance_rate
+		FROM program_classes pc
+		LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+		WHERE pc.program_id = ?`, partialAttendanceSQL)
+
+	attendanceArgs := []any{programID}
+	if facilityId != 0 {
+		attendanceQuery += " AND pc.facility_id = ?"
+		attendanceArgs = append(attendanceArgs, facilityId)
+	}
+
+	var attendanceResult struct {
+		AttendanceRate float64 `json:"attendance_rate"`
+	}
+	if err := db.Raw(attendanceQuery, attendanceArgs...).Scan(&attendanceResult).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_event_attendance")
+	}
+	metrics.AttendanceRate = attendanceResult.AttendanceRate
 	return &metrics, nil
 }
 

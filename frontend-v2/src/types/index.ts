@@ -13,7 +13,7 @@ export * from './navigation';
 export * from './websocket';
 export * from './ui';
 
-export type UserRole = 'department_admin' | 'facility_admin';
+export type UserRole = import('./user').UserRole;
 
 export type Page = 
   | { name: 'dashboard' }
