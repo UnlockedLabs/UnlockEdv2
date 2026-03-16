@@ -23,7 +23,9 @@ import {
     Room,
     RoomConflict,
     User,
-    ServerResponseMany
+    ServerResponseMany,
+    ServerResponseOne,
+    NewUserResponse
 } from '@/types';
 
 interface EditClassModalProps {
@@ -168,10 +170,11 @@ export function EditClassModal({
 }: EditClassModalProps) {
     const { user } = useAuth();
 
-    const [rooms, setRooms] = useState<Room[]>([]);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showAddRoom, setShowAddRoom] = useState(false);
     const [showAddInstructor, setShowAddInstructor] = useState(false);
+    const [tempPassword, setTempPassword] = useState('');
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [newRoomName, setNewRoomName] = useState('');
     const [newInstructor, setNewInstructor] = useState({
         name_first: '',
@@ -186,15 +189,9 @@ export function EditClassModal({
         );
     const instructors = instructorsResp?.data ?? [];
 
-    const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        rooms.length === 0 ? '/api/rooms' : null
-    );
-
-    useEffect(() => {
-        if (roomsResp?.data && rooms.length === 0) {
-            setRooms(roomsResp.data);
-        }
-    }, [roomsResp, rooms.length]);
+    const { data: roomsResp, mutate: mutateRooms } =
+        useSWR<ServerResponseMany<Room>>('/api/rooms');
+    const rooms = roomsResp?.data ?? [];
 
     const {
         register,
@@ -202,6 +199,7 @@ export function EditClassModal({
         control,
         reset,
         watch,
+        setValue,
         formState: { errors, isSubmitting }
     } = useForm<EditClassFormData>({
         defaultValues: {
@@ -270,21 +268,21 @@ export function EditClassModal({
         });
         if (resp.success) {
             const created = resp.data as unknown as Room;
-            setRooms((prev) => [...prev, created]);
-            reset({ ...watch(), room_id: created.id });
+            await mutateRooms();
+            if (created?.id) setValue('room_id', created.id);
+            setNewRoomName('');
+            setShowAddRoom(false);
             toast.success('Room created');
         } else {
             toast.error('Failed to create room');
         }
-        setNewRoomName('');
-        setShowAddRoom(false);
     }
 
     async function handleAddInstructor() {
         const { name_first, name_last, username } = newInstructor;
         if (!name_first.trim() || !name_last.trim() || !username.trim())
             return;
-        const resp = await API.post<object, object>('users', {
+        const resp = (await API.post<NewUserResponse, object>('users', {
             user: {
                 name_first: name_first.trim(),
                 name_last: name_last.trim(),
@@ -292,15 +290,18 @@ export function EditClassModal({
                 role: 'facility_admin'
             },
             provider_platforms: []
-        });
+        })) as ServerResponseOne<NewUserResponse>;
         if (resp.success) {
-            void mutateInstructors();
-            toast.success('Instructor created');
+            const { user: created, temp_password } = resp.data;
+            await mutateInstructors();
+            if (created?.id) setValue('instructor_id', created.id);
+            setNewInstructor({ name_first: '', name_last: '', username: '' });
+            setShowAddInstructor(false);
+            setTempPassword(temp_password);
+            setShowPasswordModal(true);
         } else {
             toast.error(resp.message || 'Failed to create instructor');
         }
-        setNewInstructor({ name_first: '', name_last: '', username: '' });
-        setShowAddInstructor(false);
     }
 
     async function onSubmit(data: EditClassFormData) {
@@ -908,6 +909,52 @@ export function EditClassModal({
                             onClick={() => void handleAddInstructor()}
                         >
                             Create
+                        </Button>
+                    </div>
+                </div>
+            </FormModal>
+
+            <FormModal
+                open={showPasswordModal}
+                onOpenChange={(open) => {
+                    setShowPasswordModal(open);
+                    if (!open) setTempPassword('');
+                }}
+                title="Instructor Created"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Share this temporary password with the new instructor.
+                        They will be prompted to change it on first login.
+                    </p>
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 text-center">
+                        <p className="text-sm text-gray-500 mb-1">
+                            Temporary Password
+                        </p>
+                        <p className="text-2xl font-bold text-[#203622] select-all">
+                            {tempPassword}
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                void navigator.clipboard.writeText(
+                                    tempPassword
+                                );
+                                toast.success('Password copied to clipboard');
+                            }}
+                        >
+                            Copy
+                        </Button>
+                        <Button
+                            className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                            onClick={() => {
+                                setShowPasswordModal(false);
+                                setTempPassword('');
+                            }}
+                        >
+                            Done
                         </Button>
                     </div>
                 </div>

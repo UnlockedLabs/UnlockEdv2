@@ -123,7 +123,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                         {cls.status}
                     </Badge>
                 ) : (
-                    <button onClick={() => setShowStatusModal(true)}>
+                    <button onClick={() => setShowStatusModal(true)} className="outline-none">
                         <Badge
                             variant="outline"
                             className={`${getStatusColor(cls.status)} cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5`}
@@ -295,7 +295,7 @@ function InfoCard({
     return (
         <div className="bg-[#E2E7EA] rounded-lg p-3">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
-            <div className="text-[#203622]">{value}</div>
+            <div className="text-sm text-[#203622]">{value}</div>
             {sub && (
                 <div className="text-xs text-gray-600 mt-1">{sub}</div>
             )}
