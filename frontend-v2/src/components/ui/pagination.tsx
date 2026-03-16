@@ -58,6 +58,7 @@ function PaginationLink({
           variant: isActive ? "outline" : "ghost",
           size,
         }),
+        "focus-visible:ring-gray-300 focus-visible:border-gray-300",
         className,
       )}
       {...props}

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 import { ToastState } from '@/types';
 
 export interface ToastContextType {
@@ -36,7 +36,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     return (
         <ToastContext.Provider value={{ toaster }}>
             {children}
-            <Toaster richColors position="top-right" />
         </ToastContext.Provider>
     );
 };

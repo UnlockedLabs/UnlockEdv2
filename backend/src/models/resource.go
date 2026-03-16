@@ -97,6 +97,7 @@ type QueryContext struct {
 	OrderBy            string
 	Order              string
 	IsAdmin            bool
+	CanSwitchFacility  bool
 	Search             string
 	Tags               []string
 	Total              int64
