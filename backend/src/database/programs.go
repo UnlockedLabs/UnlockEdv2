@@ -29,7 +29,8 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.ProgramOverviewResponse, error) {
 	var metrics models.ProgramOverviewResponse
 
-	const query = `
+	partialAttendanceSQL := buildPartialAttendanceSQL(db.Name(), "pcea")
+	query := fmt.Sprintf(`
 		COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN 1 END) AS active_enrollments,
 		COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) AS completions,
 		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
@@ -40,15 +41,25 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END)
 			THEN 100
 			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) * 100
-		END AS completion_rate
-	`
+		END AS completion_rate,
+		COALESCE(SUM(
+			CASE
+				WHEN pcea.attendance_status = 'present' THEN 1
+				WHEN pcea.attendance_status = 'partial' THEN %s
+				ELSE 0
+			END
+		) * 100.0 /
+			NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END), 0), 0) AS attendance_rate
+	`, partialAttendanceSQL)
 
-	if err := db.Table("program_class_enrollments pce").
+	tx := db.Table("program_class_enrollments pce").
 		Select(query).
 		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
+		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
+		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id").
 		Where("pc.program_id = ?", programID).
-		Where("pc.facility_id = ?", facilityId).
-		Scan(&metrics).Error; err != nil {
+		Where("pc.facility_id = ?", facilityId)
+	if err := tx.Scan(&metrics).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
 	return &metrics, nil
