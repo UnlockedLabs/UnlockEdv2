@@ -1,6 +1,7 @@
 import { declareAuthenticatedRoutes } from '@/auth/RouteGuard';
 import { AdminRoles } from '@/auth/useAuth';
-import { FeatureAccess, TitleHandler, UserRole } from '@/types';
+import { FeatureAccess, TitleHandler } from '@/types';
+import { UserRole } from '@/types/user';
 import {
     getClassMgmtData,
     getClassTitle,

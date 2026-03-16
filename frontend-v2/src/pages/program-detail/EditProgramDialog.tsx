@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import { mutate } from 'swr';
+import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import {
+    Facility,
     ProgramOverview,
     ProgramType,
     CreditType,
     FundingType,
     PgmType,
-    ProgramCreditType
+    ProgramCreditType,
+    ServerResponseMany
 } from '@/types';
+import { isDeptAdmin, useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,6 +45,7 @@ interface EditProgramFormData {
     credit_types: CreditType[];
     funding_type: FundingType;
     status: 'Available' | 'Inactive' | 'Archived';
+    facilities: number[];
 }
 
 interface EditProgramDialogProps {
@@ -62,7 +66,8 @@ function buildInitialFormData(program: ProgramOverview): EditProgramFormData {
         program_types: program.program_types.map((pt) => pt.program_type),
         credit_types: program.credit_types.map((ct) => ct.credit_type),
         funding_type: program.funding_type,
-        status
+        status,
+        facilities: program.facilities?.map((facility) => facility.id) ?? []
     };
 }
 
@@ -71,10 +76,16 @@ export default function EditProgramDialog({
     onOpenChange,
     program
 }: EditProgramDialogProps) {
+    const { user } = useAuth();
+    const isDeptAdminUser = user ? isDeptAdmin(user) : false;
     const [formData, setFormData] = useState<EditProgramFormData>(
         buildInitialFormData(program)
     );
     const [saving, setSaving] = useState(false);
+    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
+        isDeptAdminUser ? '/api/facilities?per_page=200' : null
+    );
+    const facilities = facilitiesResp?.data ?? [];
 
     useEffect(() => {
         if (!open) return;
@@ -116,6 +127,9 @@ export default function EditProgramDialog({
             funding_type: formData.funding_type,
             is_active: formData.status === 'Available'
         };
+        if (isDeptAdminUser) {
+            Object.assign(payload, { facilities: formData.facilities });
+        }
         const resp = await API.patch('programs/' + program.id, payload);
         if (resp.success) {
             if (
@@ -352,6 +366,50 @@ export default function EditProgramDialog({
                                     longer offered.
                                 </p>
                             </div>
+
+                            {isDeptAdminUser && (
+                                <div className="col-span-2">
+                                    <Label htmlFor="facilities">
+                                        Facilities Offered *
+                                    </Label>
+                                    <div className="mt-2 max-h-60 overflow-y-auto space-y-2">
+                                        {facilities.map((facility) => (
+                                            <label
+                                                key={facility.id}
+                                                className="flex items-center gap-2 cursor-pointer"
+                                            >
+                                                <Checkbox
+                                                    checked={formData.facilities.includes(
+                                                        facility.id
+                                                    )}
+                                                    onCheckedChange={(checked) => {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            facilities: checked
+                                                                ? [
+                                                                      ...prev.facilities,
+                                                                      facility.id
+                                                                  ]
+                                                                : prev.facilities.filter(
+                                                                      (id) =>
+                                                                          id !==
+                                                                          facility.id
+                                                                  )
+                                                        }));
+                                                    }}
+                                                />
+                                                <span className="text-sm text-gray-700">
+                                                    {facility.name}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Select which facilities will offer this
+                                        program. You can add more facilities later.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

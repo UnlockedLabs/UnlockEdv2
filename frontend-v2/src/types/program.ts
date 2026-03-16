@@ -91,6 +91,7 @@ export interface ProgramOverview extends Program {
     completions: number;
     total_enrollments: number;
     completion_rate: number;
+    attendance_rate: number;
     active_class_facility_ids: number[];
 }
 
@@ -148,6 +149,7 @@ export interface Class {
     status: SelectedClassStatus;
     enrolled: number;
     completed: number;
+    historical_enrollments?: number;
     capacity: number;
     credit_hours: number;
     archived_at: string | null;
