@@ -73,16 +73,7 @@ export function ProgramRow({
         );
     }
     function NullValue() {
-        return (
-            <div
-                className="tooltip"
-                data-tip={
-                    'Data currently unavailable. Please check back in 24 hours for updated statistics.'
-                }
-            >
-                --
-            </div>
-        );
+        return <div>--</div>;
     }
     return (
         <tr
@@ -526,7 +517,27 @@ export default function ProgramManagement() {
                                             : ''
                                     }
                                 >
-                                    {key}
+                                    {key}&nbsp;
+                                    {key === 'Avg. Completion Rate' && (
+                                        <ULIComponent
+                                            icon={InformationCircleIcon}
+                                            dataTip={
+                                                "Percent of students who completed this program across all facilities and classes. '--' means no data yet."
+                                            }
+                                            tooltipClassName="tooltip-left"
+                                            iconClassName="text-teal-4 cursor-help h-4 w-4"
+                                        />
+                                    )}
+                                    {key === 'Avg. Attendance Rate' && (
+                                        <ULIComponent
+                                            icon={InformationCircleIcon}
+                                            dataTip={
+                                                "Percent of class sessions attended for this program across all facilities and classes. '--' means no data yet."
+                                            }
+                                            tooltipClassName="tooltip-left"
+                                            iconClassName="text-teal-4 cursor-help h-4 w-4"
+                                        />
+                                    )}
                                     {key === 'Status' &&
                                         user?.role ===
                                             UserRole.FacilityAdmin && (
