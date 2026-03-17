@@ -154,7 +154,9 @@ export default function StudentManagement() {
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
         showFacilityColumn ? '/api/facilities' : null
     );
-    const facilities = facilitiesResp?.data ?? [];
+    const facilities = [...(facilitiesResp?.data ?? [])].sort((a, b) =>
+        a.name.localeCompare(b.name)
+    );
 
     const userData = data?.data ?? [];
     const totalItems = data?.meta?.total ?? 0;
@@ -289,7 +291,7 @@ export default function StudentManagement() {
     const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
 
     return (
-        <div className="py-4">
+        <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Header */}
                 <div className="mb-8">
                     {user && !showFacilityColumn && (
