@@ -163,6 +163,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                             ? `${schedule.startTime} - ${schedule.endTime}`
                             : undefined
                     }
+                    smallValue
                 />
                 <InfoCard
                     label="Duration"
@@ -177,11 +178,13 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 <InfoCard
                     label="Room"
                     value={schedule.room || 'Not assigned'}
+                    smallValue
                 />
                 <InfoCard
                     label="Next Class"
                     value={nextClass?.date ?? 'None scheduled'}
                     sub={nextClass?.time}
+                    smallValue
                 />
             </div>
 
@@ -286,16 +289,20 @@ export function StatCards({ cls, eventInstances }: StatCardsProps) {
 function InfoCard({
     label,
     value,
-    sub
+    sub,
+    smallValue
 }: {
     label: string;
     value: string;
     sub?: string;
+    smallValue?: boolean;
 }) {
     return (
         <div className="bg-[#E2E7EA] rounded-lg p-3">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
-            <div className="text-sm text-[#203622]">{value}</div>
+            <div className={`text-[#203622]${smallValue ? ' text-sm' : ''}`}>
+                {value}
+            </div>
             {sub && (
                 <div className="text-xs text-gray-600 mt-1">{sub}</div>
             )}
