@@ -111,7 +111,15 @@ func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int)
 
 func (db *DB) GetUsersByIDs(userIDs []uint, args *models.QueryContext) ([]models.User, error) {
 	users := make([]models.User, 0, len(userIDs))
-	if err := db.WithContext(args.Ctx).Find(&users).Where("id IN (?)", userIDs).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Where("id IN (?)", userIDs).Find(&users).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	return users, nil
+}
+
+func (db *DB) FindUsersByIDs(userIDs []uint) ([]models.User, error) {
+	var users []models.User
+	if err := db.Where("id IN ?", userIDs).Find(&users).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	return users, nil
@@ -226,6 +234,14 @@ func fuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) *gorm.DB {
 			likeSearch, likeSearch)
 	}
 	return tx
+}
+
+func (db *DB) GetUserRoleByID(ctx context.Context, id string) (models.UserRole, error) {
+	var role string
+	if err := db.WithContext(ctx).Model(&models.User{}).Select("role").Where("id = ?", id).First(&role).Error; err != nil {
+		return "", newNotFoundDBError(err, "users")
+	}
+	return models.UserRole(role), nil
 }
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {

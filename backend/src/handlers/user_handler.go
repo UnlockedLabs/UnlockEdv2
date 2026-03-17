@@ -34,9 +34,8 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
 		newDeptAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
 		validatedAdminRoute("POST /api/users/{id}/student-password", srv.handleResetStudentPassword, func(tx *database.DB, r *http.Request) bool {
-			var role string
-			return tx.WithContext(r.Context()).Model(&models.User{}).Select("role").Where("id = ?", r.PathValue("id")).First(&role).Error == nil &&
-				canResetUserPassword(r.Context().Value(ClaimsKey).(*Claims), models.UserRole(role))
+			role, err := tx.GetUserRoleByID(r.Context(), r.PathValue("id"))
+			return err == nil && canResetUserPassword(r.Context().Value(ClaimsKey).(*Claims), role)
 		}),
 		validatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, FacilityAdminResolver("users", "id")),
@@ -207,10 +206,10 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	log.add("created_username", reqForm.User.Username)
 	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, reqForm.User.DocID)
 	if userNameExists {
-		return newBadRequestServiceError(err, "userexists")
+		return newBadRequestServiceError(err, "Username already exists")
 	}
 	if docExists {
-		return newBadRequestServiceError(err, "docexists")
+		return newBadRequestServiceError(err, "Doc ID already exists")
 	}
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
 		return unicode.IsLetter(char) || unicode.IsDigit(char)
@@ -845,8 +844,8 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 	if len(req.UserIDs) == 0 {
 		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
 	}
-	var users []models.User
-	if err := srv.Db.Where("id IN ?", req.UserIDs).Find(&users).Error; err != nil {
+	users, err := srv.Db.FindUsersByIDs(req.UserIDs)
+	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	if !claims.canSwitchFacility() {
@@ -929,8 +928,8 @@ func (srv *Server) handleBulkDeactivateUsers(w http.ResponseWriter, r *http.Requ
 	if len(req.UserIDs) == 0 {
 		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
 	}
-	var users []models.User
-	if err := srv.Db.Where("id IN ?", req.UserIDs).Find(&users).Error; err != nil {
+	users, err := srv.Db.FindUsersByIDs(req.UserIDs)
+	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	if !claims.canSwitchFacility() {
@@ -969,8 +968,8 @@ func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request,
 	if len(req.UserIDs) == 0 {
 		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
 	}
-	var users []models.User
-	if err := srv.Db.Where("id IN ?", req.UserIDs).Find(&users).Error; err != nil {
+	users, err := srv.Db.FindUsersByIDs(req.UserIDs)
+	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	if !claims.canSwitchFacility() {

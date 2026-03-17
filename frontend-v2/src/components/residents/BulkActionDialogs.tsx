@@ -37,6 +37,7 @@ export function BulkResetPasswordDialog({
     residents,
     onSuccess
 }: BulkDialogProps) {
+    const { toaster } = useToast();
     const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<BulkPasswordResult[]>([]);
@@ -75,6 +76,9 @@ export function BulkResetPasswordDialog({
         a.download = `bulk-passwords-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+        toaster('Password file downloaded successfully', ToastState.success);
+        onSuccess();
+        onOpenChange(false);
     };
 
     const handleClose = (value: boolean) => {
