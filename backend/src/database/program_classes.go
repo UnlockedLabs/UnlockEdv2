@@ -896,3 +896,10 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 
 	return response, nil
 }
+
+func (db *DB) DeleteClass(id int) error {
+	if err := db.Delete(&models.ProgramClass{}, "id = ?", id).Error; err != nil {
+		return newDeleteDBError(err, "program class")
+	}
+	return nil
+}

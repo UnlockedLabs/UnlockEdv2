@@ -58,6 +58,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 			return err == nil
 		}),
 		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}", srv.handleDeleteClass, axx, resolver),
 	}
 }
 
@@ -474,4 +475,17 @@ func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
 
 func (c *BulkCancelClaimsAdapter) GetTimezone() string {
 	return c.TimeZone
+}
+
+func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	log.add("class_id", id)
+	if err := srv.Db.DeleteClass(id); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	log.info("class deleted")
+	return writeJsonResponse(w, http.StatusNoContent, "Class deleted successfully")
 }

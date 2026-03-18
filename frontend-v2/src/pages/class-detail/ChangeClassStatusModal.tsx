@@ -97,7 +97,7 @@ export function ChangeClassStatusModal({
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-[#203622]">
+                    <DialogTitle>
                         Change Class Status
                     </DialogTitle>
                     <DialogDescription>
@@ -113,7 +113,7 @@ export function ChangeClassStatusModal({
                                 setNewStatus(v as SelectedClassStatus)
                             }
                         >
-                            <SelectTrigger id="classStatus" className="mt-1">
+                            <SelectTrigger id="classStatus">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -140,9 +140,7 @@ export function ChangeClassStatusModal({
                             onClick={() => {
                                 void handleSubmit();
                             }}
-                            disabled={
-                                newStatus === currentStatus || isSubmitting
-                            }
+                            disabled={isSubmitting}
                             className="bg-[#556830] hover:bg-[#203622]"
                         >
                             {isSubmitting ? 'Updating...' : 'Update Status'}

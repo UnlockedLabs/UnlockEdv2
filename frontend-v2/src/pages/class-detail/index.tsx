@@ -280,7 +280,6 @@ export default function ClassDetailPage() {
                 open={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 classId={cls.id}
-                programId={cls.program_id}
                 className={cls.name}
                 onDeleted={() =>
                     navigate(`/programs/${cls.program_id}`)

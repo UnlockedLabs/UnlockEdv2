@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, X } from 'lucide-react';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
 import { FormModal } from '@/components/shared';
@@ -40,12 +40,12 @@ interface EditClassFormData {
     description: string;
     instructor_id: number | null;
     capacity: number;
-    credit_hours: number;
     start_dt: string;
     end_dt: string;
     room_id: number | null;
     start_time: string;
     end_time: string;
+    cadence: string;
     status: string;
 }
 
@@ -82,14 +82,29 @@ const DAY_RRULE_TO_FULL: Record<string, string> = {
 function parseScheduleFromEvent(
     recurrenceRule: string,
     duration: string
-): { days: string[]; startTime: string; endTime: string } {
+): { days: string[]; startTime: string; endTime: string; cadence: string; interval: number } {
     let startTime = '';
     let endTime = '';
     let days: string[] = [];
+    let cadence = 'no-repeat';
+    let interval = 1;
 
     const dtMatch = /T(\d{2})(\d{2})/.exec(recurrenceRule);
     if (dtMatch) {
         startTime = `${dtMatch[1]}:${dtMatch[2]}`;
+    }
+
+    const freqMatch = /FREQ=(\w+)/.exec(recurrenceRule);
+    if (freqMatch) {
+        const freq = freqMatch[1];
+        const intervalMatch = /INTERVAL=(\d+)/.exec(recurrenceRule);
+        interval = intervalMatch ? Number(intervalMatch[1]) : 1;
+
+        if (freq === 'DAILY') cadence = 'daily';
+        else if (freq === 'WEEKLY' && interval === 2) cadence = 'biweekly';
+        else if (freq === 'WEEKLY' && interval > 2) cadence = 'custom';
+        else if (freq === 'WEEKLY') cadence = 'weekly';
+        else if (freq === 'MONTHLY') cadence = 'monthly';
     }
 
     const byDayMatch = /BYDAY=([A-Z,]+)/.exec(recurrenceRule);
@@ -115,7 +130,7 @@ function parseScheduleFromEvent(
         }
     }
 
-    return { days, startTime, endTime };
+    return { days, startTime, endTime, cadence, interval };
 }
 
 function buildRecurrenceRule(
@@ -123,15 +138,38 @@ function buildRecurrenceRule(
     startDate: string,
     startTime: string,
     days: string[],
+    cadence: string,
+    customInterval?: number,
     endDate?: string
 ): string {
     const tzMatch = /DTSTART;TZID=([^:]+):/.exec(originalRule);
     const tz = tzMatch?.[1] ?? 'Local';
 
     const dtStart = `${startDate.replace(/-/g, '')}T${startTime.replace(/:/g, '')}00`;
-    let rule = `DTSTART;TZID=${tz}:${dtStart}\nRRULE:FREQ=WEEKLY`;
 
-    if (days.length > 0) {
+    if (cadence === 'no-repeat') {
+        return `DTSTART;TZID=${tz}:${dtStart}`;
+    }
+
+    const freqMap: Record<string, string> = {
+        daily: 'DAILY',
+        weekly: 'WEEKLY',
+        biweekly: 'WEEKLY',
+        custom: 'WEEKLY',
+        monthly: 'MONTHLY'
+    };
+    let rule = `DTSTART;TZID=${tz}:${dtStart}\nRRULE:FREQ=${freqMap[cadence] ?? 'WEEKLY'}`;
+
+    if (cadence === 'biweekly') {
+        rule += ';INTERVAL=2';
+    } else if (cadence === 'custom' && customInterval && customInterval > 1) {
+        rule += `;INTERVAL=${customInterval}`;
+    }
+
+    if (
+        days.length > 0 &&
+        (cadence === 'weekly' || cadence === 'biweekly' || cadence === 'custom')
+    ) {
         const rruleDays = days
             .map((d) => DAY_FULL_TO_RRULE[d])
             .filter(Boolean);
@@ -182,6 +220,8 @@ export function EditClassModal({
         username: ''
     });
     const [scheduleDays, setScheduleDays] = useState<string[]>([]);
+    const [showCustomRecurrence, setShowCustomRecurrence] = useState(false);
+    const [customRecurrence, setCustomRecurrence] = useState({ interval: 1 });
 
     const { data: instructorsResp, mutate: mutateInstructors } =
         useSWR<ServerResponseMany<User>>(
@@ -207,12 +247,12 @@ export function EditClassModal({
             description: '',
             instructor_id: null,
             capacity: 20,
-            credit_hours: 0,
             start_dt: '',
             end_dt: '',
             room_id: null,
             start_time: '',
             end_time: '',
+            cadence: 'weekly',
             status: ''
         }
     });
@@ -226,7 +266,7 @@ export function EditClassModal({
                       activeEvent.recurrence_rule,
                       activeEvent.duration
                   )
-                : { days: [], startTime: '', endTime: '' };
+                : { days: [], startTime: '', endTime: '', cadence: 'weekly', interval: 1 };
 
             reset({
                 name: cls.name,
@@ -239,14 +279,18 @@ export function EditClassModal({
                 room_id: activeEvent?.room_id ?? null,
                 start_time: schedule.startTime,
                 end_time: schedule.endTime,
+                cadence: schedule.cadence,
                 status: cls.status
             });
             setScheduleDays(schedule.days);
+            setCustomRecurrence({ interval: schedule.interval });
+            setShowCustomRecurrence(false);
             setConflicts([]);
         }
     }, [cls, open, reset, activeEvent]);
 
     const watchedCapacity = watch('capacity');
+    const watchedCadence = watch('cadence');
     const watchedStatus = watch('status');
     const watchedStartDt = watch('start_dt');
     const capacityBelowEnrolled =
@@ -260,6 +304,26 @@ export function EditClassModal({
                 : [...prev, day]
         );
     };
+
+    function getCustomRecurrencePreview(): string {
+        const { interval } = customRecurrence;
+        let preview = `Every ${interval > 1 ? interval + ' ' : ''}`;
+        preview += interval === 1 ? 'week' : 'weeks';
+        if (scheduleDays.length > 0) {
+            preview += ` on ${scheduleDays.join(', ')}`;
+        }
+        const endDt = watch('end_dt');
+        if (endDt) {
+            preview += `, ending on ${new Date(endDt).toLocaleDateString()}`;
+        } else {
+            preview += ', no end date';
+        }
+        return preview;
+    }
+
+    function isCustomRecurrenceValid(): boolean {
+        return scheduleDays.length > 0;
+    }
 
     async function handleAddRoom() {
         if (!newRoomName.trim()) return;
@@ -311,6 +375,8 @@ export function EditClassModal({
             data.start_dt,
             data.start_time,
             scheduleDays,
+            data.cadence,
+            data.cadence === 'custom' ? customRecurrence.interval : undefined,
             data.end_dt || undefined
         );
         const newDuration = formatDuration(data.start_time, data.end_time);
@@ -323,10 +389,6 @@ export function EditClassModal({
                 ? Number(data.instructor_id)
                 : null,
             capacity: Number(data.capacity),
-            credit_hours:
-                Number(data.credit_hours) > 0
-                    ? Number(data.credit_hours)
-                    : null,
             status: data.status,
             start_dt: `${data.start_dt}T00:00:00Z`,
             end_dt: data.end_dt ? `${data.end_dt}T00:00:00Z` : null,
@@ -373,24 +435,25 @@ export function EditClassModal({
                 description="Make changes to the class details."
                 className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
             >
-                <form
-                    onSubmit={(e) => {
-                        void handleSubmit(onSubmit)(e);
-                    }}
-                    className="space-y-6"
-                >
-                    <div className="space-y-4">
+                    <form
+                        id="edit-class-form"
+                        onSubmit={(e) => {
+                            void handleSubmit(onSubmit)(e);
+                        }}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-4">
                         <h4 className="font-medium text-[#203622]">
                             Class Details
                         </h4>
 
                         <div className="space-y-2">
-                            <Label
+                            <label
                                 htmlFor="edit-name"
                                 className="text-sm font-medium"
                             >
                                 Class Name
-                            </Label>
+                            </label>
                             <Input
                                 id="edit-name"
                                 {...register('name', {
@@ -408,58 +471,149 @@ export function EditClassModal({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium">
-                                    Instructor
-                                </Label>
-                                <Controller
-                                    name="instructor_id"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Select
-                                            value={
-                                                field.value
-                                                    ? String(field.value)
-                                                    : ''
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="edit-instructor"
+                                className="text-sm font-medium"
+                            >
+                                Instructor
+                            </label>
+                            <Controller
+                                name="instructor_id"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={
+                                            field.value
+                                                ? String(field.value)
+                                                : ''
+                                        }
+                                        onValueChange={(v) => {
+                                            if (v === '__add__') {
+                                                setShowAddInstructor(true);
+                                                return;
                                             }
-                                            onValueChange={(v) => {
-                                                if (v === '__add__') {
-                                                    setShowAddInstructor(true);
-                                                    return;
-                                                }
-                                                field.onChange(Number(v));
-                                            }}
-                                        >
-                                            <SelectTrigger id="edit-instructor">
-                                                <SelectValue placeholder="Select instructor" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {instructors.map((inst) => (
-                                                    <SelectItem
-                                                        key={inst.id}
-                                                        value={String(inst.id)}
-                                                    >
-                                                        {inst.name_last},{' '}
-                                                        {inst.name_first}
-                                                    </SelectItem>
-                                                ))}
+                                            field.onChange(Number(v));
+                                        }}
+                                    >
+                                        <SelectTrigger id="edit-instructor">
+                                            <SelectValue placeholder="Select instructor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {instructors.map((inst) => (
                                                 <SelectItem
-                                                    value="__add__"
-                                                    className="text-[#556830] font-medium"
+                                                    key={inst.id}
+                                                    value={String(inst.id)}
                                                 >
-                                                    + Add Instructor
+                                                    {inst.name_last},{' '}
+                                                    {inst.name_first}
                                                 </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    )}
+                                            ))}
+                                            <SelectItem
+                                                value="__add__"
+                                                className="text-[#556830] font-medium"
+                                            >
+                                                + Add Instructor
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="edit-capacity"
+                                className="text-sm font-medium"
+                            >
+                                Capacity
+                            </label>
+                            <Input
+                                id="edit-capacity"
+                                type="number"
+                                min={1}
+                                {...register('capacity', {
+                                    required: 'Capacity is required',
+                                    min: {
+                                        value: 1,
+                                        message: 'Minimum 1'
+                                    }
+                                })}
+                            />
+                            {errors.capacity && (
+                                <p className="text-sm text-red-600">
+                                    {errors.capacity.message}
+                                </p>
+                            )}
+                            {capacityBelowEnrolled && (
+                                <p className="text-sm text-amber-600 flex items-start gap-1">
+                                    <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                    <span>
+                                        Warning: Capacity is below current
+                                        enrollment ({cls.enrolled}{' '}
+                                        students)
+                                    </span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label
+                            htmlFor="edit-description"
+                            className="text-sm font-medium"
+                        >
+                            Description
+                        </label>
+                        <Textarea
+                            id="edit-description"
+                            rows={3}
+                            className="resize-none field-sizing-fixed"
+                            {...register('description', {
+                                required: 'Description is required',
+                                maxLength: {
+                                    value: 255,
+                                    message: 'Max 255 characters'
+                                }
+                            })}
+                        />
+                        {errors.description && (
+                            <p className="text-sm text-red-600">
+                                {errors.description.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        <h4 className="font-medium text-[#203622]">
+                            Schedule
+                        </h4>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <Label htmlFor="edit-start-time">
+                                    Start Time *
+                                </Label>
+                                <Input
+                                    id="edit-start-time"
+                                    type="time"
+                                    {...register('start_time')}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium">
-                                    Room
+                            <div>
+                                <Label htmlFor="edit-end-time">
+                                    End Time *
                                 </Label>
+                                <Input
+                                    id="edit-end-time"
+                                    type="time"
+                                    {...register('end_time')}
+                                />
+                            </div>
+
+                            <div>
+                                <Label htmlFor="edit-room">Room *</Label>
                                 <Controller
                                     name="room_id"
                                     control={control}
@@ -504,156 +658,9 @@ export function EditClassModal({
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="edit-capacity"
-                                    className="text-sm font-medium"
-                                >
-                                    Capacity
-                                </Label>
-                                <Input
-                                    id="edit-capacity"
-                                    type="number"
-                                    min={1}
-                                    {...register('capacity', {
-                                        required: 'Capacity is required',
-                                        min: {
-                                            value: 1,
-                                            message: 'Minimum 1'
-                                        }
-                                    })}
-                                />
-                                {errors.capacity && (
-                                    <p className="text-sm text-red-600">
-                                        {errors.capacity.message}
-                                    </p>
-                                )}
-                                {capacityBelowEnrolled && (
-                                    <p className="text-sm text-amber-600 flex items-start gap-1">
-                                        <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
-                                        <span>
-                                            Warning: Capacity is below current
-                                            enrollment ({cls.enrolled}{' '}
-                                            students)
-                                        </span>
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="edit-credit-hours"
-                                    className="text-sm font-medium"
-                                >
-                                    Credit Hours
-                                </Label>
-                                <Input
-                                    id="edit-credit-hours"
-                                    type="number"
-                                    min={0}
-                                    {...register('credit_hours')}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label
-                            htmlFor="edit-description"
-                            className="text-sm font-medium"
-                        >
-                            Description
-                        </Label>
-                        <Textarea
-                            id="edit-description"
-                            rows={3}
-                            className="resize-none"
-                            {...register('description', {
-                                required: 'Description is required',
-                                maxLength: {
-                                    value: 255,
-                                    message: 'Max 255 characters'
-                                }
-                            })}
-                        />
-                        {errors.description && (
-                            <p className="text-sm text-red-600">
-                                {errors.description.message}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-[#203622]">
-                            Schedule
-                        </h4>
-
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Days</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {ALL_DAYS.map((day) => {
-                                    const isSelected =
-                                        scheduleDays.includes(day);
-                                    return (
-                                        <button
-                                            key={day}
-                                            type="button"
-                                            onClick={() => toggleDay(day)}
-                                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                                isSelected
-                                                    ? 'bg-[#556830] text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            {day.slice(0, 3)}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="edit-start-time"
-                                    className="text-sm font-medium"
-                                >
-                                    Start Time
-                                </Label>
-                                <Input
-                                    id="edit-start-time"
-                                    type="time"
-                                    {...register('start_time')}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="edit-end-time"
-                                    className="text-sm font-medium"
-                                >
-                                    End Time
-                                </Label>
-                                <Input
-                                    id="edit-end-time"
-                                    type="time"
-                                    {...register('end_time')}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-[#203622]">
-                            Class Period
-                        </h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="edit-start-dt"
-                                    className="text-sm font-medium"
-                                >
-                                    Start Date
+                            <div>
+                                <Label htmlFor="edit-start-dt">
+                                    Start Date *
                                 </Label>
                                 <Input
                                     id="edit-start-dt"
@@ -681,11 +688,8 @@ export function EditClassModal({
                                         </p>
                                     )}
                             </div>
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="edit-end-dt"
-                                    className="text-sm font-medium"
-                                >
+                            <div>
+                                <Label htmlFor="edit-end-dt">
                                     End Date
                                 </Label>
                                 <Input
@@ -694,6 +698,233 @@ export function EditClassModal({
                                     {...register('end_dt')}
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="edit-cadence">
+                                Repeats *
+                            </Label>
+                            <Controller
+                                name="cadence"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            if (value === 'custom') {
+                                                setShowCustomRecurrence(true);
+                                            } else {
+                                                setShowCustomRecurrence(false);
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger id="edit-cadence">
+                                            <SelectValue placeholder="Select recurrence" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="no-repeat">
+                                                Does not repeat
+                                            </SelectItem>
+                                            <SelectItem value="daily">
+                                                Daily
+                                            </SelectItem>
+                                            <SelectItem value="weekly">
+                                                Weekly
+                                            </SelectItem>
+                                            <SelectItem value="biweekly">
+                                                Every 2 weeks
+                                            </SelectItem>
+                                            <SelectItem value="monthly">
+                                                Monthly
+                                            </SelectItem>
+                                            <SelectItem value="custom">
+                                                Custom
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {!showCustomRecurrence && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {watchedCadence === 'weekly' &&
+                                        'Class repeats every week on the selected days'}
+                                    {watchedCadence === 'biweekly' &&
+                                        'Class repeats every 2 weeks on the selected days'}
+                                    {watchedCadence === 'daily' &&
+                                        'Class repeats every day'}
+                                    {watchedCadence === 'monthly' &&
+                                        'Class repeats monthly on the same day'}
+                                    {watchedCadence === 'no-repeat' &&
+                                        'Class is a one-time event'}
+                                    {watchedCadence === 'custom' &&
+                                        getCustomRecurrencePreview()}
+                                </p>
+                            )}
+                            {watchedCadence === 'custom' &&
+                                !showCustomRecurrence && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        type="button"
+                                        onClick={() =>
+                                            setShowCustomRecurrence(true)
+                                        }
+                                        className="mt-1 h-7 text-xs text-[#556830] hover:text-[#203622] px-2"
+                                    >
+                                        Edit pattern
+                                    </Button>
+                                )}
+
+                            {showCustomRecurrence && (
+                                <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm font-medium text-gray-700">
+                                            Custom Recurrence Pattern
+                                        </Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            type="button"
+                                            onClick={() => {
+                                                setShowCustomRecurrence(false);
+                                                setValue('cadence', 'weekly');
+                                            }}
+                                            className="h-6 w-6 p-0 -mt-1"
+                                        >
+                                            <X className="size-4" />
+                                        </Button>
+                                    </div>
+
+                                    <div>
+                                        <Label
+                                            htmlFor="customInterval"
+                                            className="text-xs"
+                                        >
+                                            Repeats every X weeks
+                                        </Label>
+                                        <Select
+                                            value={customRecurrence.interval.toString()}
+                                            onValueChange={(value) =>
+                                                setCustomRecurrence({
+                                                    ...customRecurrence,
+                                                    interval: parseInt(value)
+                                                })
+                                            }
+                                        >
+                                            <SelectTrigger
+                                                id="customInterval"
+                                                className="bg-white"
+                                            >
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[1, 2, 3, 4, 5, 6, 7, 8].map(
+                                                    (num) => (
+                                                        <SelectItem
+                                                            key={num}
+                                                            value={num.toString()}
+                                                        >
+                                                            {num}{' '}
+                                                            {num === 1
+                                                                ? 'week'
+                                                                : 'weeks'}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Use the &quot;Days of Week&quot;
+                                            selector below to choose which days
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-gray-200">
+                                        <Label className="text-xs text-gray-600">
+                                            Preview
+                                        </Label>
+                                        <p className="text-sm text-gray-700 mt-1">
+                                            {getCustomRecurrencePreview()}
+                                        </p>
+                                    </div>
+
+                                    {!isCustomRecurrenceValid() && (
+                                        <div className="flex items-center gap-2 text-sm text-red-600">
+                                            <AlertCircle className="size-4" />
+                                            <span>
+                                                Please select at least one day
+                                                of the week below
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-2 pt-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            type="button"
+                                            onClick={() => {
+                                                setShowCustomRecurrence(false);
+                                                setValue('cadence', 'weekly');
+                                            }}
+                                            className="flex-1"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            type="button"
+                                            onClick={() => {
+                                                if (isCustomRecurrenceValid()) {
+                                                    setShowCustomRecurrence(
+                                                        false
+                                                    );
+                                                    toast.success(
+                                                        'Custom recurrence pattern applied'
+                                                    );
+                                                }
+                                            }}
+                                            disabled={
+                                                !isCustomRecurrenceValid()
+                                            }
+                                            className="flex-1 bg-[#556830] hover:bg-[#203622]"
+                                        >
+                                            Apply Pattern
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(watchedCadence === 'weekly' ||
+                                watchedCadence === 'biweekly' ||
+                                watchedCadence === 'custom') && (
+                                <div className="mt-2">
+                                    <Label>Days of Week *</Label>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {ALL_DAYS.map((day) => {
+                                            const isSelected =
+                                                scheduleDays.includes(day);
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        toggleDay(day)
+                                                    }
+                                                    className={`px-4 py-2 rounded-lg border transition-colors ${
+                                                        isSelected
+                                                            ? 'bg-[#556830] text-white border-[#556830]'
+                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#556830]'
+                                                    }`}
+                                                >
+                                                    {day.slice(0, 3)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -798,6 +1029,7 @@ export function EditClassModal({
                             </div>
                         </div>
                     )}
+                    </form>
 
                     <div className="mt-6 flex justify-end gap-2">
                         <Button
@@ -809,13 +1041,13 @@ export function EditClassModal({
                         </Button>
                         <Button
                             type="submit"
+                            form="edit-class-form"
                             disabled={isSubmitting}
                             className="bg-[#556830] hover:bg-[#203622] text-white"
                         >
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
-                </form>
             </FormModal>
 
             <FormModal

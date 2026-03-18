@@ -17,7 +17,6 @@ interface DeleteClassModalProps {
     open: boolean;
     onClose: () => void;
     classId: number;
-    programId: number;
     className: string;
     onDeleted: () => void;
 }
@@ -26,7 +25,6 @@ export function DeleteClassModal({
     open,
     onClose,
     classId,
-    programId,
     className,
     onDeleted
 }: DeleteClassModalProps) {
@@ -40,12 +38,7 @@ export function DeleteClassModal({
 
     const handleDelete = async () => {
         setIsSubmitting(true);
-        const resp = await API.patch<
-            unknown,
-            { archived_at: string }
-        >(`programs/${programId}/classes/${classId}`, {
-            archived_at: new Date().toISOString()
-        });
+        const resp = await API.delete(`program-classes/${classId}`);
         if (resp.success) {
             handleClose();
             onDeleted();
