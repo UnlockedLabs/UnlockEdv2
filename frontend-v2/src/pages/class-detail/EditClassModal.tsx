@@ -8,7 +8,6 @@ import { useAuth } from '@/auth/useAuth';
 import { FormModal } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -565,10 +564,10 @@ export function EditClassModal({
                         >
                             Description
                         </label>
-                        <Textarea
+                        <textarea
                             id="edit-description"
                             rows={3}
-                            className="resize-none field-sizing-fixed"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#556830] resize-none"
                             {...register('description', {
                                 required: 'Description is required',
                                 maxLength: {

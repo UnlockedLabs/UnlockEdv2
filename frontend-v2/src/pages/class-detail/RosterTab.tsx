@@ -236,7 +236,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                 aria-label={`Select ${enrollment.doc_id}`}
                                                 className="shrink-0"
                                             />
-                                            <div className="min-w-[80px]">
+                                            <div className="w-[140px] shrink-0">
                                                 <div className="text-[#203622] font-medium">
                                                     {enrollment.doc_id}
                                                 </div>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { computeAttendanceByUser } from '@/lib/attendance-utils';
 
 interface SupportTabProps {
     classId: number;
+    onCountChange?: (count: number) => void;
 }
 
 interface AtRiskResident {
@@ -88,7 +89,7 @@ function computeAtRiskResidents(
     return residents.sort((a, b) => a.attendanceRate - b.attendanceRate);
 }
 
-export function SupportTab({ classId }: SupportTabProps) {
+export function SupportTab({ classId, onCountChange }: SupportTabProps) {
     const { data: eventsResp } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(`/api/program-classes/${classId}/events?all=true`);
@@ -101,6 +102,10 @@ export function SupportTab({ classId }: SupportTabProps) {
         if (!eventsResp?.data || !enrollmentResp?.data) return [];
         return computeAtRiskResidents(eventsResp.data, enrollmentResp.data);
     }, [eventsResp, enrollmentResp]);
+
+    useEffect(() => {
+        onCountChange?.(atRisk.length);
+    }, [atRisk.length, onCountChange]);
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">

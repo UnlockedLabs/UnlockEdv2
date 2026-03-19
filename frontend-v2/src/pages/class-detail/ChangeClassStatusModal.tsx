@@ -33,7 +33,6 @@ interface ChangeClassStatusModalProps {
 const ALL_STATUSES: SelectedClassStatus[] = [
     SelectedClassStatus.Active,
     SelectedClassStatus.Scheduled,
-    SelectedClassStatus.Paused,
     SelectedClassStatus.Completed,
     SelectedClassStatus.Cancelled
 ];
@@ -44,8 +43,6 @@ function getStatusDescription(status: SelectedClassStatus): string {
             return 'Class is currently running and accepting attendance.';
         case SelectedClassStatus.Scheduled:
             return 'Class is scheduled to begin in the future.';
-        case SelectedClassStatus.Paused:
-            return 'Class is temporarily paused and hidden from daily attendance.';
         case SelectedClassStatus.Completed:
             return 'Class has finished and is now archived.';
         case SelectedClassStatus.Cancelled:

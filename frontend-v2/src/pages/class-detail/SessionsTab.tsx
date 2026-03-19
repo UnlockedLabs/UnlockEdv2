@@ -208,6 +208,16 @@ function findCancelOverrideId(
     return undefined;
 }
 
+const WEEKDAY_LONG: Record<number, string> = {
+    0: 'Sunday',
+    1: 'Monday',
+    2: 'Tuesday',
+    3: 'Wednesday',
+    4: 'Thursday',
+    5: 'Friday',
+    6: 'Saturday'
+};
+
 function buildSessionDisplays(
     instances: ClassEventInstance[],
     enrolled: number,
@@ -218,28 +228,21 @@ function buildSessionDisplays(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const cancelledByDate = new Map<string, Set<string>>();
+    const cancelledByDate = new Map<string, string[]>();
     for (const inst of instances) {
         if (inst.is_cancelled) {
-            let times = cancelledByDate.get(inst.date);
-            if (!times) {
-                times = new Set<string>();
-                cancelledByDate.set(inst.date, times);
-            }
-            times.add(inst.class_time);
+            const times = cancelledByDate.get(inst.date);
+            if (times) times.push(inst.class_time);
+            else cancelledByDate.set(inst.date, [inst.class_time]);
         }
     }
+
     const activeDatesWithDifferentTime = new Set<string>();
     for (const inst of instances) {
         if (!inst.is_cancelled) {
             const cancelledTimes = cancelledByDate.get(inst.date);
-            if (cancelledTimes) {
-                for (const ct of cancelledTimes) {
-                    if (ct !== inst.class_time) {
-                        activeDatesWithDifferentTime.add(inst.date);
-                        break;
-                    }
-                }
+            if (cancelledTimes?.some((t) => t !== inst.class_time)) {
+                activeDatesWithDifferentTime.add(inst.date);
             }
         }
     }
@@ -289,9 +292,7 @@ function buildSessionDisplays(
             return {
                 instance: inst,
                 dateObj,
-                dayName: dateObj.toLocaleDateString('en-US', {
-                    weekday: 'long'
-                }),
+                dayName: WEEKDAY_LONG[dateObj.getDay()] ?? '',
                 isToday,
                 isPast,
                 isUpcoming,

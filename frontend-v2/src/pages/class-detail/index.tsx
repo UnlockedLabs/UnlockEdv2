@@ -96,6 +96,9 @@ export default function ClassDetailPage() {
         ];
     }, [cls]);
 
+    const eventInstances = useMemo(() => eventsResp?.data ?? [], [eventsResp?.data]);
+    const [atRiskCount, setAtRiskCount] = useState(0);
+
     if (isLoading) return <LoadingSkeleton />;
 
     if (!cls) {
@@ -119,8 +122,6 @@ export default function ClassDetailPage() {
             </div>
         );
     }
-
-    const eventInstances = eventsResp?.data ?? [];
 
     return (
         <div className="min-h-screen bg-[#E2E7EA]">
@@ -212,7 +213,7 @@ export default function ClassDetailPage() {
                             value="support"
                             className={TAB_TRIGGER_CLASS}
                         >
-                            At-Risk
+                            At-Risk ({atRiskCount})
                         </TabsTrigger>
                         <TabsTrigger
                             value="sessions"
@@ -259,8 +260,8 @@ export default function ClassDetailPage() {
                         <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
                     </TabsContent>
 
-                    <TabsContent value="support" className="space-y-4">
-                        <SupportTab classId={cls.id} />
+                    <TabsContent value="support" className="space-y-4 data-[state=inactive]:hidden" forceMount>
+                        <SupportTab classId={cls.id} onCountChange={setAtRiskCount} />
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">

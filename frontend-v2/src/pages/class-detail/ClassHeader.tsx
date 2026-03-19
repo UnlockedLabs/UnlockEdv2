@@ -169,9 +169,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                     label="Duration"
                     value={
                         cls.start_dt
-                            ? cls.end_dt
-                                ? `${formatDate(cls.start_dt)} - ${formatDate(cls.end_dt)}`
-                                : `${formatDate(cls.start_dt)} - Ongoing`
+                            ? `${formatDate(cls.start_dt)} to ${cls.end_dt ? formatDate(cls.end_dt) : 'Ongoing'}`
                             : 'Not set'
                     }
                 />
