@@ -64,11 +64,11 @@ export function ResidentHeader({
                                 {user.username}
                             </span>
                         </span>
-                        <span>&#183;</span>
+                        <span>&bull;</span>
                         <span>{user.doc_id ?? 'N/A'}</span>
-                        <span>&#183;</span>
+                        <span>&bull;</span>
                         <span>Created {formatDate(joinedDate)}</span>
-                        <span>&#183;</span>
+                        <span>&bull;</span>
                         <span>
                             Last active {formatRelativeTime(lastActiveDate)}
                         </span>

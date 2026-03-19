@@ -199,8 +199,9 @@ export default function ProgramDetail() {
     const totalCapacityValue = totalCapacity;
 
     return (
-        <div className="-mx-6 -my-4">
-            <div className="px-6 pt-4 pb-6 bg-white border-b border-gray-200">
+        <div className="min-h-screen bg-[#E2E7EA]">
+            <div className="bg-white border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-6 py-6">
                 <div className="flex items-start gap-6">
                     <div className="bg-[#556830] p-4 rounded-lg">
                         <Icon className="size-10 text-white" />
@@ -302,9 +303,10 @@ export default function ProgramDetail() {
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
 
-            <div className="px-6 py-6 bg-[#E2E7EA] min-h-[50vh]">
+            <div className="max-w-7xl mx-auto px-6 py-6">
                 <Tabs defaultValue="classes" className="space-y-6">
                     <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 rounded-lg shadow-xs">
                         <TabsTrigger

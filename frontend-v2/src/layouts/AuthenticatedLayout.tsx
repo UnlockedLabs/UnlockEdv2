@@ -37,7 +37,8 @@ export default function AuthenticatedLayout() {
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
     const isFullBleed = isProgramDetail || isDashboard || isProgramsList || isFacilities;
-    const fullBleedWrapperClass = isDashboard || isProgramsList || isFacilities ? 'py-0' : 'py-4';
+    const fullBleedWrapperClass =
+        isDashboard || isProgramsList || isFacilities || isProgramDetail ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
     const isFacilityView =
         isProgramDetail &&

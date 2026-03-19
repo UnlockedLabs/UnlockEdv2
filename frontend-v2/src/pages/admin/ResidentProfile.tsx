@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, isUserDeactivated, isDeptAdmin } from '@/auth/useAuth';
 import {
@@ -10,14 +10,7 @@ import {
     EnrollmentStatus
 } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { ResidentHeader } from './resident-profile/ResidentHeader';
 import { ResidentMetrics } from './resident-profile/ResidentMetrics';
 
@@ -90,7 +83,7 @@ export default function ResidentProfile() {
 
     if (isLoading) {
         return (
-            <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
                 <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
                     <Skeleton className="h-5 w-48" />
                     <Skeleton className="h-36 w-full" />
@@ -112,24 +105,16 @@ export default function ResidentProfile() {
     const userIsDeptAdmin = isDeptAdmin(user);
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="max-w-7xl mx-auto px-6 py-8">
-                <Breadcrumb className="mb-6">
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link to="/residents">Residents</Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbPage>
-                                {residentUser.name_first}{' '}
-                                {residentUser.name_last}
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
+                <Breadcrumbs
+                    items={[
+                        { label: 'Residents', href: '/residents' },
+                        {
+                            label: `${residentUser.name_first} ${residentUser.name_last}`
+                        }
+                    ]}
+                />
 
                 <ResidentHeader
                     user={residentUser}
