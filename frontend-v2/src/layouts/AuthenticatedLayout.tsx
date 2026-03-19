@@ -33,13 +33,16 @@ export default function AuthenticatedLayout() {
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
+    const isResidentProfile = /^\/residents\/\w+$/.test(location.pathname);
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
-    const isFullBleed = isProgramDetail || isDashboard || isProgramsList || isFacilities;
+    const isGrayBgPage = isProgramDetail || isResidentProfile;
+    const isFullBleed =
+        isGrayBgPage || isDashboard || isProgramsList || isFacilities;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail ? 'py-0' : 'py-4';
-    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
+        isDashboard || isProgramsList || isFacilities || isGrayBgPage ? 'py-0' : 'py-4';
+    const showBreadcrumbs = breadcrumbItems.length > 0 && !isGrayBgPage;
     const isFacilityView =
         isProgramDetail &&
         user !== undefined &&
@@ -85,12 +88,12 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const rootClass = isProgramDetail
+    const rootClass = isGrayBgPage
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
-    const contentClass = isProgramDetail
+    const contentClass = isGrayBgPage
         ? `flex-1 overflow-x-hidden ${
-              canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
+              isResidentProfile || canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
           }`.trim()
         : 'flex-1 overflow-y-auto overflow-x-hidden';
 

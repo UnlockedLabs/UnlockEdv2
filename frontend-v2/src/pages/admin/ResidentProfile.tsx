@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
+import { ChevronRight } from 'lucide-react';
 import { useAuth, isUserDeactivated, isDeptAdmin } from '@/auth/useAuth';
 import {
     ServerResponseOne,
@@ -10,7 +11,6 @@ import {
     EnrollmentStatus
 } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { ResidentHeader } from './resident-profile/ResidentHeader';
 import { ResidentMetrics } from './resident-profile/ResidentMetrics';
 
@@ -107,14 +107,19 @@ export default function ResidentProfile() {
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="max-w-7xl mx-auto px-6 py-8">
-                <Breadcrumbs
-                    items={[
-                        { label: 'Residents', href: '/residents' },
-                        {
-                            label: `${residentUser.name_first} ${residentUser.name_last}`
-                        }
-                    ]}
-                />
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                    <button
+                        onClick={() => navigate('/residents')}
+                        className="hover:text-[#556830] transition-colors"
+                    >
+                        Residents
+                    </button>
+                    <ChevronRight className="size-4" />
+                    <span className="text-[#203622] font-medium">
+                        {residentUser.name_first}{' '}
+                        {residentUser.name_last}
+                    </span>
+                </div>
 
                 <ResidentHeader
                     user={residentUser}
