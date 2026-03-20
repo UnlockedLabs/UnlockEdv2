@@ -39,7 +39,11 @@ func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.Overrides.RoomRef").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.Overrides.RoomRef").Preload("Events.RoomRef").
+		Preload("Enrollments", func(tx *gorm.DB) *gorm.DB {
+			return tx.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+		}).
+		Preload("Program").Preload("Instructor").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -74,7 +78,11 @@ func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 
-	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Facility")
+	tx = tx.Preload("Events").Preload("Events.RoomRef").
+		Preload("Enrollments", func(db *gorm.DB) *gorm.DB {
+			return db.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+		}).
+		Preload("Program").Preload("Facility")
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}

@@ -931,6 +931,10 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 				} else {
 					untilTime = time.Now().AddDate(1, 0, 0).Truncate(24 * time.Hour)
 				}
+				maxFuture := time.Now().AddDate(0, 6, 0).Truncate(24 * time.Hour)
+				if untilTime.After(maxFuture) {
+					untilTime = maxFuture
+				}
 			} else {
 				untilTime = time.Now().AddDate(0, 1, 0).Truncate(24 * time.Hour)
 			}

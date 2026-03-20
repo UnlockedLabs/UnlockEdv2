@@ -257,6 +257,7 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		where c.id = ?
 		and e.enrollment_status = 'Enrolled'
 		and c.status = 'Active'
+		and u.deleted_at is null
 		and exists (select 1 from program_class_events evt
 				inner join program_class_event_attendance att on att.event_id = evt.id
 				where evt.class_id = c.id

@@ -18,8 +18,7 @@ import {
 } from '@/components/ui/tooltip';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { Class } from '@/types/program';
-import { SelectedClassStatus } from '@/types/attendance';
-import { ClassEventInstance } from '@/types/events';
+import { SelectedClassStatus, AttendanceFlag } from '@/types/attendance';
 import { ServerResponseOne, ServerResponseMany } from '@/types/server';
 import { BreadcrumbItem } from '@/types';
 import { ClassHeader, StatCards } from './ClassHeader';
@@ -77,11 +76,21 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
-    const { data: eventsResp, mutate: mutateEvents } = useSWR<
-        ServerResponseMany<ClassEventInstance>
+    const { mutate: mutateEvents } = useSWR<
+        ServerResponseMany<{ id: number }>
     >(class_id ? `/api/program-classes/${class_id}/events?all=true` : null);
 
+    const { data: rateResp } = useSWR<ServerResponseOne<{ attendance_rate: number }>>(
+        class_id ? `/api/program-classes/${class_id}/attendance-rate` : null
+    );
+
+    const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
+        class_id ? `/api/program-classes/${class_id}/attendance-flags?per_page=1` : null
+    );
+
     const cls = classResp?.data;
+    const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
+    const atRiskCount = flagsResp?.meta?.total ?? 0;
 
     const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
         if (!cls) return [];
@@ -95,9 +104,6 @@ export default function ClassDetailPage() {
             { label: cls.name }
         ];
     }, [cls]);
-
-    const eventInstances = useMemo(() => eventsResp?.data ?? [], [eventsResp?.data]);
-    const [atRiskCount, setAtRiskCount] = useState(0);
 
     if (isLoading) return <LoadingSkeleton />;
 
@@ -198,7 +204,8 @@ export default function ClassDetailPage() {
             <div className="max-w-7xl mx-auto px-6 py-6">
                 <StatCards
                     cls={cls}
-                    eventInstances={eventInstances}
+                    attendanceRate={attendanceRate}
+                    atRiskCount={atRiskCount}
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">
@@ -260,8 +267,8 @@ export default function ClassDetailPage() {
                         <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
                     </TabsContent>
 
-                    <TabsContent value="support" className="space-y-4 data-[state=inactive]:hidden" forceMount>
-                        <SupportTab classId={cls.id} onCountChange={setAtRiskCount} />
+                    <TabsContent value="support" className="space-y-4">
+                        <SupportTab classId={cls.id} />
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">

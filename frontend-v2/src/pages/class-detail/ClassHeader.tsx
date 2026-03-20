@@ -17,62 +17,8 @@ interface ClassHeaderProps {
 
 interface StatCardsProps {
     cls: Class;
-    eventInstances: ClassEventInstance[];
-}
-
-function computeStats(cls: Class, instances: ClassEventInstance[]) {
-    const attendanceMap = computeAttendanceByUser(instances);
-
-    let totalRate = 0;
-    let userCount = 0;
-    let atRiskCount = 0;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    attendanceMap.forEach((stats, userId) => {
-        if (stats.total === 0) return;
-        totalRate += stats.rate;
-        userCount++;
-
-        let consecutive = 0;
-        const userRecords: { date: string; status: Attendance }[] = [];
-        for (const inst of instances) {
-            if (inst.is_cancelled) continue;
-            const [y, m, d] = inst.date.split('-').map(Number);
-            if (new Date(y, m - 1, d) > today) continue;
-            for (const rec of inst.attendance_records ?? []) {
-                if (rec.user_id === userId) {
-                    userRecords.push({
-                        date: inst.date,
-                        status: rec.attendance_status
-                    });
-                }
-            }
-        }
-        userRecords.sort((a, b) => a.date.localeCompare(b.date));
-        for (let i = userRecords.length - 1; i >= 0; i--) {
-            const s = userRecords[i];
-            if (
-                s?.status === Attendance.Absent_Excused ||
-                s?.status === Attendance.Absent_Unexcused
-            ) {
-                consecutive++;
-            } else {
-                break;
-            }
-        }
-
-        if (stats.rate < 75 || consecutive >= 2) {
-            atRiskCount++;
-        }
-    });
-
-    const avgRate = userCount > 0 ? Math.round(totalRate / userCount) : 0;
-    const capacityPct =
-        cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
-
-    return { avgRate, atRiskCount, capacityPct };
+    attendanceRate: number;
+    atRiskCount: number;
 }
 
 function getNextClassDate(cls: Class): { date: string; time: string } | null {
@@ -200,11 +146,10 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     );
 }
 
-export function StatCards({ cls, eventInstances }: StatCardsProps) {
-    const { avgRate, atRiskCount, capacityPct } = useMemo(
-        () => computeStats(cls, eventInstances),
-        [cls, eventInstances]
-    );
+export function StatCards({ cls, attendanceRate, atRiskCount }: StatCardsProps) {
+    const avgRate = Math.round(attendanceRate);
+    const capacityPct =
+        cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
     const spotsAvailable = cls.capacity - cls.enrolled;
 
     return (
