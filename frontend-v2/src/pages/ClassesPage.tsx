@@ -99,10 +99,11 @@ export default function ClassesPage() {
     const sysAdmin = user ? isSysAdmin(user) : false;
     const crossFacility = deptAdmin || sysAdmin;
 
-    const classesUrl =
-        crossFacility && facilityFilter !== 'all'
-            ? `/api/program-classes?per_page=100&facility_id=${facilityFilter}`
-            : '/api/program-classes?per_page=100';
+    const classesUrl = crossFacility
+        ? facilityFilter === 'all'
+            ? '/api/program-classes?per_page=100&facility=all'
+            : `/api/program-classes?per_page=100&facility_id=${facilityFilter}`
+        : '/api/program-classes?per_page=100';
     const { data: classesResp, mutate: mutateClasses } =
         useSWR<ServerResponseMany<Class>>(classesUrl);
     const programsUrl =

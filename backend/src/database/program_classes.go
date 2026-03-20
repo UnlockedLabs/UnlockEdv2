@@ -63,7 +63,7 @@ func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.Program
 
 func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
 	content := []models.ProgramClass{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{})
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{}).Where("archived_at IS NULL")
 	if facilityID != nil {
 		tx = tx.Where("facility_id = ?", *facilityID)
 	}
@@ -191,6 +191,8 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
+	originalStatus := existing.Status
+
 	models.UpdateStruct(existing, content)
 	existing.ID = existingID
 
@@ -232,6 +234,75 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("duration", newDuration).Error; err != nil {
 				trans.Rollback()
 				return nil, nil, newUpdateDBError(err, "program class event duration")
+			}
+		}
+	}
+
+	newStatus := existing.Status
+	if newStatus != originalStatus && (newStatus == models.Completed || newStatus == models.Cancelled) {
+		completionTime := time.Now().UTC()
+		if err := db.UpdateClassEventRRuleUntilDate(trans, []int{id}, completionTime); err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "updating class event rrule until date")
+		}
+
+		var enrollmentStatus models.ProgramEnrollmentStatus
+		if newStatus == models.Cancelled {
+			enrollmentStatus = models.EnrollmentCancelled
+		} else {
+			enrollmentStatus = models.EnrollmentCompleted
+		}
+
+		if err := trans.
+			Model(&models.ProgramClassEnrollment{}).
+			Where("class_id = ? AND enrollment_status = ?", id, models.Enrolled).
+			Set("class_id", id).
+			Update("enrollment_status", enrollmentStatus).
+			Error; err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "class enrollment statuses")
+		}
+
+		if newStatus == models.Completed {
+			var completedEnrollments []models.ProgramClassEnrollment
+			if err := trans.
+				Preload("User.Facility").
+				Preload("Class.Program.ProgramCreditTypes").
+				Preload("Class.FacilityProg").
+				Where("class_id = ? AND enrollment_status = ?", id, models.EnrollmentCompleted).
+				Find(&completedEnrollments).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newNotFoundDBError(err, "fetching completed enrollments")
+			}
+
+			if len(completedEnrollments) > 0 {
+				var admin models.User
+				if err := trans.First(&admin, "id = ?", models.DerefUint(content.UpdateUserID)).Error; err != nil {
+					trans.Rollback()
+					return nil, nil, newNotFoundDBError(err, "admin user")
+				}
+
+				completions := make([]models.ProgramCompletion, 0, len(completedEnrollments))
+				for _, enrollment := range completedEnrollments {
+					completions = append(completions, models.ProgramCompletion{
+						ProgramClassID:      enrollment.ClassID,
+						FacilityName:        enrollment.User.Facility.Name,
+						ProgramName:         enrollment.Class.Program.Name,
+						ProgramOwner:        enrollment.Class.GetProgramOwnerOrEmpty(),
+						ProgramID:           enrollment.Class.ProgramID,
+						AdminEmail:          admin.Email,
+						ProgramClassStartDt: enrollment.Class.StartDt,
+						CreditType:          enrollment.Class.Program.GetUniqueCreditTypeString(),
+						ProgramClassName:    enrollment.Class.Name,
+						UserID:              enrollment.UserID,
+						EnrolledOnDt:        enrollment.CreatedAt,
+					})
+				}
+
+				if err := trans.Create(&completions).Error; err != nil {
+					trans.Rollback()
+					return nil, nil, newCreateDBError(err, "enrollment completions")
+				}
 			}
 		}
 	}

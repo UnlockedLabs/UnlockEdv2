@@ -112,7 +112,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     return (
         <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-[#203622] break-words">
+                <h1 className="text-[#203622]">
                     {cls.name}
                 </h1>
                 {isTerminal ? (
