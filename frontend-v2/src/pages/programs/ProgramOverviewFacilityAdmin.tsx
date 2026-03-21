@@ -76,6 +76,11 @@ import {
 } from '@/components/ui/tooltip';
 import { Pagination } from '@/components/Pagination';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
+import {
+    ArchiveConfirmDialog,
+    CannotArchiveDialog,
+    ReactivateDialog
+} from '@/components/programs/ProgramDialogs';
 
 type HeroIcon = React.ForwardRefExoticComponent<
     React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> & {
@@ -112,6 +117,11 @@ export default function ProgramOverviewFacilityAdmin() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
     const [showEditDialog, setShowEditDialog] = useState(false);
+    const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+    const [showCannotArchiveDialog, setShowCannotArchiveDialog] = useState(false);
+    const [showReactivateDialog, setShowReactivateDialog] = useState(false);
+    const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
+    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<string[]>([]);
 
     const facilityIdParam = searchParams.get('facility_id');
     const facilityId = facilityIdParam ? Number(facilityIdParam) : null;
@@ -171,6 +181,60 @@ export default function ProgramOverviewFacilityAdmin() {
             : 0;
     const backendCompletionRate = program?.completion_rate ?? 0;
 
+    async function handleArchiveCheck() {
+        if (!program || archiveCheckLoading) return;
+        setArchiveCheckLoading(true);
+        const resp = await API.get<{ facilities: string[] }>(
+            `programs/${program.id}/archive-check`
+        );
+        setArchiveCheckLoading(false);
+
+        if (!resp.success) {
+            toast.error(resp.message || 'Unable to check active class status.');
+            return;
+        }
+
+        const blocking = (resp.data as { facilities: string[] }).facilities ?? [];
+        if (blocking.length > 0) {
+            setArchiveBlockingFacilities(blocking);
+            setShowCannotArchiveDialog(true);
+            return;
+        }
+
+        setShowArchiveDialog(true);
+    }
+
+    async function handleStatusSelectChange(value: string) {
+        if (value === 'Archived') {
+            void handleArchiveCheck();
+            return;
+        }
+        if (value === 'Reactivate') {
+            setShowReactivateDialog(true);
+            return;
+        }
+        void handleProgramStatusChange(value);
+    }
+
+    async function handleReactivate(isActive: boolean) {
+        if (!program) return;
+        const resp = await API.patch<
+            { updated: boolean; message: string },
+            Record<string, unknown>
+        >(`programs/${program.id}/status`, {
+            archived_at: null,
+            is_active: isActive
+        });
+        const statusUpdated =
+            !Array.isArray(resp.data) && resp.data?.updated !== false;
+        if (resp.success && statusUpdated) {
+            toast.success(`${program.name} has been reactivated`);
+            void mutateProgram();
+        } else {
+            toast.error(resp.message || 'Failed to reactivate program');
+        }
+    }
+
     async function handleProgramStatusChange(newStatus: string) {
         if (!program) return;
         const body: Record<string, unknown> = {};
@@ -191,7 +255,11 @@ export default function ProgramOverviewFacilityAdmin() {
         const statusUpdated =
             !Array.isArray(resp.data) && resp.data?.updated !== false;
         if (resp.success && statusUpdated) {
-            toast.success('Program status updated');
+            const successMessage =
+                newStatus === 'Archived'
+                    ? `${program.name} has been archived`
+                    : 'Program status updated';
+            toast.success(successMessage);
             void mutateProgram();
         } else {
             toast.error(resp.message || 'Failed to update program status');
@@ -346,7 +414,7 @@ export default function ProgramOverviewFacilityAdmin() {
                         showFacilityContextBanner ? 'pt-4 pb-6' : 'py-6'
                     }`}
                 >
-                    <Breadcrumbs items={breadcrumbs} className="mt-2 mb-4" />
+                    <Breadcrumbs items={breadcrumbs} className="mb-4" />
                     <div className="flex items-start gap-6 mt-6">
                         <div className="bg-[#556830] p-4 rounded-lg flex items-center justify-center shrink-0">
                             <Icon className="size-10 text-white" />
@@ -385,25 +453,42 @@ export default function ProgramOverviewFacilityAdmin() {
                                         </p>
                                         <Select
                                             value={programStatus}
-                                            onValueChange={(value) => {
-                                                void handleProgramStatusChange(
+                                            onValueChange={(value) =>
+                                                void handleStatusSelectChange(
                                                     value
-                                                );
-                                            }}
+                                                )
+                                            }
+                                            disabled={archiveCheckLoading}
                                         >
                                             <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="Available">
-                                                    Available
-                                                </SelectItem>
-                                                <SelectItem value="Inactive">
-                                                    Inactive
-                                                </SelectItem>
-                                                <SelectItem value="Archived">
-                                                    Archived
-                                                </SelectItem>
+                                                {programStatus === 'Archived' ? (
+                                                    <>
+                                                        <SelectItem
+                                                            value="Archived"
+                                                            disabled
+                                                        >
+                                                            Archived
+                                                        </SelectItem>
+                                                        <SelectItem value="Reactivate">
+                                                            Reactivate
+                                                        </SelectItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <SelectItem value="Available">
+                                                            Available
+                                                        </SelectItem>
+                                                        <SelectItem value="Inactive">
+                                                            Inactive
+                                                        </SelectItem>
+                                                        <SelectItem value="Archived">
+                                                            Archived
+                                                        </SelectItem>
+                                                    </>
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -690,6 +775,28 @@ export default function ProgramOverviewFacilityAdmin() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <ReactivateDialog
+                open={showReactivateDialog}
+                onOpenChange={setShowReactivateDialog}
+                onConfirm={(isActive) => void handleReactivate(isActive)}
+            />
+
+            <ArchiveConfirmDialog
+                open={showArchiveDialog}
+                onOpenChange={setShowArchiveDialog}
+                programName={program.name}
+                onConfirm={() => void handleProgramStatusChange('Archived')}
+            />
+
+            <CannotArchiveDialog
+                open={showCannotArchiveDialog}
+                onOpenChange={(open) => {
+                    if (!open) setArchiveBlockingFacilities([]);
+                    setShowCannotArchiveDialog(open);
+                }}
+                programName={program.name}
+                facilities={archiveBlockingFacilities}
+            />
             <EditProgramDialog
                 open={showEditDialog}
                 onOpenChange={setShowEditDialog}
