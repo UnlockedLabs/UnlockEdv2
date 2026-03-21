@@ -3,12 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
+    AlertCircle,
     ArrowRight,
     ChevronDown,
     ChevronUp,
     MoreVertical,
-    Trash2,
-    AlertCircle
+    Trash2
 } from 'lucide-react';
 import API from '@/api/api';
 import {
@@ -38,6 +38,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    ArchiveConfirmDialog,
+    CannotArchiveDialog,
+    ReactivateDialog
+} from '@/components/programs/ProgramDialogs';
 import {
     Tooltip,
     TooltipContent,
@@ -138,9 +143,12 @@ export default function ProgramOverviewStatewide() {
     >('facility');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+    const [showCannotArchiveDialog, setShowCannotArchiveDialog] = useState(false);
+    const [showReactivateDialog, setShowReactivateDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [archiveConfirmText, setArchiveConfirmText] = useState('');
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
+    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<string[]>([]);
 
     const { data: programResp, mutate: mutateProgram } = useSWR<
         ServerResponseOne<ProgramOverview>
@@ -151,6 +159,29 @@ export default function ProgramOverviewStatewide() {
         `/api/programs/${program_id}/classes?all=true&order_by=ps.start_dt asc`
     );
     const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
+
+    async function handleArchiveCheck() {
+        if (!program || archiveCheckLoading) return;
+        setArchiveCheckLoading(true);
+        const resp = await API.get<{ facilities: string[] }>(
+            `programs/${program.id}/archive-check`
+        );
+        setArchiveCheckLoading(false);
+
+        if (!resp.success) {
+            toast.error(resp.message || 'Unable to check active class status.');
+            return;
+        }
+
+        const blocking = (resp.data as { facilities: string[] }).facilities ?? [];
+        if (blocking.length > 0) {
+            setArchiveBlockingFacilities(blocking);
+            setShowCannotArchiveDialog(true);
+            return;
+        }
+
+        setShowArchiveDialog(true);
+    }
 
     async function handleProgramStatusChange(newStatus: string) {
         if (!program) return;
@@ -172,10 +203,33 @@ export default function ProgramOverviewStatewide() {
         const statusUpdated =
             !Array.isArray(resp.data) && resp.data?.updated !== false;
         if (resp.success && statusUpdated) {
-            toast.success('Program status updated');
+            const successMessage =
+                newStatus === 'Archived'
+                    ? `${program.name} has been archived`
+                    : 'Program status updated';
+            toast.success(successMessage);
             void mutateProgram();
         } else {
             toast.error(resp.message || 'Failed to update program status');
+        }
+    }
+
+    async function handleReactivate(isActive: boolean) {
+        if (!program) return;
+        const resp = await API.patch<
+            { updated: boolean; message: string },
+            Record<string, unknown>
+        >(`programs/${program.id}/status`, {
+            archived_at: null,
+            is_active: isActive
+        });
+        const statusUpdated =
+            !Array.isArray(resp.data) && resp.data?.updated !== false;
+        if (resp.success && statusUpdated) {
+            toast.success(`${program.name} has been reactivated`);
+            void mutateProgram();
+        } else {
+            toast.error(resp.message || 'Failed to reactivate program');
         }
     }
 
@@ -467,7 +521,7 @@ export default function ProgramOverviewStatewide() {
                                 variant="outline"
                                 className="bg-gray-200 text-gray-700 border-gray-400 px-4 py-2"
                             >
-                                Program Archived
+                                Archived
                             </Badge>
                         )}
                         <DropdownMenu>
@@ -485,13 +539,20 @@ export default function ProgramOverviewStatewide() {
                                 align="end"
                                 className="w-48 p-1"
                             >
-                                {programStatus !== 'Archived' && (
+                                {programStatus === 'Archived' ? (
                                     <>
                                         <DropdownMenuItem
-                                            onClick={() => {
-                                                setArchiveConfirmText('');
-                                                setShowArchiveDialog(true);
-                                            }}
+                                            onClick={() => setShowReactivateDialog(true)}
+                                        >
+                                            Reactivate Program
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                    </>
+                                ) : (
+                                    <>
+                                        <DropdownMenuItem
+                                            onClick={() => void handleArchiveCheck()}
+                                            disabled={archiveCheckLoading}
                                             className="text-orange-600"
                                         >
                                             Archive Program
@@ -1010,84 +1071,29 @@ export default function ProgramOverviewStatewide() {
                     </Table>
                 </div>
 
-                <Dialog
+                <ReactivateDialog
+                    open={showReactivateDialog}
+                    onOpenChange={setShowReactivateDialog}
+                    onConfirm={(isActive) => void handleReactivate(isActive)}
+                />
+
+                <ArchiveConfirmDialog
                     open={showArchiveDialog}
                     onOpenChange={setShowArchiveDialog}
-                >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle className="text-[#203622]">
-                                Archive Program
-                            </DialogTitle>
-                            <DialogDescription>
-                                Are you sure you want to archive{' '}
-                                <strong>{program.name}</strong>? This action
-                                cannot be undone.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 my-4">
-                            <div className="flex gap-3">
-                                <AlertCircle className="size-5 text-orange-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm text-orange-900 font-medium mb-1">
-                                        Warning
-                                    </p>
-                                    <p className="text-sm text-orange-700">
-                                        Archiving this program will prevent new
-                                        enrollments across all{' '}
-                                        {facilityList.length} facilities.
-                                        Existing classes and enrollments will
-                                        remain accessible but no new classes can
-                                        be created for this program.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="archiveConfirmation">
-                                    To confirm, type the program name:{' '}
-                                    <strong>{program.name}</strong>
-                                </Label>
-                                <Input
-                                    id="archiveConfirmation"
-                                    placeholder="Type program name to confirm"
-                                    value={archiveConfirmText}
-                                    onChange={(event) =>
-                                        setArchiveConfirmText(
-                                            event.target.value
-                                        )
-                                    }
-                                    className="mt-2"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setShowArchiveDialog(false);
-                                    setArchiveConfirmText('');
-                                }}
-                                className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-orange-600 hover:bg-orange-700 text-white"
-                                disabled={archiveConfirmText !== program.name}
-                                onClick={() => {
-                                    void handleProgramStatusChange('Archived');
-                                    setShowArchiveDialog(false);
-                                    setArchiveConfirmText('');
-                                }}
-                            >
-                                <AlertCircle className="size-4 mr-2" />
-                                Archive Program
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                    programName={program.name}
+                    facilityCount={facilityList.length}
+                    onConfirm={() => void handleProgramStatusChange('Archived')}
+                />
+
+                <CannotArchiveDialog
+                    open={showCannotArchiveDialog}
+                    onOpenChange={(open) => {
+                        if (!open) setArchiveBlockingFacilities([]);
+                        setShowCannotArchiveDialog(open);
+                    }}
+                    programName={program.name}
+                    facilities={archiveBlockingFacilities}
+                />
 
                 <Dialog
                     open={showDeleteDialog}
