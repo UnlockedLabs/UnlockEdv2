@@ -90,8 +90,8 @@ export function CancelSessionModal({
         if (ok) {
             toast.success(
                 ok === 1
-                    ? 'Session cancelled successfully'
-                    : `${ok} sessions cancelled successfully`
+                    ? `Class on ${dateLabel} cancelled`
+                    : `${ok} sessions cancelled`
             );
         }
         if (fail) {

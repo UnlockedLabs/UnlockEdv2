@@ -120,7 +120,8 @@ function buildRecurrenceRule(
     originalRule: string,
     startDate: string,
     startTime: string,
-    days: string[]
+    days: string[],
+    endDate?: string
 ): string {
     const tzMatch = /DTSTART;TZID=([^:]+):/.exec(originalRule);
     const tz = tzMatch?.[1] ?? 'Local';
@@ -135,9 +136,13 @@ function buildRecurrenceRule(
         rule += `;BYDAY=${rruleDays.join(',')}`;
     }
 
-    const untilMatch = /UNTIL=([^;\s]+)/.exec(originalRule);
-    if (untilMatch) {
-        rule += `;UNTIL=${untilMatch[1]}`;
+    if (endDate) {
+        rule += `;UNTIL=${endDate.replace(/-/g, '')}T235959Z`;
+    } else {
+        const untilMatch = /UNTIL=([^;\s]+)/.exec(originalRule);
+        if (untilMatch) {
+            rule += `;UNTIL=${untilMatch[1]}`;
+        }
     }
 
     return rule;
@@ -214,13 +219,14 @@ export function EditClassModal({
         }
     });
 
+    const activeEvent = cls.events?.find((e) => !e.is_cancelled);
+
     useEffect(() => {
         if (cls && open) {
-            const event = cls.events?.[0];
-            const schedule = event
+            const schedule = activeEvent
                 ? parseScheduleFromEvent(
-                      event.recurrence_rule,
-                      event.duration
+                      activeEvent.recurrence_rule,
+                      activeEvent.duration
                   )
                 : { days: [], startTime: '', endTime: '' };
 
@@ -230,11 +236,9 @@ export function EditClassModal({
                 instructor_id: cls.instructor_id ?? null,
                 capacity: cls.capacity,
                 credit_hours: cls.credit_hours,
-                start_dt: new Date(cls.start_dt).toISOString().split('T')[0],
-                end_dt: cls.end_dt
-                    ? new Date(cls.end_dt).toISOString().split('T')[0]
-                    : '',
-                room_id: event?.room_id ?? null,
+                start_dt: cls.start_dt.split('T')[0],
+                end_dt: cls.end_dt ? cls.end_dt.split('T')[0] : '',
+                room_id: activeEvent?.room_id ?? null,
                 start_time: schedule.startTime,
                 end_time: schedule.endTime,
                 status: cls.status
@@ -242,7 +246,7 @@ export function EditClassModal({
             setScheduleDays(schedule.days);
             setConflicts([]);
         }
-    }, [cls, open, reset]);
+    }, [cls, open, reset, activeEvent]);
 
     const watchedCapacity = watch('capacity');
     const watchedStatus = watch('status');
@@ -300,12 +304,13 @@ export function EditClassModal({
     }
 
     async function onSubmit(data: EditClassFormData) {
-        const event = cls.events[0];
+        if (!activeEvent) return;
         const newRule = buildRecurrenceRule(
-            event.recurrence_rule,
+            activeEvent.recurrence_rule,
             data.start_dt,
             data.start_time,
-            scheduleDays
+            scheduleDays,
+            data.end_dt || undefined
         );
         const newDuration = formatDuration(data.start_time, data.end_time);
 
@@ -322,20 +327,21 @@ export function EditClassModal({
                     ? Number(data.credit_hours)
                     : null,
             status: data.status,
-            start_dt: new Date(data.start_dt),
-            end_dt: data.end_dt ? new Date(data.end_dt) : null,
-            events: [
-                {
-                    id: event.id,
-                    class_id: event.class_id,
-                    duration: newDuration,
-                    recurrence_rule: newRule,
-                    room_id: data.room_id
-                        ? Number(data.room_id)
-                        : event.room_id
-                },
-                ...cls.events.slice(1)
-            ]
+            start_dt: `${data.start_dt}T00:00:00Z`,
+            end_dt: data.end_dt ? `${data.end_dt}T00:00:00Z` : null,
+            events: cls.events.map((e) =>
+                e.id === activeEvent.id
+                    ? {
+                          id: e.id,
+                          class_id: e.class_id,
+                          duration: newDuration,
+                          recurrence_rule: newRule,
+                          room_id: data.room_id
+                              ? Number(data.room_id)
+                              : e.room_id
+                      }
+                    : { id: e.id, class_id: e.class_id, duration: e.duration, recurrence_rule: e.recurrence_rule, room_id: e.room_id }
+            )
         };
 
         const resp = await API.patch(

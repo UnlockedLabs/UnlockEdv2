@@ -125,10 +125,10 @@ export function RescheduleSessionModal({
                     `Rescheduled session and updated ${ok} future session${ok === 1 ? '' : 's'}`
                 );
             } else {
-                toast.success('Session rescheduled successfully');
+                toast.success('Class rescheduled successfully');
             }
         } else {
-            toast.success('Session rescheduled successfully');
+            toast.success('Class rescheduled successfully');
         }
 
         onClose();

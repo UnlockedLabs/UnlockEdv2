@@ -6,7 +6,8 @@ import {
     MapPin,
     CalendarOff,
     CalendarClock,
-    CheckCircle
+    CheckCircle,
+    Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,16 +18,24 @@ import {
     SheetTitle,
     SheetDescription
 } from '@/components/ui/sheet';
+import API from '@/api/api';
+import { toast } from 'sonner';
 import { Class } from '@/types/program';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
-import { getClassSchedule, ClassScheduleInfo } from '@/lib/formatters';
+import { getClassSchedule, ClassScheduleInfo, formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { CancelSessionModal } from './CancelSessionModal';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
+import {
+    ChangeInstructorModal,
+    ChangeInstructorSession
+} from './ChangeInstructorModal';
+import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
 
 interface ScheduleTabProps {
     cls: Class;
+    onClassMutate: () => void;
 }
 
 interface CalendarDay {
@@ -37,8 +46,27 @@ interface CalendarDay {
     isToday: boolean;
     isClassDay: boolean;
     isCancelled: boolean;
+    cancellationReason?: string;
+    isRescheduledFrom: boolean;
+    isRescheduledTo: boolean;
+    rescheduledDate?: string;
+    rescheduledToDate?: string;
     eventId: number | null;
+    overrideId?: number;
     hasAttendance: boolean;
+}
+
+function toLocalDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function parseOverrideDate(rrule: string): string | null {
+    const match = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(rrule);
+    if (!match) return null;
+    return `${match[1]}-${match[2]}-${match[3]}`;
 }
 
 function generateCalendarGrid(
@@ -48,8 +76,7 @@ function generateCalendarGrid(
     cls: Class,
     instancesByDate: Map<string, ClassEventInstance>
 ): CalendarDay[][] {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = toLocalDateStr(new Date());
     const startOfMonth = new Date(year, month, 1);
     const endOfMonth = new Date(year, month + 1, 0);
 
@@ -57,23 +84,41 @@ function generateCalendarGrid(
     calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay());
 
     const cancelledDates = new Set<string>();
+    const cancelOverrideIds = new Map<string, number>();
+    const cancelReasons = new Map<string, string>();
+    const rescheduleFromTo = new Map<string, { date: string; overrideId: number }>();
+    const rescheduleToFrom = new Map<string, { date: string; overrideId: number }>();
+
     for (const event of cls.events) {
         if (event.is_cancelled) continue;
+
+        const cancelledOverrides = new Map<number, { date: string; id: number; reason: string }>();
+        const rescheduledOverrides = new Map<number, { date: string; id: number }>();
+
         for (const override of event.overrides ?? []) {
-            if (override.is_cancelled) {
-                try {
-                    const rrule = override.override_rrule;
-                    const dtMatch = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(
-                        rrule
-                    );
-                    if (dtMatch) {
-                        cancelledDates.add(
-                            `${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}`
-                        );
-                    }
-                } catch {
-                    /* skip invalid override */
-                }
+            const date = parseOverrideDate(override.override_rrule);
+            if (!date) continue;
+
+            if (override.is_cancelled && override.reason === 'rescheduled') {
+                cancelledOverrides.set(override.id, { date, id: override.id, reason: override.reason });
+            } else if (!override.is_cancelled && override.linked_override_event_id) {
+                rescheduledOverrides.set(override.linked_override_event_id, { date, id: override.id });
+            } else if (override.is_cancelled) {
+                cancelledDates.add(date);
+                cancelOverrideIds.set(date, override.id);
+                if (override.reason) cancelReasons.set(date, override.reason);
+            }
+        }
+
+        for (const [cancelledId, cancelled] of cancelledOverrides) {
+            const rescheduled = rescheduledOverrides.get(cancelledId);
+            if (rescheduled) {
+                rescheduleFromTo.set(cancelled.date, { date: rescheduled.date, overrideId: rescheduled.id });
+                rescheduleToFrom.set(rescheduled.date, { date: cancelled.date, overrideId: rescheduled.id });
+            } else {
+                cancelledDates.add(cancelled.date);
+                cancelOverrideIds.set(cancelled.date, cancelled.id);
+                if (cancelled.reason) cancelReasons.set(cancelled.date, cancelled.reason);
             }
         }
     }
@@ -85,14 +130,16 @@ function generateCalendarGrid(
         if (week > 4 && current > endOfMonth) break;
         const weekDays: CalendarDay[] = [];
         for (let day = 0; day < 7; day++) {
-            const dateStr = current.toISOString().split('T')[0];
+            const dateStr = toLocalDateStr(current);
             const dayName = current.toLocaleDateString('en-US', {
                 weekday: 'long'
             });
             const isClassDay = schedule.days.includes(dayName);
+            const startDt = cls.start_dt.split('T')[0];
+            const endDt = cls.end_dt ? cls.end_dt.split('T')[0] : '';
             const isInRange =
-                dateStr >= cls.start_dt &&
-                (!cls.end_dt || dateStr <= cls.end_dt);
+                dateStr >= startDt &&
+                (!endDt || dateStr <= endDt);
 
             const instance = instancesByDate.get(dateStr);
             const eventId =
@@ -102,15 +149,48 @@ function generateCalendarGrid(
             const hasAttendance =
                 (instance?.attendance_records?.length ?? 0) > 0;
 
+            const rawFrom = rescheduleFromTo.has(dateStr);
+            const rawTo = rescheduleToFrom.has(dateStr);
+            const isRescheduledFrom = rawFrom && !rawTo;
+            const isRescheduledTo = rawTo;
+            const isCancelled =
+                !isRescheduledFrom &&
+                !isRescheduledTo &&
+                (cancelledDates.has(dateStr) ||
+                    (instance?.is_cancelled ?? false));
+
+            const rescheduledDate = isRescheduledFrom
+                ? rescheduleFromTo.get(dateStr)!.date
+                : isRescheduledTo
+                  ? rescheduleToFrom.get(dateStr)!.date
+                  : undefined;
+            const rescheduledToDate = rawFrom
+                ? rescheduleFromTo.get(dateStr)!.date
+                : undefined;
+
+            const overrideId = isRescheduledTo
+                ? rescheduleToFrom.get(dateStr)!.overrideId
+                : isRescheduledFrom
+                  ? rescheduleFromTo.get(dateStr)!.overrideId
+                  : isCancelled
+                    ? cancelOverrideIds.get(dateStr)
+                    : undefined;
+
             weekDays.push({
                 date: new Date(current),
                 dateStr,
                 dayNum: current.getDate(),
                 isCurrentMonth: current.getMonth() === month,
                 isToday: dateStr === todayStr,
-                isClassDay: isClassDay && isInRange,
-                isCancelled: cancelledDates.has(dateStr),
+                isClassDay: (isClassDay && isInRange) || isRescheduledTo,
+                isCancelled,
+                cancellationReason: isCancelled ? cancelReasons.get(dateStr) : undefined,
+                isRescheduledFrom,
+                isRescheduledTo,
+                rescheduledDate,
+                rescheduledToDate,
                 eventId,
+                overrideId,
                 hasAttendance
             });
             current.setDate(current.getDate() + 1);
@@ -121,14 +201,26 @@ function generateCalendarGrid(
     return weeks;
 }
 
+const CANCEL_REASON_LABELS: Record<string, string> = {
+    instructor_unavailable: 'Instructor Unavailable',
+    instructor_illness: 'Instructor Illness',
+    facility_issue_or_lockdown: 'Facility Issue or Lockdown',
+    holiday_or_scheduled_break: 'Holiday or Scheduled Break',
+    technology_issue: 'Technology Issue'
+};
+
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function ScheduleTab({ cls }: ScheduleTabProps) {
+export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
     const schedule = useMemo(() => getClassSchedule(cls), [cls]);
     const [viewDate] = useState(() => new Date());
     const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
     const [cancelTarget, setCancelTarget] = useState<CalendarDay | null>(null);
     const [rescheduleTarget, setRescheduleTarget] =
+        useState<CalendarDay | null>(null);
+    const [changeInstructorTarget, setChangeInstructorTarget] =
+        useState<CalendarDay | null>(null);
+    const [changeRoomTarget, setChangeRoomTarget] =
         useState<CalendarDay | null>(null);
 
     const [yyyy, mm] = [viewDate.getFullYear(), viewDate.getMonth() + 1];
@@ -174,12 +266,29 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
     const canModify =
         selectedDay &&
         !selectedDay.hasAttendance &&
-        !selectedIsPast &&
-        !selectedDay.isCancelled;
+        !selectedDay.isCancelled &&
+        !selectedDay.isRescheduledFrom &&
+        !selectedDay.rescheduledToDate;
 
     const classTime = schedule.startTime
         ? `${schedule.startTime} - ${schedule.endTime}`
         : 'Not set';
+
+    const handleUndoOverride = async (overrideId: number) => {
+        const resp = await API.delete(
+            `program-classes/${cls.id}/events/${overrideId}`
+        );
+        if (resp.success) {
+            toast.success(
+                selectedDay?.isRescheduledFrom || selectedDay?.isRescheduledTo
+                    ? 'Reschedule undone'
+                    : 'Cancellation undone'
+            );
+        }
+        setSelectedDay(null);
+        void mutate();
+        onClassMutate();
+    };
 
     const getStatusBadge = (day: CalendarDay) => {
         if (day.isCancelled) {
@@ -189,6 +298,26 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                     className="bg-gray-100 text-gray-700 border-gray-300"
                 >
                     Cancelled
+                </Badge>
+            );
+        }
+        if (day.isRescheduledFrom) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-gray-100 text-gray-600 border-gray-300"
+                >
+                    Rescheduled
+                </Badge>
+            );
+        }
+        if (day.isRescheduledTo) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-blue-50 text-blue-700 border-blue-300"
+                >
+                    Rescheduled Class
                 </Badge>
             );
         }
@@ -265,7 +394,10 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                 Duration
                             </div>
                             <div className="text-sm text-gray-600">
-                                {cls.start_dt} to {cls.end_dt || 'Ongoing'}
+                                {formatDate(cls.start_dt)} to{' '}
+                                {cls.end_dt
+                                    ? formatDate(cls.end_dt)
+                                    : 'Ongoing'}
                             </div>
                             {cls.credit_hours > 0 && (
                                 <div className="text-sm text-gray-600 mt-1">
@@ -301,8 +433,8 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             {calendarWeeks.map((week, wi) => (
                                 <div key={wi} className="grid grid-cols-7">
                                     {week.map((day) => {
-                                        const showAsClass = day.isClassDay && !day.isCancelled;
-                                        const isClickable = day.isClassDay && day.isCurrentMonth;
+                                        const showAsClass = (day.isClassDay || day.isRescheduledTo) && !day.isCancelled && !day.isRescheduledFrom;
+                                        const isClickable = (day.isClassDay || day.isRescheduledTo || day.isCancelled || day.isRescheduledFrom) && day.isCurrentMonth;
 
                                         return (
                                             <div
@@ -339,6 +471,25 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                                         </div>
                                                     )}
 
+                                                    {day.isRescheduledFrom && day.isCurrentMonth && (
+                                                        <div className="mt-1">
+                                                            <div className="text-xs bg-gray-100 text-gray-600 rounded px-1.5 py-0.5 inline-block line-through">
+                                                                Class
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                Moved to{' '}
+                                                                {day.rescheduledDate
+                                                                    ? new Date(
+                                                                          day.rescheduledDate + 'T00:00:00'
+                                                                      ).toLocaleDateString('en-US', {
+                                                                          month: 'short',
+                                                                          day: 'numeric'
+                                                                      })
+                                                                    : ''}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {showAsClass && day.isCurrentMonth && (
                                                         <div className="mt-1">
                                                             <div className="text-xs bg-[#556830] text-white rounded px-1.5 py-0.5 inline-block">
@@ -347,6 +498,11 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                                             <div className="text-xs text-gray-600 mt-1">
                                                                 {classTime}
                                                             </div>
+                                                            {day.isRescheduledTo && (
+                                                                <div className="text-xs text-blue-600 mt-0.5">
+                                                                    (Rescheduled)
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -368,12 +524,12 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             <span>Today</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded" />
-                            <span>Cancelled</span>
-                        </div>
-                        <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded" />
                             <span>Attendance Recorded</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-gray-200 border border-gray-300 rounded" />
+                            <span>Cancelled</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-gray-100 border border-gray-300 border-dashed rounded" />
@@ -399,26 +555,28 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                     {selectedDay && (
                         <>
                             <div className="border-b border-gray-200 px-6 py-4">
-                                <h3
-                                    className={`text-[#203622] mb-2 ${selectedDay.isCancelled ? 'line-through' : ''}`}
-                                >
-                                    {selectedDay.date.toLocaleDateString(
-                                        'en-US',
-                                        {
-                                            weekday: 'long',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        }
-                                    )}
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    {getStatusBadge(selectedDay)}
-                                    {selectedDay.isToday && (
-                                        <span className="text-sm text-blue-600">
-                                            Today&apos;s class
-                                        </span>
-                                    )}
+                                <div>
+                                    <h3
+                                        className={`text-[#203622] mb-2 ${selectedDay.isCancelled || selectedDay.isRescheduledFrom ? 'line-through' : ''}`}
+                                    >
+                                        {selectedDay.date.toLocaleDateString(
+                                            'en-US',
+                                            {
+                                                weekday: 'long',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                year: 'numeric'
+                                            }
+                                        )}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        {getStatusBadge(selectedDay)}
+                                        {selectedDay.isToday && (
+                                            <span className="text-sm text-blue-600">
+                                                Today&apos;s class
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -429,7 +587,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                     </h4>
                                     <div className="space-y-3">
                                         <div className="flex items-start gap-3">
-                                            <Calendar className="size-5 text-gray-400 mt-0.5 shrink-0" />
+                                            <Calendar className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm text-gray-600 mb-0.5">
                                                     Class
@@ -440,26 +598,26 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
-                                            <Clock className="size-5 text-gray-400 mt-0.5 shrink-0" />
+                                            <Clock className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm text-gray-600 mb-0.5">
                                                     Time
                                                 </div>
                                                 <div
-                                                    className={`text-[#203622] ${selectedDay.isCancelled ? 'line-through' : ''}`}
+                                                    className={`text-[#203622] ${selectedDay.isCancelled || selectedDay.isRescheduledFrom ? 'line-through' : ''}`}
                                                 >
                                                     {classTime}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
-                                            <MapPin className="size-5 text-gray-400 mt-0.5 shrink-0" />
+                                            <MapPin className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm text-gray-600 mb-0.5">
                                                     Room
                                                 </div>
                                                 <div
-                                                    className={`text-[#203622] ${selectedDay.isCancelled ? 'line-through' : ''}`}
+                                                    className={`text-[#203622] ${selectedDay.isCancelled || selectedDay.isRescheduledFrom ? 'line-through' : ''}`}
                                                 >
                                                     {schedule.room ||
                                                         'Not assigned'}
@@ -470,6 +628,8 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                 </div>
 
                                 {(selectedDay.isCancelled ||
+                                    selectedDay.isRescheduledFrom ||
+                                    selectedDay.isRescheduledTo ||
                                     selectedDay.hasAttendance) && (
                                     <div className="pt-6 border-t border-gray-200">
                                         <h4 className="text-sm text-gray-700 mb-3">
@@ -477,18 +637,143 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                         </h4>
 
                                         {selectedDay.isCancelled && (
-                                            <div className="flex items-start gap-2">
-                                                <CalendarOff className="size-4 text-gray-600 mt-0.5 shrink-0" />
-                                                <div className="text-sm text-gray-900">
-                                                    Class Cancelled
+                                            <div className="space-y-3">
+                                                <div className="flex items-start gap-2">
+                                                    <CalendarOff className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm text-gray-900 mb-1">
+                                                            Class Cancelled
+                                                        </div>
+                                                        {selectedDay.cancellationReason && (
+                                                            <p className="text-sm text-gray-600">
+                                                                {CANCEL_REASON_LABELS[selectedDay.cancellationReason] ?? selectedDay.cancellationReason}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                                {selectedDay.overrideId && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            void handleUndoOverride(
+                                                                selectedDay.overrideId!
+                                                            );
+                                                        }}
+                                                        className="w-full"
+                                                    >
+                                                        Undo Cancellation
+                                                    </Button>
+                                                )}
                                             </div>
                                         )}
+
+                                        {selectedDay.isRescheduledFrom &&
+                                            !selectedDay.isRescheduledTo &&
+                                            selectedDay.rescheduledDate && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <CalendarClock className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-sm text-gray-900 mb-1">
+                                                                Class
+                                                                Rescheduled
+                                                            </div>
+                                                            <p className="text-sm text-gray-600">
+                                                                Moved to{' '}
+                                                                {new Date(
+                                                                    selectedDay.rescheduledDate +
+                                                                        'T00:00:00'
+                                                                ).toLocaleDateString(
+                                                                    'en-US',
+                                                                    {
+                                                                        weekday:
+                                                                            'long',
+                                                                        month: 'long',
+                                                                        day: 'numeric'
+                                                                    }
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {selectedDay.overrideId && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                void handleUndoOverride(
+                                                                    selectedDay.overrideId!
+                                                                );
+                                                            }}
+                                                            className="w-full"
+                                                        >
+                                                            Undo Reschedule
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                        {selectedDay.isRescheduledTo &&
+                                            selectedDay.rescheduledDate && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <CalendarClock className={`size-4 mt-0.5 flex-shrink-0 ${selectedDay.rescheduledToDate ? 'text-gray-500' : 'text-blue-700'}`} />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-sm text-gray-900 mb-1">
+                                                                {selectedDay.rescheduledToDate
+                                                                    ? 'Class Rescheduled'
+                                                                    : 'Rescheduled Class'}
+                                                            </div>
+                                                            <p className="text-sm text-gray-600">
+                                                                {selectedDay.rescheduledToDate
+                                                                    ? `Moved to ${new Date(
+                                                                          selectedDay.rescheduledToDate +
+                                                                              'T00:00:00'
+                                                                      ).toLocaleDateString(
+                                                                          'en-US',
+                                                                          {
+                                                                              weekday:
+                                                                                  'long',
+                                                                              month: 'long',
+                                                                              day: 'numeric'
+                                                                          }
+                                                                      )}`
+                                                                    : `Originally scheduled for ${new Date(
+                                                                          selectedDay.rescheduledDate +
+                                                                              'T00:00:00'
+                                                                      ).toLocaleDateString(
+                                                                          'en-US',
+                                                                          {
+                                                                              weekday:
+                                                                                  'long',
+                                                                              month: 'long',
+                                                                              day: 'numeric'
+                                                                          }
+                                                                      )}`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {selectedDay.overrideId && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                void handleUndoOverride(
+                                                                    selectedDay.overrideId!
+                                                                );
+                                                            }}
+                                                            className="w-full"
+                                                        >
+                                                            Undo Reschedule
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
 
                                         {selectedDay.hasAttendance && (
                                             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                                 <div className="flex items-start gap-2">
-                                                    <CheckCircle className="size-4 text-[#556830] mt-0.5 shrink-0" />
+                                                    <CheckCircle className="size-4 text-[#556830] mt-0.5 flex-shrink-0" />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-sm text-[#556830] mb-1">
                                                             Attendance Taken
@@ -536,6 +821,30 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                                                 <CalendarOff className="size-4 mr-2" />
                                                 Cancel This Class
                                             </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setChangeInstructorTarget(
+                                                        selectedDay
+                                                    );
+                                                }}
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <Users className="size-4 mr-2" />
+                                                Change Instructor
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setChangeRoomTarget(
+                                                        selectedDay
+                                                    );
+                                                }}
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <MapPin className="size-4 mr-2" />
+                                                Change Room
+                                            </Button>
                                         </div>
                                     </div>
                                 )}
@@ -560,6 +869,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                     onCancelled={() => {
                         setSelectedDay(null);
                         void mutate();
+                        onClassMutate();
                     }}
                 />
             )}
@@ -570,6 +880,7 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                     onClose={() => setRescheduleTarget(null)}
                     classId={cls.id}
                     eventId={rescheduleTarget.eventId}
+                    originalDate={rescheduleTarget.dateStr}
                     dateLabel={rescheduleTarget.date.toLocaleDateString(
                         'en-US',
                         {
@@ -578,9 +889,68 @@ export function ScheduleTab({ cls }: ScheduleTabProps) {
                             day: 'numeric'
                         }
                     )}
+                    currentRoom={schedule.room}
+                    classTime={classTime}
                     onRescheduled={() => {
                         setSelectedDay(null);
                         void mutate();
+                        onClassMutate();
+                    }}
+                />
+            )}
+
+            {changeInstructorTarget?.eventId && (
+                <ChangeInstructorModal
+                    open={!!changeInstructorTarget}
+                    onClose={() => setChangeInstructorTarget(null)}
+                    classId={cls.id}
+                    sessions={[
+                        {
+                            date: changeInstructorTarget.dateStr,
+                            dateLabel: changeInstructorTarget.date.toLocaleDateString(
+                                'en-US',
+                                {
+                                    weekday: 'long',
+                                    month: 'long',
+                                    day: 'numeric'
+                                }
+                            ),
+                            eventId: changeInstructorTarget.eventId,
+                            classTime
+                        }
+                    ]}
+                    onChanged={() => {
+                        setSelectedDay(null);
+                        void mutate();
+                        onClassMutate();
+                    }}
+                />
+            )}
+
+            {changeRoomTarget?.eventId && (
+                <ChangeRoomModal
+                    open={!!changeRoomTarget}
+                    onClose={() => setChangeRoomTarget(null)}
+                    classId={cls.id}
+                    sessions={[
+                        {
+                            date: changeRoomTarget.dateStr,
+                            dateLabel: changeRoomTarget.date.toLocaleDateString(
+                                'en-US',
+                                {
+                                    weekday: 'long',
+                                    month: 'long',
+                                    day: 'numeric'
+                                }
+                            ),
+                            eventId: changeRoomTarget.eventId,
+                            classTime
+                        }
+                    ]}
+                    onChanged={() => {
+                        setSelectedDay(null);
+                        void mutate();
+                        onClassMutate();
                     }}
                 />
             )}

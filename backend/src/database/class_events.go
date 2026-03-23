@@ -299,7 +299,13 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 	}
 
 	originalBaseStart := rRule.OrigOptions.Dtstart.In(time.UTC)
-	ruleUntil := rRule.GetUntil()
+	// rrule-go's GetUntil() returns a far-future date (~year 2318) instead of zero
+	// when no UNTIL is present, so check the raw string for an explicit UNTIL clause
+	hasExplicitUntil := strings.Contains(event.RecurrenceRule, "UNTIL=")
+	var ruleUntil time.Time
+	if hasExplicitUntil {
+		ruleUntil = rRule.GetUntil()
+	}
 
 	startBoundary := class.StartDt
 	endBoundary := startBoundary.AddDate(5, 0, 0)
@@ -935,11 +941,13 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		} else {
 			startTime = rRule.GetDTStart()
 			if len(allInstances) > 0 && allInstances[0] {
-				untilTime = rRule.GetUntil()
-				if untilTime.IsZero() {
-					untilTime = time.Now().AddDate(1, 0, 0).Truncate(24 * time.Hour)
+				// rrule-go's GetUntil() returns a far-future date (~year 2318) instead of zero
+				// when no UNTIL is present, so check the raw string for an explicit UNTIL clause
+				hasExplicitUntil := strings.Contains(event.RecurrenceRule, "UNTIL=")
+				if hasExplicitUntil {
+					untilTime = rRule.GetUntil().AddDate(0, 0, 1)
 				} else {
-					untilTime = untilTime.AddDate(0, 0, 1)
+					untilTime = time.Now().AddDate(1, 0, 0).Truncate(24 * time.Hour)
 				}
 			} else {
 				untilTime = time.Now().AddDate(0, 1, 0).Truncate(24 * time.Hour)
@@ -971,10 +979,12 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		}
 
 		startTime = rRule.GetDTStart()
-		userLocation, _ := time.LoadLocation(loc.String())
-		localStartTime := startTime.In(userLocation)
-		canonicalHour = localStartTime.Hour()
-		canonicalMinute = localStartTime.Minute()
+		// Use the DTSTART's own timezone to extract the canonical wall-clock time,
+		// not the user's timezone. The DTSTART time represents the class's local
+		// wall-clock time at the facility, so converting to a different timezone
+		// would shift the displayed time incorrectly.
+		canonicalHour = startTime.Hour()
+		canonicalMinute = startTime.Minute()
 
 		firstOcc := occurrences[0]
 		//day light savings time issue
@@ -1035,12 +1045,52 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 }
 
 func createEventInstances(event models.ProgramClassEvent, occurrences []time.Time, loc *time.Location, classTime string, attendances []models.ProgramClassEventAttendance, canonicalHour, canonicalMinute int) []models.ClassEventInstance {
-	var eventInstances []models.ClassEventInstance
-	emittedDateTimes := make(map[string]bool)
+	// Pre-index attendance by date for O(1) lookup instead of scanning all records per occurrence
+	attendanceByDate := make(map[string][]models.ProgramClassEventAttendance, len(attendances))
+	for i := range attendances {
+		attendanceByDate[attendances[i].Date] = append(attendanceByDate[attendances[i].Date], attendances[i])
+	}
+
+	// Pre-compute cancelled dates from overrides once for O(1) lookup per occurrence,
+	// instead of re-parsing every override rrule for every occurrence (O(occurrences * overrides))
+	cancelledDates := make(map[int64]bool)
+	for _, override := range event.Overrides {
+		if !override.IsCancelled {
+			continue
+		}
+		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil {
+			logrus.Warnf("unable to parse cancelled override rule: %s", override.OverrideRrule)
+			continue
+		}
+		allOccs := parsedRule.All()
+		if len(allOccs) == 0 {
+			continue
+		}
+		overrideDate := allOccs[0]
+
+		//START day light savings time fix here
+		localOverrideTime := overrideDate.In(loc)
+		canonicalOverrideHour := localOverrideTime.Hour()
+		canonicalOverrideMinute := localOverrideTime.Minute()
+		consistentOverrideDate := time.Date(
+			localOverrideTime.Year(),
+			localOverrideTime.Month(),
+			localOverrideTime.Day(),
+			canonicalOverrideHour,
+			canonicalOverrideMinute,
+			0, 0,
+			loc,
+		)
+		//END day light savings time fix here
+		cancelledDates[consistentOverrideDate.Unix()] = true
+	}
+
+	eventInstances := make([]models.ClassEventInstance, 0, len(occurrences))
+	emittedDateTimes := make(map[string]bool, len(occurrences))
 	//daylight saving time fix (VIP) prevents the time shift
 	for _, occ := range occurrences {
-		occInLoc := occ.In(loc)
-		occDateStr := occInLoc.Format("2006-01-02")
+		occDateStr := occ.In(loc).Format("2006-01-02")
 		consistentOccurrence := time.Date(
 			occ.Year(),
 			occ.Month(),
@@ -1051,36 +1101,31 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			0,
 			loc,
 		)
-		isCancelled, _, _ := checkEventCancelledAndRescheduled(consistentOccurrence, event.Overrides, loc.String())
 
-		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
-			return att.Date == occDateStr
-		})
-
-		eventInstance := models.ClassEventInstance{
+		eventInstances = append(eventInstances, models.ClassEventInstance{
 			EventID:           event.ID,
 			ClassTime:         classTime,
 			Date:              occDateStr,
-			AttendanceRecords: relevantAttendance,
-			IsCancelled:       isCancelled,
-		}
-		eventInstances = append(eventInstances, eventInstance)
+			AttendanceRecords: attendanceByDate[occDateStr],
+			IsCancelled:       cancelledDates[consistentOccurrence.Unix()],
+		})
 		emittedDateTimes[occDateStr+"|"+classTime] = true
 	}
 	for _, override := range event.Overrides { //adding rescheduled-to dates as instances
 		if override.IsCancelled || override.LinkedOverrideEventID == nil {
 			continue
 		}
-		rRule, err := rrule.StrToRRule(override.OverrideRrule)
+		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
 		if err != nil {
 			logrus.Warnf("unable to parse reschedule override rule: %s", override.OverrideRrule)
 			continue
 		}
-		if len(rRule.All()) == 0 {
+		allOccs := parsedRule.All()
+		if len(allOccs) == 0 {
 			logrus.Warnf("cancelled override rule does not contain a date instance, rule is: %s", override.OverrideRrule)
 			continue
 		}
-		overrideDate := rRule.All()[0]
+		overrideDate := allOccs[0]
 		overrideDateStr := overrideDate.In(loc).Format("2006-01-02")
 
 		duration, err := time.ParseDuration(override.Duration)
@@ -1093,17 +1138,13 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			continue
 		}
 
-		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
-			return att.Date == overrideDateStr
-		})
-		rescheduledInstance := models.ClassEventInstance{
+		eventInstances = append(eventInstances, models.ClassEventInstance{
 			EventID:           event.ID,
 			ClassTime:         overrideClassTime,
 			Date:              overrideDateStr,
-			AttendanceRecords: relevantAttendance,
+			AttendanceRecords: attendanceByDate[overrideDateStr],
 			IsCancelled:       false,
-		}
-		eventInstances = append(eventInstances, rescheduledInstance)
+		})
 	}
 	slices.SortFunc(eventInstances, func(a, b models.ClassEventInstance) int {
 		return cmp.Compare(b.Date, a.Date)
@@ -1155,9 +1196,9 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 
 	var canonicalHour, canonicalMinute int
 	if len(occs) > 0 {
-		localStart := rule.GetDTStart().In(loc)
-		canonicalHour = localStart.Hour()
-		canonicalMinute = localStart.Minute()
+		dtstart := rule.GetDTStart()
+		canonicalHour = dtstart.Hour()
+		canonicalMinute = dtstart.Minute()
 	}
 
 	out := make([]models.EventDates, 0, len(occs))

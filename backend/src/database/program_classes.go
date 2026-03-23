@@ -169,12 +169,25 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	var needsRoomUpdate bool
 	var newRoomID *uint
 	var eventID uint
-	if len(content.Events) > 0 && len(existing.Events) > 0 && content.Events[0].RoomID != nil {
-		existingRoomID := existing.Events[0].RoomID
-		if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
-			needsRoomUpdate = true
-			newRoomID = content.Events[0].RoomID
-			eventID = existing.Events[0].ID
+	var needsScheduleUpdate bool
+	var newRecurrenceRule string
+	var newDuration string
+	if len(content.Events) > 0 && len(existing.Events) > 0 {
+		eventID = existing.Events[0].ID
+		if content.Events[0].RoomID != nil {
+			existingRoomID := existing.Events[0].RoomID
+			if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
+				needsRoomUpdate = true
+				newRoomID = content.Events[0].RoomID
+			}
+		}
+		if content.Events[0].RecurrenceRule != "" && content.Events[0].RecurrenceRule != existing.Events[0].RecurrenceRule {
+			needsScheduleUpdate = true
+			newRecurrenceRule = content.Events[0].RecurrenceRule
+		}
+		if content.Events[0].Duration != "" && content.Events[0].Duration != existing.Events[0].Duration {
+			needsScheduleUpdate = true
+			newDuration = content.Events[0].Duration
 		}
 	}
 
@@ -206,6 +219,21 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 			return nil, nil, newUpdateDBError(err, "program class event room")
 		}
 		existing.Events[0].RoomID = newRoomID
+	}
+
+	if needsScheduleUpdate {
+		if newRecurrenceRule != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("recurrence_rule", newRecurrenceRule).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newUpdateDBError(err, "program class event recurrence rule")
+			}
+		}
+		if newDuration != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("duration", newDuration).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newUpdateDBError(err, "program class event duration")
+			}
+		}
 	}
 
 	if len(allChanges) > 0 {
