@@ -12,9 +12,9 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 	return []routeDef{
 		newAdminRoute("GET /api/facilities", srv.handleIndexFacilities),
 		newAdminRoute("GET /api/facilities/{id}", srv.handleShowFacility),
-		newSystemAdminRoute("POST /api/facilities", srv.handleCreateFacility),
+		newDeptAdminRoute("POST /api/facilities", srv.handleCreateFacility),
 		newSystemAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
-		newSystemAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
+		newDeptAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
 		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 		adminFeatureRoute("GET /api/rooms", srv.handleGetRooms, axx),
 		adminFeatureRoute("POST /api/rooms", srv.handleCreateRoom, axx),
@@ -27,13 +27,12 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 * GET: /api/facility/{id}
 **/
 func (srv *Server) handleIndexFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
-	total, facilities, err := srv.Db.GetAllFacilities(page, perPage)
+	args := srv.getQueryContext(r)
+	facilities, err := srv.Db.GetAllFacilitiesWithStats(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	paginationData := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, facilities, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, facilities, args.IntoMeta())
 }
 
 /**
@@ -85,9 +84,6 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 }
 
 func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if !userIsSystemAdmin(r) {
-		return newUnauthorizedServiceError()
-	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")

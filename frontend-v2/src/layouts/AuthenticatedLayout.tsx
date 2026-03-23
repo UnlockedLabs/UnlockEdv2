@@ -35,8 +35,9 @@ export default function AuthenticatedLayout() {
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
-    const isFullBleed = isProgramDetail || isDashboard || isProgramsList;
-    const fullBleedWrapperClass = isDashboard || isProgramsList ? 'py-0' : 'py-4';
+    const isFacilities = location.pathname === '/facilities';
+    const isFullBleed = isProgramDetail || isDashboard || isProgramsList || isFacilities;
+    const fullBleedWrapperClass = isDashboard || isProgramsList || isFacilities ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
     const isFacilityView =
         isProgramDetail &&
@@ -124,7 +125,7 @@ export default function AuthenticatedLayout() {
 
                 <div className={contentClass}>
                     {isFullBleed ? (
-                        <div className={fullBleedWrapperClass}>
+                        <div className={`${fullBleedWrapperClass} h-full`}>
                             {showBreadcrumbs && (
                                 <div className="max-w-7xl mx-auto px-6 mb-4">
                                     <Breadcrumbs items={breadcrumbItems} />

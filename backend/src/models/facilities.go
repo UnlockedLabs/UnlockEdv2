@@ -2,6 +2,17 @@ package models
 
 import "time"
 
+type FacilityWithStats struct {
+	ID             uint      `json:"id"`
+	Name           string    `json:"name"`
+	Timezone       string    `json:"timezone"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	ActivePrograms int64     `json:"active_programs"`
+	ActiveClasses  int64     `json:"active_classes"`
+	TotalResidents int64     `json:"total_residents"`
+}
+
 type Facility struct {
 	DatabaseFields
 	Name     string `gorm:"size:255;not null" json:"name"`

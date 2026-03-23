@@ -23,6 +23,17 @@ export interface RoomConflict {
     end_time: string;
 }
 
+export interface FacilityWithStats {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+    timezone: string;
+    active_programs: number;
+    active_classes: number;
+    total_residents: number;
+}
+
 export enum Timezones {
     'CST' = 'America/Chicago',
     'EST' = 'America/New_York',
