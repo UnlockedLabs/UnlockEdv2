@@ -195,7 +195,12 @@ export default function ProgramManagementForm() {
                 }
             />
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <form
+                onSubmit={(event) => {
+                    void handleSubmit(onSubmit)(event);
+                }}
+                className="space-y-6"
+            >
                 <div className="bg-card rounded-lg border border-border p-6 space-y-4">
                     <h2 className="text-lg font-semibold text-foreground">
                         Program Information
