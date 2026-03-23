@@ -249,7 +249,7 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} />
+                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} onClassMutate={() => void mutate()} />
                     </TabsContent>
 
                     <TabsContent

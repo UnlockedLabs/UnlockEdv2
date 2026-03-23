@@ -97,8 +97,7 @@ export function SessionDetailSheet({
     const canModify =
         !hasAttendance &&
         !isCancelled &&
-        !isRescheduledFrom &&
-        (session.isUpcoming || session.isToday);
+        !isRescheduledFrom;
 
     const eventId = instance.event_id ?? instance.id;
 

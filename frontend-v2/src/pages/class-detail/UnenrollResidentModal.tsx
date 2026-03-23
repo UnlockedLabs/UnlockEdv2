@@ -85,7 +85,8 @@ export function UnenrollResidentModal({
                                     This should only be used to correct
                                     accidental enrollments. For residents who are
                                     leaving the program normally, use the
-                                    &quot;Change Status&quot; option instead.
+                                    &quot;Change Status&quot; option instead
+                                    (Dropped, Graduated, etc.).
                                 </p>
                             </div>
                         </div>

@@ -1,22 +1,12 @@
 import useSWR from 'swr';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { AttendanceFlag, AttendanceFlagType } from '@/types/attendance';
+import { Progress } from '@/components/ui/progress';
+import { AttendanceFlag } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
 
 interface SupportTabProps {
     classId: number;
-}
-
-function getFlagLabel(flagType: AttendanceFlagType): string {
-    switch (flagType) {
-        case AttendanceFlagType.NoAttendance:
-            return 'No attendance recorded';
-        case AttendanceFlagType.MultipleAttendance:
-            return '3+ unexcused absences';
-        default:
-            return 'At risk';
-    }
 }
 
 export function SupportTab({ classId }: SupportTabProps) {
@@ -54,17 +44,45 @@ export function SupportTab({ classId }: SupportTabProps) {
                             className="px-6 py-4 bg-amber-50/20"
                         >
                             <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-6">
+                                <div className="flex items-start gap-6 flex-1">
                                     <div className="min-w-[80px]">
                                         <div className="text-[#203622] font-medium">
                                             {flag.doc_id}
                                         </div>
                                         <div className="text-sm text-gray-600 mt-0.5">
-                                            {flag.name_last}, {flag.name_first}
+                                            {flag.name_first} {flag.name_last}
                                         </div>
                                     </div>
-                                    <div className="text-sm text-gray-600">
-                                        {getFlagLabel(flag.flag_type)}
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="text-sm text-gray-600">
+                                                Attendance:
+                                            </span>
+                                            <span className="text-sm text-[#203622] font-medium">
+                                                {flag.attendance_rate}%
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                                ({flag.attended_sessions}/
+                                                {flag.total_sessions} sessions)
+                                            </span>
+                                        </div>
+                                        <Progress
+                                            value={flag.attendance_rate}
+                                            className="h-2 w-64 mb-2"
+                                            indicatorClassName="bg-[#F1B51C]"
+                                        />
+                                        <div className="flex gap-4 text-xs text-gray-600">
+                                            <span>
+                                                Missed: {flag.missed_sessions}{' '}
+                                                sessions
+                                            </span>
+                                            {flag.consecutive_absences > 0 && (
+                                                <span className="text-amber-700 font-medium">
+                                                    {flag.consecutive_absences}{' '}
+                                                    consecutive absences
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <Badge

@@ -36,6 +36,7 @@ interface RosterTabProps {
     className: string;
     capacity: number;
     enrolled: number;
+    onClassMutate: () => void;
 }
 
 function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
@@ -46,7 +47,7 @@ function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus
     return allStatuses;
 }
 
-export function RosterTab({ classId, classStatus, className, capacity, enrolled }: RosterTabProps) {
+export function RosterTab({ classId, classStatus, className, capacity, enrolled, onClassMutate }: RosterTabProps) {
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [changingStatus, setChangingStatus] = useState<number | null>(null);
@@ -118,6 +119,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
             );
             setSelectedIds(new Set());
             void mutate();
+            onClassMutate();
         } else {
             toast.error(resp.message || 'Failed to graduate residents');
         }
@@ -147,6 +149,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
         if (resp.success) {
             toast.success(`Status updated to ${newStatus}`);
             void mutate();
+            onClassMutate();
         } else {
             toast.error(resp.message || 'Failed to update status');
         }
@@ -442,7 +445,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                     userId={unenrollTarget.user_id}
                     residentDisplayId={unenrollTarget.doc_id ?? ''}
                     residentName={unenrollTarget.name_full ?? ''}
-                    onUnenrolled={() => void mutate()}
+                    onUnenrolled={() => { void mutate(); onClassMutate(); }}
                 />
             )}
 
@@ -471,7 +474,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                 className={className}
                 capacity={capacity}
                 enrolled={enrolled}
-                onEnrolled={() => void mutate()}
+                onEnrolled={() => { void mutate(); onClassMutate(); }}
             />
         </div>
     );

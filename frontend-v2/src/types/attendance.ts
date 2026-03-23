@@ -79,6 +79,12 @@ export interface AttendanceFlag {
     name_last: string;
     doc_id: string;
     flag_type: AttendanceFlagType;
+    user_id: number;
+    total_sessions: number;
+    attended_sessions: number;
+    missed_sessions: number;
+    attendance_rate: number;
+    consecutive_absences: number;
 }
 
 export enum AttendanceFlagType {

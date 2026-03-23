@@ -295,10 +295,16 @@ const (
 )
 
 type AttendanceFlag struct {
-	NameFirst string             `json:"name_first"`
-	NameLast  string             `json:"name_last"`
-	DocID     string             `json:"doc_id"`
-	FlagType  AttendanceFlagType `json:"flag_type"`
+	NameFirst           string             `json:"name_first"`
+	NameLast            string             `json:"name_last"`
+	DocID               string             `json:"doc_id"`
+	FlagType            AttendanceFlagType `json:"flag_type"`
+	UserID              uint               `json:"user_id"`
+	TotalSessions       int                `json:"total_sessions"`
+	AttendedSessions    int                `json:"attended_sessions"`
+	MissedSessions      int                `json:"missed_sessions"`
+	AttendanceRate      int                `json:"attendance_rate"`
+	ConsecutiveAbsences int                `json:"consecutive_absences"`
 }
 
 type MissingAttendanceItem struct {
