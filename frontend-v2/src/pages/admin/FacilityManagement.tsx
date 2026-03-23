@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import { useForm, Controller } from 'react-hook-form';
-import { useAuth, isSysAdmin } from '@/auth/useAuth';
-import { useUrlPagination } from '@/hooks/useUrlPagination';
-import { useCheckResponse } from '@/hooks/useCheckResponse';
-import { useToast } from '@/contexts/ToastContext';
+import { toast } from 'sonner';
+import { Search, Plus, Edit, ArrowUpDown, Building2 } from 'lucide-react';
 import API from '@/api/api';
-import { Facility, Timezones, ServerResponseMany, ToastState } from '@/types';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { FormModal } from '@/components/shared/FormModal';
-import { DataTable, Column } from '@/components/shared/DataTable';
+import type { ServerResponseMany } from '../../types/server';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -21,287 +28,478 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Plus, Pencil, Trash2, MoreHorizontal, Building2 } from 'lucide-react';
+import { FacilityWithStats } from '@/types';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Pagination } from '@/components/Pagination';
+
+type SortColumn = 'name' | 'timezone' | 'programs' | 'classes' | 'residents';
+type SortDirection = 'asc' | 'desc';
+
+interface FacilitySortRow {
+    name: string;
+    timezone?: string | null;
+    active_programs: number;
+    active_classes: number;
+    total_residents: number;
+}
+
+const timezones = [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'America/Phoenix', label: 'Arizona Time (MST)' },
+    { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii Time (HST)' }
+];
+
+function getTimezoneLabel(tz: string): string {
+    const match = timezones.find((t) => t.value === tz);
+    return match ? match.label : tz;
+}
 
 interface FacilityFormData {
     name: string;
     timezone: string;
 }
 
-function getTimezoneLabel(tz: string): string {
-    const entry = Object.entries(Timezones).find(([, value]) => value === tz);
-    return entry ? `${entry[0]} (${entry[1]})` : tz;
-}
-
 export default function FacilityManagement() {
-    const { user } = useAuth();
-    const { toaster } = useToast();
-    const { page, perPage, setPage } = useUrlPagination(1, 20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortColumn, setSortColumn] = useState<SortColumn>('name');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
-    const [addModalOpen, setAddModalOpen] = useState(false);
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
+    const [showAddFacility, setShowAddFacility] = useState(false);
+    const [showEditFacility, setShowEditFacility] = useState(false);
+    const [selectedFacility, setSelectedFacility] =
+        useState<FacilityWithStats | null>(null);
+    const [formData, setFormData] = useState<FacilityFormData>({
+        name: '',
+        timezone: 'America/New_York'
+    });
+    const [saving, setSaving] = useState(false);
 
-    const isSysAdminUser = user ? isSysAdmin(user) : false;
+    const { data, mutate } = useSWR<ServerResponseMany<FacilityWithStats>>(
+        '/api/facilities?per_page=1000'
+    );
+    const allFacilities: FacilityWithStats[] = data?.data ?? [];
 
-    const { data, mutate, error, isLoading } = useSWR<ServerResponseMany<Facility>>(
-        `/api/facilities?page=${page}&per_page=${perPage}`
+    const normalizedQuery = searchQuery.toLowerCase();
+    const filtered: FacilityWithStats[] = normalizedQuery
+        ? allFacilities.filter((f) => {
+              const row = f as FacilitySortRow;
+              return row.name.toLowerCase().includes(normalizedQuery);
+          })
+        : allFacilities;
+
+    const dir = sortDirection === 'asc' ? 1 : -1;
+    const sorted: FacilityWithStats[] = filtered.slice().sort((a, b) => {
+        const left = a as FacilitySortRow;
+        const right = b as FacilitySortRow;
+        switch (sortColumn) {
+            case 'name':
+                return dir * left.name.localeCompare(right.name);
+            case 'timezone':
+                return (
+                    dir *
+                    String(left.timezone ?? '').localeCompare(
+                        String(right.timezone ?? '')
+                    )
+                );
+            case 'programs':
+                return dir * (left.active_programs - right.active_programs);
+            case 'classes':
+                return dir * (left.active_classes - right.active_classes);
+            case 'residents':
+                return dir * (left.total_residents - right.total_residents);
+            default:
+                return 0;
+        }
+    });
+
+    const paginated = sorted.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
     );
 
-    const facilityData = data?.data ?? [];
-    const totalPages = data?.meta?.last_page ?? 1;
+    function toggleSort(column: SortColumn) {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    }
 
-    const checkDelete = useCheckResponse<Facility>({
-        mutate,
-        closeDialog: () => setDeleteDialogOpen(false)
-    });
-
-    const addForm = useForm<FacilityFormData>({
-        defaultValues: { name: '', timezone: Timezones.CST }
-    });
-    const editForm = useForm<FacilityFormData>();
-
-    const handleAddFacility = async (formData: FacilityFormData) => {
-        const response = await API.post<Facility, object>('facilities', formData);
-        if (response.success) {
-            toaster('Facility created successfully', ToastState.success);
-            setAddModalOpen(false);
-            addForm.reset();
+    async function handleAddFacility() {
+        setSaving(true);
+        const resp = await API.post<FacilityWithStats, FacilityFormData>(
+            'facilities',
+            formData
+        );
+        if (resp.success) {
+            toast.success(`Facility "${formData.name}" added successfully`);
+            setShowAddFacility(false);
+            setFormData({ name: '', timezone: 'America/New_York' });
             void mutate();
         } else {
-            toaster(response.message || 'Failed to create facility', ToastState.error);
+            toast.error(resp.message || 'Failed to create facility');
         }
-    };
+        setSaving(false);
+    }
 
-    const handleEditFacility = async (formData: FacilityFormData) => {
+    async function handleEditFacility() {
         if (!selectedFacility) return;
-        const response = await API.patch<Facility, object>(
+        setSaving(true);
+        const resp = await API.patch<FacilityWithStats, FacilityFormData>(
             `facilities/${selectedFacility.id}`,
             formData
         );
-        if (response.success) {
-            toaster('Facility updated successfully', ToastState.success);
-            setEditModalOpen(false);
-            editForm.reset();
+        if (resp.success) {
+            toast.success(`${selectedFacility.name} updated successfully`);
+            setShowEditFacility(false);
             setSelectedFacility(null);
             void mutate();
         } else {
-            toaster(response.message || 'Failed to update facility', ToastState.error);
+            toast.error(resp.message || 'Failed to update facility');
         }
-    };
+        setSaving(false);
+    }
 
-    const handleDeleteFacility = async () => {
-        if (!user || !isSysAdmin(user)) {
-            toaster('Only System Admins may delete a facility', ToastState.error);
-            setDeleteDialogOpen(false);
-            return;
-        }
-        if (selectedFacility?.id === 1) {
-            toaster('Cannot delete default facility', ToastState.error);
-            setDeleteDialogOpen(false);
-            return;
-        }
-        const response = await API.delete('facilities/' + selectedFacility?.id);
-        checkDelete(
-            response.success,
-            'Error deleting facility',
-            'Facility successfully deleted'
-        );
-        setSelectedFacility(null);
-    };
-
-    const openEdit = (facility: Facility) => {
+    function openEdit(facility: FacilityWithStats) {
         setSelectedFacility(facility);
-        editForm.reset({
-            name: facility.name,
-            timezone: facility.timezone
-        });
-        setEditModalOpen(true);
-    };
-
-    const columns: Column<Facility>[] = [
-        {
-            key: 'name',
-            header: 'Name',
-            render: (f) => (
-                <div className="flex items-center gap-2">
-                    <Building2 className="size-4 text-[#556830]" />
-                    <span className="font-medium text-foreground">{f.name}</span>
-                </div>
-            )
-        },
-        {
-            key: 'timezone',
-            header: 'Timezone',
-            render: (f) => getTimezoneLabel(f.timezone)
-        },
-        {
-            key: 'actions',
-            header: 'Actions',
-            headerClassName: 'text-right',
-            className: 'text-right',
-            render: (facility) => (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="size-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(facility)}>
-                            <Pencil className="size-4 mr-2" />
-                            Edit
-                        </DropdownMenuItem>
-                        {isSysAdminUser && (
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    setSelectedFacility(facility);
-                                    setDeleteDialogOpen(true);
-                                }}
-                                className="text-destructive"
-                            >
-                                <Trash2 className="size-4 mr-2" />
-                                Delete
-                            </DropdownMenuItem>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        }
-    ];
-
-    const addButton = (
-        <Button
-            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
-            disabled={!isSysAdminUser}
-            onClick={() => {
-                addForm.reset({ name: '', timezone: Timezones.CST });
-                setAddModalOpen(true);
-            }}
-            title={!isSysAdminUser ? 'Only System Admins can add new facilities.' : undefined}
-        >
-            <Plus className="size-4" />
-            Add Facility
-        </Button>
-    );
+        setFormData({ name: facility.name, timezone: facility.timezone });
+        setShowEditFacility(true);
+    }
 
     return (
-        <div className="space-y-6">
-            <PageHeader
-                title="Facility Management"
-                subtitle="Manage your facilities"
-                actions={addButton}
-            />
-
-            {error ? (
-                <div className="text-center py-8 text-destructive">Failed to load facilities.</div>
-            ) : (
-                <DataTable
-                    columns={columns}
-                    data={facilityData}
-                    keyExtractor={(f) => f.id}
-                    isLoading={isLoading}
-                    emptyMessage="No facilities found."
-                    page={page}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                />
-            )}
-
-            <FormModal
-                open={addModalOpen}
-                onOpenChange={setAddModalOpen}
-                title="Add Facility"
-            >
-                <form onSubmit={addForm.handleSubmit((d) => void handleAddFacility(d))} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="add-name">Facility Name</Label>
-                        <Input id="add-name" {...addForm.register('name', { required: true })} />
+        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-full overflow-x-hidden">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* Header */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-[#203622]">Facilities</h1>
+                            <p className="text-gray-600 mt-1">
+                                Manage correctional facilities and their
+                                configurations
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => {
+                                setFormData({
+                                    name: '',
+                                    timezone: 'America/New_York'
+                                });
+                                setShowAddFacility(true);
+                            }}
+                            className="gap-2 bg-[#556830] hover:bg-[#203622] text-white"
+                        >
+                            <Plus className="size-4" />
+                            Add Facility
+                        </Button>
                     </div>
-                    <div className="space-y-2">
-                        <Label>Timezone</Label>
-                        <Controller
-                            control={addForm.control}
-                            name="timezone"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select timezone" />
+                </div>
+
+                {/* Search */}
+                <div className="mb-6">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 size-5" />
+                        <Input
+                            placeholder="Search facilities..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => toggleSort('name')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Facility Name
+                                        <ArrowUpDown className="size-4" />
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => toggleSort('timezone')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Timezone
+                                        <ArrowUpDown className="size-4" />
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => toggleSort('programs')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Active Programs
+                                        <ArrowUpDown className="size-4" />
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => toggleSort('classes')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Active Classes
+                                        <ArrowUpDown className="size-4" />
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => toggleSort('residents')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Residents
+                                        <ArrowUpDown className="size-4" />
+                                    </div>
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Actions
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginated.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-32">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Building2 className="size-12 text-gray-300" />
+                                            <p className="text-gray-500">
+                                                No facilities found
+                                            </p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                paginated.map((facility) => (
+                                    <TableRow
+                                        key={facility.id}
+                                        className="cursor-pointer hover:bg-gray-50"
+                                    >
+                                        <TableCell className="font-medium text-[#203622]">
+                                            {facility.name}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-gray-600">
+                                            {getTimezoneLabel(
+                                                facility.timezone
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {facility.active_programs === 0 ? (
+                                                <span className="text-orange-600 font-medium">
+                                                    0
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-900">
+                                                    {facility.active_programs}
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {facility.active_classes === 0 ? (
+                                                <span className="text-orange-600 font-medium">
+                                                    0
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-900">
+                                                    {facility.active_classes}
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-gray-900">
+                                            {facility.total_residents}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openEdit(facility);
+                                                }}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <Edit className="size-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+
+                    <Pagination
+                        totalItems={sorted.length}
+                        itemsPerPage={itemsPerPage}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(value) => {
+                            setItemsPerPage(value);
+                            setCurrentPage(1);
+                        }}
+                        itemLabel="facilities"
+                    />
+                </div>
+
+                {/* Add Facility Dialog */}
+                <Dialog
+                    open={showAddFacility}
+                    onOpenChange={setShowAddFacility}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Facility</DialogTitle>
+                            <DialogDescription>
+                                Create a new correctional facility
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="add-name">Facility Name</Label>
+                                <Input
+                                    id="add-name"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            name: e.target.value
+                                        })
+                                    }
+                                    placeholder="Northern Regional Facility"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="add-timezone">Timezone</Label>
+                                <Select
+                                    value={formData.timezone}
+                                    onValueChange={(value) =>
+                                        setFormData({
+                                            ...formData,
+                                            timezone: value
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="add-timezone">
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(Timezones).map(([label, value]) => (
-                                            <SelectItem key={value} value={value}>
-                                                {label} ({value})
+                                        {timezones.map((tz) => (
+                                            <SelectItem
+                                                key={tz.value}
+                                                value={tz.value}
+                                            >
+                                                {tz.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            )}
-                        />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" type="button" onClick={() => setAddModalOpen(false)}>Cancel</Button>
-                        <Button type="submit" className="bg-[#203622] text-white hover:bg-[#203622]/90">Save</Button>
-                    </div>
-                </form>
-            </FormModal>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowAddFacility(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => void handleAddFacility()}
+                                disabled={saving || !formData.name.trim()}
+                                className="bg-[#556830] hover:bg-[#203622] text-white"
+                            >
+                                {saving ? 'Adding...' : 'Add Facility'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
-            <FormModal
-                open={editModalOpen}
-                onOpenChange={setEditModalOpen}
-                title="Edit Facility"
-            >
-                <form onSubmit={editForm.handleSubmit((d) => void handleEditFacility(d))} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-name">Facility Name</Label>
-                        <Input id="edit-name" {...editForm.register('name', { required: true })} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Timezone</Label>
-                        <Controller
-                            control={editForm.control}
-                            name="timezone"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select timezone" />
+                {/* Edit Facility Dialog */}
+                <Dialog
+                    open={showEditFacility}
+                    onOpenChange={setShowEditFacility}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Edit Facility</DialogTitle>
+                            <DialogDescription>
+                                Update facility information
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">Facility Name</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            name: e.target.value
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-timezone">Timezone</Label>
+                                <Select
+                                    value={formData.timezone}
+                                    onValueChange={(value) =>
+                                        setFormData({
+                                            ...formData,
+                                            timezone: value
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="edit-timezone">
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(Timezones).map(([label, value]) => (
-                                            <SelectItem key={value} value={value}>
-                                                {label} ({value})
+                                        {timezones.map((tz) => (
+                                            <SelectItem
+                                                key={tz.value}
+                                                value={tz.value}
+                                            >
+                                                {tz.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            )}
-                        />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" type="button" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-                        <Button type="submit" className="bg-[#203622] text-white hover:bg-[#203622]/90">Save</Button>
-                    </div>
-                </form>
-            </FormModal>
-
-            <ConfirmDialog
-                open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                title="Delete Facility"
-                description="Are you sure you would like to delete this facility? This action cannot be undone."
-                confirmLabel="Delete"
-                onConfirm={() => void handleDeleteFacility()}
-                variant="destructive"
-            />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowEditFacility(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => void handleEditFacility()}
+                                disabled={saving || !formData.name.trim()}
+                                className="bg-[#556830] hover:bg-[#203622] text-white"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
     );
 }
