@@ -269,7 +269,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-sm text-gray-600">
                                                 Enrolled:{' '}
                                                 {new Date(
                                                     enrollment.enrolled_at ??
@@ -306,7 +306,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled 
                                                     >
                                                         <Badge
                                                             variant="outline"
-                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-xs hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
+                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
                                                         >
                                                             {changingStatus === enrollment.id
                                                                 ? 'Updating...'

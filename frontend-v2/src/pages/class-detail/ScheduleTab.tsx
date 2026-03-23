@@ -333,11 +333,11 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
                     <div className="overflow-x-auto">
                         <div className="min-w-[500px] border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="grid grid-cols-7 bg-gray-100">
+                            <div className="grid grid-cols-7 bg-gray-50">
                                 {DAY_HEADERS.map((d) => (
                                     <div
                                         key={d}
-                                        className="py-2 text-center text-xs font-medium text-gray-600"
+                                        className="p-2 text-center text-sm font-medium text-gray-600 border-r border-gray-200 last:border-r-0"
                                     >
                                         {d}
                                     </div>

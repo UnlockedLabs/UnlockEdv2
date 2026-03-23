@@ -100,7 +100,7 @@ export function AuditTab({ classId }: AuditTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-            <h3 className="text-[#203622] mb-6 font-semibold">Audit History</h3>
+            <h3 className="text-[#203622] mb-6">Audit History</h3>
             {entries.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                     <Calendar className="size-12 mx-auto mb-3 text-gray-500" />

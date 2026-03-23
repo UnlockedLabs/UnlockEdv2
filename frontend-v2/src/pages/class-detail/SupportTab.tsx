@@ -28,12 +28,12 @@ export function SupportTab({ classId }: SupportTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
-                <h3 className="text-[#203622] font-semibold">
+            <div className="border-b border-gray-200 px-6 py-4">
+                <h3 className="text-[#203622]">
                     At-Risk Residents ({flagsResp?.meta?.total ?? 0})
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                    Residents with no attendance or 3+ unexcused absences
+                <p className="text-sm text-gray-600 mt-1">
+                    Residents with attendance below 75% or multiple consecutive absences
                 </p>
             </div>
             {flags.length === 0 ? (
@@ -51,28 +51,30 @@ export function SupportTab({ classId }: SupportTabProps) {
                     {flags.map((flag, idx) => (
                         <div
                             key={`${flag.doc_id}-${idx}`}
-                            className="px-4 sm:px-6 py-4 flex items-center justify-between"
+                            className="px-6 py-4 bg-amber-50/20"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="w-[120px] sm:w-[160px] shrink-0">
-                                    <div className="text-[#203622] font-medium truncate">
-                                        {flag.doc_id}
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-start gap-6">
+                                    <div className="min-w-[80px]">
+                                        <div className="text-[#203622] font-medium">
+                                            {flag.doc_id}
+                                        </div>
+                                        <div className="text-sm text-gray-600 mt-0.5">
+                                            {flag.name_last}, {flag.name_first}
+                                        </div>
                                     </div>
-                                    <div className="text-sm text-gray-500 mt-0.5 truncate">
-                                        {flag.name_last}, {flag.name_first}
+                                    <div className="text-sm text-gray-600">
+                                        {getFlagLabel(flag.flag_type)}
                                     </div>
                                 </div>
-                                <div className="text-sm text-gray-600">
-                                    {getFlagLabel(flag.flag_type)}
-                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className="bg-amber-50 text-amber-700 border-amber-200"
+                                >
+                                    <AlertCircle className="size-3 mr-1" />
+                                    Needs Support
+                                </Badge>
                             </div>
-                            <Badge
-                                variant="outline"
-                                className="bg-amber-50 text-amber-700 border-amber-200"
-                            >
-                                <AlertCircle className="size-3 mr-1" />
-                                Needs Support
-                            </Badge>
                         </div>
                     ))}
                 </div>
