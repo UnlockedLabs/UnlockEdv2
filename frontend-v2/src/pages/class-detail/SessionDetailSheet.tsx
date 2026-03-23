@@ -90,6 +90,7 @@ export function SessionDetailSheet({
         isRescheduledFrom,
         isRescheduledTo,
         rescheduledDate,
+        cancellationReason,
         hasAttendance,
         isToday
     } = session;
@@ -351,6 +352,11 @@ export function SessionDetailSheet({
                                                 <div className="text-sm text-gray-900 mb-1">
                                                     Class Cancelled
                                                 </div>
+                                                {cancellationReason && (
+                                                    <p className="text-sm text-gray-600">
+                                                        {cancellationReason}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                         <Button

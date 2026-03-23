@@ -15,6 +15,7 @@ export interface SessionDisplay {
     rescheduledDate?: string;
     rescheduledClassTime?: string;
     rescheduleOverrideId?: number;
+    cancellationReason?: string;
     attendedCount: number;
     totalEnrolled: number;
 }
@@ -52,6 +53,38 @@ const WEEKDAY_LONG: Record<number, string> = {
     5: 'Friday',
     6: 'Saturday'
 };
+
+const CANCELLATION_REASON_LABELS: Record<string, string> = {
+    instructor_unavailable: 'Instructor Unavailable',
+    instructor_illness: 'Instructor Illness',
+    facility_issue_or_lockdown: 'Facility Issue or Lockdown',
+    holiday_or_scheduled_break: 'Holiday or Scheduled Break',
+    technology_issue: 'Technology Issue'
+};
+
+function formatCancellationReason(reason: string): string {
+    return CANCELLATION_REASON_LABELS[reason] ?? reason;
+}
+
+export function buildCancellationReasonMap(
+    events: ProgramClassEvent[]
+): Map<string, string> {
+    const map = new Map<string, string>();
+    for (const event of events) {
+        for (const override of event.overrides ?? []) {
+            if (
+                override.is_cancelled &&
+                override.reason &&
+                override.reason !== 'rescheduled' &&
+                override.reason !== 'applied_future'
+            ) {
+                const date = parseOverrideDate(override.override_rrule);
+                if (date) map.set(date, formatCancellationReason(override.reason));
+            }
+        }
+    }
+    return map;
+}
 
 export function buildRoomOverrideMap(
     events: ProgramClassEvent[]
@@ -160,7 +193,8 @@ export function buildSessionDisplays(
     enrolled: number,
     fromTo: Map<string, RescheduleLink>,
     toFrom: Map<string, RescheduleLink>,
-    appliedFutureDates: Set<string>
+    appliedFutureDates: Set<string>,
+    cancellationReasons?: Map<string, string>
 ): SessionDisplay[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -247,6 +281,10 @@ export function buildSessionDisplays(
                     : isRescheduledTo
                       ? rescheduleTo.overrideId
                       : undefined,
+                cancellationReason:
+                    inst.is_cancelled && !isRescheduledFrom
+                        ? cancellationReasons?.get(inst.date)
+                        : undefined,
                 attendedCount,
                 totalEnrolled: enrolled
             };

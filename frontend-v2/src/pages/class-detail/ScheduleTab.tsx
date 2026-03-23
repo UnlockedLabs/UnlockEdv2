@@ -12,6 +12,7 @@ import { SessionDetailSheet } from './SessionDetailSheet';
 import {
     buildRescheduleMaps,
     buildRoomOverrideMap,
+    buildCancellationReasonMap,
     buildSessionDisplays,
     findCancelOverrideId,
     type SessionDisplay
@@ -147,6 +148,11 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
         [cls.events]
     );
 
+    const cancellationReasons = useMemo(
+        () => buildCancellationReasonMap(cls.events ?? []),
+        [cls.events]
+    );
+
     const allSessions = useMemo(() => {
         if (!instancesResp?.data) return [];
         return buildSessionDisplays(
@@ -154,9 +160,10 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
             cls.enrolled,
             rescheduleMaps.fromTo,
             rescheduleMaps.toFrom,
-            rescheduleMaps.appliedFutureDates
+            rescheduleMaps.appliedFutureDates,
+            cancellationReasons
         );
-    }, [instancesResp, cls.enrolled, rescheduleMaps]);
+    }, [instancesResp, cls.enrolled, rescheduleMaps, cancellationReasons]);
 
     const sessionsByDate = useMemo(() => {
         const map = new Map<string, SessionDisplay>();
