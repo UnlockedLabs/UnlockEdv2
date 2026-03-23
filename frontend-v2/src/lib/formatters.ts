@@ -2,13 +2,19 @@ import { Video } from '@/types/content';
 import { Class } from '@/types/program';
 import { RRule, Weekday } from 'rrule';
 
+const MONTH_NAMES = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
+
 export function formatDate(dateStr?: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    const datePart = dateStr.split('T')[0];
+    const parts = datePart.split('-');
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+    const year = parts[0];
+    return `${MONTH_NAMES[month]} ${day}, ${year}`;
 }
 
 export function formatRelativeTime(dateStr?: string): string {

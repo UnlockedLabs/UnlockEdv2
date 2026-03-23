@@ -218,16 +218,27 @@ function buildSessionDisplays(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const cancelledByDate = new Map<string, Set<string>>();
+    for (const inst of instances) {
+        if (inst.is_cancelled) {
+            let times = cancelledByDate.get(inst.date);
+            if (!times) {
+                times = new Set<string>();
+                cancelledByDate.set(inst.date, times);
+            }
+            times.add(inst.class_time);
+        }
+    }
     const activeDatesWithDifferentTime = new Set<string>();
     for (const inst of instances) {
         if (!inst.is_cancelled) {
-            for (const other of instances) {
-                if (
-                    other.is_cancelled &&
-                    other.date === inst.date &&
-                    other.class_time !== inst.class_time
-                ) {
-                    activeDatesWithDifferentTime.add(inst.date);
+            const cancelledTimes = cancelledByDate.get(inst.date);
+            if (cancelledTimes) {
+                for (const ct of cancelledTimes) {
+                    if (ct !== inst.class_time) {
+                        activeDatesWithDifferentTime.add(inst.date);
+                        break;
+                    }
                 }
             }
         }

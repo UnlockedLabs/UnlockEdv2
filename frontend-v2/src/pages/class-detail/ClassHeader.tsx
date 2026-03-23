@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Class } from '@/types/program';
 import { Attendance, SelectedClassStatus } from '@/types/attendance';
 import { ClassEventInstance } from '@/types/events';
-import { getClassSchedule, getStatusColor } from '@/lib/formatters';
+import { getClassSchedule, getStatusColor, formatDate } from '@/lib/formatters';
 import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import { ChangeClassStatusModal } from './ChangeClassStatusModal';
 
@@ -100,17 +100,6 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
     }
 }
 
-function formatDate(dt: string): string {
-    if (!dt) return '';
-    const d = new Date(dt);
-    if (isNaN(d.getTime())) return dt;
-    return d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-}
-
 export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const schedule = useMemo(() => getClassSchedule(cls), [cls]);
@@ -181,7 +170,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                         cls.start_dt
                             ? cls.end_dt
                                 ? `${formatDate(cls.start_dt)} - ${formatDate(cls.end_dt)}`
-                                : formatDate(cls.start_dt)
+                                : `${formatDate(cls.start_dt)} - Ongoing`
                             : 'Not set'
                     }
                 />

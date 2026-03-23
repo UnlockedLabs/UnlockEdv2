@@ -63,7 +63,7 @@ export function SessionDetailSheet({
                     s.isUpcoming &&
                     !s.isCancelled &&
                     !s.isRescheduledFrom &&
-                    s.instance.date !== session.instance.date
+                    s.instance.date > session.instance.date
             )
             .map((s) => ({
                 date: s.instance.date,
@@ -97,7 +97,8 @@ export function SessionDetailSheet({
     const canModify =
         !hasAttendance &&
         !isCancelled &&
-        !isRescheduledFrom;
+        !isRescheduledFrom &&
+        (session.isUpcoming || session.isToday);
 
     const eventId = instance.event_id ?? instance.id;
 
@@ -281,7 +282,7 @@ export function SessionDetailSheet({
                                     Status
                                 </h4>
 
-                                {isRescheduledFrom && rescheduledDate && (
+                                {isRescheduledFrom && !isRescheduledTo && rescheduledDate && (
                                     <div className="space-y-3">
                                         <div className="flex items-start gap-2">
                                             <CalendarClock className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />

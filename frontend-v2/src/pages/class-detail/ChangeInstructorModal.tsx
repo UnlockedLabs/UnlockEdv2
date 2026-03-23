@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Dialog,
     DialogContent,
@@ -57,7 +56,6 @@ export function ChangeInstructorModal({
     const { user } = useAuth();
     const [selectedInstructorId, setSelectedInstructorId] = useState('');
     const [reason, setReason] = useState('');
-    const [note, setNote] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
@@ -69,7 +67,6 @@ export function ChangeInstructorModal({
         if (open) {
             setSelectedInstructorId('');
             setReason('');
-            setNote('');
         }
     }, [open]);
 
@@ -96,10 +93,19 @@ export function ChangeInstructorModal({
             else fail++;
         }
 
-        if (ok)
-            toast.success(
-                `Instructor updated for ${ok} session${ok === 1 ? '' : 's'}`
-            );
+        const instructor = instructors.find(
+            (i) => String(i.id) === selectedInstructorId
+        );
+        const instructorName = instructor
+            ? `${instructor.name_first} ${instructor.name_last}`
+            : '';
+        if (ok) {
+            const msg =
+                ok === 1
+                    ? `Instructor changed to ${instructorName}`
+                    : `Instructor changed to ${instructorName} for ${ok} sessions`;
+            toast.success(msg);
+        }
         if (fail)
             toast.error(
                 `Failed to update ${fail} session${fail === 1 ? '' : 's'}`
@@ -156,10 +162,7 @@ export function ChangeInstructorModal({
                         </Label>
                         <Select
                             value={reason}
-                            onValueChange={(value) => {
-                                setReason(value);
-                                if (value !== 'other') setNote('');
-                            }}
+                            onValueChange={setReason}
                         >
                             <SelectTrigger id="change-reason">
                                 <SelectValue placeholder="Select a reason" />
@@ -181,21 +184,6 @@ export function ChangeInstructorModal({
                             </SelectContent>
                         </Select>
                     </div>
-
-                    {reason === 'other' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="instructor-change-note">
-                                Please specify *
-                            </Label>
-                            <Textarea
-                                id="instructor-change-note"
-                                placeholder="Enter the specific reason for the change..."
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                rows={3}
-                            />
-                        </div>
-                    )}
 
                     {setApplyToFuture && (
                         <div className="flex items-center space-x-2">
@@ -288,7 +276,6 @@ export function ChangeInstructorModal({
                             onClose();
                             setSelectedInstructorId('');
                             setReason('');
-                            setNote('');
                             if (setApplyToFuture) setApplyToFuture(false);
                         }}
                         disabled={isSubmitting}
@@ -300,9 +287,7 @@ export function ChangeInstructorModal({
                             void handleApply();
                         }}
                         disabled={
-                            !selectedInstructorId ||
-                            isSubmitting ||
-                            (reason === 'other' && !note.trim())
+                            !selectedInstructorId || isSubmitting
                         }
                         className="bg-[#556830] hover:bg-[#203622] text-white"
                     >
