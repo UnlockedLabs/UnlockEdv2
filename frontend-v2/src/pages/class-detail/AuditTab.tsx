@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import { Calendar } from 'lucide-react';
+import { Pagination } from '@/components/Pagination';
 import { ServerResponseMany } from '@/types/server';
 
 interface HistoryEntry {
@@ -94,13 +95,15 @@ function formatEntry(entry: HistoryEntry): React.ReactNode {
 }
 
 export function AuditTab({ classId }: AuditTabProps) {
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(20);
+
     const { data: auditResp } = useSWR<ServerResponseMany<HistoryEntry>>(
-        `/api/program-classes/${classId}/history`
+        `/api/program-classes/${classId}/history?page=${page}&per_page=${perPage}`
     );
-    const [expanded, setExpanded] = useState(false);
 
     const entries = auditResp?.data ?? [];
-    const displayEntries = expanded ? entries : entries.slice(0, 20);
+    const total = auditResp?.meta?.total ?? entries.length;
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
@@ -115,7 +118,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {displayEntries.map((entry, idx) => (
+                    {entries.map((entry, idx) => (
                         <div
                             key={`${entry.created_at}-${entry.field_name}-${idx}`}
                             className="flex gap-3 text-sm"
@@ -135,17 +138,20 @@ export function AuditTab({ classId }: AuditTabProps) {
                             </div>
                         </div>
                     ))}
-                    {entries.length > 20 && (
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            className="text-sm text-[#556830] hover:text-[#203622] underline"
-                        >
-                            {expanded
-                                ? 'Show Less'
-                                : `Show All (${entries.length})`}
-                        </button>
-                    )}
                 </div>
+            )}
+            {total > perPage && (
+                <Pagination
+                    currentPage={page}
+                    totalItems={total}
+                    itemsPerPage={perPage}
+                    onPageChange={setPage}
+                    onItemsPerPageChange={(val) => {
+                        setPerPage(val);
+                        setPage(1);
+                    }}
+                    itemLabel="entries"
+                />
             )}
         </div>
     );
