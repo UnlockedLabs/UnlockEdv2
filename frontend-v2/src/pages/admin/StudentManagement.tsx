@@ -66,6 +66,7 @@ import {
     BulkDeactivateDialog,
     BulkDeleteDialog
 } from '@/components/residents/BulkActionDialogs';
+import { BulkImportDialog } from '@/components/residents/BulkImportDialog';
 import {
     Tooltip,
     TooltipContent,
@@ -127,6 +128,7 @@ export default function StudentManagement() {
     const [bulkResetOpen, setBulkResetOpen] = useState(false);
     const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
     useEffect(() => {
         setSelectedResidents(new Set());
@@ -310,9 +312,9 @@ export default function StudentManagement() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button
+                                onClick={() => setBulkImportOpen(true)}
                                 variant="outline"
                                 className="gap-2"
-                                disabled
                             >
                                 <Upload className="size-4" />
                                 Bulk Import
@@ -846,6 +848,11 @@ export default function StudentManagement() {
                     onOpenChange={setBulkDeleteOpen}
                     residents={getSelectedUsers()}
                     onSuccess={handleBulkSuccess}
+                />
+                <BulkImportDialog
+                    open={bulkImportOpen}
+                    onOpenChange={setBulkImportOpen}
+                    onSuccess={() => void mutate()}
                 />
 
                 {/* Bulk Action Bar */}

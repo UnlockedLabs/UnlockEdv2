@@ -86,7 +86,7 @@ export default function AuthenticatedLayout() {
 
     const rootClass = isProgramDetail
         ? 'min-h-screen bg-background flex'
-        : 'h-screen bg-background flex overflow-hidden';
+        : 'h-screen bg-[#E2E7EA] flex overflow-hidden';
     const contentClass = isProgramDetail
         ? `flex-1 overflow-x-hidden ${
               canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
@@ -134,7 +134,7 @@ export default function AuthenticatedLayout() {
                             <Outlet />
                         </div>
                     ) : (
-                        <div className="max-w-7xl mx-auto px-6 py-4">
+                        <div>
                             {showBreadcrumbs && (
                                 <div className="mb-4">
                                     <Breadcrumbs items={breadcrumbItems} />
