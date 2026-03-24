@@ -27,12 +27,16 @@ function formatFieldLabel(name: string): string {
     return name.replace(/_/g, ' ');
 }
 
-function formatEntry(entry: HistoryEntry): string {
+const B = ({ children }: { children: React.ReactNode }) => (
+    <span className="font-medium">{children}</span>
+);
+
+function formatEntry(entry: HistoryEntry): React.ReactNode {
     const actor = entry.admin_username ?? 'System';
     const field = entry.field_name ?? '';
 
     if (field === 'class' || field === 'program') {
-        return `Class created by ${actor}`;
+        return <>Class created by <B>{actor}</B></>;
     }
 
     if (field === 'event_rescheduled') {
@@ -41,9 +45,9 @@ function formatEntry(entry: HistoryEntry): string {
             : null;
         const newVal = entry.new_value ?? '';
         if (origDate) {
-            return `Event on ${origDate} moved to ${newVal} by ${actor}`;
+            return <>Event on <B>{origDate}</B> moved to <B>{newVal}</B> by <B>{actor}</B></>;
         }
-        return `Event rescheduled to ${newVal} by ${actor}`;
+        return <>Event rescheduled to <B>{newVal}</B> by <B>{actor}</B></>;
     }
 
     if (field === 'event_cancelled') {
@@ -51,8 +55,8 @@ function formatEntry(entry: HistoryEntry): string {
             ? parseDateFromRRule(entry.new_value)
             : null;
         return date
-            ? `Event on ${date} cancelled by ${actor}`
-            : `Event cancelled by ${actor}`;
+            ? <>Event on <B>{date}</B> cancelled by <B>{actor}</B></>
+            : <>Event cancelled by <B>{actor}</B></>;
     }
 
     if (field === 'event_restored') {
@@ -60,33 +64,33 @@ function formatEntry(entry: HistoryEntry): string {
             ? parseDateFromRRule(entry.old_value)
             : null;
         return date
-            ? `${actor} restored event on ${date}`
-            : `Event restored by ${actor}`;
+            ? <><B>{actor}</B> restored event on <B>{date}</B></>
+            : <>Event restored by <B>{actor}</B></>;
     }
 
     if (field === 'event_rescheduled_series') {
-        return `Schedule series updated by ${actor}`;
+        return <>Schedule series updated by <B>{actor}</B></>;
     }
 
     if (field === 'event_substitute_instructor') {
-        return `Substitute instructor set to ${entry.new_value ?? ''} by ${actor}`;
+        return <>Substitute instructor set to <B>{entry.new_value ?? ''}</B> by <B>{actor}</B></>;
     }
 
     if (field === 'event_room_changed') {
-        return `Room changed to ${entry.new_value ?? ''} by ${actor}`;
+        return <>Room changed to <B>{entry.new_value ?? ''}</B> by <B>{actor}</B></>;
     }
 
     const label = formatFieldLabel(field);
     if (entry.old_value && entry.new_value) {
-        return `${label} changed from ${entry.old_value} to ${entry.new_value} by ${actor}`;
+        return <>{label} changed from <B>{entry.old_value}</B> to <B>{entry.new_value}</B> by <B>{actor}</B></>;
     }
     if (entry.new_value) {
-        return `${label} set to ${entry.new_value} by ${actor}`;
+        return <>{label} set to <B>{entry.new_value}</B> by <B>{actor}</B></>;
     }
     if (entry.old_value) {
-        return `${label} removed (was ${entry.old_value}) by ${actor}`;
+        return <>{label} removed (was <B>{entry.old_value}</B>) by <B>{actor}</B></>;
     }
-    return `${label} updated by ${actor}`;
+    return <>{label} updated by <B>{actor}</B></>;
 }
 
 export function AuditTab({ classId }: AuditTabProps) {
