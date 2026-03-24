@@ -46,7 +46,7 @@ export function EditProfileDialog({
         setSubmitting(true);
         const resp = await API.patch<User, Partial<User>>(
             `users/${user.id}`,
-            { name_first: firstName, name_last: lastName, username, doc_id: docId }
+            { name_first: firstName, name_last: lastName, doc_id: docId }
         );
         setSubmitting(false);
         if (resp.success) {
@@ -95,7 +95,7 @@ export function EditProfileDialog({
                         <Input
                             id="edit-username"
                             value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            disabled
                             className="mt-2"
                         />
                     </div>
