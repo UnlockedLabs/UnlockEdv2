@@ -76,7 +76,7 @@ export function BulkResetPasswordDialog({
         a.download = `bulk-passwords-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-        toaster('Password file downloaded successfully', ToastState.success);
+        toaster('Password file downloaded', ToastState.success);
         onSuccess();
         onOpenChange(false);
     };
