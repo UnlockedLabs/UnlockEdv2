@@ -167,7 +167,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
-	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled", "instructor"}
+	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "facility_id", "start_dt", "end_dt", "program", "enrolled", "completed", "archived_at", "instructor", "instructor_id"}
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
@@ -229,6 +229,14 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 			return nil, nil, newUpdateDBError(err, "program class event room")
 		}
 		existing.Events[0].RoomID = newRoomID
+		var roomName string
+		if newRoomID != nil {
+			var room models.Room
+			if err := trans.Select("name").First(&room, *newRoomID).Error; err == nil {
+				roomName = room.Name
+			}
+		}
+		allChanges = append(allChanges, *models.NewChangeLogEntry("program_classes", "event_room_changed", nil, &roomName, existing.ID, models.DerefUint(content.UpdateUserID)))
 	}
 
 	if needsScheduleUpdate {
@@ -244,6 +252,8 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 				return nil, nil, newUpdateDBError(err, "program class event duration")
 			}
 		}
+		oldRule := existing.Events[0].RecurrenceRule
+		allChanges = append(allChanges, *models.NewChangeLogEntry("program_classes", "event_rescheduled_series", &oldRule, &newRecurrenceRule, existing.ID, models.DerefUint(content.UpdateUserID)))
 	}
 
 	newStatus := existing.Status

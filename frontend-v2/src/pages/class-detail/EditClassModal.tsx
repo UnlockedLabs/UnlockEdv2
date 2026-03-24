@@ -388,6 +388,7 @@ export function EditClassModal({
                 ? Number(data.instructor_id)
                 : null,
             capacity: Number(data.capacity),
+            credit_hours: data.credit_hours ?? null,
             status: data.status,
             start_dt: `${data.start_dt}T00:00:00Z`,
             end_dt: data.end_dt ? `${data.end_dt}T00:00:00Z` : null,

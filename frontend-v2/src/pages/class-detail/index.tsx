@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { Edit, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,6 +64,7 @@ function LoadingSkeleton() {
 export default function ClassDetailPage() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
+    const { mutate: globalMutate } = useSWRConfig();
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -301,6 +302,11 @@ export default function ClassDetailPage() {
                 onUpdated={() => {
                     void mutate();
                     void mutateEvents();
+                    void globalMutate(
+                        (key: string) => typeof key === 'string' && key.startsWith(`/api/program-classes/${class_id}/history`),
+                        undefined,
+                        { revalidate: true }
+                    );
                 }}
             />
         </div>
