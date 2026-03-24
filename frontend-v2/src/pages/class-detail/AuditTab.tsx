@@ -25,7 +25,8 @@ function parseDateFromRRule(rrule: string): string | null {
 }
 
 function formatFieldLabel(name: string): string {
-    return name.replace(/_/g, ' ');
+    const label = name.replace(/_/g, ' ');
+    return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 const B = ({ children }: { children: React.ReactNode }) => (
