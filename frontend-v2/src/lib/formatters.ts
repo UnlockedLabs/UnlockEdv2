@@ -238,6 +238,10 @@ export function formatTime12h(time: string): string {
     return `${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
 }
 
+export function formatEnrollmentStatus(status: string): string {
+    return status.replace(/^Incomplete:\s*/i, '');
+}
+
 export function getEnrollmentStatusColor(status: string): string {
     if (status === 'Enrolled')
         return 'bg-green-50 text-[#556830] border-green-200';

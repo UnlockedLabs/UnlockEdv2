@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import { Edit, MoreVertical, Trash2 } from 'lucide-react';
@@ -37,7 +37,7 @@ const TAB_TRIGGER_CLASS =
 
 function LoadingSkeleton() {
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
+        <div className="bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Skeleton className="h-8 w-32 mb-4" />
@@ -68,6 +68,7 @@ export default function ClassDetailPage() {
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const editModalVersion = useRef(0);
 
     const {
         data: classResp,
@@ -110,7 +111,7 @@ export default function ClassDetailPage() {
 
     if (!cls) {
         return (
-            <div className="min-h-screen bg-[#E2E7EA] flex items-center justify-center">
+            <div className="bg-[#E2E7EA] flex items-center justify-center">
                 <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
                     <h2 className="text-xl font-semibold text-[#203622] mb-2">
                         Class Not Found
@@ -131,7 +132,7 @@ export default function ClassDetailPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
+        <div className="bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
@@ -147,7 +148,7 @@ export default function ClassDetailPage() {
                             <Button
                                 variant="outline"
                                 className="border-gray-300"
-                                onClick={() => setShowEditModal(true)}
+                                onClick={() => { editModalVersion.current++; setShowEditModal(true); }}
                             >
                                 <Edit className="size-4 mr-2" />
                                 Edit Class
@@ -296,6 +297,7 @@ export default function ClassDetailPage() {
             />
 
             <EditClassModal
+                key={editModalVersion.current}
                 open={showEditModal}
                 onOpenChange={setShowEditModal}
                 cls={cls}

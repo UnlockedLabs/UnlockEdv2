@@ -21,7 +21,7 @@ import {
 import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
-import { getEnrollmentStatusColor } from '@/lib/formatters';
+import { getEnrollmentStatusColor, formatEnrollmentStatus } from '@/lib/formatters';
 import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import API from '@/api/api';
 import { toast } from 'sonner';
@@ -218,7 +218,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             const stats = attendanceMap.get(
                                 enrollment.user_id
                             ) ?? { attended: 0, total: 0, rate: 0 };
-                            const needsSupport = stats.rate < 75;
+                            const needsSupport = stats.total > 0 && stats.rate < 75;
 
                             return (
                                 <div
@@ -297,7 +297,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                             variant="outline"
                                                             className={getEnrollmentStatusColor(enrollment.enrollment_status)}
                                                         >
-                                                            {enrollment.enrollment_status}
+                                                            {formatEnrollmentStatus(enrollment.enrollment_status)}
                                                         </Badge>
                                                     );
                                                 }
@@ -313,7 +313,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                         >
                                                             {changingStatus === enrollment.id
                                                                 ? 'Updating...'
-                                                                : enrollment.enrollment_status}
+                                                                : formatEnrollmentStatus(enrollment.enrollment_status)}
                                                             <Edit className="size-3 text-current opacity-60 group-hover:opacity-100 transition-opacity" />
                                                         </Badge>
                                                     </button>

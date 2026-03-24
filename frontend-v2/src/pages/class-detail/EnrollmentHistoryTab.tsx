@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
-import { getEnrollmentStatusColor } from '@/lib/formatters';
+import { getEnrollmentStatusColor, formatEnrollmentStatus } from '@/lib/formatters';
 
 type StatusFilter = 'all' | EnrollmentStatus;
 type TimeFilter = 'week' | 'month' | '3months' | 'all';
@@ -176,7 +176,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     enrollment.enrollment_status
                                                 )}
                                             >
-                                                {enrollment.enrollment_status}
+                                                {formatEnrollmentStatus(enrollment.enrollment_status)}
                                             </Badge>
                                         </div>
                                         <div className="text-sm text-gray-500 space-y-1">

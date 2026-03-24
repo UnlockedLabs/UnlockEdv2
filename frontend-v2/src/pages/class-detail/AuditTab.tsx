@@ -141,7 +141,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                     ))}
                 </div>
             )}
-            {total > perPage && (
+            {total >= perPage && (
                 <Pagination
                     currentPage={page}
                     totalItems={total}
