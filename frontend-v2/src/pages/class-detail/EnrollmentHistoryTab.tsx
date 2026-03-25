@@ -160,7 +160,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                         >
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex items-start gap-3 sm:gap-6 flex-1">
-                                    <div className="w-[140px] sm:w-[180px] shrink-0">
+                                    <div className="w-[160px] shrink-0">
                                         <div className="text-[#203622] font-medium truncate">
                                             {enrollment.doc_id}
                                         </div>
@@ -181,8 +181,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                         </div>
                                         <div className="text-sm text-gray-500 space-y-1">
                                             {enrollment.enrolled_at && (
-                                                <div className="flex gap-2">
-                                                    <span className="font-medium">
+                                                <div className="flex">
+                                                    <span className="font-medium w-24">
                                                         Enrolled:
                                                     </span>
                                                     <span>
@@ -196,8 +196,8 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                             )}
                                             {(enrollment.enrollment_ended_at ??
                                                 enrollment.completion_dt) && (
-                                                <div className="flex gap-2">
-                                                    <span className="font-medium">
+                                                <div className="flex">
+                                                    <span className="font-medium w-24">
                                                         {enrollment.enrollment_status ===
                                                         EnrollmentStatus.Completed
                                                             ? 'Completed:'
