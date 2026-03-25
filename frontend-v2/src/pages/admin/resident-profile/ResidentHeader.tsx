@@ -1,6 +1,6 @@
 import { User } from '@/types';
 import { formatDate, formatRelativeTime } from '@/lib/formatters';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -55,7 +55,18 @@ export function ResidentHeader({
                         <h1 className="text-[#203622]">
                             {user.name_first} {user.name_last}
                         </h1>
-                        <StatusBadge status={statusLabel} variant="resident" />
+                        {statusLabel === 'Active' ? (
+                            <Badge className="bg-green-100 text-green-800 border-green-300">
+                                Active
+                            </Badge>
+                        ) : (
+                            <Badge
+                                variant="outline"
+                                className="bg-gray-100 text-gray-700 border-gray-300"
+                            >
+                                Inactive
+                            </Badge>
+                        )}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span>
@@ -64,11 +75,11 @@ export function ResidentHeader({
                                 {user.username}
                             </span>
                         </span>
-                        <span>&bull;</span>
+                        <span>•</span>
                         <span>{user.doc_id ?? 'N/A'}</span>
-                        <span>&bull;</span>
+                        <span>•</span>
                         <span>Created {formatDate(joinedDate)}</span>
-                        <span>&bull;</span>
+                        <span>•</span>
                         <span>
                             Last active {formatRelativeTime(lastActiveDate)}
                         </span>
@@ -115,16 +126,16 @@ export function ResidentHeader({
                                     <UserX className="size-4 mr-2" />
                                     Deactivate Account
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 {isDeptAdmin && (
                                     <>
-                                        <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={onTransfer}>
                                             <Users className="size-4 mr-2" />
                                             Transfer Resident
                                         </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
                                     </>
                                 )}
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={onDelete}
                                     className="text-red-600"

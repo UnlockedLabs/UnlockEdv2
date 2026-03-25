@@ -42,13 +42,13 @@ export function CompletedPrograms({
                                 className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
                             >
                                 <CheckCircle2 className="size-6 text-green-700 shrink-0" />
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1">
                                     <div className="font-medium text-[#203622]">
                                         {program.program_name}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
                                         Completed{' '}
-                                        {formatDate(program.end_date)} &bull;{' '}
+                                        {formatDate(program.end_date)} •{' '}
                                         {present}/{total} sessions attended (
                                         {rate}%)
                                     </div>

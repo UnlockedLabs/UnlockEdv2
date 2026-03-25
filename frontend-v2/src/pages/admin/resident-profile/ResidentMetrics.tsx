@@ -10,17 +10,21 @@ function MetricCard({
     label,
     value,
     subtitle,
-    valueColor
+    valueColor,
+    valueMargin
 }: {
     label: string;
     value: string | number;
     subtitle: string;
     valueColor: string;
+    valueMargin?: boolean;
 }) {
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
-            <div className={`text-2xl font-medium mb-1 ${valueColor}`}>
+            <div
+                className={`text-2xl font-medium ${valueMargin ? 'mb-1' : ''} ${valueColor}`}
+            >
                 {value}
             </div>
             <div className="text-xs text-gray-500">{subtitle}</div>
@@ -42,6 +46,7 @@ export function ResidentMetrics({
                 value={`${overallAttendancePercent}%`}
                 subtitle={`${sessionsAttended} of ${totalSessions} sessions`}
                 valueColor="text-[#556830]"
+                valueMargin
             />
             <MetricCard
                 label="Active Enrollments"

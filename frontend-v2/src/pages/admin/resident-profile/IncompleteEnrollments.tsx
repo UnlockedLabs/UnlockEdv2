@@ -114,6 +114,7 @@ export function IncompleteEnrollments({
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
+                                                    variant="outline"
                                                     className={getEnrollmentStatusColor(
                                                         enrollment.enrollment_status ??
                                                             ''

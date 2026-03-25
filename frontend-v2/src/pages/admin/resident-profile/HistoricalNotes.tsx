@@ -47,12 +47,12 @@ export function HistoricalNotes({
                                 <span className="font-medium">
                                     {note.admin}
                                 </span>
-                                <span>&#183;</span>
+                                <span>•</span>
                                 <span>{formatDate(note.date)}</span>
                             </div>
-                            <p className="text-sm text-gray-700">
+                            <div className="text-sm text-gray-700">
                                 {note.note}
-                            </p>
+                            </div>
                         </div>
                     ))}
                 </div>

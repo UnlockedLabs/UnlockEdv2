@@ -66,9 +66,9 @@ export function AddNoteDialog({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="add-note">Note</Label>
+                        <Label htmlFor="note">Note</Label>
                         <Textarea
-                            id="add-note"
+                            id="note"
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                             placeholder="Add contextual information, support plans, or important updates..."

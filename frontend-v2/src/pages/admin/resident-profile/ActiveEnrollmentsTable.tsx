@@ -54,10 +54,7 @@ export function ActiveEnrollmentsTable({
                 <h2 className="text-lg font-semibold text-[#203622]">
                     Active Enrollments
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                    {enrollments.length} active class
-                    {enrollments.length !== 1 ? 'es' : ''} &bull; All time
-                </p>
+                <p className="text-sm text-gray-600 mt-1">{enrollments.length} active class{enrollments.length !== 1 ? 'es' : ''} • All time</p>
             </div>
             <Table>
                 <TableHeader>
@@ -114,7 +111,6 @@ export function ActiveEnrollmentsTable({
                         return (
                             <TableRow
                                 key={`${enrollment.program_id}-${enrollment.class_id}`}
-                                className="hover:bg-gray-50"
                             >
                                 <TableCell>
                                     <div className="font-medium text-[#203622]">

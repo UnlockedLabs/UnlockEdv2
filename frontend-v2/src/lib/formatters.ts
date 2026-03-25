@@ -238,12 +238,12 @@ export function getEnrollmentStatusColor(status: string): string {
     if (status === 'Completed')
         return 'bg-blue-50 text-blue-700 border-blue-200';
     if (status.includes('Withdrawn'))
-        return 'bg-gray-50 text-gray-600 border-gray-200';
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     if (status.includes('Dropped'))
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     if (status.includes('Segregated'))
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-orange-100 text-orange-700 border-orange-300';
     if (status.includes('Failed'))
-        return 'bg-orange-50 text-orange-700 border-orange-200';
-    return 'bg-gray-50 text-gray-600 border-gray-200';
+        return 'bg-red-100 text-red-700 border-red-300';
+    return 'bg-gray-100 text-gray-700 border-gray-300';
 }
