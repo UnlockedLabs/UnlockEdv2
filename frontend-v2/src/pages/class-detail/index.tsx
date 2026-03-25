@@ -100,8 +100,8 @@ export default function ClassDetailPage() {
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Programs', href: '/programs' },
             {
-                label: cls.program.name,
-                href: `/programs/${cls.program.id}`
+                label: cls.program?.name ?? 'Program',
+                href: `/programs/${cls.program_id}`
             },
             { label: cls.name }
         ];
