@@ -373,10 +373,10 @@ func (db *DB) computeConsecutiveAbsences(classID int, flags []models.AttendanceF
 		if !counting {
 			continue
 		}
-		if r.AttendanceStatus == "absent_excused" || r.AttendanceStatus == "absent_unexcused" {
-			byUser[currentUser]++
-		} else {
+		if r.AttendanceStatus == "present" || r.AttendanceStatus == "partial" {
 			counting = false
+		} else if r.AttendanceStatus == "absent_excused" || r.AttendanceStatus == "absent_unexcused" {
+			byUser[currentUser]++
 		}
 	}
 

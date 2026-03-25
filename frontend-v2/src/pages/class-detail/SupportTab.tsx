@@ -11,7 +11,7 @@ interface SupportTabProps {
 
 export function SupportTab({ classId }: SupportTabProps) {
     const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
-        `/api/program-classes/${classId}/attendance-flags?per_page=100`
+        `/api/program-classes/${classId}/attendance-flags`
     );
 
     const flags = flagsResp?.data ?? [];
@@ -45,7 +45,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-6 flex-1">
-                                    <div className="min-w-[80px]">
+                                    <div className="w-[160px] shrink-0">
                                         <div className="text-[#203622] font-medium">
                                             {flag.doc_id}
                                         </div>

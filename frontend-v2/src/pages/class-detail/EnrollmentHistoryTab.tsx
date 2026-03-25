@@ -172,9 +172,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                         <div className="flex items-center gap-3 mb-2">
                                             <Badge
                                                 variant="outline"
-                                                className={getEnrollmentStatusColor(
+                                                className={`font-semibold ${getEnrollmentStatusColor(
                                                     enrollment.enrollment_status
-                                                )}
+                                                )}`}
                                             >
                                                 {formatEnrollmentStatus(enrollment.enrollment_status)}
                                             </Badge>

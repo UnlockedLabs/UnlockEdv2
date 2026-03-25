@@ -87,7 +87,7 @@ export default function ClassDetailPage() {
     );
 
     const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
-        class_id ? `/api/program-classes/${class_id}/attendance-flags?per_page=1` : null
+        class_id ? `/api/program-classes/${class_id}/attendance-flags` : null
     );
 
     const cls = classResp?.data;
