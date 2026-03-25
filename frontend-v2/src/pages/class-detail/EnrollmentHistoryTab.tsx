@@ -180,20 +180,18 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                             </Badge>
                                         </div>
                                         <div className="text-sm text-gray-500 space-y-1">
-                                            {enrollment.enrolled_at && (
-                                                <div className="flex">
-                                                    <span className="font-medium w-24">
-                                                        Enrolled:
-                                                    </span>
-                                                    <span>
-                                                        {new Date(
-                                                            enrollment.enrolled_at
-                                                        ).toLocaleDateString(
-                                                            'en-CA'
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            )}
+                                            <div className="flex">
+                                                <span className="font-medium w-24">
+                                                    Enrolled:
+                                                </span>
+                                                <span>
+                                                    {enrollment.enrolled_at
+                                                        ? new Date(
+                                                              enrollment.enrolled_at
+                                                          ).toLocaleDateString('en-CA')
+                                                        : '-'}
+                                                </span>
+                                            </div>
                                             {(enrollment.enrollment_ended_at ??
                                                 enrollment.completion_dt) && (
                                                 <div className="flex">
