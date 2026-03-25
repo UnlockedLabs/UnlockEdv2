@@ -1012,7 +1012,10 @@ export function EditClassModal({
                       {c.class_name}
                     </p>
                     <p className="text-red-600">
-                      {c.start_time} - {c.end_time}
+                      {new Date(c.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
+                      {new Date(c.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      {' - '}
+                      {new Date(c.end_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </p>
                   </div>
                 ))}
