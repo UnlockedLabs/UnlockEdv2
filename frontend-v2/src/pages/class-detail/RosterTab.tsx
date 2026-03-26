@@ -36,18 +36,19 @@ interface RosterTabProps {
     className: string;
     capacity: number;
     enrolled: number;
+    flaggedUserIds: Set<number>;
     onClassMutate: () => void;
 }
 
 function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
     const allStatuses = Object.values(EnrollmentStatus).filter((s) => s !== currentStatus);
     if (classStatus === 'Completed' || classStatus === 'Cancelled') return [];
-    if (classStatus === 'Scheduled') return allStatuses.filter((s) => s === EnrollmentStatus.Cancelled);
+    if (classStatus === 'Scheduled') return [];
     if (classStatus === 'Active') return allStatuses.filter((s) => s !== EnrollmentStatus.Cancelled);
     return allStatuses;
 }
 
-export function RosterTab({ classId, classStatus, className, capacity, enrolled, onClassMutate }: RosterTabProps) {
+export function RosterTab({ classId, classStatus, className, capacity, enrolled, flaggedUserIds, onClassMutate }: RosterTabProps) {
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [changingStatus, setChangingStatus] = useState<number | null>(null);
@@ -60,7 +61,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
     const { data: enrollmentResp, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>
     >(
-        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(EnrollmentStatus.Enrolled)}`
+        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(EnrollmentStatus.Enrolled)}&per_page=1000`
     );
 
     const { data: eventsResp } = useSWR<
@@ -218,7 +219,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             const stats = attendanceMap.get(
                                 enrollment.user_id
                             ) ?? { attended: 0, total: 0, rate: 0 };
-                            const needsSupport = stats.total > 0 && stats.rate < 75;
+                            const needsSupport = flaggedUserIds.has(enrollment.user_id);
 
                             return (
                                 <div
@@ -291,7 +292,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                             )}
                                             {(() => {
                                                 const allowed = getAllowedStatuses(classStatus, enrollment.enrollment_status);
-                                                if (allowed.length === 0) {
+                                                const isScheduled = classStatus === 'Scheduled';
+                                                if (allowed.length === 0 && !isScheduled) {
                                                     return (
                                                         <Badge
                                                             variant="outline"
@@ -422,6 +424,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                     onClose={() => setStatusModalEnrollment(null)}
                     residentDisplayId={statusModalEnrollment.doc_id ?? ''}
                     residentName={statusModalEnrollment.name_full ?? ''}
+                    className={className}
+                    classStatus={classStatus}
                     currentStatus={statusModalEnrollment.enrollment_status}
                     allowedStatuses={getAllowedStatuses(
                         classStatus,
@@ -452,6 +456,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
             <BulkGraduateModal
                 open={showBulkGraduateModal}
                 onClose={() => setShowBulkGraduateModal(false)}
+                className={className}
+                classStatus={classStatus}
                 selectedResidents={Array.from(selectedIds)
                     .map((enrollmentId) => {
                         const e = enrolledRows.find((r) => r.id === enrollmentId);

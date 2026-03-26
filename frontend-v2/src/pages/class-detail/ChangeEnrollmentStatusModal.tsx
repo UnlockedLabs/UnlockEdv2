@@ -23,6 +23,8 @@ interface ChangeEnrollmentStatusModalProps {
     onClose: () => void;
     residentDisplayId: string;
     residentName: string;
+    className: string;
+    classStatus: string;
     currentStatus: EnrollmentStatus;
     allowedStatuses: EnrollmentStatus[];
     onStatusChange: (newStatus: EnrollmentStatus, reason: string) => void;
@@ -42,6 +44,8 @@ export function ChangeEnrollmentStatusModal({
     onClose,
     residentDisplayId,
     residentName,
+    className,
+    classStatus,
     currentStatus,
     allowedStatuses,
     onStatusChange
@@ -70,6 +74,29 @@ export function ChangeEnrollmentStatusModal({
     const displayStatuses = STATUSES_IN_ORDER.filter(
         (s) => s === currentStatus || allowedStatuses.includes(s)
     );
+
+    if (classStatus === 'Scheduled') {
+        return (
+            <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Change Enrollment Status</DialogTitle>
+                        <DialogDescription>
+                            {className} currently has a status of
+                            &quot;Scheduled&quot;. You may update enrollment
+                            status for {residentDisplayId} - {residentName} only
+                            once the class is &quot;Active&quot;.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" onClick={onClose}>
+                            Cancel
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>

@@ -43,7 +43,6 @@ export function EnrollResidentsModal({
     const [searchQuery] = useDebounceValue(searchTerm, 300);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [showConfirmConflicts, setShowConfirmConflicts] = useState(false);
 
     const encodedSearch = encodeURIComponent(searchQuery);
     const { data: usersResp } = useSWR<ServerResponseMany<User>>(
@@ -95,24 +94,21 @@ export function EnrollResidentsModal({
         setConflictMap(new Map());
         setSearchTerm('');
         setError('');
-        setShowConfirmConflicts(false);
         setIsSubmitting(false);
         onOpenChange(false);
     };
 
-    const submitEnrollment = async (confirm: boolean) => {
+    const handleEnroll = async () => {
+        if (selectedIds.size === 0) return;
         setIsSubmitting(true);
         setError('');
         const userIds = Array.from(selectedIds);
-        interface EnrollResp {
-            conflicts?: ConflictDetail[];
-        }
         const resp = await API.post<
-            EnrollResp,
+            unknown,
             { user_ids: number[]; confirm: boolean }
         >(`program-classes/${classId}/enrollments`, {
             user_ids: userIds,
-            confirm
+            confirm: true
         });
 
         if (resp.success) {
@@ -121,21 +117,10 @@ export function EnrollResidentsModal({
             );
             onEnrolled();
             handleClose();
-        } else if (resp.status === 409) {
-            setShowConfirmConflicts(true);
         } else {
             setError(resp.message || 'Failed to enroll residents');
         }
         setIsSubmitting(false);
-    };
-
-    const handleEnroll = () => {
-        if (selectedIds.size === 0) return;
-        void submitEnrollment(false);
-    };
-
-    const handleEnrollAnyway = () => {
-        void submitEnrollment(true);
     };
 
     return (
@@ -286,31 +271,19 @@ export function EnrollResidentsModal({
                         >
                             Cancel
                         </Button>
-                        {showConfirmConflicts ? (
-                            <Button
-                                onClick={handleEnrollAnyway}
-                                disabled={isSubmitting}
-                                className="bg-amber-600 hover:bg-amber-700 text-white"
-                            >
-                                {isSubmitting
-                                    ? 'Enrolling...'
-                                    : `Enroll Anyway (${selectedIds.size})`}
-                            </Button>
-                        ) : (
-                            <Button
-                                onClick={handleEnroll}
-                                disabled={
-                                    selectedIds.size === 0 ||
-                                    isSubmitting ||
-                                    wouldExceedCapacity
-                                }
-                                className="bg-[#556830] hover:bg-[#203622] text-white"
-                            >
-                                {isSubmitting
-                                    ? 'Enrolling...'
-                                    : `Enroll Selected (${selectedIds.size})`}
-                            </Button>
-                        )}
+                        <Button
+                            onClick={() => void handleEnroll()}
+                            disabled={
+                                selectedIds.size === 0 ||
+                                isSubmitting ||
+                                wouldExceedCapacity
+                            }
+                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                        >
+                            {isSubmitting
+                                ? 'Enrolling...'
+                                : `Enroll Selected (${selectedIds.size})`}
+                        </Button>
                     </div>
                 </div>
             </DialogContent>

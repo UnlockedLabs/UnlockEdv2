@@ -18,6 +18,8 @@ interface SelectedResident {
 interface BulkGraduateModalProps {
     open: boolean;
     onClose: () => void;
+    className: string;
+    classStatus: string;
     selectedResidents: SelectedResident[];
     onConfirm: () => Promise<void>;
 }
@@ -25,6 +27,8 @@ interface BulkGraduateModalProps {
 export function BulkGraduateModal({
     open,
     onClose,
+    className,
+    classStatus,
     selectedResidents,
     onConfirm
 }: BulkGraduateModalProps) {
@@ -37,6 +41,28 @@ export function BulkGraduateModal({
         setIsSubmitting(false);
         onClose();
     };
+
+    if (classStatus === 'Scheduled') {
+        return (
+            <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Graduate Residents</DialogTitle>
+                        <DialogDescription>
+                            {className} currently has a status of
+                            &quot;Scheduled&quot;. You may graduate residents
+                            only once the class is &quot;Active&quot;.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" onClick={onClose}>
+                            Cancel
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>

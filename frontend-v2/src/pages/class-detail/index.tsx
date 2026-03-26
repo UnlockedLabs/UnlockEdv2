@@ -93,6 +93,11 @@ export default function ClassDetailPage() {
     const cls = classResp?.data;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
+    const flaggedUserIds = useMemo(() => {
+        const ids = new Set<number>();
+        for (const f of flagsResp?.data ?? []) ids.add(f.user_id);
+        return ids;
+    }, [flagsResp?.data]);
 
     const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
         if (!cls) return [];
@@ -251,7 +256,7 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} onClassMutate={() => void mutate()} />
+                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} flaggedUserIds={flaggedUserIds} onClassMutate={() => void mutate()} />
                     </TabsContent>
 
                     <TabsContent
