@@ -382,7 +382,7 @@ export const ReportExportModal = forwardRef<
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-2 mt-6">
+                    <div className="flex justify-end gap-4 mt-6">
                         <CancelButton
                             onClick={handleClose}
                             disabled={isGenerating}

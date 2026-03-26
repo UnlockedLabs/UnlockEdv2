@@ -88,7 +88,7 @@ const ModifyProgramModal = forwardRef(function (
                             />
                         </label>
                     </div>
-                    <div className="modal-action">
+                    <div className="flex justify-end gap-4 mt-6">
                         <button
                             className="btn"
                             onClick={(e) => {
