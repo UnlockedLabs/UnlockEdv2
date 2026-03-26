@@ -53,7 +53,7 @@ const STATUS_DISPLAY: Record<string, { label: string; className: string }> = {
         className: 'bg-yellow-100 text-yellow-800 border-yellow-300'
     },
     absent_unexcused: {
-        label: 'Absent',
+        label: 'Unexcused',
         className: 'bg-red-100 text-red-800 border-red-300'
     }
 };

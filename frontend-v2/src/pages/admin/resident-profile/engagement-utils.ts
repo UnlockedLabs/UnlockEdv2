@@ -1,4 +1,4 @@
-export type EngagementLevel = 'strong' | 'check-in' | 'support';
+export type EngagementLevel = 'strong' | 'check-in' | 'support' | 'none';
 
 interface EngagementIndicator {
     level: EngagementLevel;
@@ -10,8 +10,13 @@ export function getEngagementIndicator(
     sessionsAttended: number,
     totalSessions: number
 ): EngagementIndicator {
-    const rate =
-        totalSessions > 0 ? (sessionsAttended / totalSessions) * 100 : 0;
+    if (totalSessions === 0)
+        return {
+            level: 'none',
+            label: '',
+            className: ''
+        };
+    const rate = (sessionsAttended / totalSessions) * 100;
     if (rate >= 80)
         return {
             level: 'strong',

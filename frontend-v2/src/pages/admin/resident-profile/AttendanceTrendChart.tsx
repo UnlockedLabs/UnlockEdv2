@@ -13,6 +13,12 @@ interface AttendanceTrendChartProps {
 }
 
 export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
+    const chartData = data.map((d, i) => ({
+        ...d,
+        week: `Week ${i + 1}`,
+        rate: Math.round(d.rate)
+    }));
+
     if (data.length === 0) {
         return (
             <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
@@ -35,7 +41,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                 Weekly attendance rate over the last 8 weeks
             </p>
             <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={data}>
+                <LineChart data={chartData}>
                     <CartesianGrid
                         strokeDasharray="3 3"
                         stroke="#E5E7EB"
@@ -49,6 +55,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                         tick={{ fontSize: 12, fill: '#6B7280' }}
                         tickLine={{ stroke: '#E5E7EB' }}
                         domain={[0, 100]}
+                        tickFormatter={(value: number) => `${Math.round(value)}%`}
                     />
                     <Tooltip
                         contentStyle={{
@@ -65,6 +72,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                         strokeWidth={2}
                         dot={{ fill: '#556830', r: 4 }}
                         name="Attendance Rate (%)"
+                        formatter={(value: number) => Math.round(value)}
                     />
                 </LineChart>
             </ResponsiveContainer>

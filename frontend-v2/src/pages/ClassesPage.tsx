@@ -219,8 +219,8 @@ export default function ClassesPage() {
     }, [filteredClasses, currentPage, itemsPerPage]);
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
-            <div className="max-w-7xl mx-auto px-6 py-8">
+        <>
+        <div className="max-w-7xl mx-auto px-6 py-8">
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
@@ -234,10 +234,10 @@ export default function ClassesPage() {
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
-                                className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 gap-2"
+                                className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
                                 onClick={() => setShowBulkCancel(true)}
                             >
-                                <CalendarOff className="size-4" />
+                                <CalendarOff className="size-4 mr-2" />
                                 Cancel Classes by Instructor
                             </Button>
                             <Button
@@ -613,7 +613,7 @@ export default function ClassesPage() {
                 onClose={() => setShowBulkCancel(false)}
                 mutate={mutateClasses}
             />
-        </div>
+        </>
     );
 }
 

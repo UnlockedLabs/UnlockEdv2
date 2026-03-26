@@ -571,9 +571,9 @@ func (srv *Server) handleCreateUserNote(w http.ResponseWriter, r *http.Request, 
 		return newBadRequestServiceError(errors.New("note is required"), "note cannot be empty")
 	}
 	note := &models.UserNote{
-		UserID:  uint(userId),
-		AdminID: claims.UserID,
-		Note:    strings.TrimSpace(body.Note),
+		UserID:       uint(userId),
+		CreateUserID: claims.UserID,
+		Note:         strings.TrimSpace(body.Note),
 	}
 	if err := srv.Db.CreateUserNote(r.Context(), note); err != nil {
 		return newDatabaseServiceError(err)

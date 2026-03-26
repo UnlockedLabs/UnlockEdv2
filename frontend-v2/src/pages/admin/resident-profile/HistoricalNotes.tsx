@@ -50,7 +50,7 @@ export function HistoricalNotes({
                                 <span>•</span>
                                 <span>{formatDate(note.date)}</span>
                             </div>
-                            <div className="text-sm text-gray-700">
+                            <div className="text-sm text-gray-700 break-words overflow-hidden">
                                 {note.note}
                             </div>
                         </div>

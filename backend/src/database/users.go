@@ -774,7 +774,7 @@ func (db *DB) GetUserNotes(ctx context.Context, userID uint) ([]models.UserNoteR
 	if err := db.WithContext(ctx).
 		Table("user_notes un").
 		Select("un.id, un.created_at AS date, un.note, CONCAT(u.name_first, ' ', u.name_last) AS admin").
-		Joins("INNER JOIN users u ON u.id = un.admin_id").
+		Joins("INNER JOIN users u ON u.id = un.create_user_id").
 		Where("un.user_id = ?", userID).
 		Order("un.created_at DESC").
 		Scan(&notes).Error; err != nil {
@@ -973,7 +973,7 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 		JOIN program_class_enrollments e ON e.class_id = pc.id AND e.user_id = pcea.user_id
 		JOIN users u ON u.id = pcea.user_id
 		WHERE pcea.user_id = ?
-			AND CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date
+			AND (e.enrolled_at IS NULL OR CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date)
 			AND (e.enrollment_ended_at IS NULL OR CAST(DATE(e.enrollment_ended_at) AS TEXT) >= pcea.date)
 	`
 

@@ -135,9 +135,11 @@ export function ActiveEnrollmentsTable({
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge className={indicator.className}>
-                                        {indicator.label}
-                                    </Badge>
+                                    {indicator.level !== 'none' && (
+                                        <Badge className={indicator.className}>
+                                            {indicator.label}
+                                        </Badge>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button

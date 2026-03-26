@@ -40,7 +40,7 @@ export default function ResidentProfile() {
         `/api/users/${residentId}/profile`
     );
 
-    const { data: programsResp } = useSWR<
+    const { data: programsResp, mutate: mutatePrograms } = useSWR<
         ServerResponseMany<ResidentProgramOverview>
     >(residentId ? `/api/users/${residentId}/programs` : null);
 
@@ -129,7 +129,8 @@ export default function ResidentProfile() {
 
     const handleActionSuccess = useCallback(() => {
         void mutateProfile();
-    }, [mutateProfile]);
+        void mutatePrograms();
+    }, [mutateProfile, mutatePrograms]);
 
     if (error || !user) return null;
 
@@ -157,8 +158,7 @@ export default function ResidentProfile() {
     const userIsDeptAdmin = canSwitchFacility(user);
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
-            <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-8">
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
                     <button
                         onClick={() => navigate('/residents')}
@@ -260,6 +260,5 @@ export default function ResidentProfile() {
                     onSuccess={() => void mutateNotes()}
                 />
             </div>
-        </div>
     );
 }

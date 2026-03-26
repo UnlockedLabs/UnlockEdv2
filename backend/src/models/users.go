@@ -229,13 +229,16 @@ func (rpc *ResidentProgramClassInfo) CalculateAttendancePercentage() string {
 }
 
 type UserNote struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	UserID    uint      `json:"user_id" gorm:"not null"`
-	AdminID   uint      `json:"admin_id" gorm:"not null"`
-	Note      string    `json:"note" gorm:"not null"`
-	CreatedAt time.Time `json:"created_at"`
+	ID           uint       `json:"id" gorm:"primaryKey"`
+	UserID       uint       `json:"user_id" gorm:"not null"`
+	Note         string     `json:"note" gorm:"not null"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty" gorm:"index"`
+	CreateUserID uint       `json:"create_user_id" gorm:"not null"`
+	UpdateUserID *uint      `json:"update_user_id,omitempty"`
 
-	Admin *User `json:"admin,omitempty" gorm:"foreignKey:AdminID;references:ID"`
+	Creator *User `json:"creator,omitempty" gorm:"foreignKey:CreateUserID;references:ID"`
 }
 
 func (UserNote) TableName() string { return "user_notes" }
