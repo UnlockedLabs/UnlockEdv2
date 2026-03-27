@@ -148,7 +148,7 @@ export default function StudentManagement() {
         showFacilityColumn && facilityFilter !== 'all'
             ? `?facility_id=${facilityFilter}`
             : '';
-    const { data: statsResp } = useSWR<ServerResponseOne<UserStatsData>>(
+    const { data: statsResp, mutate: mutateStats } = useSWR<ServerResponseOne<UserStatsData>>(
         `/api/users/stats${statsParam}`
     );
     const stats = statsResp?.data;
@@ -202,6 +202,7 @@ export default function StudentManagement() {
             toaster(`Resident ${formData.name_first} ${formData.name_last} added successfully`, ToastState.success);
             addForm.reset();
             void mutate();
+            void mutateStats();
         } else {
             toaster(
                 response.message || 'Failed to create resident',
@@ -212,6 +213,7 @@ export default function StudentManagement() {
 
     const handleMutate = () => {
         void mutate();
+        void mutateStats();
     };
 
     const activeResidents = userData.filter((r) => !r.deactivated_at);
@@ -250,6 +252,7 @@ export default function StudentManagement() {
     const handleBulkSuccess = () => {
         setSelectedResidents(new Set());
         void mutate();
+        void mutateStats();
     };
 
     const openAction = (
