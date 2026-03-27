@@ -73,6 +73,7 @@ export function AddNoteDialog({
                             onChange={(e) => setNote(e.target.value)}
                             placeholder="Add contextual information, support plans, or important updates..."
                             rows={4}
+                            className="[overflow-wrap:anywhere] [field-sizing:normal]"
                         />
                     </div>
                 </div>

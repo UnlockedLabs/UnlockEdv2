@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { ChevronRight } from 'lucide-react';
 import { useAuth, isUserDeactivated, canSwitchFacility } from '@/auth/useAuth';
@@ -130,7 +130,12 @@ export default function ResidentProfile() {
     const handleActionSuccess = useCallback(() => {
         void mutateProfile();
         void mutatePrograms();
-    }, [mutateProfile, mutatePrograms]);
+        void mutateNotes();
+        setTimeout(() => {
+            void mutateProfile();
+            void mutatePrograms();
+        }, 1000);
+    }, [mutateProfile, mutatePrograms, mutateNotes]);
 
     if (error || !user) return null;
 

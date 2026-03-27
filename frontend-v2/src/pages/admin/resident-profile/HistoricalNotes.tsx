@@ -21,7 +21,7 @@ export function HistoricalNotes({
     onAddNote
 }: HistoricalNotesProps) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-[#203622]">
                     Historical Notes
@@ -50,7 +50,7 @@ export function HistoricalNotes({
                                 <span>•</span>
                                 <span>{formatDate(note.date)}</span>
                             </div>
-                            <div className="text-sm text-gray-700 break-words overflow-hidden">
+                            <div className="text-sm text-gray-700 [overflow-wrap:anywhere]">
                                 {note.note}
                             </div>
                         </div>

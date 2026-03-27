@@ -54,7 +54,7 @@ export function ResetPasswordDialog({
             const data = (resp as ServerResponseOne<ResetPasswordResponse>)
                 .data;
             setTempPassword(data.temp_password);
-            toast.success('Password has been reset successfully');
+            toast.success(`Password reset for ${user.name_first} ${user.name_last}`);
             setPhase('result');
         } else {
             toast.error(resp.message);

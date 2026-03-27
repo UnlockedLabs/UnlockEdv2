@@ -785,7 +785,8 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newUnauthorizedServiceError()
 	}
 
-	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, queryCtx.All)
+	allFacilities := claims.Role == models.DepartmentAdmin || claims.Role == models.SystemAdmin || queryCtx.All
+	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, allFacilities)
 	if err != nil {
 		log.add("user_id", userID)
 		return newDatabaseServiceError(err)
@@ -796,8 +797,12 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newInternalServerServiceError(err, "Failed to convert attendance data to CSV format")
 	}
 
+	docLabel := strings.TrimSpace(user.DocID)
+	if docLabel == "" {
+		docLabel = fmt.Sprintf("User%d", userID)
+	}
 	date := time.Now().Format("2006-01-02")
-	filename := fmt.Sprintf("Attendance-%s-%s.csv", user.DocID, date)
+	filename := fmt.Sprintf("Attendance-%s-%s.csv", docLabel, date)
 
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))

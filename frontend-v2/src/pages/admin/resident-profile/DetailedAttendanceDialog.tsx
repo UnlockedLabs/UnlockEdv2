@@ -48,6 +48,10 @@ const STATUS_DISPLAY: Record<string, { label: string; className: string }> = {
         label: 'Partial',
         className: 'bg-yellow-100 text-yellow-800 border-yellow-300'
     },
+    absent: {
+        label: 'Unexcused',
+        className: 'bg-red-100 text-red-800 border-red-300'
+    },
     absent_excused: {
         label: 'Excused',
         className: 'bg-yellow-100 text-yellow-800 border-yellow-300'
@@ -84,7 +88,7 @@ export function DetailedAttendanceDialog({
             );
             const disposition = headers.get('Content-Disposition');
             const filename =
-                disposition?.match(/filename="?(.+)"?/)?.[1] ??
+                disposition?.match(/filename="?([^"]+)"?/)?.[1] ??
                 'attendance-export.csv';
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -164,7 +168,7 @@ export function DetailedAttendanceDialog({
                                                 <TableCell className="text-sm text-gray-600">
                                                     {record.marked_by || '\u2014'}
                                                 </TableCell>
-                                                <TableCell className="text-sm text-gray-600">
+                                                <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
                                                     {record.note || '\u2014'}
                                                 </TableCell>
                                             </TableRow>

@@ -72,7 +72,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                         strokeWidth={2}
                         dot={{ fill: '#556830', r: 4 }}
                         name="Attendance Rate (%)"
-                        formatter={(value: number) => Math.round(value)}
+                        formatter={(value: number) => `${Math.round(value)}%`}
                     />
                 </LineChart>
             </ResponsiveContainer>

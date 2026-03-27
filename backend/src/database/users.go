@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -759,7 +760,7 @@ func (db *DB) GetUserWeeklyAttendanceTrend(ctx context.Context, userID, weeks in
 	for _, r := range rows {
 		rate := 0.0
 		if r.TotalCount > 0 {
-			rate = r.PresentCount / r.TotalCount * 100
+			rate = math.Round(r.PresentCount / r.TotalCount * 100)
 		}
 		trends = append(trends, models.WeeklyAttendanceTrend{
 			Week: fmt.Sprintf("%s %d", r.WeekStart.Format("Jan"), r.WeekStart.Day()),
