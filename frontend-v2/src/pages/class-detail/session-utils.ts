@@ -166,6 +166,21 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
         }
     }
 
+    // Resolve chains: if A→B and B→C, update A to point to C (the final destination)
+    for (const [fromDate, link] of fromTo) {
+        let currentTarget = link.date;
+        const visited = new Set<string>([fromDate]);
+        while (fromTo.has(currentTarget) && !visited.has(currentTarget)) {
+            visited.add(currentTarget);
+            const nextLink = fromTo.get(currentTarget)!;
+            fromTo.set(fromDate, {
+                ...nextLink,
+                date: nextLink.date
+            });
+            currentTarget = nextLink.date;
+        }
+    }
+
     return { fromTo, toFrom, appliedFutureDates };
 }
 
@@ -291,13 +306,87 @@ export function buildSessionDisplays(
         })
         .sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
 
-    const byDate = new Map(sessions.map((s) => [s.instance.date, s]));
+    // Fix double-reschedule chains (A→B→C) using instance-level data.
+    // When B is re-rescheduled to C, the backend overwrites B's override, breaking A's link.
+    // A becomes an orphan: is_cancelled + is_rescheduled but no rescheduled_to_date and not in fromTo.
+    // B becomes an intermediate: is_cancelled + is_rescheduled WITH rescheduled_to_date=C.
+    // We detect orphans first, then only activate chain logic if orphans exist.
+
+    // Step 1: Find orphans per event (cancelled+rescheduled, no target, not already matched by fromTo)
+    const orphansByEvent = new Map<number, SessionDisplay[]>();
     for (const s of sessions) {
-        if (s.isRescheduledFrom && s.rescheduledDate) {
-            const target = byDate.get(s.rescheduledDate);
-            if (target) s.rescheduledClassTime = target.instance.class_time;
+        const inst = s.instance;
+        if (
+            inst.is_cancelled &&
+            inst.is_rescheduled &&
+            !s.isRescheduledFrom &&
+            !inst.rescheduled_to_date
+        ) {
+            const list = orphansByEvent.get(inst.event_id) ?? [];
+            list.push(s);
+            orphansByEvent.set(inst.event_id, list);
         }
     }
 
-    return sessions;
+    // Step 2: Only resolve chains for events that have orphans
+    const intermediateDates = new Set<string>();
+    for (const [eventId, orphans] of orphansByEvent) {
+        // Build rescheduled_to chain for this event from intermediate instances
+        // Intermediates are cancelled+rescheduled instances that DO have rescheduled_to_date
+        const rescheduledToChain = new Map<string, string>();
+        for (const inst of instances) {
+            if (
+                inst.event_id === eventId &&
+                inst.is_cancelled &&
+                inst.is_rescheduled &&
+                inst.rescheduled_to_date
+            ) {
+                rescheduledToChain.set(inst.date, inst.rescheduled_to_date);
+            }
+        }
+        if (rescheduledToChain.size === 0) continue;
+
+        // Follow chain to find final destination
+        let finalTarget: string | undefined;
+        for (const [, target] of rescheduledToChain) {
+            let current = target;
+            const visited = new Set<string>();
+            while (rescheduledToChain.has(current) && !visited.has(current)) {
+                visited.add(current);
+                current = rescheduledToChain.get(current)!;
+            }
+            finalTarget = current;
+            break;
+        }
+        if (!finalTarget) continue;
+
+        // Mark intermediates for filtering
+        for (const date of rescheduledToChain.keys()) {
+            intermediateDates.add(date);
+        }
+
+        // Connect orphans to final destination
+        for (const s of orphans) {
+            s.isRescheduledFrom = true;
+            s.isCancelled = false;
+            s.rescheduledDate = finalTarget;
+        }
+    }
+
+    // Filter out intermediate chain dates (only when double-reschedule chains exist)
+    const filtered = intermediateDates.size > 0
+        ? sessions.filter((s) => !intermediateDates.has(s.instance.date))
+        : sessions;
+
+    const byDate = new Map(filtered.map((s) => [s.instance.date, s]));
+    for (const s of filtered) {
+        if (s.isRescheduledFrom && s.rescheduledDate) {
+            const target = byDate.get(s.rescheduledDate);
+            if (target && target.instance.class_time !== s.instance.class_time) {
+                s.rescheduledClassTime = target.instance.class_time;
+            }
+        }
+    }
+
+    return filtered;
 }

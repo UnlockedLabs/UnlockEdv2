@@ -1077,8 +1077,44 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		}
 		eventInstances = append(eventInstances, eventInstance)
 	}
-	for _, override := range event.Overrides { //adding the rescheduled ones to instances slice
-		if override.IsCancelled { //skip cancelled ones
+	// Build a map of non-cancelled, non-reschedule overrides (room/instructor/time changes)
+	// keyed by date string so we can apply them to base occurrences
+	sameDateOverrides := make(map[string]models.ProgramClassEventOverride)
+	for _, override := range event.Overrides {
+		isReschedule := override.LinkedOverrideEventID != nil && *override.LinkedOverrideEventID != override.ID
+		if override.IsCancelled || isReschedule {
+			continue
+		}
+		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil || len(parsedRule.All()) == 0 {
+			continue
+		}
+		dateStr := parsedRule.All()[0].In(loc).Format("2006-01-02")
+		sameDateOverrides[dateStr] = override
+	}
+	// Apply room/instructor/time overrides to existing base instances
+	for i := range eventInstances {
+		if sdOverride, ok := sameDateOverrides[eventInstances[i].Date]; ok {
+			parsedRule, _ := rrule.StrToRRule(sdOverride.OverrideRrule)
+			overrideDate := parsedRule.All()[0]
+			duration, err := time.ParseDuration(sdOverride.Duration)
+			if err == nil {
+				overrideEnd := overrideDate.Add(duration)
+				eventInstances[i].ClassTime = overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
+			}
+			eventInstances[i].OverrideID = sdOverride.ID
+		}
+	}
+	// Index existing instances by date for dedup
+	instanceByDate := make(map[string]int, len(eventInstances))
+	for i, inst := range eventInstances {
+		instanceByDate[inst.Date] = i
+	}
+	// Add rescheduled sessions (overrides with LinkedOverrideEventID pointing to a different override)
+	// If the target date already has a base instance, replace it instead of duplicating
+	for _, override := range event.Overrides {
+		isReschedule := override.LinkedOverrideEventID != nil && *override.LinkedOverrideEventID != override.ID
+		if override.IsCancelled || !isReschedule {
 			continue
 		}
 		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
@@ -1102,18 +1138,16 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		overrideClassTime := overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
 
 		rescheduledFromDate := ""
-		if override.LinkedOverrideEventID != nil {
-			for _, other := range event.Overrides {
-				if other.ID == *override.LinkedOverrideEventID && other.IsCancelled {
-					otherRule, err := rrule.StrToRRule(other.OverrideRrule)
-					if err == nil && len(otherRule.All()) > 0 {
-						rescheduledFromDate = otherRule.All()[0].In(loc).Format("2006-01-02")
-					}
-					break
+		for _, other := range event.Overrides {
+			if other.ID == *override.LinkedOverrideEventID && other.IsCancelled {
+				otherRule, err := rrule.StrToRRule(other.OverrideRrule)
+				if err == nil && len(otherRule.All()) > 0 {
+					rescheduledFromDate = otherRule.All()[0].In(loc).Format("2006-01-02")
 				}
+				break
 			}
 		}
-		eventInstances = append(eventInstances, models.ClassEventInstance{
+		rescheduledInstance := models.ClassEventInstance{
 			EventID:             event.ID,
 			ClassTime:           overrideClassTime,
 			Date:                overrideDateStr,
@@ -1121,7 +1155,13 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			IsCancelled:         false,
 			RescheduledFromDate: rescheduledFromDate,
 			OverrideID:          override.ID,
-		})
+		}
+		if existingIdx, exists := instanceByDate[overrideDateStr]; exists {
+			eventInstances[existingIdx] = rescheduledInstance
+		} else {
+			instanceByDate[overrideDateStr] = len(eventInstances)
+			eventInstances = append(eventInstances, rescheduledInstance)
+		}
 	}
 	slices.SortFunc(eventInstances, func(a, b models.ClassEventInstance) int {
 		return cmp.Compare(b.Date, a.Date)

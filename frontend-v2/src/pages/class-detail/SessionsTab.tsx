@@ -357,6 +357,9 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 session.instance.date
             );
         }
+        if (!overrideId && session.instance.override_id) {
+            overrideId = session.instance.override_id;
+        }
 
         if (!overrideId) return;
         const hasAppliedFuture =
