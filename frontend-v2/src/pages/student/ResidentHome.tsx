@@ -158,14 +158,14 @@ export default function ResidentHome() {
                                 heading="Your Top Content"
                                 items={topUserContent}
                                 onViewAll={() =>
-                                    navigate('/knowledge-center/libraries')
+                                    navigate('/knowledge-center')
                                 }
                             />
                             <TopContentList
                                 heading="Popular Content"
                                 items={topFacilityContent}
                                 onViewAll={() =>
-                                    navigate('/knowledge-center/libraries')
+                                    navigate('/knowledge-center')
                                 }
                             />
                         </div>

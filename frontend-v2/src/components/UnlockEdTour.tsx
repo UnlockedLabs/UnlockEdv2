@@ -84,7 +84,7 @@ export default function UnlockEdTour() {
                         navigate('/home');
                         return;
                     case '#library-viewer-sub-page':
-                        navigate('/knowledge-center/libraries');
+                        navigate('/knowledge-center');
                         return;
                     case '#top-content':
                         navigate('/viewer/libraries/1');
