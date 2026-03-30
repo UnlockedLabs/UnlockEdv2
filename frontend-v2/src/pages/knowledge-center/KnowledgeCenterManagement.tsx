@@ -53,6 +53,263 @@ import API from '@/api/api';
 
 const ITEMS_PER_PAGE = 12;
 
+interface CardHandlers {
+    onToggleFeatured: (id: number, type: 'library' | 'video' | 'link') => void;
+    onToggleVisibility: (id: number, type: 'library' | 'video' | 'link') => void;
+    onNavigate: (path: string) => void;
+}
+
+function LibraryCard({ library, handlers }: { library: Library; handlers: CardHandlers }) {
+    return (
+        <div
+            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+            onClick={() => handlers.onNavigate(`/viewer/libraries/${library.id}`)}
+        >
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handlers.onToggleFeatured(library.id, 'library');
+                            }}
+                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                        >
+                            <Star
+                                className={`size-4 ${library.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                            />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="text-sm">
+                            Featured content appears at the top for residents
+                        </p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <div className="flex items-start gap-3 mb-3">
+                <img
+                    src={library.thumbnail_url ?? ''}
+                    alt={library.title}
+                    className="size-12 rounded flex-shrink-0 border border-gray-200"
+                />
+                <div className="flex-1 min-w-0 pr-8">
+                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                        {library.title}
+                    </h3>
+                </div>
+            </div>
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                {library.description}
+            </p>
+            <div
+                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Switch
+                        checked={library.visibility_status}
+                        onCheckedChange={() =>
+                            handlers.onToggleVisibility(library.id, 'library')
+                        }
+                    />
+                    <span className="text-gray-700">Visible</span>
+                </div>
+                <Badge
+                    variant={library.visibility_status ? 'default' : 'secondary'}
+                    className={
+                        library.visibility_status
+                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                    }
+                >
+                    {library.visibility_status ? 'Visible' : 'Hidden'}
+                </Badge>
+            </div>
+        </div>
+    );
+}
+
+interface VideoCardProps {
+    video: Video;
+    handlers: CardHandlers;
+    onRetry: (video: Video) => void;
+    onViewStatus: (video: Video) => void;
+}
+
+function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
+    const available = videoIsAvailable(video);
+    return (
+        <div
+            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative`}
+            onClick={() => {
+                if (available) handlers.onNavigate(`/viewer/videos/${video.id}`);
+            }}
+        >
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handlers.onToggleFeatured(video.id, 'video');
+                            }}
+                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                        >
+                            <Star
+                                className={`size-4 ${video.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                            />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="text-sm">
+                            Featured content appears at the top for residents
+                        </p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <div className="flex items-start gap-3 mb-3">
+                <div className="relative flex-shrink-0">
+                    <img
+                        src={`/api/photos/${video.external_id}.jpg`}
+                        alt={video.title}
+                        className="size-12 rounded object-cover border border-gray-200"
+                    />
+                    <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[10px] px-1 py-0.5 rounded">
+                        {formatVideoDuration(video.duration)}
+                    </div>
+                </div>
+                <div className="flex-1 min-w-0 pr-8">
+                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                        {video.title}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                        {video.channel_title}
+                    </p>
+                </div>
+            </div>
+            {available ? (
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                    {video.description}
+                </p>
+            ) : (
+                <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-sm text-red-600 mb-2">
+                        {getVideoErrorMessage(video) ?? 'Video is processing...'}
+                    </p>
+                    {video.video_download_attempts.length < MAX_DOWNLOAD_ATTEMPTS && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => onRetry(video)}
+                        >
+                            Try Again
+                        </Button>
+                    )}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs ml-2"
+                        onClick={() => onViewStatus(video)}
+                    >
+                        View Status
+                    </Button>
+                </div>
+            )}
+            <div
+                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Switch
+                        checked={video.visibility_status}
+                        onCheckedChange={() =>
+                            handlers.onToggleVisibility(video.id, 'video')
+                        }
+                    />
+                    <span className="text-gray-700">Visible</span>
+                </div>
+                <Badge
+                    variant={video.visibility_status ? 'default' : 'secondary'}
+                    className={
+                        video.visibility_status
+                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                    }
+                >
+                    {video.visibility_status ? 'Visible' : 'Hidden'}
+                </Badge>
+            </div>
+        </div>
+    );
+}
+
+function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers: CardHandlers; onLinkClick: (link: HelpfulLink) => void }) {
+    return (
+        <div
+            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+            onClick={() => onLinkClick(link)}
+        >
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handlers.onToggleFeatured(link.id, 'link');
+                            }}
+                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                        >
+                            <Star
+                                className={`size-4 ${link.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                            />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="text-sm">
+                            Featured content appears at the top for residents
+                        </p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <div className="pr-8 mb-2">
+                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    {link.title}
+                </h3>
+            </div>
+            <p className="text-sm text-[#556830] mb-2 truncate">{link.url}</p>
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                {link.description}
+            </p>
+            <div
+                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Switch
+                        checked={link.visibility_status}
+                        onCheckedChange={() =>
+                            handlers.onToggleVisibility(link.id, 'link')
+                        }
+                    />
+                    <span className="text-gray-700">Visible</span>
+                </div>
+                <Badge
+                    variant={link.visibility_status ? 'default' : 'secondary'}
+                    className={
+                        link.visibility_status
+                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                    }
+                >
+                    {link.visibility_status ? 'Visible' : 'Hidden'}
+                </Badge>
+            </div>
+        </div>
+    );
+}
+
 export default function KnowledgeCenterManagement() {
     const navigate = useNavigate();
     const { toaster } = useToast();
@@ -79,6 +336,7 @@ export default function KnowledgeCenterManagement() {
 
     const [polling, setPolling] = useState(false);
     const pollingRef = useRef(false);
+    const recentToggles = useRef(new Set<string>());
     const [statusDialogOpen, setStatusDialogOpen] = useState(false);
     const [targetVideo, setTargetVideo] = useState<Video | null>(null);
 
@@ -95,8 +353,9 @@ export default function KnowledgeCenterManagement() {
     }, [searchQuery, visibilityFilter, categoryFilter]);
 
     const visibilityParam = useMemo(() => {
-        if (visibilityFilter === 'all' || visibilityFilter === 'not-featured')
-            return '';
+        if (visibilityFilter === 'not-featured')
+            return '&visibility=all';
+        if (visibilityFilter === 'all') return '&visibility=all';
         return `&visibility=${visibilityFilter}`;
     }, [visibilityFilter]);
 
@@ -198,10 +457,18 @@ export default function KnowledgeCenterManagement() {
         });
     };
 
+    const guardToggle = (key: string): boolean => {
+        if (recentToggles.current.has(key)) return false;
+        recentToggles.current.add(key);
+        setTimeout(() => recentToggles.current.delete(key), 1000);
+        return true;
+    };
+
     const handleToggleFeatured = async (
         id: number,
         type: 'library' | 'video' | 'link'
     ) => {
+        if (!guardToggle(`featured-${type}-${id}`)) return;
         const endpoints: Record<string, string> = {
             library: `libraries/${id}/favorite`,
             video: `videos/${id}/favorite`,
@@ -222,6 +489,7 @@ export default function KnowledgeCenterManagement() {
         id: number,
         type: 'library' | 'video' | 'link'
     ) => {
+        if (!guardToggle(`visibility-${type}-${id}`)) return;
         const endpoints: Record<string, string> = {
             library: `libraries/${id}/toggle`,
             video: `videos/${id}/visibility`,
@@ -272,10 +540,7 @@ export default function KnowledgeCenterManagement() {
 
     const handleRetryVideo = async (video: Video) => {
         if (polling) {
-            toaster(
-                'Please wait before retrying again',
-                ToastState.error
-            );
+            toaster('Please wait before retrying again', ToastState.error);
             return;
         }
         const resp = await API.put<null, object>(
@@ -315,271 +580,11 @@ export default function KnowledgeCenterManagement() {
             : `Download is processing: ${getVideoErrorMessage(targetVideo) ?? ''}\nThe video download will be retried every 3 hours.`;
     };
 
-    const LibraryCard = ({ library }: { library: Library }) => (
-        <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
-            onClick={() => navigate(`/viewer/libraries/${library.id}`)}
-        >
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                void handleToggleFeatured(
-                                    library.id,
-                                    'library'
-                                );
-                            }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
-                        >
-                            <Star
-                                className={`size-4 ${library.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
-                            />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="text-sm">
-                            Featured content appears at the top for residents
-                        </p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-            <div className="flex items-start gap-3 mb-3">
-                <img
-                    src={library.thumbnail_url ?? ''}
-                    alt={library.title}
-                    className="size-12 rounded flex-shrink-0 border border-gray-200"
-                />
-                <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
-                        {library.title}
-                    </h3>
-                </div>
-            </div>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                {library.description}
-            </p>
-            <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Switch
-                        checked={library.visibility_status}
-                        onCheckedChange={() =>
-                            void handleToggleVisibility(
-                                library.id,
-                                'library'
-                            )
-                        }
-                    />
-                    <span className="text-gray-700">Visible</span>
-                </div>
-                <Badge
-                    variant={
-                        library.visibility_status ? 'default' : 'secondary'
-                    }
-                    className={
-                        library.visibility_status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                    }
-                >
-                    {library.visibility_status ? 'Visible' : 'Hidden'}
-                </Badge>
-            </div>
-        </div>
-    );
-
-    const VideoCard = ({ video }: { video: Video }) => {
-        const available = videoIsAvailable(video);
-        return (
-            <div
-                className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative`}
-                onClick={() => {
-                    if (available) navigate(`/viewer/videos/${video.id}`);
-                }}
-            >
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleToggleFeatured(
-                                        video.id,
-                                        'video'
-                                    );
-                                }}
-                                className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
-                            >
-                                <Star
-                                    className={`size-4 ${video.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
-                                />
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p className="text-sm">
-                                Featured content appears at the top for
-                                residents
-                            </p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <div className="flex items-start gap-3 mb-3">
-                    <div className="relative flex-shrink-0">
-                        <img
-                            src={`/api/photos/${video.external_id}.jpg`}
-                            alt={video.title}
-                            className="size-12 rounded object-cover border border-gray-200"
-                        />
-                        <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[10px] px-1 py-0.5 rounded">
-                            {formatVideoDuration(video.duration)}
-                        </div>
-                    </div>
-                    <div className="flex-1 min-w-0 pr-8">
-                        <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
-                            {video.title}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                            {video.channel_title}
-                        </p>
-                    </div>
-                </div>
-                {available ? (
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                        {video.description}
-                    </p>
-                ) : (
-                    <div className="mb-3" onClick={(e) => e.stopPropagation()}>
-                        <p className="text-sm text-red-600 mb-2">
-                            {getVideoErrorMessage(video) ??
-                                'Video is processing...'}
-                        </p>
-                        {video.video_download_attempts.length <
-                            MAX_DOWNLOAD_ATTEMPTS && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-xs"
-                                onClick={() =>
-                                    void handleRetryVideo(video)
-                                }
-                            >
-                                Try Again
-                            </Button>
-                        )}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs ml-2"
-                            onClick={() => {
-                                setTargetVideo(video);
-                                setStatusDialogOpen(true);
-                            }}
-                        >
-                            View Status
-                        </Button>
-                    </div>
-                )}
-                <div
-                    className="flex items-center justify-between pt-3 border-t border-gray-100"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Switch
-                            checked={video.visibility_status}
-                            onCheckedChange={() =>
-                                void handleToggleVisibility(
-                                    video.id,
-                                    'video'
-                                )
-                            }
-                        />
-                        <span className="text-gray-700">Visible</span>
-                    </div>
-                    <Badge
-                        variant={
-                            video.visibility_status ? 'default' : 'secondary'
-                        }
-                        className={
-                            video.visibility_status
-                                ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                        }
-                    >
-                        {video.visibility_status ? 'Visible' : 'Hidden'}
-                    </Badge>
-                </div>
-            </div>
-        );
+    const cardHandlers: CardHandlers = {
+        onToggleFeatured: (id, type) => void handleToggleFeatured(id, type),
+        onToggleVisibility: (id, type) => void handleToggleVisibility(id, type),
+        onNavigate: (path) => navigate(path)
     };
-
-    const LinkCard = ({ link }: { link: HelpfulLink }) => (
-        <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
-            onClick={() => void handleLinkClick(link)}
-        >
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                void handleToggleFeatured(link.id, 'link');
-                            }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
-                        >
-                            <Star
-                                className={`size-4 ${link.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
-                            />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="text-sm">
-                            Featured content appears at the top for residents
-                        </p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-            <div className="pr-8 mb-2">
-                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
-                    {link.title}
-                </h3>
-            </div>
-            <p className="text-sm text-[#556830] mb-2 truncate">{link.url}</p>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                {link.description}
-            </p>
-            <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Switch
-                        checked={link.visibility_status}
-                        onCheckedChange={() =>
-                            void handleToggleVisibility(link.id, 'link')
-                        }
-                    />
-                    <span className="text-gray-700">Visible</span>
-                </div>
-                <Badge
-                    variant={
-                        link.visibility_status ? 'default' : 'secondary'
-                    }
-                    className={
-                        link.visibility_status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                    }
-                >
-                    {link.visibility_status ? 'Visible' : 'Hidden'}
-                </Badge>
-            </div>
-        </div>
-    );
 
     return (
         <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
@@ -715,6 +720,7 @@ export default function KnowledgeCenterManagement() {
                                     <LibraryCard
                                         key={library.id}
                                         library={library}
+                                        handlers={cardHandlers}
                                     />
                                 ))}
                             </div>
@@ -743,6 +749,12 @@ export default function KnowledgeCenterManagement() {
                                     <VideoCard
                                         key={video.id}
                                         video={video}
+                                        handlers={cardHandlers}
+                                        onRetry={(v) => void handleRetryVideo(v)}
+                                        onViewStatus={(v) => {
+                                            setTargetVideo(v);
+                                            setStatusDialogOpen(true);
+                                        }}
                                     />
                                 ))}
                             </div>
@@ -770,7 +782,12 @@ export default function KnowledgeCenterManagement() {
                         <>
                             <div className="grid grid-cols-3 gap-6">
                                 {helpfulLinks.map((link) => (
-                                    <LinkCard key={link.id} link={link} />
+                                    <LinkCard
+                                        key={link.id}
+                                        link={link}
+                                        handlers={cardHandlers}
+                                        onLinkClick={(l) => void handleLinkClick(l)}
+                                    />
                                 ))}
                             </div>
                             {linkTotal > itemsPerPage && (

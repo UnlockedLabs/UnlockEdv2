@@ -13,7 +13,7 @@ import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
-import { Toaster } from '@/components/ui/sonner';
+
 import WebsocketSession from '@/session/websocket';
 
 export default function AuthenticatedLayout() {
@@ -123,7 +123,6 @@ export default function AuthenticatedLayout() {
 
                 <TitleManager />
                 <UnlockEdTour />
-                <Toaster />
 
                 <div className={contentClass}>
                     {isFullBleed ? (
