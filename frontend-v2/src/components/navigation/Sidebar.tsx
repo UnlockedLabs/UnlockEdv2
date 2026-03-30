@@ -239,7 +239,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     onNavigate={onNavigate}
                     items={[
                         {
-                            to: '/knowledge-center-management/libraries',
+                            to: '/knowledge-center-management',
                             icon: BookOpenIcon,
                             label: 'Knowledge Center',
                             active: isActive(['/knowledge-center-management'])
@@ -291,7 +291,7 @@ function StudentNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
             )}
             {hasOpen && (
                 <NavLink
-                    to="/knowledge-center/libraries"
+                    to="/knowledge-center"
                     icon={BookOpenIcon}
                     label="Knowledge Center"
                     active={isActive(['/knowledge-center'])}

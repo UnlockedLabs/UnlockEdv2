@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Star, StarOff, ChevronLeft, Loader2 } from 'lucide-react';
+import { Star, StarOff, ArrowLeft, Loader2 } from 'lucide-react';
 import {
     Library,
     ServerResponseOne,
@@ -9,8 +9,9 @@ import {
 } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
 import { useToast } from '@/contexts/ToastContext';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { FormModal } from '@/components/shared/FormModal';
-import { SearchInput } from '@/components/shared/SearchInput';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,12 +42,26 @@ export default function LibraryViewer() {
     const [providerID, setProviderID] = useState<number>();
     const [libraryTitle, setLibraryTitle] = useState('');
     const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
     const [viewerRefreshKey, setViewerRefreshKey] = useState(0);
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const loadingTimeoutRef = useRef<number | null>(null);
     const bookmarkForm = useForm<BookmarkFormData>();
+    const { setBreadcrumbItems } = useBreadcrumb();
+    const isAdmin = user ? isAdministrator(user) : false;
+    const [libraryData, setLibraryData] = useState<Library | null>(null);
+
+    const backPath = isAdmin
+        ? '/knowledge-center-management'
+        : '/knowledge-center';
+
+    useEffect(() => {
+        setBreadcrumbItems([
+            { label: 'Knowledge Center', href: backPath },
+            { label: libraryTitle || 'Library' }
+        ]);
+        return () => setBreadcrumbItems([]);
+    }, [libraryTitle, setBreadcrumbItems, backPath]);
 
     const forceViewerRefresh = () =>
         setViewerRefreshKey((key) => key + 1);
@@ -87,6 +102,7 @@ export default function LibraryViewer() {
                 if (resp.success) {
                     setLibraryTitle(resp.data.title);
                     setProviderID(resp.data.open_content_provider_id);
+                    setLibraryData(resp.data);
                 }
                 const response = await fetch(
                     `/api/proxy/libraries/${libraryId}/`
@@ -176,39 +192,80 @@ export default function LibraryViewer() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        setSrc(`/api/proxy/libraries/${libraryId}/`);
-                        navigate('', { replace: true });
-                        forceViewerRefresh();
-                    }}
-                >
-                    <ChevronLeft className="size-4" />
-                    Library Home
-                </Button>
-
-                {user && !isAdministrator(user) && (
-                    <button onClick={toggleBookmark}>
-                        {bookmarked ? (
-                            <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
-                        ) : (
-                            <StarOff className="size-5 text-muted-foreground" />
+            <div className="px-6 py-3 border-b border-gray-200 bg-white">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setSrc(
+                                    `/api/proxy/libraries/${libraryId}/`
+                                );
+                                navigate('', { replace: true });
+                                forceViewerRefresh();
+                            }}
+                        >
+                            Library Home
+                        </Button>
+                        {user && !isAdministrator(user) && (
+                            <button onClick={toggleBookmark}>
+                                {bookmarked ? (
+                                    <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                                ) : (
+                                    <StarOff className="size-5 text-muted-foreground" />
+                                )}
+                            </button>
                         )}
-                    </button>
-                )}
-
-                <SearchInput
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                    placeholder={`Search ${libraryTitle}`}
-                    className="w-64"
-                />
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(backPath)}
+                    >
+                        <ArrowLeft className="size-4 mr-2" />
+                        Back
+                    </Button>
+                </div>
+                <div className="flex items-start justify-between mt-2">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h2 className="text-xl font-semibold text-[#203622]">
+                                {libraryTitle}
+                            </h2>
+                            {isAdmin && libraryData && (
+                                <>
+                                    <Badge
+                                        variant="outline"
+                                        className={
+                                            libraryData.visibility_status
+                                                ? 'bg-green-50 text-[#556830] border-green-200 text-xs'
+                                                : 'bg-gray-50 text-gray-600 border-gray-200 text-xs'
+                                        }
+                                    >
+                                        {libraryData.visibility_status
+                                            ? 'Visible'
+                                            : 'Hidden'}
+                                    </Badge>
+                                    {libraryData.is_favorited && (
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-amber-50 text-amber-700 border-amber-200 text-xs"
+                                        >
+                                            Featured
+                                        </Badge>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-600 line-clamp-1">
+                            {libraryData?.description}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 bg-[#E2E7EA]">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <Skeleton className="w-full h-[600px]" />
@@ -259,9 +316,11 @@ export default function LibraryViewer() {
                 title="Favorite Page"
             >
                 <form
-                    onSubmit={bookmarkForm.handleSubmit((d) =>
-                        void handleBookmarkSubmit(d)
-                    )}
+                    onSubmit={(e) => {
+                        void bookmarkForm.handleSubmit((d) =>
+                            void handleBookmarkSubmit(d)
+                        )(e);
+                    }}
                     className="space-y-4"
                 >
                     <div className="space-y-2">
