@@ -3,6 +3,9 @@ import API from '@/api/api';
 import {
     User,
     BulkPasswordResult,
+    BulkPasswordResponse,
+    BulkActionFailure,
+    BulkActionResponse,
     ServerResponseOne,
     ToastState
 } from '@/types';
@@ -41,24 +44,27 @@ export function BulkResetPasswordDialog({
     const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<BulkPasswordResult[]>([]);
+    const [failures, setFailures] = useState<BulkActionFailure[]>([]);
 
     useEffect(() => {
         if (!open) {
             setConfirmInput('');
             setResults([]);
+            setFailures([]);
         }
     }, [open]);
 
     const handleGenerate = async () => {
         setLoading(true);
-        const response = (await API.post<BulkPasswordResult[], object>(
+        const response = (await API.post<BulkPasswordResponse, object>(
             'users/bulk/reset-password',
             { user_ids: residents.map((r) => r.id) }
-        )) as ServerResponseOne<BulkPasswordResult[]>;
+        )) as ServerResponseOne<BulkPasswordResponse>;
         setLoading(false);
 
         if (response.success) {
-            setResults(response.data);
+            setResults(response.data.successes ?? []);
+            setFailures(response.data.failures ?? []);
         }
     };
 
@@ -172,16 +178,39 @@ export function BulkResetPasswordDialog({
                                 <CheckCircle className="size-5 text-green-600" />
                                 <div>
                                     <div className="font-medium text-sm text-green-900">
-                                        Passwords Generated!
+                                        Passwords Generated
                                     </div>
                                     <p className="text-sm text-green-700 mt-1">
-                                        {results.length} temporary passwords
-                                        have been created. Download the CSV
-                                        file to distribute to residents.
+                                        {results.length} temporary password
+                                        {results.length !== 1 ? 's' : ''} created.
+                                        Download the CSV file to distribute to
+                                        residents.
                                     </p>
                                 </div>
                             </div>
                         </div>
+
+                        {failures.length > 0 && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm text-red-900 mb-1">
+                                            {failures.length} failed
+                                        </div>
+                                        <div className="bg-white border border-red-200 rounded p-3 max-h-32 overflow-y-auto">
+                                            <ul className="text-sm text-gray-700 space-y-1">
+                                                {failures.map((f) => (
+                                                    <li key={f.user_id}>
+                                                        {'\u2022'} {f.name} ({f.username}): {f.reason}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <DialogFooter>
                             <Button
@@ -215,26 +244,23 @@ export function BulkDeactivateDialog({
 
     const handleDeactivate = async () => {
         setLoading(true);
-        const response = (await API.post<
-            { success_count: number; failed_count: number },
-            object
-        >('users/bulk/deactivate', {
+        const response = (await API.post<BulkActionResponse, object>(
+            'users/bulk/deactivate', {
             user_ids: residents.map((r) => r.id)
-        })) as ServerResponseOne<{
-            success_count: number;
-            failed_count: number;
-        }>;
+        })) as ServerResponseOne<BulkActionResponse>;
         setLoading(false);
 
         if (response.success) {
-            const { success_count, failed_count } = response.data;
+            const { success_count, failures } = response.data;
+            const failedCount = failures?.length ?? 0;
+            const failedNames = failures?.map((f) => f.name).join(', ');
             const msg =
-                failed_count > 0
-                    ? `${success_count} resident${success_count > 1 ? 's' : ''} deactivated, ${failed_count} failed`
-                    : `${success_count} resident${success_count > 1 ? 's' : ''} deactivated`;
+                failedCount > 0
+                    ? `${success_count} resident${success_count !== 1 ? 's' : ''} deactivated, ${failedCount} failed: ${failedNames}`
+                    : `${success_count} resident${success_count !== 1 ? 's' : ''} deactivated`;
             toaster(
                 msg,
-                failed_count > 0 ? ToastState.error : ToastState.success
+                failedCount > 0 ? ToastState.error : ToastState.success
             );
             onOpenChange(false);
             onSuccess();
@@ -334,26 +360,23 @@ export function BulkDeleteDialog({
 
     const handleDelete = async () => {
         setLoading(true);
-        const response = (await API.post<
-            { success_count: number; failed_count: number },
-            object
-        >('users/bulk/delete', {
+        const response = (await API.post<BulkActionResponse, object>(
+            'users/bulk/delete', {
             user_ids: residents.map((r) => r.id)
-        })) as ServerResponseOne<{
-            success_count: number;
-            failed_count: number;
-        }>;
+        })) as ServerResponseOne<BulkActionResponse>;
         setLoading(false);
 
         if (response.success) {
-            const { success_count, failed_count } = response.data;
+            const { success_count, failures } = response.data;
+            const failedCount = failures?.length ?? 0;
+            const failedNames = failures?.map((f) => f.name).join(', ');
             const msg =
-                failed_count > 0
-                    ? `${success_count} resident${success_count > 1 ? 's' : ''} deleted, ${failed_count} failed`
-                    : `${success_count} resident${success_count > 1 ? 's' : ''} deleted`;
+                failedCount > 0
+                    ? `${success_count} resident${success_count !== 1 ? 's' : ''} deleted, ${failedCount} failed: ${failedNames}`
+                    : `${success_count} resident${success_count !== 1 ? 's' : ''} deleted`;
             toaster(
                 msg,
-                failed_count > 0 ? ToastState.error : ToastState.success
+                failedCount > 0 ? ToastState.error : ToastState.success
             );
             onOpenChange(false);
             onSuccess();

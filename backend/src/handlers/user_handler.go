@@ -765,39 +765,43 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 	if len(req.UserIDs) == 0 {
 		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
 	}
-	users, err := srv.Db.FindUsersByIDs(req.UserIDs)
+	var facID uint
+	if !claims.canSwitchFacility() {
+		facID = claims.FacilityID
+	}
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if !claims.canSwitchFacility() {
-		filtered := users[:0]
-		for _, u := range users {
-			if u.FacilityID == claims.FacilityID {
-				filtered = append(filtered, u)
-			}
-		}
-		users = filtered
-	}
-	type resultEntry struct {
+	type successEntry struct {
 		UserID       uint   `json:"user_id"`
 		Username     string `json:"username"`
 		Name         string `json:"name"`
 		DocID        string `json:"doc_id"`
 		TempPassword string `json:"temp_password"`
 	}
-	var results []resultEntry
+	type failedEntry struct {
+		UserID   uint   `json:"user_id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Reason   string `json:"reason"`
+	}
+	var successes []successEntry
+	var failures []failedEntry
 	for i := range users {
 		user := &users[i]
 		lockedStatus, err := srv.Db.IsAccountLocked(user.ID)
 		if err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk reset: error checking locked status")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error checking locked status"})
 			continue
 		}
 		if lockedStatus.IsLocked {
 			if err := srv.Db.ResetFailedLoginAttempts(user.ID); err != nil {
 				log.add("user_id", user.ID)
 				log.error("bulk reset: error resetting failed login attempts")
+				failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error resetting failed login attempts"})
 				continue
 			}
 		}
@@ -805,12 +809,14 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk reset: error creating temp password")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error creating temp password"})
 			continue
 		}
 		if user.KratosID == "" {
 			if err := srv.HandleCreateUserKratos(user.Username, newPass); err != nil {
 				log.add("user_id", user.ID)
 				log.error("bulk reset: error creating user in kratos")
+				failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error creating identity"})
 				continue
 			}
 		} else {
@@ -819,6 +825,7 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 			if err := srv.handleUpdatePasswordKratos(kratosC, newPass, true); err != nil {
 				log.add("user_id", user.ID)
 				log.error("bulk reset: error updating password in kratos")
+				failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error updating password"})
 				continue
 			}
 		}
@@ -827,7 +834,7 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 			log.add("user_id", user.ID)
 			log.error("bulk reset: error inserting account history")
 		}
-		results = append(results, resultEntry{
+		successes = append(successes, successEntry{
 			UserID:       user.ID,
 			Username:     user.Username,
 			Name:         user.NameFirst + " " + user.NameLast,
@@ -835,7 +842,10 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 			TempPassword: newPass,
 		})
 	}
-	return writeJsonResponse(w, http.StatusOK, results)
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
+		"successes": successes,
+		"failures":  failures,
+	})
 }
 
 func (srv *Server) handleBulkDeactivateUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -849,32 +859,35 @@ func (srv *Server) handleBulkDeactivateUsers(w http.ResponseWriter, r *http.Requ
 	if len(req.UserIDs) == 0 {
 		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
 	}
-	users, err := srv.Db.FindUsersByIDs(req.UserIDs)
+	var facID uint
+	if !claims.canSwitchFacility() {
+		facID = claims.FacilityID
+	}
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if !claims.canSwitchFacility() {
-		filtered := users[:0]
-		for _, u := range users {
-			if u.FacilityID == claims.FacilityID {
-				filtered = append(filtered, u)
-			}
-		}
-		users = filtered
+	type failedEntry struct {
+		UserID   uint   `json:"user_id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Reason   string `json:"reason"`
 	}
-	var successCount, failedCount int
+	var successCount int
+	var failures []failedEntry
 	for _, user := range users {
 		if err := srv.Db.DeactivateUser(r.Context(), user.ID, &claims.UserID); err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk deactivate: error deactivating user")
-			failedCount++
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deactivating user"})
 			continue
 		}
 		successCount++
 	}
-	return writeJsonResponse(w, http.StatusOK, map[string]int{
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
 		"success_count": successCount,
-		"failed_count":  failedCount,
+		"failed_count":  len(failures),
+		"failures":      failures,
 	})
 }
 
@@ -889,37 +902,40 @@ func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request,
 	if len(req.UserIDs) == 0 {
 		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
 	}
-	users, err := srv.Db.FindUsersByIDs(req.UserIDs)
+	var facID uint
+	if !claims.canSwitchFacility() {
+		facID = claims.FacilityID
+	}
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if !claims.canSwitchFacility() {
-		filtered := users[:0]
-		for _, u := range users {
-			if u.FacilityID == claims.FacilityID {
-				filtered = append(filtered, u)
-			}
-		}
-		users = filtered
+	type failedEntry struct {
+		UserID   uint   `json:"user_id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Reason   string `json:"reason"`
 	}
-	var successCount, failedCount int
+	var successCount int
+	var failures []failedEntry
 	for _, user := range users {
 		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk delete: error deleting identity in kratos")
-			failedCount++
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deleting identity"})
 			continue
 		}
 		if err := srv.WithUserContext(r).DeleteUser(int(user.ID)); err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk delete: error deleting user")
-			failedCount++
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deleting user"})
 			continue
 		}
 		successCount++
 	}
-	return writeJsonResponse(w, http.StatusOK, map[string]int{
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
 		"success_count": successCount,
-		"failed_count":  failedCount,
+		"failed_count":  len(failures),
+		"failures":      failures,
 	})
 }
