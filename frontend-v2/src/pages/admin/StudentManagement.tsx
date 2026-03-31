@@ -1,4 +1,4 @@
-import { useState, startTransition } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +44,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Pagination } from '@/components/Pagination';
 import {
     DropdownMenu,
@@ -60,6 +61,12 @@ import {
     DeleteDialog,
     TransferDialog
 } from '@/components/residents/ResidentModals';
+import {
+    BulkResetPasswordDialog,
+    BulkDeactivateDialog,
+    BulkDeleteDialog
+} from '@/components/residents/BulkActionDialogs';
+import { BulkImportDialog } from '@/components/residents/BulkImportDialog';
 import {
     Tooltip,
     TooltipContent,
@@ -117,6 +124,16 @@ export default function StudentManagement() {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
 
+    const [selectedResidents, setSelectedResidents] = useState<Map<number, User>>(new Map());
+    const [bulkResetOpen, setBulkResetOpen] = useState(false);
+    const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [bulkImportOpen, setBulkImportOpen] = useState(false);
+
+    useEffect(() => {
+        setSelectedResidents(new Map());
+    }, [searchTerm, facilityFilter, sortField, sortDir]);
+
     const facilityParam =
         showFacilityColumn && facilityFilter !== 'all'
             ? `&facility_id=${facilityFilter}`
@@ -131,7 +148,7 @@ export default function StudentManagement() {
         showFacilityColumn && facilityFilter !== 'all'
             ? `?facility_id=${facilityFilter}`
             : '';
-    const { data: statsResp } = useSWR<ServerResponseOne<UserStatsData>>(
+    const { data: statsResp, mutate: mutateStats } = useSWR<ServerResponseOne<UserStatsData>>(
         `/api/users/stats${statsParam}`
     );
     const stats = statsResp?.data;
@@ -139,7 +156,9 @@ export default function StudentManagement() {
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
         showFacilityColumn ? '/api/facilities' : null
     );
-    const facilities = facilitiesResp?.data ?? [];
+    const facilities = [...(facilitiesResp?.data ?? [])].sort((a, b) =>
+        a.name.localeCompare(b.name)
+    );
 
     const userData = data?.data ?? [];
     const totalItems = data?.meta?.total ?? 0;
@@ -183,6 +202,7 @@ export default function StudentManagement() {
             toaster(`Resident ${formData.name_first} ${formData.name_last} added successfully`, ToastState.success);
             addForm.reset();
             void mutate();
+            void mutateStats();
         } else {
             toaster(
                 response.message || 'Failed to create resident',
@@ -193,6 +213,45 @@ export default function StudentManagement() {
 
     const handleMutate = () => {
         void mutate();
+        void mutateStats();
+    };
+
+    const activeResidents = userData.filter((r) => !r.deactivated_at);
+
+    const allPageSelected =
+        activeResidents.length > 0 &&
+        activeResidents.every((r) => selectedResidents.has(r.id));
+
+    const toggleSelectAll = () => {
+        setSelectedResidents((prev) => {
+            const next = new Map(prev);
+            if (allPageSelected) {
+                activeResidents.forEach((r) => next.delete(r.id));
+            } else {
+                activeResidents.forEach((r) => next.set(r.id, r));
+            }
+            return next;
+        });
+    };
+
+    const toggleSelectResident = (resident: User) => {
+        setSelectedResidents((prev) => {
+            const next = new Map(prev);
+            if (next.has(resident.id)) {
+                next.delete(resident.id);
+            } else {
+                next.set(resident.id, resident);
+            }
+            return next;
+        });
+    };
+
+    const getSelectedUsers = () => Array.from(selectedResidents.values());
+
+    const handleBulkSuccess = () => {
+        setSelectedResidents(new Map());
+        void mutate();
+        void mutateStats();
     };
 
     const openAction = (
@@ -236,7 +295,7 @@ export default function StudentManagement() {
     const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
 
     return (
-        <div className="py-4">
+        <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Header */}
                 <div className="mb-8">
                     {user && !showFacilityColumn && (
@@ -255,9 +314,9 @@ export default function StudentManagement() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button
+                                onClick={() => setBulkImportOpen(true)}
                                 variant="outline"
                                 className="gap-2"
-                                disabled
                             >
                                 <Upload className="size-4" />
                                 Bulk Import
@@ -365,6 +424,12 @@ export default function StudentManagement() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-12">
+                                        <Checkbox
+                                            checked={allPageSelected}
+                                            onCheckedChange={toggleSelectAll}
+                                        />
+                                    </TableHead>
                                     <SortableHeader field="name_last">
                                         Name
                                     </SortableHeader>
@@ -392,7 +457,7 @@ export default function StudentManagement() {
                                     <TableRow>
                                         <TableCell
                                             colSpan={
-                                                showFacilityColumn ? 6 : 5
+                                                showFacilityColumn ? 7 : 6
                                             }
                                             className="text-center py-12"
                                         >
@@ -415,6 +480,24 @@ export default function StudentManagement() {
                                                 )
                                             }
                                         >
+                                            <TableCell
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
+                                                {!resident.deactivated_at && (
+                                                    <Checkbox
+                                                        checked={selectedResidents.has(
+                                                            resident.id
+                                                        )}
+                                                        onCheckedChange={() =>
+                                                            toggleSelectResident(
+                                                                resident
+                                                            )
+                                                        }
+                                                    />
+                                                )}
+                                            </TableCell>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     {resident.name_last},{' '}
@@ -747,6 +830,91 @@ export default function StudentManagement() {
                             />
                         )}
                     </>
+                )}
+
+                {/* Bulk Action Dialogs */}
+                <BulkResetPasswordDialog
+                    open={bulkResetOpen}
+                    onOpenChange={setBulkResetOpen}
+                    residents={getSelectedUsers()}
+                    onSuccess={handleBulkSuccess}
+                />
+                <BulkDeactivateDialog
+                    open={bulkDeactivateOpen}
+                    onOpenChange={setBulkDeactivateOpen}
+                    residents={getSelectedUsers()}
+                    onSuccess={handleBulkSuccess}
+                />
+                <BulkDeleteDialog
+                    open={bulkDeleteOpen}
+                    onOpenChange={setBulkDeleteOpen}
+                    residents={getSelectedUsers()}
+                    onSuccess={handleBulkSuccess}
+                />
+                <BulkImportDialog
+                    open={bulkImportOpen}
+                    onOpenChange={setBulkImportOpen}
+                    onSuccess={() => void mutate()}
+                />
+
+                {/* Bulk Action Bar */}
+                {selectedResidents.size > 0 && (
+                    <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+                    <div className="bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
+                        <div className="flex items-center gap-6">
+                            <div className="text-sm">
+                                <span className="font-semibold text-[#203622]">
+                                    {selectedResidents.size}
+                                </span>
+                                <span className="text-gray-600 ml-1">
+                                    {selectedResidents.size === 1
+                                        ? 'resident'
+                                        : 'residents'}{' '}
+                                    selected
+                                </span>
+                            </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setSelectedResidents(new Map())
+                                    }
+                                >
+                                    Clear Selection
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setBulkResetOpen(true)}
+                                >
+                                    <KeyRound className="size-4 mr-2" />
+                                    Reset Passwords
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setBulkDeactivateOpen(true)
+                                    }
+                                    className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                >
+                                    <UserX className="size-4 mr-2" />
+                                    Deactivate
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setBulkDeleteOpen(true)}
+                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                >
+                                    <UsersIcon className="size-4 mr-2" />
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
                 )}
         </div>
     );

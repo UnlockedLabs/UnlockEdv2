@@ -104,6 +104,32 @@ export interface BulkUploadResponse {
     error_csv_data?: string;
 }
 
+export interface BulkPasswordResult {
+    user_id: number;
+    username: string;
+    name: string;
+    doc_id: string;
+    temp_password: string;
+}
+
+export interface BulkPasswordResponse {
+    successes: BulkPasswordResult[];
+    failures: BulkActionFailure[];
+}
+
+export interface BulkActionFailure {
+    user_id: number;
+    username: string;
+    name: string;
+    reason: string;
+}
+
+export interface BulkActionResponse {
+    success_count: number;
+    failed_count: number;
+    failures: BulkActionFailure[];
+}
+
 export enum FilterResidentNames {
     'Resident Name (A-Z)' = 'name_last asc',
     'Resident Name (Z-A)' = 'name_last desc'
