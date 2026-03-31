@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -106,7 +107,7 @@ func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, lo
 		}
 		ref := uint(id)
 		facilityID = &ref
-	} else if claims.Role != models.DepartmentAdmin && claims.Role != models.SystemAdmin {
+	} else if !claims.canSwitchFacility() {
 		facilityID = &claims.FacilityID
 	}
 	stats, err := srv.Db.GetUserStats(r.Context(), facilityID)
@@ -534,7 +535,8 @@ func (srv *Server) handleGetUserAttendanceTrend(w http.ResponseWriter, r *http.R
 			weeks = parsed
 		}
 	}
-	trends, err := srv.Db.GetUserWeeklyAttendanceTrend(r.Context(), userId, weeks)
+	service := services.NewUsersService(srv.Db)
+	trends, err := service.GetWeeklyAttendanceTrend(r.Context(), userId, weeks)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -785,8 +787,17 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newUnauthorizedServiceError()
 	}
 
-	allFacilities := claims.Role == models.DepartmentAdmin || claims.Role == models.SystemAdmin || queryCtx.All
-	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, allFacilities)
+	allFacilities := claims.canSwitchFacility() || queryCtx.All
+	var classID *uint
+	if cid := r.URL.Query().Get("class_id"); cid != "" {
+		parsed, err := strconv.Atoi(cid)
+		if err != nil {
+			return newInvalidIdServiceError(err, "class_id")
+		}
+		ref := uint(parsed)
+		classID = &ref
+	}
+	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, allFacilities, classID)
 	if err != nil {
 		log.add("user_id", userID)
 		return newDatabaseServiceError(err)

@@ -5,8 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -738,13 +736,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	return userEnrollments, nil
 }
 
-func (db *DB) GetUserWeeklyAttendanceTrend(ctx context.Context, userID, weeks int) ([]models.WeeklyAttendanceTrend, error) {
-	type weekRow struct {
-		WeekStart    time.Time
-		PresentCount float64
-		TotalCount   float64
-	}
-	var rows []weekRow
+func (db *DB) GetUserWeeklyAttendanceRows(ctx context.Context, userID, weeks int) ([]models.WeeklyAttendanceRow, error) {
+	var rows []models.WeeklyAttendanceRow
 	query := `
 		SELECT DATE_TRUNC('week', date::date) AS week_start,
 			COALESCE(SUM(CASE WHEN attendance_status IN ('present','partial') THEN 1 ELSE 0 END), 0) AS present_count,
@@ -756,18 +749,7 @@ func (db *DB) GetUserWeeklyAttendanceTrend(ctx context.Context, userID, weeks in
 	if err := db.WithContext(ctx).Raw(query, userID, weeks).Scan(&rows).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "weekly_attendance_trend")
 	}
-	trends := make([]models.WeeklyAttendanceTrend, 0, len(rows))
-	for _, r := range rows {
-		rate := 0.0
-		if r.TotalCount > 0 {
-			rate = math.Round(r.PresentCount / r.TotalCount * 100)
-		}
-		trends = append(trends, models.WeeklyAttendanceTrend{
-			Week: fmt.Sprintf("%s %d", r.WeekStart.Format("Jan"), r.WeekStart.Day()),
-			Rate: rate,
-		})
-	}
-	return trends, nil
+	return rows, nil
 }
 
 func (db *DB) GetUserNotes(ctx context.Context, userID uint) ([]models.UserNoteResponse, error) {
@@ -957,7 +939,7 @@ func (db *DB) DeactivatedUsersPresent(userIDs []int) (bool, error) {
 	return count > 0, nil
 }
 
-func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, facilityID uint, all bool) ([]models.ResidentAttendanceCSVData, error) {
+func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, facilityID uint, all bool, classID *uint) ([]models.ResidentAttendanceCSVData, error) {
 	var csvData []models.ResidentAttendanceCSVData
 
 	query := `
@@ -983,6 +965,11 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 	if !all {
 		query += " AND u.facility_id = ?"
 		args = append(args, facilityID)
+	}
+
+	if classID != nil {
+		query += " AND pc.id = ?"
+		args = append(args, *classID)
 	}
 
 	query += " ORDER BY p.name ASC, pc.name ASC, pcea.date ASC"

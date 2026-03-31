@@ -255,6 +255,12 @@ type WeeklyAttendanceTrend struct {
 	Rate float64 `json:"rate"`
 }
 
+type WeeklyAttendanceRow struct {
+	WeekStart    time.Time
+	PresentCount float64
+	TotalCount   float64
+}
+
 type ResidentTransferProgramConflicts struct {
 	ProgramName string `json:"program_name"`
 	ClassName   string `json:"class_name"`

@@ -39,7 +39,7 @@ export function AddNoteDialog({
         });
         setSubmitting(false);
         if (resp.success) {
-            toast.success('Note added');
+            toast.success('Historical note added');
             setNote('');
             onSuccess();
             onOpenChange(false);

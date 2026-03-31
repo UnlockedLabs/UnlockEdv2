@@ -88,7 +88,7 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsScrollableRoot = isProgramDetail || isClassesPage;
+    const needsScrollableRoot = isProgramDetail;
     const needsGrayBg = isResidentProfile || isClassesPage || (isProgramDetail && canSwitchFacility(user));
     const rootClass = needsScrollableRoot
         ? 'min-h-screen bg-background flex'
