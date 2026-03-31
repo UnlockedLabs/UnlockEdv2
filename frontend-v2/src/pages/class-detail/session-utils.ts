@@ -12,6 +12,7 @@ export interface SessionDisplay {
     isCancelled: boolean;
     isRescheduledFrom: boolean;
     isRescheduledTo: boolean;
+    isCancelledReschedule: boolean;
     rescheduledDate?: string;
     rescheduledClassTime?: string;
     rescheduleOverrideId?: number;
@@ -105,17 +106,20 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
     fromTo: Map<string, RescheduleLink>;
     toFrom: Map<string, RescheduleLink>;
     appliedFutureDates: Set<string>;
+    intermediateDates: Set<string>;
 } {
     const fromTo = new Map<string, RescheduleLink>();
     const toFrom = new Map<string, RescheduleLink>();
     const appliedFutureDates = new Set<string>();
+    const intermediateDates = new Set<string>();
 
     for (const event of events) {
+        // Index overrides by ID for chain traversal
         const cancelledOverrides = new Map<
             number,
             { date: string; override: ProgramClassEventOverride }
         >();
-        const rescheduledOverrides = new Map<
+        const targetOverrides = new Map<
             number,
             { date: string; override: ProgramClassEventOverride }
         >();
@@ -129,59 +133,84 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
                 override.reason === 'applied_future'
             ) {
                 appliedFutureDates.add(date);
-            } else if (
-                override.is_cancelled &&
-                override.reason === 'rescheduled'
-            ) {
+                continue;
+            }
+            // Cancelled with reason="rescheduled" — this is a cancel source
+            if (override.is_cancelled && override.reason === 'rescheduled') {
                 cancelledOverrides.set(override.id, { date, override });
-            } else if (
-                !override.is_cancelled &&
-                override.linked_override_event_id
-            ) {
-                rescheduledOverrides.set(
+            }
+            // Any override with a linked ID is a target (can be BOTH a cancel
+            // source AND a target — e.g., B in A→B→C is cancelled+rescheduled
+            // and linked to A's cancel)
+            if (override.linked_override_event_id) {
+                targetOverrides.set(
                     override.linked_override_event_id,
                     { date, override }
                 );
             }
         }
 
+        // Build pairs, following chains to find ORIGINAL → FINAL like the prototype.
+        // For A→B→C: A's cancel(id=X) → B's cancel(id=Y, linked=X) → C's target(linked=Y)
+        // We want fromTo = {A→C}, not {A→B, B→C}
         for (const [cancelledId, cancelled] of cancelledOverrides) {
-            const rescheduled = rescheduledOverrides.get(cancelledId);
-            if (rescheduled) {
-                const startTime = parseOverrideStartTime(
-                    rescheduled.override.override_rrule
-                );
-                fromTo.set(cancelled.date, {
-                    date: rescheduled.date,
-                    overrideId: rescheduled.override.id,
-                    eventId: event.id
-                });
-                toFrom.set(rescheduled.date, {
-                    date: cancelled.date,
-                    overrideId: rescheduled.override.id,
-                    eventId: event.id,
-                    startTime
-                });
+            // Check if this cancel is itself linked FROM another cancel (it's an intermediate)
+            if (cancelled.override.linked_override_event_id) continue;
+
+            // This cancel has no parent link — it's a chain root (the ORIGINAL date)
+            // Follow the chain: find the target linked to this cancel
+            let currentCancelId = cancelledId;
+            const visited = new Set<number>([currentCancelId]);
+
+            // Follow through intermediate cancels
+            while (true) {
+                const target = targetOverrides.get(currentCancelId);
+                if (!target) break;
+
+                if (!target.override.is_cancelled) {
+                    // Final non-cancelled target (normal reschedule or end of chain)
+                    const startTime = parseOverrideStartTime(
+                        target.override.override_rrule
+                    );
+                    fromTo.set(cancelled.date, {
+                        date: target.date,
+                        overrideId: target.override.id,
+                        eventId: event.id
+                    });
+                    toFrom.set(target.date, {
+                        date: cancelled.date,
+                        overrideId: target.override.id,
+                        eventId: event.id,
+                        startTime
+                    });
+                    break;
+                } else if (target.override.reason === 'rescheduled') {
+                    // Intermediate in re-reschedule chain (B in A→B→C)
+                    // B was re-rescheduled, so it's not the final destination
+                    intermediateDates.add(target.date);
+                    if (visited.has(target.override.id)) break;
+                    visited.add(target.override.id);
+                    currentCancelId = target.override.id;
+                } else {
+                    // Cancelled reschedule target (Scenario 1: A→B, B cancelled by user)
+                    // B IS the final destination — it just happens to be cancelled too
+                    fromTo.set(cancelled.date, {
+                        date: target.date,
+                        overrideId: target.override.id,
+                        eventId: event.id
+                    });
+                    toFrom.set(target.date, {
+                        date: cancelled.date,
+                        overrideId: target.override.id,
+                        eventId: event.id
+                    });
+                    break;
+                }
             }
         }
     }
 
-    // Resolve chains: if A→B and B→C, update A to point to C (the final destination)
-    for (const [fromDate, link] of fromTo) {
-        let currentTarget = link.date;
-        const visited = new Set<string>([fromDate]);
-        while (fromTo.has(currentTarget) && !visited.has(currentTarget)) {
-            visited.add(currentTarget);
-            const nextLink = fromTo.get(currentTarget)!;
-            fromTo.set(fromDate, {
-                ...nextLink,
-                date: nextLink.date
-            });
-            currentTarget = nextLink.date;
-        }
-    }
-
-    return { fromTo, toFrom, appliedFutureDates };
+    return { fromTo, toFrom, appliedFutureDates, intermediateDates };
 }
 
 export function findCancelOverrideId(
@@ -209,6 +238,7 @@ export function buildSessionDisplays(
     fromTo: Map<string, RescheduleLink>,
     toFrom: Map<string, RescheduleLink>,
     appliedFutureDates: Set<string>,
+    intermediateDates: Set<string>,
     cancellationReasons?: Map<string, string>
 ): SessionDisplay[] {
     const today = new Date();
@@ -267,13 +297,26 @@ export function buildSessionDisplays(
 
             const rescheduleFrom = fromTo.get(inst.date);
             const rescheduleTo = toFrom.get(inst.date);
-            const isRescheduledFrom =
+            let isRescheduledFrom =
                 rescheduleFrom != null && inst.is_cancelled;
             const isRescheduledTo =
                 rescheduleTo != null &&
-                !inst.is_cancelled &&
                 (!rescheduleTo.startTime ||
                     inst.class_time.startsWith(rescheduleTo.startTime));
+            // Same-date time-only reschedule: the backend dedup replaces the cancelled
+            // instance with the non-cancelled one, so only the "to" instance exists.
+            // Mark it as BOTH isRescheduledFrom and isRescheduledTo (matching prototype).
+            const isSameDateReschedule =
+                isRescheduledTo &&
+                !isRescheduledFrom &&
+                rescheduleTo != null &&
+                rescheduleTo.date === inst.date;
+            if (isSameDateReschedule && rescheduleFrom) {
+                isRescheduledFrom = true;
+            }
+            // Dual state: session is both a reschedule target AND cancelled (Scenario 1)
+            const isCancelledReschedule =
+                isRescheduledTo && inst.is_cancelled && !isRescheduledFrom;
 
             return {
                 instance: inst,
@@ -283,17 +326,18 @@ export function buildSessionDisplays(
                 isPast,
                 isUpcoming,
                 hasAttendance,
-                isCancelled: inst.is_cancelled && !isRescheduledFrom,
+                isCancelled: inst.is_cancelled && !isRescheduledFrom && !isCancelledReschedule,
                 isRescheduledFrom,
-                isRescheduledTo,
-                rescheduledDate: isRescheduledFrom
+                isRescheduledTo: isRescheduledTo && !isCancelledReschedule,
+                isCancelledReschedule,
+                rescheduledDate: isRescheduledFrom && rescheduleFrom
                     ? rescheduleFrom.date
-                    : isRescheduledTo
+                    : (isRescheduledTo || isCancelledReschedule) && rescheduleTo
                       ? rescheduleTo.date
                       : undefined,
-                rescheduleOverrideId: isRescheduledFrom
+                rescheduleOverrideId: isRescheduledFrom && rescheduleFrom
                     ? rescheduleFrom.overrideId
-                    : isRescheduledTo
+                    : (isRescheduledTo || isCancelledReschedule) && rescheduleTo
                       ? rescheduleTo.overrideId
                       : undefined,
                 cancellationReason:
@@ -306,86 +350,38 @@ export function buildSessionDisplays(
         })
         .sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
 
-    // Fix double-reschedule chains (A→B→C) using instance-level data.
-    // When B is re-rescheduled to C, the backend overwrites B's override, breaking A's link.
-    // A becomes an orphan: is_cancelled + is_rescheduled but no rescheduled_to_date and not in fromTo.
-    // B becomes an intermediate: is_cancelled + is_rescheduled WITH rescheduled_to_date=C.
-    // We detect orphans first, then only activate chain logic if orphans exist.
+    // Filter out intermediate dates (B in A→B→C chains) identified by buildRescheduleMaps
+    let filtered = sessions.filter(
+        (s) => !intermediateDates.has(s.instance.date)
+    );
 
-    // Step 1: Find orphans per event (cancelled+rescheduled, no target, not already matched by fromTo)
-    const orphansByEvent = new Map<number, SessionDisplay[]>();
-    for (const s of sessions) {
-        const inst = s.instance;
-        if (
-            inst.is_cancelled &&
-            inst.is_rescheduled &&
-            !s.isRescheduledFrom &&
-            !inst.rescheduled_to_date
-        ) {
-            const list = orphansByEvent.get(inst.event_id) ?? [];
-            list.push(s);
-            orphansByEvent.set(inst.event_id, list);
-        }
-    }
-
-    // Step 2: Only resolve chains for events that have orphans
-    const intermediateDates = new Set<string>();
-    for (const [eventId, orphans] of orphansByEvent) {
-        // Build rescheduled_to chain for this event from intermediate instances
-        // Intermediates are cancelled+rescheduled instances that DO have rescheduled_to_date
-        const rescheduledToChain = new Map<string, string>();
-        for (const inst of instances) {
-            if (
-                inst.event_id === eventId &&
-                inst.is_cancelled &&
-                inst.is_rescheduled &&
-                inst.rescheduled_to_date
-            ) {
-                rescheduledToChain.set(inst.date, inst.rescheduled_to_date);
-            }
-        }
-        if (rescheduledToChain.size === 0) continue;
-
-        // Follow chain to find final destination
-        let finalTarget: string | undefined;
-        for (const [, target] of rescheduledToChain) {
-            let current = target;
-            const visited = new Set<string>();
-            while (rescheduledToChain.has(current) && !visited.has(current)) {
-                visited.add(current);
-                current = rescheduledToChain.get(current)!;
-            }
-            finalTarget = current;
-            break;
-        }
-        if (!finalTarget) continue;
-
-        // Mark intermediates for filtering
-        for (const date of rescheduledToChain.keys()) {
-            intermediateDates.add(date);
-        }
-
-        // Connect orphans to final destination
-        for (const s of orphans) {
-            s.isRescheduledFrom = true;
-            s.isCancelled = false;
-            s.rescheduledDate = finalTarget;
-        }
-    }
-
-    // Filter out intermediate chain dates (only when double-reschedule chains exist)
-    const filtered = intermediateDates.size > 0
-        ? sessions.filter((s) => !intermediateDates.has(s.instance.date))
-        : sessions;
-
-    const byDate = new Map(filtered.map((s) => [s.instance.date, s]));
+    // Set rescheduledClassTime and handle same-date reschedules.
+    // For same-date time-only reschedules, the prototype shows ONE row with both
+    // "Rescheduled" and "Rescheduled Class" badges and "Moved to [date] at [time]".
+    const sameDateTargets = new Set<SessionDisplay>();
     for (const s of filtered) {
         if (s.isRescheduledFrom && s.rescheduledDate) {
-            const target = byDate.get(s.rescheduledDate);
-            if (target && target.instance.class_time !== s.instance.class_time) {
-                s.rescheduledClassTime = target.instance.class_time;
+            // Same-date time reschedule: single instance is both "from" and "to"
+            if (s.instance.date === s.rescheduledDate) {
+                s.rescheduledClassTime = s.instance.class_time;
+                continue;
+            }
+            // Different-date reschedule: find the separate target row
+            const target = filtered.find(
+                (t) =>
+                    t.instance.date === s.rescheduledDate &&
+                    t !== s &&
+                    (t.isRescheduledTo || t.isCancelledReschedule)
+            );
+            if (target) {
+                if (target.instance.class_time !== s.instance.class_time) {
+                    s.rescheduledClassTime = target.instance.class_time;
+                }
             }
         }
+    }
+    if (sameDateTargets.size > 0) {
+        filtered = filtered.filter((s) => !sameDateTargets.has(s));
     }
 
     return filtered;

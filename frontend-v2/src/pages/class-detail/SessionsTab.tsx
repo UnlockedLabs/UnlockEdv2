@@ -163,6 +163,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             rescheduleMaps.fromTo,
             rescheduleMaps.toFrom,
             rescheduleMaps.appliedFutureDates,
+            rescheduleMaps.intermediateDates,
             cancellationReasons
         );
     }, [instancesResp, cls.enrolled, rescheduleMaps, cancellationReasons]);
@@ -377,6 +378,18 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                         : 'Reschedule undone'
                     : 'Cancellation undone'
             );
+        }
+        await refreshData();
+    };
+
+    const handleUndoCancel = async (session: SessionDisplay) => {
+        const eventId = session.instance.event_id ?? session.instance.id;
+        const resp = await API.patch(
+            `program-classes/${cls.id}/events/${eventId}`,
+            { date: session.instance.date, is_cancelled: false }
+        );
+        if (resp.success) {
+            toast.success('Cancellation undone');
         }
         await refreshData();
     };
@@ -758,6 +771,12 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 onUndo={() => {
                     if (selectedSession) void handleUndo(selectedSession);
                 }}
+                onUndoCancel={() => {
+                    if (selectedSession) void handleUndoCancel(selectedSession);
+                }}
+                onUndoReschedule={() => {
+                    if (selectedSession) void handleUndo(selectedSession);
+                }}
                 allSessions={allSessions}
             />
 
@@ -887,6 +906,7 @@ function SessionRow({
         isCancelled,
         isRescheduledFrom,
         isRescheduledTo,
+        isCancelledReschedule,
         isToday,
         hasAttendance,
         isPast,
@@ -895,9 +915,15 @@ function SessionRow({
         rescheduledClassTime
     } = session;
 
+    // Same-date time-only reschedule: both isRescheduledFrom and isRescheduledTo are true.
+    // Should display as a "to" row (blue) with one undo button, not a "from" row (gray dashed).
+    const isSameDateReschedule = isRescheduledFrom && isRescheduledTo && rescheduledDate === session.instance.date;
+
     const getBorderClass = () => {
         if (isRescheduledFrom)
             return 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100';
+        if (isCancelledReschedule)
+            return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
         if (isRescheduledTo)
             return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
         if (isCancelled)
@@ -934,8 +960,8 @@ function SessionRow({
     };
 
     const showCheckbox =
-        isUpcoming && !isCancelled && !isRescheduledFrom;
-    const showLineThrough = isCancelled || isRescheduledFrom;
+        isUpcoming && !isCancelled && !isRescheduledFrom && !isCancelledReschedule;
+    const showLineThrough = isCancelled || isRescheduledFrom || isCancelledReschedule;
 
     return (
         <div
@@ -987,6 +1013,22 @@ function SessionRow({
                                 Rescheduled Class
                             </Badge>
                         )}
+                        {isCancelledReschedule && (
+                            <>
+                                <Badge
+                                    variant="outline"
+                                    className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
+                                >
+                                    Cancelled
+                                </Badge>
+                                <Badge
+                                    variant="outline"
+                                    className="ml-2 bg-blue-100 text-blue-800 border-blue-300"
+                                >
+                                    Rescheduled Class
+                                </Badge>
+                            </>
+                        )}
                     </div>
                     {isRescheduledFrom && rescheduledDate ? (
                         <div className="text-xs text-gray-500 mt-0.5">
@@ -994,7 +1036,7 @@ function SessionRow({
                             {rescheduledClassTime &&
                                 ` at ${rescheduledClassTime}`}
                         </div>
-                    ) : isRescheduledTo && rescheduledDate ? (
+                    ) : (isRescheduledTo || isCancelledReschedule) && rescheduledDate ? (
                         <div className="text-xs text-blue-700 mt-0.5">
                             &larr; Originally{' '}
                             {formatShortDate(rescheduledDate)}
@@ -1065,13 +1107,24 @@ function SessionRow({
                         variant="outline"
                         size="sm"
                         onClick={() => onUndo()}
+                        className="border-amber-300 hover:bg-amber-50"
+                    >
+                        <Undo2 className="size-4 mr-1.5" />
+                        Undo
+                    </Button>
+                )}
+                {isCancelledReschedule && isUpcoming && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onUndo()}
                         className="border-gray-300 hover:bg-gray-50"
                     >
                         <Undo2 className="size-4 mr-1.5" />
                         Undo
                     </Button>
                 )}
-                {isRescheduledTo && isUpcoming && (
+                {isRescheduledTo && isUpcoming && !isSameDateReschedule && (
                     <>
                         <Button
                             variant="outline"
@@ -1096,7 +1149,8 @@ function SessionRow({
                 {isUpcoming &&
                     !isCancelled &&
                     !isRescheduledFrom &&
-                    !isRescheduledTo && (
+                    !isRescheduledTo &&
+                    !isCancelledReschedule && (
                         <>
                             <Button
                                 variant="outline"

@@ -35,6 +35,8 @@ interface SessionDetailSheetProps {
     classId: number;
     onMutate: () => void;
     onUndo: () => void;
+    onUndoCancel?: () => void;
+    onUndoReschedule?: () => void;
     allSessions?: SessionDisplay[];
 }
 
@@ -47,6 +49,8 @@ export function SessionDetailSheet({
     classId,
     onMutate,
     onUndo,
+    onUndoCancel,
+    onUndoReschedule,
     allSessions = []
 }: SessionDetailSheetProps) {
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -89,6 +93,7 @@ export function SessionDetailSheet({
         isCancelled,
         isRescheduledFrom,
         isRescheduledTo,
+        isCancelledReschedule,
         rescheduledDate,
         cancellationReason,
         hasAttendance,
@@ -98,7 +103,8 @@ export function SessionDetailSheet({
     const canModify =
         !hasAttendance &&
         !isCancelled &&
-        !isRescheduledFrom;
+        !isRescheduledFrom &&
+        !isCancelledReschedule;
 
     const eventId = instance.event_id ?? instance.id;
 
@@ -116,7 +122,7 @@ export function SessionDetailSheet({
     });
 
     const getStatusBadge = () => {
-        if (isCancelled) {
+        if (isCancelled || isCancelledReschedule) {
             return (
                 <Badge
                     variant="outline"
@@ -215,7 +221,7 @@ export function SessionDetailSheet({
                     <div className="border-b border-gray-200 px-6 py-4">
                         <div>
                             <h3
-                                className={`text-[#203622] mb-2 ${isCancelled || isRescheduledFrom ? 'line-through' : ''}`}
+                                className={`text-[#203622] mb-2 ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                             >
                                 {dateLabel}
                             </h3>
@@ -254,7 +260,7 @@ export function SessionDetailSheet({
                                             Time
                                         </div>
                                         <div
-                                            className={`text-[#203622] ${isCancelled || isRescheduledFrom ? 'line-through' : ''}`}
+                                            className={`text-[#203622] ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                                         >
                                             {classTime}
                                         </div>
@@ -267,7 +273,7 @@ export function SessionDetailSheet({
                                             Room
                                         </div>
                                         <div
-                                            className={`text-[#203622] ${isCancelled || isRescheduledFrom ? 'line-through' : ''}`}
+                                            className={`text-[#203622] ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                                         >
                                             {room}
                                         </div>
@@ -276,11 +282,73 @@ export function SessionDetailSheet({
                             </div>
                         </div>
 
-                        {(isCancelled || isRescheduledFrom || isRescheduledTo || hasAttendance) && (
+                        {(isCancelled || isCancelledReschedule || isRescheduledFrom || isRescheduledTo || hasAttendance) && (
                             <div className="pt-6 border-t border-gray-200">
                                 <h4 className="text-sm text-gray-700 mb-3">
                                     Status
                                 </h4>
+
+                                {isCancelledReschedule && (
+                                    <div className="space-y-4">
+                                        <div className="space-y-3">
+                                            <div className="flex items-start gap-2">
+                                                <CalendarOff className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-gray-900 mb-1">
+                                                        Class Cancelled
+                                                    </div>
+                                                    {cancellationReason && (
+                                                        <p className="text-sm text-gray-600">
+                                                            {cancellationReason}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    if (onUndoCancel) onUndoCancel();
+                                                    onClose();
+                                                }}
+                                                className="w-full"
+                                            >
+                                                Undo Cancellation
+                                            </Button>
+                                        </div>
+                                        {rescheduledDate && (
+                                            <div className="space-y-3">
+                                                <div className="flex items-start gap-2">
+                                                    <CalendarClock className="size-4 text-blue-700 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm text-gray-900 mb-1">
+                                                            Rescheduled Class
+                                                        </div>
+                                                        <p className="text-sm text-gray-600">
+                                                            Originally scheduled for{' '}
+                                                            {new Date(rescheduledDate + 'T00:00:00').toLocaleDateString('en-US', {
+                                                                weekday: 'long',
+                                                                month: 'long',
+                                                                day: 'numeric'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (onUndoReschedule) onUndoReschedule();
+                                                        onClose();
+                                                    }}
+                                                    className="w-full"
+                                                >
+                                                    Undo Reschedule
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {isRescheduledFrom && !isRescheduledTo && rescheduledDate && (
                                     <div className="space-y-3">

@@ -109,14 +109,47 @@ func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classI
 		return newGetRecordsDBError(err, "program_class_event_overrides")
 	}
 
+	// Collect all overrides in the chain for deletion.
+	// Follows both directions: forward links (LinkedOverrideEventID) and reverse
+	// links (overrides linking TO this one). BFS traverses the full chain so
+	// undoing A in A→B→C deletes all three overrides.
 	eventIDs = append(eventIDs, override.ID)
+	visited := map[uint]bool{override.ID: true}
+	queue := []uint{override.ID}
+	// Seed the queue with the forward link if it exists
 	if override.LinkedOverrideEventID != nil {
-		eventIDs = append(eventIDs, *override.LinkedOverrideEventID)
+		fwd := *override.LinkedOverrideEventID
+		if !visited[fwd] {
+			visited[fwd] = true
+			eventIDs = append(eventIDs, fwd)
+			queue = append(queue, fwd)
+		}
 	}
-	var reverseLinked []models.ProgramClassEventOverride
-	if err := trans.Where("linked_override_event_id = ?", override.ID).Find(&reverseLinked).Error; err == nil {
-		for _, rl := range reverseLinked {
-			eventIDs = append(eventIDs, rl.ID)
+	for len(queue) > 0 {
+		currentID := queue[0]
+		queue = queue[1:]
+		// Reverse links: overrides that point TO currentID
+		var reverseLinked []models.ProgramClassEventOverride
+		if err := trans.Where("linked_override_event_id = ?", currentID).Find(&reverseLinked).Error; err == nil {
+			for _, rl := range reverseLinked {
+				if !visited[rl.ID] {
+					visited[rl.ID] = true
+					eventIDs = append(eventIDs, rl.ID)
+					queue = append(queue, rl.ID)
+				}
+			}
+		}
+		// Forward link: the override that currentID points to
+		var current models.ProgramClassEventOverride
+		if err := trans.Where("id = ?", currentID).First(&current).Error; err == nil {
+			if current.LinkedOverrideEventID != nil {
+				fwd := *current.LinkedOverrideEventID
+				if !visited[fwd] {
+					visited[fwd] = true
+					eventIDs = append(eventIDs, fwd)
+					queue = append(queue, fwd)
+				}
+			}
 		}
 	}
 
@@ -173,9 +206,19 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 	)
 
 	changeLogEntry = models.NewChangeLogEntry("program_classes", "", nil, nil, 0, ctx.UserID)
+	var parentCancelIDs []uint
 	for _, overrideEvent := range overrideEvents {
 		if !overrideEvent.IsCancelled && linkedOverrideID != nil {
 			overrideEvent.LinkedOverrideEventID = linkedOverrideID
+			// Clean up old reschedule targets: when re-rescheduling (A→B then B→C),
+			// the old target (B's non-cancelled override) must be removed so only
+			// the new target (C) remains linked to A's cancel override.
+			if err := trans.Where("linked_override_event_id = ? AND is_cancelled = false AND id != ? AND deleted_at IS NULL",
+				*linkedOverrideID, overrideEvent.ID).
+				Delete(&models.ProgramClassEventOverride{}).Error; err != nil {
+				trans.Rollback()
+				return NewDBError(err, "unable to clean up old reschedule targets")
+			}
 		}
 		if overrideEvent.ID == 0 {
 			var existing models.ProgramClassEventOverride
@@ -183,7 +226,18 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 				Where("event_id = ? AND override_rrule = ? AND deleted_at IS NULL",
 					overrideEvent.EventID, overrideEvent.OverrideRrule).
 				First(&existing).Error; err == nil {
+				// If the existing override is a reschedule target linked from a cancel,
+				// remember the parent cancel so we can preserve it after the upsert
+				if existing.LinkedOverrideEventID != nil && *existing.LinkedOverrideEventID != existing.ID {
+					parentCancelIDs = append(parentCancelIDs, *existing.LinkedOverrideEventID)
+				}
 				overrideEvent.ID = existing.ID
+				// Preserve the chain link when overwriting a reschedule target with a cancel.
+				// Example: After A→B, B's override has linked=A_cancel. When B is cancelled,
+				// the incoming cancel has linked=nil. Carry forward so the A←B chain survives.
+				if overrideEvent.LinkedOverrideEventID == nil && existing.LinkedOverrideEventID != nil {
+					overrideEvent.LinkedOverrideEventID = existing.LinkedOverrideEventID
+				}
 			}
 		}
 		isOverrideUpdate = overrideEvent.ID > 0
@@ -242,6 +296,17 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 				trans.Rollback()
 				return err
 			}
+		}
+	}
+
+	// Restore parent cancel overrides that may have been soft-deleted by the upsert.
+	// This preserves the A→B→C chain: when rescheduling B→C, A's cancel must survive.
+	if len(parentCancelIDs) > 0 {
+		if err := trans.Unscoped().Model(&models.ProgramClassEventOverride{}).
+			Where("id IN ?", parentCancelIDs).
+			Update("deleted_at", nil).Error; err != nil {
+			trans.Rollback()
+			return NewDBError(err, "unable to restore parent cancel overrides")
 		}
 	}
 
@@ -1065,14 +1130,42 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			eventInstance.OverrideID = overrideID
 		}
 		if isCancelled && isRescheduled {
-			for _, other := range event.Overrides {
-				if !other.IsCancelled && other.LinkedOverrideEventID != nil && *other.LinkedOverrideEventID == overrideID {
-					rRule, err := rrule.StrToRRule(other.OverrideRrule)
-					if err == nil && len(rRule.All()) > 0 {
-						eventInstance.RescheduledToDate = rRule.All()[0].In(loc).Format("2006-01-02")
+			// Find the final reschedule target by following the chain.
+			// Simple case: non-cancelled override linked to this cancel (A→B).
+			// Chain case: cancelled override linked to this cancel (A→B→C),
+			// then follow B's cancel to find C's non-cancelled reschedule target.
+			currentID := overrideID
+			visited := map[uint]bool{currentID: true}
+			for {
+				foundTarget := false
+				// Look for non-cancelled reschedule target linked to currentID
+				for _, other := range event.Overrides {
+					if !other.IsCancelled && other.LinkedOverrideEventID != nil && *other.LinkedOverrideEventID == currentID {
+						rRule, err := rrule.StrToRRule(other.OverrideRrule)
+						if err == nil && len(rRule.All()) > 0 {
+							eventInstance.RescheduledToDate = rRule.All()[0].In(loc).Format("2006-01-02")
+						}
+						foundTarget = true
+						break
 					}
+				}
+				if foundTarget {
 					break
 				}
+				// No non-cancelled target found — look for a cancelled intermediate
+				// (chain case: B was re-rescheduled, so B's override is now cancelled)
+				nextID := uint(0)
+				for _, other := range event.Overrides {
+					if other.IsCancelled && other.LinkedOverrideEventID != nil && *other.LinkedOverrideEventID == currentID && !visited[other.ID] {
+						nextID = other.ID
+						break
+					}
+				}
+				if nextID == 0 {
+					break
+				}
+				visited[nextID] = true
+				currentID = nextID
 			}
 		}
 		eventInstances = append(eventInstances, eventInstance)
@@ -1110,11 +1203,13 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 	for i, inst := range eventInstances {
 		instanceByDate[inst.Date] = i
 	}
-	// Add rescheduled sessions (overrides with LinkedOverrideEventID pointing to a different override)
-	// If the target date already has a base instance, replace it instead of duplicating
+	// Add rescheduled sessions (overrides with LinkedOverrideEventID pointing to a different override).
+	// Includes both non-cancelled targets (normal reschedule) and cancelled targets
+	// (Scenario 1: B was rescheduled from A, then B was cancelled — B is both a
+	// reschedule target and cancelled, needs to show as "Cancelled + Rescheduled Class").
 	for _, override := range event.Overrides {
 		isReschedule := override.LinkedOverrideEventID != nil && *override.LinkedOverrideEventID != override.ID
-		if override.IsCancelled || !isReschedule {
+		if !isReschedule {
 			continue
 		}
 		parsedRule, err := rrule.StrToRRule(override.OverrideRrule)
@@ -1152,7 +1247,7 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			ClassTime:           overrideClassTime,
 			Date:                overrideDateStr,
 			AttendanceRecords:   attendanceByDate[overrideDateStr],
-			IsCancelled:         false,
+			IsCancelled:         override.IsCancelled,
 			RescheduledFromDate: rescheduledFromDate,
 			OverrideID:          override.ID,
 		}
