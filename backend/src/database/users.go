@@ -109,17 +109,13 @@ func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int)
 	return &user, nil
 }
 
-func (db *DB) GetUsersByIDs(userIDs []uint, args *models.QueryContext) ([]models.User, error) {
+func (db *DB) GetUsersByIDs(ctx context.Context, userIDs []uint, facID uint) ([]models.User, error) {
 	users := make([]models.User, 0, len(userIDs))
-	if err := db.WithContext(args.Ctx).Where("id IN (?)", userIDs).Find(&users).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "users")
+	tx := db.WithContext(ctx).Where("id IN ? AND role = ?", userIDs, models.Student)
+	if facID != 0 {
+		tx = tx.Where("facility_id = ?", facID)
 	}
-	return users, nil
-}
-
-func (db *DB) FindUsersByIDs(userIDs []uint) ([]models.User, error) {
-	var users []models.User
-	if err := db.Where("id IN ?", userIDs).Find(&users).Error; err != nil {
+	if err := tx.Find(&users).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	return users, nil

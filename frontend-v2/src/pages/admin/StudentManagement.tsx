@@ -124,14 +124,14 @@ export default function StudentManagement() {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
 
-    const [selectedResidents, setSelectedResidents] = useState<Set<number>>(new Set());
+    const [selectedResidents, setSelectedResidents] = useState<Map<number, User>>(new Map());
     const [bulkResetOpen, setBulkResetOpen] = useState(false);
     const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
     useEffect(() => {
-        setSelectedResidents(new Set());
+        setSelectedResidents(new Map());
     }, [searchTerm, facilityFilter, sortField, sortDir]);
 
     const facilityParam =
@@ -224,33 +224,32 @@ export default function StudentManagement() {
 
     const toggleSelectAll = () => {
         setSelectedResidents((prev) => {
-            const next = new Set(prev);
+            const next = new Map(prev);
             if (allPageSelected) {
                 activeResidents.forEach((r) => next.delete(r.id));
             } else {
-                activeResidents.forEach((r) => next.add(r.id));
+                activeResidents.forEach((r) => next.set(r.id, r));
             }
             return next;
         });
     };
 
-    const toggleSelectResident = (id: number) => {
+    const toggleSelectResident = (resident: User) => {
         setSelectedResidents((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) {
-                next.delete(id);
+            const next = new Map(prev);
+            if (next.has(resident.id)) {
+                next.delete(resident.id);
             } else {
-                next.add(id);
+                next.set(resident.id, resident);
             }
             return next;
         });
     };
 
-    const getSelectedUsers = () =>
-        userData.filter((r) => selectedResidents.has(r.id));
+    const getSelectedUsers = () => Array.from(selectedResidents.values());
 
     const handleBulkSuccess = () => {
-        setSelectedResidents(new Set());
+        setSelectedResidents(new Map());
         void mutate();
         void mutateStats();
     };
@@ -493,7 +492,7 @@ export default function StudentManagement() {
                                                         )}
                                                         onCheckedChange={() =>
                                                             toggleSelectResident(
-                                                                resident.id
+                                                                resident
                                                             )
                                                         }
                                                     />
@@ -879,7 +878,7 @@ export default function StudentManagement() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() =>
-                                        setSelectedResidents(new Set())
+                                        setSelectedResidents(new Map())
                                     }
                                 >
                                     Clear Selection
