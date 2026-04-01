@@ -26,7 +26,7 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
             {
                 path: 'knowledge-center-management',
                 element: <KnowledgeCenterManagement />,
-                handle: { title: 'Knowledge Center Management' }
+                handle: { title: 'Knowledge Center' }
             }
         ],
         AdminRoles,
