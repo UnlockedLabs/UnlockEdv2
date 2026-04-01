@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pagination } from '@/components/shared/Pagination';
 import { Switch } from '@/components/ui/switch';
 import {
     Tooltip,
@@ -51,7 +50,6 @@ import {
 } from '@/lib/formatters';
 import API from '@/api/api';
 
-const ITEMS_PER_PAGE = 12;
 
 interface CardHandlers {
     onToggleFeatured: (id: number, type: 'library' | 'video' | 'link') => void;
@@ -320,10 +318,6 @@ export default function KnowledgeCenterManagement() {
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [currentTab, setCurrentTab] = useState('libraries');
 
-    const [librariesPage, setLibrariesPage] = useState(1);
-    const [videosPage, setVideosPage] = useState(1);
-    const [linksPage, setLinksPage] = useState(1);
-    const [itemsPerPage] = useState(ITEMS_PER_PAGE);
 
     const [showAddVideo, setShowAddVideo] = useState(false);
     const [showAddLink, setShowAddLink] = useState(false);
@@ -346,12 +340,6 @@ export default function KnowledgeCenterManagement() {
         }
     }, [currentTab]);
 
-    useEffect(() => {
-        setLibrariesPage(1);
-        setVideosPage(1);
-        setLinksPage(1);
-    }, [searchQuery, visibilityFilter, categoryFilter]);
-
     const visibilityParam = useMemo(() => {
         if (visibilityFilter === 'not-featured')
             return '&visibility=all';
@@ -373,21 +361,21 @@ export default function KnowledgeCenterManagement() {
         data: libData,
         mutate: mutateLibs
     } = useSWR<ServerResponseMany<Library>>(
-        `/api/libraries?page=${librariesPage}&per_page=${itemsPerPage}&order_by=title&order=asc${visibilityParam}&search=${searchQuery}${categoryParam}`
+        `/api/libraries?page=1&per_page=500&order_by=title&order=asc${visibilityParam}&search=${searchQuery}${categoryParam}`
     );
 
     const {
         data: vidData,
         mutate: mutateVids
     } = useSWR<ServerResponseMany<Video>>(
-        `/api/videos?page=${videosPage}&per_page=${itemsPerPage}&order_by=title&order=asc${visibilityParam}&search=${searchQuery}`
+        `/api/videos?page=1&per_page=500&order_by=title&order=asc${visibilityParam}&search=${searchQuery}`
     );
 
     const {
         data: linkData,
         mutate: mutateLinks
     } = useSWR<ServerResponseOne<HelpfulLinkAndSort>>(
-        `/api/helpful-links?search=${searchQuery}&page=${linksPage}&per_page=${itemsPerPage}&order_by=title&order=asc`
+        `/api/helpful-links?search=${searchQuery}&page=1&per_page=500&order_by=title&order=asc`
     );
 
     const libraries = useMemo(() => {
@@ -663,10 +651,7 @@ export default function KnowledgeCenterManagement() {
                     {currentTab === 'libraries' && (
                         <Select
                             value={categoryFilter}
-                            onValueChange={(value) => {
-                                setCategoryFilter(value);
-                                setLibrariesPage(1);
-                            }}
+                            onValueChange={setCategoryFilter}
                         >
                             <SelectTrigger className="w-[280px]">
                                 <SelectValue placeholder="Filter by category" />
@@ -724,15 +709,6 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
-                            {libTotal > itemsPerPage && (
-                                <Pagination
-                                    currentPage={librariesPage}
-                                    totalItems={libTotal}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setLibrariesPage}
-                                    onItemsPerPageChange={(_v) => void _v}
-                                />
-                            )}
                         </>
                     )}
                 </TabsContent>
@@ -758,15 +734,6 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
-                            {vidTotal > itemsPerPage && (
-                                <Pagination
-                                    currentPage={videosPage}
-                                    totalItems={vidTotal}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setVideosPage}
-                                    onItemsPerPageChange={(_v) => void _v}
-                                />
-                            )}
                         </>
                     )}
                 </TabsContent>
@@ -790,15 +757,6 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
-                            {linkTotal > itemsPerPage && (
-                                <Pagination
-                                    currentPage={linksPage}
-                                    totalItems={linkTotal}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setLinksPage}
-                                    onItemsPerPageChange={(_v) => void _v}
-                                />
-                            )}
                         </>
                     )}
                 </TabsContent>
