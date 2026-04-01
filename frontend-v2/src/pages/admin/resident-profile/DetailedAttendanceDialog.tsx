@@ -127,12 +127,12 @@ export function DetailedAttendanceDialog({
                         </Button>
                     </div>
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <Table>
+                        <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Marked By</TableHead>
+                                    <TableHead className="w-[120px]">Date</TableHead>
+                                    <TableHead className="w-[100px]">Status</TableHead>
+                                    <TableHead className="w-[130px]">Marked By</TableHead>
                                     <TableHead>Notes</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -168,7 +168,7 @@ export function DetailedAttendanceDialog({
                                                 <TableCell className="text-sm text-gray-600">
                                                     {record.marked_by || '\u2014'}
                                                 </TableCell>
-                                                <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
+                                                <TableCell className="text-sm text-gray-600 truncate">
                                                     {record.note || '\u2014'}
                                                 </TableCell>
                                             </TableRow>

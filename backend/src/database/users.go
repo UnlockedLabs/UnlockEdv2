@@ -682,9 +682,9 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pc.id                    AS class_id,
 			pce.updated_at,
 			pce.created_at,
-			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
+			(SELECT ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ')
+			 FROM program_credit_types pct WHERE pct.program_id = p.id) AS credit_types,
 
-            -- count present attendance status
             COALESCE(SUM(
               CASE
                 WHEN pcea.attendance_status = 'present' THEN 1
@@ -697,7 +697,6 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
               END
             ), 0) AS present_attendance,
 
-            -- count everything else as absent
             COALESCE(SUM(
               CASE WHEN pcea.attendance_status NOT IN ('present','partial') THEN 1 ELSE 0 END
             ), 0)  AS absent_attendance, pce.change_reason,
@@ -705,7 +704,6 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
         `).
 		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
-		Joins("INNER JOIN program_credit_types pct ON pct.program_id = p.id").
 		Joins("INNER JOIN program_class_events e ON e.class_id = pc.id").
 		Joins(
 			`LEFT JOIN program_class_event_attendance pcea
