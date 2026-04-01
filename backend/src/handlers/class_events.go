@@ -25,6 +25,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/events/{event_id}", srv.handlePatchEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_override_id}/uncancel", srv.handleUncancelOverride, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
 	}
@@ -352,6 +353,18 @@ func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Requ
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "Event override(s) deleted successfully")
+}
+
+func (srv *Server) handleUncancelOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
+	overrideID, err := strconv.Atoi(r.PathValue("event_override_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event override ID")
+	}
+	ctx := srv.getQueryContext(r)
+	if err := srv.Db.UncancelOverride(&ctx, uint(overrideID)); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Override uncancelled successfully")
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {

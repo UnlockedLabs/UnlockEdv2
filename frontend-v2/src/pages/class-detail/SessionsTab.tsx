@@ -383,10 +383,11 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     };
 
     const handleUndoCancel = async (session: SessionDisplay) => {
-        const eventId = session.instance.event_id ?? session.instance.id;
-        const resp = await API.patch(
-            `program-classes/${cls.id}/events/${eventId}`,
-            { date: session.instance.date, is_cancelled: false }
+        const overrideId = session.rescheduleOverrideId ?? session.instance.override_id;
+        if (!overrideId) return;
+        const resp = await API.post(
+            `program-classes/${cls.id}/events/${overrideId}/uncancel`,
+            {}
         );
         if (resp.success) {
             toast.success('Cancellation undone');

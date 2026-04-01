@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
-import { useAuth, isDeptAdmin, isSysAdmin } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
     Class,
     Facility,
@@ -95,9 +95,7 @@ export default function ClassesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
-    const deptAdmin = user ? isDeptAdmin(user) : false;
-    const sysAdmin = user ? isSysAdmin(user) : false;
-    const crossFacility = deptAdmin || sysAdmin;
+    const crossFacility = user ? canSwitchFacility(user) : false;
 
     const classesUrl = crossFacility
         ? facilityFilter === 'all'

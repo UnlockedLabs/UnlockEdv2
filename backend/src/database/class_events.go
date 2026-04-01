@@ -88,6 +88,19 @@ func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, events []mod
 	return nil
 }
 
+// UncancelOverride flips an override from cancelled back to non-cancelled via a direct
+// UPDATE. Used when undoing only the cancellation of a rescheduled class — the override
+// stays in place (preserving the reschedule link) but is no longer cancelled.
+func (db *DB) UncancelOverride(ctx *models.QueryContext, overrideID uint) error {
+	return db.WithContext(ctx.Ctx).
+		Model(&models.ProgramClassEventOverride{}).
+		Where("id = ?", overrideID).
+		Updates(map[string]interface{}{
+			"is_cancelled": false,
+			"reason":       "",
+		}).Error
+}
+
 // Soft deletes ProgramClassEventOverride by its ID, removes any associated attendance records, and logs the change.
 // If the ProgramClassEventOverride to be deleted has an exiting LinkedOverrideEventID (rescheduled event) that ProgramClassEventOverride is deleted
 func (db *DB) DeleteOverrideEvent(args *models.QueryContext, eventID int, classID int, undoAppliedFuture bool) error {
