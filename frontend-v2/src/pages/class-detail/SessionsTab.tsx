@@ -409,6 +409,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             }}
             onReschedule={() => setRescheduleTarget(session)}
             onUndo={() => void handleUndo(session)}
+            onUndoCancel={() => void handleUndoCancel(session)}
         />
     );
 
@@ -886,7 +887,8 @@ function SessionRow({
     onNavigateToAttendance,
     onCancel,
     onReschedule,
-    onUndo
+    onUndo,
+    onUndoCancel
 }: {
     session: SessionDisplay;
     selected: boolean;
@@ -896,6 +898,7 @@ function SessionRow({
     onCancel: () => void;
     onReschedule: () => void;
     onUndo: () => void;
+    onUndoCancel: () => void;
 }) {
     const dateLabel = session.dateObj.toLocaleDateString('en-US', {
         month: 'long',
@@ -1118,7 +1121,7 @@ function SessionRow({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onUndo()}
+                        onClick={() => onUndoCancel()}
                         className="border-gray-300 hover:bg-gray-50"
                     >
                         <Undo2 className="size-4 mr-1.5" />

@@ -14,7 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 /*
@@ -254,12 +253,29 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 			}
 		}
 		isOverrideUpdate = overrideEvent.ID > 0
-		if err := trans.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"duration", "override_rrule", "is_cancelled", "room_id", "reason", "linked_override_event_id", "instructor_id"}),
-		}).Create(&overrideEvent).Error; err != nil {
-			trans.Rollback()
-			return newCreateDBError(err, "program_class_event_overrides")
+		if isOverrideUpdate {
+			// Existing override found — do a direct UPDATE to avoid GORM's
+			// soft-delete behavior with Create+OnConflict which deletes the
+			// existing record and creates a new one (breaking chain links).
+			if err := trans.Model(&models.ProgramClassEventOverride{}).
+				Where("id = ?", overrideEvent.ID).
+				Updates(map[string]interface{}{
+					"duration":                 overrideEvent.Duration,
+					"override_rrule":           overrideEvent.OverrideRrule,
+					"is_cancelled":             overrideEvent.IsCancelled,
+					"room_id":                  overrideEvent.RoomID,
+					"reason":                   overrideEvent.Reason,
+					"linked_override_event_id": overrideEvent.LinkedOverrideEventID,
+					"instructor_id":            overrideEvent.InstructorID,
+				}).Error; err != nil {
+				trans.Rollback()
+				return newCreateDBError(err, "program_class_event_overrides")
+			}
+		} else {
+			if err := trans.Create(&overrideEvent).Error; err != nil {
+				trans.Rollback()
+				return newCreateDBError(err, "program_class_event_overrides")
+			}
 		}
 		if overrideEvent.IsCancelled && len(overrideEvents) < 2 {
 			changeLogEntry.FieldName = "event_cancelled"

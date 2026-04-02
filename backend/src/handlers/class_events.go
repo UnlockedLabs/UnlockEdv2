@@ -199,10 +199,6 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		return newBadRequestServiceError(errors.New("date is required"), "date is required")
 	}
 	ctx := srv.getQueryContext(r)
-	facilityLoc, err := time.LoadLocation(ctx.Timezone)
-	if err != nil {
-		return newBadRequestServiceError(err, "invalid facility timezone")
-	}
 	event, err := srv.Db.GetEventById(eventId)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -211,9 +207,12 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	eventStartLocal := eventRule.OrigOptions.Dtstart.In(facilityLoc)
-	canonicalHour := eventStartLocal.Hour()
-	canonicalMinute := eventStartLocal.Minute()
+	// Use GetDTStart() (same as createEventInstances) to get the canonical time.
+	// OrigOptions.Dtstart.In(tz) can give a different hour due to DST on the
+	// DTSTART date vs the target date. GetDTStart() is what the instance generator uses.
+	eventStart := eventRule.GetDTStart()
+	canonicalHour := eventStart.Hour()
+	canonicalMinute := eventStart.Minute()
 
 	buildRRule := func(dateStr string, optionalTime string) (string, error) {
 		dateOnly, err := time.Parse("2006-01-02", dateStr)
