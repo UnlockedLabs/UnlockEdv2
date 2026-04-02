@@ -1281,7 +1281,16 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			OverrideID:          override.ID,
 		}
 		if existingIdx, exists := instanceByDate[overrideDateStr]; exists {
-			eventInstances[existingIdx] = rescheduledInstance
+			existingInst := eventInstances[existingIdx]
+			if existingInst.IsCancelled || override.IsCancelled || existingInst.ClassTime == overrideClassTime {
+				// Replace when: the existing is cancelled, the override is cancelled,
+				// or both have the same time (same session slot, just add reschedule info)
+				eventInstances[existingIdx] = rescheduledInstance
+			} else {
+				// Both are active sessions on the same date at DIFFERENT times
+				// (e.g., a 9am session + a 2pm session rescheduled to the same day).
+				eventInstances = append(eventInstances, rescheduledInstance)
+			}
 		} else {
 			instanceByDate[overrideDateStr] = len(eventInstances)
 			eventInstances = append(eventInstances, rescheduledInstance)

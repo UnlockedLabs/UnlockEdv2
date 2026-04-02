@@ -1040,10 +1040,9 @@ function SessionRow({
                             {rescheduledClassTime &&
                                 ` at ${rescheduledClassTime}`}
                         </div>
-                    ) : (isRescheduledTo || isCancelledReschedule) && rescheduledDate ? (
+                    ) : (isRescheduledTo || isCancelledReschedule) ? (
                         <div className="text-xs text-blue-700 mt-0.5">
-                            &larr; Originally{' '}
-                            {formatShortDate(rescheduledDate)}
+                            {session.instance.class_time}
                         </div>
                     ) : (
                         <div
