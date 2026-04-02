@@ -18,6 +18,11 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 import { useToast } from '@/contexts/ToastContext';
 import { ToastState, ServerResponseMany } from '@/types';
 import API from '@/api/api';
@@ -168,12 +173,17 @@ export function DetailedAttendanceDialog({
                         <TableCell className="text-sm text-gray-600">
                           {record.marked_by || '\u2014'}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600" title={record.note || undefined}>
-                          {record.note
-                            ? record.note.length > 17
-                              ? record.note.slice(0, 17) + '...'
-                              : record.note
-                            : '\u2014'}
+                        <TableCell className="text-sm text-gray-600 truncate">
+                          {record.note ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="truncate block">{record.note}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="max-w-[250px] break-words">
+                                {record.note}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : '\u2014'}
                         </TableCell>
                       </TableRow>
                     );
