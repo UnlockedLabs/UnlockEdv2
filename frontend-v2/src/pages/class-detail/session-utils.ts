@@ -194,6 +194,9 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
                 } else {
                     // Cancelled reschedule target (Scenario 1: A→B, B cancelled by user)
                     // B IS the final destination — it just happens to be cancelled too
+                    const startTime = parseOverrideStartTime(
+                        target.override.override_rrule
+                    );
                     fromTo.set(cancelled.date, {
                         date: target.date,
                         overrideId: target.override.id,
@@ -202,7 +205,8 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
                     toFrom.set(target.date, {
                         date: cancelled.date,
                         overrideId: target.override.id,
-                        eventId: event.id
+                        eventId: event.id,
+                        startTime
                     });
                     break;
                 }
@@ -274,17 +278,25 @@ export function buildSessionDisplays(
             if (
                 inst.is_cancelled &&
                 activeDatesWithDifferentTime.has(inst.date) &&
-                !fromTo.has(inst.date)
+                !fromTo.has(inst.date) &&
+                !toFrom.has(inst.date)
             ) {
                 return false;
             }
             return true;
         })
         .map((inst) => {
-            const dateObj = parseLocalDate(inst.date);
-            const isToday = dateObj.getTime() === today.getTime();
-            const isPast = dateObj < today;
-            const isUpcoming = dateObj > today;
+            const dateOnly = parseLocalDate(inst.date);
+            const isToday = dateOnly.getTime() === today.getTime();
+            const isPast = dateOnly < today;
+            const isUpcoming = dateOnly > today;
+            // Include start time from class_time (e.g., "10:00-11:00") for
+            // correct sort order when multiple sessions fall on the same date
+            const startTimeParts = inst.class_time?.split('-')[0]?.split(':');
+            const dateObj = startTimeParts?.length === 2
+                ? new Date(dateOnly.getFullYear(), dateOnly.getMonth(), dateOnly.getDate(),
+                    Number(startTimeParts[0]), Number(startTimeParts[1]))
+                : dateOnly;
 
             const attendedCount =
                 inst.attendance_records?.filter(

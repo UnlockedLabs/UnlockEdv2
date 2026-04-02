@@ -25,6 +25,7 @@ export interface BulkCancelSession {
     dateObj: Date;
     dayName: string;
     eventId: number;
+    classTime?: string;
 }
 
 interface BulkCancelSessionsModalProps {
@@ -62,10 +63,12 @@ export function BulkCancelSessionsModal({
         let fail = 0;
 
         for (const s of sessions) {
+            const startTime = s.classTime?.split('-')[0];
             const resp = await API.patch(
                 `program-classes/${classId}/events/${s.eventId}`,
                 {
                     date: s.date,
+                    start_time: startTime,
                     is_cancelled: true,
                     reason: reason === 'other' ? note.trim() : reason
                 }

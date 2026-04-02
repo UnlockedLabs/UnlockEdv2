@@ -520,6 +520,7 @@ export function SessionDetailSheet({
                     classId={classId}
                     eventId={eventId}
                     date={instance.date}
+                    classTime={instance.class_time}
                     dateLabel={shortDateLabel}
                     onCancelled={() => {
                         setApplyToFuture(false);
@@ -530,7 +531,8 @@ export function SessionDetailSheet({
                     setApplyToFuture={setApplyToFuture}
                     futureSessions={futureSessions.map((s) => ({
                         date: s.date,
-                        eventId: s.eventId
+                        eventId: s.eventId,
+                        classTime: s.classTime
                     }))}
                 />
             )}

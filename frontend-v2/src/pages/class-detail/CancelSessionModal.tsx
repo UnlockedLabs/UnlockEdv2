@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 export interface CancelFutureSession {
     date: string;
     eventId: number;
+    classTime?: string;
 }
 
 interface CancelSessionModalProps {
@@ -30,6 +31,7 @@ interface CancelSessionModalProps {
     classId: number;
     eventId: number;
     date: string;
+    classTime?: string;
     dateLabel: string;
     onCancelled: () => void;
     applyToFuture?: boolean;
@@ -43,6 +45,7 @@ export function CancelSessionModal({
     classId,
     eventId,
     date,
+    classTime,
     dateLabel,
     onCancelled,
     applyToFuture,
@@ -68,17 +71,19 @@ export function CancelSessionModal({
         const cancelReason = reason === 'other' ? note.trim() : reason;
 
         const sessionsToCancel = [
-            { date, eventId },
+            { date, eventId, classTime },
             ...(applyToFuture ? futureSessions : [])
         ];
 
         let ok = 0;
         let fail = 0;
         for (const s of sessionsToCancel) {
+            const startTime = s.classTime?.split('-')[0];
             const resp = await API.patch(
                 `program-classes/${classId}/events/${s.eventId}`,
                 {
                     date: s.date,
+                    start_time: startTime,
                     is_cancelled: true,
                     reason: cancelReason
                 }

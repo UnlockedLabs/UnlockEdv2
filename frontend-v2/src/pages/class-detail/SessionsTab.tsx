@@ -696,6 +696,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                         quickCancelSession.instance.id
                     }
                     date={quickCancelSession.instance.date}
+                    classTime={quickCancelSession.instance.class_time}
                     dateLabel={quickCancelSession.dateObj.toLocaleDateString(
                         'en-US',
                         {
@@ -815,7 +816,8 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                                             dayName: s.dayName,
                                             eventId:
                                                 s.instance.event_id ??
-                                                s.instance.id
+                                                s.instance.id,
+                                            classTime: s.instance.class_time
                                         }))
                                     );
                                     setShowBulkCancelModal(true);

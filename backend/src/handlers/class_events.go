@@ -166,6 +166,7 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 
 type patchEventOverrideRequest struct {
 	Date         string `json:"date"`
+	StartTime    string `json:"start_time"`
 	IsCancelled  bool   `json:"is_cancelled"`
 	Reason       string `json:"reason"`
 	RoomID       *uint  `json:"room_id"`
@@ -232,7 +233,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 			ctx.Timezone, cleanDate, hour, minute), nil
 	}
 
-	originalRRule, err := buildRRule(req.Date, "")
+	originalRRule, err := buildRRule(req.Date, req.StartTime)
 	if err != nil {
 		return newBadRequestServiceError(err, "invalid date format")
 	}

@@ -81,10 +81,12 @@ export function ChangeInstructorModal({
             : sessions;
 
         for (const s of allSessions) {
+            const startTime = s.classTime?.split('-')[0];
             const resp = await API.patch(
                 `program-classes/${classId}/events/${s.eventId}`,
                 {
                     date: s.date,
+                    start_time: startTime,
                     is_cancelled: false,
                     instructor_id: Number(selectedInstructorId)
                 }
