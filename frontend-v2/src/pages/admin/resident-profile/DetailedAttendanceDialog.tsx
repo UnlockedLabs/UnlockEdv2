@@ -1,4 +1,5 @@
-import { Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +75,12 @@ export function DetailedAttendanceDialog({
   residentId
 }: DetailedAttendanceDialogProps) {
   const { toaster } = useToast();
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    if (open) setPage(1);
+  }, [open]);
 
   const { data: attendanceResp } = useSWR<
     ServerResponseMany<AttendanceRecord>
@@ -83,6 +90,8 @@ export function DetailedAttendanceDialog({
       : null
   );
   const records = attendanceResp?.data ?? [];
+  const totalPages = Math.ceil(records.length / PAGE_SIZE);
+  const paginatedRecords = records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (!enrollment) return null;
 
@@ -142,8 +151,8 @@ export function DetailedAttendanceDialog({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {records.length > 0 ? (
-                  records.map((record, i) => {
+                {paginatedRecords.length > 0 ? (
+                  paginatedRecords.map((record, i) => {
                     const display =
                       STATUS_DISPLAY[
                       record.attendance_status
@@ -201,6 +210,31 @@ export function DetailedAttendanceDialog({
               </TableBody>
             </Table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-sm text-gray-500">
+                Page {page} of {totalPages} ({records.length} records)
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page === totalPages}
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
