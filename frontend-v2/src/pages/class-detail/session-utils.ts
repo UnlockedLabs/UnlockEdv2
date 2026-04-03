@@ -95,7 +95,11 @@ export function buildRoomOverrideMap(
         for (const override of event.overrides ?? []) {
             if (!override.is_cancelled && override.room_id && override.room_ref) {
                 const date = parseOverrideDate(override.override_rrule);
-                if (date) map.set(date, override.room_ref.name);
+                const time = parseOverrideStartTime(override.override_rrule);
+                if (date) {
+                    const key = time ? `${date}|${time}` : date;
+                    map.set(key, override.room_ref.name);
+                }
             }
         }
     }

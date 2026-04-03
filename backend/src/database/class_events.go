@@ -1199,9 +1199,13 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		}
 		eventInstances = append(eventInstances, eventInstance)
 	}
-	// Build a map of non-cancelled, non-reschedule overrides (room/instructor/time changes)
-	// keyed by date string so we can apply them to base occurrences
-	sameDateOverrides := make(map[string]models.ProgramClassEventOverride)
+	// Collect non-cancelled, non-reschedule overrides (room/instructor/time changes)
+	// grouped by date so we can match them to base instances by time
+	type sameDateOverride struct {
+		override  models.ProgramClassEventOverride
+		startTime string
+	}
+	sameDateOverridesByDate := make(map[string][]sameDateOverride)
 	for _, override := range event.Overrides {
 		isReschedule := override.LinkedOverrideEventID != nil && *override.LinkedOverrideEventID != override.ID
 		if override.IsCancelled || isReschedule {
@@ -1211,20 +1215,33 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 		if err != nil || len(parsedRule.All()) == 0 {
 			continue
 		}
-		dateStr := parsedRule.All()[0].In(loc).Format("2006-01-02")
-		sameDateOverrides[dateStr] = override
+		overrideDate := parsedRule.All()[0].In(loc)
+		dateStr := overrideDate.Format("2006-01-02")
+		startTime := overrideDate.Format("15:04")
+		sameDateOverridesByDate[dateStr] = append(sameDateOverridesByDate[dateStr], sameDateOverride{
+			override:  override,
+			startTime: startTime,
+		})
 	}
-	// Apply room/instructor/time overrides to existing base instances
+	// Apply room/instructor/time overrides to base instances, matching by time
 	for i := range eventInstances {
-		if sdOverride, ok := sameDateOverrides[eventInstances[i].Date]; ok {
-			parsedRule, _ := rrule.StrToRRule(sdOverride.OverrideRrule)
-			overrideDate := parsedRule.All()[0]
-			duration, err := time.ParseDuration(sdOverride.Duration)
-			if err == nil {
-				overrideEnd := overrideDate.Add(duration)
-				eventInstances[i].ClassTime = overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
+		overrides, ok := sameDateOverridesByDate[eventInstances[i].Date]
+		if !ok {
+			continue
+		}
+		instStartTime := strings.Split(eventInstances[i].ClassTime, "-")[0]
+		for _, sdo := range overrides {
+			if sdo.startTime == instStartTime {
+				parsedRule, _ := rrule.StrToRRule(sdo.override.OverrideRrule)
+				overrideDate := parsedRule.All()[0]
+				duration, err := time.ParseDuration(sdo.override.Duration)
+				if err == nil {
+					overrideEnd := overrideDate.Add(duration)
+					eventInstances[i].ClassTime = overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
+				}
+				eventInstances[i].OverrideID = sdo.override.ID
+				break
 			}
-			eventInstances[i].OverrideID = sdOverride.ID
 		}
 	}
 	// Index existing instances by date for dedup

@@ -764,7 +764,9 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 }
                 room={
                     (selectedSession
-                        ? roomOverrides.get(selectedSession.instance.date)
+                        ? roomOverrides.get(
+                              `${selectedSession.instance.date}|${selectedSession.instance.class_time?.split('-')[0]}`
+                          ) ?? roomOverrides.get(selectedSession.instance.date)
                         : undefined) ??
                     cls.events?.[0]?.room_ref?.name ??
                     'TBD'
