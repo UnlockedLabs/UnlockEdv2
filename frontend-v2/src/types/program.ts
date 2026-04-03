@@ -208,6 +208,7 @@ export interface ResidentProgramOverview {
     credit_types: string;
     program_id: number;
     class_id: number;
+    enrollment_id: number;
     updated_at: string;
     enrollment_status?: EnrollmentStatus;
     start_date: string;
@@ -216,6 +217,7 @@ export interface ResidentProgramOverview {
     absent_attendance?: number;
     attendance_percentage?: number;
     change_reason?: string;
+    schedule?: string;
 }
 
 export interface ProgramCompletion {

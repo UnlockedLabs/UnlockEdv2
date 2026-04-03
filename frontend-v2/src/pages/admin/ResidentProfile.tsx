@@ -1,100 +1,92 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { formatDate } from '@/lib/formatters';
 import useSWR from 'swr';
-import { useAuth, hasFeature, isUserDeactivated } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
-import API from '@/api/api';
+import { ChevronRight } from 'lucide-react';
+import { useAuth, isUserDeactivated, canSwitchFacility } from '@/auth/useAuth';
 import {
-    UserRole,
     ServerResponseOne,
-    ResidentEngagementProfile,
-    FeatureAccess,
-    OpenContentResponse,
-    ResidentProgramOverview,
     ServerResponseMany,
-    ToastState,
-    ActivityHistoryResponse
+    ResidentEngagementProfile,
+    ResidentProgramOverview,
+    EnrollmentStatus
 } from '@/types';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable, Column } from '@/components/shared/DataTable';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { StatusBadge } from '@/components/shared/StatusBadge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import {
-    UserCircle,
-    MoreHorizontal,
-    Trash2,
-    Download,
-    FileSpreadsheet,
-    UserX,
-    Calendar,
-    Clock,
-    Activity
-} from 'lucide-react';
-
-function getTimestamp(): string {
-    const now = new Date();
-    return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-}
-
-function ProfileInfoRow({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex justify-between py-1.5 text-sm">
-            <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium text-foreground">{value}</span>
-        </div>
-    );
-}
-
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
-    return (
-        <Card className="bg-card">
-            <CardContent className="flex items-center gap-3 py-4">
-                <div className="rounded-lg bg-muted p-2">{icon}</div>
-                <div>
-                    <p className="text-2xl font-bold text-foreground">{value}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
+import { ResidentHeader } from './resident-profile/ResidentHeader';
+import { ResidentMetrics } from './resident-profile/ResidentMetrics';
+import { ActiveEnrollmentsTable } from './resident-profile/ActiveEnrollmentsTable';
+import { AttendanceTrendChart } from './resident-profile/AttendanceTrendChart';
+import { DetailedAttendanceDialog } from './resident-profile/DetailedAttendanceDialog';
+import { CompletedPrograms } from './resident-profile/CompletedPrograms';
+import { IncompleteEnrollments } from './resident-profile/IncompleteEnrollments';
+import { HistoricalNotes } from './resident-profile/HistoricalNotes';
+import { EditProfileDialog } from './resident-profile/EditProfileDialog';
+import { ResetPasswordDialog } from './resident-profile/ResetPasswordDialog';
+import { DeactivateDialog } from './resident-profile/DeactivateDialog';
+import { DeleteDialog } from './resident-profile/DeleteDialog';
+import { TransferDialog } from './resident-profile/TransferDialog';
+import { AddNoteDialog } from './resident-profile/AddNoteDialog';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { toaster } = useToast();
     const { user_id: residentId } = useParams<{ user_id: string }>();
-
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
 
     const {
         data: profileResp,
         error,
-        mutate: mutateProfile,
-        isLoading
-    } = useSWR<ServerResponseOne<ResidentEngagementProfile>>(
+        isLoading,
+        mutate: mutateProfile
+    } = useSWR<ServerResponseOne<ResidentEngagementProfile>, Error>(
         `/api/users/${residentId}/profile`
     );
 
-    const { data: programsResp } = useSWR<ServerResponseMany<ResidentProgramOverview>>(
-        residentId ? `/api/users/${residentId}/programs` : null
-    );
+    const { data: programsResp, mutate: mutatePrograms } = useSWR<
+        ServerResponseMany<ResidentProgramOverview>
+    >(residentId ? `/api/users/${residentId}/programs` : null);
 
-    const { data: activityResp } = useSWR<ServerResponseMany<ActivityHistoryResponse>>(
-        residentId ? `/api/users/${residentId}/account-history?per_page=10` : null
-    );
+    const profileData = profileResp?.data;
+    const programs = useMemo(() => programsResp?.data ?? [], [programsResp]);
+
+    const {
+        activeEnrollments,
+        completedPrograms,
+        incompleteEnrollments,
+        attendanceStats
+    } = useMemo(() => {
+        const active = programs.filter(
+            (p) => p.enrollment_status === EnrollmentStatus.Enrolled
+        );
+        const completed = programs.filter(
+            (p) => p.enrollment_status === EnrollmentStatus.Completed
+        );
+        const incomplete = programs.filter((p) =>
+            p.enrollment_status?.startsWith('Incomplete:')
+        );
+        const totalAttended = programs.reduce(
+            (sum, p) => sum + (p.present_attendance ?? 0),
+            0
+        );
+        const totalAbsent = programs.reduce(
+            (sum, p) => sum + (p.absent_attendance ?? 0),
+            0
+        );
+        const totalSessions = totalAttended + totalAbsent;
+        const overallPercent =
+            totalSessions > 0
+                ? Math.round((totalAttended / totalSessions) * 100)
+                : 0;
+
+        return {
+            activeEnrollments: active,
+            completedPrograms: completed,
+            incompleteEnrollments: incomplete,
+            attendanceStats: {
+                totalAttended,
+                totalSessions,
+                overallPercent
+            }
+        };
+    }, [programs]);
 
     useEffect(() => {
         if (error?.message === 'Not Found') {
@@ -104,346 +96,174 @@ export default function ResidentProfile() {
         }
     }, [error, navigate]);
 
-    if (error || !user) return null;
+    const { data: trendResp } = useSWR<
+        ServerResponseOne<{ week: string; rate: number }[]>
+    >(residentId ? `/api/users/${residentId}/attendance-trend?weeks=8` : null);
+    const chartData = useMemo(() => trendResp?.data ?? [], [trendResp]);
 
-    const metrics = profileResp?.data;
-    const programs = programsResp?.data ?? [];
-    const activityHistory = activityResp?.data ?? [];
+    const { data: notesResp, mutate: mutateNotes } = useSWR<
+        ServerResponseOne<
+            { id: number; date: string; admin: string; note: string }[]
+        >
+    >(residentId ? `/api/users/${residentId}/notes` : null);
+    const notes = useMemo(() => notesResp?.data ?? [], [notesResp]);
 
-    const handleDeleteUser = async () => {
-        if (!metrics?.user) return;
-        if (metrics.user.role === UserRole.SystemAdmin) {
-            toaster('This is the primary administrator and cannot be deleted', ToastState.error);
-            return;
-        }
-        const response = await API.delete('users/' + metrics.user.id);
-        if (response.success) {
-            toaster('Resident deleted successfully', ToastState.success);
-            navigate('/residents');
-        } else {
-            toaster('Failed to delete resident', ToastState.error);
-        }
-        setDeleteDialogOpen(false);
-    };
+    const [selectedEnrollment, setSelectedEnrollment] =
+        useState<ResidentProgramOverview | null>(null);
+    const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
 
-    const handleDeactivateUser = async () => {
-        if (!metrics?.user?.id) return;
-        const response = await API.post(`users/${metrics.user.id}/deactivate`, {});
-        if (response.success) {
-            toaster('Resident deactivated successfully', ToastState.success);
+    const handleViewDetails = useCallback(
+        (enrollment: ResidentProgramOverview) => {
+            setSelectedEnrollment(enrollment);
+            setAttendanceDialogOpen(true);
+        },
+        []
+    );
+
+    const [editOpen, setEditOpen] = useState(false);
+    const [resetPwOpen, setResetPwOpen] = useState(false);
+    const [deactivateOpen, setDeactivateOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [transferOpen, setTransferOpen] = useState(false);
+    const [addNoteOpen, setAddNoteOpen] = useState(false);
+
+    const handleActionSuccess = useCallback(() => {
+        void mutateProfile();
+        void mutatePrograms();
+        void mutateNotes();
+        setTimeout(() => {
             void mutateProfile();
-        } else {
-            toaster('Failed to deactivate resident', ToastState.error);
-        }
-        setDeactivateDialogOpen(false);
-    };
+            void mutatePrograms();
+        }, 1000);
+    }, [mutateProfile, mutatePrograms, mutateNotes]);
 
-    async function downloadUsageReport() {
-        try {
-            const response = await fetch(`/api/users/${residentId}/usage-report`);
-            if (!response.ok) {
-                toaster('Failed to generate resident usage report', ToastState.error);
-                return;
-            }
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const id = metrics?.user?.doc_id ?? residentId;
-            const filename = `usage-report-${id}-${getTimestamp()}.pdf`;
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = filename;
-            document.body.appendChild(anchor);
-            anchor.click();
-            anchor.remove();
-            window.URL.revokeObjectURL(url);
-        } catch {
-            toaster('Failed to download resident usage report', ToastState.error);
-        }
-    }
-
-    function downloadAttendanceExport() {
-        API.downloadFile(`users/${residentId}/attendance-export`)
-            .then(({ blob, headers }) => {
-                const disposition = headers.get('Content-Disposition') ?? '';
-                const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-                const filename = match?.[1]?.replace(/['"]/g, '') ?? `Attendance-${residentId}-${getTimestamp()}.csv`;
-                const url = window.URL.createObjectURL(blob);
-                const anchor = document.createElement('a');
-                anchor.href = url;
-                anchor.download = filename;
-                document.body.appendChild(anchor);
-                anchor.click();
-                anchor.remove();
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(() => {
-                toaster('Failed to download attendance export', ToastState.error);
-            });
-    }
-
-    const engagementMetrics = metrics?.activity_engagement;
-    const avgHoursWeekly = engagementMetrics ? engagementMetrics.total_hours_active_monthly / 4 : 0;
-    const weeklyHours = engagementMetrics?.total_hours_active_weekly ?? 0;
-    const weeklyMinutes = engagementMetrics?.total_minutes_active_weekly ?? 0;
-
-    const weekValue = weeklyHours >= 1 ? weeklyHours.toFixed(1) : weeklyMinutes > 0 ? `${weeklyMinutes}` : '0';
-    const weekUnit = weeklyHours >= 1 ? 'hours' : 'min';
-    const avgValue = avgHoursWeekly >= 1 ? avgHoursWeekly.toFixed(1) : avgHoursWeekly > 0 ? '<1' : '0';
-    const avgUnit = avgHoursWeekly >= 1 ? 'hours' : 'min';
-
-    const programColumns: Column<ResidentProgramOverview>[] = [
-        {
-            key: 'program',
-            header: 'Program',
-            render: (p) => <span className="font-medium text-foreground">{p.program_name}</span>
-        },
-        {
-            key: 'class',
-            header: 'Class',
-            render: (p) => p.class_name
-        },
-        {
-            key: 'status',
-            header: 'Status',
-            render: (p) => <StatusBadge status={p.status} variant="progClass" />
-        },
-        {
-            key: 'enrollment',
-            header: 'Enrollment',
-            render: (p) => p.enrollment_status ? <StatusBadge status={p.enrollment_status} variant="enrollment" /> : '\u2014'
-        },
-        {
-            key: 'attendance',
-            header: 'Attendance',
-            render: (p) => p.attendance_percentage != null ? `${Math.round(p.attendance_percentage)}%` : '\u2014'
-        },
-        {
-            key: 'start_date',
-            header: 'Start Date',
-            render: (p) => p.start_date ? formatDate(p.start_date) : '\u2014'
-        }
-    ];
-
-    const libraryColumns: Column<OpenContentResponse>[] = [
-        {
-            key: 'title',
-            header: 'Library Name',
-            render: (item) => (
-                <span>
-                    {item.is_featured ? `${item.title ?? 'Untitled'} *` : item.title ?? 'Untitled'}
-                </span>
-            )
-        },
-        {
-            key: 'hours',
-            header: 'Hours',
-            className: 'text-right',
-            headerClassName: 'text-right',
-            render: (item) => item.total_hours.toFixed(2)
-        }
-    ];
-
-    const activityColumns: Column<ActivityHistoryResponse>[] = [
-        {
-            key: 'action',
-            header: 'Action',
-            render: (a) => (
-                <span className="capitalize">{a.action.replace(/_/g, ' ')}</span>
-            )
-        },
-        {
-            key: 'detail',
-            header: 'Detail',
-            render: (a) => a.new_value || a.class_name || '\u2014'
-        },
-        {
-            key: 'date',
-            header: 'Date',
-            render: (a) => formatDate(new Date(a.created_at).toISOString())
-        }
-    ];
+    if (error || !user) return null;
 
     if (isLoading) {
         return (
-            <div className="space-y-6">
-                <Skeleton className="h-8 w-64" />
-                <div className="grid grid-cols-3 gap-6">
-                    <Skeleton className="h-48" />
-                    <Skeleton className="h-48 col-span-2" />
+            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+                <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-36 w-full" />
+                    <div className="grid grid-cols-3 gap-4">
+                        <Skeleton className="h-24" />
+                        <Skeleton className="h-24" />
+                        <Skeleton className="h-24" />
+                    </div>
                 </div>
             </div>
         );
     }
 
-    if (!metrics) return null;
+    if (!profileData) return null;
 
-    const isDeactivated = isUserDeactivated(metrics.user);
+    const residentUser = profileData.user;
+    const engagement = profileData.activity_engagement;
+    const isDeactivated = isUserDeactivated(residentUser);
+    const userIsDeptAdmin = canSwitchFacility(user);
 
     return (
-        <div className="space-y-6">
-            <PageHeader
-                title={`${metrics.user.name_first} ${metrics.user.name_last}`}
-                subtitle="Resident Profile"
-                actions={
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                                <MoreHorizontal className="size-4 mr-2" />
-                                Actions
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => void downloadUsageReport()}>
-                                <Download className="size-4 mr-2" />
-                                Download Usage Report (PDF)
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => downloadAttendanceExport()}>
-                                <FileSpreadsheet className="size-4 mr-2" />
-                                Export Attendance
-                            </DropdownMenuItem>
-                            {!isDeactivated && (
-                                <DropdownMenuItem onClick={() => setDeactivateDialogOpen(true)}>
-                                    <UserX className="size-4 mr-2" />
-                                    Deactivate Resident
-                                </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                                onClick={() => setDeleteDialogOpen(true)}
-                                className="text-destructive"
-                            >
-                                <Trash2 className="size-4 mr-2" />
-                                Delete Resident
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                }
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="bg-card">
-                    <CardContent className="pt-6 space-y-3">
-                        <div className="flex flex-col items-center mb-4">
-                            <UserCircle className="size-20 text-[#556830]" />
-                            <h2 className="text-xl font-bold text-foreground mt-2">
-                                {metrics.user.name_first} {metrics.user.name_last}
-                            </h2>
-                            {isDeactivated && (
-                                <span className="mt-1 inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
-                                    Deactivated
-                                </span>
-                            )}
-                        </div>
-                        <ProfileInfoRow label="Username" value={metrics.user.username} />
-                        <ProfileInfoRow label="Resident ID" value={metrics.user.doc_id ?? 'N/A'} />
-                        <ProfileInfoRow
-                            label="Joined"
-                            value={
-                                engagementMetrics?.joined
-                                    ? formatDate(engagementMetrics.joined)
-                                    : 'No Date Available'
-                            }
-                        />
-                        <ProfileInfoRow
-                            label="Last Active"
-                            value={
-                                engagementMetrics?.last_active_date
-                                    ? formatDate(engagementMetrics.last_active_date)
-                                    : 'N/A'
-                            }
-                        />
-                        {metrics.user.deactivated_at && (
-                            <ProfileInfoRow
-                                label="Date Deactivated"
-                                value={formatDate(metrics.user.deactivated_at)}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-
-                <div className="lg:col-span-2 grid grid-cols-3 gap-4">
-                    <StatCard
-                        icon={<Calendar className="size-5 text-[#556830]" />}
-                        label="Days Active"
-                        value={engagementMetrics?.total_active_days_monthly.toFixed(0) ?? '0'}
-                    />
-                    <StatCard
-                        icon={<Clock className="size-5 text-[#556830]" />}
-                        label="Avg Time Per Week"
-                        value={`${avgValue} ${avgUnit}`}
-                    />
-                    <StatCard
-                        icon={<Activity className="size-5 text-[#556830]" />}
-                        label="Total Time This Week"
-                        value={`${weekValue} ${weekUnit}`}
-                    />
+        <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                    <button
+                        onClick={() => navigate('/residents')}
+                        className="hover:text-[#556830] transition-colors"
+                    >
+                        Residents
+                    </button>
+                    <ChevronRight className="size-4" />
+                    <span className="text-[#203622] font-medium">
+                        {residentUser.name_first}{' '}
+                        {residentUser.name_last}
+                    </span>
                 </div>
+
+                <ResidentHeader
+                    user={residentUser}
+                    facilityName={residentUser.facility?.name ?? ''}
+                    joinedDate={engagement?.joined ?? ''}
+                    lastActiveDate={engagement?.last_active_date ?? ''}
+                    isDeactivated={isDeactivated}
+                    isDeptAdmin={userIsDeptAdmin}
+                    onEditProfile={() => setEditOpen(true)}
+                    onResetPassword={() => setResetPwOpen(true)}
+                    onDeactivate={() => setDeactivateOpen(true)}
+                    onTransfer={() => setTransferOpen(true)}
+                    onDelete={() => setDeleteOpen(true)}
+                />
+
+                <ResidentMetrics
+                    overallAttendancePercent={attendanceStats.overallPercent}
+                    sessionsAttended={attendanceStats.totalAttended}
+                    totalSessions={attendanceStats.totalSessions}
+                    activeEnrollments={activeEnrollments.length}
+                    completedPrograms={completedPrograms.length}
+                />
+
+                <AttendanceTrendChart data={chartData} />
+
+                <ActiveEnrollmentsTable
+                    enrollments={activeEnrollments}
+                    onViewDetails={handleViewDetails}
+                />
+
+                <DetailedAttendanceDialog
+                    open={attendanceDialogOpen}
+                    onOpenChange={setAttendanceDialogOpen}
+                    enrollment={selectedEnrollment}
+                    residentId={residentId ?? ''}
+                />
+
+                <CompletedPrograms
+                    programs={completedPrograms}
+                    onViewDetails={handleViewDetails}
+                />
+
+                <IncompleteEnrollments
+                    enrollments={incompleteEnrollments}
+                />
+
+                <HistoricalNotes
+                    notes={notes}
+                    isDeactivated={isDeactivated}
+                    onAddNote={() => setAddNoteOpen(true)}
+                />
+
+                <EditProfileDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    user={residentUser}
+                    onSuccess={handleActionSuccess}
+                />
+                <ResetPasswordDialog
+                    open={resetPwOpen}
+                    onOpenChange={setResetPwOpen}
+                    user={residentUser}
+                />
+                <DeactivateDialog
+                    open={deactivateOpen}
+                    onOpenChange={setDeactivateOpen}
+                    user={residentUser}
+                    onSuccess={handleActionSuccess}
+                />
+                <DeleteDialog
+                    open={deleteOpen}
+                    onOpenChange={setDeleteOpen}
+                    user={residentUser}
+                />
+                <TransferDialog
+                    open={transferOpen}
+                    onOpenChange={setTransferOpen}
+                    user={residentUser}
+                    onSuccess={handleActionSuccess}
+                />
+                <AddNoteDialog
+                    open={addNoteOpen}
+                    onOpenChange={setAddNoteOpen}
+                    residentId={residentId ?? ''}
+                    residentName={residentUser.name_first}
+                    onSuccess={() => void mutateNotes()}
+                />
             </div>
-
-            <Tabs defaultValue="programs">
-                <TabsList>
-                    {hasFeature(user, FeatureAccess.ProgramAccess) && (
-                        <TabsTrigger value="programs">Programs</TabsTrigger>
-                    )}
-                    <TabsTrigger value="libraries">Top Libraries</TabsTrigger>
-                    <TabsTrigger value="activity">Activity History</TabsTrigger>
-                </TabsList>
-
-                {hasFeature(user, FeatureAccess.ProgramAccess) && (
-                    <TabsContent value="programs">
-                        <DataTable
-                            columns={programColumns}
-                            data={programs}
-                            keyExtractor={(p) => `${p.program_id}-${p.class_id}`}
-                            emptyMessage="No program enrollments found."
-                            onRowClick={(p) => navigate(`/program-classes/${p.class_id}/dashboard`)}
-                        />
-                    </TabsContent>
-                )}
-
-                <TabsContent value="libraries">
-                    <DataTable
-                        columns={libraryColumns}
-                        data={metrics.top_libraries ?? []}
-                        keyExtractor={(item) => item.content_id}
-                        emptyMessage="No library activity found."
-                        onRowClick={(item) => navigate(`/viewer/libraries/${item.content_id}`)}
-                    />
-                    {(metrics.top_libraries ?? []).some((l) => l.is_featured) && (
-                        <p className="text-xs text-muted-foreground italic mt-2">
-                            * Featured library
-                        </p>
-                    )}
-                </TabsContent>
-
-                <TabsContent value="activity">
-                    <DataTable
-                        columns={activityColumns}
-                        data={activityHistory}
-                        keyExtractor={(a) => `${a.action}-${new Date(a.created_at).getTime()}-${a.field_name}`}
-                        emptyMessage="No activity history found."
-                    />
-                </TabsContent>
-            </Tabs>
-
-            <ConfirmDialog
-                open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                title="Delete Resident"
-                description="Are you sure you would like to delete this resident? This action cannot be undone."
-                confirmLabel="Delete"
-                onConfirm={() => void handleDeleteUser()}
-                variant="destructive"
-            />
-
-            <ConfirmDialog
-                open={deactivateDialogOpen}
-                onOpenChange={setDeactivateDialogOpen}
-                title="Deactivate Resident"
-                description={`Are you sure you want to deactivate ${metrics.user.name_first} ${metrics.user.name_last}? They will no longer be able to log in.`}
-                confirmLabel="Deactivate"
-                onConfirm={() => void handleDeactivateUser()}
-                variant="destructive"
-            />
-        </div>
     );
 }

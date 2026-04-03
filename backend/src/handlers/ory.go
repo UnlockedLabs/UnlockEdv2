@@ -205,6 +205,10 @@ func (srv *Server) updateFacilityInKratosIdentity(userID int, transFacilityID in
 		log.Errorf("error retrieving user with id %d: %v", userID, err)
 		return err
 	}
+	if user.KratosID == "" {
+		log.Errorf("user %d has no Kratos identity ID, skipping identity update", userID)
+		return nil
+	}
 	identity, resp, err := srv.OryClient.IdentityAPI.GetIdentity(ctx, user.KratosID).Execute()
 	if err != nil {
 		log.Errorf("error fetching identity using id %s: %v", user.KratosID, err)

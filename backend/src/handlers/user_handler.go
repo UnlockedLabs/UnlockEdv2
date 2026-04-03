@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -23,7 +24,11 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	return []routeDef{
 		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
 		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		validatedRoute("GET /api/users/{id}/attendance-trend", srv.handleGetUserAttendanceTrend, resolver),
+		validatedRoute("GET /api/users/{id}/notes", srv.handleGetUserNotes, resolver),
+		validatedAdminRoute("POST /api/users/{id}/notes", srv.handleCreateUserNote, FacilityAdminResolver("users", "id")),
 		/* admin */
+		newAdminRoute("GET /api/users/stats", srv.handleGetUserStats),
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
@@ -78,6 +83,10 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			return newDatabaseServiceError(err)
 		}
 	default:
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() && r.URL.Query().Get("facility_id") == "" {
+			args.FacilityID = 0
+		}
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 		if err != nil {
 			log.add("facility_id", args.FacilityID)
@@ -86,6 +95,26 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
+}
+
+func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var facilityID *uint
+	if fid := r.URL.Query().Get("facility_id"); fid != "" {
+		id, err := strconv.Atoi(fid)
+		if err != nil {
+			return newInvalidIdServiceError(err, "facility ID")
+		}
+		ref := uint(id)
+		facilityID = &ref
+	} else if !claims.canSwitchFacility() {
+		facilityID = &claims.FacilityID
+	}
+	stats, err := srv.Db.GetUserStats(r.Context(), facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, stats)
 }
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
@@ -489,8 +518,69 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 	}
 	for i := range userPrograms {
 		userPrograms[i].CalculateAttendancePercentage()
+		userPrograms[i].Schedule = models.FormatScheduleFromRRule(userPrograms[i].RecurrenceRule)
 	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
+}
+
+func (srv *Server) handleGetUserAttendanceTrend(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	weeks := 8
+	if wk := r.URL.Query().Get("weeks"); wk != "" {
+		if parsed, err := strconv.Atoi(wk); err == nil && parsed > 0 {
+			weeks = parsed
+		}
+	}
+	service := services.NewUsersService(srv.Db)
+	trends, err := service.GetWeeklyAttendanceTrend(r.Context(), userId, weeks)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, trends)
+}
+
+func (srv *Server) handleGetUserNotes(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	notes, err := srv.Db.GetUserNotes(r.Context(), uint(userId))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, notes)
+}
+
+func (srv *Server) handleCreateUserNote(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var body struct {
+		Note string `json:"note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return newBadRequestServiceError(err, "invalid request body")
+	}
+	if strings.TrimSpace(body.Note) == "" {
+		return newBadRequestServiceError(errors.New("note is required"), "note cannot be empty")
+	}
+	note := &models.UserNote{
+		UserID: uint(userId),
+		Note:   strings.TrimSpace(body.Note),
+	}
+	note.CreateUserID = &claims.UserID
+	if err := srv.Db.CreateUserNote(r.Context(), note); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, "Note added successfully")
 }
 
 func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -697,7 +787,17 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newUnauthorizedServiceError()
 	}
 
-	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, queryCtx.All)
+	allFacilities := claims.canSwitchFacility() || queryCtx.All
+	var classID *uint
+	if cid := r.URL.Query().Get("class_id"); cid != "" {
+		parsed, err := strconv.Atoi(cid)
+		if err != nil {
+			return newInvalidIdServiceError(err, "class_id")
+		}
+		ref := uint(parsed)
+		classID = &ref
+	}
+	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, allFacilities, classID)
 	if err != nil {
 		log.add("user_id", userID)
 		return newDatabaseServiceError(err)
@@ -708,8 +808,12 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newInternalServerServiceError(err, "Failed to convert attendance data to CSV format")
 	}
 
+	docLabel := strings.TrimSpace(user.DocID)
+	if docLabel == "" {
+		docLabel = fmt.Sprintf("User%d", userID)
+	}
 	date := time.Now().Format("2006-01-02")
-	filename := fmt.Sprintf("Attendance-%s-%s.csv", user.DocID, date)
+	filename := fmt.Sprintf("Attendance-%s-%s.csv", docLabel, date)
 
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
