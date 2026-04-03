@@ -11,6 +11,22 @@ export function formatDate(dateStr?: string): string {
     });
 }
 
+export function formatRelativeTime(dateStr?: string): string {
+    if (!dateStr) return '-';
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return formatDate(dateStr);
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return formatDate(dateStr);
+}
+
 export function formatDateTime(dateStr: string): string {
     const dt = new Date(dateStr);
     const date = dt.toLocaleDateString('en-US', {
@@ -24,6 +40,36 @@ export function formatDateTime(dateStr: string): string {
         hour12: true
     });
     return `${date} - ${time}`;
+}
+
+export function formatLastActive(dateStr?: string | null): string {
+    if (!dateStr) return '\u2014';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${Math.max(diffMins, 1)}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) {
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
 }
 
 export function getVideoErrorMessage(video: Video): string | undefined {
@@ -192,12 +238,12 @@ export function getEnrollmentStatusColor(status: string): string {
     if (status === 'Completed')
         return 'bg-blue-50 text-blue-700 border-blue-200';
     if (status.includes('Withdrawn'))
-        return 'bg-gray-50 text-gray-600 border-gray-200';
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     if (status.includes('Dropped'))
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return 'bg-gray-100 text-gray-700 border-gray-300';
     if (status.includes('Segregated'))
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-orange-100 text-orange-700 border-orange-300';
     if (status.includes('Failed'))
-        return 'bg-orange-50 text-orange-700 border-orange-200';
-    return 'bg-gray-50 text-gray-600 border-gray-200';
+        return 'bg-red-100 text-red-700 border-red-300';
+    return 'bg-gray-100 text-gray-700 border-gray-300';
 }

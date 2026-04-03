@@ -22,7 +22,7 @@ func calcOffset(page, perPage int) int {
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(models.User{}).
 		Preload("LoginMetrics").
-		Where("facility_id = ?", args.FacilityID)
+		Preload("Facility")
 
 	if !args.IncludeDeactivated {
 		tx = tx.Where("deactivated_at IS NULL")
@@ -30,13 +30,20 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 
 	switch role {
 	case "system_admin":
-		tx = tx.Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("facility_id = ?", args.FacilityID).
+			Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "department_admin":
-		tx = tx.Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("facility_id = ?", args.FacilityID).
+			Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
 	case "facility_admin":
-		tx = tx.Where("facility_id = ? and role = 'facility_admin'", args.FacilityID)
+		tx = tx.Where("facility_id = ? AND role = 'facility_admin'", args.FacilityID)
 	case "student":
-		tx = tx.Where("facility_id = ? and role = 'student'", args.FacilityID)
+		tx = tx.Where("role = 'student'")
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
+	default:
+		tx = tx.Where("facility_id = ?", args.FacilityID)
 	}
 	if args.Search != "" {
 		tx = fuzzySearchUsers(tx, args)
@@ -45,7 +52,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	validUserOrderByFields := []string{"name_last", "created_at", "last_login"}
+	validUserOrderByFields := []string{"name_last", "created_at", "last_login", "doc_id", "username"}
 	if !slices.Contains(validUserOrderByFields, args.OrderBy) {
 		args.OrderBy = "name_last"
 	}
@@ -63,6 +70,35 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	return users, nil
+}
+
+type UserStats struct {
+	Total    int64 `json:"total"`
+	Active   int64 `json:"active"`
+	Inactive int64 `json:"inactive"`
+}
+
+func (db *DB) GetUserStats(ctx context.Context, facilityID *uint) (*UserStats, error) {
+	var stats UserStats
+	baseTx := db.WithContext(ctx).Model(&models.User{}).Where("role = ?", models.Student)
+	if facilityID != nil {
+		baseTx = baseTx.Where("facility_id = ?", *facilityID)
+	}
+	if err := baseTx.Count(&stats.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	daysAgo := time.Now().AddDate(0, 0, -30)
+	activeTx := db.WithContext(ctx).Model(&models.User{}).
+		Where("role = ?", models.Student).
+		Joins("JOIN login_metrics ON users.id = login_metrics.user_id AND login_metrics.last_login > ?", daysAgo)
+	if facilityID != nil {
+		activeTx = activeTx.Where("facility_id = ?", *facilityID)
+	}
+	if err := activeTx.Count(&stats.Active).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	stats.Inactive = stats.Total - stats.Active
+	return &stats, nil
 }
 
 func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int) (*models.User, error) {
@@ -635,6 +671,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	base := db.WithContext(args.Ctx).
 		Table("program_class_enrollments AS pce").
 		Select(`
+            pce.id                   AS enrollment_id,
             pce.enrollment_status   AS enrollment_status,
             p.name                   AS program_name,
             p.id                     AS program_id,
@@ -645,9 +682,9 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pc.id                    AS class_id,
 			pce.updated_at,
 			pce.created_at,
-			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
+			(SELECT ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ')
+			 FROM program_credit_types pct WHERE pct.program_id = p.id) AS credit_types,
 
-            -- count present attendance status
             COALESCE(SUM(
               CASE
                 WHEN pcea.attendance_status = 'present' THEN 1
@@ -660,14 +697,13 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
               END
             ), 0) AS present_attendance,
 
-            -- count everything else as absent
             COALESCE(SUM(
               CASE WHEN pcea.attendance_status NOT IN ('present','partial') THEN 1 ELSE 0 END
-            ), 0)  AS absent_attendance, pce.change_reason
+            ), 0)  AS absent_attendance, pce.change_reason,
+			STRING_AGG(DISTINCT e.recurrence_rule, '|') AS recurrence_rule
         `).
 		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
-		Joins("INNER JOIN program_credit_types pct ON pct.program_id = p.id").
 		Joins("INNER JOIN program_class_events e ON e.class_id = pc.id").
 		Joins(
 			`LEFT JOIN program_class_event_attendance pcea
@@ -677,7 +713,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		).
 		Where("pce.user_id = ?", userId).
 		Group(`
-            pce.enrollment_status,
+            pce.id, pce.enrollment_status,
             p.name, p.id,
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at,
 			pce.created_at, pce.change_reason`).Order(args.OrderClause("pce.created_at desc"))
@@ -696,6 +732,43 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 
 	}
 	return userEnrollments, nil
+}
+
+func (db *DB) GetUserWeeklyAttendanceRows(ctx context.Context, userID, weeks int) ([]models.WeeklyAttendanceRow, error) {
+	var rows []models.WeeklyAttendanceRow
+	query := `
+		SELECT DATE_TRUNC('week', date::date) AS week_start,
+			COALESCE(SUM(CASE WHEN attendance_status IN ('present','partial') THEN 1 ELSE 0 END), 0) AS present_count,
+			COUNT(*) AS total_count
+		FROM program_class_event_attendance
+		WHERE user_id = ? AND date::date >= NOW() - INTERVAL '1 week' * ?
+		GROUP BY week_start
+		ORDER BY week_start ASC`
+	if err := db.WithContext(ctx).Raw(query, userID, weeks).Scan(&rows).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "weekly_attendance_trend")
+	}
+	return rows, nil
+}
+
+func (db *DB) GetUserNotes(ctx context.Context, userID uint) ([]models.UserNoteResponse, error) {
+	var notes []models.UserNoteResponse
+	if err := db.WithContext(ctx).
+		Table("user_notes un").
+		Select("un.id, un.created_at AS date, un.note, CONCAT(u.name_first, ' ', u.name_last) AS admin").
+		Joins("INNER JOIN users u ON u.id = un.create_user_id").
+		Where("un.user_id = ?", userID).
+		Order("un.created_at DESC").
+		Scan(&notes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "user_notes")
+	}
+	return notes, nil
+}
+
+func (db *DB) CreateUserNote(ctx context.Context, note *models.UserNote) error {
+	if err := db.WithContext(ctx).Create(note).Error; err != nil {
+		return newCreateDBError(err, "user_notes")
+	}
+	return nil
 }
 
 func adjustUserOrderBy(arg string) string {
@@ -864,7 +937,7 @@ func (db *DB) DeactivatedUsersPresent(userIDs []int) (bool, error) {
 	return count > 0, nil
 }
 
-func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, facilityID uint, all bool) ([]models.ResidentAttendanceCSVData, error) {
+func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, facilityID uint, all bool, classID *uint) ([]models.ResidentAttendanceCSVData, error) {
 	var csvData []models.ResidentAttendanceCSVData
 
 	query := `
@@ -881,7 +954,7 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 		JOIN program_class_enrollments e ON e.class_id = pc.id AND e.user_id = pcea.user_id
 		JOIN users u ON u.id = pcea.user_id
 		WHERE pcea.user_id = ?
-			AND CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date
+			AND (e.enrolled_at IS NULL OR CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date)
 			AND (e.enrollment_ended_at IS NULL OR CAST(DATE(e.enrollment_ended_at) AS TEXT) >= pcea.date)
 	`
 
@@ -890,6 +963,11 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 	if !all {
 		query += " AND u.facility_id = ?"
 		args = append(args, facilityID)
+	}
+
+	if classID != nil {
+		query += " AND pc.id = ?"
+		args = append(args, *classID)
 	}
 
 	query += " ORDER BY p.name ASC, pc.name ASC, pcea.date ASC"

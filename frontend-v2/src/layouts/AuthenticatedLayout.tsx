@@ -33,12 +33,16 @@ export default function AuthenticatedLayout() {
     const breadcrumbItems =
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
+    const isResidentProfile = /^\/residents\/\w+$/.test(location.pathname);
+    const isClassesPage = location.pathname === '/classes';
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
-    const isFullBleed = isProgramDetail || isDashboard || isProgramsList || isFacilities;
-    const fullBleedWrapperClass = isDashboard || isProgramsList || isFacilities ? 'py-0' : 'py-4';
-    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail;
+    const isFullBleed =
+        isProgramDetail || isResidentProfile || isClassesPage || isDashboard || isProgramsList || isFacilities;
+    const fullBleedWrapperClass =
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassesPage ? 'py-0' : 'py-4';
+    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile;
     const isFacilityView =
         isProgramDetail &&
         user !== undefined &&
@@ -84,14 +88,14 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const rootClass = isProgramDetail
+    const needsScrollableRoot = isProgramDetail;
+    const needsGrayBg = isResidentProfile || isClassesPage || (isProgramDetail && canSwitchFacility(user));
+    const rootClass = needsScrollableRoot
         ? 'min-h-screen bg-background flex'
         : 'h-screen bg-background flex overflow-hidden';
-    const contentClass = isProgramDetail
-        ? `flex-1 overflow-x-hidden ${
-              canSwitchFacility(user) ? 'bg-[#E2E7EA]' : ''
-          }`.trim()
-        : 'flex-1 overflow-y-auto overflow-x-hidden';
+    const contentClass = needsScrollableRoot
+        ? `flex-1 overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`.trim()
+        : `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
     return (
         <div className={rootClass}>

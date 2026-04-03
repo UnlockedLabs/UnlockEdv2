@@ -40,6 +40,12 @@ const enrollmentStatusStyles: Record<string, string> = {
     Transferred: 'bg-amber-50 text-amber-700 border-amber-200'
 };
 
+const residentStatusStyles: Record<string, string> = {
+    Active: 'bg-green-100 text-green-800 border-green-300',
+    Inactive: 'bg-gray-100 text-gray-700 border-gray-300',
+    Archived: 'bg-orange-100 text-orange-700 border-orange-300'
+};
+
 type StatusType =
     | SelectedClassStatus
     | ProgClassStatus
@@ -49,7 +55,7 @@ type StatusType =
 
 interface StatusBadgeProps {
     status: StatusType;
-    variant?: 'class' | 'progClass' | 'program' | 'enrollment' | 'auto';
+    variant?: 'class' | 'progClass' | 'program' | 'enrollment' | 'resident' | 'auto';
     className?: string;
 }
 
@@ -69,6 +75,9 @@ function getStyleForStatus(
     if (variant === 'enrollment' && status in enrollmentStatusStyles) {
         return enrollmentStatusStyles[status];
     }
+    if (variant === 'resident' && status in residentStatusStyles) {
+        return residentStatusStyles[status];
+    }
     if (variant === 'auto') {
         if (status in classStatusStyles)
             return classStatusStyles[status as SelectedClassStatus];
@@ -78,6 +87,8 @@ function getStyleForStatus(
             return programStatusStyles[status as ProgramEffectiveStatus];
         if (status in enrollmentStatusStyles)
             return enrollmentStatusStyles[status];
+        if (status in residentStatusStyles)
+            return residentStatusStyles[status];
     }
     return 'bg-muted text-foreground border-border';
 }

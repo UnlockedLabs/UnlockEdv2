@@ -463,10 +463,10 @@ export default function ProgramOverviewStatewide() {
 
     return (
         <div className="min-h-full">
-            <div className="max-w-7xl mx-auto px-6 pt-4 pb-8">
-                <Breadcrumbs items={breadcrumbs} className="mb-4" />
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <Breadcrumbs items={breadcrumbs} className="mb-6" />
 
-                <div className="flex items-start justify-between mb-8 mt-6">
+                <div className="flex items-start justify-between mb-8">
                     <div className="flex items-start gap-4">
                         <div>
                             <h1 className="text-[#203622] mb-2">

@@ -3,27 +3,40 @@ import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
-import { useCheckResponse } from '@/hooks/useCheckResponse';
 import { useToast } from '@/contexts/ToastContext';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import API from '@/api/api';
 import {
     User,
-    UserRole,
+    Facility,
     ServerResponseMany,
     ServerResponseOne,
-    ResetPasswordResponse,
     NewUserResponse,
     ToastState
 } from '@/types';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable, Column } from '@/components/shared/DataTable';
-import { SearchInput } from '@/components/shared/SearchInput';
-import { FormModal } from '@/components/shared/FormModal';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { formatLastActive } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -31,56 +44,74 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { Pagination } from '@/components/Pagination';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Plus, Pencil, RotateCcw, Trash2, MoreHorizontal, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatDate, formatDateTime } from '@/lib/formatters';
+    Search,
+    Plus,
+    Upload,
+    ArrowUpDown,
+    Users as UsersIcon
+} from 'lucide-react';
 
-type SortOption = 'name_last asc' | 'name_last desc' | 'last_login desc' | 'last_login asc' | 'created_at desc' | 'created_at asc';
+type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
+type SortDir = 'asc' | 'desc';
 
 interface StudentFormData {
     name_first: string;
     name_last: string;
     username: string;
-    email: string;
     doc_id?: string;
+    facility_id?: number;
+}
+
+interface UserStatsData {
+    total: number;
+    active: number;
+    inactive: number;
 }
 
 export default function StudentManagement() {
     const navigate = useNavigate();
     const { toaster } = useToast();
-    const { page, perPage, setPage } = useUrlPagination(1, 20);
+    const { user } = useAuth();
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
+
+    const showFacilityColumn = user ? canSwitchFacility(user) : false;
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState<SortOption>('name_last asc');
-    const [includeDeactivated, setIncludeDeactivated] = useState(false);
-    const [addModalOpen, setAddModalOpen] = useState(false);
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [resetDialogOpen, setResetDialogOpen] = useState(false);
-    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [tempPassword, setTempPassword] = useState('');
+    const [facilityFilter, setFacilityFilter] = useState<string>('all');
+    const [sortField, setSortField] = useState<SortField>('name_last');
+    const [sortDir, setSortDir] = useState<SortDir>('asc');
+    const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+    const facilityParam =
+        showFacilityColumn && facilityFilter !== 'all'
+            ? `&facility_id=${facilityFilter}`
+            : '';
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const { data, mutate, error, isLoading } = useSWR<ServerResponseMany<User>>(
-        `/api/users?search=${encodeURIComponent(searchTerm)}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&role=student&include_deactivated=${includeDeactivated}`
+        `/api/users?search=${encodeURIComponent(searchTerm)}&page=${page}&per_page=${perPage}&order_by=${sortField} ${sortDir}&role=student&include_deactivated=true${facilityParam}`
     );
 
-    const userData = data?.data ?? [];
-    const totalPages = data?.meta?.last_page ?? 1;
+    const statsParam =
+        showFacilityColumn && facilityFilter !== 'all'
+            ? `?facility_id=${facilityFilter}`
+            : '';
+    const { data: statsResp } = useSWR<ServerResponseOne<UserStatsData>>(
+        `/api/users/stats${statsParam}`
+    );
+    const stats = statsResp?.data;
 
-    const checkDelete = useCheckResponse<User>({
-        mutate,
-        closeDialog: () => setDeleteDialogOpen(false)
-    });
+    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
+        showFacilityColumn ? '/api/facilities' : null
+    );
+    const facilities = facilitiesResp?.data ?? [];
+
+    const userData = data?.data ?? [];
+    const totalItems = data?.meta?.total ?? 0;
 
     const addForm = useForm<StudentFormData>();
-    const editForm = useForm<StudentFormData>();
 
     const handleSearchChange = (value: string) => {
         startTransition(() => {
@@ -89,362 +120,444 @@ export default function StudentManagement() {
         });
     };
 
+    const toggleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortField(field);
+            setSortDir('asc');
+        }
+        setPage(1);
+    };
+
     const handleAddUser = async (formData: StudentFormData) => {
-        const response = await API.post<NewUserResponse, object>('users', {
-            ...formData,
-            role: UserRole.Student
-        }) as ServerResponseOne<NewUserResponse>;
+        const user = {
+            name_first: formData.name_first,
+            name_last: formData.name_last,
+            username: formData.username,
+            doc_id: formData.doc_id,
+            role: 'student' as const,
+            ...(formData.facility_id
+                ? { facility_id: formData.facility_id }
+                : {})
+        };
+        const response = (await API.post<NewUserResponse, object>('users', {
+            user
+        })) as ServerResponseOne<NewUserResponse>;
 
         if (response.success) {
-            setTempPassword(response.data.temp_password);
-            setAddModalOpen(false);
-            setPasswordModalOpen(true);
-            toaster('Resident created successfully', ToastState.success);
+            setAddDialogOpen(false);
+            toaster('Resident added successfully', ToastState.success);
             addForm.reset();
             void mutate();
         } else {
-            toaster(response.message || 'Failed to create resident', ToastState.error);
+            toaster(
+                response.message || 'Failed to create resident',
+                ToastState.error
+            );
         }
     };
 
-    const handleEditUser = async (formData: StudentFormData) => {
-        if (!selectedUser) return;
-        const response = await API.patch<User, object>(`users/${selectedUser.id}`, formData);
-        if (response.success) {
-            toaster('Resident updated successfully', ToastState.success);
-            setEditModalOpen(false);
-            editForm.reset();
-            setSelectedUser(null);
-            void mutate();
-        } else {
-            toaster(response.message || 'Failed to update resident', ToastState.error);
-        }
-    };
+    const SortableHeader = ({
+        field,
+        children
+    }: {
+        field: SortField;
+        children: React.ReactNode;
+    }) => (
+        <TableHead
+            className="cursor-pointer hover:bg-gray-50"
+            onClick={() => toggleSort(field)}
+        >
+            <div className="flex items-center gap-2">
+                {children}
+                <ArrowUpDown
+                    className={cn(
+                        'size-4',
+                        sortField === field
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'
+                    )}
+                />
+            </div>
+        </TableHead>
+    );
 
-    const handleDeleteUser = async () => {
-        if (!selectedUser) return;
-        const response = await API.delete('users/' + selectedUser.id);
-        checkDelete(
-            response.success,
-            'Failed to delete resident',
-            'Resident deleted successfully'
-        );
-        setSelectedUser(null);
-    };
-
-    const handleResetPassword = async () => {
-        if (!selectedUser) return;
-        const response = await API.post<ResetPasswordResponse, object>(
-            `users/${selectedUser.id}/student-password`,
-            {}
-        ) as ServerResponseOne<ResetPasswordResponse>;
-        if (response.success) {
-            setTempPassword(response.data.temp_password);
-            setResetDialogOpen(false);
-            setPasswordModalOpen(true);
-            toaster('Password reset successfully', ToastState.success);
-        } else {
-            toaster('Failed to reset password', ToastState.error);
-        }
-    };
-
-    const openEdit = (targetUser: User) => {
-        setSelectedUser(targetUser);
-        editForm.reset({
-            name_first: targetUser.name_first,
-            name_last: targetUser.name_last,
-            username: targetUser.username,
-            email: targetUser.email,
-            doc_id: targetUser.doc_id ?? ''
-        });
-        setEditModalOpen(true);
-    };
-
-    const columns: Column<User>[] = [
-        {
-            key: 'name',
-            header: 'Name',
-            render: (u) => (
-                <span className={cn(
-                    'font-medium text-foreground',
-                    u.deactivated_at && 'opacity-50'
-                )}>
-                    {u.name_last}, {u.name_first}
-                </span>
-            )
-        },
-        {
-            key: 'username',
-            header: 'Username',
-            render: (u) => <span className={cn(u.deactivated_at && 'opacity-50')}>{u.username}</span>
-        },
-        {
-            key: 'last_active',
-            header: 'Last Active',
-            render: (u) => (
-                <span className={cn(u.deactivated_at && 'opacity-50')}>
-                    {u.login_metrics?.last_login ? formatDateTime(u.login_metrics.last_login) : '\u2014'}
-                </span>
-            )
-        },
-        {
-            key: 'doc_id',
-            header: 'Resident ID',
-            render: (u) => <span className={cn(u.deactivated_at && 'opacity-50')}>{u.doc_id ?? '\u2014'}</span>
-        },
-        {
-            key: 'updated_at',
-            header: 'Last Updated',
-            render: (u) => <span className={cn(u.deactivated_at && 'opacity-50')}>{formatDate(u.updated_at)}</span>
-        },
-        {
-            key: 'created_at',
-            header: 'Created At',
-            render: (u) => <span className={cn(u.deactivated_at && 'opacity-50')}>{formatDate(u.created_at)}</span>
-        },
-        {
-            key: 'actions',
-            header: 'Actions',
-            headerClassName: 'text-right',
-            className: 'text-right',
-            render: (targetUser) => (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="size-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {!targetUser.deactivated_at && (
-                            <>
-                                <DropdownMenuItem onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEdit(targetUser);
-                                }}>
-                                    <Pencil className="size-4 mr-2" />
-                                    Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedUser(targetUser);
-                                    setResetDialogOpen(true);
-                                }}>
-                                    <RotateCcw className="size-4 mr-2" />
-                                    Reset Password
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                        <DropdownMenuItem
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedUser(targetUser);
-                                setDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive"
-                        >
-                            <Trash2 className="size-4 mr-2" />
-                            Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        }
-    ];
+    const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
 
     return (
-        <div className="space-y-6">
-            <PageHeader
-                title="Resident Management"
-                subtitle="Manage resident accounts"
-                actions={
-                    <div className="flex gap-2">
-                        <Button
-                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-medium"
-                            onClick={() => {
-                                addForm.reset();
-                                setAddModalOpen(true);
+        <div className="py-4">
+                {/* Header */}
+                <div className="mb-8">
+                    {user && !showFacilityColumn && (
+                        <div className="text-sm text-gray-600 mb-2">
+                            {user.facility.name}
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-[#203622]">
+                                Residents
+                            </h1>
+                            <p className="text-gray-600 mt-1">
+                                Manage resident profiles and account information
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                className="gap-2"
+                                disabled
+                            >
+                                <Upload className="size-4" />
+                                Bulk Import
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    addForm.reset();
+                                    if (showFacilityColumn && user) {
+                                        addForm.setValue(
+                                            'facility_id',
+                                            user.facility_id
+                                        );
+                                    }
+                                    setAddDialogOpen(true);
+                                }}
+                                className="gap-2 bg-[#556830] hover:bg-[#203622]"
+                            >
+                                <Plus className="size-4" />
+                                Add Resident
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Search + Filter */}
+                <div className="mb-6 flex gap-4">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 size-5" />
+                        <Input
+                            placeholder="Search by name, username, or ID..."
+                            value={searchTerm}
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    {showFacilityColumn && (
+                        <Select
+                            value={facilityFilter}
+                            onValueChange={(v) => {
+                                setFacilityFilter(v);
+                                setPage(1);
                             }}
                         >
-                            <Plus className="size-4" />
-                            Add Resident
-                        </Button>
-                    </div>
-                }
-            />
-
-            <div className="flex items-center gap-3">
-                <SearchInput
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    placeholder="Search residents..."
-                    className="w-72"
-                />
-                <Select value={sortQuery} onValueChange={(v) => setSortQuery(v as SortOption)}>
-                    <SelectTrigger className="w-52">
-                        <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="name_last asc">Name (A-Z)</SelectItem>
-                        <SelectItem value="name_last desc">Name (Z-A)</SelectItem>
-                        <SelectItem value="last_login desc">Last Active (Newest)</SelectItem>
-                        <SelectItem value="last_login asc">Last Active (Oldest)</SelectItem>
-                        <SelectItem value="created_at desc">Created (Newest)</SelectItem>
-                        <SelectItem value="created_at asc">Created (Oldest)</SelectItem>
-                    </SelectContent>
-                </Select>
-                <label className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Checkbox
-                        checked={includeDeactivated}
-                        onCheckedChange={(checked) => setIncludeDeactivated(checked === true)}
-                    />
-                    Include Deactivated
-                </label>
-            </div>
-
-            {error ? (
-                <div className="text-center py-8 text-destructive">Failed to load residents.</div>
-            ) : (
-                <DataTable
-                    columns={columns}
-                    data={userData}
-                    keyExtractor={(u) => u.id}
-                    isLoading={isLoading}
-                    emptyMessage="No residents found."
-                    onRowClick={(u) => navigate(`/residents/${u.id}`)}
-                    page={page}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                />
-            )}
-
-            <FormModal
-                open={addModalOpen}
-                onOpenChange={setAddModalOpen}
-                title="Add Resident"
-            >
-                <form onSubmit={addForm.handleSubmit((d) => void handleAddUser(d))} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="add-first">First Name</Label>
-                            <Input id="add-first" {...addForm.register('name_first', { required: true })} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="add-last">Last Name</Label>
-                            <Input id="add-last" {...addForm.register('name_last', { required: true })} />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="add-username">Username</Label>
-                        <Input id="add-username" {...addForm.register('username', { required: true })} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="add-email">Email</Label>
-                        <Input id="add-email" type="email" {...addForm.register('email', { required: true })} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="add-doc-id">Resident ID</Label>
-                        <Input id="add-doc-id" {...addForm.register('doc_id')} />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" type="button" onClick={() => setAddModalOpen(false)}>Cancel</Button>
-                        <Button type="submit" className="bg-[#203622] text-white hover:bg-[#203622]/90">Save</Button>
-                    </div>
-                </form>
-            </FormModal>
-
-            <FormModal
-                open={editModalOpen}
-                onOpenChange={setEditModalOpen}
-                title="Edit Resident"
-            >
-                <form onSubmit={editForm.handleSubmit((d) => void handleEditUser(d))} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-first">First Name</Label>
-                            <Input id="edit-first" {...editForm.register('name_first', { required: true })} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-last">Last Name</Label>
-                            <Input id="edit-last" {...editForm.register('name_last', { required: true })} />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-username">Username</Label>
-                        <Input id="edit-username" {...editForm.register('username', { required: true })} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-email">Email</Label>
-                        <Input id="edit-email" type="email" {...editForm.register('email', { required: true })} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-doc-id">Resident ID</Label>
-                        <Input id="edit-doc-id" {...editForm.register('doc_id')} />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" type="button" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-                        <Button type="submit" className="bg-[#203622] text-white hover:bg-[#203622]/90">Save</Button>
-                    </div>
-                </form>
-            </FormModal>
-
-            <ConfirmDialog
-                open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                title="Delete Resident"
-                description="Are you sure you would like to delete this resident? This action cannot be undone."
-                confirmLabel="Delete"
-                onConfirm={() => void handleDeleteUser()}
-                variant="destructive"
-            />
-
-            <ConfirmDialog
-                open={resetDialogOpen}
-                onOpenChange={setResetDialogOpen}
-                title="Reset Password"
-                description={`Are you sure you would like to reset ${selectedUser?.name_first ?? ''} ${selectedUser?.name_last ?? ''}'s password?`}
-                confirmLabel="Reset Password"
-                onConfirm={() => void handleResetPassword()}
-            />
-
-            <FormModal
-                open={passwordModalOpen}
-                onOpenChange={(open) => {
-                    setPasswordModalOpen(open);
-                    if (!open) {
-                        setTempPassword('');
-                        setSelectedUser(null);
-                    }
-                }}
-                title="New Password"
-                description="Copy the password below and share it with the resident. If it's lost, you'll need to reset it again."
-            >
-                <div className="bg-muted rounded-lg border border-border p-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Temporary Password</p>
-                    <p className="text-2xl font-bold text-foreground select-all">{tempPassword}</p>
+                            <SelectTrigger className="w-64">
+                                <SelectValue placeholder="Filter by facility" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">
+                                    All Facilities
+                                </SelectItem>
+                                {facilities.map((f) => (
+                                    <SelectItem
+                                        key={f.id}
+                                        value={String(f.id)}
+                                    >
+                                        {f.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            void navigator.clipboard.writeText(tempPassword);
-                            toaster('Password copied to clipboard', ToastState.success);
-                        }}
-                    >
-                        <Copy className="size-4 mr-2" />
-                        Copy
-                    </Button>
-                    <Button
-                        className="bg-[#203622] text-white hover:bg-[#203622]/90"
-                        onClick={() => {
-                            setPasswordModalOpen(false);
-                            setTempPassword('');
-                            setSelectedUser(null);
-                        }}
-                    >
-                        Done
-                    </Button>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-white rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">
+                            Total Residents
+                        </div>
+                        <div className="text-2xl font-medium text-[#203622]">
+                            {stats?.total ?? '\u2014'}
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">
+                            Active Accounts
+                        </div>
+                        <div className="text-2xl font-medium text-green-700">
+                            {stats?.active ?? '\u2014'}
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">
+                            Inactive Accounts
+                        </div>
+                        <div className="text-2xl font-medium text-gray-500">
+                            {stats?.inactive ?? '\u2014'}
+                        </div>
+                    </div>
                 </div>
-            </FormModal>
+
+                {/* Table */}
+                {error ? (
+                    <div className="text-center py-8 text-destructive">
+                        Failed to load residents.
+                    </div>
+                ) : isLoading ? (
+                    <div className="bg-white rounded-lg p-4 space-y-3">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Skeleton key={i} className="h-10 w-full" />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <SortableHeader field="name_last">
+                                        Name
+                                    </SortableHeader>
+                                    <SortableHeader field="username">
+                                        Username
+                                    </SortableHeader>
+                                    <SortableHeader field="doc_id">
+                                        Resident ID
+                                    </SortableHeader>
+                                    {showFacilityColumn && (
+                                        <SortableHeader field="facility_id">
+                                            Facility
+                                        </SortableHeader>
+                                    )}
+                                    <SortableHeader field="last_login">
+                                        Last Active
+                                    </SortableHeader>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {userData.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={
+                                                showFacilityColumn ? 6 : 5
+                                            }
+                                            className="text-center py-12"
+                                        >
+                                            <div className="flex flex-col items-center gap-2">
+                                                <UsersIcon className="size-12 text-gray-300" />
+                                                <p className="text-gray-500">
+                                                    No residents found
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    userData.map((resident) => (
+                                        <TableRow
+                                            key={resident.id}
+                                            className="hover:bg-gray-50 cursor-pointer"
+                                            onClick={() =>
+                                                navigate(
+                                                    `/residents/${resident.id}`
+                                                )
+                                            }
+                                        >
+                                            <TableCell className="font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    {resident.name_last},{' '}
+                                                    {resident.name_first}
+                                                    {resident.deactivated_at && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-gray-100 text-gray-600 border-gray-300"
+                                                        >
+                                                            Deactivated
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-gray-600">
+                                                {resident.username}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-gray-600">
+                                                {resident.doc_id ?? '\u2014'}
+                                            </TableCell>
+                                            {showFacilityColumn && (
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {resident.facility?.name ??
+                                                        '\u2014'}
+                                                </TableCell>
+                                            )}
+                                            <TableCell className="text-sm text-gray-600">
+                                                {formatLastActive(
+                                                    resident.login_metrics
+                                                        ?.last_login
+                                                )}
+                                            </TableCell>
+                                            <TableCell
+                                                className="text-right"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
+                                                {resident.deactivated_at ? (
+                                                    <span className="text-sm text-gray-500 italic">
+                                                        No actions available
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground">
+                                                        --
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+
+                        <Pagination
+                            currentPage={page}
+                            totalItems={totalItems}
+                            itemsPerPage={perPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={setPerPage}
+                            itemLabel="residents"
+                        />
+                    </div>
+                )}
+
+                {/* Add Resident Dialog */}
+                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Resident</DialogTitle>
+                            <DialogDescription>
+                                Create a new resident profile in the system
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                void addForm.handleSubmit(
+                                    (d) => void handleAddUser(d)
+                                )(e);
+                            }}
+                        >
+                            <div className="space-y-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="add-first">
+                                            First Name
+                                        </Label>
+                                        <Input
+                                            id="add-first"
+                                            placeholder="First name"
+                                            {...addForm.register('name_first', {
+                                                required: true
+                                            })}
+                                            className="mt-2"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="add-last">
+                                            Last Name
+                                        </Label>
+                                        <Input
+                                            id="add-last"
+                                            placeholder="Last name"
+                                            {...addForm.register('name_last', {
+                                                required: true
+                                            })}
+                                            className="mt-2"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label htmlFor="add-username">
+                                        Username
+                                    </Label>
+                                    <Input
+                                        id="add-username"
+                                        placeholder="Enter username for login"
+                                        {...addForm.register('username', {
+                                            required: true
+                                        })}
+                                        className="mt-2"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="add-doc-id">
+                                        Resident ID
+                                    </Label>
+                                    <Input
+                                        id="add-doc-id"
+                                        placeholder="e.g., R001"
+                                        {...addForm.register('doc_id')}
+                                        className="mt-2"
+                                    />
+                                </div>
+                                {showFacilityColumn && (
+                                    <div>
+                                        <Label htmlFor="add-facility">
+                                            Facility
+                                        </Label>
+                                        <Select
+                                            value={
+                                                addForm.watch('facility_id')
+                                                    ? String(
+                                                          addForm.watch(
+                                                              'facility_id'
+                                                          )
+                                                      )
+                                                    : undefined
+                                            }
+                                            onValueChange={(v) =>
+                                                addForm.setValue(
+                                                    'facility_id',
+                                                    Number(v)
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger className="mt-2">
+                                                <SelectValue placeholder="Select facility" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {facilities.map((f) => (
+                                                    <SelectItem
+                                                        key={f.id}
+                                                        value={String(f.id)}
+                                                    >
+                                                        {f.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                            </div>
+                            <DialogFooter className="pt-2">
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => setAddDialogOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={!isFormValid}
+                                    className="bg-[#556830] hover:bg-[#203622]"
+                                >
+                                    Add Resident
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
         </div>
     );
 }

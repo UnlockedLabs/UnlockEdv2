@@ -376,7 +376,7 @@ export default function ProgramOverviewFacilityAdmin() {
     }
 
     return (
-        <div className="-mx-6 -my-4 bg-[#E2E7EA] min-h-screen overflow-x-hidden">
+        <div className="min-h-screen bg-[#E2E7EA]">
             {showFacilityContextBanner && (
                 <div className="bg-blue-50 border-b border-blue-200">
                     <div className="max-w-7xl mx-auto px-6 py-3">
@@ -411,11 +411,11 @@ export default function ProgramOverviewFacilityAdmin() {
             <div className="bg-white border-b border-gray-200">
                 <div
                     className={`max-w-7xl mx-auto px-6 ${
-                        showFacilityContextBanner ? 'pt-4 pb-6' : 'py-6'
+                        showFacilityContextBanner ? 'pt-6 pb-6' : 'py-6'
                     }`}
                 >
-                    <Breadcrumbs items={breadcrumbs} className="mb-4" />
-                    <div className="flex items-start gap-6 mt-6">
+                    <Breadcrumbs items={breadcrumbs} className="mb-6" />
+                    <div className="flex items-start gap-6">
                         <div className="bg-[#556830] p-4 rounded-lg flex items-center justify-center shrink-0">
                             <Icon className="size-10 text-white" />
                         </div>
