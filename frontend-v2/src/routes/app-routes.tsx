@@ -6,7 +6,7 @@ import Error from '@/pages/Error';
 import Login from '@/pages/auth/Login';
 import ResetPassword from '@/pages/auth/ResetPassword';
 import Consent from '@/pages/auth/Consent';
-import Welcome from '@/pages/Welcome';
+import { Navigate } from 'react-router-dom';
 import StudentLayer0 from '@/pages/student/StudentLayer0';
 import AdminManagement from '@/pages/admin/AdminManagement';
 import FacilityManagement from '@/pages/admin/FacilityManagement';
@@ -112,7 +112,7 @@ export const globalRoutes = {
     children: [
         {
             path: '/',
-            element: <Welcome />,
+            element: <Navigate to="/login" replace />,
             errorElement: <Error />
         },
         {
