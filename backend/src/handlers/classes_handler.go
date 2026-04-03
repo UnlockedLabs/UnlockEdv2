@@ -58,6 +58,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 			return err == nil
 		}),
 		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}", srv.handleDeleteClass, axx, resolver),
 	}
 }
 
@@ -189,6 +190,14 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		}
 	}
 
+	existing, err := srv.Db.GetClassByID(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if existing.CannotUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
+	}
+
 	if instructorIDProvided {
 		if class.InstructorID == nil || *class.InstructorID == 0 {
 			class.InstructorID = nil
@@ -202,17 +211,8 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 			class.InstructorName = instructorName
 		}
 	} else {
-
-		existing, err := srv.Db.GetClassByID(id)
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
 		class.InstructorID = existing.InstructorID
 		class.InstructorName = existing.InstructorName
-	}
-
-	if class.CannotUpdateClass() {
-		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
@@ -299,7 +299,9 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	historyEvents = append(historyEvents, createdByDetails)
+	if createdByDetails.Action != "" {
+		historyEvents = append(historyEvents, createdByDetails)
+	}
 	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
 }
 
@@ -475,4 +477,17 @@ func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
 
 func (c *BulkCancelClaimsAdapter) GetTimezone() string {
 	return c.TimeZone
+}
+
+func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	log.add("class_id", id)
+	if err := srv.Db.DeleteClass(id); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	log.info("class deleted")
+	return writeJsonResponse(w, http.StatusNoContent, "Class deleted successfully")
 }

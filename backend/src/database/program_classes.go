@@ -39,7 +39,11 @@ func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.Overrides.RoomRef").Preload("Events.RoomRef").
+		Preload("Enrollments", func(tx *gorm.DB) *gorm.DB {
+			return tx.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+		}).
+		Preload("Program").Preload("Instructor").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -63,7 +67,7 @@ func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.Program
 
 func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
 	content := []models.ProgramClass{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{})
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{}).Where("archived_at IS NULL")
 	if facilityID != nil {
 		tx = tx.Where("facility_id = ?", *facilityID)
 	}
@@ -74,7 +78,11 @@ func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
 
-	tx = tx.Preload("Events").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Facility")
+	tx = tx.Preload("Events").Preload("Events.RoomRef").
+		Preload("Enrollments", func(db *gorm.DB) *gorm.DB {
+			return db.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+		}).
+		Preload("Program").Preload("Facility")
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
@@ -159,7 +167,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
-	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled", "instructor"}
+	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "facility_id", "start_dt", "end_dt", "program", "enrolled", "completed", "archived_at", "instructor", "instructor_id"}
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
@@ -169,14 +177,29 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	var needsRoomUpdate bool
 	var newRoomID *uint
 	var eventID uint
-	if len(content.Events) > 0 && len(existing.Events) > 0 && content.Events[0].RoomID != nil {
-		existingRoomID := existing.Events[0].RoomID
-		if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
-			needsRoomUpdate = true
-			newRoomID = content.Events[0].RoomID
-			eventID = existing.Events[0].ID
+	var needsScheduleUpdate bool
+	var newRecurrenceRule string
+	var newDuration string
+	if len(content.Events) > 0 && len(existing.Events) > 0 {
+		eventID = existing.Events[0].ID
+		if content.Events[0].RoomID != nil {
+			existingRoomID := existing.Events[0].RoomID
+			if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
+				needsRoomUpdate = true
+				newRoomID = content.Events[0].RoomID
+			}
+		}
+		if content.Events[0].RecurrenceRule != "" && content.Events[0].RecurrenceRule != existing.Events[0].RecurrenceRule {
+			needsScheduleUpdate = true
+			newRecurrenceRule = content.Events[0].RecurrenceRule
+		}
+		if content.Events[0].Duration != "" && content.Events[0].Duration != existing.Events[0].Duration {
+			needsScheduleUpdate = true
+			newDuration = content.Events[0].Duration
 		}
 	}
+
+	originalStatus := existing.Status
 
 	models.UpdateStruct(existing, content)
 	existing.ID = existingID
@@ -206,6 +229,100 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 			return nil, nil, newUpdateDBError(err, "program class event room")
 		}
 		existing.Events[0].RoomID = newRoomID
+		var roomName string
+		if newRoomID != nil {
+			var room models.Room
+			if err := trans.Select("name").First(&room, *newRoomID).Error; err == nil {
+				roomName = room.Name
+			}
+		}
+		allChanges = append(allChanges, *models.NewChangeLogEntry("program_classes", "event_room_changed", nil, &roomName, existing.ID, models.DerefUint(content.UpdateUserID)))
+	}
+
+	if needsScheduleUpdate {
+		if newRecurrenceRule != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("recurrence_rule", newRecurrenceRule).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newUpdateDBError(err, "program class event recurrence rule")
+			}
+		}
+		if newDuration != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("duration", newDuration).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newUpdateDBError(err, "program class event duration")
+			}
+		}
+		oldRule := existing.Events[0].RecurrenceRule
+		allChanges = append(allChanges, *models.NewChangeLogEntry("program_classes", "event_rescheduled_series", &oldRule, &newRecurrenceRule, existing.ID, models.DerefUint(content.UpdateUserID)))
+	}
+
+	newStatus := existing.Status
+	if newStatus != originalStatus && (newStatus == models.Completed || newStatus == models.Cancelled) {
+		completionTime := time.Now().UTC()
+		if err := db.UpdateClassEventRRuleUntilDate(trans, []int{id}, completionTime); err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "updating class event rrule until date")
+		}
+
+		var enrollmentStatus models.ProgramEnrollmentStatus
+		if newStatus == models.Cancelled {
+			enrollmentStatus = models.EnrollmentCancelled
+		} else {
+			enrollmentStatus = models.EnrollmentCompleted
+		}
+
+		if err := trans.
+			Model(&models.ProgramClassEnrollment{}).
+			Where("class_id = ? AND enrollment_status = ?", id, models.Enrolled).
+			Set("class_id", id).
+			Update("enrollment_status", enrollmentStatus).
+			Error; err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "class enrollment statuses")
+		}
+
+		if newStatus == models.Completed {
+			var completedEnrollments []models.ProgramClassEnrollment
+			if err := trans.
+				Preload("User.Facility").
+				Preload("Class.Program.ProgramCreditTypes").
+				Preload("Class.FacilityProg").
+				Where("class_id = ? AND enrollment_status = ?", id, models.EnrollmentCompleted).
+				Find(&completedEnrollments).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newNotFoundDBError(err, "fetching completed enrollments")
+			}
+
+			if len(completedEnrollments) > 0 {
+				var admin models.User
+				if err := trans.First(&admin, "id = ?", models.DerefUint(content.UpdateUserID)).Error; err != nil {
+					trans.Rollback()
+					return nil, nil, newNotFoundDBError(err, "admin user")
+				}
+
+				completions := make([]models.ProgramCompletion, 0, len(completedEnrollments))
+				for _, enrollment := range completedEnrollments {
+					completions = append(completions, models.ProgramCompletion{
+						ProgramClassID:      enrollment.ClassID,
+						FacilityName:        enrollment.User.Facility.Name,
+						ProgramName:         enrollment.Class.Program.Name,
+						ProgramOwner:        enrollment.Class.GetProgramOwnerOrEmpty(),
+						ProgramID:           enrollment.Class.ProgramID,
+						AdminEmail:          admin.Email,
+						ProgramClassStartDt: enrollment.Class.StartDt,
+						CreditType:          enrollment.Class.Program.GetUniqueCreditTypeString(),
+						ProgramClassName:    enrollment.Class.Name,
+						UserID:              enrollment.UserID,
+						EnrolledOnDt:        enrollment.CreatedAt,
+					})
+				}
+
+				if err := trans.Create(&completions).Error; err != nil {
+					trans.Rollback()
+					return nil, nil, newCreateDBError(err, "enrollment completions")
+				}
+			}
+		}
 	}
 
 	if len(allChanges) > 0 {
@@ -867,4 +984,11 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 	}
 
 	return response, nil
+}
+
+func (db *DB) DeleteClass(id int) error {
+	if err := db.Delete(&models.ProgramClass{}, "id = ?", id).Error; err != nil {
+		return newDeleteDBError(err, "program class")
+	}
+	return nil
 }

@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
 import { ClassManagementFormInner } from '@/pages/programs/ClassManagementForm';
 import EditProgramDialog from '@/pages/program-detail/EditProgramDialog';
-import { isDeptAdmin, useAuth } from '@/auth/useAuth';
+import { canSwitchFacility, useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -287,7 +287,7 @@ export default function ProgramOverviewFacilityAdmin() {
         facilityResp?.data?.name ??
         user?.facility?.name;
     const showFacilityContextBanner =
-        Boolean(user && isDeptAdmin(user) && facilityId && facilityName);
+        Boolean(user && canSwitchFacility(user) && facilityId && facilityName);
 
     if (!program) {
         return (

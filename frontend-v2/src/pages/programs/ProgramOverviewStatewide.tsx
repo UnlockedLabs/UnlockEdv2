@@ -462,7 +462,7 @@ export default function ProgramOverviewStatewide() {
     ];
 
     return (
-        <div className="min-h-full">
+        <div className="flex-1 bg-[#E2E7EA]">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <Breadcrumbs items={breadcrumbs} className="mb-6" />
 

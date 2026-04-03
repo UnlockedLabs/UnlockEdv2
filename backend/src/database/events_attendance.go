@@ -257,12 +257,18 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		where c.id = ?
 		and e.enrollment_status = 'Enrolled'
 		and c.status = 'Active'
+		and u.deleted_at is null
 		and exists (select 1 from program_class_events evt
 				inner join program_class_event_attendance att on att.event_id = evt.id
 				where evt.class_id = c.id
 						and att.attendance_status is not null
 		)`
-	noAttendanceSQL := `and not exists (select 1 from program_class_events evt
+	noAttendanceSQL := `and exists (select 1 from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id
+					and att.user_id = e.user_id
+		)
+		and not exists (select 1 from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
@@ -280,7 +286,19 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 						and att.user_id = e.user_id
 						and att.attendance_status = 'absent_unexcused'
 		) >= 3`
-	//count for pagination
+
+	statsSQL := `,
+		e.user_id,
+		(select count(*) from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id and att.user_id = e.user_id
+		) as total_sessions,
+		(select count(*) from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id and att.user_id = e.user_id
+				and att.attendance_status in ('present','partial')
+		) as attended_sessions`
+
 	countQuery := fmt.Sprintf(`select count(*) from (
 			select u.id %s %s
 			union all
@@ -291,20 +309,82 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		return nil, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 
-	attendanceQuery := fmt.Sprintf(`select name_first, name_last, doc_id, flag_type from (
+	attendanceQuery := fmt.Sprintf(`select name_first, name_last, doc_id, flag_type, user_id, total_sessions, attended_sessions from (
 			select u.name_first, u.name_last,
-			u.doc_id, 'no_attendance' as flag_type %s %s
+			u.doc_id, 'no_attendance' as flag_type %s %s %s
 			union all
 			select u.name_first, u.name_last,
-			u.doc_id, 'multiple_absences' as flag_type %s %s
+			u.doc_id, 'multiple_absences' as flag_type %s %s %s
 		) AS attendance_flags
 		ORDER BY name_last, name_first
-		LIMIT ? OFFSET ?`, attendanceCoreSQL, noAttendanceSQL, attendanceCoreSQL, multiAbsencesSQL)
+		LIMIT ? OFFSET ?`, statsSQL, attendanceCoreSQL, noAttendanceSQL, statsSQL, attendanceCoreSQL, multiAbsencesSQL)
 	if err := db.WithContext(args.Ctx).Raw(attendanceQuery, classID, classID, args.PerPage, args.CalcOffset()).Scan(&flags).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 
+	for i := range flags {
+		flags[i].MissedSessions = flags[i].TotalSessions - flags[i].AttendedSessions
+		if flags[i].TotalSessions > 0 {
+			flags[i].AttendanceRate = int(float64(flags[i].AttendedSessions) / float64(flags[i].TotalSessions) * 100)
+		}
+	}
+
+	if len(flags) > 0 {
+		if err := db.computeConsecutiveAbsences(classID, flags); err != nil {
+			return nil, err
+		}
+	}
+
 	return flags, nil
+}
+
+func (db *DB) computeConsecutiveAbsences(classID int, flags []models.AttendanceFlag) error {
+	userIDs := make([]uint, len(flags))
+	for i, f := range flags {
+		userIDs[i] = f.UserID
+	}
+
+	type record struct {
+		UserID           uint   `gorm:"column:user_id"`
+		Date             string `gorm:"column:date"`
+		AttendanceStatus string `gorm:"column:attendance_status"`
+	}
+	var records []record
+	if err := db.Raw(`
+		SELECT att.user_id, att.date, att.attendance_status
+		FROM program_class_event_attendance att
+		INNER JOIN program_class_events evt ON evt.id = att.event_id
+		WHERE evt.class_id = ? AND att.user_id IN ?
+		ORDER BY att.user_id, att.date DESC`,
+		classID, userIDs,
+	).Scan(&records).Error; err != nil {
+		return newNotFoundDBError(err, "consecutive absences")
+	}
+
+	byUser := make(map[uint]int)
+	var currentUser uint
+	var counting bool
+	for _, r := range records {
+		if r.UserID != currentUser {
+			currentUser = r.UserID
+			counting = true
+			byUser[currentUser] = 0
+		}
+		if !counting {
+			continue
+		}
+		switch r.AttendanceStatus {
+		case "present", "partial":
+			counting = false
+		case "absent_excused", "absent_unexcused":
+			byUser[currentUser]++
+		}
+	}
+
+	for i := range flags {
+		flags[i].ConsecutiveAbsences = byUser[flags[i].UserID]
+	}
+	return nil
 }
 
 func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int, error) {

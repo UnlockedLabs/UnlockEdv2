@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ClassEventInstance } from '@/types/events';
+import { Attendance } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
 
 interface TakeAttendanceModalProps {
@@ -47,7 +48,7 @@ function buildRecentSessions(
         if (inst.is_cancelled) continue;
 
         const [y, m, d] = inst.date.split('-').map(Number);
-        const dateObj = new Date(y!, m! - 1, d!);
+        const dateObj = new Date(y, m - 1, d);
 
         if (dateObj > today || dateObj < cutoff) continue;
 
@@ -55,8 +56,8 @@ function buildRecentSessions(
         const hasAttendance = records.length > 0;
         const attendedCount = records.filter(
             (r) =>
-                r.attendance_status === 'present' ||
-                r.attendance_status === 'partial'
+                r.attendance_status === Attendance.Present ||
+                r.attendance_status === Attendance.Partial
         ).length;
 
         sessions.push({
@@ -84,7 +85,7 @@ export function TakeAttendanceModal({
 
     const { data: eventsResp } = useSWR<
         ServerResponseMany<ClassEventInstance>
-    >(open ? `/api/program-classes/${classId}/events` : null);
+    >(open ? `/api/program-classes/${classId}/events?all=true` : null);
 
     const sessions = useMemo(() => {
         return buildRecentSessions(eventsResp?.data ?? []);
@@ -135,26 +136,24 @@ export function TakeAttendanceModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle className="text-[#203622]">
-                        Take Attendance - {className}
-                    </DialogTitle>
+                    <DialogTitle>Take Attendance - {className}</DialogTitle>
                     <DialogDescription>
                         Select which session you'd like to record or edit
                         attendance for.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="mt-2 space-y-5">
+                <div className="space-y-4 mt-4">
                     {todaySession && (
-                        <div className="rounded-lg border-2 border-[#F1B51C] p-4 space-y-3">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="size-5 text-[#203622]" />
+                        <div className="bg-[#E2E7EA] rounded-lg p-4 border-2 border-[#556830]">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Calendar className="size-5 text-[#556830]" />
                                 <span className="font-semibold text-[#203622]">
                                     Today's Session
                                 </span>
-                                <Badge className="bg-[#F1B51C] text-[#203622] border-0 ml-1">
+                                <Badge className="bg-[#F1B51C] text-[#203622]">
                                     {todaySession.dateObj.toLocaleDateString(
                                         'en-US',
                                         {
@@ -169,11 +168,11 @@ export function TakeAttendanceModal({
                                 onClick={() =>
                                     handleSelectSession(todaySession)
                                 }
-                                className="w-full bg-[#556830] text-white hover:bg-[#203622]"
+                                className="w-full bg-[#556830] hover:bg-[#203622] text-white"
                             >
                                 {todaySession.hasAttendance
                                     ? `Edit Today's Attendance (${todaySession.attendedCount}/${todaySession.totalRecords})`
-                                    : "Take Today's Attendance"}
+                                    : 'Take Attendance for Today'}
                             </Button>
                         </div>
                     )}
@@ -186,15 +185,15 @@ export function TakeAttendanceModal({
                             {missingCount > 0 && (
                                 <Badge
                                     variant="outline"
-                                    className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1"
+                                    className="bg-amber-50 text-amber-700 border-amber-200"
                                 >
-                                    <AlertCircle className="size-3" />
+                                    <AlertCircle className="size-3 mr-1" />
                                     {missingCount} missing
                                 </Badge>
                             )}
                         </div>
 
-                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
                             {pastSessions.length === 0 ? (
                                 <p className="text-center text-gray-500 py-6 text-sm">
                                     No past sessions in the last 30 days.
@@ -206,55 +205,58 @@ export function TakeAttendanceModal({
                                         onClick={() =>
                                             handleSelectSession(session)
                                         }
-                                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+                                        className={`w-full text-left p-3 rounded-lg border transition-colors ${
                                             session.hasAttendance
-                                                ? 'border-gray-200 hover:bg-[#E2E7EA]/30'
-                                                : 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'
+                                                ? 'border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/30'
+                                                : 'border-amber-200 bg-amber-50/30 hover:border-amber-400 hover:bg-amber-50'
                                         }`}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            {session.hasAttendance ? (
-                                                <CheckCircle className="size-5 text-[#556830] shrink-0" />
-                                            ) : (
-                                                <AlertCircle className="size-5 text-[#F1B51C] shrink-0" />
-                                            )}
-                                            <div>
-                                                <div className="text-sm font-medium text-[#203622]">
-                                                    {session.dateObj.toLocaleDateString(
-                                                        'en-US',
-                                                        {
-                                                            weekday: 'long',
-                                                            month: 'short',
-                                                            day: 'numeric'
-                                                        }
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-gray-500 mt-0.5">
-                                                    {session.hasAttendance
-                                                        ? `${session.attendedCount} / ${session.totalRecords} attended`
-                                                        : 'Missing attendance'}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                {session.hasAttendance ? (
+                                                    <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
+                                                ) : (
+                                                    <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
+                                                )}
+                                                <div>
+                                                    <div className="text-sm font-medium text-[#203622]">
+                                                        {session.dateObj.toLocaleDateString(
+                                                            'en-US',
+                                                            {
+                                                                weekday: 'long',
+                                                                month: 'short',
+                                                                day: 'numeric'
+                                                            }
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 mt-0.5">
+                                                        {session.hasAttendance
+                                                            ? `${session.attendedCount} / ${session.totalRecords} attended`
+                                                            : 'Missing attendance'}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <span className="text-xs text-gray-500 font-medium">
+                                                {session.hasAttendance
+                                                    ? 'Edit'
+                                                    : 'Take'}
+                                            </span>
                                         </div>
-                                        <span className="text-sm text-gray-500">
-                                            {session.hasAttendance
-                                                ? 'Edit'
-                                                : 'Take'}
-                                        </span>
                                     </button>
                                 ))
                             )}
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-gray-200">
-                        <label className="text-sm text-gray-500 mb-2 block">
+                    <div className="pt-3 border-t border-gray-200">
+                        <p className="text-sm text-gray-600 mb-2">
                             Need an older date?
-                        </label>
+                        </p>
                         <Input
                             type="date"
                             max={todayStr}
                             onChange={(e) => handleCustomDate(e.target.value)}
+                            className="w-full"
                         />
                     </div>
                 </div>

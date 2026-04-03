@@ -1,105 +1,74 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle, Plus, Edit } from 'lucide-react';
+import { Search, CheckCircle, Plus, Edit, MoreVertical, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import {
-    ClassEnrollment,
-    EnrollmentStatus
-} from '@/types/attendance';
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger
+} from '@/components/ui/tooltip';
+import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
-import { getEnrollmentStatusColor } from '@/lib/formatters';
+import { getEnrollmentStatusColor, formatEnrollmentStatus } from '@/lib/formatters';
+import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { ChangeEnrollmentStatusModal } from './ChangeEnrollmentStatusModal';
+import { UnenrollResidentModal } from './UnenrollResidentModal';
+import { BulkGraduateModal } from './BulkGraduateModal';
+import { EnrollResidentsModal } from './EnrollResidentsModal';
 
 interface RosterTabProps {
     classId: number;
     classStatus: string;
-}
-
-interface AttendanceStats {
-    attended: number;
-    total: number;
-    rate: number;
-}
-
-function computeAttendanceByUser(
-    instances: ClassEventInstance[]
-): Map<number, AttendanceStats> {
-    const byUser = new Map<number, { attended: number; total: number }>();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (const inst of instances) {
-        if (inst.is_cancelled) continue;
-        const instDate = new Date(inst.date);
-        instDate.setHours(0, 0, 0, 0);
-        if (instDate > today) continue;
-
-        for (const record of inst.attendance_records ?? []) {
-            const existing = byUser.get(record.user_id) ?? {
-                attended: 0,
-                total: 0
-            };
-            existing.total++;
-            if (
-                record.attendance_status === 'present' ||
-                record.attendance_status === 'partial'
-            ) {
-                existing.attended++;
-            }
-            byUser.set(record.user_id, existing);
-        }
-    }
-
-    const result = new Map<number, AttendanceStats>();
-    byUser.forEach((stats, userId) => {
-        result.set(userId, {
-            ...stats,
-            rate:
-                stats.total > 0
-                    ? Math.round((stats.attended / stats.total) * 100)
-                    : 100
-        });
-    });
-    return result;
+    className: string;
+    capacity: number;
+    enrolled: number;
+    flaggedUserIds: Set<number>;
+    onClassMutate: () => void;
 }
 
 function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
     const allStatuses = Object.values(EnrollmentStatus).filter((s) => s !== currentStatus);
     if (classStatus === 'Completed' || classStatus === 'Cancelled') return [];
-    if (classStatus === 'Scheduled') return allStatuses.filter((s) => s === EnrollmentStatus.Cancelled);
+    if (classStatus === 'Scheduled') return [];
     if (classStatus === 'Active') return allStatuses.filter((s) => s !== EnrollmentStatus.Cancelled);
     return allStatuses;
 }
 
-export function RosterTab({ classId, classStatus }: RosterTabProps) {
-    const navigate = useNavigate();
+export function RosterTab({ classId, classStatus, className, capacity, enrolled, flaggedUserIds, onClassMutate }: RosterTabProps) {
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [changingStatus, setChangingStatus] = useState<number | null>(null);
     const [statusModalEnrollment, setStatusModalEnrollment] =
         useState<ClassEnrollment | null>(null);
+    const [unenrollTarget, setUnenrollTarget] = useState<ClassEnrollment | null>(null);
+    const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
 
     const { data: enrollmentResp, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>
-    >(`/api/program-classes/${classId}/enrollments`);
+    >(
+        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(EnrollmentStatus.Enrolled)}&per_page=1000`
+    );
 
     const { data: eventsResp } = useSWR<
         ServerResponseMany<ClassEventInstance>
-    >(`/api/program-classes/${classId}/events`);
+    >(`/api/program-classes/${classId}/events?all=true`);
 
-    const enrolledRows = useMemo(() => {
-        return (enrollmentResp?.data ?? []).filter(
-            (e) => e.enrollment_status === EnrollmentStatus.Enrolled
-        );
-    }, [enrollmentResp]);
+    const enrolledRows = enrollmentResp?.data ?? [];
 
     const attendanceMap = useMemo(() => {
         return computeAttendanceByUser(eventsResp?.data ?? []);
@@ -151,6 +120,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
             );
             setSelectedIds(new Set());
             void mutate();
+            onClassMutate();
         } else {
             toast.error(resp.message || 'Failed to graduate residents');
         }
@@ -180,6 +150,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
         if (resp.success) {
             toast.success(`Status updated to ${newStatus}`);
             void mutate();
+            onClassMutate();
         } else {
             toast.error(resp.message || 'Failed to update status');
         }
@@ -189,8 +160,8 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
     return (
         <div className="space-y-4">
             <div className="bg-white rounded-lg border border-gray-200">
-                <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <div className="border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
                             <Checkbox
                                 checked={
@@ -201,27 +172,23 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                 aria-label="Select all residents"
                             />
                             <div>
-                                <h3 className="text-[#203622] font-semibold">
+                                <h3 className="text-[#203622]">
                                     Enrolled Residents ({enrolledRows.length})
                                     {selectedIds.size > 0 && (
-                                        <span className="ml-2 text-[#556830] font-normal">
+                                        <span className="ml-2 text-[#556830]">
                                             - {selectedIds.size} selected
                                         </span>
                                     )}
                                 </h3>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-gray-600 mt-1">
                                     View enrollment and track engagement
                                 </p>
                             </div>
                         </div>
                         <Button
                             variant="outline"
-                            className="border-gray-300 self-start sm:self-auto ml-7 sm:ml-0"
-                            onClick={() =>
-                                navigate(
-                                    `/program-classes/${classId}/enrollments/add`
-                                )
-                            }
+                            className="border-gray-300"
+                            onClick={() => setShowEnrollModal(true)}
                         >
                             <Plus className="size-4 mr-2" />
                             Enroll Resident
@@ -251,16 +218,16 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                         filteredRows.map((enrollment) => {
                             const stats = attendanceMap.get(
                                 enrollment.user_id
-                            ) ?? { attended: 0, total: 0, rate: 100 };
-                            const needsSupport = stats.rate < 75;
+                            ) ?? { attended: 0, total: 0, rate: 0 };
+                            const needsSupport = flaggedUserIds.has(enrollment.user_id);
 
                             return (
                                 <div
                                     key={enrollment.id}
-                                    className="px-4 sm:px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                                    className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
                                 >
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between">
-                                        <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-6 flex-1">
                                             <Checkbox
                                                 checked={selectedIds.has(
                                                     enrollment.id
@@ -273,7 +240,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                                 aria-label={`Select ${enrollment.doc_id}`}
                                                 className="shrink-0"
                                             />
-                                            <div className="min-w-[100px] shrink-0">
+                                            <div className="w-[140px] shrink-0">
                                                 <div className="text-[#203622] font-medium">
                                                     {enrollment.doc_id}
                                                 </div>
@@ -281,7 +248,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                                     {enrollment.name_full}
                                                 </div>
                                             </div>
-                                            <div className="flex-1 min-w-0 hidden md:block">
+                                            <div className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="text-sm text-gray-600">
                                                         Attendance:
@@ -296,7 +263,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                                 </div>
                                                 <Progress
                                                     value={stats.rate}
-                                                    className="h-2 max-w-64 bg-gray-200"
+                                                    className="h-2 w-64"
                                                     indicatorClassName={
                                                         needsSupport
                                                             ? 'bg-[#F1B51C]'
@@ -305,8 +272,8 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 sm:gap-3 ml-7 sm:ml-0 flex-wrap">
-                                            <span className="text-sm text-gray-500">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm text-gray-600">
                                                 Enrolled:{' '}
                                                 {new Date(
                                                     enrollment.enrolled_at ??
@@ -325,13 +292,14 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                             )}
                                             {(() => {
                                                 const allowed = getAllowedStatuses(classStatus, enrollment.enrollment_status);
-                                                if (allowed.length === 0) {
+                                                const isScheduled = classStatus === 'Scheduled';
+                                                if (allowed.length === 0 && !isScheduled) {
                                                     return (
                                                         <Badge
                                                             variant="outline"
                                                             className={getEnrollmentStatusColor(enrollment.enrollment_status)}
                                                         >
-                                                            {enrollment.enrollment_status}
+                                                            {formatEnrollmentStatus(enrollment.enrollment_status)}
                                                         </Badge>
                                                     );
                                                 }
@@ -343,16 +311,69 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                                                     >
                                                         <Badge
                                                             variant="outline"
-                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-xs hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
+                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
                                                         >
                                                             {changingStatus === enrollment.id
                                                                 ? 'Updating...'
-                                                                : enrollment.enrollment_status}
+                                                                : formatEnrollmentStatus(enrollment.enrollment_status)}
                                                             <Edit className="size-3 text-current opacity-60 group-hover:opacity-100 transition-opacity" />
                                                         </Badge>
                                                     </button>
                                                 );
                                             })()}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-8 w-8 p-0">
+                                                    <MoreVertical className="size-4" />
+                                                    <span className="sr-only">
+                                                        Resident actions
+                                                    </span>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="z-[100]"
+                                                >
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            setStatusModalEnrollment(
+                                                                enrollment
+                                                            )
+                                                        }
+                                                    >
+                                                        <Edit className="size-4 mr-2" />
+                                                        Change Status
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div>
+                                                                <DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() =>
+                                                                        setUnenrollTarget(
+                                                                            enrollment
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        stats.total >
+                                                                        0
+                                                                    }
+                                                                >
+                                                                    <UserMinus className="size-4 mr-2" />
+                                                                    Unenroll
+                                                                    Resident
+                                                                </DropdownMenuItem>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        {stats.total > 0 && (
+                                                            <TooltipContent side="left">
+                                                                Cannot unenroll
+                                                                after attendance
+                                                                has been taken
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 </div>
@@ -387,7 +408,7 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                             <Button
                                 size="sm"
                                 className="bg-[#556830] hover:bg-[#203622]"
-                                onClick={() => { void handleBulkGraduate(); }}
+                                onClick={() => setShowBulkGraduateModal(true)}
                             >
                                 <CheckCircle className="size-4 mr-2" />
                                 Graduate Selected
@@ -403,21 +424,64 @@ export function RosterTab({ classId, classStatus }: RosterTabProps) {
                     onClose={() => setStatusModalEnrollment(null)}
                     residentDisplayId={statusModalEnrollment.doc_id ?? ''}
                     residentName={statusModalEnrollment.name_full ?? ''}
+                    className={className}
+                    classStatus={classStatus}
                     currentStatus={statusModalEnrollment.enrollment_status}
                     allowedStatuses={getAllowedStatuses(
                         classStatus,
                         statusModalEnrollment.enrollment_status
                     )}
-                    onStatusChange={(newStatus, reason) => {
+                    onStatusChange={(newStatus, reason) =>
                         void handleStatusChange(
                             statusModalEnrollment,
                             newStatus,
                             reason
-                        );
-                        setStatusModalEnrollment(null);
-                    }}
+                        )
+                    }
                 />
             )}
+
+            {unenrollTarget && (
+                <UnenrollResidentModal
+                    open={!!unenrollTarget}
+                    onClose={() => setUnenrollTarget(null)}
+                    classId={classId}
+                    userId={unenrollTarget.user_id}
+                    residentDisplayId={unenrollTarget.doc_id ?? ''}
+                    residentName={unenrollTarget.name_full ?? ''}
+                    onUnenrolled={() => { void mutate(); onClassMutate(); }}
+                />
+            )}
+
+            <BulkGraduateModal
+                open={showBulkGraduateModal}
+                onClose={() => setShowBulkGraduateModal(false)}
+                className={className}
+                classStatus={classStatus}
+                selectedResidents={Array.from(selectedIds)
+                    .map((enrollmentId) => {
+                        const e = enrolledRows.find((r) => r.id === enrollmentId);
+                        return e
+                            ? {
+                                  id: e.id,
+                                  displayId: e.doc_id ?? '',
+                                  name: e.name_full ?? ''
+                              }
+                            : null;
+                    })
+                    .filter((r): r is NonNullable<typeof r> => r !== null)}
+                onConfirm={handleBulkGraduate}
+            />
+
+            <EnrollResidentsModal
+                open={showEnrollModal}
+                onOpenChange={setShowEnrollModal}
+                classId={classId}
+                className={className}
+                capacity={capacity}
+                enrolled={enrolled}
+                onEnrolled={() => { void mutate(); onClassMutate(); }}
+            />
         </div>
     );
 }

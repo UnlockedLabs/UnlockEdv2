@@ -15,6 +15,7 @@ func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 	resolve := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
 		adminFeatureRoute("GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, axx),
+		adminFeatureRoute("POST /api/program-classes/{class_id}/enrollment-conflicts", srv.handleCheckEnrollmentConflicts, axx),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, axx, resolve),
 		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, axx, resolve),
 		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments/{enrollment_id}/date", srv.handleUpdateEnrollmentDate, axx, resolve),
@@ -54,6 +55,27 @@ func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http
 		return newDatabaseServiceError(err)
 	}
 	return writePaginatedResponse(w, http.StatusOK, enrollments, args.IntoMeta())
+}
+
+func (srv *Server) handleCheckEnrollmentConflicts(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	body := struct {
+		UserIDs []int `json:"user_ids"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(body.UserIDs) == 0 {
+		return writeJsonResponse(w, http.StatusOK, map[string]any{"conflicts": []any{}})
+	}
+	conflicts, err := srv.Db.CheckSchedulingConflicts(classID, body.UserIDs)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, map[string]any{"conflicts": conflicts})
 }
 
 func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Request, log sLog) error {
