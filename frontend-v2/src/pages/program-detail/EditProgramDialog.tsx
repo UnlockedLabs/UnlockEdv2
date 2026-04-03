@@ -12,7 +12,7 @@ import {
     ProgramCreditType,
     ServerResponseMany
 } from '@/types';
-import { isDeptAdmin, useAuth } from '@/auth/useAuth';
+import { canSwitchFacility, useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -77,7 +77,7 @@ export default function EditProgramDialog({
     program
 }: EditProgramDialogProps) {
     const { user } = useAuth();
-    const isDeptAdminUser = user ? isDeptAdmin(user) : false;
+    const isDeptAdminUser = user ? canSwitchFacility(user) : false;
     const [formData, setFormData] = useState<EditProgramFormData>(
         buildInitialFormData(program)
     );

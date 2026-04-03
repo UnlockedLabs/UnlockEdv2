@@ -166,10 +166,12 @@ type ProgramClassEventOverride struct {
 	RoomID                *uint  `json:"room_id"`
 	Reason                string `json:"reason"`
 	LinkedOverrideEventID *uint  `json:"linked_override_event_id"`
+	InstructorID          *uint  `json:"instructor_id"`
 
 	/* Foreign keys */
-	Event   *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
-	RoomRef *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Event         *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	RoomRef       *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	InstructorRef *User              `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
 }
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
@@ -254,11 +256,15 @@ type AttendanceRecordResponse struct {
 }
 
 type ClassEventInstance struct {
-	EventID           uint                          `json:"event_id"`
-	ClassTime         string                        `json:"class_time"` // e.g. "12:00-14:00"
-	Date              string                        `json:"date"`
-	AttendanceRecords []ProgramClassEventAttendance `json:"attendance_records"`
-	IsCancelled       bool                          `json:"is_cancelled"`
+	EventID             uint                          `json:"event_id"`
+	ClassTime           string                        `json:"class_time"` // e.g. "12:00-14:00"
+	Date                string                        `json:"date"`
+	AttendanceRecords   []ProgramClassEventAttendance `json:"attendance_records"`
+	IsCancelled         bool                          `json:"is_cancelled"`
+	IsRescheduled       bool                          `json:"is_rescheduled"`
+	RescheduledToDate   string                        `json:"rescheduled_to_date,omitempty"`
+	RescheduledFromDate string                        `json:"rescheduled_from_date,omitempty"`
+	OverrideID          uint                          `json:"override_id,omitempty"`
 }
 
 type EnrollmentAttendance struct {
@@ -289,10 +295,16 @@ const (
 )
 
 type AttendanceFlag struct {
-	NameFirst string             `json:"name_first"`
-	NameLast  string             `json:"name_last"`
-	DocID     string             `json:"doc_id"`
-	FlagType  AttendanceFlagType `json:"flag_type"`
+	NameFirst           string             `json:"name_first"`
+	NameLast            string             `json:"name_last"`
+	DocID               string             `json:"doc_id"`
+	FlagType            AttendanceFlagType `json:"flag_type"`
+	UserID              uint               `json:"user_id"`
+	TotalSessions       int                `json:"total_sessions"`
+	AttendedSessions    int                `json:"attended_sessions"`
+	MissedSessions      int                `json:"missed_sessions"`
+	AttendanceRate      int                `json:"attendance_rate"`
+	ConsecutiveAbsences int                `json:"consecutive_absences"`
 }
 
 type MissingAttendanceItem struct {

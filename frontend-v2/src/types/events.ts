@@ -6,6 +6,10 @@ export interface ClassEventInstance extends ProgramClassEvent {
     date: string;
     class_time: string;
     attendance_records: ProgramClassEventAttendance[];
+    is_rescheduled?: boolean;
+    rescheduled_to_date?: string;
+    rescheduled_from_date?: string;
+    override_id?: number;
 }
 
 export interface ShortCalendarEvent {
@@ -45,6 +49,8 @@ export interface ProgramClassEventOverride {
     room_ref?: Room;
     is_cancelled: boolean;
     reason: string;
+    linked_override_event_id?: number;
+    instructor_id?: number;
 }
 
 export interface FacilityProgramClassEvent extends ProgramClassEvent {

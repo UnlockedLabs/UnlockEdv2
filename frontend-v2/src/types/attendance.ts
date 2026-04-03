@@ -71,6 +71,7 @@ export interface ClassEnrollment {
     doc_id: string;
     completion_dt?: string;
     enrolled_at?: string;
+    enrollment_ended_at?: string;
 }
 
 export interface AttendanceFlag {
@@ -78,6 +79,12 @@ export interface AttendanceFlag {
     name_last: string;
     doc_id: string;
     flag_type: AttendanceFlagType;
+    user_id: number;
+    total_sessions: number;
+    attended_sessions: number;
+    missed_sessions: number;
+    attendance_rate: number;
+    consecutive_absences: number;
 }
 
 export enum AttendanceFlagType {

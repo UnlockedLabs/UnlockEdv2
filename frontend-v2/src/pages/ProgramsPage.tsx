@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { useAuth, isDeptAdmin, isSysAdmin } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
     ProgramsOverviewTable,
     ProgramType,
@@ -81,7 +81,7 @@ function parseCommaSeparated(value: string | null | undefined): string[] {
 export default function ProgramsPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const isDeptAdminUser = user ? isDeptAdmin(user) || isSysAdmin(user) : false;
+    const isDeptAdminUser = user ? canSwitchFacility(user) : false;
 
     const { data: resp, mutate } = useSWR<
         ServerResponseMany<ProgramsOverviewTable>
