@@ -90,14 +90,9 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsScrollableRoot = isProgramDetail || isClassDetail;
     const needsGrayBg = isResidentProfile || isClassesPage || (isProgramDetail && canSwitchFacility(user));
-    const rootClass = needsScrollableRoot
-        ? 'min-h-screen bg-background flex'
-        : 'h-screen bg-background flex overflow-hidden';
-    const contentClass = needsScrollableRoot
-        ? `flex-1 overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`.trim()
-        : `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const rootClass = 'h-screen bg-background flex overflow-hidden';
+    const contentClass = `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
     return (
         <div className={rootClass}>
