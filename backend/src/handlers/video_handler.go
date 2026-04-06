@@ -160,6 +160,9 @@ func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log 
 	if err := json.NewDecoder(r.Body).Decode(&video); err != nil {
 		return newBadRequestServiceError(err, "error reading video")
 	}
+	if len(video.VideoUrls) == 0 {
+		return newBadRequestServiceError(errors.New("no video URLs provided"), "video_urls is required")
+	}
 	for _, videoURL := range video.VideoUrls {
 		if err := validateVideoURL(videoURL); err != nil {
 			return newBadRequestServiceError(err, "invalid video URL")

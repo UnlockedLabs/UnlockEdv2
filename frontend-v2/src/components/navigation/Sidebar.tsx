@@ -233,8 +233,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     icon={BookOpenIcon}
                     collapsed={collapsed}
                     isActive={isActive([
-                        '/knowledge-center-management',
-                        '/knowledge-insights'
+                        '/knowledge-center-management'
                     ])}
                     onNavigate={onNavigate}
                     items={[
@@ -243,12 +242,6 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                             icon: BookOpenIcon,
                             label: 'Knowledge Center',
                             active: isActive(['/knowledge-center-management'])
-                        },
-                        {
-                            to: '/knowledge-insights',
-                            icon: ChartBarIcon,
-                            label: 'Knowledge Insights',
-                            active: isActive(['/knowledge-insights'])
                         }
                     ]}
                 />

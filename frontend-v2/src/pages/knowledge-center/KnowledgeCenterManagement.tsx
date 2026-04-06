@@ -97,14 +97,14 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     </h3>
                 </div>
             </div>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
                 {library.description}
             </p>
             <div
                 className="flex items-center justify-between pt-3 border-t border-gray-100"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <Switch
                         checked={library.visibility_status}
                         onCheckedChange={() =>
@@ -112,7 +112,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                         }
                     />
                     <span className="text-gray-700">Visible</span>
-                </div>
+                </label>
                 <Badge
                     variant={library.visibility_status ? 'default' : 'secondary'}
                     className={
@@ -187,7 +187,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 </div>
             </div>
             {available ? (
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
                     {video.description}
                 </p>
             ) : (
@@ -219,7 +219,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 className="flex items-center justify-between pt-3 border-t border-gray-100"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <Switch
                         checked={video.visibility_status}
                         onCheckedChange={() =>
@@ -227,7 +227,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                         }
                     />
                     <span className="text-gray-700">Visible</span>
-                </div>
+                </label>
                 <Badge
                     variant={video.visibility_status ? 'default' : 'secondary'}
                     className={
@@ -277,14 +277,14 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </h3>
             </div>
             <p className="text-sm text-[#556830] mb-2 truncate">{link.url}</p>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
                 {link.description}
             </p>
             <div
                 className="flex items-center justify-between pt-3 border-t border-gray-100"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <Switch
                         checked={link.visibility_status}
                         onCheckedChange={() =>
@@ -292,7 +292,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                         }
                     />
                     <span className="text-gray-700">Visible</span>
-                </div>
+                </label>
                 <Badge
                     variant={link.visibility_status ? 'default' : 'secondary'}
                     className={
@@ -496,7 +496,7 @@ export default function KnowledgeCenterManagement() {
 
     const handleAddVideo = async () => {
         const resp = await API.post<null, object>('videos', {
-            url: videoFormData.url
+            video_urls: [videoFormData.url]
         });
         if (resp.success) {
             toaster('Video added successfully', ToastState.success);
@@ -575,7 +575,6 @@ export default function KnowledgeCenterManagement() {
     };
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
         <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-8">
                 <h1 className="text-[#203622] mb-2">Knowledge Center</h1>
@@ -904,7 +903,6 @@ export default function KnowledgeCenterManagement() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
         </div>
     );
 }

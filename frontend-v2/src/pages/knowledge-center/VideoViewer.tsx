@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Video, ServerResponseOne } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
-import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +14,6 @@ export default function VideoViewer() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { id: videoId } = useParams();
-    const { setBreadcrumbItems } = useBreadcrumb();
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [video, setVideo] = useState<Video | undefined>();
@@ -23,14 +22,6 @@ export default function VideoViewer() {
     const backPath = isAdmin
         ? '/knowledge-center-management'
         : '/knowledge-center';
-
-    useEffect(() => {
-        setBreadcrumbItems([
-            { label: 'Knowledge Center', href: backPath },
-            { label: video?.title ?? 'Video' }
-        ]);
-        return () => setBreadcrumbItems([]);
-    }, [video?.title, setBreadcrumbItems, backPath]);
 
     useEffect(() => {
         const fetchVideoData = async () => {
@@ -82,7 +73,12 @@ export default function VideoViewer() {
         <div className="flex flex-col h-full">
             <div className="px-6 py-3 border-b border-gray-200 bg-white">
                 <div className="flex items-center justify-between">
-                    <div />
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Knowledge Center', href: backPath },
+                            { label: video?.title ?? 'Video' }
+                        ]}
+                    />
                     <Button
                         variant="ghost"
                         size="sm"
@@ -138,19 +134,17 @@ export default function VideoViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#E2E7EA] flex items-center justify-center p-6">
-                <div className="max-w-4xl w-full space-y-4">
-                    <video
-                        width="100%"
-                        height="auto"
-                        controls
-                        onError={handleError}
-                        src={`/api/proxy/videos/${video?.id}`}
-                        className="rounded-lg border border-border"
-                    >
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
+            <div className="flex-1 bg-[#E2E7EA]">
+                <video
+                    width="100%"
+                    height="100%"
+                    controls
+                    onError={handleError}
+                    src={`/api/proxy/videos/${video?.id}`}
+                    className="w-full h-full"
+                >
+                    Your browser does not support the video tag.
+                </video>
             </div>
         </div>
     );
