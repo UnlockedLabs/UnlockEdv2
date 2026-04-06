@@ -40,11 +40,13 @@ export default function AuthenticatedLayout() {
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
+    const isKnowledgeCenter = location.pathname === '/knowledge-center-management';
+    const isContentViewer = location.pathname.startsWith('/viewer/');
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities;
+        isProgramDetail || isResidentProfile || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassDetail || isClassesPage ? 'py-0' : 'py-4';
-    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile;
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer ? 'py-0' : 'py-4';
+    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile && !isContentViewer;
     const isFacilityView =
         isProgramDetail &&
         user !== undefined &&
@@ -53,7 +55,9 @@ export default function AuthenticatedLayout() {
 
     useEffect(() => {
         if (!user) return;
-        if (isProgramDetail) {
+        if (isContentViewer) {
+            setPageTitle('');
+        } else if (isProgramDetail) {
             if (isFacilityView) {
                 setPageTitle('');
             } else if (canSwitchFacility(user)) {
@@ -90,7 +94,7 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsGrayBg = isResidentProfile || isClassesPage || (isProgramDetail && canSwitchFacility(user));
+    const needsGrayBg = isResidentProfile || isClassesPage || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
     const contentClass = `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 

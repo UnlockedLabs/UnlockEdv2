@@ -349,7 +349,12 @@ func (vs *VideoService) retrySingleVideo(ctx context.Context, videoId int) error
 
 func (yt *VideoService) addVideos(ctx context.Context) error {
 	params := yt.Body
-	urls := params["video_urls"].([]any)
+	rawUrls, ok := params["video_urls"].([]any)
+	if !ok || len(rawUrls) == 0 {
+		logger().Warn("addVideos called with no video_urls")
+		return nil
+	}
+	urls := rawUrls
 	logger().Infof("Adding videos: %v", urls)
 
 	for idx := range urls {

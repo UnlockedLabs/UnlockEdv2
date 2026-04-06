@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Star, StarOff, ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import {
     Library,
     ServerResponseOne,
@@ -9,7 +9,7 @@ import {
 } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
 import { useToast } from '@/contexts/ToastContext';
-import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { FormModal } from '@/components/shared/FormModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,33 +38,18 @@ export default function LibraryViewer() {
     const [isLoading, setIsLoading] = useState(true);
     const [iframeLoading, setIframeLoading] = useState(false);
     const [iframeError, setIframeError] = useState(false);
-    const [bookmarked, setBookmarked] = useState(false);
     const [providerID, setProviderID] = useState<number>();
     const [libraryTitle, setLibraryTitle] = useState('');
     const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
-    const [viewerRefreshKey, setViewerRefreshKey] = useState(0);
-
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const loadingTimeoutRef = useRef<number | null>(null);
     const bookmarkForm = useForm<BookmarkFormData>();
-    const { setBreadcrumbItems } = useBreadcrumb();
     const isAdmin = user ? isAdministrator(user) : false;
     const [libraryData, setLibraryData] = useState<Library | null>(null);
 
     const backPath = isAdmin
         ? '/knowledge-center-management'
         : '/knowledge-center';
-
-    useEffect(() => {
-        setBreadcrumbItems([
-            { label: 'Knowledge Center', href: backPath },
-            { label: libraryTitle || 'Library' }
-        ]);
-        return () => setBreadcrumbItems([]);
-    }, [libraryTitle, setBreadcrumbItems, backPath]);
-
-    const forceViewerRefresh = () =>
-        setViewerRefreshKey((key) => key + 1);
 
     const handleIframeLoad = () => {
         setIframeError(false);
@@ -132,45 +117,7 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId, url, viewerRefreshKey]);
-
-    const toggleBookmark = () => {
-        if (!src) {
-            toaster('Please wait for the library to load', ToastState.error);
-            return;
-        }
-        if (bookmarked) {
-            void handleUnbookmark();
-        } else {
-            setBookmarkModalOpen(true);
-        }
-    };
-
-    const handleUnbookmark = async () => {
-        if (!src) {
-            toaster('Please wait for the library to load', ToastState.error);
-            return;
-        }
-        let relativeUrl = src;
-        if (src.startsWith('http://') || src.startsWith('https://')) {
-            relativeUrl = new URL(src).pathname;
-        } else if (!src.startsWith('/')) {
-            relativeUrl = '/' + src;
-        }
-        const response = await API.put(
-            `open-content/${libraryId}/bookmark`,
-            {
-                open_content_provider_id: providerID,
-                content_url: relativeUrl
-            }
-        );
-        if (response.success) {
-            setBookmarked(false);
-            toaster('Library removed from bookmarks', ToastState.success);
-        } else {
-            toaster(response.message, ToastState.error);
-        }
-    };
+    }, [libraryId, url]);
 
     const handleBookmarkSubmit = async (data: BookmarkFormData) => {
         const response = await API.put(
@@ -181,7 +128,6 @@ export default function LibraryViewer() {
             }
         );
         if (response.success) {
-            setBookmarked(true);
             toaster('Library added to favorites', ToastState.success);
         } else {
             toaster(response.message, ToastState.error);
@@ -194,30 +140,12 @@ export default function LibraryViewer() {
         <div className="flex flex-col h-full">
             <div className="px-6 py-3 border-b border-gray-200 bg-white">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                setSrc(
-                                    `/api/proxy/libraries/${libraryId}/`
-                                );
-                                navigate('', { replace: true });
-                                forceViewerRefresh();
-                            }}
-                        >
-                            Library Home
-                        </Button>
-                        {user && !isAdministrator(user) && (
-                            <button onClick={toggleBookmark}>
-                                {bookmarked ? (
-                                    <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
-                                ) : (
-                                    <StarOff className="size-5 text-muted-foreground" />
-                                )}
-                            </button>
-                        )}
-                    </div>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Knowledge Center', href: backPath },
+                            { label: libraryTitle || 'Library' }
+                        ]}
+                    />
                     <Button
                         variant="ghost"
                         size="sm"
@@ -274,15 +202,13 @@ export default function LibraryViewer() {
                     <div className="relative w-full h-full">
                         <iframe
                             ref={iframeRef}
-                            sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             className="w-full h-full"
                             src={src}
+                            title={libraryTitle}
                             onLoad={handleIframeLoad}
                             onError={handleIframeError}
-                            style={{
-                                border: 'none',
-                                minHeight: '600px'
-                            }}
                         />
                         {iframeLoading && (
                             <div className="absolute inset-0 bg-muted/90 flex items-center justify-center z-10">
