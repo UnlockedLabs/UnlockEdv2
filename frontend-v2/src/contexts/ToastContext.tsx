@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { ToastState } from '@/types';
 
 export interface ToastContextType {
