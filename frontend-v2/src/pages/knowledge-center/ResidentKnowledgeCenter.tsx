@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTourContext } from '@/contexts/TourContext';
+import { targetToStepIndexMap } from '@/components/UnlockEdTour';
 import useSWR from 'swr';
 import {
     Search,
@@ -54,6 +56,19 @@ interface ContentItem {
 
 export default function ResidentKnowledgeCenter() {
     const navigate = useNavigate();
+    const { tourState, setTourState } = useTourContext();
+
+    useEffect(() => {
+        if (tourState?.tourActive) {
+            if (tourState.target === '#visit-knowledge-center') {
+                setTourState({
+                    stepIndex:
+                        targetToStepIndexMap['#knowledge-center-landing'],
+                    target: '#knowledge-center-landing'
+                });
+            }
+        }
+    }, [tourState, setTourState]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
@@ -303,7 +318,7 @@ export default function ResidentKnowledgeCenter() {
     };
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]" id="knowledge-center-landing">
         <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-8">
                 <h1 className="text-[#203622] mb-2">Knowledge Center</h1>
@@ -312,7 +327,7 @@ export default function ResidentKnowledgeCenter() {
                 </p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6" id="knowledge-center-search">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
                     <Input
@@ -325,7 +340,7 @@ export default function ResidentKnowledgeCenter() {
             </div>
 
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+                <div id="knowledge-center-tabs" className="flex items-center gap-3">
                     <button
                         onClick={() => {
                             setContentTypeFilter('all');
@@ -392,7 +407,7 @@ export default function ResidentKnowledgeCenter() {
                             setCurrentPage(1);
                         }}
                     >
-                        <SelectTrigger className="w-[280px]">
+                        <SelectTrigger id="knowledge-center-filters" className="w-[280px]">
                             <SelectValue placeholder="Filter by category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -419,8 +434,17 @@ export default function ResidentKnowledgeCenter() {
             ) : (
                 <>
                     <div className="grid grid-cols-3 gap-6 mb-6">
-                        {paginatedContent.map((item) => (
-                            <ContentCard key={item.id} item={item} />
+                        {paginatedContent.map((item, index) => (
+                            <div
+                                key={`${item.type}-${item.id}`}
+                                id={
+                                    index === 0
+                                        ? 'knowledge-center-enter-library'
+                                        : undefined
+                                }
+                            >
+                                <ContentCard item={item} />
+                            </div>
                         ))}
                     </div>
                     {filteredContent.length > itemsPerPage && (

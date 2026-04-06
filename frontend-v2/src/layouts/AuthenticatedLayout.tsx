@@ -9,6 +9,7 @@ import MobileNav from '@/components/navigation/MobileNav';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { TitleManager } from '@/components/TitleManager';
 import UnlockEdTour from '@/components/UnlockEdTour';
+import HelpCenter from '@/pages/HelpCenter';
 import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
@@ -41,12 +42,13 @@ export default function AuthenticatedLayout() {
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
-    const isKnowledgeCenter = location.pathname === '/knowledge-center-management';
+    const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
     const isContentViewer = location.pathname.startsWith('/viewer/');
+    const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer;
+        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer ? 'py-0' : 'py-4';
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile && !isContentViewer;
     const isFacilityView =
         isProgramDetail &&
@@ -107,6 +109,9 @@ export default function AuthenticatedLayout() {
                     onToggleCollapse={() =>
                         setSidebarCollapsed(!sidebarCollapsed)
                     }
+                    onToggleHelpCenter={() =>
+                        setHelpCenterOpen(!helpCenterOpen)
+                    }
                 />
             </div>
 
@@ -128,28 +133,45 @@ export default function AuthenticatedLayout() {
                 <TitleManager />
                 <UnlockEdTour />
 
-                <div className={contentClass}>
-                    {isFullBleed ? (
-                        isClassDetail || isEventAttendance ? (
-                            <Outlet />
+                <div className="flex flex-1 min-h-0 overflow-hidden">
+                    <div
+                        className={`${contentClass} transition-all duration-100 ease-in-out flex-1 min-w-0`}
+                    >
+                        {isFullBleed ? (
+                            isClassDetail || isEventAttendance ? (
+                                <Outlet />
+                            ) : (
+                                <div
+                                    className={`${fullBleedWrapperClass} h-full`}
+                                >
+                                    {showBreadcrumbs && (
+                                        <div className="max-w-7xl mx-auto px-6 mb-4">
+                                            <Breadcrumbs
+                                                items={breadcrumbItems}
+                                            />
+                                        </div>
+                                    )}
+                                    <Outlet />
+                                </div>
+                            )
                         ) : (
-                            <div className={`${fullBleedWrapperClass} h-full`}>
+                            <div className="max-w-7xl mx-auto px-6 py-4">
                                 {showBreadcrumbs && (
-                                    <div className="max-w-7xl mx-auto px-6 mb-4">
-                                        <Breadcrumbs items={breadcrumbItems} />
+                                    <div className="mb-4">
+                                        <Breadcrumbs
+                                            items={breadcrumbItems}
+                                        />
                                     </div>
                                 )}
                                 <Outlet />
                             </div>
-                        )
-                    ) : (
-                        <div className="max-w-7xl mx-auto px-6 py-4">
-                            {showBreadcrumbs && (
-                                <div className="mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
-                                </div>
-                            )}
-                            <Outlet />
+                        )}
+                    </div>
+                    {helpCenterOpen && (
+                        <div className="w-80 bg-muted p-4 shadow-lg overflow-y-auto shrink-0">
+                            <HelpCenter
+                                close={() => setHelpCenterOpen(false)}
+                            />
                         </div>
                     )}
                 </div>
