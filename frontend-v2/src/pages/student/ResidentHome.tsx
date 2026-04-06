@@ -1,5 +1,6 @@
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
+import { useEffect } from 'react';
 import {
     OpenContentItem,
     HelpfulLink,
@@ -12,6 +13,8 @@ import TopContentList from '@/components/dashboard/TopContentList';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, Star } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
+import { useTourContext } from '@/contexts/TourContext';
+import { targetToStepIndexMap } from '@/components/UnlockEdTour';
 
 interface ResidentHomeData {
     helpfulLinks: HelpfulLink[];
@@ -109,6 +112,7 @@ export default function ResidentHome() {
     const navigate = useNavigate();
     const { topUserContent, topFacilityContent } =
         useLoaderData() as ResidentHomeData;
+    const { tourState, setTourState } = useTourContext();
 
     const { data: featured } = useSWR<ServerResponseMany<Library>>(
         '/api/libraries?visibility=featured&order_by=created_at'
@@ -120,12 +124,27 @@ export default function ResidentHome() {
         '/api/helpful-links'
     );
 
+    useEffect(() => {
+        if (tourState.tourActive && tourState.target === '#navigate-homepage') {
+            setTourState({
+                stepIndex: targetToStepIndexMap['#popular-content'],
+                target: '#popular-content'
+            });
+        } else if (tourState.tourActive && tourState.stepIndex !== 1) {
+            setTourState({
+                run: true,
+                stepIndex: 0,
+                target: '#resident-home'
+            });
+        }
+    }, [tourState.tourActive]);
+
     const featuredItems = featured?.data ?? [];
     const favoriteItems = favorites?.data ?? [];
     const links = helpfulLinks?.data?.helpful_links ?? [];
 
     return (
-        <div className="bg-muted min-h-screen p-6">
+        <div className="bg-muted min-h-screen p-6" id="resident-home">
             <div className="max-w-7xl mx-auto flex gap-6">
                 <div className="flex-1 space-y-8">
                     {featuredItems.length > 0 && (
@@ -153,21 +172,25 @@ export default function ResidentHome() {
                         <h2 className="text-xl font-semibold text-foreground mb-4">
                             Pick Up Where You Left Off
                         </h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <TopContentList
-                                heading="Your Top Content"
-                                items={topUserContent}
-                                onViewAll={() =>
-                                    navigate('/knowledge-center')
-                                }
-                            />
-                            <TopContentList
-                                heading="Popular Content"
-                                items={topFacilityContent}
-                                onViewAll={() =>
-                                    navigate('/knowledge-center')
-                                }
-                            />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="end-tour">
+                            <div id="top-content">
+                                <TopContentList
+                                    heading="Your Top Content"
+                                    items={topUserContent}
+                                    onViewAll={() =>
+                                        navigate('/knowledge-center')
+                                    }
+                                />
+                            </div>
+                            <div id="popular-content">
+                                <TopContentList
+                                    heading="Popular Content"
+                                    items={topFacilityContent}
+                                    onViewAll={() =>
+                                        navigate('/knowledge-center')
+                                    }
+                                />
+                            </div>
                         </div>
                     </section>
 

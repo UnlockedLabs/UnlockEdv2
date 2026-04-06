@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useTourContext } from '@/contexts/TourContext';
 
 interface Inputs {
     identifier: string;
@@ -29,6 +30,7 @@ function formatCountdown(seconds: number): string {
 export default function LoginForm() {
     const navigate = useNavigate();
     const loaderData = useLoaderData() as AuthFlow;
+    const { setTourState } = useTourContext();
     const [processing, setProcessing] = useState(false);
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
@@ -72,6 +74,9 @@ export default function LoginForm() {
         )) as ServerResponseOne<AuthResponse>;
         if (resp.success) {
             tabSessionManager.onLogin();
+            if (resp.data.first_login) {
+                setTourState({ tourActive: true });
+            }
             if (resp.data.redirect_to.startsWith('/')) {
                 navigate(resp.data.redirect_to);
             } else {

@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import API from '@/api/api';
+import { useTourContext } from '@/contexts/TourContext';
+import { targetToStepIndexMap } from '@/components/UnlockEdTour';
 
 interface UrlNavState {
     url?: string;
@@ -33,6 +35,7 @@ export default function LibraryViewer() {
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { toaster } = useToast();
+    const { tourState, setTourState } = useTourContext();
 
     const [src, setSrc] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -119,6 +122,22 @@ export default function LibraryViewer() {
         };
     }, [libraryId, url]);
 
+    useEffect(() => {
+        if (tourState.tourActive) {
+            if (tourState.target === '#top-content') {
+                setTourState({
+                    stepIndex: targetToStepIndexMap['#library-viewer-favorite'],
+                    target: '#library-viewer-favorite'
+                });
+            } else {
+                setTourState({
+                    stepIndex: targetToStepIndexMap['#library-viewer-sub-page'],
+                    target: '#library-viewer-sub-page'
+                });
+            }
+        }
+    }, []);
+
     const handleBookmarkSubmit = async (data: BookmarkFormData) => {
         const response = await API.put(
             `open-content/${libraryId}/bookmark`,
@@ -134,11 +153,17 @@ export default function LibraryViewer() {
         }
         setBookmarkModalOpen(false);
         bookmarkForm.reset();
+        if (tourState.tourActive) {
+            setTourState({
+                stepIndex: targetToStepIndexMap['#navigate-homepage'],
+                target: '#navigate-homepage'
+            });
+        }
     };
 
     return (
         <div className="flex flex-col h-full">
-            <div className="px-6 py-3 border-b border-gray-200 bg-white">
+            <div className="px-6 py-3 border-b border-gray-200 bg-white" id="library-viewer-sub-page">
                 <div className="flex items-center justify-between">
                     <Breadcrumbs
                         items={[
