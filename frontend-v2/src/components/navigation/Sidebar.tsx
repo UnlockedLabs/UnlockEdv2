@@ -26,7 +26,8 @@ import {
     ArrowPathIcon,
     BookmarkIcon,
     TrophyIcon,
-    RocketLaunchIcon
+    RocketLaunchIcon,
+    QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -337,6 +338,14 @@ function StudentNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     onClick={onNavigate}
                 />
             )}
+            <NavLink
+                to="/home#faqs"
+                icon={QuestionMarkCircleIcon}
+                label="Get Help"
+                active={isActive(['/home'])}
+                collapsed={collapsed}
+                onClick={onNavigate}
+            />
         </>
     );
 }

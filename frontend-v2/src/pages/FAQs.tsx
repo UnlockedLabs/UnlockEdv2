@@ -13,7 +13,7 @@ interface FAQEntry {
     extra?: string;
 }
 
-const FAQ_CATEGORIES: Record<string, FAQEntry[]> = {
+export const FAQ_CATEGORIES: Record<string, FAQEntry[]> = {
     Overview: [
         {
             question: "What is UnlockEd's Knowledge Center?",
