@@ -52,8 +52,8 @@ import API from '@/api/api';
 
 
 interface CardHandlers {
-    onToggleFeatured: (id: number, type: 'library' | 'video' | 'link') => void;
-    onToggleVisibility: (id: number, type: 'library' | 'video' | 'link') => void;
+    onToggleFeatured: (id: number, type: 'library' | 'video' | 'link', isFeatured: boolean) => void;
+    onToggleVisibility: (id: number, type: 'library' | 'video' | 'link', isVisible: boolean) => void;
     onNavigate: (path: string) => void;
 }
 
@@ -69,7 +69,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(library.id, 'library');
+                                handlers.onToggleFeatured(library.id, 'library', library.is_favorited);
                             }}
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
@@ -108,7 +108,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     <Switch
                         checked={library.visibility_status}
                         onCheckedChange={() =>
-                            handlers.onToggleVisibility(library.id, 'library')
+                            handlers.onToggleVisibility(library.id, 'library', library.visibility_status)
                         }
                     />
                     <span className="text-gray-700">Visible</span>
@@ -150,7 +150,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(video.id, 'video');
+                                handlers.onToggleFeatured(video.id, 'video', video.is_favorited);
                             }}
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
@@ -223,7 +223,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     <Switch
                         checked={video.visibility_status}
                         onCheckedChange={() =>
-                            handlers.onToggleVisibility(video.id, 'video')
+                            handlers.onToggleVisibility(video.id, 'video', video.visibility_status)
                         }
                     />
                     <span className="text-gray-700">Visible</span>
@@ -255,7 +255,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(link.id, 'link');
+                                handlers.onToggleFeatured(link.id, 'link', link.is_favorited);
                             }}
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
@@ -288,7 +288,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                     <Switch
                         checked={link.visibility_status}
                         onCheckedChange={() =>
-                            handlers.onToggleVisibility(link.id, 'link')
+                            handlers.onToggleVisibility(link.id, 'link', link.visibility_status)
                         }
                     />
                     <span className="text-gray-700">Visible</span>
@@ -454,7 +454,8 @@ export default function KnowledgeCenterManagement() {
 
     const handleToggleFeatured = async (
         id: number,
-        type: 'library' | 'video' | 'link'
+        type: 'library' | 'video' | 'link',
+        isFeatured: boolean
     ) => {
         if (!guardToggle(`featured-${type}-${id}`)) return;
         const endpoints: Record<string, string> = {
@@ -462,20 +463,27 @@ export default function KnowledgeCenterManagement() {
             video: `videos/${id}/favorite`,
             link: `helpful-links/favorite/${id}`
         };
+        const typeLabel: Record<string, string> = {
+            library: 'Library',
+            video: 'Video',
+            link: 'Helpful link'
+        };
+        const actionString = isFeatured ? 'unfeatured' : 'featured';
         const resp = await API.put<null, object>(endpoints[type], {});
         if (resp.success) {
-            toaster('Updated successfully', ToastState.success);
+            toaster(`${typeLabel[type]} ${actionString}`, ToastState.success);
             if (type === 'library') void mutateLibs();
             else if (type === 'video') void mutateVids();
             else void mutateLinks();
         } else {
-            toaster('Failed to update', ToastState.error);
+            toaster(`${typeLabel[type]} ${actionString}`, ToastState.error);
         }
     };
 
     const handleToggleVisibility = async (
         id: number,
-        type: 'library' | 'video' | 'link'
+        type: 'library' | 'video' | 'link',
+        isVisible: boolean
     ) => {
         if (!guardToggle(`visibility-${type}-${id}`)) return;
         const endpoints: Record<string, string> = {
@@ -483,14 +491,20 @@ export default function KnowledgeCenterManagement() {
             video: `videos/${id}/visibility`,
             link: `helpful-links/toggle/${id}`
         };
+        const typeLabel: Record<string, string> = {
+            library: 'Library',
+            video: 'Video',
+            link: 'Helpful link'
+        };
+        const actionString = isVisible ? 'is now hidden' : 'is now visible';
         const resp = await API.put<null, object>(endpoints[type], {});
         if (resp.success) {
-            toaster('Visibility updated', ToastState.success);
+            toaster(`${typeLabel[type]} ${actionString}`, ToastState.success);
             if (type === 'library') void mutateLibs();
             else if (type === 'video') void mutateVids();
             else void mutateLinks();
         } else {
-            toaster('Failed to update visibility', ToastState.error);
+            toaster(`${typeLabel[type]} ${actionString}`, ToastState.error);
         }
     };
 
@@ -512,7 +526,7 @@ export default function KnowledgeCenterManagement() {
     };
 
     const handleAddLink = async () => {
-        const resp = await API.post<null, object>(
+        const resp = await API.put<null, object>(
             'helpful-links',
             linkFormData
         );
@@ -569,8 +583,8 @@ export default function KnowledgeCenterManagement() {
     };
 
     const cardHandlers: CardHandlers = {
-        onToggleFeatured: (id, type) => void handleToggleFeatured(id, type),
-        onToggleVisibility: (id, type) => void handleToggleVisibility(id, type),
+        onToggleFeatured: (id, type, isFeatured) => void handleToggleFeatured(id, type, isFeatured),
+        onToggleVisibility: (id, type, isVisible) => void handleToggleVisibility(id, type, isVisible),
         onNavigate: (path) => navigate(path)
     };
 
