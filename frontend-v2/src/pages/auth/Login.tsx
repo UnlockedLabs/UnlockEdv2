@@ -11,7 +11,7 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex">
-            <div className="hidden lg:flex lg:w-[55%] flex-col justify-between bg-[#264653] text-white p-14 relative overflow-hidden">
+            <div className="hidden lg:flex lg:w-[55%] flex-col justify-between bg-[#2C3622] text-white p-14 relative overflow-hidden">
                 <div
                     className="absolute top-0 left-0 w-[520px] h-[520px] rounded-full opacity-[0.07] -translate-x-1/3 -translate-y-1/3 pointer-events-none"
                     style={{ backgroundColor: BRAND_YELLOW }}
