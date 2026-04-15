@@ -45,14 +45,12 @@ function FeaturedLibraryCard({
                     )}
                 </div>
                 <CardContent className="p-3">
-                    <h4 className="text-sm font-medium text-foreground line-clamp-2">
+                    <h4 className="text-sm font-medium text-foreground line-clamp-2 h-10 leading-5">
                         {library.title}
                     </h4>
-                    {library.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                            {library.description}
-                        </p>
-                    )}
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                        {library.description ?? ''}
+                    </p>
                 </CardContent>
             </Card>
         </div>
