@@ -15,6 +15,8 @@ import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
 import { Toaster } from '@/components/ui/sonner';
 import WebsocketSession from '@/session/websocket';
+import { XIcon } from 'lucide-react';
+import { FAQContent } from '@/pages/FAQs';
 
 export default function AuthenticatedLayout() {
     const { user } = useAuth();
@@ -102,20 +104,20 @@ export default function AuthenticatedLayout() {
                     onToggleCollapse={() =>
                         setSidebarCollapsed(!sidebarCollapsed)
                     }
+                    onToggleHelpCenter={() =>
+                        setHelpCenterOpen(!helpCenterOpen)
+                    }
                 />
             </div>
 
-            <div className="flex-1 flex flex-col min-w-0">
-                <div className="flex items-center">
+            <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+                <div className="flex items-center shrink-0 h-16 border-b border-border">
                     <div className="md:hidden px-2">
                         <MobileNav />
                     </div>
                     <div className="flex-1">
                         <TopNav
                             facilities={facilities}
-                            onToggleHelpCenter={() =>
-                                setHelpCenterOpen(!helpCenterOpen)
-                            }
                         />
                     </div>
                 </div>
@@ -124,28 +126,52 @@ export default function AuthenticatedLayout() {
                 <UnlockEdTour />
                 <Toaster />
 
-                <div className={contentClass}>
-                    {isFullBleed ? (
-                        isClassDetail || isEventAttendance ? (
-                            <Outlet />
-                        ) : (
-                            <div className={`${fullBleedWrapperClass} h-full`}>
-                                {showBreadcrumbs && (
-                                    <div className="max-w-7xl mx-auto px-6 mb-4">
-                                        <Breadcrumbs items={breadcrumbItems} />
+                <div className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}>
+                    <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}>
+                        <div className={contentClass}>
+                            {isFullBleed ? (
+                                isClassDetail || isEventAttendance ? (
+                                    <Outlet />
+                                ) : (
+                                    <div className={`${fullBleedWrapperClass} h-full`}>
+                                        {showBreadcrumbs && (
+                                            <div className="max-w-7xl mx-auto px-6 mb-4">
+                                                <Breadcrumbs items={breadcrumbItems} />
+                                            </div>
+                                        )}
+                                        <Outlet />
                                     </div>
-                                )}
-                                <Outlet />
-                            </div>
-                        )
-                    ) : (
-                        <div className="max-w-7xl mx-auto px-6 py-4">
-                            {showBreadcrumbs && (
-                                <div className="mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
+                                )
+                            ) : (
+                                <div className="max-w-7xl mx-auto px-6 py-4">
+                                    {showBreadcrumbs && (
+                                        <div className="mb-4">
+                                            <Breadcrumbs items={breadcrumbItems} />
+                                        </div>
+                                    )}
+                                    <Outlet />
                                 </div>
                             )}
-                            <Outlet />
+                        </div>
+                    </div>
+
+                    {helpCenterOpen && (
+                        <div className="w-80 h-full self-center bg-background animate-in slide-in-from-right duration-300 flex flex-col overflow-y-auto ">
+                            <div className="p-4 shrink-0">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-semibold">Frequently Asked Questions</h2>
+                                    <button
+                                        onClick={() => setHelpCenterOpen(false)}
+                                        className="text-muted-foreground hover:text-foreground"
+                                        aria-label="Close help center"
+                                    >
+                                        <XIcon className="size-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-0">
+                                <FAQContent compact />
+                            </div>
                         </div>
                     )}
                 </div>

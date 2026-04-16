@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate, useLocation } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import {
     OpenContentItem,
@@ -12,14 +12,6 @@ import TopContentList from '@/components/dashboard/TopContentList';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, Star } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
-import { FAQ_CATEGORIES } from '@/pages/FAQs';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger
-} from '@/components/ui/accordion';
-import API from '@/api/api';
 
 interface ResidentHomeData {
     helpfulLinks: HelpfulLink[];
@@ -115,8 +107,6 @@ function FavoriteItem({ item }: { item: OpenContentItem }) {
 
 export default function ResidentHome() {
     const navigate = useNavigate();
-    const location = useLocation();
-    const showFAQs = location.hash === '#faqs';
     const { topUserContent, topFacilityContent } =
         useLoaderData() as ResidentHomeData;
 
@@ -133,12 +123,6 @@ export default function ResidentHome() {
     const featuredItems = featured?.data ?? [];
     const favoriteItems = favorites?.data ?? [];
     const links = helpfulLinks?.data?.helpful_links ?? [];
-
-    function logQuestionClick(question: string) {
-        void API.post('analytics/faq-click', { question }).catch(() => {
-            // Analytics failures are intentionally ignored
-        });
-    }
 
     return (
         <div className="bg-muted min-h-screen p-6">
@@ -228,67 +212,6 @@ export default function ResidentHome() {
                             />
                         )}
                     </div>
-
-                    {showFAQs && (
-                        <div id="faqs" className="bg-card rounded-lg border border-border p-5">
-                            <h2 className="text-lg font-semibold text-foreground mb-3">
-                                Frequently Asked Questions
-                            </h2>
-                            <div className="max-h-[400px] overflow-y-auto space-y-3">
-                                {Object.entries(FAQ_CATEGORIES).map(
-                                    ([category, questions]) => (
-                                        <div key={category}>
-                                            <h3 className="text-sm font-semibold text-foreground mb-2">
-                                                {category}
-                                            </h3>
-                                            <Accordion type="single" collapsible>
-                                                {questions.map((faq, index) => (
-                                                    <AccordionItem
-                                                        key={`${category}-${index}`}
-                                                        value={`${category}-${index}`}
-                                                    >
-                                                        <AccordionTrigger
-                                                            onClick={() =>
-                                                                logQuestionClick(
-                                                                    faq.question
-                                                                )
-                                                            }
-                                                            className="px-0 text-sm text-foreground hover:no-underline hover:text-[#556830]"
-                                                        >
-                                                            {faq.question}
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="px-0 text-xs text-muted-foreground">
-                                                            <p>{faq.answer}</p>
-                                                            {faq.list && (
-                                                                <ul className="list-disc list-outside pl-4 mt-2 space-y-1">
-                                                                    {faq.list.map(
-                                                                        (item, i) => (
-                                                                            <li
-                                                                                key={
-                                                                                    i
-                                                                                }
-                                                                            >
-                                                                                {item}
-                                                                            </li>
-                                                                        )
-                                                                    )}
-                                                                </ul>
-                                                            )}
-                                                            {faq.extra && (
-                                                                <p className="mt-2">
-                                                                    {faq.extra}
-                                                                </p>
-                                                            )}
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                ))}
-                                            </Accordion>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </aside>
             </div>
         </div>
