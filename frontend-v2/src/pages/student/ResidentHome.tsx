@@ -32,23 +32,23 @@ function FeaturedLibraryCard({
 }) {
     return (
         <div onClick={onClick} className="block cursor-pointer">
-            <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
-                <div className="h-[100px] bg-muted">
-                    {library.thumbnail_url ? (
-                        <img
-                            src={library.thumbnail_url}
-                            alt={library.title}
-                            className="object-cover w-full h-full"
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-muted" />
-                    )}
-                </div>
-                <CardContent className="p-3">
-                    <h4 className="text-sm font-medium text-foreground line-clamp-2 h-10 leading-5">
-                        {library.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+            <Card className="hover:shadow-md transition-shadow h-full">
+                <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                        {library.thumbnail_url ? (
+                            <img
+                                src={library.thumbnail_url}
+                                alt={library.title}
+                                className="size-12 rounded object-cover flex-shrink-0"
+                            />
+                        ) : (
+                            <div className="size-12 rounded bg-muted flex-shrink-0" />
+                        )}
+                        <h4 className="text-sm font-medium text-foreground line-clamp-1">
+                            {library.title}
+                        </h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
                         {library.description ?? ''}
                     </p>
                 </CardContent>
