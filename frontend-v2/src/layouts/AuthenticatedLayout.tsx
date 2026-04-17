@@ -156,7 +156,7 @@ export default function AuthenticatedLayout() {
                     </div>
 
                     {helpCenterOpen && (
-                        <div className="w-80 h-full self-center bg-background animate-in slide-in-from-right duration-300 flex flex-col overflow-y-auto ">
+                        <div className="w-80 shrink-0 bg-background border-l border-border animate-in slide-in-from-right duration-300 flex flex-col sticky top-0 h-[calc(100vh-4rem)]">
                             <div className="p-4 shrink-0">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-lg font-semibold">Frequently Asked Questions</h2>
@@ -169,7 +169,7 @@ export default function AuthenticatedLayout() {
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-0">
+                            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 pb-4 flex flex-col justify-center">
                                 <FAQContent compact />
                             </div>
                         </div>
