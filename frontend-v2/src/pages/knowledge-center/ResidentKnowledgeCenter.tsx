@@ -38,7 +38,7 @@ import {
 import { formatVideoDuration } from '@/lib/formatters';
 import API from '@/api/api';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 10;
 
 interface ContentItem {
     id: number;
@@ -75,7 +75,7 @@ export default function ResidentKnowledgeCenter() {
     const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(ITEMS_PER_PAGE);
+    const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
 
     const { data: tagsData } = useSWR<ServerResponseMany<Option>>(
         '/api/tags'
@@ -447,13 +447,16 @@ export default function ResidentKnowledgeCenter() {
                             </div>
                         ))}
                     </div>
-                    {filteredContent.length > itemsPerPage && (
+                    {filteredContent.length > 10 && (
                         <Pagination
                             currentPage={currentPage}
                             totalItems={filteredContent.length}
                             itemsPerPage={itemsPerPage}
                             onPageChange={setCurrentPage}
-                            onItemsPerPageChange={(_v) => void _v}
+                            onItemsPerPageChange={(v) => {
+                            setItemsPerPage(v);
+                            setCurrentPage(1);
+                        }}
                         />
                     )}
                 </>

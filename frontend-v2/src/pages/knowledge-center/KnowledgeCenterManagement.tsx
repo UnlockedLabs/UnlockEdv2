@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Pagination } from '@/components/shared/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
 import { useToast } from '@/contexts/ToastContext';
 import {
@@ -317,7 +318,8 @@ export default function KnowledgeCenterManagement() {
     const [visibilityFilter, setVisibilityFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [currentTab, setCurrentTab] = useState('libraries');
-
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const [showAddVideo, setShowAddVideo] = useState(false);
     const [showAddLink, setShowAddLink] = useState(false);
@@ -338,6 +340,7 @@ export default function KnowledgeCenterManagement() {
         if (currentTab !== 'libraries') {
             setCategoryFilter('all');
         }
+        setCurrentPage(1);
     }, [currentTab]);
 
     const visibilityParam = useMemo(() => {
@@ -432,6 +435,26 @@ export default function KnowledgeCenterManagement() {
         if (visibilityFilter !== 'all') return helpfulLinks.length;
         return linkData?.data?.meta?.total ?? 0;
     }, [linkData?.data?.meta?.total, visibilityFilter, helpfulLinks.length]);
+
+    const paginatedLibraries = libraries.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const paginatedVideos = videos.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const paginatedLinks = helpfulLinks.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handleItemsPerPageChange = (v: number) => {
+        setItemsPerPage(v);
+        setCurrentPage(1);
+    };
 
     const pollVideos = (delay: number) => {
         if (!pollingRef.current) return;
@@ -604,13 +627,19 @@ export default function KnowledgeCenterManagement() {
                         <Input
                             placeholder="Search across all content..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="pl-10"
                         />
                     </div>
                     <Select
                         value={visibilityFilter}
-                        onValueChange={setVisibilityFilter}
+                        onValueChange={(v) => {
+                            setVisibilityFilter(v);
+                            setCurrentPage(1);
+                        }}
                     >
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filter by" />
@@ -664,7 +693,10 @@ export default function KnowledgeCenterManagement() {
                     {currentTab === 'libraries' && (
                         <Select
                             value={categoryFilter}
-                            onValueChange={setCategoryFilter}
+                            onValueChange={(v) => {
+                                setCategoryFilter(v);
+                                setCurrentPage(1);
+                            }}
                         >
                             <SelectTrigger className="w-[280px]">
                                 <SelectValue placeholder="Filter by category" />
@@ -714,7 +746,7 @@ export default function KnowledgeCenterManagement() {
                     ) : (
                         <>
                             <div className="grid grid-cols-3 gap-6">
-                                {libraries.map((library) => (
+                                {paginatedLibraries.map((library) => (
                                     <LibraryCard
                                         key={library.id}
                                         library={library}
@@ -722,6 +754,15 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
+                            {libraries.length > 10 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalItems={libraries.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                    onItemsPerPageChange={handleItemsPerPageChange}
+                                />
+                            )}
                         </>
                     )}
                 </TabsContent>
@@ -734,7 +775,7 @@ export default function KnowledgeCenterManagement() {
                     ) : (
                         <>
                             <div className="grid grid-cols-3 gap-6">
-                                {videos.map((video) => (
+                                {paginatedVideos.map((video) => (
                                     <VideoCard
                                         key={video.id}
                                         video={video}
@@ -747,6 +788,15 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
+                            {videos.length > 10 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalItems={videos.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                    onItemsPerPageChange={handleItemsPerPageChange}
+                                />
+                            )}
                         </>
                     )}
                 </TabsContent>
@@ -761,7 +811,7 @@ export default function KnowledgeCenterManagement() {
                     ) : (
                         <>
                             <div className="grid grid-cols-3 gap-6">
-                                {helpfulLinks.map((link) => (
+                                {paginatedLinks.map((link) => (
                                     <LinkCard
                                         key={link.id}
                                         link={link}
@@ -770,6 +820,15 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
+                            {helpfulLinks.length > 10 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalItems={helpfulLinks.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                    onItemsPerPageChange={handleItemsPerPageChange}
+                                />
+                            )}
                         </>
                     )}
                 </TabsContent>
