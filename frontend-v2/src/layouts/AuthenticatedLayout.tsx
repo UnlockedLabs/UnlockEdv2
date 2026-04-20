@@ -37,13 +37,14 @@ export default function AuthenticatedLayout() {
     const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
     const isEventAttendance = /^\/program-classes\/\d+\/events\/\d+\/attendance\//.test(location.pathname);
     const isClassesPage = location.pathname === '/classes';
+    const isResidentsPage = location.pathname === '/residents';
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities;
+        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isClassDetail || isClassesPage ? 'py-0' : 'py-4';
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile;
     const isFacilityView =
         isProgramDetail &&
@@ -90,7 +91,7 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsGrayBg = isResidentProfile || isClassesPage || (isProgramDetail && canSwitchFacility(user));
+    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
     const contentClass = `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
