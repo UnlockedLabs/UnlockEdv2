@@ -36,6 +36,7 @@ export interface User {
     session_id: string;
     created_at: string;
     updated_at: string;
+    facility_id: number;
     facility: Facility;
     feature_access: FeatureAccess[];
     timezone: string;
@@ -101,6 +102,32 @@ export interface BulkUploadResponse {
     valid_rows: ValidatedUserRow[];
     invalid_rows: InvalidUserRow[];
     error_csv_data?: string;
+}
+
+export interface BulkPasswordResult {
+    user_id: number;
+    username: string;
+    name: string;
+    doc_id: string;
+    temp_password: string;
+}
+
+export interface BulkPasswordResponse {
+    successes: BulkPasswordResult[];
+    failures: BulkActionFailure[];
+}
+
+export interface BulkActionFailure {
+    user_id: number;
+    username: string;
+    name: string;
+    reason: string;
+}
+
+export interface BulkActionResponse {
+    success_count: number;
+    failed_count: number;
+    failures: BulkActionFailure[];
 }
 
 export enum FilterResidentNames {
