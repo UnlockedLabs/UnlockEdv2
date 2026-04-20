@@ -258,7 +258,7 @@ export default function ResidentKnowledgeCenter() {
                         </div>
                     )}
                     <div className="flex-1 min-w-0 pr-8">
-                        <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                        <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
                             {item.title}
                         </h3>
                         {item.author && (
@@ -269,7 +269,7 @@ export default function ResidentKnowledgeCenter() {
                     </div>
                 </div>
 
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
                     {item.description}
                 </p>
 

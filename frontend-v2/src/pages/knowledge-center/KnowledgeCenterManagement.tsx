@@ -93,7 +93,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     className="size-12 rounded flex-shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
                         {library.title}
                     </h3>
                 </div>
@@ -179,7 +179,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
                         {video.title}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -273,7 +273,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
                     {link.title}
                 </h3>
             </div>

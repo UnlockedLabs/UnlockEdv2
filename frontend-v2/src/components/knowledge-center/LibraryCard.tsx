@@ -107,7 +107,7 @@ export default function LibraryCard({
                             alt={`${library.title} thumbnail`}
                             className="w-12 h-12 flex-shrink-0 object-cover"
                         />
-                        <h3 className="text-sm font-medium text-foreground line-clamp-2">
+                        <h3 className="text-sm font-medium text-foreground line-clamp-2 min-h-[2.5rem]">
                             {library.title}
                         </h3>
                     </div>
