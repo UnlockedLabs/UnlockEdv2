@@ -188,8 +188,8 @@ export default function ResidentHome() {
                     )}
                 </div>
 
-                <aside className="hidden xl:block w-[320px] shrink-0">
-                    <div className="bg-card rounded-lg border border-border p-5 sticky top-6">
+                <aside className="hidden xl:block w-[320px] shrink-0 space-y-6 sticky top-6 self-start">
+                    <div className="bg-card rounded-lg border border-border p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <Star className="size-5 text-[#F1B51C]" />
                             <h2 className="text-lg font-semibold text-foreground">

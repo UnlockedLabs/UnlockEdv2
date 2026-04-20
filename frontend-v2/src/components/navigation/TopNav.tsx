@@ -1,6 +1,5 @@
 import {
     useAuth,
-    isAdministrator,
     canSwitchFacility,
     handleLogout,
     isFacilityAdmin
@@ -14,15 +13,13 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Building2, LogOut, Moon, Sun, CircleHelp } from 'lucide-react';
+import { Building2, LogOut, Moon, Sun } from 'lucide-react';
 import { usePageTitle } from '@/contexts/PageTitleContext';
 
 export default function TopNav({
-    facilities,
-    onToggleHelpCenter
+    facilities
 }: {
     facilities?: Facility[];
-    onToggleHelpCenter: () => void;
 }) {
     const { user } = useAuth();
     const { resolvedTheme, setTheme } = useTheme();
@@ -92,15 +89,6 @@ export default function TopNav({
                     </DropdownMenu>
                 ) : null}
 
-                {!isAdministrator(user) && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onToggleHelpCenter}
-                    >
-                        <CircleHelp className="h-4 w-4" />
-                    </Button>
-                )}
 
                 <Button
                     variant="ghost"
