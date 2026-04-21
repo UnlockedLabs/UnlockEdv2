@@ -6,7 +6,6 @@ import {
     isFacilityAdmin
 } from '@/auth/useAuth';
 import { Facility } from '@/types';
-import { useTheme } from 'next-themes';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,7 +13,7 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Building2, LogOut, Moon, Sun, CircleHelp } from 'lucide-react';
+import { Building2, LogOut, CircleHelp } from 'lucide-react';
 import { usePageTitle } from '@/contexts/PageTitleContext';
 
 export default function TopNav({
@@ -25,7 +24,6 @@ export default function TopNav({
     onToggleHelpCenter: () => void;
 }) {
     const { user } = useAuth();
-    const { resolvedTheme, setTheme } = useTheme();
     const { pageTitle } = usePageTitle();
 
     if (!user) return null;
@@ -101,23 +99,6 @@ export default function TopNav({
                         <CircleHelp className="h-4 w-4" />
                     </Button>
                 )}
-
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                        setTheme(
-                            resolvedTheme === 'dark' ? 'light' : 'dark'
-                        )
-                    }
-                    aria-label="Toggle theme"
-                >
-                    {resolvedTheme === 'dark' ? (
-                        <Sun className="h-4 w-4" />
-                    ) : (
-                        <Moon className="h-4 w-4" />
-                    )}
-                </Button>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

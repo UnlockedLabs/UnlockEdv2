@@ -38,7 +38,7 @@ import {
 import { formatVideoDuration } from '@/lib/formatters';
 import API from '@/api/api';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 interface ContentItem {
     id: number;
@@ -83,7 +83,7 @@ export default function ResidentKnowledgeCenter() {
     const categories = tagsData?.data ?? [];
 
     const categoryParam =
-        categoryFilter !== 'all' ? `&tag=${categoryFilter}` : '';
+        categoryFilter !== 'all' ? `&tags=${categoryFilter}` : '';
 
     const { data: libData } = useSWR<
         ServerResponseMany<Library>
@@ -111,7 +111,8 @@ export default function ResidentKnowledgeCenter() {
             description: lib.description ?? '',
             featured: lib.is_favorited,
             imageUrl: lib.thumbnail_url,
-            url: lib.url
+            url: lib.url,
+            categories: lib.tags ?? []
         }));
 
         const vids: ContentItem[] = (vidData?.data ?? [])
@@ -153,6 +154,12 @@ export default function ResidentKnowledgeCenter() {
                 ) {
                     return false;
                 }
+                if (
+                    categoryFilter !== 'all' &&
+                    item.type !== 'library'
+                ) {
+                    return false;
+                }
                 return true;
             })
             .sort((a, b) => {
@@ -160,7 +167,7 @@ export default function ResidentKnowledgeCenter() {
                 if (!a.featured && b.featured) return 1;
                 return a.title.localeCompare(b.title);
             });
-    }, [allContent, contentTypeFilter]);
+    }, [allContent, contentTypeFilter, categoryFilter]);
 
     const paginatedContent = filteredContent.slice(
         (currentPage - 1) * itemsPerPage,
@@ -205,7 +212,7 @@ export default function ResidentKnowledgeCenter() {
 
         return (
             <div
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative h-full flex flex-col"
                 onClick={handleClick}
             >
                 {item.featured && (
@@ -272,6 +279,8 @@ export default function ResidentKnowledgeCenter() {
                 <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
                     {item.description}
                 </p>
+
+                <div className="flex-1" />
 
                 {item.type === 'library' && item.categories && item.categories.length > 0 && (
                     <div className="pt-3 border-t border-gray-100 flex flex-wrap gap-2">
@@ -417,7 +426,7 @@ export default function ResidentKnowledgeCenter() {
                             {categories.map((cat) => (
                                 <SelectItem
                                     key={String(cat.key)}
-                                    value={String(cat.value)}
+                                    value={String(cat.key)}
                                 >
                                     {String(cat.value)}
                                 </SelectItem>
@@ -442,23 +451,22 @@ export default function ResidentKnowledgeCenter() {
                                         ? 'knowledge-center-enter-library'
                                         : undefined
                                 }
+                                className="h-full"
                             >
                                 <ContentCard item={item} />
                             </div>
                         ))}
                     </div>
-                    {filteredContent.length > 10 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalItems={filteredContent.length}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setCurrentPage}
-                            onItemsPerPageChange={(v) => {
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={filteredContent.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(v) => {
                             setItemsPerPage(v);
                             setCurrentPage(1);
                         }}
-                        />
-                    )}
+                    />
                 </>
             )}
         </div>

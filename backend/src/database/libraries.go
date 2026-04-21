@@ -11,7 +11,8 @@ import (
 
 type LibraryResponse struct {
 	models.Library
-	IsFavorited bool `json:"is_favorited"`
+	IsFavorited bool     `json:"is_favorited"`
+	Tags        []string `json:"tags" gorm:"-"`
 }
 
 // Retrieves either a paginated list of libraries or all libraries based upon the given parameters.
@@ -114,6 +115,35 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 	}
 	if err := tx.Find(&libraries).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "libraries")
+	}
+	if len(libraries) > 0 {
+		libraryIDs := make([]uint, len(libraries))
+		for i, lib := range libraries {
+			libraryIDs[i] = lib.ID
+		}
+		type tagRow struct {
+			ContentID uint
+			TagName   string
+		}
+		var rows []tagRow
+		if err := db.WithContext(args.Ctx).Raw(
+			`SELECT oct.content_id, t.name AS tag_name
+			 FROM open_content_tags oct
+			 JOIN tags t ON t.id = oct.tag_id
+			 WHERE oct.content_id IN ?`, libraryIDs,
+		).Scan(&rows).Error; err != nil {
+			log.Warnf("failed to fetch tags for libraries: %v", err)
+		} else {
+			tagMap := make(map[uint][]string)
+			for _, r := range rows {
+				tagMap[r.ContentID] = append(tagMap[r.ContentID], r.TagName)
+			}
+			for i := range libraries {
+				if tags, ok := tagMap[libraries[i].ID]; ok {
+					libraries[i].Tags = tags
+				}
+			}
+		}
 	}
 	return libraries, nil
 }

@@ -54,6 +54,7 @@ export interface Library {
     visibility_status: boolean;
     open_content_provider: OpenContentProvider;
     is_favorited: boolean;
+    tags?: string[];
 }
 
 export interface HelpfulLink {

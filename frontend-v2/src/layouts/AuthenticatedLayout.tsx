@@ -116,19 +116,21 @@ export default function AuthenticatedLayout() {
             </div>
 
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="flex items-center">
-                    <div className="md:hidden px-2">
-                        <MobileNav />
+                {isAdministrator(user) && (
+                    <div className="flex items-center">
+                        <div className="md:hidden px-2">
+                            <MobileNav />
+                        </div>
+                        <div className="flex-1">
+                            <TopNav
+                                facilities={facilities}
+                                onToggleHelpCenter={() =>
+                                    setHelpCenterOpen(!helpCenterOpen)
+                                }
+                            />
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <TopNav
-                            facilities={facilities}
-                            onToggleHelpCenter={() =>
-                                setHelpCenterOpen(!helpCenterOpen)
-                            }
-                        />
-                    </div>
-                </div>
+                )}
 
                 <TitleManager />
                 <UnlockEdTour />

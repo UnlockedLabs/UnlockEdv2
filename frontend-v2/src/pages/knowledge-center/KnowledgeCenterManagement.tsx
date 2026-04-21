@@ -319,7 +319,7 @@ export default function KnowledgeCenterManagement() {
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [currentTab, setCurrentTab] = useState('libraries');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
     const [showAddVideo, setShowAddVideo] = useState(false);
     const [showAddLink, setShowAddLink] = useState(false);
@@ -352,7 +352,7 @@ export default function KnowledgeCenterManagement() {
 
     const categoryParam = useMemo(() => {
         if (categoryFilter === 'all') return '';
-        return `&tag=${categoryFilter}`;
+        return `&tags=${categoryFilter}`;
     }, [categoryFilter]);
 
     const { data: tagsData } = useSWR<ServerResponseMany<Option>>(
@@ -708,7 +708,7 @@ export default function KnowledgeCenterManagement() {
                                 {categories.map((cat) => (
                                     <SelectItem
                                         key={String(cat.key)}
-                                        value={String(cat.value)}
+                                        value={String(cat.key)}
                                     >
                                         {String(cat.value)}
                                     </SelectItem>
@@ -754,15 +754,13 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
-                            {libraries.length > 10 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalItems={libraries.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
-                                    onItemsPerPageChange={handleItemsPerPageChange}
-                                />
-                            )}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={libraries.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                            />
                         </>
                     )}
                 </TabsContent>
@@ -788,15 +786,13 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
-                            {videos.length > 10 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalItems={videos.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
-                                    onItemsPerPageChange={handleItemsPerPageChange}
-                                />
-                            )}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={videos.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                            />
                         </>
                     )}
                 </TabsContent>
@@ -820,15 +816,13 @@ export default function KnowledgeCenterManagement() {
                                     />
                                 ))}
                             </div>
-                            {helpfulLinks.length > 10 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalItems={helpfulLinks.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
-                                    onItemsPerPageChange={handleItemsPerPageChange}
-                                />
-                            )}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={helpfulLinks.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                            />
                         </>
                     )}
                 </TabsContent>

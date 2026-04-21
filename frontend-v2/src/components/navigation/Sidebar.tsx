@@ -3,13 +3,16 @@ import {
     useAuth,
     isAdministrator,
     hasFeature,
-    canSwitchFacility
+    canSwitchFacility,
+    handleLogout
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import Brand from '@/components/Brand';
+import { Button } from '@/components/ui/button';
 import { useTourContext } from '@/contexts/TourContext';
+import { LogOut } from 'lucide-react';
 import {
     HomeIcon,
     AcademicCapIcon,
@@ -93,6 +96,45 @@ export default function Sidebar({
                     />
                 )}
             </nav>
+
+            {!isAdministrator(user) && (
+                <div className="border-t border-border p-4 shrink-0">
+                    {!collapsed ? (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-full bg-[#556830] flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                    {user.name_first?.[0]}
+                                    {user.name_last?.[0]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-foreground truncate">
+                                        {user.name_first} {user.name_last}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Resident
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="outline"
+                                onClick={() => void handleLogout()}
+                                className="w-full justify-start"
+                            >
+                                <LogOut className="size-4 mr-2" />
+                                Log Out
+                            </Button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => void handleLogout()}
+                            className="w-full p-2 rounded-lg hover:bg-accent transition-colors flex items-center justify-center"
+                            aria-label="Log out"
+                        >
+                            <LogOut className="size-5 text-muted-foreground" />
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
