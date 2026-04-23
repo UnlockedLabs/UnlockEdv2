@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Plus, BookOpen } from 'lucide-react';
-import { Class } from '@/types';
-import { getClassSchedule, getStatusColor } from '@/lib/formatters';
+import { Class, SelectedClassStatus } from '@/types';
+import { getClassSchedule, getInstructorName, getStatusColor } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -53,7 +53,7 @@ function ClassRow({
                         </p>
                     )}
                     <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
-                        <span>{cls.instructor_name}</span>
+                        <span>{getInstructorName(cls.events) || '—'}</span>
                         {scheduleText && <span>{scheduleText}</span>}
                         {schedule.room && <span>{schedule.room}</span>}
                     </div>
@@ -92,16 +92,16 @@ export default function ClassesTab({
     navigate: ReturnType<typeof useNavigate>;
 }) {
     const activeScheduledClasses = programClasses.filter(
-        (cls) => cls.status === 'Active' || cls.status === 'Scheduled'
+        (cls) => cls.status === SelectedClassStatus.Active || cls.status === SelectedClassStatus.Scheduled
     );
     const completedClasses = programClasses.filter(
-        (cls) => cls.status === 'Completed'
+        (cls) => cls.status === SelectedClassStatus.Completed
     );
     const cancelledClasses = programClasses.filter(
-        (cls) => cls.status === 'Cancelled'
+        (cls) => cls.status === SelectedClassStatus.Cancelled
     );
     const pausedClasses = programClasses.filter(
-        (cls) => cls.status === 'Paused'
+        (cls) => cls.status === SelectedClassStatus.Paused
     );
 
     return (

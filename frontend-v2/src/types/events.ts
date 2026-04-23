@@ -1,5 +1,6 @@
 import { Attendance, SelectedClassStatus } from './attendance';
 import { Room } from './facility';
+import { User } from './user';
 
 export interface ClassEventInstance extends ProgramClassEvent {
     event_id: number;
@@ -37,6 +38,9 @@ export interface ProgramClassEvent {
     room_ref?: Room;
     recurrence_rule: string;
     is_cancelled: boolean;
+    instructor_id?: number | null;
+    instructor_ref?: User | null;
+    reason?: string | null;
     overrides: ProgramClassEventOverride[];
 }
 
@@ -50,7 +54,8 @@ export interface ProgramClassEventOverride {
     is_cancelled: boolean;
     reason: string;
     linked_override_event_id?: number;
-    instructor_id?: number;
+    instructor_id?: number | null;
+    instructor_ref?: User | null;
 }
 
 export interface FacilityProgramClassEvent extends ProgramClassEvent {

@@ -31,7 +31,7 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import { getStatusColor } from '@/lib/formatters';
+import { getInstructorName, getStatusColor } from '@/lib/formatters';
 import {
     programTypeColors,
     TAB_TRIGGER_CLASSES
@@ -204,7 +204,7 @@ export default function ProgramOverviewFacilityAdmin() {
         setShowArchiveDialog(true);
     }
 
-    async function handleStatusSelectChange(value: string) {
+    function handleStatusSelectChange(value: string) {
         if (value === 'Archived') {
             void handleArchiveCheck();
             return;
@@ -1039,7 +1039,8 @@ function ClassRow({
 
     const scheduleText = String(cls.schedule ?? '');
     const roomText = String(cls.room ?? '');
-    const metaItems = [cls.instructor_name, scheduleText, roomText].filter(
+    const instructorName = getInstructorName(cls.events);
+    const metaItems = [instructorName, scheduleText, roomText].filter(
         (item): item is string => Boolean(item)
     );
     const attendanceRate =

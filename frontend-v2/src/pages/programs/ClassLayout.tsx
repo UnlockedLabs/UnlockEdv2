@@ -2,7 +2,7 @@ import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { ArrowLeft, Edit, ClipboardList } from 'lucide-react';
 import { Class, ClassLoaderData, ServerResponseOne, SelectedClassStatus } from '@/types';
-import { getClassSchedule, getStatusColor, formatTime12h } from '@/lib/formatters';
+import { getClassSchedule, getInstructorName, getStatusColor, formatTime12h } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -64,6 +64,7 @@ export default function ClassLayout() {
     }
 
     const schedule = getClassSchedule(cls);
+    const instructorName = getInstructorName(cls.events);
     const enrollPct = cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
     const attendanceRate = loaderData?.attendance_rate ?? 0;
     const missingAttendance = loaderData?.missing_attendance ?? 0;
@@ -88,7 +89,7 @@ export default function ClassLayout() {
                         </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {cls.instructor_name && <span>{cls.instructor_name}</span>}
+                        {instructorName && <span>{instructorName}</span>}
                         {schedule.days.length > 0 && (
                             <span>
                                 {schedule.days.map((d) => d.slice(0, 3)).join(', ')}

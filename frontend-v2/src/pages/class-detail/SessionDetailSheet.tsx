@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import useSWR from 'swr';
 import {
     Calendar,
     Clock,
@@ -17,14 +18,18 @@ import {
     SheetTitle,
     SheetDescription
 } from '@/components/ui/sheet';
-import { CancelSessionModal } from './CancelSessionModal';
+import { CancelEventModal } from '@/components/schedule/CancelEventModal';
+import { ChangeInstructorModal } from '@/components/schedule/ChangeInstructorModal';
+import { ChangeRoomModal } from '@/components/schedule/ChangeRoomModal';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
-import {
-    ChangeInstructorModal,
-    ChangeInstructorSession
-} from './ChangeInstructorModal';
-import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
 import { SessionDisplay } from './SessionsTab';
+import {
+    FacilityProgramClassEvent,
+    ProgramClassEvent,
+    Room,
+    ServerResponseMany,
+    SelectedClassStatus
+} from '@/types';
 
 interface SessionDetailSheetProps {
     session: SessionDisplay | null;
@@ -33,11 +38,57 @@ interface SessionDetailSheetProps {
     classTime: string;
     room: string;
     classId: number;
+    facilityId: string;
+    classEvents: ProgramClassEvent[];
     onMutate: () => void;
     onUndo: () => void;
     onUndoCancel?: () => void;
     onUndoReschedule?: () => void;
     allSessions?: SessionDisplay[];
+}
+
+function buildFacilityEvent(
+    session: SessionDisplay,
+    classId: number,
+    classEvents: ProgramClassEvent[]
+): FacilityProgramClassEvent {
+    const eventId = session.instance.event_id ?? session.instance.id;
+    const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
+
+    const parts = session.instance.class_time.split('-');
+    const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
+    const [eh = 0, em = 0] = (parts[1] ?? '').split(':').map(Number);
+
+    const start = new Date(session.dateObj);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(session.dateObj);
+    end.setHours(eh, em, 0, 0);
+
+    return {
+        id: eventId,
+        class_id: classId,
+        duration: backingEvent?.duration ?? '',
+        room_id: backingEvent?.room_id ?? 0,
+        recurrence_rule: backingEvent?.recurrence_rule ?? '',
+        is_cancelled: session.instance.is_cancelled,
+        instructor_id: backingEvent?.instructor_id ?? null,
+        overrides: backingEvent?.overrides ?? [],
+        reason: null,
+        start,
+        end,
+        is_override: !!session.instance.override_id,
+        override_id: session.instance.override_id ?? 0,
+        linked_override_event: null as unknown as FacilityProgramClassEvent,
+        room: '',
+        instructor_name: '',
+        program_id: 0,
+        program_name: '',
+        title: '',
+        enrolled_users: '',
+        frequency: '',
+        credit_types: '',
+        class_status: SelectedClassStatus.Scheduled
+    };
 }
 
 export function SessionDetailSheet({
@@ -47,6 +98,8 @@ export function SessionDetailSheet({
     classTime,
     room,
     classId,
+    facilityId,
+    classEvents,
     onMutate,
     onUndo,
     onUndoCancel,
@@ -57,7 +110,11 @@ export function SessionDetailSheet({
     const [showRescheduleModal, setShowRescheduleModal] = useState(false);
     const [showChangeInstructor, setShowChangeInstructor] = useState(false);
     const [showChangeRoom, setShowChangeRoom] = useState(false);
-    const [applyToFuture, setApplyToFuture] = useState(false);
+
+    const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
+        facilityId ? `/api/rooms?facility_id=${facilityId}` : '/api/rooms'
+    );
+    const rooms = roomsResp?.data ?? [];
 
     const futureSessions = useMemo(() => {
         if (!session) return [];
@@ -120,6 +177,8 @@ export function SessionDetailSheet({
         month: 'long',
         day: 'numeric'
     });
+
+    const facilityEvent = buildFacilityEvent(session, classId, classEvents);
 
     const getStatusBadge = () => {
         if (isCancelled || isCancelledReschedule) {
@@ -186,26 +245,6 @@ export function SessionDetailSheet({
         onUndo();
         onClose();
     };
-
-    const buildPayload = (s: SessionDisplay) => ({
-        date: s.instance.date,
-        dateLabel: s.dateObj.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
-        }),
-        eventId: s.instance.event_id ?? s.instance.id,
-        classTime: s.instance.class_time,
-        dateObj: s.dateObj,
-        dayName: s.dateObj.toLocaleDateString('en-US', { weekday: 'long' })
-    });
-
-    const currentPayload = buildPayload(session);
-
-    const changeInstructorSessions: ChangeInstructorSession[] = [
-        currentPayload
-    ];
-    const changeRoomSessions: ChangeRoomSession[] = [currentPayload];
 
     return (
         <>
@@ -513,29 +552,15 @@ export function SessionDetailSheet({
                 </SheetContent>
             </Sheet>
 
-            {showCancelModal && (
-                <CancelSessionModal
-                    open={showCancelModal}
-                    onClose={() => setShowCancelModal(false)}
-                    classId={classId}
-                    eventId={eventId}
-                    date={instance.date}
-                    classTime={instance.class_time}
-                    dateLabel={shortDateLabel}
-                    onCancelled={() => {
-                        setApplyToFuture(false);
-                        onClose();
-                        onMutate();
-                    }}
-                    applyToFuture={applyToFuture}
-                    setApplyToFuture={setApplyToFuture}
-                    futureSessions={futureSessions.map((s) => ({
-                        date: s.date,
-                        eventId: s.eventId,
-                        classTime: s.classTime
-                    }))}
-                />
-            )}
+            <CancelEventModal
+                open={showCancelModal}
+                onOpenChange={setShowCancelModal}
+                event={facilityEvent}
+                onSuccess={() => {
+                    onClose();
+                    onMutate();
+                }}
+            />
 
             {showRescheduleModal && (
                 <RescheduleSessionModal
@@ -548,12 +573,9 @@ export function SessionDetailSheet({
                     currentRoom={room}
                     classTime={classTime}
                     onRescheduled={() => {
-                        setApplyToFuture(false);
                         onClose();
                         onMutate();
                     }}
-                    applyToFuture={applyToFuture}
-                    setApplyToFuture={setApplyToFuture}
                     futureSessions={futureSessions.map((s) => ({
                         date: s.date,
                         eventId: s.eventId
@@ -561,39 +583,27 @@ export function SessionDetailSheet({
                 />
             )}
 
-            {showChangeInstructor && (
-                <ChangeInstructorModal
-                    open={showChangeInstructor}
-                    onClose={() => setShowChangeInstructor(false)}
-                    classId={classId}
-                    sessions={changeInstructorSessions}
-                    futureSessions={futureSessions}
-                    onChanged={() => {
-                        setApplyToFuture(false);
-                        onClose();
-                        onMutate();
-                    }}
-                    applyToFuture={applyToFuture}
-                    setApplyToFuture={setApplyToFuture}
-                />
-            )}
+            <ChangeInstructorModal
+                open={showChangeInstructor}
+                onOpenChange={setShowChangeInstructor}
+                event={facilityEvent}
+                facilityId={facilityId}
+                onSuccess={() => {
+                    onClose();
+                    onMutate();
+                }}
+            />
 
-            {showChangeRoom && (
-                <ChangeRoomModal
-                    open={showChangeRoom}
-                    onClose={() => setShowChangeRoom(false)}
-                    classId={classId}
-                    sessions={changeRoomSessions}
-                    futureSessions={futureSessions}
-                    onChanged={() => {
-                        setApplyToFuture(false);
-                        onClose();
-                        onMutate();
-                    }}
-                    applyToFuture={applyToFuture}
-                    setApplyToFuture={setApplyToFuture}
-                />
-            )}
+            <ChangeRoomModal
+                open={showChangeRoom}
+                onOpenChange={setShowChangeRoom}
+                event={facilityEvent}
+                rooms={rooms}
+                onSuccess={() => {
+                    onClose();
+                    onMutate();
+                }}
+            />
         </>
     );
 }

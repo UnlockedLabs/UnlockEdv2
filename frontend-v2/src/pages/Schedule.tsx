@@ -1,67 +1,99 @@
-import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import useSWR from 'swr';
+import API from '@/api/api';
 import { toZonedTime } from 'date-fns-tz';
-import { useAuth } from '@/auth/useAuth';
+import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
+// react-big-calendar types are incompatible with @types/react@18 (missing `refs`)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Calendar = BigCalendar as unknown as React.ComponentType<any>;
+import moment from 'moment';
+import { useAuth, isDeptAdmin } from '@/auth/useAuth';
 import {
     FacilityProgramClassEvent,
     ServerResponseMany,
     SelectedClassStatus,
-    Room
+    Room,
+    Facility
 } from '@/types';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { CancelEventModal } from '@/components/schedule/CancelEventModal';
 import { RescheduleEventModal } from '@/components/schedule/RescheduleEventModal';
+import { RescheduleSessionModal } from '@/components/schedule/RescheduleSessionModal';
 import { RescheduleSeriesModal } from '@/components/schedule/RescheduleSeriesModal';
 import { RestoreEventModal } from '@/components/schedule/RestoreEventModal';
-import { Calendar, Clock, MapPin, User, Users, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ChangeRoomModal } from '@/components/schedule/ChangeRoomModal';
+import { ChangeInstructorModal } from '@/components/schedule/ChangeInstructorModal';
+import {
+    Calendar as CalendarIcon,
+    Clock,
+    MapPin,
+    Users,
+    CalendarClock,
+    CalendarOff,
+    CircleCheck
+} from 'lucide-react';
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
-const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const localizer = momentLocalizer(moment);
 
-function formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    });
-}
+const SCROLL_TO_TIME = new Date(1970, 0, 1, 7, 0, 0);
 
-function getWeekDates(referenceDate: Date): Date[] {
-    const startOfWeek = new Date(referenceDate);
-    startOfWeek.setDate(referenceDate.getDate() - referenceDate.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    return Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(startOfWeek);
-        d.setDate(startOfWeek.getDate() + i);
-        return d;
-    });
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-    return a.getFullYear() === b.getFullYear() &&
-        a.getMonth() === b.getMonth() &&
-        a.getDate() === b.getDate();
+interface CalendarEvent {
+    id: number;
+    title: string;
+    start: Date;
+    end: Date;
+    resource: FacilityProgramClassEvent;
 }
 
 export default function Schedule() {
     const { user } = useAuth();
     const { class_id } = useParams<{ class_id?: string }>();
-    const [selectedEvent, setSelectedEvent] = useState<FacilityProgramClassEvent | null>(null);
-    const [currentWeek, setCurrentWeek] = useState(new Date());
+    const navigate = useNavigate();
+
+    // All state must be before any early return
+    const [currentView, setCurrentView] = useState<View>('week');
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedFacilityId, setSelectedFacilityId] = useState<string>('');
+    const [selectedProgram, setSelectedProgram] = useState<string>('all');
+    const [selectedInstructor, setSelectedInstructor] = useState<string>('all');
     const [showAllClasses, setShowAllClasses] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState<FacilityProgramClassEvent | null>(null);
+    const [showSheet, setShowSheet] = useState(false);
     const [showCancel, setShowCancel] = useState(false);
     const [showReschedule, setShowReschedule] = useState(false);
+    const [showRescheduleSingle, setShowRescheduleSingle] = useState(false);
     const [showRescheduleSeries, setShowRescheduleSeries] = useState(false);
     const [showRestore, setShowRestore] = useState(false);
+    const [showChangeRoom, setShowChangeRoom] = useState(false);
+    const [showChangeInstructor, setShowChangeInstructor] = useState(false);
+    const [undoingReschedule, setUndoingReschedule] = useState(false);
 
-    if (!user) return null;
+const isDepAdmin = user ? isDeptAdmin(user) : false;
+    const activeFacilityId = selectedFacilityId || (user ? String(user.facility.id) : '');
+    const timezone = user?.timezone ?? 'UTC';
+
+    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
+        isDepAdmin ? '/api/facilities' : null
+    );
+    const facilities = useMemo(() => facilitiesResp?.data ?? [], [facilitiesResp]);
 
     const { startDate, endDate } = useMemo(() => {
         const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
@@ -69,80 +101,143 @@ export default function Schedule() {
         return { startDate: start, endDate: end };
     }, []);
 
-    const { data: eventsResp, isLoading, mutate } = useSWR<
-        ServerResponseMany<FacilityProgramClassEvent>
-    >(
-        `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}${
-            class_id && !showAllClasses ? `&class_id=${class_id}` : ''
-        }`
+    const apiUrl = useMemo(() => {
+        if (!user) return null;
+        let url = `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`;
+        if (class_id && !showAllClasses) url += `&class_id=${class_id}`;
+        if (isDepAdmin && activeFacilityId) url += `&facility_id=${activeFacilityId}`;
+        return url;
+    }, [user, startDate, endDate, class_id, showAllClasses, isDepAdmin, activeFacilityId]);
+
+    const { data: eventsResp, isLoading, mutate } = useSWR<ServerResponseMany<FacilityProgramClassEvent>>(apiUrl);
+    const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
+        activeFacilityId ? `/api/rooms?facility_id=${activeFacilityId}` : '/api/rooms'
     );
 
-    const { data: roomsResp } = useSWR<ServerResponseMany<Room>>('/api/rooms');
-    const rooms = roomsResp?.data ?? [];
-
-    const events = eventsResp?.data ?? [];
+    const rooms = useMemo(() => roomsResp?.data ?? [], [roomsResp]);
+    const rawEvents = useMemo(() => eventsResp?.data ?? [], [eventsResp]);
 
     const formattedEvents = useMemo(() => {
-        return events.map((event) => ({
+        return rawEvents.map((event) => ({
             ...event,
-            start: toZonedTime(new Date(event.start), user.timezone),
-            end: toZonedTime(new Date(event.end), user.timezone)
+            start: toZonedTime(new Date(event.start), timezone),
+            end: toZonedTime(new Date(event.end), timezone)
         }));
-    }, [events, user.timezone]);
+    }, [rawEvents, timezone]);
 
-    const weekDates = useMemo(() => getWeekDates(currentWeek), [currentWeek]);
+    const availablePrograms = useMemo(() => {
+        const map = new Map<number, string>();
+        formattedEvents.forEach((e) => {
+            if (e.program_id && e.program_name) map.set(e.program_id, e.program_name);
+        });
+        return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+    }, [formattedEvents]);
 
-    const weekEvents = useMemo(() => {
-        return formattedEvents.filter((event) =>
-            weekDates.some((day) => isSameDay(event.start, day))
-        );
-    }, [formattedEvents, weekDates]);
+    const availableInstructors = useMemo(() => {
+        const set = new Set<string>();
+        formattedEvents.forEach((e) => {
+            if (e.instructor_name) set.add(e.instructor_name);
+        });
+        return Array.from(set).sort();
+    }, [formattedEvents]);
 
-    const goToPreviousWeek = () => {
-        const prev = new Date(currentWeek);
-        prev.setDate(prev.getDate() - 7);
-        setCurrentWeek(prev);
-    };
+    const filteredEvents = useMemo(() => {
+        return formattedEvents.filter((e) => {
+            if (selectedProgram !== 'all' && String(e.program_id) !== selectedProgram) return false;
+            if (selectedInstructor !== 'all' && e.instructor_name !== selectedInstructor) return false;
+            return true;
+        });
+    }, [formattedEvents, selectedProgram, selectedInstructor]);
 
-    const goToNextWeek = () => {
-        const next = new Date(currentWeek);
-        next.setDate(next.getDate() + 7);
-        setCurrentWeek(next);
-    };
+    const calendarEvents: CalendarEvent[] = useMemo(() => {
+        return filteredEvents.map((e) => ({
+            id: e.id,
+            title: e.title,
+            start: e.start,
+            end: e.end,
+            resource: e
+        }));
+    }, [filteredEvents]);
 
-    const goToToday = () => {
-        setCurrentWeek(new Date());
-    };
+    const selectedFacilityName = useMemo(() => {
+        if (!user) return '';
+        if (!isDepAdmin) return user.facility.name;
+        return facilities.find((f) => String(f.id) === activeFacilityId)?.name ?? user.facility.name;
+    }, [isDepAdmin, facilities, activeFacilityId, user]);
+
+    // Early return after all hooks
+    if (!user) return null;
 
     const canUpdateEvent = (): boolean => {
         if (!selectedEvent) return false;
         if (
             selectedEvent.class_status === SelectedClassStatus.Completed ||
             selectedEvent.class_status === SelectedClassStatus.Cancelled
-        ) {
+        )
             return false;
-        }
-        if (class_id && selectedEvent.class_id.toString() !== class_id) {
-            return false;
-        }
+        if (class_id && selectedEvent.class_id.toString() !== class_id) return false;
         return true;
+    };
+
+    const isEventToday = (event: FacilityProgramClassEvent | null) => {
+        if (!event) return false;
+        return new Date().toDateString() === new Date(event.start).toDateString();
+    };
+
+    const isPastEvent = (event: FacilityProgramClassEvent | null) => {
+        if (!event) return false;
+        return new Date() > new Date(event.end);
+    };
+
+    const eventStyleGetter = (event: CalendarEvent) => {
+        const e = event.resource;
+        let backgroundColor = '#556830';
+        let borderColor = '#203622';
+        if (e.is_cancelled) {
+            backgroundColor = '#9ca3af';
+            borderColor = '#6b7280';
+        }
+        return {
+            style: {
+                backgroundColor,
+                borderColor,
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderRadius: '4px',
+                opacity: e.is_cancelled ? 0.6 : 1,
+                color: 'white',
+                textDecoration: e.is_cancelled ? 'line-through' : 'none'
+            }
+        };
+    };
+
+    const handleSelectEvent = (event: CalendarEvent) => {
+        setSelectedEvent(event.resource);
+        setShowSheet(true);
     };
 
     const handleModalSuccess = () => {
         void mutate();
         setSelectedEvent(null);
+        setShowSheet(false);
     };
 
-    const weekLabel = useMemo(() => {
-        const start = weekDates[0];
-        const end = weekDates[6];
-        const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
-        const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
-        if (startMonth === endMonth) {
-            return `${startMonth} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`;
+    async function handleUndoReschedule() {
+        if (!selectedEvent) return;
+        setUndoingReschedule(true);
+        const resp = await API.delete(`program-classes/${selectedEvent.class_id}/events/${selectedEvent.override_id}`);
+        setUndoingReschedule(false);
+        if (resp.success) {
+            toast.success('Reschedule undone');
+            handleModalSuccess();
+        } else {
+            toast.error(resp.message || 'Failed to undo reschedule');
         }
-        return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}, ${end.getFullYear()}`;
-    }, [weekDates]);
+    }
+
+
+
+    const subtitle = isDepAdmin ? `Viewing: ${selectedFacilityName}` : 'Manage class schedules';
 
     if (isLoading) {
         return (
@@ -154,13 +249,18 @@ export default function Schedule() {
     }
 
     return (
-        <div className="space-y-6">
-            <PageHeader
-                title={class_id ? 'Class Schedule' : 'Facility Schedule'}
-                subtitle="View and manage scheduled classes"
-                actions={
-                    class_id ? (
-                        <label className="flex items-center gap-2 text-sm">
+        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-screen overflow-x-hidden">
+            <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-6">
+                {/* Page Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl text-[#203622] mb-2">
+                            {class_id ? 'Class Schedule' : 'Schedule'}
+                        </h1>
+                        <p className="text-gray-600">{subtitle}</p>
+                    </div>
+                    {class_id && (
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
                             <input
                                 type="checkbox"
                                 checked={showAllClasses}
@@ -169,231 +269,412 @@ export default function Schedule() {
                             />
                             Show all classes
                         </label>
-                    ) : undefined
-                }
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-3">
-                    <Card className="bg-card">
-                        <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
-                                        <ChevronLeft className="size-4" />
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={goToToday}>
-                                        Today
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={goToNextWeek}>
-                                        <ChevronRight className="size-4" />
-                                    </Button>
-                                </div>
-                                <h3 className="text-lg font-semibold text-foreground">{weekLabel}</h3>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <div className="min-w-[700px]">
-                                    <div className="grid grid-cols-8 border-b border-border">
-                                        <div className="p-2 text-xs text-muted-foreground" />
-                                        {weekDates.map((date, i) => {
-                                            const isToday = isSameDay(date, new Date());
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    className={cn(
-                                                        'p-2 text-center border-l border-border',
-                                                        isToday && 'bg-muted'
-                                                    )}
-                                                >
-                                                    <div className="text-xs text-muted-foreground">{SHORT_DAYS[i]}</div>
-                                                    <div className={cn(
-                                                        'text-sm font-medium',
-                                                        isToday ? 'text-foreground' : 'text-foreground'
-                                                    )}>
-                                                        {date.getDate()}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {HOURS.map((hour) => (
-                                        <div key={hour} className="grid grid-cols-8 border-b border-border min-h-[60px]">
-                                            <div className="p-1 text-xs text-muted-foreground text-right pr-2 pt-1">
-                                                {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
-                                            </div>
-                                            {weekDates.map((date, dayIdx) => {
-                                                const dayEvents = weekEvents.filter(
-                                                    (e) => isSameDay(e.start, date) && e.start.getHours() === hour
-                                                );
-                                                return (
-                                                    <div key={dayIdx} className="border-l border-border p-0.5 relative">
-                                                        {dayEvents.map((event) => (
-                                                            <button
-                                                                key={event.id}
-                                                                onClick={() => setSelectedEvent(event)}
-                                                                className={cn(
-                                                                    'w-full text-left text-xs p-1 rounded mb-0.5 truncate',
-                                                                    selectedEvent?.id === event.id
-                                                                        ? 'bg-[#203622] text-white'
-                                                                        : event.is_cancelled
-                                                                          ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                          : 'bg-[#556830]/10 text-foreground border border-[#556830]/20 hover:bg-[#556830]/20'
-                                                                )}
-                                                            >
-                                                                {event.title}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    )}
                 </div>
 
-                <div className="lg:col-span-1">
-                    <Card className="bg-card sticky top-6">
-                        <CardHeader>
-                            <CardTitle className="text-foreground text-lg">Event Details</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {selectedEvent ? (
-                                <div className="space-y-4">
-                                    <div>
-                                        <h3 className="font-semibold text-foreground text-base">
-                                            {selectedEvent.title}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            {selectedEvent.program_name}
-                                        </p>
-                                    </div>
+            {/* Filters — hidden in class-specific view */}
+            {!class_id && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        {isDepAdmin && (
+                            <div>
+                                <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                    Facility
+                                </label>
+                                <Select
+                                    value={activeFacilityId}
+                                    onValueChange={(val) => {
+                                        setSelectedFacilityId(val);
+                                        setSelectedProgram('all');
+                                        setSelectedInstructor('all');
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {facilities.map((f) => (
+                                            <SelectItem key={f.id} value={String(f.id)}>
+                                                {f.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
 
-                                    <StatusBadge status={selectedEvent.class_status} variant="class" />
+                        <div>
+                            <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                Program
+                            </label>
+                            <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Programs" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Programs</SelectItem>
+                                    {availablePrograms.map((p) => (
+                                        <SelectItem key={p.id} value={String(p.id)}>
+                                            {p.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="size-4 text-muted-foreground" />
-                                            <span>
-                                                {formatTime(selectedEvent.start)} - {formatTime(selectedEvent.end)}
-                                            </span>
+                        <div>
+                            <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                Instructor
+                            </label>
+                            <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Instructors" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Instructors</SelectItem>
+                                    {availableInstructors.map((i) => (
+                                        <SelectItem key={i} value={i}>
+                                            {i}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Calendar */}
+            <div
+                className="bg-white border border-gray-200 rounded-lg p-6 unlocked-calendar"
+                style={{ height: '700px' }}
+            >
+                <Calendar
+                    localizer={localizer}
+                    events={calendarEvents}
+                    startAccessor="start"
+                    endAccessor="end"
+                    view={currentView}
+                    onView={setCurrentView}
+                    date={currentDate}
+                    onNavigate={setCurrentDate}
+                    onSelectEvent={handleSelectEvent}
+                    eventPropGetter={eventStyleGetter}
+                    views={['month', 'week', 'day', 'agenda']}
+                    style={{ height: '100%' }}
+                    min={new Date(0, 0, 0, 0, 0, 0, 0)}
+                    max={new Date(0, 0, 0, 23, 59, 59, 999)}
+                    scrollToTime={SCROLL_TO_TIME}
+                />
+            </div>
+
+                {/* Event Detail Sheet */}
+                <Sheet open={showSheet} onOpenChange={setShowSheet}>
+                    <SheetContent className="w-[400px] sm:w-[500px] p-0">
+                        {selectedEvent && (
+                            <>
+                                <SheetHeader className="sr-only">
+                                    <SheetTitle>Class Instance Details</SheetTitle>
+                                    <SheetDescription>
+                                        View and manage this class instance
+                                    </SheetDescription>
+                                </SheetHeader>
+
+                            <div className="border-b border-gray-200 px-6 py-4">
+                                <h3
+                                    className={`text-[#203622] mb-2 ${
+                                        selectedEvent.is_cancelled ? 'line-through' : ''
+                                    }`}
+                                >
+                                    {selectedEvent.start.toLocaleDateString('en-US', {
+                                        weekday: 'long',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </h3>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {selectedEvent.is_cancelled && (
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-gray-100 text-gray-700 border-gray-300"
+                                        >
+                                            Cancelled
+                                        </Badge>
+                                    )}
+                                    {selectedEvent.class_status === SelectedClassStatus.Completed && (
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-green-50 text-[#556830] border-green-200"
+                                        >
+                                            Completed
+                                        </Badge>
+                                    )}
+                                    {!selectedEvent.is_cancelled &&
+                                        selectedEvent.class_status === SelectedClassStatus.Scheduled &&
+                                        isPastEvent(selectedEvent) && (
+                                            <Badge
+                                                variant="outline"
+                                                className="bg-amber-50 text-amber-700 border-amber-300"
+                                            >
+                                                Missing Attendance
+                                            </Badge>
+                                        )}
+                                    {!selectedEvent.is_cancelled &&
+                                        selectedEvent.class_status === SelectedClassStatus.Scheduled &&
+                                        !isPastEvent(selectedEvent) && (
+                                            <Badge
+                                                variant="outline"
+                                                className="bg-gray-50 text-gray-600 border-gray-200"
+                                            >
+                                                Scheduled
+                                            </Badge>
+                                        )}
+                                    {!selectedEvent.is_cancelled &&
+                                        selectedEvent.class_status === SelectedClassStatus.Active && (
+                                            <Badge
+                                                variant="outline"
+                                                className="bg-green-50 text-[#556830] border-green-200"
+                                            >
+                                                Active
+                                            </Badge>
+                                        )}
+                                    {isEventToday(selectedEvent) && (
+                                        <span className="text-sm text-blue-600">• Today's class</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="px-6 py-6 space-y-6">
+                                <div>
+                                    <h4 className="text-sm text-gray-700 mb-3">Class Details</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-start gap-3">
+                                            <CalendarIcon className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-gray-600 mb-0.5">Class</div>
+                                                <div className="text-[#203622]">{selectedEvent.title}</div>
+                                                <div className="text-sm text-gray-500">
+                                                    {selectedEvent.program_name}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="size-4 text-muted-foreground" />
-                                            <span>
-                                                {selectedEvent.start.toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
-                                            </span>
+                                        <div className="flex items-start gap-3">
+                                            <Clock className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-gray-600 mb-0.5">Time</div>
+                                                <div
+                                                    className={`text-[#203622] ${
+                                                        selectedEvent.is_cancelled ? 'line-through' : ''
+                                                    }`}
+                                                >
+                                                    {selectedEvent.start.toLocaleTimeString('en-US', {
+                                                        hour: 'numeric',
+                                                        minute: '2-digit'
+                                                    })}{' '}
+                                                    -{' '}
+                                                    {selectedEvent.end.toLocaleTimeString('en-US', {
+                                                        hour: 'numeric',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                         {selectedEvent.room && (
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="size-4 text-muted-foreground" />
-                                                <span>{selectedEvent.room}</span>
+                                            <div className="flex items-start gap-3">
+                                                <MapPin className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-gray-600 mb-0.5">Room</div>
+                                                    <div
+                                                        className={`text-[#203622] ${
+                                                            selectedEvent.is_cancelled ? 'line-through' : ''
+                                                        }`}
+                                                    >
+                                                        {selectedEvent.room}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                         {selectedEvent.instructor_name && (
-                                            <div className="flex items-center gap-2">
-                                                <User className="size-4 text-muted-foreground" />
-                                                <span>{selectedEvent.instructor_name}</span>
-                                            </div>
-                                        )}
-                                        {selectedEvent.enrolled_users && (
-                                            <div className="flex items-center gap-2">
-                                                <Users className="size-4 text-muted-foreground" />
-                                                <span>{selectedEvent.enrolled_users} enrolled</span>
-                                            </div>
-                                        )}
-                                        {selectedEvent.credit_types && (
-                                            <div className="text-xs text-muted-foreground pt-2 border-t">
-                                                Credits: {selectedEvent.credit_types}
+                                            <div className="flex items-start gap-3">
+                                                <Users className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-gray-600 mb-0.5">
+                                                        Instructor
+                                                    </div>
+                                                    <div className="text-[#203622]">
+                                                        {selectedEvent.instructor_name}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
-
-                                    {selectedEvent.is_cancelled && (
-                                        <div className="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700">
-                                            This session has been cancelled.
-                                        </div>
-                                    )}
-
-                                    {class_id && selectedEvent.class_id.toString() !== class_id && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-700">
-                                            This event belongs to another class and cannot be edited here.
-                                        </div>
-                                    )}
-
-                                    {canUpdateEvent() && (
-                                        <div className="space-y-2 pt-2 border-t">
-                                            {selectedEvent.is_cancelled ? (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="w-full text-[#556830] border-[#556830]"
-                                                    onClick={() => setShowRestore(true)}
-                                                >
-                                                    Restore Event
-                                                </Button>
-                                            ) : (
-                                                <>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="w-full text-[#556830] border-[#556830]"
-                                                        onClick={() => setShowReschedule(true)}
-                                                    >
-                                                        Edit Event
-                                                    </Button>
-                                                    {!selectedEvent.is_override && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="w-full text-[#556830] border-[#556830]"
-                                                            onClick={() => setShowRescheduleSeries(true)}
-                                                        >
-                                                            Edit Series
-                                                        </Button>
-                                                    )}
-                                                    {selectedEvent.is_override && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="w-full text-[#556830] border-[#556830]"
-                                                            onClick={() => setShowRestore(true)}
-                                                        >
-                                                            Restore Event
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="w-full text-red-600 border-red-300"
-                                                        onClick={() => setShowCancel(true)}
-                                                    >
-                                                        Cancel Event
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    Select an event from the calendar to view details.
-                                </p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+
+                                {(() => {
+                                    const past = isPastEvent(selectedEvent);
+                                    const showTakeAttendance =
+                                        past &&
+                                        !selectedEvent.is_cancelled &&
+                                        selectedEvent.class_status !== SelectedClassStatus.Completed;
+                                    const showFutureActions = !past && canUpdateEvent();
+                                    const showStatus = selectedEvent.is_cancelled;
+                                    const isRescheduled = selectedEvent.is_override && !selectedEvent.is_cancelled && !!selectedEvent.linked_override_event && showFutureActions;
+
+                                    if (!showTakeAttendance && !showFutureActions && !showStatus && !isRescheduled) return null;
+
+                                    return (
+                                        <>
+                                            {isRescheduled && (
+                                                <div className="pt-6 border-t border-gray-200">
+                                                    <h4 className="text-sm text-gray-700 mb-3">Status</h4>
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-start gap-2">
+                                                            <CalendarClock className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                                            <div className="text-sm text-gray-900">Rescheduled Class</div>
+                                                        </div>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full"
+                                                            onClick={() => void handleUndoReschedule()}
+                                                            disabled={undoingReschedule}
+                                                        >
+                                                            {undoingReschedule ? 'Undoing...' : 'Undo Reschedule'}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {showStatus && (
+                                                <div className="pt-6 border-t border-gray-200">
+                                                    <h4 className="text-sm text-gray-700 mb-3">Status</h4>
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-start gap-2">
+                                                            <CalendarOff className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm text-gray-900 mb-1">Class Cancelled</div>
+                                                                {selectedEvent.reason && (
+                                                                    <p className="text-sm text-gray-600">{selectedEvent.reason}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {showFutureActions && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full"
+                                                                onClick={() => {
+                                                                    setShowSheet(false);
+                                                                    setShowRestore(true);
+                                                                }}
+                                                            >
+                                                                {selectedEvent.is_override ? 'Undo Cancellation' : 'Restore Future Sessions'}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {(showTakeAttendance || (showFutureActions && !selectedEvent.is_cancelled && !isRescheduled)) && (
+                                                <div className="pt-6 border-t border-gray-200">
+                                                    <h4 className="text-sm text-gray-700 mb-3">Actions</h4>
+                                                    <div className="space-y-2">
+                                                        {showTakeAttendance && (
+                                                            <Button
+                                                                className="w-full justify-start bg-[#556830] hover:bg-[#203622] text-white"
+                                                                onClick={() => {
+                                                                    const d = selectedEvent.start;
+                                                                    const date = [
+                                                                        d.getFullYear(),
+                                                                        String(d.getMonth() + 1).padStart(2, '0'),
+                                                                        String(d.getDate()).padStart(2, '0')
+                                                                    ].join('-');
+                                                                    setShowSheet(false);
+                                                                    navigate(
+                                                                        `/program-classes/${selectedEvent.class_id}/events/${selectedEvent.id}/attendance/${date}`
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <CircleCheck className="size-4 mr-2" />
+                                                                Take Attendance
+                                                            </Button>
+                                                        )}
+                                                        {showFutureActions && !selectedEvent.is_cancelled && !isRescheduled && (
+                                                            <>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                                                    onClick={() => {
+                                                                        setShowSheet(false);
+                                                                        setShowReschedule(true);
+                                                                    }}
+                                                                >
+                                                                    <CalendarClock className="size-4 mr-2" />
+                                                                    Reschedule This Class
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="w-full justify-start border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                                                                    onClick={() => {
+                                                                        setShowSheet(false);
+                                                                        setShowCancel(true);
+                                                                    }}
+                                                                >
+                                                                    <CalendarOff className="size-4 mr-2" />
+                                                                    Cancel This Class
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                                                    onClick={() => {
+                                                                        setShowSheet(false);
+                                                                        setShowChangeInstructor(true);
+                                                                    }}
+                                                                >
+                                                                    <Users className="size-4 mr-2" />
+                                                                    Change Instructor
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                                                    onClick={() => {
+                                                                        setShowSheet(false);
+                                                                        setShowChangeRoom(true);
+                                                                    }}
+                                                                >
+                                                                    <MapPin className="size-4 mr-2" />
+                                                                    Change Room
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+
+                                {!selectedEvent.is_cancelled && (
+                                    <div className="pt-2">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => {
+                                                setShowSheet(false);
+                                                navigate(`/program-classes/${selectedEvent.class_id}/detail`);
+                                            }}
+                                        >
+                                            View Full Class Details →
+                                        </Button>
+                                    </div>
+                                )}
+
+                            </div>
+                            </>
+                        )}
+                    </SheetContent>
+                </Sheet>
 
             {selectedEvent && (
                 <>
@@ -406,6 +687,19 @@ export default function Schedule() {
                     <RescheduleEventModal
                         open={showReschedule}
                         onOpenChange={setShowReschedule}
+                        event={selectedEvent}
+                        onSingleSession={() => {
+                            setShowReschedule(false);
+                            setShowRescheduleSingle(true);
+                        }}
+                        onSeriesReschedule={() => {
+                            setShowReschedule(false);
+                            setShowRescheduleSeries(true);
+                        }}
+                    />
+                    <RescheduleSessionModal
+                        open={showRescheduleSingle}
+                        onOpenChange={setShowRescheduleSingle}
                         event={selectedEvent}
                         rooms={rooms}
                         onSuccess={handleModalSuccess}
@@ -423,8 +717,23 @@ export default function Schedule() {
                         event={selectedEvent}
                         onSuccess={handleModalSuccess}
                     />
+                    <ChangeRoomModal
+                        open={showChangeRoom}
+                        onOpenChange={setShowChangeRoom}
+                        event={selectedEvent}
+                        rooms={rooms}
+                        onSuccess={handleModalSuccess}
+                    />
+                    <ChangeInstructorModal
+                        open={showChangeInstructor}
+                        onOpenChange={setShowChangeInstructor}
+                        event={selectedEvent}
+                        facilityId={activeFacilityId}
+                        onSuccess={handleModalSuccess}
+                    />
                 </>
             )}
+        </div>
         </div>
     );
 }

@@ -11,6 +11,7 @@ import {
 } from '@/types';
 import {
     getClassSchedule,
+    getInstructorName,
     isClassToday,
     getStatusColor,
     formatTime12h
@@ -166,7 +167,7 @@ export default function ClassesPage() {
                 (cls) =>
                     cls.name.toLowerCase().includes(q) ||
                     cls.program?.name?.toLowerCase().includes(q) ||
-                    cls.instructor_name.toLowerCase().includes(q)
+                    getInstructorName(cls.events).toLowerCase().includes(q)
             );
         }
 
@@ -195,7 +196,7 @@ export default function ClassesPage() {
                     cls.status === SelectedClassStatus.Scheduled
             );
         } else if (statusFilter !== 'all') {
-            result = result.filter((cls) => cls.status === statusFilter);
+            result = result.filter((cls) => cls.status === (statusFilter as SelectedClassStatus));
         }
 
         return result;
@@ -672,7 +673,7 @@ function ClassRow({
             </td>
             <td className="px-6 py-4">
                 <div className="text-sm text-gray-700">
-                    {cls.instructor_name}
+                    {getInstructorName(cls.events)}
                 </div>
             </td>
             <td className="px-6 py-4">

@@ -320,10 +320,11 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 				if class.Facility != nil {
 					facilityName = class.Facility.Name
 				}
+				_, instructorName := models.GetInstructorFromEvents(class.Events)
 				items = append(items, models.TodaysScheduleItem{
 					ClassID:        class.ID,
 					ClassName:      class.Name,
-					InstructorName: class.InstructorName,
+					InstructorName: instructorName,
 					FacilityID:     class.FacilityID,
 					FacilityName:   facilityName,
 					EventID:        inst.EventID,
