@@ -1,5 +1,6 @@
 import { Video } from '@/types/content';
 import { Class } from '@/types/program';
+import { ProgramClassEvent } from '@/types/events';
 import { RRule, Weekday } from 'rrule';
 
 const MONTH_NAMES = [
@@ -46,6 +47,39 @@ export function formatDateTime(dateStr: string): string {
         hour12: true
     });
     return `${date} - ${time}`;
+}
+
+export function formatRoomConflictRange(
+    startISO: string,
+    endISO: string,
+    timeZone: string
+): string {
+    const start = new Date(startISO);
+    const end = new Date(endISO);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return `${startISO} - ${endISO}`;
+    }
+
+    const dateFmt = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    const timeFmt = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    const startDate = dateFmt.format(start);
+    const endDate = dateFmt.format(end);
+    const startTime = timeFmt.format(start);
+    const endTime = timeFmt.format(end);
+
+    if (startDate === endDate) return `${startDate} ${startTime} - ${endTime}`;
+    return `${startDate} ${startTime} - ${endDate} ${endTime}`;
 }
 
 export function formatLastActive(dateStr?: string | null): string {
@@ -131,6 +165,22 @@ export interface ClassScheduleInfo {
     startTime: string;
     endTime: string;
     room: string;
+}
+
+export function getInstructorName(events: ProgramClassEvent[]): string {
+    if (!events?.length) return '';
+    const latest = events.reduce((max, e) => (e.id > max.id ? e : max), events[0]);
+    const ref = latest.instructor_ref;
+    if (ref) return `${ref.name_first} ${ref.name_last}`.trim();
+    return '';
+}
+
+export function getInstructorId(events: ProgramClassEvent[]): number | null {
+    if (!events?.length) return null;
+    const latest = events.reduce((max, e) => (e.id > max.id ? e : max), events[0]);
+    if (typeof latest.instructor_id === 'number') return latest.instructor_id;
+    if (latest.instructor_ref?.id) return latest.instructor_ref.id;
+    return null;
 }
 
 export function getClassSchedule(cls: Class): ClassScheduleInfo {

@@ -57,13 +57,9 @@ function generateCalendarGrid(
             if (override.is_cancelled) {
                 try {
                     const rrule = override.override_rrule;
-                    const dtMatch = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(
-                        rrule
-                    );
+                    const dtMatch = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(rrule);
                     if (dtMatch) {
-                        cancelledDates.add(
-                            `${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}`
-                        );
+                        cancelledDates.add(`${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}`);
                     }
                 } catch {
                     /* skip invalid override */
@@ -127,7 +123,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
     const { data: instancesResp, mutate } = useSWR<
         ServerResponseMany<ClassEventInstance>
     >(
-        `/api/program-classes/${cls.id}/events?month=${String(mm).padStart(2, '0')}&year=${yyyy}`
+        `/api/program-classes/${cls.id}/events?month=${String(mm).padStart(2, '0')}&year=${yyyy}&per_page=100`
     );
 
     const instancesByDate = useMemo(() => {
@@ -161,6 +157,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
             rescheduleMaps.fromTo,
             rescheduleMaps.toFrom,
             rescheduleMaps.appliedFutureDates,
+            rescheduleMaps.intermediateDates,
             cancellationReasons
         );
     }, [instancesResp, cls.enrolled, rescheduleMaps, cancellationReasons]);
@@ -269,6 +266,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
             isCancelled: day.isCancelled,
             isRescheduledFrom: false,
             isRescheduledTo: false,
+            isCancelledReschedule: false,
             attendedCount: 0,
             totalEnrolled: cls.enrolled
         });
@@ -355,6 +353,12 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                     {week.map((day) => {
                                         const showAsClass = day.isClassDay && !day.isCancelled;
                                         const isClickable = day.isClassDay && day.isCurrentMonth;
+                                        const calSession = day.isCancelled && day.isCurrentMonth
+                                            ? sessionsByDate.get(day.dateStr)
+                                            : undefined;
+                                        const movedToLabel = calSession?.isRescheduledFrom && calSession.rescheduledDate
+                                            ? `Moved to ${new Date(calSession.rescheduledDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                                            : null;
 
                                         return (
                                             <div
@@ -387,7 +391,9 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                                             <div className="text-xs bg-gray-200 text-gray-500 rounded px-1.5 py-0.5 inline-block line-through">
                                                                 Class
                                                             </div>
-                                                            <div className="text-xs text-gray-500 mt-1">Cancelled</div>
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                {movedToLabel ?? 'Cancelled'}
+                                                            </div>
                                                         </div>
                                                     )}
 
@@ -439,6 +445,8 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                 session={selectedSession}
                 onClose={() => setSelectedSession(null)}
                 className={cls.name}
+                facilityId={String(cls.facility_id)}
+                classEvents={cls.events ?? []}
                 classTime={
                     selectedSession?.instance.class_time ?? classTime
                 }

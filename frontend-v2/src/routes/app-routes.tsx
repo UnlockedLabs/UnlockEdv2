@@ -1,6 +1,12 @@
 import { declareAuthenticatedRoutes } from '@/auth/RouteGuard';
-import { AdminRoles, AllRoles, checkExistingFlow, checkRole, checkDefaultFacility } from '@/auth/useAuth';
-import { UserRole } from '@/types';
+import {
+    AdminRoles,
+    AllRoles,
+    checkExistingFlow,
+    checkRole,
+    checkDefaultFacility
+} from '@/auth/useAuth';
+import { UserRole } from '@/types/user';
 import { getProviderPlatforms } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
 import Login from '@/pages/auth/Login';
@@ -69,7 +75,7 @@ const adminRoutes = declareAuthenticatedRoutes(
         {
             path: 'schedule',
             element: <Schedule />,
-            handle: { title: 'Facility Schedule' }
+            handle: { title: 'Schedule' }
         }
     ],
     AdminRoles

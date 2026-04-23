@@ -39,11 +39,11 @@ func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.Overrides.RoomRef").Preload("Events.RoomRef").
-		Preload("Enrollments", func(tx *gorm.DB) *gorm.DB {
-			return tx.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
-		}).
-		Preload("Program").Preload("Instructor").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.Overrides.Instructor").Preload("Events.Overrides.RoomRef").Preload("Events.RoomRef").
+		Preload("Events.Instructor").Preload("Enrollments", func(tx *gorm.DB) *gorm.DB {
+		return tx.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+	}).
+		Preload("Program").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -171,7 +171,6 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
-	originalInstructorID := existing.InstructorID
 	existingID := existing.ID
 
 	var needsRoomUpdate bool
@@ -204,18 +203,13 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	models.UpdateStruct(existing, content)
 	existing.ID = existingID
 
-	instructorIDChanged := false
-	if originalInstructorID == nil && content.InstructorID != nil {
-		instructorIDChanged = true
-	} else if originalInstructorID != nil && content.InstructorID == nil {
-		instructorIDChanged = true
-	} else if originalInstructorID != nil && content.InstructorID != nil && *originalInstructorID != *content.InstructorID {
-		instructorIDChanged = true
-	}
-
-	if instructorIDChanged {
-		existing.InstructorID = content.InstructorID
-		existing.InstructorName = content.InstructorName
+	if content.UpdateInstructor {
+		if err := trans.Model(&models.ProgramClassEvent{}).
+			Where("class_id = ?", existing.ID).
+			Update("instructor_id", content.InstructorID).Error; err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "program class event instructor")
+		}
 	}
 
 	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Model(&models.ProgramClass{}).Where("id = ?", existing.ID).Updates(existing).Error; err != nil {
