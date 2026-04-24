@@ -43,6 +43,7 @@ export default function AuthenticatedLayout() {
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
     const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
+    const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
     const isContentViewer = location.pathname.startsWith('/viewer/');
     const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
     const isFullBleed =
@@ -99,7 +100,7 @@ export default function AuthenticatedLayout() {
 
     const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const contentClass = `flex-1 ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
     return (
         <div className={rootClass}>

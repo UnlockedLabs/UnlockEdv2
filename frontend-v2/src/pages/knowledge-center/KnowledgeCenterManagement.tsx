@@ -70,12 +70,12 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(library.id, 'library', library.is_favorited);
+                                handlers.onToggleFeatured(library.id, 'library', !!library.is_featured);
                             }}
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
                             <Star
-                                className={`size-4 ${library.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${library.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -93,12 +93,12 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     className="size-12 rounded flex-shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
+                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
                         {library.title}
                     </h3>
                 </div>
             </div>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                 {library.description}
             </p>
             <div
@@ -151,12 +151,12 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(video.id, 'video', video.is_favorited);
+                                handlers.onToggleFeatured(video.id, 'video', !!video.is_featured);
                             }}
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
                             <Star
-                                className={`size-4 ${video.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${video.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -179,7 +179,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
+                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
                         {video.title}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -188,7 +188,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 </div>
             </div>
             {available ? (
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                     {video.description}
                 </p>
             ) : (
@@ -256,12 +256,12 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(link.id, 'link', link.is_favorited);
+                                handlers.onToggleFeatured(link.id, 'link', !!link.is_featured);
                             }}
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
                             <Star
-                                className={`size-4 ${link.is_favorited ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${link.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -273,12 +273,12 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
+                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
                     {link.title}
                 </h3>
             </div>
             <p className="text-sm text-[#556830] mb-2 truncate">{link.url}</p>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                 {link.description}
             </p>
             <div
@@ -344,7 +344,10 @@ export default function KnowledgeCenterManagement() {
     }, [currentTab]);
 
     const visibilityParam = useMemo(() => {
-        if (visibilityFilter === 'not-featured')
+        if (
+            visibilityFilter === 'featured' ||
+            visibilityFilter === 'not-featured'
+        )
             return '&visibility=all';
         if (visibilityFilter === 'all') return '&visibility=all';
         return `&visibility=${visibilityFilter}`;
@@ -383,27 +386,38 @@ export default function KnowledgeCenterManagement() {
 
     const libraries = useMemo(() => {
         const items = libData?.data ?? [];
+        if (visibilityFilter === 'featured') {
+            return items.filter((lib) => lib.is_featured);
+        }
         if (visibilityFilter === 'not-featured') {
-            return items.filter((lib) => !lib.is_favorited);
+            return items.filter((lib) => !lib.is_featured);
         }
         return items;
     }, [libData?.data, visibilityFilter]);
 
     const libTotal = useMemo(() => {
-        if (visibilityFilter === 'not-featured') return libraries.length;
+        if (
+            visibilityFilter === 'featured' ||
+            visibilityFilter === 'not-featured'
+        )
+            return libraries.length;
         return libData?.meta?.total ?? 0;
     }, [libData?.meta?.total, visibilityFilter, libraries.length]);
 
     const videos = useMemo(() => {
         const items = vidData?.data ?? [];
+        if (visibilityFilter === 'featured') {
+            return items.filter((vid) => vid.is_featured);
+        }
         if (visibilityFilter === 'not-featured') {
-            return items.filter((vid) => !vid.is_favorited);
+            return items.filter((vid) => !vid.is_featured);
         }
         return items;
     }, [vidData?.data, visibilityFilter]);
 
     const vidTotal = useMemo(() => {
-        if (visibilityFilter === 'not-featured') return videos.length;
+        if (visibilityFilter === 'featured' || visibilityFilter === 'not-featured')
+            return videos.length;
         return vidData?.meta?.total ?? 0;
     }, [vidData?.meta?.total, visibilityFilter, videos.length]);
 
@@ -422,11 +436,11 @@ export default function KnowledgeCenterManagement() {
                 );
             }
             if (visibilityFilter === 'featured') {
-                return items.filter((link) => link.is_favorited);
+                return items.filter((link) => link.is_featured);
             }
         }
         if (visibilityFilter === 'not-featured') {
-            return items.filter((link) => !link.is_favorited);
+            return items.filter((link) => !link.is_featured);
         }
         return items;
     }, [linkData?.data?.helpful_links, visibilityFilter]);
@@ -483,7 +497,7 @@ export default function KnowledgeCenterManagement() {
         if (!guardToggle(`featured-${type}-${id}`)) return;
         const endpoints: Record<string, string> = {
             library: `libraries/${id}/favorite`,
-            video: `videos/${id}/favorite`,
+            video: `videos/${id}/feature`,
             link: `helpful-links/favorite/${id}`
         };
         const typeLabel: Record<string, string> = {

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Pagination } from '@/components/shared/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Library,
     Video as VideoType,
@@ -109,7 +110,7 @@ export default function ResidentKnowledgeCenter() {
             type: 'library' as const,
             title: lib.title,
             description: lib.description ?? '',
-            featured: lib.is_favorited,
+            featured: !!lib.is_featured,
             imageUrl: lib.thumbnail_url,
             url: lib.url,
             categories: lib.tags ?? []
@@ -125,7 +126,7 @@ export default function ResidentKnowledgeCenter() {
                 type: 'video' as const,
                 title: vid.title,
                 description: vid.description,
-                featured: vid.is_favorited,
+                featured: !!vid.is_featured,
                 thumbnailUrl: `/api/photos/${vid.external_id}.jpg`,
                 author: vid.channel_title,
                 duration: vid.duration
@@ -138,7 +139,7 @@ export default function ResidentKnowledgeCenter() {
             type: 'link' as const,
             title: link.title,
             description: link.description,
-            featured: link.is_favorited,
+            featured: !!link.is_featured,
             url: link.url
         }));
 
@@ -265,12 +266,17 @@ export default function ResidentKnowledgeCenter() {
                         </div>
                     )}
                     <div className="flex-1 min-w-0 pr-8">
-                        <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-2 min-h-[3rem]">
+                        <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
                             {item.title}
                         </h3>
                         {item.author && (
                             <p className="text-sm text-gray-500">
                                 {item.author}
+                            </p>
+                        )}
+                        {!item.author && (
+                            <p className="text-sm text-gray-500 invisible">
+                                placeholder
                             </p>
                         )}
                     </div>
@@ -280,13 +286,11 @@ export default function ResidentKnowledgeCenter() {
                     {item.description}
                 </p>
 
-                <div className="flex-1" />
-
                 {item.type === 'library' && item.categories && item.categories.length > 0 && (
-                    <div className="pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+                    <div className="mt-auto pt-3 border-t border-gray-100 flex items-center gap-2 overflow-hidden min-h-[2.5rem]">
                         <Badge
                             variant="secondary"
-                            className="bg-[#E2E7EA] text-gray-700 hover:bg-[#E2E7EA] text-xs"
+                            className="bg-[#E2E7EA] text-gray-700 hover:bg-[#E2E7EA] text-xs shrink-0 max-w-48 truncate"
                         >
                             {item.categories[0]}
                         </Badge>
@@ -296,7 +300,7 @@ export default function ResidentKnowledgeCenter() {
                                     <TooltipTrigger asChild>
                                         <Badge
                                             variant="secondary"
-                                            className="bg-[#556830]/10 text-[#556830] hover:bg-[#556830]/10 text-xs cursor-help"
+                                            className="bg-[#556830]/10 text-[#556830] hover:bg-[#556830]/10 text-xs cursor-help shrink-0"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             +{item.categories.length - 1} more
@@ -305,7 +309,7 @@ export default function ResidentKnowledgeCenter() {
                                     <TooltipContent side="top" className="bg-gray-900 text-white max-w-xs">
                                         <div className="space-y-1">
                                             {item.categories.slice(1).map((cat, idx) => (
-                                                <p key={idx} className="text-sm">{cat}</p>
+                                                <p key={idx} className="text-sm">• {cat}</p>
                                             ))}
                                         </div>
                                     </TooltipContent>
@@ -316,25 +320,35 @@ export default function ResidentKnowledgeCenter() {
                 )}
 
                 {item.type === 'link' && item.url && (
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="mt-auto pt-3 border-t border-gray-100 min-h-[2.5rem] flex items-center">
                         <p className="text-sm text-[#556830] truncate">
                             {item.url}
                         </p>
                     </div>
+                )}
+
+                {item.type === 'video' && (
+                    <div className="mt-auto pt-3 border-t border-gray-100 min-h-[2.5rem]" />
                 )}
             </div>
         );
     };
 
     return (
-        <div className="-mx-6 -mt-4 -mb-4 min-h-[calc(100vh-4rem)] bg-[#E2E7EA]" id="knowledge-center-landing">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="mb-8">
-                <h1 className="text-[#203622] mb-2">Knowledge Center</h1>
-                <p className="text-gray-600">
-                    Explore libraries, videos, and helpful resources.
-                </p>
-            </div>
+        <div
+            className="h-full min-h-0 bg-[#E2E7EA]"
+            id="knowledge-center-landing"
+        >
+            <ScrollArea className="h-full" type="always">
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    <div className="mb-8">
+                    <h1 className="text-[#203622] mb-2">
+                        Knowledge Center
+                    </h1>
+                    <p className="text-gray-600">
+                        Explore libraries, videos, and helpful resources.
+                    </p>
+                </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6" id="knowledge-center-search">
                 <div className="relative">
@@ -469,7 +483,8 @@ export default function ResidentKnowledgeCenter() {
                     />
                 </>
             )}
-        </div>
+                </div>
+            </ScrollArea>
         </div>
     );
 }

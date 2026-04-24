@@ -9,6 +9,7 @@ import (
 type HelpfulLinkResp struct {
 	models.HelpfulLink
 	IsFavorited bool `json:"is_favorited"`
+	IsFeatured  bool `json:"is_featured"`
 }
 
 func (db *DB) GetHelpfulLinks(args *models.QueryContext, onlyVisible bool) ([]HelpfulLinkResp, error) {
@@ -18,7 +19,11 @@ func (db *DB) GetHelpfulLinks(args *models.QueryContext, onlyVisible bool) ([]He
 		Select("1").
 		Where(`f.content_id = helpful_links.id AND f.user_id = ?
 			AND f.open_content_provider_id = helpful_links.open_content_provider_id`, args.UserID)
-	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited", subQuery)
+	featuredSubQuery := db.Table("open_content_favorites ff").
+		Select("1").
+		Where(`ff.content_id = helpful_links.id AND ff.facility_id = ?
+			AND ff.open_content_provider_id = helpful_links.open_content_provider_id`, args.FacilityID)
+	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited, EXISTS(?) as is_featured", subQuery, featuredSubQuery)
 
 	if onlyVisible {
 		tx = tx.Where("visibility_status = ?", true)
