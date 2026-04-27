@@ -3,6 +3,7 @@ import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SearchInputProps {
+    id?: string;
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
@@ -10,13 +11,14 @@ interface SearchInputProps {
 }
 
 export function SearchInput({
+    id,
     value,
     onChange,
     placeholder = 'Search...',
     className
 }: SearchInputProps) {
     return (
-        <div className={cn('relative', className)}>
+        <div id={id} className={cn('relative', className)}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
                 placeholder={placeholder}

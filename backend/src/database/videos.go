@@ -67,6 +67,7 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 type VideoResponse struct {
 	models.Video
 	IsFavorited bool `json:"is_favorited"`
+	IsFeatured  bool `json:"is_featured"`
 }
 
 func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]VideoResponse, error) {
@@ -82,7 +83,14 @@ func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]Vide
 		WHERE f.content_id = videos.id
 		  AND f.open_content_provider_id = videos.open_content_provider_id
 		  AND f.user_id = ?
-	) AS is_favorited`, args.UserID).
+	) AS is_favorited,
+	EXISTS (
+		SELECT 1
+		FROM open_content_favorites ff
+		WHERE ff.content_id = videos.id
+		  AND ff.open_content_provider_id = videos.open_content_provider_id
+		  AND ff.facility_id = ?
+	) AS is_featured`, args.UserID, args.FacilityID).
 		Joins(`left join facility_visibility_statuses fvs
         on fvs.open_content_provider_id = videos.open_content_provider_id
         and fvs.content_id = videos.id
