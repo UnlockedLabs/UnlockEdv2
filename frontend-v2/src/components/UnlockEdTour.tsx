@@ -84,10 +84,22 @@ export default function UnlockEdTour() {
                         navigate('/home');
                         return;
                     case '#library-viewer-sub-page':
-                        navigate('/knowledge-center/libraries');
+                        setTourState({
+                            stepIndex:
+                                targetToStepIndexMap[
+                                    '#knowledge-center-enter-library'
+                                ],
+                            target: '#knowledge-center-enter-library'
+                        });
+                        navigate('/knowledge-center');
                         return;
                     case '#top-content':
-                        navigate('/viewer/libraries/1');
+                        setTourState({
+                            stepIndex:
+                                targetToStepIndexMap['#navigate-homepage'],
+                            target: '#navigate-homepage'
+                        });
+                        navigate(-1);
                         return;
                     default:
                         setTourState({

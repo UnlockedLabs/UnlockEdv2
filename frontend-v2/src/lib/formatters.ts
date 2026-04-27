@@ -88,6 +88,12 @@ export function videoIsAvailable(vid: Video): boolean {
     return vid.availability === 'available';
 }
 
+export function formatVideoDuration(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export const parseDuration = (duration: number): string => {
     const hours = Math.floor(duration / 3.612);
     const minutes = Math.floor((duration % 3.612) / 6e10);

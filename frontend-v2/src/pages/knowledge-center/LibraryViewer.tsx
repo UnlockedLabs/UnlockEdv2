@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Star, StarOff, ChevronLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import {
     Library,
     ServerResponseOne,
@@ -9,13 +9,16 @@ import {
 } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
 import { useToast } from '@/contexts/ToastContext';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { FormModal } from '@/components/shared/FormModal';
-import { SearchInput } from '@/components/shared/SearchInput';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import API from '@/api/api';
+import { useTourContext } from '@/contexts/TourContext';
+import { targetToStepIndexMap } from '@/components/UnlockEdTour';
 
 interface UrlNavState {
     url?: string;
@@ -32,24 +35,24 @@ export default function LibraryViewer() {
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { toaster } = useToast();
+    const { tourState, setTourState } = useTourContext();
 
     const [src, setSrc] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [iframeLoading, setIframeLoading] = useState(false);
     const [iframeError, setIframeError] = useState(false);
-    const [bookmarked, setBookmarked] = useState(false);
     const [providerID, setProviderID] = useState<number>();
     const [libraryTitle, setLibraryTitle] = useState('');
     const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [viewerRefreshKey, setViewerRefreshKey] = useState(0);
-
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const loadingTimeoutRef = useRef<number | null>(null);
     const bookmarkForm = useForm<BookmarkFormData>();
+    const isAdmin = user ? isAdministrator(user) : false;
+    const [libraryData, setLibraryData] = useState<Library | null>(null);
 
-    const forceViewerRefresh = () =>
-        setViewerRefreshKey((key) => key + 1);
+    const backPath = isAdmin
+        ? '/knowledge-center-management'
+        : '/knowledge-center';
 
     const handleIframeLoad = () => {
         setIframeError(false);
@@ -87,6 +90,7 @@ export default function LibraryViewer() {
                 if (resp.success) {
                     setLibraryTitle(resp.data.title);
                     setProviderID(resp.data.open_content_provider_id);
+                    setLibraryData(resp.data);
                 }
                 const response = await fetch(
                     `/api/proxy/libraries/${libraryId}/`
@@ -116,45 +120,23 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId, url, viewerRefreshKey]);
+    }, [libraryId, url]);
 
-    const toggleBookmark = () => {
-        if (!src) {
-            toaster('Please wait for the library to load', ToastState.error);
-            return;
-        }
-        if (bookmarked) {
-            void handleUnbookmark();
-        } else {
-            setBookmarkModalOpen(true);
-        }
-    };
-
-    const handleUnbookmark = async () => {
-        if (!src) {
-            toaster('Please wait for the library to load', ToastState.error);
-            return;
-        }
-        let relativeUrl = src;
-        if (src.startsWith('http://') || src.startsWith('https://')) {
-            relativeUrl = new URL(src).pathname;
-        } else if (!src.startsWith('/')) {
-            relativeUrl = '/' + src;
-        }
-        const response = await API.put(
-            `open-content/${libraryId}/bookmark`,
-            {
-                open_content_provider_id: providerID,
-                content_url: relativeUrl
+    useEffect(() => {
+        if (tourState.tourActive) {
+            if (tourState.target === '#top-content') {
+                setTourState({
+                    stepIndex: targetToStepIndexMap['#library-viewer-favorite'],
+                    target: '#library-viewer-favorite'
+                });
+            } else {
+                setTourState({
+                    stepIndex: targetToStepIndexMap['#library-viewer-sub-page'],
+                    target: '#library-viewer-sub-page'
+                });
             }
-        );
-        if (response.success) {
-            setBookmarked(false);
-            toaster('Library removed from bookmarks', ToastState.success);
-        } else {
-            toaster(response.message, ToastState.error);
         }
-    };
+    }, []);
 
     const handleBookmarkSubmit = async (data: BookmarkFormData) => {
         const response = await API.put(
@@ -165,50 +147,78 @@ export default function LibraryViewer() {
             }
         );
         if (response.success) {
-            setBookmarked(true);
             toaster('Library added to favorites', ToastState.success);
         } else {
             toaster(response.message, ToastState.error);
         }
         setBookmarkModalOpen(false);
         bookmarkForm.reset();
+        if (tourState.tourActive) {
+            setTourState({
+                stepIndex: targetToStepIndexMap['#navigate-homepage'],
+                target: '#navigate-homepage'
+            });
+        }
     };
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        setSrc(`/api/proxy/libraries/${libraryId}/`);
-                        navigate('', { replace: true });
-                        forceViewerRefresh();
-                    }}
-                >
-                    <ChevronLeft className="size-4" />
-                    Library Home
-                </Button>
-
-                {user && !isAdministrator(user) && (
-                    <button onClick={toggleBookmark}>
-                        {bookmarked ? (
-                            <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
-                        ) : (
-                            <StarOff className="size-5 text-muted-foreground" />
-                        )}
-                    </button>
-                )}
-
-                <SearchInput
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                    placeholder={`Search ${libraryTitle}`}
-                    className="w-64"
-                />
+            <div className="px-6 py-3 border-b border-gray-200 bg-white" id="library-viewer-sub-page">
+                <div className="flex items-center justify-between">
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Knowledge Center', href: backPath },
+                            { label: libraryTitle || 'Library' }
+                        ]}
+                    />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(backPath)}
+                    >
+                        <ArrowLeft className="size-4 mr-2" />
+                        Back
+                    </Button>
+                </div>
+                <div className="flex items-start justify-between mt-2">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h2 className="text-xl font-semibold text-[#203622]">
+                                {libraryTitle}
+                            </h2>
+                            {isAdmin && libraryData && (
+                                <>
+                                    <Badge
+                                        variant="outline"
+                                        className={
+                                            libraryData.visibility_status
+                                                ? 'bg-green-50 text-[#556830] border-green-200 text-xs'
+                                                : 'bg-gray-50 text-gray-600 border-gray-200 text-xs'
+                                        }
+                                    >
+                                        {libraryData.visibility_status
+                                            ? 'Visible'
+                                            : 'Hidden'}
+                                    </Badge>
+                                    {libraryData.is_favorited && (
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-amber-50 text-amber-700 border-amber-200 text-xs"
+                                        >
+                                            Featured
+                                        </Badge>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-600 line-clamp-1">
+                            {libraryData?.description}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 bg-[#E2E7EA]">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <Skeleton className="w-full h-[600px]" />
@@ -217,15 +227,13 @@ export default function LibraryViewer() {
                     <div className="relative w-full h-full">
                         <iframe
                             ref={iframeRef}
-                            sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             className="w-full h-full"
                             src={src}
+                            title={libraryTitle}
                             onLoad={handleIframeLoad}
                             onError={handleIframeError}
-                            style={{
-                                border: 'none',
-                                minHeight: '600px'
-                            }}
                         />
                         {iframeLoading && (
                             <div className="absolute inset-0 bg-muted/90 flex items-center justify-center z-10">
@@ -259,9 +267,11 @@ export default function LibraryViewer() {
                 title="Favorite Page"
             >
                 <form
-                    onSubmit={bookmarkForm.handleSubmit((d) =>
-                        void handleBookmarkSubmit(d)
-                    )}
+                    onSubmit={(e) => {
+                        void bookmarkForm.handleSubmit((d) =>
+                            void handleBookmarkSubmit(d)
+                        )(e);
+                    }}
                     className="space-y-4"
                 >
                     <div className="space-y-2">

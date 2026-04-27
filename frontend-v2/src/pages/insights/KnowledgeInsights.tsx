@@ -87,7 +87,7 @@ export default function KnowledgeInsights() {
     >(`/api/libraries?order_by=most_popular&per_page=5`);
 
     function navigateToOpenContent() {
-        navigate('/knowledge-center-management/libraries');
+        navigate('/knowledge-center-management');
     }
 
     return (

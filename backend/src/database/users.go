@@ -30,11 +30,15 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 
 	switch role {
 	case "system_admin":
-		tx = tx.Where("facility_id = ?", args.FacilityID).
-			Where("role IN ('system_admin',  'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("role IN ('system_admin', 'department_admin', 'facility_admin')")
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
 	case "department_admin":
-		tx = tx.Where("facility_id = ?", args.FacilityID).
-			Where("(role = 'department_admin') OR (role = 'facility_admin' AND facility_id = ?)", args.FacilityID)
+		tx = tx.Where("role IN ('department_admin', 'facility_admin')")
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
 	case "facility_admin":
 		tx = tx.Where("facility_id = ? AND role = 'facility_admin'", args.FacilityID)
 	case "student":

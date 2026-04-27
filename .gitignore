@@ -21,6 +21,7 @@ jar
 /provider-middleware/providers.db
 /backend/server
 /provider-middleware/middleware
+/provider-middleware/provider-middleware
 /provider-middleware/bin
 /backend/bin
 /bin/*
@@ -28,3 +29,4 @@ jar
 /csvs/zims/*.zim
 /.claude
 /frontend-v2/node_modules/
+/frontend-v2/public/

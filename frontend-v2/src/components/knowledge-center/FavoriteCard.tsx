@@ -124,7 +124,7 @@ export default function FavoriteCard({
                     alt={favorite.title}
                     className="h-16 mx-auto object-contain"
                 />
-                <h3 className="text-sm font-medium text-foreground text-center line-clamp-1">
+                <h3 className="text-sm font-medium text-foreground text-center line-clamp-2 min-h-[2.5rem]">
                     {favorite.title}
                 </h3>
                 <p className="text-xs text-muted-foreground text-center">

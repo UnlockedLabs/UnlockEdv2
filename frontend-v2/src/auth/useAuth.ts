@@ -189,14 +189,8 @@ export const getDashboardLink = (user?: User) => {
     return isAdministrator(user) ? getAdminLink(user) : getResidentLink(user);
 };
 
-const getAdminLink = (user: User): string => {
-    if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
-        return '/knowledge-insights';
-    }
-    if (user.feature_access.includes(FeatureAccess.ProviderAccess)) {
-        return '/learning-insights';
-    }
-    return '/operational-insights';
+const getAdminLink = (_user: User): string => {
+    return '/dashboard';
 };
 
 const getResidentLink = (user: User): string => {

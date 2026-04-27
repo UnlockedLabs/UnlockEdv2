@@ -11,7 +11,9 @@ import (
 
 type LibraryResponse struct {
 	models.Library
-	IsFavorited bool `json:"is_favorited"`
+	IsFavorited bool     `json:"is_favorited"`
+	IsFeatured  bool     `json:"is_featured"`
+	Tags        []string `json:"tags" gorm:"-"`
 }
 
 // Retrieves either a paginated list of libraries or all libraries based upon the given parameters.
@@ -38,6 +40,14 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 		END AS visibility_status,
 		EXISTS (
 			SELECT 1
+			FROM open_content_favorites ff
+			WHERE ff.content_id = libraries.id
+				AND ff.open_content_provider_id = libraries.open_content_provider_id
+				AND ff.open_content_url_id IS NULL
+				AND ff.facility_id = ?
+		) AS is_featured,
+		EXISTS (
+			SELECT 1
 			FROM open_content_favorites f
 			WHERE f.content_id = libraries.id
 				AND f.open_content_provider_id = libraries.open_content_provider_id
@@ -49,7 +59,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 	} else {
 		criteria, id = "f.user_id = ?", args.UserID
 	}
-	tx := db.WithContext(args.Ctx).Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), id)
+	tx := db.WithContext(args.Ctx).Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), args.FacilityID, id)
 	tx = tx.Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
 		and fvs.content_id = libraries.id
 		and fvs.facility_id = ?`, args.FacilityID)
@@ -114,6 +124,35 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 	}
 	if err := tx.Find(&libraries).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "libraries")
+	}
+	if len(libraries) > 0 {
+		libraryIDs := make([]uint, len(libraries))
+		for i, lib := range libraries {
+			libraryIDs[i] = lib.ID
+		}
+		type tagRow struct {
+			ContentID uint
+			TagName   string
+		}
+		var rows []tagRow
+		if err := db.WithContext(args.Ctx).Raw(
+			`SELECT oct.content_id, t.name AS tag_name
+			 FROM open_content_tags oct
+			 JOIN tags t ON t.id = oct.tag_id
+			 WHERE oct.content_id IN ?`, libraryIDs,
+		).Scan(&rows).Error; err != nil {
+			log.Warnf("failed to fetch tags for libraries: %v", err)
+		} else {
+			tagMap := make(map[uint][]string)
+			for _, r := range rows {
+				tagMap[r.ContentID] = append(tagMap[r.ContentID], r.TagName)
+			}
+			for i := range libraries {
+				if tags, ok := tagMap[libraries[i].ID]; ok {
+					libraries[i].Tags = tags
+				}
+			}
+		}
 	}
 	return libraries, nil
 }

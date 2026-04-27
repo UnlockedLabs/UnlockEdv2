@@ -107,13 +107,14 @@ export default function LibraryCard({
                             alt={`${library.title} thumbnail`}
                             className="w-12 h-12 flex-shrink-0 object-cover"
                         />
-                        <h3 className="text-sm font-medium text-foreground line-clamp-2">
+                        <h3 className="text-sm font-medium text-foreground line-clamp-2 min-h-[2.5rem]">
                             {library.title}
                         </h3>
                     </div>
                     <div className="flex self-start gap-1 flex-shrink-0">
                         {onSearchClick && (
                             <Button
+                                id="knowledge-center-search-lib"
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
@@ -123,6 +124,7 @@ export default function LibraryCard({
                             </Button>
                         )}
                         <Button
+                            id="knowledge-center-fav-lib"
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
@@ -182,6 +184,7 @@ export default function LibraryCard({
             <div className="flex items-center gap-2">
                 {onSearchClick && (
                     <Button
+                        id="knowledge-center-search-lib"
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
@@ -191,6 +194,7 @@ export default function LibraryCard({
                     </Button>
                 )}
                 <Button
+                    id="knowledge-center-fav-lib"
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0"

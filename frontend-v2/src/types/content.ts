@@ -23,6 +23,7 @@ export interface Video {
     created_at: string;
     updated_at: string;
     is_favorited: boolean;
+    is_featured?: boolean;
     open_content_provider?: OpenContentProvider;
     video_download_attempts: VideoDownloadAttempt[];
     video_favorites: VideoFavorites[];
@@ -54,6 +55,8 @@ export interface Library {
     visibility_status: boolean;
     open_content_provider: OpenContentProvider;
     is_favorited: boolean;
+    is_featured?: boolean;
+    tags?: string[];
 }
 
 export interface HelpfulLink {
@@ -66,6 +69,7 @@ export interface HelpfulLink {
     open_content_provider_id: number;
     facility_id: number;
     is_favorited: boolean;
+    is_featured?: boolean;
 }
 
 export interface HelpfulLinkAndSort {

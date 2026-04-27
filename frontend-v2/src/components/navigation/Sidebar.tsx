@@ -3,12 +3,16 @@ import {
     useAuth,
     isAdministrator,
     hasFeature,
-    canSwitchFacility
+    canSwitchFacility,
+    handleLogout
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import Brand from '@/components/Brand';
+import { Button } from '@/components/ui/button';
+import { useTourContext } from '@/contexts/TourContext';
+import { LogOut } from 'lucide-react';
 import {
     HomeIcon,
     AcademicCapIcon,
@@ -26,19 +30,22 @@ import {
     ArrowPathIcon,
     BookmarkIcon,
     TrophyIcon,
-    RocketLaunchIcon
+    RocketLaunchIcon,
+    QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
     collapsed: boolean;
     onToggleCollapse: () => void;
     onNavigate?: () => void;
+    onToggleHelpCenter?: () => void;
 }
 
 export default function Sidebar({
     collapsed,
     onToggleCollapse,
-    onNavigate
+    onNavigate,
+    onToggleHelpCenter
 }: SidebarProps) {
     const { user } = useAuth();
     const location = useLocation();
@@ -85,9 +92,49 @@ export default function Sidebar({
                         collapsed={collapsed}
                         isActive={isActive}
                         onNavigate={onNavigate}
+                        onToggleHelpCenter={onToggleHelpCenter}
                     />
                 )}
             </nav>
+
+            {!isAdministrator(user) && (
+                <div className="border-t border-border p-4 shrink-0">
+                    {!collapsed ? (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-full bg-[#556830] flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                    {user.name_first?.[0]}
+                                    {user.name_last?.[0]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-foreground truncate">
+                                        {user.name_first} {user.name_last}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Resident
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="outline"
+                                onClick={() => void handleLogout()}
+                                className="w-full justify-start"
+                            >
+                                <LogOut className="size-4 mr-2" />
+                                Log Out
+                            </Button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => void handleLogout()}
+                            className="w-full p-2 rounded-lg hover:bg-accent transition-colors flex items-center justify-center"
+                            aria-label="Log out"
+                        >
+                            <LogOut className="size-5 text-muted-foreground" />
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
@@ -233,22 +280,15 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     icon={BookOpenIcon}
                     collapsed={collapsed}
                     isActive={isActive([
-                        '/knowledge-center-management',
-                        '/knowledge-insights'
+                        '/knowledge-center-management'
                     ])}
                     onNavigate={onNavigate}
                     items={[
                         {
-                            to: '/knowledge-center-management/libraries',
+                            to: '/knowledge-center-management',
                             icon: BookOpenIcon,
                             label: 'Knowledge Center',
                             active: isActive(['/knowledge-center-management'])
-                        },
-                        {
-                            to: '/knowledge-insights',
-                            icon: ChartBarIcon,
-                            label: 'Knowledge Insights',
-                            active: isActive(['/knowledge-insights'])
                         }
                     ]}
                 />
@@ -257,24 +297,36 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
     );
 }
 
-function StudentNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
+function StudentNav({
+    collapsed,
+    isActive,
+    onNavigate,
+    onToggleHelpCenter
+}: NavSectionProps & { onToggleHelpCenter?: () => void }) {
     const { user } = useAuth();
+    const { tourState } = useTourContext();
     if (!user) return null;
-
     const hasOpen = hasFeature(user, FeatureAccess.OpenContentAccess);
     const hasProvider = hasFeature(user, FeatureAccess.ProviderAccess);
     const hasProgram = hasFeature(user, FeatureAccess.ProgramAccess);
+
+    const tourHighlight = (target: string) =>
+        tourState.tourActive && tourState.target === target
+            ? 'animate-pulse border-2 border-[#F1B51C] rounded-xl'
+            : undefined;
 
     return (
         <>
             {hasOpen ? (
                 <NavLink
+                    id="navigate-homepage"
                     to="/home"
                     icon={HomeIcon}
                     label="Home"
                     active={isActive(['/home'])}
                     collapsed={collapsed}
                     onClick={onNavigate}
+                    extraClassName={tourHighlight('#navigate-homepage')}
                 />
             ) : (
                 !hasProvider &&
@@ -291,12 +343,14 @@ function StudentNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
             )}
             {hasOpen && (
                 <NavLink
-                    to="/knowledge-center/libraries"
+                    id="visit-knowledge-center"
+                    to="/knowledge-center"
                     icon={BookOpenIcon}
                     label="Knowledge Center"
                     active={isActive(['/knowledge-center'])}
                     collapsed={collapsed}
                     onClick={onNavigate}
+                    extraClassName={tourHighlight('#visit-knowledge-center')}
                 />
             )}
             {hasProvider && (
@@ -337,6 +391,16 @@ function StudentNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     onClick={onNavigate}
                 />
             )}
+            <button
+                onClick={onToggleHelpCenter}
+                className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full',
+                    'text-gray-700 dark:text-gray-300 hover:bg-accent'
+                )}
+            >
+                <QuestionMarkCircleIcon className="size-5 shrink-0" />
+                {!collapsed && <span className="text-sm">Get Help</span>}
+            </button>
         </>
     );
 }
@@ -359,31 +423,37 @@ function SectionHeader({
 }
 
 interface NavLinkProps {
+    id?: string;
     to: string;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     label: string;
     active: boolean;
     collapsed: boolean;
     onClick?: () => void;
+    extraClassName?: string;
 }
 
 function NavLink({
+    id,
     to,
     icon: Icon,
     label,
     active,
     collapsed,
-    onClick
+    onClick,
+    extraClassName
 }: NavLinkProps) {
     return (
         <Link
+            id={id}
             to={to}
             onClick={onClick}
             className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
                 active
                     ? 'bg-[#556830] text-white'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-accent'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-accent',
+                extraClassName
             )}
         >
             <Icon className="size-5 shrink-0" />

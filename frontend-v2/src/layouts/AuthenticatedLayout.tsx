@@ -9,11 +9,12 @@ import MobileNav from '@/components/navigation/MobileNav';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { TitleManager } from '@/components/TitleManager';
 import UnlockEdTour from '@/components/UnlockEdTour';
+import HelpCenter from '@/pages/HelpCenter';
 import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
-import { Toaster } from '@/components/ui/sonner';
+
 import WebsocketSession from '@/session/websocket';
 
 export default function AuthenticatedLayout() {
@@ -41,11 +42,15 @@ export default function AuthenticatedLayout() {
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
+    const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
+    const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
+    const isContentViewer = location.pathname.startsWith('/viewer/');
+    const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities;
+        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage ? 'py-0' : 'py-4';
-    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile;
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage ? 'py-0' : 'py-4';
+    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile && !isContentViewer;
     const isFacilityView =
         isProgramDetail &&
         user !== undefined &&
@@ -54,7 +59,9 @@ export default function AuthenticatedLayout() {
 
     useEffect(() => {
         if (!user) return;
-        if (isProgramDetail) {
+        if (isContentViewer) {
+            setPageTitle('');
+        } else if (isProgramDetail) {
             if (isFacilityView) {
                 setPageTitle('');
             } else if (canSwitchFacility(user)) {
@@ -91,9 +98,9 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || (isProgramDetail && canSwitchFacility(user));
+    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const contentClass = `flex-1 ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
     return (
         <div className={rootClass}>
@@ -103,50 +110,71 @@ export default function AuthenticatedLayout() {
                     onToggleCollapse={() =>
                         setSidebarCollapsed(!sidebarCollapsed)
                     }
+                    onToggleHelpCenter={() =>
+                        setHelpCenterOpen(!helpCenterOpen)
+                    }
                 />
             </div>
 
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="flex items-center">
-                    <div className="md:hidden px-2">
-                        <MobileNav />
+                {isAdministrator(user) && (
+                    <div className="flex items-center">
+                        <div className="md:hidden px-2">
+                            <MobileNav />
+                        </div>
+                        <div className="flex-1">
+                            <TopNav
+                                facilities={facilities}
+                                onToggleHelpCenter={() =>
+                                    setHelpCenterOpen(!helpCenterOpen)
+                                }
+                            />
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <TopNav
-                            facilities={facilities}
-                            onToggleHelpCenter={() =>
-                                setHelpCenterOpen(!helpCenterOpen)
-                            }
-                        />
-                    </div>
-                </div>
+                )}
 
                 <TitleManager />
                 <UnlockEdTour />
-                <Toaster />
 
-                <div className={contentClass}>
-                    {isFullBleed ? (
-                        isClassDetail || isEventAttendance ? (
-                            <Outlet />
+                <div className="flex flex-1 min-h-0 overflow-hidden">
+                    <div
+                        className={`${contentClass} transition-all duration-100 ease-in-out flex-1 min-w-0`}
+                    >
+                        {isFullBleed ? (
+                            isClassDetail || isEventAttendance ? (
+                                <Outlet />
+                            ) : (
+                                <div
+                                    className={`${fullBleedWrapperClass} h-full`}
+                                >
+                                    {showBreadcrumbs && (
+                                        <div className="max-w-7xl mx-auto px-6 mb-4">
+                                            <Breadcrumbs
+                                                items={breadcrumbItems}
+                                            />
+                                        </div>
+                                    )}
+                                    <Outlet />
+                                </div>
+                            )
                         ) : (
-                            <div className={`${fullBleedWrapperClass} h-full`}>
+                            <div className="max-w-7xl mx-auto px-6 py-4">
                                 {showBreadcrumbs && (
-                                    <div className="max-w-7xl mx-auto px-6 mb-4">
-                                        <Breadcrumbs items={breadcrumbItems} />
+                                    <div className="mb-4">
+                                        <Breadcrumbs
+                                            items={breadcrumbItems}
+                                        />
                                     </div>
                                 )}
                                 <Outlet />
                             </div>
-                        )
-                    ) : (
-                        <div className="max-w-7xl mx-auto px-6 py-4">
-                            {showBreadcrumbs && (
-                                <div className="mb-4">
-                                    <Breadcrumbs items={breadcrumbItems} />
-                                </div>
-                            )}
-                            <Outlet />
+                        )}
+                    </div>
+                    {helpCenterOpen && (
+                        <div className="w-80 bg-muted p-4 shadow-lg overflow-y-auto shrink-0">
+                            <HelpCenter
+                                close={() => setHelpCenterOpen(false)}
+                            />
                         </div>
                     )}
                 </div>

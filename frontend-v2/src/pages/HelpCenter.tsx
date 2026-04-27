@@ -1,6 +1,28 @@
 import { FAQContent } from './FAQs';
+import Tour from '@/components/Tour';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function HelpCenter() {
+export default function HelpCenter({ close }: { close?: () => void }) {
+    if (close) {
+        return (
+            <div className="flex flex-col gap-4">
+                <div className="flex justify-end">
+                    <button
+                        onClick={close}
+                        className="p-1 rounded hover:bg-accent transition-colors"
+                    >
+                        <XMarkIcon className="size-5 text-muted-foreground" />
+                    </button>
+                </div>
+                <h1 className="text-xl font-bold text-foreground">
+                    Help Center
+                </h1>
+                <Tour close={close} />
+                <FAQContent />
+            </div>
+        );
+    }
+
     return (
         <div className="bg-muted min-h-screen p-6">
             <div className="max-w-3xl mx-auto space-y-8">
