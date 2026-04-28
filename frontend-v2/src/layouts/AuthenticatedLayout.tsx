@@ -17,6 +17,7 @@ import { resolveTitle } from '@/loaders/routeLoaders';
 
 import WebsocketSession from '@/session/websocket';
 
+
 export default function AuthenticatedLayout() {
     const { user } = useAuth();
     const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -116,65 +117,55 @@ export default function AuthenticatedLayout() {
                 />
             </div>
 
-            <div className="flex-1 flex flex-col min-w-0">
-                {isAdministrator(user) && (
-                    <div className="flex items-center">
-                        <div className="md:hidden px-2">
-                            <MobileNav />
-                        </div>
-                        <div className="flex-1">
-                            <TopNav
-                                facilities={facilities}
-                                onToggleHelpCenter={() =>
-                                    setHelpCenterOpen(!helpCenterOpen)
-                                }
-                            />
-                        </div>
+            <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+                <div className="flex items-center shrink-0 h-16 border-b border-border">
+                    <div className="md:hidden px-2">
+                        <MobileNav />
                     </div>
-                )}
+                    <div className="flex-1">
+                        <TopNav
+                            facilities={facilities}
+                        />
+                    </div>
+                </div>
 
                 <TitleManager />
                 <UnlockEdTour />
 
-                <div className="flex flex-1 min-h-0 overflow-hidden">
-                    <div
-                        className={`${contentClass} transition-all duration-100 ease-in-out flex-1 min-w-0`}
-                    >
-                        {isFullBleed ? (
-                            isClassDetail || isEventAttendance ? (
-                                <Outlet />
+                <div className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}>
+                    <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}>
+                        <div className={contentClass}>
+                            {isFullBleed ? (
+                                isClassDetail || isEventAttendance ? (
+                                    <Outlet />
+                                ) : (
+                                    <div className={`${fullBleedWrapperClass} h-full`}>
+                                        {showBreadcrumbs && (
+                                            <div className="max-w-7xl mx-auto px-6 mb-4">
+                                                <Breadcrumbs items={breadcrumbItems} />
+                                            </div>
+                                        )}
+                                        <Outlet />
+                                    </div>
+                                )
                             ) : (
-                                <div
-                                    className={`${fullBleedWrapperClass} h-full`}
-                                >
+                                <div className="max-w-7xl mx-auto px-6 py-4">
                                     {showBreadcrumbs && (
-                                        <div className="max-w-7xl mx-auto px-6 mb-4">
-                                            <Breadcrumbs
-                                                items={breadcrumbItems}
-                                            />
+                                        <div className="mb-4">
+                                            <Breadcrumbs items={breadcrumbItems} />
                                         </div>
                                     )}
                                     <Outlet />
                                 </div>
-                            )
-                        ) : (
-                            <div className="max-w-7xl mx-auto px-6 py-4">
-                                {showBreadcrumbs && (
-                                    <div className="mb-4">
-                                        <Breadcrumbs
-                                            items={breadcrumbItems}
-                                        />
-                                    </div>
-                                )}
-                                <Outlet />
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
+
                     {helpCenterOpen && (
-                        <div className="w-80 bg-muted p-4 shadow-lg overflow-y-auto shrink-0">
-                            <HelpCenter
-                                close={() => setHelpCenterOpen(false)}
-                            />
+                        <div className="w-80 shrink-0 bg-background border-l border-border animate-in slide-in-from-right duration-300 flex flex-col sticky top-0 h-[calc(100vh-4rem)]">
+                            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 py-4">
+                                <HelpCenter close={() => setHelpCenterOpen(false)} />
+                            </div>
                         </div>
                     )}
                 </div>
