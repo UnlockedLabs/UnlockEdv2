@@ -143,6 +143,7 @@ interface NavSectionProps {
     collapsed: boolean;
     isActive: (paths: string[]) => boolean;
     onNavigate?: () => void;
+    onToggleHelpCenter?: () => void;
 }
 
 function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
@@ -297,12 +298,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
     );
 }
 
-function StudentNav({
-    collapsed,
-    isActive,
-    onNavigate,
-    onToggleHelpCenter
-}: NavSectionProps & { onToggleHelpCenter?: () => void }) {
+function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: NavSectionProps) {
     const { user } = useAuth();
     const { tourState } = useTourContext();
     if (!user) return null;
@@ -391,16 +387,13 @@ function StudentNav({
                     onClick={onNavigate}
                 />
             )}
-            <button
+            <SectionHeader label="Help" collapsed={collapsed} />
+            <NavButton
+                icon={QuestionMarkCircleIcon}
+                label="FAQ"
+                collapsed={collapsed}
                 onClick={onToggleHelpCenter}
-                className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full',
-                    'text-gray-700 dark:text-gray-300 hover:bg-accent'
-                )}
-            >
-                <QuestionMarkCircleIcon className="size-5 shrink-0" />
-                {!collapsed && <span className="text-sm">Get Help</span>}
-            </button>
+            />
         </>
     );
 }
@@ -462,6 +455,33 @@ function NavLink({
     );
 }
 
+interface NavButtonProps {
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    label: string;
+    collapsed: boolean;
+    onClick?: () => void;
+}
+
+function NavButton({
+    icon: Icon,
+    label,
+    collapsed,
+    onClick
+}: NavButtonProps) {
+    return (
+        <button
+            onClick={onClick}
+            className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+                'text-gray-700 dark:text-gray-300 hover:bg-accent'
+            )}
+        >
+            <Icon className="size-5 shrink-0" />
+            {!collapsed && <span className="text-sm">{label}</span>}
+        </button>
+    );
+}
+
 interface CollapsibleItem {
     to: string;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -480,7 +500,6 @@ interface CollapsibleSectionProps {
 }
 
 function CollapsibleSection({
-    id,
     label,
     icon: Icon,
     collapsed,

@@ -186,3 +186,11 @@
 html {
     font-size: var(--font-size);
 }
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
