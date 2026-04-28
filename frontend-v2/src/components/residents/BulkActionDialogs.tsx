@@ -369,7 +369,9 @@ export function BulkDeleteDialog({
         if (response.success) {
             const { success_count, failures } = response.data;
             const failedCount = failures?.length ?? 0;
-            const failedNames = failures?.map((f) => f.name).join(', ');
+            const failedNames = failures
+                ?.map((f) => f.name?.trim() || `id ${f.user_id}`)
+                .join(', ');
             const msg =
                 failedCount > 0
                     ? `${success_count} resident${success_count !== 1 ? 's' : ''} deleted, ${failedCount} failed: ${failedNames}`
