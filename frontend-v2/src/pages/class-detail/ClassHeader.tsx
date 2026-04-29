@@ -6,7 +6,13 @@ import { Progress } from '@/components/ui/progress';
 import { Class } from '@/types/program';
 import { Attendance, SelectedClassStatus } from '@/types/attendance';
 import { ClassEventInstance } from '@/types/events';
-import { getClassSchedule, getStatusColor, formatDate } from '@/lib/formatters';
+import {
+    getClassSchedule,
+    getStatusColor,
+    formatDate,
+    formatTime12h,
+    formatClassTimeRange
+} from '@/lib/formatters';
 import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import { ChangeClassStatusModal } from './ChangeClassStatusModal';
 
@@ -24,23 +30,29 @@ interface StatCardsProps {
 function getNextClassDate(cls: Class): { date: string; time: string } | null {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return null;
+    const tz =
+        cls.facility?.timezone ??
+        Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
         const cleaned = event.recurrence_rule.replace(
             /DTSTART;TZID=[^:]+:/,
             'DTSTART:'
         );
         const rule = RRule.fromString(cleaned);
-        const now = new Date();
-        const next = rule.after(now, true);
+        const nowInFacilityTz = new Date(
+            new Date().toLocaleString('en-US', { timeZone: tz })
+        );
+        const next = rule.after(nowInFacilityTz, true);
         if (!next) return null;
         const date = next.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'UTC'
         });
         const h = String(next.getUTCHours()).padStart(2, '0');
         const m = String(next.getUTCMinutes()).padStart(2, '0');
-        return { date, time: `${h}:${m}` };
+        return { date, time: formatTime12h(`${h}:${m}`) };
     } catch {
         return null;
     }
@@ -106,7 +118,9 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                     value={schedule.days.join(', ') || 'Not set'}
                     sub={
                         schedule.startTime
-                            ? `${schedule.startTime} - ${schedule.endTime}`
+                            ? formatClassTimeRange(
+                                  `${schedule.startTime}-${schedule.endTime}`
+                              )
                             : undefined
                     }
                     smallValue
