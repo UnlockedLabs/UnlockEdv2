@@ -19,6 +19,7 @@ import { DetailedAttendanceDialog } from './resident-profile/DetailedAttendanceD
 import { CompletedPrograms } from './resident-profile/CompletedPrograms';
 import { IncompleteEnrollments } from './resident-profile/IncompleteEnrollments';
 import { HistoricalNotes } from './resident-profile/HistoricalNotes';
+import ActivityHistoryCard from '@/components/student/ActivityHistoryCard';
 import { EditProfileDialog } from './resident-profile/EditProfileDialog';
 import { ResetPasswordDialog } from './resident-profile/ResetPasswordDialog';
 import { DeactivateDialog } from './resident-profile/DeactivateDialog';
@@ -228,6 +229,8 @@ export default function ResidentProfile() {
                     isDeactivated={isDeactivated}
                     onAddNote={() => setAddNoteOpen(true)}
                 />
+
+                <ActivityHistoryCard residentId={residentId} />
 
                 <EditProfileDialog
                     open={editOpen}

@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ServerResponseMany, ActivityHistoryResponse } from '@/types';
+import type { ChangeLogEntry } from '@/types';
+import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
 
 interface ActivityHistoryCardProps {
     programId?: string;
@@ -29,12 +31,6 @@ function formatActivityDate(date: Date): string {
         day: 'numeric',
         year: 'numeric'
     });
-}
-
-function formatAction(action: string): string {
-    return action
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function ActivityHistoryCard({
@@ -92,26 +88,24 @@ export default function ActivityHistoryCard({
                 {!isLoading && !error && data && (
                     <>
                         <div className="space-y-2">
-                            {data.data.map((item, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border"
-                                >
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                            {formatAction(item.action)}
+                            {data.data.map((item, idx) => {
+                                const prose = formatHistoryEntry(
+                                    item as unknown as ChangeLogEntry
+                                );
+                                return (
+                                    <div
+                                        key={idx}
+                                        className="flex items-center justify-between py-2 px-3 rounded-md border border-border"
+                                    >
+                                        <p className="text-sm text-foreground">
+                                            {prose ?? item.action}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {item.user_username}
-                                            {item.admin_username &&
-                                                ` by ${item.admin_username}`}
-                                        </p>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap ml-3">
+                                            {formatActivityDate(item.created_at)}
+                                        </span>
                                     </div>
-                                    <span className="text-xs text-muted-foreground">
-                                        {formatActivityDate(item.created_at)}
-                                    </span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         {totalPages > 1 && (
                             <div className="flex items-center justify-center gap-2 mt-4">
