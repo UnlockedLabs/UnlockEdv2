@@ -244,6 +244,13 @@ export function formatTime12h(time: string): string {
     return `${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
 }
 
+export function formatClassTimeRange(range: string): string {
+    if (!range) return '';
+    const [start, end] = range.split('-').map((s) => s.trim());
+    if (!start || !end) return formatTime12h(range);
+    return `${formatTime12h(start)} - ${formatTime12h(end)}`;
+}
+
 export function formatEnrollmentStatus(status: string): string {
     return status.replace(/^Incomplete:\s*/i, '');
 }

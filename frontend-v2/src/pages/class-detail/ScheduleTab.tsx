@@ -6,7 +6,12 @@ import { toast } from 'sonner';
 import { Class } from '@/types/program';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
-import { formatDate, getClassSchedule, ClassScheduleInfo } from '@/lib/formatters';
+import {
+    formatDate,
+    getClassSchedule,
+    ClassScheduleInfo,
+    formatClassTimeRange
+} from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { SessionDetailSheet } from './SessionDetailSheet';
 import {
@@ -193,8 +198,9 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
     });
 
     const classTime = schedule.startTime
-        ? `${schedule.startTime} - ${schedule.endTime}`
-        : 'Not set';
+        ? `${schedule.startTime}-${schedule.endTime}`
+        : '';
+    const classTimeDisplay = classTime ? formatClassTimeRange(classTime) : 'Not set';
 
     const refreshData = async () => {
         await mutate();
@@ -298,7 +304,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                             </div>
                             <div className="text-sm text-gray-600">
                                 {schedule.days.join(', ')} at{' '}
-                                {schedule.startTime} - {schedule.endTime}
+                                {classTimeDisplay}
                             </div>
                             {schedule.room && (
                                 <div className="text-sm text-gray-600 mt-1">
@@ -397,7 +403,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                                                 Class
                                                             </div>
                                                             <div className="text-xs text-gray-600 mt-1">
-                                                                {classTime}
+                                                                {classTimeDisplay}
                                                             </div>
                                                         </div>
                                                     )}

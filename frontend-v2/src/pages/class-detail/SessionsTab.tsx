@@ -33,6 +33,7 @@ import {
 } from './ChangeInstructorModal';
 import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
 import { SessionDetailSheet } from './SessionDetailSheet';
+import { formatClassTimeRange } from '@/lib/formatters';
 import {
     buildRescheduleMaps,
     buildRoomOverrideMap,
@@ -1042,17 +1043,17 @@ function SessionRow({
                         <div className="text-xs text-gray-500 mt-0.5">
                             &rarr; Moved to {formatShortDate(rescheduledDate)}
                             {rescheduledClassTime &&
-                                ` at ${rescheduledClassTime}`}
+                                ` at ${formatClassTimeRange(rescheduledClassTime)}`}
                         </div>
                     ) : (isRescheduledTo || isCancelledReschedule) ? (
                         <div className="text-xs text-blue-700 mt-0.5">
-                            {session.instance.class_time}
+                            {formatClassTimeRange(session.instance.class_time)}
                         </div>
                     ) : (
                         <div
                             className={`text-xs text-gray-600 mt-0.5 ${showLineThrough ? 'line-through' : ''}`}
                         >
-                            {session.instance.class_time}
+                            {formatClassTimeRange(session.instance.class_time)}
                         </div>
                     )}
                 </div>

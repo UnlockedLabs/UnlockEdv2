@@ -25,6 +25,7 @@ import {
 } from './ChangeInstructorModal';
 import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
 import { SessionDisplay } from './SessionsTab';
+import { formatClassTimeRange } from '@/lib/formatters';
 
 interface SessionDetailSheetProps {
     session: SessionDisplay | null;
@@ -262,7 +263,7 @@ export function SessionDetailSheet({
                                         <div
                                             className={`text-[#203622] ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                                         >
-                                            {classTime}
+                                            {formatClassTimeRange(classTime)}
                                         </div>
                                     </div>
                                 </div>
