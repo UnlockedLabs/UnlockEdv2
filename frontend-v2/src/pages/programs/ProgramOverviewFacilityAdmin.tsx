@@ -31,7 +31,7 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import { getStatusColor } from '@/lib/formatters';
+import { getInstructorName, getStatusColor } from '@/lib/formatters';
 import {
     programTypeColors,
     TAB_TRIGGER_CLASSES
@@ -204,7 +204,7 @@ export default function ProgramOverviewFacilityAdmin() {
         setShowArchiveDialog(true);
     }
 
-    async function handleStatusSelectChange(value: string) {
+    function handleStatusSelectChange(value: string) {
         if (value === 'Archived') {
             void handleArchiveCheck();
             return;
@@ -613,6 +613,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                 classes={nonArchivedClasses}
                                 loading={classesLoading}
                                 programId={program_id!}
+                                facilityId={facilityId ?? undefined}
                                 canAddClass={
                                     !!program.is_active && !program.archived_at
                                 }
@@ -834,6 +835,7 @@ function ClassesTab({
     classes,
     loading,
     programId,
+    facilityId,
     canAddClass,
     onOpenStatusModal,
     onCreated
@@ -841,6 +843,7 @@ function ClassesTab({
     classes: Class[];
     loading: boolean;
     programId: string;
+    facilityId?: number;
     canAddClass: boolean;
     onOpenStatusModal: (cls: Class) => void;
     onCreated?: () => void;
@@ -889,6 +892,7 @@ function ClassesTab({
                     <h3 className="text-[#203622] mb-4">Create New Class</h3>
                     <ClassManagementFormInner
                         programId={programId}
+                        facilityId={facilityId}
                         onCancel={() => setShowCreateForm(false)}
                         onCreated={() => {
                             setShowCreateForm(false);
@@ -931,7 +935,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-[#E2E7EA]/50"
@@ -957,7 +961,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
@@ -981,7 +985,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
@@ -1004,7 +1008,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
@@ -1039,7 +1043,8 @@ function ClassRow({
 
     const scheduleText = String(cls.schedule ?? '');
     const roomText = String(cls.room ?? '');
-    const metaItems = [cls.instructor_name, scheduleText, roomText].filter(
+    const instructorName = getInstructorName(cls.events);
+    const metaItems = [instructorName, scheduleText, roomText].filter(
         (item): item is string => Boolean(item)
     );
     const attendanceRate =

@@ -136,7 +136,9 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil || instructorName == "" {
 		return newBadRequestServiceError(err, "invalid instructor selected")
 	}
-	class.InstructorName = instructorName
+	for i := range class.Events {
+		class.Events[i].InstructorID = class.InstructorID
+	}
 
 	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
@@ -201,18 +203,13 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if instructorIDProvided {
 		if class.InstructorID == nil || *class.InstructorID == 0 {
 			class.InstructorID = nil
-			class.InstructorName = "Unassigned"
 		} else {
-
 			instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
 			if err != nil || instructorName == "" {
 				return newBadRequestServiceError(err, "invalid instructor selected")
 			}
-			class.InstructorName = instructorName
 		}
-	} else {
-		class.InstructorID = existing.InstructorID
-		class.InstructorName = existing.InstructorName
+		class.UpdateInstructor = true
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {

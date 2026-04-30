@@ -56,6 +56,7 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
+import { getInstructorName } from '@/lib/formatters';
 
 const classStatusColors: Record<string, string> = {
     Active: 'bg-green-100 text-green-700 border-green-200',
@@ -983,9 +984,7 @@ export default function ProgramOverviewStatewide() {
                                                                                     }
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">
-                                                                                    {
-                                                                                        cls.instructor_name
-                                                                                    }
+                                                                                    {getInstructorName(cls.events) || '—'}
                                                                                 </TableCell>
                                                                                 <TableCell>
                                                                                     <span className="text-sm">

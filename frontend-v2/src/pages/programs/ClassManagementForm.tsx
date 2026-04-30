@@ -7,6 +7,7 @@ import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
 import {
     ClassLoaderData,
+    Instructor,
     ProgClassStatus,
     ServerResponseMany,
     Room,
@@ -14,6 +15,7 @@ import {
     User
 } from '@/types';
 import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
+import { formatRoomConflictRange, getInstructorId } from '@/lib/formatters';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +60,7 @@ interface ClassManagementFormProps {
     onCancel?: () => void;
     onCreated?: () => void;
     embedded?: boolean;
+    facilityId?: number;
 }
 
 const WEEKDAY_OPTIONS = [
@@ -127,9 +130,11 @@ export function ClassManagementFormInner({
     loaderData,
     onCancel,
     onCreated,
-    embedded = false
+    embedded = false,
+    facilityId: facilityIdProp
 }: ClassManagementFormProps) {
     const { user } = useAuth();
+    const timezone = user?.timezone ?? 'UTC';
     const navigate = useNavigate();
 
     const isNewClass = classId === 'new' || !classId;
@@ -155,10 +160,24 @@ export function ClassManagementFormInner({
     const [customRecurrenceInterval, setCustomRecurrenceInterval] =
         useState(1);
 
-    const { data: instructorsResp, mutate: mutateInstructors } = useSWR<
-        ServerResponseMany<User>
-    >(user ? `/api/users?role=${user.role}&per_page=100` : null);
-    const instructors = instructorsResp?.data ?? [];
+    const [instructors, setInstructors] = useState<Instructor[]>([]);
+
+    const resolvedFacilityId = facilityIdProp ?? user?.facility.id;
+
+    useEffect(() => {
+        if (!resolvedFacilityId) return;
+        async function fetchInstructors() {
+            const resp = await API.get<Instructor>(
+                `facilities/${resolvedFacilityId}/instructors`
+            );
+            if (resp.success && resp.data) {
+                setInstructors(
+                    (resp.data as Instructor[]).filter((i) => i.id !== 0)
+                );
+            }
+        }
+        void fetchInstructors();
+    }, [resolvedFacilityId]);
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
         rooms.length === 0 ? '/api/rooms' : null
@@ -264,7 +283,7 @@ export function ClassManagementFormInner({
             reset({
                 name: existingClass.name,
                 description: existingClass.description,
-                instructor_id: existingClass.instructor_id ?? null,
+                instructor_id: getInstructorId(existingClass.events) ?? null,
                 capacity: existingClass.capacity,
                 credit_hours: existingClass.credit_hours,
                 start_dt: new Date(existingClass.start_dt)
@@ -391,7 +410,8 @@ export function ClassManagementFormInner({
             provider_platforms: []
         });
         if (resp.success) {
-            void mutateInstructors();
+            const newUser = (resp.data as { user: User; temp_password: string }).user;
+            setInstructors((prev) => [...prev, newUser as unknown as Instructor]);
             toast.success('Instructor created');
         } else {
             toast.error(resp.message || 'Failed to create instructor');
@@ -1643,7 +1663,7 @@ export function ClassManagementFormInner({
                                 {c.class_name}
                             </p>
                             <p className="text-red-600">
-                                {c.start_time} - {c.end_time}
+                                {formatRoomConflictRange(c.start_time, c.end_time, timezone)}
                             </p>
                         </div>
                     ))}

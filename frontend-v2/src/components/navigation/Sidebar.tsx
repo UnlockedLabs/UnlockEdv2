@@ -218,13 +218,13 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                             to: '/programs',
                             icon: RectangleStackIcon,
                             label: 'Programs',
-                            active: isActive(['/programs', '/program-classes'])
+                            active: isActive(['/programs'])
                         },
                         {
                             to: '/classes',
                             icon: AcademicCapIcon,
                             label: 'Classes',
-                            active: isActive(['/classes'])
+                            active: isActive(['/classes', '/program-classes'])
                         },
                         {
                             to: '/schedule',

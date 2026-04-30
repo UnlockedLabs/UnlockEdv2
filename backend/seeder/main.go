@@ -641,10 +641,9 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 					log.Printf("Failed to create program credit type: %v", err)
 				}
 				class := models.ProgramClass{
-					Capacity:       capacities[rand.Intn(len(capacities))],
-					Name:           programs[i].Name,
-					InstructorName: faker.Name(),
-					Description:    programClassDescriptions[programs[i].Name],
+					Capacity:    capacities[rand.Intn(len(capacities))],
+					Name:        programs[i].Name,
+					Description: programClassDescriptions[programs[i].Name],
 					Status:         models.Scheduled, //this will change during new class development
 					StartDt:        time.Now().Add(14 * 24 * time.Hour),
 					EndDt:          &endDates[rand.Intn(len(endDates))],

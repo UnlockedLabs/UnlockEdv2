@@ -1,6 +1,8 @@
 import { RoomConflict } from '@/types';
+import { useAuth } from '@/auth/useAuth';
 import { FormModal } from '@/components/shared/FormModal';
 import { Button } from '@/components/ui/button';
+import { formatRoomConflictRange } from '@/lib/formatters';
 
 interface RoomConflictModalProps {
     open: boolean;
@@ -13,6 +15,9 @@ export function RoomConflictModal({
     onOpenChange,
     conflicts
 }: RoomConflictModalProps) {
+    const { user } = useAuth();
+    const timezone = user?.timezone ?? 'UTC';
+
     return (
         <FormModal
             open={open}
@@ -27,7 +32,7 @@ export function RoomConflictModal({
                             {c.class_name}
                         </p>
                         <p className="text-red-600">
-                            {c.start_time} - {c.end_time}
+                            {formatRoomConflictRange(c.start_time, c.end_time, timezone)}
                         </p>
                     </div>
                 ))}

@@ -118,7 +118,7 @@
 
 @layer base {
     * {
-        @apply border-border;
+        @apply border-border outline-ring/50;
     }
 
     body {
@@ -193,4 +193,180 @@ html {
 }
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
+}
+
+input[type='checkbox']:focus {
+    outline-color: #9ca3af;
+}
+
+/* React Big Calendar custom styling (match redesign target) */
+.unlocked-calendar .rbc-calendar {
+    font-family: inherit;
+}
+
+.unlocked-calendar .rbc-header {
+    padding: 12px 4px;
+    font-weight: 500;
+    color: #203622;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.unlocked-calendar .rbc-button-link:focus {
+    outline: none;
+}
+
+.unlocked-calendar .rbc-button-link:focus-visible {
+    outline: 2px solid rgba(156, 163, 175, 0.4);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.unlocked-calendar .rbc-date-cell > a:focus {
+    outline: none;
+}
+
+.unlocked-calendar .rbc-date-cell > a:focus-visible {
+    outline: 2px solid rgba(156, 163, 175, 0.4);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.unlocked-calendar .rbc-today {
+    background-color: #f0fdf4;
+}
+
+.unlocked-calendar .rbc-off-range-bg {
+    background-color: #f9fafb;
+}
+
+.unlocked-calendar .rbc-event {
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    background-color: #556830;
+    border-color: #203622;
+}
+
+.unlocked-calendar .rbc-event-content {
+    line-height: 1.25;
+}
+
+.unlocked-calendar .rbc-event-label {
+    font-size: 0.6875rem;
+}
+
+.unlocked-calendar .rbc-event:hover {
+    opacity: 0.9;
+}
+
+.unlocked-calendar .rbc-toolbar {
+    padding: 16px 0;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.rbc-toolbar button {
+    padding: 8px 16px;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    color: #374151;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rbc-toolbar button:hover {
+    background-color: #f9fafb;
+    border-color: #556830;
+}
+
+.rbc-toolbar button.rbc-active {
+    background-color: #556830;
+    color: white;
+    border-color: #556830;
+}
+
+.rbc-toolbar button.rbc-active:hover {
+    background-color: #203622;
+}
+
+.unlocked-calendar .rbc-month-view,
+.unlocked-calendar .rbc-time-view,
+.unlocked-calendar .rbc-agenda-view {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.unlocked-calendar .rbc-time-slot {
+    border-top: 1px solid #f3f4f6;
+}
+
+.unlocked-calendar .rbc-day-slot .rbc-time-slot {
+    border-top: 1px solid #f3f4f6;
+}
+
+.unlocked-calendar .rbc-current-time-indicator {
+    background-color: #556830;
+    height: 2px;
+}
+
+.unlocked-calendar .rbc-agenda-date-cell,
+.unlocked-calendar .rbc-agenda-time-cell {
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.unlocked-calendar .rbc-agenda-event-cell {
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.unlocked-calendar .rbc-show-more {
+    background-color: transparent;
+    color: #556830;
+    font-weight: 500;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.unlocked-calendar .rbc-show-more:hover {
+    background-color: #f0fdf4;
+    text-decoration: underline;
+}
+
+/* Sheet slide animation — targeting Radix dialog data-state directly */
+@keyframes sheet-slide-in-right {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+@keyframes sheet-slide-out-right {
+    from { transform: translateX(0); }
+    to   { transform: translateX(100%); }
+}
+@keyframes sheet-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes sheet-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+[data-slot="sheet-content"][data-state="open"] {
+    animation: sheet-slide-in-right 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-slot="sheet-content"][data-state="closed"] {
+    animation: sheet-slide-out-right 200ms ease-in;
+}
+[data-slot="sheet-overlay"][data-state="open"] {
+    animation: sheet-fade-in 300ms ease-out;
+}
+[data-slot="sheet-overlay"][data-state="closed"] {
+    animation: sheet-fade-out 200ms ease-in;
 }

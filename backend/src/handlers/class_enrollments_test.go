@@ -120,14 +120,13 @@ func TestHandleEnrollUsersInClass_Validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			class := models.ProgramClass{
-				Name:           "Test Class",
-				ProgramID:      program.ID,
-				FacilityID:     facility.ID,
-				Status:         tt.classStatus,
-				InstructorName: "Instructor",
-				Description:    "Description",
-				Capacity:       tt.capacity,
-				StartDt:        time.Now(),
+				Name:        "Test Class",
+				ProgramID:   program.ID,
+				FacilityID:  facility.ID,
+				Status:      tt.classStatus,
+				Description: "Description",
+				Capacity:    tt.capacity,
+				StartDt:     time.Now(),
 			}
 			if tt.isArchived {
 				class.ArchivedAt = TimePtr(time.Now())

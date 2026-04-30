@@ -122,6 +122,11 @@ func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, 
 
 func (srv *Server) handleGetRooms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facilityID := srv.getFacilityID(r)
+	if queryParam := r.URL.Query().Get("facility_id"); queryParam != "" {
+		if parsed, err := strconv.Atoi(queryParam); err == nil {
+			facilityID = uint(parsed)
+		}
+	}
 	log.add("facility_id", facilityID)
 	rooms, err := srv.Db.GetRoomsForFacility(facilityID)
 	if err != nil {

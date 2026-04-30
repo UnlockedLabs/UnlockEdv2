@@ -67,16 +67,20 @@ func FormatScheduleFromRRule(rruleStr string) string {
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
-	ClassID        uint   `json:"class_id" gorm:"not null" validate:"required"`
-	Duration       string `json:"duration" gorm:"not null" validate:"required"`
-	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" validate:"required"`
-	RoomID         *uint  `json:"room_id" gorm:"not null"`
+	ClassID        uint    `json:"class_id" gorm:"not null" validate:"required"`
+	Duration       string  `json:"duration" gorm:"not null" validate:"required"`
+	RecurrenceRule string  `json:"recurrence_rule" gorm:"not null" validate:"required"`
+	RoomID         *uint   `json:"room_id" gorm:"not null"`
+	InstructorID   *uint   `json:"instructor_id" gorm:"not null" validate:"required"`
+	Reason         *string `json:"reason"`
+	IsCancelled    bool    `json:"is_cancelled"`
 
 	/* Foreign keys */
-	Class     *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
-	RoomRef   *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
-	Attendees []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
-	Overrides []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
+	Class      *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
+	RoomRef    *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Instructor *User                         `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
+	Attendees  []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
+	Overrides  []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
 }
 
 type DateRange struct {
@@ -169,9 +173,9 @@ type ProgramClassEventOverride struct {
 	InstructorID          *uint  `json:"instructor_id"`
 
 	/* Foreign keys */
-	Event         *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
-	RoomRef       *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
-	InstructorRef *User              `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
+	Event      *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	RoomRef    *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Instructor *User              `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
 }
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
@@ -327,6 +331,25 @@ type EventDates struct {
 	EventID   uint   `json:"event_id"`
 	Date      string `json:"date"`
 	ClassTime string `json:"class_time"` // e.g. "12:00-14:00"
+}
+
+// GetInstructorFromEvents returns the instructor ID and display name from the
+// event with the highest ID, mirroring the frontend getInstructorName utility.
+func GetInstructorFromEvents(events []ProgramClassEvent) (*uint, string) {
+	var maxEvent *ProgramClassEvent
+	for i := range events {
+		if maxEvent == nil || events[i].ID > maxEvent.ID {
+			maxEvent = &events[i]
+		}
+	}
+	if maxEvent == nil {
+		return nil, ""
+	}
+	name := ""
+	if maxEvent.Instructor != nil {
+		name = strings.TrimSpace(maxEvent.Instructor.NameFirst + " " + maxEvent.Instructor.NameLast)
+	}
+	return maxEvent.InstructorID, name
 }
 
 type FacilityProgramClassEvent struct {

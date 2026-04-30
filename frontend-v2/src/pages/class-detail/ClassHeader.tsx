@@ -4,10 +4,13 @@ import { RRule } from 'rrule';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Class } from '@/types/program';
-import { Attendance, SelectedClassStatus } from '@/types/attendance';
-import { ClassEventInstance } from '@/types/events';
-import { getClassSchedule, getStatusColor, formatDate } from '@/lib/formatters';
-import { computeAttendanceByUser } from '@/lib/attendance-utils';
+import { SelectedClassStatus } from '@/types/attendance';
+import {
+    getClassSchedule,
+    getInstructorName,
+    getStatusColor,
+    formatDate
+} from '@/lib/formatters';
 import { ChangeClassStatusModal } from './ChangeClassStatusModal';
 
 interface ClassHeaderProps {
@@ -58,9 +61,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     return (
         <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-[#203622]">
-                    {cls.name}
-                </h1>
+                <h1 className="text-[#203622]">{cls.name}</h1>
                 {isTerminal ? (
                     <Badge
                         variant="outline"
@@ -69,7 +70,10 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                         {cls.status}
                     </Badge>
                 ) : (
-                    <button onClick={() => setShowStatusModal(true)} className="outline-none">
+                    <button
+                        onClick={() => setShowStatusModal(true)}
+                        className="outline-none"
+                    >
                         <Badge
                             variant="outline"
                             className={`${getStatusColor(cls.status)} cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5`}
@@ -85,7 +89,9 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 <MapPin className="size-4 text-gray-500" />
                 <span className="text-sm text-gray-700">
                     <span className="font-medium">
-                        {cls.facility?.name ?? cls.facility_name ?? 'Unknown Facility'}
+                        {cls.facility?.name ??
+                            cls.facility_name ??
+                            'Unknown Facility'}
                     </span>
                 </span>
             </div>
@@ -99,7 +105,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
             <div className="grid grid-cols-5 gap-4">
                 <InfoCard
                     label="Instructor"
-                    value={cls.instructor_name || 'Unassigned'}
+                    value={getInstructorName(cls.events) || 'Unassigned'}
                 />
                 <InfoCard
                     label="Schedule"
@@ -146,7 +152,11 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     );
 }
 
-export function StatCards({ cls, attendanceRate, atRiskCount }: StatCardsProps) {
+export function StatCards({
+    cls,
+    attendanceRate,
+    atRiskCount
+}: StatCardsProps) {
     const avgRate = Math.round(attendanceRate);
     const capacityPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
@@ -157,9 +167,7 @@ export function StatCards({ cls, attendanceRate, atRiskCount }: StatCardsProps) 
             <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Users className="size-5 text-[#556830] shrink-0" />
-                    <h3 className="text-[#203622] truncate">
-                        Enrollment
-                    </h3>
+                    <h3 className="text-[#203622] truncate">Enrollment</h3>
                 </div>
                 <div className="text-3xl text-[#203622] mb-2">
                     {cls.enrolled} / {cls.capacity}
@@ -170,21 +178,17 @@ export function StatCards({ cls, attendanceRate, atRiskCount }: StatCardsProps) 
                     indicatorClassName="bg-[#556830]"
                 />
                 <div className="text-sm text-gray-600">
-                    {spotsAvailable}{' '}
-                    {spotsAvailable === 1 ? 'spot' : 'spots'} available
+                    {spotsAvailable} {spotsAvailable === 1 ? 'spot' : 'spots'}{' '}
+                    available
                 </div>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Calendar className="size-5 text-[#556830] shrink-0" />
-                    <h3 className="text-[#203622] truncate">
-                        Attendance
-                    </h3>
+                    <h3 className="text-[#203622] truncate">Attendance</h3>
                 </div>
-                <div className="text-3xl text-[#203622] mb-2">
-                    {avgRate}%
-                </div>
+                <div className="text-3xl text-[#203622] mb-2">{avgRate}%</div>
                 <Progress
                     value={avgRate}
                     className="h-2 mb-3"
@@ -213,9 +217,7 @@ export function StatCards({ cls, attendanceRate, atRiskCount }: StatCardsProps) 
                             All residents engaged
                         </span>
                     ) : (
-                        <span>
-                            Low attendance or consecutive absences
-                        </span>
+                        <span>Low attendance or consecutive absences</span>
                     )}
                 </div>
             </div>
@@ -240,9 +242,7 @@ function InfoCard({
             <div className={`text-[#203622]${smallValue ? ' text-sm' : ''}`}>
                 {value}
             </div>
-            {sub && (
-                <div className="text-xs text-gray-600 mt-1">{sub}</div>
-            )}
+            {sub && <div className="text-xs text-gray-600 mt-1">{sub}</div>}
         </div>
     );
 }
