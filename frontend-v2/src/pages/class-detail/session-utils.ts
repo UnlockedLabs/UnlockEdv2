@@ -315,6 +315,11 @@ export function buildSessionDisplays(
             const rescheduleTo = toFrom.get(inst.date);
             let isRescheduledFrom =
                 rescheduleFrom != null && inst.is_cancelled;
+            // Fallback: backend sets is_rescheduled=true when reason='rescheduled',
+            // regardless of linked_override_event_id chain availability.
+            if (!isRescheduledFrom && inst.is_rescheduled && inst.is_cancelled) {
+                isRescheduledFrom = true;
+            }
             const isRescheduledTo =
                 rescheduleTo != null &&
                 (!rescheduleTo.startTime ||
@@ -325,8 +330,7 @@ export function buildSessionDisplays(
             const isSameDateReschedule =
                 isRescheduledTo &&
                 !isRescheduledFrom &&
-                rescheduleTo != null &&
-                rescheduleTo.date === inst.date;
+                rescheduleTo?.date === inst.date;
             if (isSameDateReschedule && rescheduleFrom) {
                 isRescheduledFrom = true;
             }
@@ -348,14 +352,19 @@ export function buildSessionDisplays(
                 isCancelledReschedule,
                 rescheduledDate: isRescheduledFrom && rescheduleFrom
                     ? rescheduleFrom.date
+                    : isRescheduledFrom && inst.rescheduled_to_date
+                    ? inst.rescheduled_to_date
                     : (isRescheduledTo || isCancelledReschedule) && rescheduleTo
                       ? rescheduleTo.date
                       : undefined,
                 rescheduleOverrideId: isRescheduledFrom && rescheduleFrom
                     ? rescheduleFrom.overrideId
+                    : isRescheduledFrom && inst.override_id
+                    ? inst.override_id
                     : (isRescheduledTo || isCancelledReschedule) && rescheduleTo
                       ? rescheduleTo.overrideId
                       : undefined,
+                rescheduledClassTime: undefined as string | undefined,
                 cancellationReason:
                     inst.is_cancelled && !isRescheduledFrom
                         ? cancellationReasons?.get(inst.date)

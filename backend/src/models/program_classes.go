@@ -25,21 +25,20 @@ with a collection of Events held at a particular Facility
 */
 type ProgramClass struct {
 	DatabaseFields
-	ProgramID      uint        `json:"program_id" gorm:"not null"`
-	FacilityID     uint        `json:"facility_id" gorm:"not null"`
-	Capacity       int64       `json:"capacity" gorm:"not null"`
-	Name           string      `json:"name" gorm:"size:255" validate:"required,max=255"`
-	InstructorID   *uint       `json:"instructor_id"`
-	Instructor     *User       `json:"instructor" gorm:"foreignKey:InstructorID;references:ID"`
-	InstructorName string      `json:"instructor_name" gorm:"size:255" validate:"omitempty,max=255"`
-	Description    string      `json:"description" gorm:"not null" validate:"required,max=255"`
-	ArchivedAt     *time.Time  `json:"archived_at"`
-	StartDt        time.Time   `gorm:"type:date" json:"start_dt"`
-	EndDt          *time.Time  `gorm:"type:date" json:"end_dt"`
-	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
-	CreditHours    *int64      `json:"credit_hours"`
-	Enrolled       int64       `json:"enrolled" gorm:"-"`
-	Completed      int64       `json:"completed" gorm:"-"`
+	ProgramID        uint        `json:"program_id" gorm:"not null"`
+	FacilityID       uint        `json:"facility_id" gorm:"not null"`
+	Capacity         int64       `json:"capacity" gorm:"not null"`
+	Name             string      `json:"name" gorm:"size:255" validate:"required,max=255"`
+	InstructorID     *uint       `json:"instructor_id" gorm:"-"`
+	UpdateInstructor bool        `json:"-" gorm:"-"`
+	Description      string      `json:"description" gorm:"not null" validate:"required,max=255"`
+	ArchivedAt       *time.Time  `json:"archived_at"`
+	StartDt          time.Time   `gorm:"type:date" json:"start_dt"`
+	EndDt            *time.Time  `gorm:"type:date" json:"end_dt"`
+	Status           ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
+	CreditHours      *int64      `json:"credit_hours"`
+	Enrolled         int64       `json:"enrolled" gorm:"-"`
+	Completed        int64       `json:"completed" gorm:"-"`
 
 	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -308,20 +307,6 @@ type ConflictDetail struct {
 	ConflictStart    time.Time `json:"conflict_start"`
 	ConflictEnd      time.Time `json:"conflict_end"`
 	Reason           string    `json:"reason"`
-}
-
-// GetInstructorNameForJSON returns instructor name with backward compatibility
-// Frontend should check instructor object first, then fallback to instructor_name
-func (pc *ProgramClass) GetInstructorNameForJSON() string {
-	// If we have instructor relationship, use it
-	if pc.Instructor != nil {
-		if pc.Instructor.NameFirst != "" && pc.Instructor.NameLast != "" {
-			return pc.Instructor.NameFirst + " " + pc.Instructor.NameLast
-		}
-		return pc.Instructor.Username
-	}
-	// Fallback to legacy instructor_name field
-	return pc.InstructorName
 }
 
 type BulkCancelSessionsRequest struct {

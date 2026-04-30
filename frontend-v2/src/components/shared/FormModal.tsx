@@ -14,6 +14,7 @@ interface FormModalProps {
     description?: string;
     children: ReactNode;
     className?: string;
+    preventAutoFocus?: boolean;
 }
 
 export function FormModal({
@@ -22,13 +23,17 @@ export function FormModal({
     title,
     description,
     children,
-    className
+    className,
+    preventAutoFocus
 }: FormModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className={className}>
+            <DialogContent
+                className={className}
+                onOpenAutoFocus={preventAutoFocus ? (e) => e.preventDefault() : undefined}
+            >
                 <DialogHeader>
-                    <DialogTitle className="text-foreground">
+                    <DialogTitle className="text-[#203622]">
                         {title}
                     </DialogTitle>
                     {description && (

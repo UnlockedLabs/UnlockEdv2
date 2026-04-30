@@ -19,10 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Class } from '@/types/program';
-import { ClassEventInstance } from '@/types/events';
+import { ClassEventInstance, FacilityProgramClassEvent, ProgramClassEvent } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
+import { SelectedClassStatus } from '@/types/attendance';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
-import { CancelSessionModal } from './CancelSessionModal';
+import { CancelEventModal } from '@/components/schedule/CancelEventModal';
 import {
     BulkCancelSessionsModal,
     BulkCancelSession
@@ -41,6 +42,47 @@ import {
     findCancelOverrideId,
     type SessionDisplay
 } from './session-utils';
+
+function buildFacilityEvent(
+    session: SessionDisplay,
+    classId: number,
+    classEvents: ProgramClassEvent[]
+): FacilityProgramClassEvent {
+    const eventId = session.instance.event_id ?? session.instance.id;
+    const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
+    const parts = session.instance.class_time.split('-');
+    const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
+    const [eh = 0, em = 0] = (parts[1] ?? '').split(':').map(Number);
+    const start = new Date(session.dateObj);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(session.dateObj);
+    end.setHours(eh, em, 0, 0);
+    return {
+        id: eventId,
+        class_id: classId,
+        duration: backingEvent?.duration ?? '',
+        room_id: backingEvent?.room_id ?? 0,
+        recurrence_rule: backingEvent?.recurrence_rule ?? '',
+        is_cancelled: session.instance.is_cancelled,
+        instructor_id: backingEvent?.instructor_id ?? null,
+        overrides: backingEvent?.overrides ?? [],
+        reason: null,
+        start,
+        end,
+        is_override: !!session.instance.override_id,
+        override_id: session.instance.override_id ?? 0,
+        linked_override_event: null as unknown as FacilityProgramClassEvent,
+        room: '',
+        instructor_name: '',
+        program_id: 0,
+        program_name: '',
+        title: '',
+        enrolled_users: '',
+        frequency: '',
+        credit_types: '',
+        class_status: SelectedClassStatus.Scheduled
+    };
+}
 
 type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
 type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
@@ -684,32 +726,19 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             )}
 
             {showQuickCancel && quickCancelSession && (
-                <CancelSessionModal
+                <CancelEventModal
                     open={showQuickCancel}
-                    onClose={() => {
-                        setShowQuickCancel(false);
-                        setQuickCancelSession(null);
+                    onOpenChange={(open) => {
+                        setShowQuickCancel(open);
+                        if (!open) setQuickCancelSession(null);
                     }}
-                    classId={cls.id}
-                    eventId={
-                        quickCancelSession.instance.event_id ??
-                        quickCancelSession.instance.id
-                    }
-                    date={quickCancelSession.instance.date}
-                    classTime={quickCancelSession.instance.class_time}
-                    dateLabel={quickCancelSession.dateObj.toLocaleDateString(
-                        'en-US',
-                        {
-                            weekday: 'long',
-                            month: 'long',
-                            day: 'numeric'
-                        }
-                    )}
-                    onCancelled={() => {
+                    event={buildFacilityEvent(quickCancelSession, cls.id, cls.events ?? [])}
+                    onSuccess={() => {
                         setShowQuickCancel(false);
                         setQuickCancelSession(null);
                         void refreshData();
                     }}
+                    showApplyToFuture={false}
                 />
             )}
 
@@ -757,6 +786,8 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 session={selectedSession}
                 onClose={() => setSelectedSession(null)}
                 className={cls.name}
+                facilityId={String(cls.facility_id)}
+                classEvents={cls.events ?? []}
                 classTime={
                     selectedSession?.instance.class_time ??
                     cls.events?.[0]?.duration ??

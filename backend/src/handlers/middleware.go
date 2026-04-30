@@ -259,6 +259,11 @@ func FacilityAdminResolver(table string, param string) RouteResolver {
 			return true
 		}
 		id := r.PathValue(param)
+		// The facilities table IS the facility — compare path ID directly.
+		if table == "facilities" {
+			facID, err := strconv.ParseUint(id, 10, 64)
+			return err == nil && claims.FacilityID == uint(facID)
+		}
 		var facID uint
 		err := tx.Table(table).
 			Select("facility_id").

@@ -140,7 +140,8 @@ export default function ProgramsPage() {
                 ),
                 funding_type: programFormData.fundingTypes[0],
                 is_active:
-                    programFormData.status === ProgramEffectiveStatus.Available
+                    programFormData.status === ProgramEffectiveStatus.Available,
+                facilities: programFormData.facilities
             };
 
             const resp = (await API.post<Program, typeof payload>(

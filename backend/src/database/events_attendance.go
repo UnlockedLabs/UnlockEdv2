@@ -502,6 +502,7 @@ func (db *DB) GetActiveClassesWithEvents(args *models.QueryContext, facilityID *
 		Model(&models.ProgramClass{}).
 		Preload("Events.Overrides").
 		Preload("Events.RoomRef").
+		Preload("Events.Instructor").
 		Preload("Facility").
 		Where("status = ?", models.Active).
 		Where("archived_at IS NULL")
