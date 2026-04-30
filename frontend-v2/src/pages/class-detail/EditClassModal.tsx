@@ -26,6 +26,7 @@ import {
   ServerResponseOne,
   NewUserResponse
 } from '@/types';
+import { formatRoomConflictRange, getInstructorId } from '@/lib/formatters';
 
 interface EditClassModalProps {
   open: boolean;
@@ -207,6 +208,7 @@ export function EditClassModal({
   onUpdated
 }: EditClassModalProps) {
   const { user } = useAuth();
+  const timezone = user?.timezone ?? 'UTC';
 
   const activeEvent = cls.events?.find((e) => !e.is_cancelled);
   const initialSchedule = activeEvent
@@ -249,7 +251,7 @@ export function EditClassModal({
     values: {
       name: cls.name,
       description: cls.description,
-      instructor_id: cls.instructor_id ?? null,
+      instructor_id: getInstructorId(cls.events) ?? null,
       capacity: cls.capacity,
       credit_hours: cls.credit_hours ?? null,
       start_dt: cls.start_dt.split('T')[0],
@@ -364,7 +366,7 @@ export function EditClassModal({
         ? Number(data.instructor_id)
         : null,
       capacity: Number(data.capacity),
-      credit_hours: data.credit_hours != null && data.credit_hours !== '' ? Number(data.credit_hours) : null,
+      credit_hours: data.credit_hours != null ? Number(data.credit_hours) : null,
       status: data.status,
       start_dt: `${data.start_dt}T00:00:00Z`,
       end_dt: data.end_dt ? `${data.end_dt}T00:00:00Z` : null,
@@ -1012,10 +1014,7 @@ export function EditClassModal({
                       {c.class_name}
                     </p>
                     <p className="text-red-600">
-                      {new Date(c.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
-                      {new Date(c.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      {' - '}
-                      {new Date(c.end_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      {formatRoomConflictRange(c.start_time, c.end_time, timezone)}
                     </p>
                   </div>
                 ))}

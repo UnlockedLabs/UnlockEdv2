@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 import API from '@/api/api';
 import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
 import { FormModal } from '@/components/shared/FormModal';
@@ -61,14 +62,9 @@ function parseRRuleDefaults(event: FacilityProgramClassEvent) {
     return { startTime, endTime, days, endDate };
 }
 
-function closedSeriesRRule(
-    originalRule: string,
-    closeDateStr: string
-): string {
+function closedSeriesRRule(originalRule: string, closeDateStr: string): string {
     const untilStr = closeDateStr.replace(/-/g, '') + 'T235959Z';
-    const ruleClean = originalRule
-        .replace(/;UNTIL=\d{8}T\d{6}Z/, '')
-        .replace(/\n/, '\n');
+    const ruleClean = originalRule.replace(/;UNTIL=\d{8}T\d{6}Z/, '').replace(/\n/, '\n');
     const parts = ruleClean.split('\n');
     return parts[0] + '\n' + parts[1] + `;UNTIL=${untilStr}`;
 }
@@ -87,26 +83,39 @@ export function RescheduleSeriesModal({
     onSuccess
 }: RescheduleSeriesModalProps) {
     const rruleRef = useRef<RRuleFormHandle>(null);
-    const [roomId, setRoomId] = useState(
-        event.room_id ? String(event.room_id) : ''
-    );
+    const [roomId, setRoomId] = useState(event.room_id ? String(event.room_id) : '');
     const [submitting, setSubmitting] = useState(false);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
 
     const defaults = parseRRuleDefaults(event);
+    const currentRoomName = rooms.find((r) => r.id === event.room_id)?.name ?? '';
+
+    const DAY_CODE_MAP: Record<string, string> = {
+        MO: 'Monday', TU: 'Tuesday', WE: 'Wednesday', TH: 'Thursday',
+        FR: 'Friday', SA: 'Saturday', SU: 'Sunday'
+    };
+    const currentDays = defaults.days.map((d) => DAY_CODE_MAP[d] ?? d).join(', ');
+    const currentTimeRange = defaults.startTime && defaults.endTime
+        ? `${defaults.startTime} - ${defaults.endTime}`
+        : '';
+
+    const sessionDateLong = event.start.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
 
     async function handleSubmit() {
         if (!rruleRef.current?.validate()) {
-            toast.error('Please fill in all schedule fields');
+            toast.error('Please fill in all required schedule fields');
             return;
         }
         const result = rruleRef.current.createRule();
         if (!result) return;
 
-        const newStartDate = result.rule.match(
-            /DTSTART;TZID=Local:(\d{4})(\d{2})(\d{2})/
-        );
+        const newStartDate = /DTSTART;TZID=Local:(\d{4})(\d{2})(\d{2})/.exec(result.rule);
         if (!newStartDate) {
             toast.error('Invalid start date');
             return;
@@ -115,27 +124,22 @@ export function RescheduleSeriesModal({
         const closeDate = dayBefore(newStartDateStr);
 
         setSubmitting(true);
-        const resp = await API.put(
-            `program-classes/${event.class_id}/events`,
-            {
-                event_series: {
-                    class_id: event.class_id,
-                    recurrence_rule: result.rule,
-                    duration: result.duration,
-                    room_id: roomId ? Number(roomId) : event.room_id
-                },
-                closed_event_series: {
-                    id: event.id,
-                    class_id: event.class_id,
-                    recurrence_rule: closedSeriesRRule(
-                        event.recurrence_rule,
-                        closeDate
-                    ),
-                    duration: event.duration,
-                    room_id: event.room_id
-                }
+        const resp = await API.put(`program-classes/${event.class_id}/events`, {
+            event_series: {
+                class_id: event.class_id,
+                recurrence_rule: result.rule,
+                duration: result.duration,
+                room_id: roomId ? Number(roomId) : event.room_id,
+                instructor_id: event.instructor_id ?? null
+            },
+            closed_event_series: {
+                id: event.id,
+                class_id: event.class_id,
+                recurrence_rule: closedSeriesRRule(event.recurrence_rule, closeDate),
+                duration: event.duration,
+                room_id: event.room_id
             }
-        );
+        });
         setSubmitting(false);
 
         if (resp.status === 409 && Array.isArray(resp.data)) {
@@ -145,7 +149,7 @@ export function RescheduleSeriesModal({
         }
 
         if (resp.success) {
-            toast.success('Series rescheduled');
+            toast.success('Class rescheduled successfully');
             onOpenChange(false);
             onSuccess();
         } else {
@@ -158,32 +162,42 @@ export function RescheduleSeriesModal({
             <FormModal
                 open={open}
                 onOpenChange={onOpenChange}
-                title="Edit Series"
-                description={`Update the recurring schedule for "${event.title}"`}
-                className="max-w-lg"
+                title="Reschedule Series"
+                description={`Update the recurring schedule pattern starting from ${sessionDateLong}. This will affect all future sessions in the series.`}
+                className="max-w-lg max-h-[90vh] overflow-y-auto"
+                preventAutoFocus
             >
-                <div className="space-y-4">
+                <div className="pt-4 pb-0">
+                <div className="space-y-5">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Current Schedule</h4>
+                        <div className="space-y-1 text-sm text-gray-600">
+                            {currentDays && <div><span className="font-medium">Days:</span> {currentDays}</div>}
+                            {currentTimeRange && <div><span className="font-medium">Time:</span> {currentTimeRange}</div>}
+                            {currentRoomName && <div><span className="font-medium">Room:</span> {currentRoomName}</div>}
+                        </div>
+                    </div>
+
                     <RRuleControl
                         ref={rruleRef}
-                        defaultStartDate=""
+                        defaultStartDate={`${event.start.getFullYear()}-${String(event.start.getMonth() + 1).padStart(2, '0')}-${String(event.start.getDate()).padStart(2, '0')}`}
                         defaultStartTime={defaults.startTime}
                         defaultEndTime={defaults.endTime}
                         defaultDays={defaults.days}
                         defaultEndDate={defaults.endDate}
+                        startDateLabel="Effective Starting From *"
+                        startDateHelper="Changes will apply to all sessions on or after this date"
                     />
 
                     <div className="space-y-2">
-                        <Label>Room</Label>
+                        <Label>New Room *</Label>
                         <Select value={roomId} onValueChange={setRoomId}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select room" />
+                                <SelectValue placeholder="Select a room" />
                             </SelectTrigger>
                             <SelectContent>
                                 {rooms.map((room) => (
-                                    <SelectItem
-                                        key={room.id}
-                                        value={String(room.id)}
-                                    >
+                                    <SelectItem key={room.id} value={String(room.id)}>
                                         {room.name}
                                     </SelectItem>
                                 ))}
@@ -191,19 +205,29 @@ export function RescheduleSeriesModal({
                         </Select>
                     </div>
 
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div className="flex gap-3">
+                            <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm text-amber-900 font-medium mb-1">Important</p>
+                                <p className="text-sm text-amber-700">
+                                    This will update the recurring schedule for all future sessions. Sessions before the effective date will remain on the original schedule.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div className="flex justify-end gap-2 mt-8">
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
                         <Button
                             onClick={() => void handleSubmit()}
                             disabled={submitting}
-                            className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                            className="bg-[#556830] hover:bg-[#203622] text-white"
                         >
-                            {submitting ? 'Saving...' : 'Save Series'}
+                            {submitting ? 'Saving...' : 'Reschedule Series'}
                         </Button>
                     </div>
                 </div>
