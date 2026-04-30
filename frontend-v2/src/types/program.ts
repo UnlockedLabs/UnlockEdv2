@@ -26,7 +26,6 @@ export enum ProgramType {
     VOCATIONAL = 'Vocational'
 }
 
-
 export enum CreditType {
     COMPLETION = 'Completion',
     EARNED_TIME = 'Earned-time',
@@ -139,8 +138,6 @@ export interface Class {
     facility_id: number;
     facility_name: string;
     facility?: Facility;
-    instructor_name: string;
-    instructor_id?: number | null;
     instructor?: User | null;
     name: string;
     description: string;
@@ -256,6 +253,13 @@ export interface OverrideForm {
     override_rule?: string;
     is_cancelled?: boolean;
     duration?: string;
+}
+
+export enum ChangeReason {
+    'Scheduling conflict' = 'Scheduling conflict',
+    'Resource unavailable' = 'Resource unavailable',
+    'Administrative change' = 'Administrative change',
+    'Other' = 'Other'
 }
 
 export enum CancelEventReason {

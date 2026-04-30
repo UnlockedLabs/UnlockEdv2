@@ -864,47 +864,48 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 		Joins("JOIN facilities f ON f.id = u.facility_id").
 		Joins("LEFT JOIN program_completions c on c.program_class_id = pc.id and c.user_id = u.id").
 		Joins("LEFT JOIN program_class_events pce on pce.class_id = pc.id").
+		Joins("LEFT JOIN users iu ON iu.id = pce.instructor_id").
 		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id = pce.id AND pca.user_id = u.id").
 		Select(`
-	           f.name AS facility_name,
-	           p.name AS program_name,
-	           pc.name AS class_name,
-		       pc.instructor_name AS instructor_name,
-			   u.id as unlock_ed_id,
-	           u.doc_id AS resident_id,
+				f.name AS facility_name,
+				p.name AS program_name,
+				pc.name AS class_name,
+				COALESCE(iu.name_first || ' ' || iu.name_last, '') AS instructor_name,
+				u.id as unlock_ed_id,
+				u.doc_id AS resident_id,
 				u.name_last AS name_last,
 				u.name_first AS name_first,
-	           pe.created_at as enrollment_date,
-			   COALESCE(
-	           CASE
-	               WHEN c.id IS NOT NULL THEN c.created_at
-	               WHEN pe.enrollment_status IN (?) THEN pe.updated_at
-	               END,
-	               pc.end_dt
+				pe.created_at as enrollment_date,
+				COALESCE(
+				CASE
+					WHEN c.id IS NOT NULL THEN c.created_at
+					WHEN pe.enrollment_status IN (?) THEN pe.updated_at
+					END,
+					pc.end_dt
 	 		) as end_date,
-	           pe.enrollment_status AS end_status,
-	           CASE
-	               WHEN COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END) = 0 THEN 0
-	               ELSE
-	                   COALESCE(
-	                       SUM(
-							   CASE
-								   WHEN pca.attendance_status = 'present' THEN 1
-								   WHEN pca.attendance_status = 'partial' THEN `+partialAttendanceSQL+`
-								   ELSE 0
-							   END
-						   ) * 100.0 /
-	                       NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
-	                       0
-	                   )
-	           END AS attendance_percentage`, statuses).
+				pe.enrollment_status AS end_status,
+				CASE
+					WHEN COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END) = 0 THEN 0
+					ELSE
+						COALESCE(
+							SUM(
+								CASE
+									WHEN pca.attendance_status = 'present' THEN 1
+									WHEN pca.attendance_status = 'partial' THEN `+partialAttendanceSQL+`
+									ELSE 0
+								END
+							) * 100.0 /
+							NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
+							0
+						)
+				END AS attendance_percentage`, statuses).
 		Where(`
 			(
 				c.id IS NOT NULL
 				OR pe.enrollment_status IN (?)
 			)
 		`, statuses).
-		Group("u.id, u.doc_id, f.name, p.name, pc.name,pc.instructor_name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
+		Group("u.id, u.doc_id, f.name, p.name, pc.name, iu.name_first, iu.name_last, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
 		Order("f.name ASC, p.name ASC, pc.name ASC, end_date DESC")
 
 	if !args.All {

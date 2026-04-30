@@ -4,6 +4,7 @@ import { SWRConfig } from 'swr';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TourProvider } from '@/contexts/TourContext';
 import App from '@/App';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '@/styles/globals.css';
 
 ReactDOM.createRoot(document.querySelector('#root')!).render(

@@ -32,14 +32,18 @@ export function RestoreEventModal({
         hour12: true
     });
 
+    const isSeries = !event.is_override;
+
     async function handleConfirm() {
         setSubmitting(true);
-        const resp = await API.delete(
-            `program-classes/${event.class_id}/events/${event.override_id}`
-        );
+        const d = event.start;
+        const restoreDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const resp = isSeries
+            ? await API.post(`program-classes/${event.class_id}/events/${event.id}/uncancel-series`, { restore_date: restoreDate })
+            : await API.delete(`program-classes/${event.class_id}/events/${event.override_id}`);
         setSubmitting(false);
         if (resp.success) {
-            toast.success('Event restored');
+            toast.success(isSeries ? 'Future sessions restored' : 'Cancellation undone');
             onOpenChange(false);
             onSuccess();
         } else {
@@ -51,8 +55,12 @@ export function RestoreEventModal({
         <ConfirmDialog
             open={open}
             onOpenChange={onOpenChange}
-            title="Restore Event"
-            description={`This will restore the event to its original schedule: ${dateStr} at ${timeStr}`}
+            title={isSeries ? 'Restore Future Sessions' : 'Restore Event'}
+            description={
+                isSeries
+                    ? `This will restore all cancelled sessions from ${dateStr} onwards.`
+                    : `This will restore the event to its original schedule: ${dateStr} at ${timeStr}`
+            }
             confirmLabel={submitting ? 'Restoring...' : 'Restore'}
             onConfirm={() => void handleConfirm()}
         />

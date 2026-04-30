@@ -1,5 +1,4 @@
 import { useState, useImperativeHandle, forwardRef } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -21,6 +20,8 @@ interface RRuleControlProps {
     defaultEndTime?: string;
     defaultDays?: string[];
     defaultEndDate?: string;
+    startDateLabel?: string;
+    startDateHelper?: string;
 }
 
 const WEEKDAY_OPTIONS = [
@@ -35,6 +36,12 @@ const WEEKDAY_OPTIONS = [
 
 type Frequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
+const FREQUENCY_HELPER: Record<Frequency, string> = {
+    DAILY: 'Class repeats every day',
+    WEEKLY: 'Class repeats every week on the selected days',
+    MONTHLY: 'Class repeats monthly on the same day'
+};
+
 function formatDuration(startTime: string, endTime: string): string {
     if (!startTime || !endTime) return '0h0m0s';
     const [sh, sm] = startTime.split(':').map(Number);
@@ -48,7 +55,7 @@ function formatDuration(startTime: string, endTime: string): string {
 
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
     function RRuleControl(
-        { defaultStartDate, defaultStartTime, defaultEndTime, defaultDays, defaultEndDate },
+        { defaultStartDate, defaultStartTime, defaultEndTime, defaultDays, defaultEndDate, startDateLabel, startDateHelper },
         ref
     ) {
         const [startDate, setStartDate] = useState(defaultStartDate ?? '');
@@ -56,16 +63,11 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
         const [endTime, setEndTime] = useState(defaultEndTime ?? '');
         const [frequency, setFrequency] = useState<Frequency>('WEEKLY');
         const [days, setDays] = useState<string[]>(defaultDays ?? []);
-        const [endType, setEndType] = useState<'never' | 'until'>(
-            defaultEndDate ? 'until' : 'never'
-        );
-        const [untilDate, setUntilDate] = useState(defaultEndDate ?? '');
+        const [untilDate] = useState(defaultEndDate ?? '');
 
         function toggleDay(day: string) {
             setDays((prev) =>
-                prev.includes(day)
-                    ? prev.filter((d) => d !== day)
-                    : [...prev, day]
+                prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
             );
         }
 
@@ -75,7 +77,6 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
                 const dur = formatDuration(startTime, endTime);
                 if (dur === '0h0m0s') return false;
                 if (frequency === 'WEEKLY' && days.length === 0) return false;
-                if (endType === 'until' && !untilDate) return false;
                 return true;
             },
             createRule() {
@@ -85,7 +86,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
                 if (frequency === 'WEEKLY' && days.length > 0) {
                     rule += `;BYDAY=${days.join(',')}`;
                 }
-                if (endType === 'until' && untilDate) {
+                if (untilDate) {
                     rule += `;UNTIL=${untilDate.replace(/-/g, '')}T235959Z`;
                 }
                 return {
@@ -97,35 +98,18 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
 
         return (
             <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-2">
-                        <Label>Start Date</Label>
-                        <Input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Start Time</Label>
-                        <Input
-                            type="time"
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>End Time</Label>
-                        <Input
-                            type="time"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                        />
-                    </div>
+                <div className="space-y-2">
+                    <Label>{startDateLabel ?? 'Start Date'}</Label>
+                    <Input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                    />
+                    {startDateHelper && <p className="text-sm text-gray-500">{startDateHelper}</p>}
                 </div>
 
-                <div className="space-y-2">
-                    <Label>Frequency</Label>
+                <div className="space-y-2 pt-1">
+                    <Label>Repeats *</Label>
                     <Select
                         value={frequency}
                         onValueChange={(v) => setFrequency(v as Frequency)}
@@ -139,66 +123,48 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
                             <SelectItem value="MONTHLY">Monthly</SelectItem>
                         </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500">{FREQUENCY_HELPER[frequency]}</p>
                 </div>
 
                 {frequency === 'WEEKLY' && (
-                    <div className="space-y-2">
-                        <Label>Days of Week</Label>
-                        <div className="flex flex-wrap gap-2">
+                    <div className="space-y-2 pt-1">
+                        <Label>Days of Week *</Label>
+                        <div className="grid grid-cols-4 gap-2">
                             {WEEKDAY_OPTIONS.map((day) => (
-                                <Button
+                                <button
                                     key={day.value}
                                     type="button"
-                                    variant={
-                                        days.includes(day.value)
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size="sm"
-                                    className={
-                                        days.includes(day.value)
-                                            ? 'bg-[#556830] hover:bg-[#203622] text-white'
-                                            : 'border-gray-300'
-                                    }
                                     onClick={() => toggleDay(day.value)}
+                                    className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
+                                        days.includes(day.value)
+                                            ? 'bg-[#556830] text-white border-[#556830]'
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                    }`}
                                 >
                                     {day.label}
-                                </Button>
+                                </button>
                             ))}
                         </div>
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4 pt-1">
                     <div className="space-y-2">
-                        <Label>Ends</Label>
-                        <Select
-                            value={endType}
-                            onValueChange={(v) =>
-                                setEndType(v as 'never' | 'until')
-                            }
-                        >
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="never">Never</SelectItem>
-                                <SelectItem value="until">
-                                    Until Date
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Label>New Start Time *</Label>
+                        <Input
+                            type="time"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                        />
                     </div>
-                    {endType === 'until' && (
-                        <div className="space-y-2">
-                            <Label>Until</Label>
-                            <Input
-                                type="date"
-                                value={untilDate}
-                                onChange={(e) => setUntilDate(e.target.value)}
-                            />
-                        </div>
-                    )}
+                    <div className="space-y-2">
+                        <Label>New End Time *</Label>
+                        <Input
+                            type="time"
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
         );

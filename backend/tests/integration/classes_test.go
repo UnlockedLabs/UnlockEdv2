@@ -74,15 +74,6 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 		require.NotZero(t, got.ID)
 		require.Equal(t, class.Name, got.Name)
 		require.Equal(t, class.InstructorID, got.InstructorID)
-		require.NotEmpty(t, got.InstructorName)
-		// Backend populates InstructorName from the instructor user (name_first || ' ' || name_last, fallback to username)
-		expectedInstructorName := fmt.Sprintf("%s %s", instructor.NameFirst, instructor.NameLast)
-		if expectedInstructorName == " " {
-			expectedInstructorName = instructor.Username
-		}
-		require.Equal(t, expectedInstructorName, got.InstructorName)
-
-		// Note: The instructor relationship is not populated in the response, only InstructorName is filled
 		require.Equal(t, class.Description, got.Description)
 		require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
 		require.WithinDuration(t, *class.EndDt, *got.EndDt, time.Millisecond)

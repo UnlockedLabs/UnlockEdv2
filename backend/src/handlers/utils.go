@@ -71,7 +71,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	ctxWithUser := context.WithValue(r.Context(), models.UserIDKey, claims.UserID)
 	f, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
-	if err != nil {
+	if err != nil || !claims.canSwitchFacility() {
 		facilityID = claims.FacilityID
 	} else {
 		facilityID = uint(f)

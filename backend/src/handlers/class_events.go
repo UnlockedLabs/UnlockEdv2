@@ -26,6 +26,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/events/{event_id}", srv.handlePatchEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_override_id}/uncancel", srv.handleUncancelOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/uncancel-series", srv.handleUncancelSeries, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
 	}
@@ -46,6 +47,7 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 			return newInvalidIdServiceError(err, "class_id")
 		}
 	}
+
 	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -198,6 +200,19 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 	}
 	if req.Date == "" {
 		return newBadRequestServiceError(errors.New("date is required"), "date is required")
+	}
+	if req.InstructorID != nil {
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		name, err := srv.Db.GetInstructorNameByID(*req.InstructorID, class.FacilityID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if name == "" {
+			return newForbiddenServiceError(errors.New("instructor does not belong to this facility"), "instructor not authorized for this facility")
+		}
 	}
 	ctx := srv.getQueryContext(r)
 	event, err := srv.Db.GetEventById(eventId)
@@ -355,6 +370,27 @@ func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Requ
 	return writeJsonResponse(w, http.StatusNoContent, "Event override(s) deleted successfully")
 }
 
+func (srv *Server) handleUncancelSeries(w http.ResponseWriter, r *http.Request, log sLog) error {
+	eventID, err := strconv.Atoi(r.PathValue("event_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event_id")
+	}
+	var req struct {
+		RestoreDate string `json:"restore_date"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if req.RestoreDate == "" {
+		return newBadRequestServiceError(errors.New("restore date is required"), "restore date is required")
+	}
+	ctx := srv.getQueryContext(r)
+	if err := srv.Db.UncancelEventSeries(&ctx, uint(eventID), req.RestoreDate); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Series uncancelled successfully")
+}
+
 func (srv *Server) handleUncancelOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
 	overrideID, err := strconv.Atoi(r.PathValue("event_override_id"))
 	if err != nil {
@@ -440,7 +476,10 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 			return newDatabaseServiceError(err)
 		}
 		var excludeEventID *uint
-		if eventSeriesRequest.EventSeries.ID > 0 {
+		if eventSeriesRequest.ClosedEventSeries.ID > 0 {
+			closedID := eventSeriesRequest.ClosedEventSeries.ID
+			excludeEventID = &closedID
+		} else if eventSeriesRequest.EventSeries.ID > 0 {
 			excludeEventID = &eventSeriesRequest.EventSeries.ID
 		}
 		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
@@ -465,10 +504,11 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	}
 	eventSeriesRequest.EventSeries.ClassID = uint(classID)
 	eventSeriesRequest.ClosedEventSeries.ClassID = uint(classID)
-	events := []models.ProgramClassEvent{
-		eventSeriesRequest.EventSeries,
-		eventSeriesRequest.ClosedEventSeries,
+	var events []models.ProgramClassEvent
+	if eventSeriesRequest.EventSeries.RecurrenceRule != "" {
+		events = append(events, eventSeriesRequest.EventSeries)
 	}
+	events = append(events, eventSeriesRequest.ClosedEventSeries)
 	var maxEvent *models.ProgramClassEvent
 	for i := range allEvents {
 		if maxEvent == nil || allEvents[i].ID > maxEvent.ID {
