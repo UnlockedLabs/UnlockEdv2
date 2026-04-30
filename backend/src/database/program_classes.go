@@ -524,7 +524,7 @@ func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint) (string,
 	err := db.Table("users").
 		Select("COALESCE(name_first || ' ' || name_last, username)").
 		Where("id = ? AND facility_id = ? AND role IN ?",
-			instructorID, facilityID, models.AdminRoles).
+			instructorID, facilityID, []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}).
 		Scan(&instructorName).Error
 	if err != nil {
 		return "", err
