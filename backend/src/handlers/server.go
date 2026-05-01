@@ -587,6 +587,19 @@ func writeConflictResponse(w http.ResponseWriter, conflicts []models.RoomConflic
 	return nil
 }
 
+func writeDeleteConflictResponse(w http.ResponseWriter, message string, blockers models.DeleteBlockingChildren) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+	resp := models.Resource[models.DeleteBlockingChildren]{
+		Message: message,
+		Data:    blockers,
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return newResponseServiceError(err)
+	}
+	return nil
+}
+
 func (srv *Server) errorResponse(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

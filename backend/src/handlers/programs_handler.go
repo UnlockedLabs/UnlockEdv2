@@ -25,6 +25,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
 		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
 		adminFeatureRoute("GET /api/programs/{id}/archive-check", srv.handleGetProgramArchiveCheck, axx),
+		adminFeatureRoute("GET /api/programs/{id}/delete-check", srv.handleGetProgramDeleteCheck, axx),
 		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
@@ -261,12 +262,42 @@ func (srv *Server) handleGetProgramArchiveCheck(w http.ResponseWriter, r *http.R
 	return writeJsonResponse(w, http.StatusOK, payload)
 }
 
+func (srv *Server) handleGetProgramDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	log.add("program_id", id)
+	blockers, err := srv.Db.ProgramBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		CanDelete bool                          `json:"can_delete"`
+		Blockers  models.DeleteBlockingChildren `json:"blockers"`
+	}{
+		CanDelete: !blockers.HasAny(),
+		Blockers:  blockers,
+	}
+	return writeJsonResponse(w, http.StatusOK, payload)
+}
+
 func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	log.add("program_id", id)
+
+	blockers, err := srv.Db.ProgramBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if blockers.HasAny() {
+		log.info("program delete blocked by child records")
+		return writeDeleteConflictResponse(w, "cannot delete: program has child records", blockers)
+	}
+
 	if err = srv.Db.DeleteProgram(id); err != nil {
 		return newDatabaseServiceError(err)
 	}

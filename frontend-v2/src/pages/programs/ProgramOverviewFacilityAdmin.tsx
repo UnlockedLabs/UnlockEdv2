@@ -135,6 +135,11 @@ export default function ProgramOverviewFacilityAdmin() {
     >(`/api/programs/${program_id}${facilityId ? `?facility_id=${facilityId}` : ''}`);
     const program = programResp?.data;
 
+    const { data: deleteCheckResp, mutate: mutateDeleteCheck } = useSWR<
+        ServerResponseOne<{ can_delete: boolean }>
+    >(program_id ? `/api/programs/${program_id}/delete-check` : null);
+    const canDelete = deleteCheckResp?.data?.can_delete ?? false;
+
     const {
         data: classesResp,
         isLoading: classesLoading,
@@ -311,7 +316,6 @@ export default function ProgramOverviewFacilityAdmin() {
     const Icon = primaryType
         ? programTypeIcons[primaryType] || LightBulbIcon
         : LightBulbIcon;
-    const deleteDisabled = classes.length > 0;
     const breadcrumbs = showFacilityContextBanner
         ? [
               { label: 'Dashboard', href: '/dashboard' },
@@ -348,14 +352,17 @@ export default function ProgramOverviewFacilityAdmin() {
     async function handleDeleteProgram() {
         if (!program) return;
         const resp = await API.delete(`programs/${program.id}`);
+        setDeleteModalOpen(false);
+        setDeleteConfirmationText('');
         if (resp.success) {
             toast.success(`Program "${program.name}" has been deleted`);
             navigate('/programs');
-        } else {
-            toast.error(resp.message || 'Failed to delete program');
+            return;
         }
-        setDeleteModalOpen(false);
-        setDeleteConfirmationText('');
+        if (resp.status === 409) {
+            void mutateDeleteCheck();
+        }
+        toast.error(resp.message || 'Failed to delete program');
     }
 
     function getStatusDescription(status: string) {
@@ -519,21 +526,18 @@ export default function ProgramOverviewFacilityAdmin() {
                                                     <div>
                                                         <DropdownMenuItem
                                                             variant="destructive"
-                                                            onClick={() =>
-                                                                setDeleteModalOpen(
-                                                                    true
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                deleteDisabled
-                                                            }
+                                                            onClick={() => {
+                                                                setDeleteConfirmationText('');
+                                                                setDeleteModalOpen(true);
+                                                            }}
+                                                            disabled={!canDelete}
                                                         >
                                                             <Trash2 className="size-4" />
                                                             Delete Program
                                                         </DropdownMenuItem>
                                                     </div>
                                                 </TooltipTrigger>
-                                                {deleteDisabled && (
+                                                {!canDelete && (
                                                     <TooltipContent side="left">
                                                         Cannot delete program
                                                         with existing classes
@@ -765,7 +769,7 @@ export default function ProgramOverviewFacilityAdmin() {
                         </Button>
                         <Button
                             variant="destructive"
-                            onClick={void handleDeleteProgram}
+                            onClick={() => void handleDeleteProgram()}
                             disabled={deleteConfirmationText !== program.name}
                             className="px-7 sm:ml-1 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
                         >

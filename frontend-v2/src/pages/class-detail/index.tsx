@@ -90,6 +90,11 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}/attendance-flags` : null
     );
 
+    const { data: deleteCheckResp } = useSWR<
+        ServerResponseOne<{ can_delete: boolean }>
+    >(class_id ? `/api/program-classes/${class_id}/delete-check` : null);
+    const canDelete = deleteCheckResp?.data?.can_delete ?? false;
+
     const cls = classResp?.data;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
@@ -184,20 +189,17 @@ export default function ClassDetailPage() {
                                             <div>
                                                 <DropdownMenuItem
                                                     variant="destructive"
-                                                    onClick={() =>
-                                                        setShowDeleteModal(true)
-                                                    }
-                                                    disabled={cls.enrolled > 0}
+                                                    onClick={() => setShowDeleteModal(true)}
+                                                    disabled={!canDelete}
                                                 >
                                                     <Trash2 className="size-4 mr-2" />
                                                     Delete Class
                                                 </DropdownMenuItem>
                                             </div>
                                         </TooltipTrigger>
-                                        {cls.enrolled > 0 && (
+                                        {!canDelete && (
                                             <TooltipContent side="left">
-                                                Cannot delete class with
-                                                enrolled residents
+                                                Cannot delete class with enrolled residents
                                             </TooltipContent>
                                         )}
                                     </Tooltip>

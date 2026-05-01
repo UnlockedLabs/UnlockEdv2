@@ -157,7 +157,11 @@ export function ClassManagementFormInner({
 
     const { data: instructorsResp, mutate: mutateInstructors } = useSWR<
         ServerResponseMany<User>
-    >(user ? `/api/users?role=${user.role}&per_page=100` : null);
+    >(
+        user
+            ? `/api/users?role=${user.role}&facility_id=${user.facility_id}&per_page=100`
+            : null
+    );
     const instructors = instructorsResp?.data ?? [];
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(

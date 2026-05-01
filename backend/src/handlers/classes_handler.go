@@ -59,6 +59,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		}),
 		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}", srv.handleDeleteClass, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/delete-check", srv.handleGetClassDeleteCheck, axx, resolver),
 	}
 }
 
@@ -479,12 +480,42 @@ func (c *BulkCancelClaimsAdapter) GetTimezone() string {
 	return c.TimeZone
 }
 
+func (srv *Server) handleGetClassDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	log.add("class_id", id)
+	blockers, err := srv.Db.ClassBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		CanDelete bool                          `json:"can_delete"`
+		Blockers  models.DeleteBlockingChildren `json:"blockers"`
+	}{
+		CanDelete: !blockers.HasAny(),
+		Blockers:  blockers,
+	}
+	return writeJsonResponse(w, http.StatusOK, payload)
+}
+
 func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", id)
+
+	blockers, err := srv.Db.ClassBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if blockers.HasAny() {
+		log.info("class delete blocked by child records")
+		return writeDeleteConflictResponse(w, "cannot delete: class has child records", blockers)
+	}
+
 	if err := srv.Db.DeleteClass(id); err != nil {
 		return newDatabaseServiceError(err)
 	}
