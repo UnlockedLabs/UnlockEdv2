@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -113,7 +114,9 @@ func (r *Request[T]) Do() *Response[T] {
 	var decoded bool
 	rawStr := string(rawBytes)
 
-	if r.asJson && resp.StatusCode < 400 && resp.StatusCode != http.StatusNoContent {
+	contentType := resp.Header.Get("Content-Type")
+	isJSON := strings.Contains(contentType, "application/json")
+	if r.asJson && resp.StatusCode != http.StatusNoContent && isJSON {
 		require.NoError(r.t, json.Unmarshal(rawBytes, &env), "failed to unmarshal response body")
 
 		parsed = new(T)
