@@ -526,7 +526,7 @@ export function ClassManagementFormInner({
                 onCreated();
             }
             if (!embedded) {
-                navigate(`/program-classes/${classId}/dashboard`);
+                navigate(`/program-classes/${classId}/detail`);
             }
         }
     }

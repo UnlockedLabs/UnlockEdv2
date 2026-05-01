@@ -144,7 +144,7 @@ export default function ClassesTab({
                                             navigate(
                                                 '/program-classes/' +
                                                     cls.id +
-                                                    '/dashboard'
+                                                    '/detail'
                                             )
                                         }
                                     />
@@ -169,7 +169,7 @@ export default function ClassesTab({
                                             navigate(
                                                 '/program-classes/' +
                                                     cls.id +
-                                                    '/dashboard'
+                                                    '/detail'
                                             )
                                         }
                                         className="bg-gray-50/50 hover:bg-gray-100"
@@ -195,7 +195,7 @@ export default function ClassesTab({
                                             navigate(
                                                 '/program-classes/' +
                                                     cls.id +
-                                                    '/dashboard'
+                                                    '/detail'
                                             )
                                         }
                                         className="bg-gray-50/50 hover:bg-gray-100"
@@ -221,7 +221,7 @@ export default function ClassesTab({
                                             navigate(
                                                 '/program-classes/' +
                                                     cls.id +
-                                                    '/dashboard'
+                                                    '/detail'
                                             )
                                         }
                                         className="bg-gray-50/50 hover:bg-gray-100"

@@ -22,8 +22,6 @@ export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
 export interface ClassLoaderData extends TitleHandler {
     class?: Class;
     redirect?: string;
-    attendance_rate?: number;
-    missing_attendance?: number;
     rooms?: Room[];
     breadcrumbs?: BreadcrumbItem[];
 }

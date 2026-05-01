@@ -3,7 +3,6 @@ import { AdminRoles } from '@/auth/useAuth';
 import { FeatureAccess, TitleHandler } from '@/types';
 import { UserRole } from '@/types/user';
 import {
-    getClassMgmtData,
     getClassTitle,
     getFilterDropdowns,
     getProgramData,
@@ -18,7 +17,6 @@ import ProgramOverviewDashboard from '@/pages/programs/ProgramOverviewDashboard'
 import ClassManagementForm from '@/pages/programs/ClassManagementForm';
 import ProgramClassManagement from '@/pages/programs/ProgramClassManagement';
 import ClassDetailPage from '@/pages/class-detail';
-import ClassLayout from '@/pages/programs/ClassLayout';
 import ClassEnrollmentDetails from '@/pages/programs/ClassEnrollmentDetails';
 import ClassEvents from '@/pages/programs/ClassEvents';
 import AddClassEnrollments from '@/pages/programs/AddClassEnrollments';
@@ -104,15 +102,6 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
             element: <ProgramClassManagement />,
             handle: { title: 'Class Management' },
             children: [
-                {
-                    path: ':class_id/dashboard',
-                    loader: getClassMgmtData,
-                    element: <ClassLayout />,
-                    errorElement: <Error />,
-                    handle: {
-                        title: (data: TitleHandler) => data.title
-                    }
-                },
                 {
                     path: ':class_id/enrollments',
                     loader: getClassTitle,
