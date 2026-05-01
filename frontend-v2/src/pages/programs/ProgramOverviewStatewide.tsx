@@ -156,6 +156,32 @@ export default function ProgramOverviewStatewide() {
     >(`/api/programs/${program_id}`);
     const program = programResp?.data;
 
+    const { data: deleteCheckResp, mutate: mutateDeleteCheck } = useSWR<
+        ServerResponseOne<{
+            can_delete: boolean;
+            blockers: {
+                classes?: number;
+                enrollments?: number;
+                completions?: number;
+                attendance_flags?: number;
+            };
+        }>
+    >(program_id ? `/api/programs/${program_id}/delete-check` : null);
+    const canDelete = deleteCheckResp?.data?.can_delete ?? false;
+    const deleteBlockers = deleteCheckResp?.data?.blockers;
+    const deleteBlockerReason = (() => {
+        if (canDelete || !deleteBlockers) return null;
+        if ((deleteBlockers.classes ?? 0) > 0)
+            return 'Cannot delete program with existing classes';
+        if ((deleteBlockers.enrollments ?? 0) > 0)
+            return 'Cannot delete program with active enrollments';
+        if ((deleteBlockers.completions ?? 0) > 0)
+            return 'Cannot delete program with completion records';
+        if ((deleteBlockers.attendance_flags ?? 0) > 0)
+            return 'Cannot delete program with attendance records';
+        return 'Cannot delete program';
+    })();
+
     const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
         `/api/programs/${program_id}/classes?all=true&order_by=ps.start_dt asc`
     );
@@ -240,9 +266,12 @@ export default function ProgramOverviewStatewide() {
         if (resp.success) {
             toast.success(`Program "${program.name}" has been deleted`);
             navigate('/programs');
-        } else {
-            toast.error(resp.message || 'Failed to delete program');
+            return;
         }
+        if (resp.status === 409) {
+            void mutateDeleteCheck();
+        }
+        toast.error(resp.message || 'Failed to delete program');
     }
 
     const facilityList = useMemo(() => {
@@ -412,7 +441,6 @@ export default function ProgramOverviewStatewide() {
             ? program.completion_rate
             : computedCompletionRate
     );
-    const deleteDisabled = classes.length > 0;
 
     const toggleSort = (column: typeof sortColumn) => {
         if (sortColumn === column) {
@@ -569,7 +597,7 @@ export default function ProgramOverviewStatewide() {
                                                     setDeleteConfirmText('');
                                                     setShowDeleteDialog(true);
                                                 }}
-                                                disabled={deleteDisabled}
+                                                disabled={!canDelete}
                                                 className="text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                                             >
                                                 <Trash2 className="size-4" />
@@ -577,10 +605,9 @@ export default function ProgramOverviewStatewide() {
                                             </DropdownMenuItem>
                                         </div>
                                     </TooltipTrigger>
-                                    {deleteDisabled && (
+                                    {!canDelete && deleteBlockerReason && (
                                         <TooltipContent side="left">
-                                            Cannot delete program with existing
-                                            classes
+                                            {deleteBlockerReason}
                                         </TooltipContent>
                                     )}
                                 </Tooltip>

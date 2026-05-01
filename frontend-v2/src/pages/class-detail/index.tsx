@@ -90,6 +90,31 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}/attendance-flags` : null
     );
 
+    const { data: deleteCheckResp, mutate: mutateDeleteCheck } = useSWR<
+        ServerResponseOne<{
+            can_delete: boolean;
+            blockers: {
+                enrollments?: number;
+                completions?: number;
+                attendance_flags?: number;
+                non_deletable_status?: string;
+            };
+        }>
+    >(class_id ? `/api/program-classes/${class_id}/delete-check` : null);
+    const canDelete = deleteCheckResp?.data?.can_delete ?? false;
+    const deleteBlockers = deleteCheckResp?.data?.blockers;
+    const deleteBlockerReason = (() => {
+        if (deleteBlockers?.non_deletable_status)
+            return `Only Scheduled classes can be deleted (this class is ${deleteBlockers.non_deletable_status})`;
+        if ((deleteBlockers?.enrollments ?? 0) > 0)
+            return 'Cannot delete class with enrollment records';
+        if ((deleteBlockers?.completions ?? 0) > 0)
+            return 'Cannot delete class with program completions';
+        if ((deleteBlockers?.attendance_flags ?? 0) > 0)
+            return 'Cannot delete class with attendance records';
+        return 'Cannot delete class';
+    })();
+
     const cls = classResp?.data;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
@@ -146,7 +171,7 @@ export default function ClassDetailPage() {
                         <div className="flex-1 min-w-0">
                             <ClassHeader
                                 cls={cls}
-                                onMutate={() => void mutate()}
+                                onMutate={() => { void mutate(); void mutateDeleteCheck(); }}
                             />
                         </div>
                         <div className="flex gap-2 ml-6">
@@ -184,20 +209,17 @@ export default function ClassDetailPage() {
                                             <div>
                                                 <DropdownMenuItem
                                                     variant="destructive"
-                                                    onClick={() =>
-                                                        setShowDeleteModal(true)
-                                                    }
-                                                    disabled={cls.enrolled > 0}
+                                                    onClick={() => setShowDeleteModal(true)}
+                                                    disabled={!canDelete}
                                                 >
                                                     <Trash2 className="size-4 mr-2" />
                                                     Delete Class
                                                 </DropdownMenuItem>
                                             </div>
                                         </TooltipTrigger>
-                                        {cls.enrolled > 0 && (
+                                        {!canDelete && (
                                             <TooltipContent side="left">
-                                                Cannot delete class with
-                                                enrolled residents
+                                                {deleteBlockerReason}
                                             </TooltipContent>
                                         )}
                                     </Tooltip>
@@ -256,7 +278,7 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} flaggedUserIds={flaggedUserIds} onClassMutate={() => void mutate()} />
+                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} flaggedUserIds={flaggedUserIds} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
                     </TabsContent>
 
                     <TabsContent
@@ -267,11 +289,11 @@ export default function ClassDetailPage() {
                     </TabsContent>
 
                     <TabsContent value="sessions" className="space-y-4">
-                        <SessionsTab cls={cls} onClassMutate={() => void mutate()} />
+                        <SessionsTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
                     </TabsContent>
 
                     <TabsContent value="schedule" className="space-y-4">
-                        <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
+                        <ScheduleTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
@@ -309,6 +331,7 @@ export default function ClassDetailPage() {
                 onUpdated={() => {
                     void mutate();
                     void mutateEvents();
+                    void mutateDeleteCheck();
                     void globalMutate(
                         (key: string) => typeof key === 'string' && key.startsWith(`/api/program-classes/${class_id}/history`),
                         undefined,

@@ -382,10 +382,29 @@ func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id uint) ([]stri
 }
 
 func (db *DB) DeleteProgram(id int) error {
-	if err := db.Delete(&models.Program{}, id).Error; err != nil {
-		return newDeleteDBError(err, "programs")
-	}
-	return nil
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("class_id IN (SELECT id FROM program_classes WHERE program_id = ?)", id).
+			Delete(&models.ProgramClassEvent{}).Error; err != nil {
+			return newDeleteDBError(err, "program_class_events")
+		}
+		if err := tx.Exec(`DELETE FROM change_log_entries
+			WHERE (table_name = 'programs' AND parent_ref_id = ?)
+			   OR (table_name = 'program_classes'
+			       AND parent_ref_id IN (SELECT id FROM program_classes WHERE program_id = ?))`,
+			id, id).Error; err != nil {
+			return newDeleteDBError(err, "change_log_entries")
+		}
+		if err := tx.Exec(`DELETE FROM program_classes_history
+			WHERE table_name = 'program_classes'
+			  AND parent_ref_id IN (SELECT id FROM program_classes WHERE program_id = ?)`,
+			id).Error; err != nil {
+			return newDeleteDBError(err, "program_classes_history")
+		}
+		if err := tx.Delete(&models.Program{}, id).Error; err != nil {
+			return newDeleteDBError(err, "programs")
+		}
+		return nil
+	})
 }
 
 func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
