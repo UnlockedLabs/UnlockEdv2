@@ -980,8 +980,19 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 }
 
 func (db *DB) DeleteClass(id int) error {
-	if err := db.Delete(&models.ProgramClass{}, "id = ?", id).Error; err != nil {
-		return newDeleteDBError(err, "program class")
-	}
-	return nil
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("class_id = ?", id).Delete(&models.ProgramClassEvent{}).Error; err != nil {
+			return newDeleteDBError(err, "program_class_events")
+		}
+		if err := tx.Exec(`DELETE FROM change_log_entries WHERE table_name = 'program_classes' AND parent_ref_id = ?`, id).Error; err != nil {
+			return newDeleteDBError(err, "change_log_entries")
+		}
+		if err := tx.Exec(`DELETE FROM program_classes_history WHERE table_name = 'program_classes' AND parent_ref_id = ?`, id).Error; err != nil {
+			return newDeleteDBError(err, "program_classes_history")
+		}
+		if err := tx.Delete(&models.ProgramClass{}, "id = ?", id).Error; err != nil {
+			return newDeleteDBError(err, "program class")
+		}
+		return nil
+	})
 }
