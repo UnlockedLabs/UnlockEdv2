@@ -931,7 +931,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-[#E2E7EA]/50"
@@ -957,7 +957,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
@@ -981,7 +981,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
@@ -1004,7 +1004,7 @@ function ClassesTab({
                                     onOpenStatusModal={onOpenStatusModal}
                                     onClick={() =>
                                         navigate(
-                                            `/program-classes/${cls.id}/dashboard`
+                                            `/program-classes/${cls.id}/detail`
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"

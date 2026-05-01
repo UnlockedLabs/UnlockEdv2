@@ -1034,7 +1034,7 @@ export default function ProgramOverviewStatewide() {
                                                                                         ) => {
                                                                                             event.stopPropagation();
                                                                                             navigate(
-                                                                                                `/program-classes/${cls.id}/dashboard`
+                                                                                                `/program-classes/${cls.id}/detail`
                                                                                             );
                                                                                         }}
                                                                                         className="gap-2 text-[#556830] hover:text-[#203622] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
