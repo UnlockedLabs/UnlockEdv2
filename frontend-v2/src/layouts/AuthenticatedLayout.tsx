@@ -43,6 +43,7 @@ export default function AuthenticatedLayout() {
     const isDashboard = location.pathname.startsWith('/dashboard');
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
+    const isAdmins = location.pathname === '/admins';
     const isSchedule = location.pathname === '/schedule';
 
     const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
@@ -50,9 +51,9 @@ export default function AuthenticatedLayout() {
     const isContentViewer = location.pathname.startsWith('/viewer/');
     const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule;
+        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule || isAdmins;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule ? 'py-0' : 'py-4';
+        isDashboard || isProgramsList || isFacilities || isAdmins || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile && !isContentViewer;
     const isFacilityView =
         isProgramDetail &&
@@ -101,9 +102,9 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
+    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isAdmins || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const contentClass = `flex-1 ${isResidentKnowledgeCenter || isContentViewer ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${isContentViewer || isFacilities ? 'h-full' : ''} ${needsGrayBg ? 'min-h-full bg-[#E2E7EA]' : ''}`;
 
     return (
         <div className={rootClass}>
@@ -135,7 +136,7 @@ export default function AuthenticatedLayout() {
                 <UnlockEdTour />
 
                 <div className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}>
-                    <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}>
+                    <div className={`flex-1 min-w-0 h-full transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}>
                         <div className={contentClass}>
                             {isFullBleed ? (
                                 isClassDetail || isEventAttendance ? (

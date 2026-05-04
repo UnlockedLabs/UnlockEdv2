@@ -848,7 +848,7 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 	if !claims.canSwitchFacility() {
 		facID = claims.FacilityID
 	}
-	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID)
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID, models.Student, models.FacilityAdmin, models.DepartmentAdmin)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -942,7 +942,7 @@ func (srv *Server) handleBulkDeactivateUsers(w http.ResponseWriter, r *http.Requ
 	if !claims.canSwitchFacility() {
 		facID = claims.FacilityID
 	}
-	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID)
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID, models.Student)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -985,7 +985,7 @@ func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request,
 	if !claims.canSwitchFacility() {
 		facID = claims.FacilityID
 	}
-	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID)
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID, models.Student, models.FacilityAdmin, models.DepartmentAdmin)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

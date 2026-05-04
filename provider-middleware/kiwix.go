@@ -20,7 +20,7 @@ const (
 
 var maxLibraries = sync.OnceValue(func() int {
 	if os.Getenv("APP_ENV") == "dev" {
-		return 10
+		return 1000
 	} else {
 		return 1000
 	}

@@ -134,14 +134,12 @@ export default function VideoViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#E2E7EA]">
+            <div className="flex-1 min-h-0 bg-[#E2E7EA] flex items-center justify-center overflow-hidden">
                 <video
-                    width="100%"
-                    height="100%"
                     controls
                     onError={handleError}
                     src={`/api/proxy/videos/${video?.id}`}
-                    className="w-full h-full"
+                    className="max-w-full max-h-full"
                 >
                     Your browser does not support the video tag.
                 </video>

@@ -112,8 +112,8 @@ func seedTestData(db *gorm.DB) {
 	}
 	videos := []models.Video{}
 	libraries := []models.Library{}
-	libraries = generateFakeLibraries(2, 25)
-	videos = generateFakeVideos(3, 25)
+	// libraries = generateFakeLibraries(2, 25)
+	// videos = generateFakeVideos(3, 25)
 	for i := range videos {
 		// create open_content_url for each video
 		_ = db.Create(&models.OpenContentUrl{
@@ -500,46 +500,46 @@ func getRandomProgram(programMap map[string]models.ProgType) string {
 	return keySlice[rand.Intn(len(keySlice))]
 }
 
-func generateFakeLibraries(providerID uint, count int) []models.Library {
-	langs := []string{"eng", "spa", "fra", "por", "deu"}
-	libraries := make([]models.Library, 0, count)
-	for range count {
-		lang := langs[rand.Intn(len(langs))]
-		title := faker.Word() + " Docs"
-		lib := models.Library{
-			OpenContentProviderID: providerID,
-			ExternalID:            models.StringPtr(fmt.Sprintf("urn:uuid:%s", faker.UUIDDigit())),
-			Title:                 title,
-			Language:              models.StringPtr(lang),
-			Description:           models.StringPtr(faker.Paragraph()),
-			Url:                   fmt.Sprintf("/content/devdocs_en_%s_%s", strings.ToLower(faker.Word()), "2025-01"),
-			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
-		}
-		libraries = append(libraries, lib)
-	}
-	return libraries
-}
+// func generateFakeLibraries(providerID uint, count int) []models.Library {
+// 	langs := []string{"eng", "spa", "fra", "por", "deu"}
+// 	libraries := make([]models.Library, 0, count)
+// 	for range count {
+// 		lang := langs[rand.Intn(len(langs))]
+// 		title := faker.Word() + " Docs"
+// 		lib := models.Library{
+// 			OpenContentProviderID: providerID,
+// 			ExternalID:            models.StringPtr(fmt.Sprintf("urn:uuid:%s", faker.UUIDDigit())),
+// 			Title:                 title,
+// 			Language:              models.StringPtr(lang),
+// 			Description:           models.StringPtr(faker.Paragraph()),
+// 			Url:                   fmt.Sprintf("/content/devdocs_en_%s_%s", strings.ToLower(faker.Word()), "2025-01"),
+// 			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
+// 		}
+// 		libraries = append(libraries, lib)
+// 	}
+// 	return libraries
+// }
 
-func generateFakeVideos(providerID uint, count int) []models.Video {
-	videos := make([]models.Video, 0, count)
-	for range count {
-		title := faker.Sentence()
-		channel := faker.Name()
-		video := models.Video{
-			ExternalID:            fmt.Sprintf("vid-%d-%s", rand.Intn(999999), faker.Word()),
-			Url:                   fmt.Sprintf("https://video.example.com/watch?v=%d", rand.Intn(999999)),
-			Title:                 title,
-			Availability:          models.VideoAvailable,
-			ChannelTitle:          &channel,
-			Duration:              rand.Intn(7200) + 60, // 1–120 mins
-			Description:           faker.Paragraph(),
-			ThumbnailUrl:          fmt.Sprintf("https://img.example.com/thumbs/%d.jpg", rand.Intn(999999)),
-			OpenContentProviderID: providerID,
-		}
-		videos = append(videos, video)
-	}
-	return videos
-}
+//	func generateFakeVideos(providerID uint, count int) []models.Video {
+//		videos := make([]models.Video, 0, count)
+//		for range count {
+//			title := faker.Sentence()
+//			channel := faker.Name()
+//			video := models.Video{
+//				ExternalID:            fmt.Sprintf("vid-%d-%s", rand.Intn(999999), faker.Word()),
+//				Url:                   fmt.Sprintf("https://video.example.com/watch?v=%d", rand.Intn(999999)),
+//				Title:                 title,
+//				Availability:          models.VideoAvailable,
+//				ChannelTitle:          &channel,
+//				Duration:              rand.Intn(7200) + 60, // 1–120 mins
+//				Description:           faker.Paragraph(),
+//				ThumbnailUrl:          fmt.Sprintf("https://img.example.com/thumbs/%d.jpg", rand.Intn(999999)),
+//				OpenContentProviderID: providerID,
+//			}
+//			videos = append(videos, video)
+//		}
+//		return videos
+//	}
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
@@ -644,11 +644,11 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 					Capacity:    capacities[rand.Intn(len(capacities))],
 					Name:        programs[i].Name,
 					Description: programClassDescriptions[programs[i].Name],
-					Status:         models.Scheduled, //this will change during new class development
-					StartDt:        time.Now().Add(14 * 24 * time.Hour),
-					EndDt:          &endDates[rand.Intn(len(endDates))],
-					FacilityID:     facilities[idx].ID,
-					ProgramID:      programs[i].ID,
+					Status:      models.Scheduled, //this will change during new class development
+					StartDt:     time.Now().Add(14 * 24 * time.Hour),
+					EndDt:       &endDates[rand.Intn(len(endDates))],
+					FacilityID:  facilities[idx].ID,
+					ProgramID:   programs[i].ID,
 				}
 				if err := db.Create(&class).Error; err != nil {
 					log.Printf("Failed to create program class: %v", err)
