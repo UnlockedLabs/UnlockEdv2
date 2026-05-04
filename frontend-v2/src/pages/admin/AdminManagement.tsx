@@ -476,7 +476,7 @@ export default function AdminManagement() {
 
             {/* Bulk action bar */}
             {selectedAdmins.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 z-50">
+                <div className="fixed bottom-6 left-[calc(50%-7px)] -translate-x-1/2 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 z-50">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">
                             <span className="font-semibold text-[#203622]">
