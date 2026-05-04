@@ -173,10 +173,8 @@ func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
 
 // BeforeUpdate hook that runs to set enrolled_at if enrolling in an Active class or enrollment_ended_at if entering a terminal state while class is Active|Paused.
 func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
-	// allow calling code to override
 	if !tx.Statement.Changed("enrollment_status") ||
-		tx.Statement.Changed("enrolled_at") ||
-		tx.Statement.Changed("enrollment_ended_at") {
+		tx.Statement.Changed("enrolled_at") {
 		return nil
 	}
 
@@ -196,7 +194,12 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	var classID int
 	if v, ok := tx.Get("class_id"); ok {
-		classID = v.(int)
+		switch val := v.(type) {
+		case int:
+			classID = val
+		case uint:
+			classID = int(val)
+		}
 	}
 
 	var classStatus ClassStatus
@@ -213,6 +216,11 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if newEnrollmentStatus == Enrolled && classStatus == Active {
 		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
 		// ? do we need to worry about updating fields to the same value (enrolled -> enrolled)?
+	}
+
+	// Clear enrollment_ended_at when status becomes Enrolled (reactivation)
+	if newEnrollmentStatus == Enrolled && (classStatus == Active || classStatus == Paused) {
+		tx.Statement.SetColumn("enrollment_ended_at", nil)
 	}
 
 	// This is when an enrollment ends while the class remains active
