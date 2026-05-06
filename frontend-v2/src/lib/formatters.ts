@@ -297,8 +297,10 @@ export function formatTime12h(time: string): string {
 export function formatClassTimeRange(range: string): string {
     if (!range) return '';
     const [start, end] = range.split('-').map((s) => s.trim());
-    if (!start || !end) return formatTime12h(range);
-    return `${formatTime12h(start)} - ${formatTime12h(end)}`;
+    if (start && end) return `${formatTime12h(start)} - ${formatTime12h(end)}`;
+    if (start) return formatTime12h(start);
+    if (end) return formatTime12h(end);
+    return '';
 }
 
 export function formatEnrollmentStatus(status: string): string {

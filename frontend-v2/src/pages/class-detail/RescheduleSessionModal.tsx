@@ -81,10 +81,9 @@ export function RescheduleSessionModal({
 
     const handleReschedule = async () => {
         setIsSubmitting(true);
-        const startTimeFromClass = classTime?.split('-')[0]?.split(' - ')[0];
         const body: Record<string, unknown> = {
             date: originalDate,
-            start_time: startTimeFromClass,
+            start_time: startTime,
             new_date: newDate || originalDate
         };
         if (newStartTime) body.new_start_time = newStartTime;
