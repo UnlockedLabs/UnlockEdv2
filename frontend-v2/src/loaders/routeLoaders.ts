@@ -15,7 +15,6 @@ import {
     ServerResponseOne,
     ClassLoaderData,
     ProgramOverview,
-    SelectedClassStatus,
     Room,
     BreadcrumbItem
 } from '@/types';
@@ -289,45 +288,6 @@ export const getClassTitle: LoaderFunction = async ({
     } else {
         return redirectOnError(classResp);
     }
-};
-
-export const getClassMgmtData: LoaderFunction = async ({
-    params
-}): Promise<ClassLoaderData | Response> => {
-    const { class_id } = params;
-    let cls: Class | undefined;
-    let attendanceRate: number | undefined;
-    let missingAttendance: number | undefined;
-    let className = 'Class Management';
-    const classResp = (await API.get(
-        `program-classes/${class_id}`
-    )) as ServerResponseOne<Class>;
-    if (classResp.success) {
-        cls = classResp.data;
-        className = cls.name;
-        if (classResp.data.status === SelectedClassStatus.Scheduled) {
-            attendanceRate = 0;
-            missingAttendance = 0;
-        } else {
-            const resp2 = (await API.get(
-                `program-classes/${class_id}/attendance-rate`
-            )) as ServerResponseOne<{ attendance_rate: number }>;
-            attendanceRate = resp2.success ? resp2.data.attendance_rate : 0;
-            const resp3 = (await API.get(
-                `program-classes/${class_id}/missing-attendance`
-            )) as ServerResponseOne<number>;
-            missingAttendance = resp3.success ? resp3.data : 0;
-        }
-    } else {
-        return redirectOnError(classResp);
-    }
-    return {
-        title: className,
-        class: cls,
-        attendance_rate: attendanceRate,
-        missing_attendance: missingAttendance,
-        breadcrumbs: cls ? buildClassBreadcrumbs(cls, 'Dashboard') : undefined
-    };
 };
 
 export const getProgram: LoaderFunction = async ({ params }) => {
