@@ -170,7 +170,7 @@ export function BulkCancelSessionsModal({
                     </div>
 
                     {reason === 'other' && (
-                        <div>
+                        <div className="min-w-0">
                             <Label htmlFor="cancelNote">
                                 Please specify *
                             </Label>
@@ -179,8 +179,9 @@ export function BulkCancelSessionsModal({
                                 placeholder="Enter the specific reason for cancellation..."
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
-                                className="mt-2"
+                                className="mt-2 break-all [field-sizing:fixed]"
                                 rows={3}
+                                maxLength={255}
                             />
                         </div>
                     )}
