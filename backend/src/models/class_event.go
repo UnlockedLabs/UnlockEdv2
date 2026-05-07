@@ -354,18 +354,20 @@ func GetInstructorFromEvents(events []ProgramClassEvent) (*uint, string) {
 
 type FacilityProgramClassEvent struct {
 	ProgramClassEvent
-	Room                string                     `json:"room" gorm:"->"` // read-only, populated from joined rooms table
-	InstructorName      string                     `json:"instructor_name"`
-	ProgramID           uint                       `json:"program_id"`
-	ProgramName         string                     `json:"program_name"`
-	ClassName           string                     `json:"title"`
-	IsCancelled         bool                       `json:"is_cancelled"`
-	IsOverride          bool                       `json:"is_override"`
-	EnrolledUsers       string                     `json:"enrolled_users"`
-	StartTime           *time.Time                 `json:"start"`
-	EndTime             *time.Time                 `json:"end"`
-	Frequency           string                     `json:"frequency"`
-	ClassStatus         ClassStatus                `json:"class_status"`
-	OverrideID          uint                       `json:"override_id"`
-	LinkedOverrideEvent *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
+	Room                   string                     `json:"room" gorm:"->"` // read-only, populated from joined rooms table
+	OriginalRoom           string                     `json:"original_room,omitempty" gorm:"-"`
+	InstructorName         string                     `json:"instructor_name"`
+	OriginalInstructorName string                     `json:"original_instructor_name,omitempty" gorm:"-"`
+	ProgramID              uint                       `json:"program_id"`
+	ProgramName            string                     `json:"program_name"`
+	ClassName              string                     `json:"title"`
+	IsCancelled            bool                       `json:"is_cancelled"`
+	IsOverride             bool                       `json:"is_override"`
+	EnrolledUsers          string                     `json:"enrolled_users"`
+	StartTime              *time.Time                 `json:"start"`
+	EndTime                *time.Time                 `json:"end"`
+	Frequency              string                     `json:"frequency"`
+	ClassStatus            ClassStatus                `json:"class_status"`
+	OverrideID             uint                       `json:"override_id"`
+	LinkedOverrideEvent    *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
 }
