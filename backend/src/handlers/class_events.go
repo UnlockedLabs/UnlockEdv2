@@ -201,6 +201,9 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 	if req.Date == "" {
 		return newBadRequestServiceError(errors.New("date is required"), "date is required")
 	}
+	if len(req.Reason) > 255 {
+		return newBadRequestServiceError(errors.New("reason exceeds maximum length of 255 characters"), "reason exceeds maximum length of 255 characters")
+	}
 	if req.InstructorID != nil {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
