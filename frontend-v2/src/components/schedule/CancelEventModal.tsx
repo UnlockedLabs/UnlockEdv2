@@ -102,7 +102,7 @@ export function CancelEventModal({
                 </div>
 
                 {isOther && (
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                         <Label>Details</Label>
                         <Textarea
                             value={customReason}
@@ -110,6 +110,7 @@ export function CancelEventModal({
                             placeholder="Describe the reason..."
                             rows={3}
                             maxLength={255}
+                            className="break-all [field-sizing:fixed]"
                         />
                     </div>
                 )}
