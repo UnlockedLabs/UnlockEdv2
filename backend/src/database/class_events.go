@@ -847,33 +847,45 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			}
 			pce := event.ProgramClassEvent
 			roomName := event.Room
+			originalRoomName := ""
 			instructorName := event.InstructorName
+			originalInstructorName := ""
 			if override.RoomRef != nil {
-				roomName = override.RoomRef.Name
+				newRoomName := override.RoomRef.Name
+				if newRoomName != event.Room {
+					originalRoomName = event.Room
+				}
+				roomName = newRoomName
 				pce.RoomID = override.RoomID
 			}
 			if override.InstructorID != nil {
 				pce.InstructorID = override.InstructorID
 				if override.Instructor != nil {
-					instructorName = strings.TrimSpace(override.Instructor.NameFirst + " " + override.Instructor.NameLast)
+					newInstructorName := strings.TrimSpace(override.Instructor.NameFirst + " " + override.Instructor.NameLast)
+					if newInstructorName != event.InstructorName {
+						originalInstructorName = event.InstructorName
+					}
+					instructorName = newInstructorName
 				}
 			}
 			facilityEvent := models.FacilityProgramClassEvent{
-				ProgramClassEvent:   pce,
-				Room:                roomName,
-				InstructorName:      instructorName,
-				ProgramID:           event.ProgramID,
-				ProgramName:         event.ProgramName,
-				ClassName:           event.ClassName,
-				EnrolledUsers:       event.EnrolledUsers,
-				ClassStatus:         event.ClassStatus,
-				StartTime:           &consistentOverrideDate,
-				EndTime:             &overrideEndTime,
-				Frequency:           rRule.OrigOptions.Freq.String(),
-				IsOverride:          true,
-				IsCancelled:         override.IsCancelled,
-				OverrideID:          override.ID,
-				LinkedOverrideEvent: linkedOverrideEvent,
+				ProgramClassEvent:      pce,
+				Room:                   roomName,
+				OriginalRoom:           originalRoomName,
+				InstructorName:         instructorName,
+				OriginalInstructorName: originalInstructorName,
+				ProgramID:              event.ProgramID,
+				ProgramName:            event.ProgramName,
+				ClassName:              event.ClassName,
+				EnrolledUsers:          event.EnrolledUsers,
+				ClassStatus:            event.ClassStatus,
+				StartTime:              &consistentOverrideDate,
+				EndTime:                &overrideEndTime,
+				Frequency:              rRule.OrigOptions.Freq.String(),
+				IsOverride:             true,
+				IsCancelled:            override.IsCancelled,
+				OverrideID:             override.ID,
+				LinkedOverrideEvent:    linkedOverrideEvent,
 			}
 			facilityEvents = append(facilityEvents, facilityEvent)
 		}
