@@ -6,7 +6,6 @@ const TAB_TRIGGER_CLASS =
     'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-xs data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-muted px-4 py-2.5 rounded-lg transition-all duration-200';
 
 const TAB_OPTIONS = [
-    { name: 'Dashboard', value: 'dashboard' },
     { name: 'Schedule', value: 'schedule' },
     { name: 'Enrollment', value: 'enrollments' },
     { name: 'Attendance', value: 'attendance' }
@@ -15,7 +14,7 @@ const TAB_OPTIONS = [
 function getTabFromPath(pathname: string): string {
     const parts = pathname.split('/');
     const tabSegment = parts[3];
-    return TAB_OPTIONS.find((t) => t.value === tabSegment)?.value ?? 'dashboard';
+    return TAB_OPTIONS.find((t) => t.value === tabSegment)?.value ?? 'enrollments';
 }
 
 export default function ProgramClassManagement() {

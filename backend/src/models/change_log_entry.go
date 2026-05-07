@@ -37,7 +37,7 @@ func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, 
 
 func derefToString(v reflect.Value) string {
 
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return ""
 		}
