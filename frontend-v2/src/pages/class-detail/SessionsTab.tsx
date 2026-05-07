@@ -39,9 +39,12 @@ import {
     buildRoomOverrideMap,
     buildCancellationReasonMap,
     buildSessionDisplays,
+    findActiveOverride,
     findCancelOverrideId,
+    getSessionChangeInfo,
     type SessionDisplay
 } from './session-utils';
+import { getInstructorName } from '@/lib/formatters';
 
 function buildFacilityEvent(
     session: SessionDisplay,
@@ -50,6 +53,7 @@ function buildFacilityEvent(
 ): FacilityProgramClassEvent {
     const eventId = session.instance.event_id ?? session.instance.id;
     const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
+    const activeOverride = findActiveOverride(classEvents, session.instance.date);
     const parts = session.instance.class_time.split('-');
     const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
     const [eh = 0, em = 0] = (parts[1] ?? '').split(':').map(Number);
@@ -61,16 +65,16 @@ function buildFacilityEvent(
         id: eventId,
         class_id: classId,
         duration: backingEvent?.duration ?? '',
-        room_id: backingEvent?.room_id ?? 0,
+        room_id: activeOverride?.room_id ?? backingEvent?.room_id ?? 0,
         recurrence_rule: backingEvent?.recurrence_rule ?? '',
         is_cancelled: session.instance.is_cancelled,
-        instructor_id: backingEvent?.instructor_id ?? null,
+        instructor_id: activeOverride?.instructor_id ?? backingEvent?.instructor_id ?? null,
         overrides: backingEvent?.overrides ?? [],
         reason: null,
         start,
         end,
-        is_override: !!session.instance.override_id,
-        override_id: session.instance.override_id ?? 0,
+        is_override: !!activeOverride || !!session.instance.override_id,
+        override_id: activeOverride?.id ?? session.instance.override_id ?? 0,
         linked_override_event: null as unknown as FacilityProgramClassEvent,
         room: '',
         instructor_name: '',
@@ -782,39 +786,50 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 />
             )}
 
-            <SessionDetailSheet
-                session={selectedSession}
-                onClose={() => setSelectedSession(null)}
-                className={cls.name}
-                facilityId={String(cls.facility_id)}
-                classEvents={cls.events ?? []}
-                classTime={
-                    selectedSession?.instance.class_time ??
-                    cls.events?.[0]?.duration ??
-                    ''
-                }
-                room={
+            {(() => {
+                const changeInfo = selectedSession
+                    ? getSessionChangeInfo(cls.events ?? [], selectedSession.instance.date)
+                    : {};
+                const baseRoom =
                     (selectedSession
                         ? roomOverrides.get(
                               `${selectedSession.instance.date}|${selectedSession.instance.class_time?.split('-')[0]}`
                           ) ?? roomOverrides.get(selectedSession.instance.date)
                         : undefined) ??
                     cls.events?.[0]?.room_ref?.name ??
-                    'TBD'
-                }
-                classId={cls.id}
-                onMutate={() => void refreshData()}
-                onUndo={() => {
-                    if (selectedSession) void handleUndo(selectedSession);
-                }}
-                onUndoCancel={() => {
-                    if (selectedSession) void handleUndoCancel(selectedSession);
-                }}
-                onUndoReschedule={() => {
-                    if (selectedSession) void handleUndo(selectedSession);
-                }}
-                allSessions={allSessions}
-            />
+                    'TBD';
+                const baseInstructor = getInstructorName(cls.events ?? []);
+                return (
+                    <SessionDetailSheet
+                        session={selectedSession}
+                        onClose={() => setSelectedSession(null)}
+                        className={cls.name}
+                        facilityId={String(cls.facility_id)}
+                        classEvents={cls.events ?? []}
+                        classTime={
+                            selectedSession?.instance.class_time ??
+                            cls.events?.[0]?.duration ??
+                            ''
+                        }
+                        room={changeInfo.newRoom ?? baseRoom}
+                        originalRoom={changeInfo.originalRoom}
+                        instructorName={changeInfo.newInstructor ?? baseInstructor}
+                        originalInstructorName={changeInfo.originalInstructor}
+                        classId={cls.id}
+                        onMutate={() => void refreshData()}
+                        onUndo={() => {
+                            if (selectedSession) void handleUndo(selectedSession);
+                        }}
+                        onUndoCancel={() => {
+                            if (selectedSession) void handleUndoCancel(selectedSession);
+                        }}
+                        onUndoReschedule={() => {
+                            if (selectedSession) void handleUndo(selectedSession);
+                        }}
+                        allSessions={allSessions}
+                    />
+                );
+            })()}
 
             {selectedDates.size > 0 && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4">

@@ -145,12 +145,14 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 			return newDatabaseServiceError(err)
 		}
 		eventIDUint := uint(eventId)
+		classIDUint := uint(classID)
 		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
 			RoomID:         *override.RoomID,
 			RecurrenceRule: override.OverrideRrule,
 			Duration:       override.Duration,
 			ExcludeEventID: &eventIDUint,
+			ExcludeClassID: &classIDUint,
 		})
 		if err != nil {
 			return newDatabaseServiceError(err)

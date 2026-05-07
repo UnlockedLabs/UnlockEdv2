@@ -87,6 +87,67 @@ export function buildCancellationReasonMap(
     return map;
 }
 
+export function findActiveOverride(
+    events: ProgramClassEvent[],
+    date: string
+): ProgramClassEventOverride | null {
+    for (const event of events) {
+        for (const override of event.overrides ?? []) {
+            if (override.is_cancelled) continue;
+            if (parseOverrideDate(override.override_rrule) === date) return override;
+        }
+    }
+    return null;
+}
+
+export interface SessionChangeInfo {
+    newRoom?: string;
+    originalRoom?: string;
+    newInstructor?: string;
+    originalInstructor?: string;
+}
+
+export function getSessionChangeInfo(
+    events: ProgramClassEvent[],
+    date: string
+): SessionChangeInfo {
+    for (const event of events) {
+        for (const override of event.overrides ?? []) {
+            if (override.is_cancelled) continue;
+            const ovDate = parseOverrideDate(override.override_rrule);
+            if (ovDate !== date) continue;
+
+            const result: SessionChangeInfo = {};
+
+            if (
+                override.room_id != null &&
+                override.room_id !== event.room_id &&
+                override.room_ref
+            ) {
+                result.newRoom = override.room_ref.name;
+                if (event.room_ref) result.originalRoom = event.room_ref.name;
+            }
+
+            if (
+                override.instructor_id != null &&
+                override.instructor_id !== event.instructor_id
+            ) {
+                if (override.instructor_ref) {
+                    result.newInstructor = `${override.instructor_ref.name_first} ${override.instructor_ref.name_last}`.trim();
+                }
+                if (event.instructor_ref) {
+                    result.originalInstructor = `${event.instructor_ref.name_first} ${event.instructor_ref.name_last}`.trim();
+                }
+            }
+
+            if (result.newRoom || result.originalRoom || result.newInstructor || result.originalInstructor) {
+                return result;
+            }
+        }
+    }
+    return {};
+}
+
 export function buildRoomOverrideMap(
     events: ProgramClassEvent[]
 ): Map<string, string> {
