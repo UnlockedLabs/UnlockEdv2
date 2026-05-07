@@ -445,7 +445,7 @@ const isDepAdmin = user ? isDeptAdmin(user) : false;
                                 </div>
                             </div>
 
-                            <div className="px-6 py-6 space-y-6">
+                            <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto min-h-0">
                                 <div>
                                     <h4 className="text-sm text-gray-700 mb-3">Class Details</h4>
                                     <div className="space-y-3">

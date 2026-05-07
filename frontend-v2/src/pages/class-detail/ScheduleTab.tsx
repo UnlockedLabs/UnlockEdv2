@@ -20,8 +20,10 @@ import {
     buildCancellationReasonMap,
     buildSessionDisplays,
     findCancelOverrideId,
+    getSessionChangeInfo,
     type SessionDisplay
 } from './session-utils';
+import { getInstructorName } from '@/lib/formatters';
 
 interface ScheduleTabProps {
     cls: Class;
@@ -447,29 +449,40 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                 </div>
             </div>
 
-            <SessionDetailSheet
-                session={selectedSession}
-                onClose={() => setSelectedSession(null)}
-                className={cls.name}
-                facilityId={String(cls.facility_id)}
-                classEvents={cls.events ?? []}
-                classTime={
-                    selectedSession?.instance.class_time ?? classTime
-                }
-                room={
+            {(() => {
+                const changeInfo = selectedSession
+                    ? getSessionChangeInfo(cls.events ?? [], selectedSession.instance.date)
+                    : {};
+                const baseRoom =
                     (selectedSession
                         ? roomOverrides.get(selectedSession.instance.date)
                         : undefined) ??
                     schedule.room ??
-                    'Not assigned'
-                }
-                classId={cls.id}
-                onMutate={() => void refreshData()}
-                onUndo={() => {
-                    if (selectedSession) void handleUndo(selectedSession);
-                }}
-                allSessions={allSessions}
-            />
+                    'Not assigned';
+                const baseInstructor = getInstructorName(cls.events ?? []);
+                return (
+                    <SessionDetailSheet
+                        session={selectedSession}
+                        onClose={() => setSelectedSession(null)}
+                        className={cls.name}
+                        facilityId={String(cls.facility_id)}
+                        classEvents={cls.events ?? []}
+                        classTime={
+                            selectedSession?.instance.class_time ?? classTime
+                        }
+                        room={changeInfo.newRoom ?? baseRoom}
+                        originalRoom={changeInfo.originalRoom}
+                        instructorName={changeInfo.newInstructor ?? baseInstructor}
+                        originalInstructorName={changeInfo.originalInstructor}
+                        classId={cls.id}
+                        onMutate={() => void refreshData()}
+                        onUndo={() => {
+                            if (selectedSession) void handleUndo(selectedSession);
+                        }}
+                        allSessions={allSessions}
+                    />
+                );
+            })()}
         </div>
     );
 }

@@ -132,6 +132,9 @@ func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]mo
 			if req.ExcludeEventID != nil && booking.EventID == *req.ExcludeEventID {
 				continue
 			}
+			if req.ExcludeClassID != nil && booking.ClassID == *req.ExcludeClassID {
+				continue
+			}
 			if hasLocalTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime, tz) {
 				className := classNamesCache[booking.ClassID]
 				if className == "" {

@@ -23,6 +23,7 @@ import { ChangeInstructorModal } from '@/components/schedule/ChangeInstructorMod
 import { ChangeRoomModal } from '@/components/schedule/ChangeRoomModal';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
 import { SessionDisplay } from './SessionsTab';
+import { findActiveOverride } from './session-utils';
 import {
     FacilityProgramClassEvent,
     ProgramClassEvent,
@@ -38,6 +39,9 @@ interface SessionDetailSheetProps {
     className: string;
     classTime: string;
     room: string;
+    originalRoom?: string;
+    instructorName?: string;
+    originalInstructorName?: string;
     classId: number;
     facilityId: string;
     classEvents: ProgramClassEvent[];
@@ -55,6 +59,7 @@ function buildFacilityEvent(
 ): FacilityProgramClassEvent {
     const eventId = session.instance.event_id ?? session.instance.id;
     const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
+    const activeOverride = findActiveOverride(classEvents, session.instance.date);
 
     const parts = session.instance.class_time.split('-');
     const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
@@ -69,16 +74,16 @@ function buildFacilityEvent(
         id: eventId,
         class_id: classId,
         duration: backingEvent?.duration ?? '',
-        room_id: backingEvent?.room_id ?? 0,
+        room_id: activeOverride?.room_id ?? backingEvent?.room_id ?? 0,
         recurrence_rule: backingEvent?.recurrence_rule ?? '',
         is_cancelled: session.instance.is_cancelled,
-        instructor_id: backingEvent?.instructor_id ?? null,
+        instructor_id: activeOverride?.instructor_id ?? backingEvent?.instructor_id ?? null,
         overrides: backingEvent?.overrides ?? [],
         reason: null,
         start,
         end,
-        is_override: !!session.instance.override_id,
-        override_id: session.instance.override_id ?? 0,
+        is_override: !!activeOverride || !!session.instance.override_id,
+        override_id: activeOverride?.id ?? session.instance.override_id ?? 0,
         linked_override_event: null as unknown as FacilityProgramClassEvent,
         room: '',
         instructor_name: '',
@@ -98,6 +103,9 @@ export function SessionDetailSheet({
     className,
     classTime,
     room,
+    originalRoom,
+    instructorName,
+    originalInstructorName,
     classId,
     facilityId,
     classEvents,
@@ -276,7 +284,7 @@ export function SessionDetailSheet({
                         </div>
                     </div>
 
-                    <div className="px-6 py-6 space-y-6">
+                    <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto min-h-0">
                         <div>
                             <h4 className="text-sm text-gray-700 mb-3">
                                 Class Details
@@ -313,14 +321,67 @@ export function SessionDetailSheet({
                                             Room
                                         </div>
                                         <div
-                                            className={`text-[#203622] ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
+                                            className={`text-[#203622] ${
+                                                originalRoom || isCancelled || isRescheduledFrom || isCancelledReschedule
+                                                    ? 'line-through'
+                                                    : ''
+                                            }`}
                                         >
-                                            {room}
+                                            {originalRoom || room}
                                         </div>
                                     </div>
                                 </div>
+                                {(originalInstructorName || instructorName) && (
+                                    <div className="flex items-start gap-3">
+                                        <Users className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm text-gray-600 mb-0.5">
+                                                Instructor
+                                            </div>
+                                            <div
+                                                className={`text-[#203622] ${
+                                                    originalInstructorName || isCancelled || isRescheduledFrom || isCancelledReschedule
+                                                        ? 'line-through'
+                                                        : ''
+                                                }`}
+                                            >
+                                                {originalInstructorName || instructorName}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
+
+                        {!isCancelled && originalInstructorName && instructorName && (
+                            <div className="pt-6 border-t border-gray-200">
+                                <h4 className="text-sm text-gray-700 mb-3">Status</h4>
+                                <div className="flex items-start gap-2">
+                                    <Users className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm text-gray-900 mb-1">Instructor Change</div>
+                                        <p className="text-sm text-gray-600">
+                                            Session Instructor: {instructorName}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!isCancelled && originalRoom && (
+                            <div className="pt-6 border-t border-gray-200">
+                                <h4 className="text-sm text-gray-700 mb-3">Status</h4>
+                                <div className="flex items-start gap-2">
+                                    <MapPin className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm text-gray-900 mb-1">Room Change</div>
+                                        <p className="text-sm text-gray-600">
+                                            Session Room: {room}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {(isCancelled || isCancelledReschedule || isRescheduledFrom || isRescheduledTo || hasAttendance) && (
                             <div className="pt-6 border-t border-gray-200">
