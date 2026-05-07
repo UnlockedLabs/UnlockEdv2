@@ -60,7 +60,9 @@ export interface ProgramClassEventOverride {
 
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
     room: string;
+    original_room?: string;
     instructor_name: string;
+    original_instructor_name?: string;
     program_id: number;
     program_name: string;
     title: string;

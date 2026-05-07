@@ -480,30 +480,34 @@ const isDepAdmin = user ? isDeptAdmin(user) : false;
                                                 </div>
                                             </div>
                                         </div>
-                                        {selectedEvent.room && (
+                                        {(selectedEvent.original_room || selectedEvent.room) && (
                                             <div className="flex items-start gap-3">
                                                 <MapPin className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-sm text-gray-600 mb-0.5">Room</div>
                                                     <div
                                                         className={`text-[#203622] ${
-                                                            selectedEvent.is_cancelled ? 'line-through' : ''
+                                                            selectedEvent.original_room || selectedEvent.is_cancelled ? 'line-through' : ''
                                                         }`}
                                                     >
-                                                        {selectedEvent.room}
+                                                        {selectedEvent.original_room || selectedEvent.room}
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
-                                        {selectedEvent.instructor_name && (
+                                        {(selectedEvent.original_instructor_name || selectedEvent.instructor_name) && (
                                             <div className="flex items-start gap-3">
                                                 <Users className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-sm text-gray-600 mb-0.5">
                                                         Instructor
                                                     </div>
-                                                    <div className="text-[#203622]">
-                                                        {selectedEvent.instructor_name}
+                                                    <div
+                                                        className={`text-[#203622] ${
+                                                            selectedEvent.original_instructor_name || selectedEvent.is_cancelled ? 'line-through' : ''
+                                                        }`}
+                                                    >
+                                                        {selectedEvent.original_instructor_name || selectedEvent.instructor_name}
                                                     </div>
                                                 </div>
                                             </div>
@@ -520,11 +524,41 @@ const isDepAdmin = user ? isDeptAdmin(user) : false;
                                     const showFutureActions = !past && canUpdateEvent();
                                     const showStatus = selectedEvent.is_cancelled;
                                     const isRescheduled = selectedEvent.is_override && !selectedEvent.is_cancelled && !!selectedEvent.linked_override_event && showFutureActions;
+                                    const isInstructorChanged = !!selectedEvent.original_instructor_name && !selectedEvent.is_cancelled;
+                                    const isRoomChanged = !!selectedEvent.original_room && !selectedEvent.is_cancelled;
 
-                                    if (!showTakeAttendance && !showFutureActions && !showStatus && !isRescheduled) return null;
+                                    if (!showTakeAttendance && !showFutureActions && !showStatus && !isRescheduled && !isInstructorChanged && !isRoomChanged) return null;
 
                                     return (
                                         <>
+                                            {isInstructorChanged && (
+                                                <div className="pt-6 border-t border-gray-200">
+                                                    <h4 className="text-sm text-gray-700 mb-3">Status</h4>
+                                                    <div className="flex items-start gap-2">
+                                                        <Users className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-sm text-gray-900 mb-1">Instructor Change</div>
+                                                            <p className="text-sm text-gray-600">
+                                                                Session Instructor: {selectedEvent.instructor_name}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {isRoomChanged && (
+                                                <div className="pt-6 border-t border-gray-200">
+                                                    <h4 className="text-sm text-gray-700 mb-3">Status</h4>
+                                                    <div className="flex items-start gap-2">
+                                                        <MapPin className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-sm text-gray-900 mb-1">Room Change</div>
+                                                            <p className="text-sm text-gray-600">
+                                                                Session Room: {selectedEvent.room}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                             {isRescheduled && (
                                                 <div className="pt-6 border-t border-gray-200">
                                                     <h4 className="text-sm text-gray-700 mb-3">Status</h4>
