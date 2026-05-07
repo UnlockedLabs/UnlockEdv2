@@ -152,10 +152,15 @@ export default function ClassesPage() {
     }, [programsResp, crossFacility, user, selectedFacilityForClass]);
 
     const handleProgramSelect = (programId: number) => {
+        const facilityForUrl = selectedFacilityForClass;
         setShowCreateModal(false);
         setProgramSearch('');
         setSelectedFacilityForClass(null);
-        navigate(`/programs/${programId}/classes`);
+        navigate(
+            crossFacility && facilityForUrl
+                ? `/programs/${programId}?facility_id=${facilityForUrl}`
+                : `/programs/${programId}`
+        );
     };
 
     const filteredClasses = useMemo(() => {
