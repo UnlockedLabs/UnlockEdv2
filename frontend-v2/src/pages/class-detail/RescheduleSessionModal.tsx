@@ -20,6 +20,7 @@ import {
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
+import { formatTime12h } from '@/lib/formatters';
 
 export interface RescheduleFutureSession {
     date: string;
@@ -55,7 +56,9 @@ export function RescheduleSessionModal({
     setApplyToFuture,
     futureSessions = []
 }: RescheduleSessionModalProps) {
-    const [startTime, endTime] = classTime?.split(' - ') ?? [];
+    const [startTime, endTime] = classTime
+        ?.split('-')
+        .map((s) => s.trim()) ?? [];
     const [newDate, setNewDate] = useState('');
     const [newStartTime, setNewStartTime] = useState('');
     const [newEndTime, setNewEndTime] = useState('');
@@ -78,10 +81,9 @@ export function RescheduleSessionModal({
 
     const handleReschedule = async () => {
         setIsSubmitting(true);
-        const startTimeFromClass = classTime?.split('-')[0]?.split(' - ')[0];
         const body: Record<string, unknown> = {
             date: originalDate,
-            start_time: startTimeFromClass,
+            start_time: startTime,
             new_date: newDate || originalDate
         };
         if (newStartTime) body.new_start_time = newStartTime;
@@ -172,7 +174,7 @@ export function RescheduleSessionModal({
                             type="time"
                             value={newStartTime}
                             onChange={(e) => setNewStartTime(e.target.value)}
-                            placeholder={startTime}
+                            placeholder={startTime ? formatTime12h(startTime) : undefined}
                         />
                     </div>
                     <div className="space-y-2">
@@ -184,7 +186,7 @@ export function RescheduleSessionModal({
                             type="time"
                             value={newEndTime}
                             onChange={(e) => setNewEndTime(e.target.value)}
-                            placeholder={endTime}
+                            placeholder={endTime ? formatTime12h(endTime) : undefined}
                         />
                     </div>
                     <div className="space-y-2">
