@@ -9,7 +9,9 @@ import {
     getClassSchedule,
     getInstructorName,
     getStatusColor,
-    formatDate
+    formatDate,
+    formatTime12h,
+    formatClassTimeRange
 } from '@/lib/formatters';
 import { ChangeClassStatusModal } from './ChangeClassStatusModal';
 
@@ -27,23 +29,48 @@ interface StatCardsProps {
 function getNextClassDate(cls: Class): { date: string; time: string } | null {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return null;
+    const tz =
+        cls.facility?.timezone ??
+        Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
         const cleaned = event.recurrence_rule.replace(
             /DTSTART;TZID=[^:]+:/,
             'DTSTART:'
         );
         const rule = RRule.fromString(cleaned);
-        const now = new Date();
-        const next = rule.after(now, true);
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).formatToParts(new Date());
+        const get = (t: string) =>
+            Number(parts.find((p) => p.type === t)?.value);
+        const nowInFacilityTz = new Date(
+            Date.UTC(
+                get('year'),
+                get('month') - 1,
+                get('day'),
+                get('hour') % 24,
+                get('minute'),
+                get('second')
+            )
+        );
+        const next = rule.after(nowInFacilityTz, true);
         if (!next) return null;
         const date = next.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'UTC'
         });
         const h = String(next.getUTCHours()).padStart(2, '0');
         const m = String(next.getUTCMinutes()).padStart(2, '0');
-        return { date, time: `${h}:${m}` };
+        return { date, time: formatTime12h(`${h}:${m}`) };
     } catch {
         return null;
     }
@@ -112,7 +139,9 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                     value={schedule.days.join(', ') || 'Not set'}
                     sub={
                         schedule.startTime
-                            ? `${schedule.startTime} - ${schedule.endTime}`
+                            ? formatClassTimeRange(
+                                  `${schedule.startTime}-${schedule.endTime}`
+                              )
                             : undefined
                     }
                     smallValue
