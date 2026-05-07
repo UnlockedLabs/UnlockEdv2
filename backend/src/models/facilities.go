@@ -56,6 +56,7 @@ type ConflictCheckRequest struct {
 	RecurrenceRule string
 	Duration       string
 	ExcludeEventID *uint
+	ExcludeClassID *uint
 }
 
 type RoomConflict struct {
