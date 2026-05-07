@@ -173,8 +173,7 @@ func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
 
 // BeforeUpdate hook that runs to set enrolled_at if enrolling in an Active class or enrollment_ended_at if entering a terminal state while class is Active|Paused.
 func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
-	if !tx.Statement.Changed("enrollment_status") ||
-		tx.Statement.Changed("enrolled_at") {
+	if !tx.Statement.Changed("enrollment_status") {
 		return nil
 	}
 
@@ -199,6 +198,8 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 			classID = val
 		case uint:
 			classID = int(val)
+		default:
+			return fmt.Errorf("unexpected type for 'class_id': %T", val)
 		}
 	}
 
@@ -213,7 +214,7 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 	}
 
 	// This likely gets hit when we introduce "Waitlist" as a status
-	if newEnrollmentStatus == Enrolled && classStatus == Active {
+	if newEnrollmentStatus == Enrolled && classStatus == Active && !tx.Statement.Changed("enrolled_at") {
 		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
 		// ? do we need to worry about updating fields to the same value (enrolled -> enrolled)?
 	}
@@ -223,8 +224,7 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 		tx.Statement.SetColumn("enrollment_ended_at", nil)
 	}
 
-	// This is when an enrollment ends while the class remains active
-	if IsTerminalEnrollment(newEnrollmentStatus) && (classStatus == Active || classStatus == Paused) {
+	if IsTerminalEnrollment(newEnrollmentStatus) {
 		tx.Statement.SetColumn("enrollment_ended_at", time.Now().UTC())
 	}
 
