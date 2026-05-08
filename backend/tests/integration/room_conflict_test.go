@@ -105,6 +105,7 @@ func testDetectsOverlappingBookings(t *testing.T, env *TestEnv, facility *models
 		"duration":        "2h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260302T090000Z\nRRULE:FREQ=DAILY;UNTIL=20260331T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass1.ID), event1Payload).
@@ -155,6 +156,7 @@ func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facilit
 		"duration":        "2h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260402T140000Z\nRRULE:FREQ=DAILY;UNTIL=20260430T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -218,6 +220,7 @@ func testNoConflictForDifferentTimes(t *testing.T, env *TestEnv, facility *model
 		"duration":        "2h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260504T090000Z\nRRULE:FREQ=DAILY;UNTIL=20260531T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -270,6 +273,7 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 		"duration":        "2h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260601T100000Z\nRRULE:FREQ=DAILY;UNTIL=20260630T000000Z",
+		"instructor_id":   instructor1.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass1.ID), event1Payload).
@@ -301,6 +305,7 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 		"duration":        "1h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260601T103000Z\nRRULE:FREQ=DAILY;UNTIL=20260610T000000Z",
+		"instructor_id":   instructor2.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass2.ID), conflictingEventPayload).
@@ -341,6 +346,7 @@ func testRejectsRoomFromDifferentFacility(t *testing.T, env *TestEnv, facility *
 		"duration":        "2h",
 		"room_id":         otherFacilityRoomID,
 		"recurrence_rule": "DTSTART:20260702T100000Z\nRRULE:FREQ=DAILY;UNTIL=20260731T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -389,6 +395,7 @@ func testDetectsConflictsWithTimezoneAwareRRules(t *testing.T, env *TestEnv, fac
 		"duration":        "1h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART;TZID=America/New_York:20250703T100000\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass1.ID), event1Payload).
@@ -456,6 +463,7 @@ func testBackwardsCompatibleUTCRules(t *testing.T, env *TestEnv, facility *model
 		"duration":        "1h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260806T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass1.ID), event1Payload).

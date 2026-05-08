@@ -249,7 +249,7 @@ func (env *TestEnv) GetEnrollmentTimestamps(enrollmentID uint) (enrolledAt, ende
 	return enrollment.EnrolledAt, enrollment.EnrollmentEndedAt, nil
 }
 
-func (env *TestEnv) CreateTestEvent(classID uint, rrule string) (*models.ProgramClassEvent, error) {
+func (env *TestEnv) CreateTestEvent(classID uint, rrule string, instructorID uint) (*models.ProgramClassEvent, error) {
 	if rrule == "" {
 		startDate := time.Now().AddDate(0, 0, -2) // 2 days ago
 		rrule = fmt.Sprintf("DTSTART:%s\nRRULE:FREQ=DAILY;COUNT=10", startDate.Format("20060102T090000Z"))
@@ -264,6 +264,7 @@ func (env *TestEnv) CreateTestEvent(classID uint, rrule string) (*models.Program
 		Duration:       "2h",
 		RecurrenceRule: rrule,
 		RoomID:         &roomID,
+		InstructorID:   &instructorID,
 	}
 
 	if err := env.DB.Create(event).Error; err != nil {
@@ -281,7 +282,7 @@ func (env *TestEnv) GetEventRecurrenceRule(eventID uint) (string, error) {
 	return event.RecurrenceRule, nil
 }
 
-func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string) (*models.ProgramClassEvent, error) {
+func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string, instructorID uint) (*models.ProgramClassEvent, error) {
 	roomID, err := env.getOrCreateTestRoom(classID)
 	if err != nil {
 		return nil, err
@@ -291,6 +292,7 @@ func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string) (
 		Duration:       "2h",
 		RecurrenceRule: customRRule,
 		RoomID:         &roomID,
+		InstructorID:   &instructorID,
 	}
 	if err := env.DB.Create(event).Error; err != nil {
 		return nil, err
@@ -355,6 +357,24 @@ func (env *TestEnv) CreateTestEnrollmentWithDates(classID, userID uint, status m
 	}
 
 	return enrollment, nil
+}
+
+func (env *TestEnv) getOrCreateInstructorForClass(classID uint) (uint, error) {
+	var class models.ProgramClass
+	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
+		return 0, err
+	}
+	var instructor models.User
+	result := env.DB.Where("facility_id = ? AND role = ?", class.FacilityID, models.FacilityAdmin).
+		Order("id ASC").First(&instructor)
+	if result.Error == nil {
+		return instructor.ID, nil
+	}
+	created, err := env.CreateTestInstructor(class.FacilityID, fmt.Sprintf("auto%d", time.Now().UnixNano()))
+	if err != nil {
+		return 0, err
+	}
+	return created.ID, nil
 }
 
 func (env *TestEnv) getOrCreateTestRoom(classID uint) (uint, error) {

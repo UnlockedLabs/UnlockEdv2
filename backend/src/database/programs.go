@@ -395,9 +395,10 @@ func (db *DB) DeleteProgram(id int) error {
 			return newDeleteDBError(err, "change_log_entries")
 		}
 		if err := tx.Exec(`DELETE FROM program_classes_history
-			WHERE table_name = 'program_classes'
-			  AND parent_ref_id IN (SELECT id FROM program_classes WHERE program_id = ?)`,
-			id).Error; err != nil {
+			WHERE (table_name = 'program_classes'
+			       AND parent_ref_id IN (SELECT id FROM program_classes WHERE program_id = ?))
+			   OR (table_name = 'programs' AND parent_ref_id = ?)`,
+			id, id).Error; err != nil {
 			return newDeleteDBError(err, "program_classes_history")
 		}
 		if err := tx.Delete(&models.Program{}, id).Error; err != nil {

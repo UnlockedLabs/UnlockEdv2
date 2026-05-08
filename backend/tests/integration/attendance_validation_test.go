@@ -43,7 +43,7 @@ func TestAttendanceValidation(t *testing.T) {
 	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
-	event, err := env.CreateTestEvent(class.ID, "")
+	event, err := env.CreateTestEvent(class.ID, "", instructor.ID)
 	require.NoError(t, err)
 
 	_, err = env.CreateTestEnrollment(class.ID, enrolledStudent.ID, models.Enrolled)
