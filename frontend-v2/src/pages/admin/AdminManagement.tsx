@@ -60,7 +60,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pagination } from '@/components/shared/Pagination';
+import { Pagination } from '@/components/Pagination';
 
 type SortColumn = 'name' | 'username' | 'role' | 'facility' | 'lastActive';
 type SortDirection = 'asc' | 'desc';
@@ -165,7 +165,7 @@ export default function AdminManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
-    const [selectedAdmins, setSelectedAdmins] = useState<Set<number>>(new Set());
+    const [selectedAdmins, setSelectedAdmins] = useState<Map<number, User>>(new Map());
 
     const [showAddAdmin, setShowAddAdmin] = useState(false);
     const [showEditAdmin, setShowEditAdmin] = useState(false);
@@ -204,7 +204,20 @@ export default function AdminManagement() {
     // Per-role counts can't come from the paginated fetch, and the API doesn't
     // filter by a target role server-side. Fetch the full admin set just for the
     // stat cards. Admin counts are small in practice.
-    const statsUrl = user ? `/api/users?role=${user.role}&per_page=500` : null;
+    // TODO: per_page=500 is a hard ceiling; deptAdminCount/facilityAdminCount
+    // will undercount past 500 admins. Replace with a dedicated
+    // /api/users/admin-stats endpoint (mirrors /api/users/stats for residents).
+    const statsUrl = useMemo(() => {
+        if (!user) return null;
+        const params = new URLSearchParams({
+            role: user.role,
+            per_page: '500'
+        });
+        if (canSwitchFac && facilityFilter !== 'all') {
+            params.set('facility_id', facilityFilter);
+        }
+        return `/api/users?${params.toString()}`;
+    }, [user, canSwitchFac, facilityFilter]);
     const { data: statsResp } = useSWR<ServerResponseMany<User>, Error>(statsUrl);
     const allAdmins = statsResp?.data ?? [];
     const totalAdmins = statsResp?.meta?.total ?? allAdmins.length;
@@ -237,19 +250,28 @@ export default function AdminManagement() {
         setCurrentPage(1);
     };
 
+    const allOnPageSelected =
+        admins.length > 0 && admins.every((a) => selectedAdmins.has(a.id));
+
     const toggleSelectAll = () => {
-        if (selectedAdmins.size === admins.length && admins.length > 0) {
-            setSelectedAdmins(new Set());
-        } else {
-            setSelectedAdmins(new Set(admins.map((a) => a.id)));
-        }
+        setSelectedAdmins((prev) => {
+            const next = new Map(prev);
+            if (allOnPageSelected) {
+                admins.forEach((a) => next.delete(a.id));
+            } else {
+                admins.forEach((a) => next.set(a.id, a));
+            }
+            return next;
+        });
     };
 
-    const toggleSelectAdmin = (adminId: number) => {
-        const next = new Set(selectedAdmins);
-        if (next.has(adminId)) next.delete(adminId);
-        else next.add(adminId);
-        setSelectedAdmins(next);
+    const toggleSelectAdmin = (admin: User) => {
+        setSelectedAdmins((prev) => {
+            const next = new Map(prev);
+            if (next.has(admin.id)) next.delete(admin.id);
+            else next.set(admin.id, admin);
+            return next;
+        });
     };
 
     const openAddDialog = () => {
@@ -490,7 +512,7 @@ export default function AdminManagement() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setSelectedAdmins(new Set())}
+                                onClick={() => setSelectedAdmins(new Map())}
                             >
                                 Clear Selection
                             </Button>
@@ -522,10 +544,7 @@ export default function AdminManagement() {
                         <TableRow>
                             <TableHead className="w-12">
                                 <Checkbox
-                                    checked={
-                                        admins.length > 0 &&
-                                        selectedAdmins.size === admins.length
-                                    }
+                                    checked={allOnPageSelected}
                                     onCheckedChange={toggleSelectAll}
                                     aria-label="Select all admins"
                                 />
@@ -607,7 +626,7 @@ export default function AdminManagement() {
                                         <Checkbox
                                             checked={selectedAdmins.has(admin.id)}
                                             onCheckedChange={() =>
-                                                toggleSelectAdmin(admin.id)
+                                                toggleSelectAdmin(admin)
                                             }
                                             aria-label={`Select ${admin.username}`}
                                         />
@@ -842,13 +861,12 @@ export default function AdminManagement() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-username">Username</Label>
-                            <Input
-                                id="edit-username"
-                                value={formData.username}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, username: e.target.value })
-                                }
-                            />
+                            <div className="border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                                {formData.username}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                Usernames cannot be changed after account creation
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-role">Role</Label>
@@ -1020,9 +1038,9 @@ export default function AdminManagement() {
                 open={showBulkResetPassword}
                 onOpenChange={setShowBulkResetPassword}
                 kind="admin"
-                users={admins.filter((a) => selectedAdmins.has(a.id))}
+                users={Array.from(selectedAdmins.values())}
                 onSuccess={() => {
-                    setSelectedAdmins(new Set());
+                    setSelectedAdmins(new Map());
                     void mutate();
                 }}
             />
@@ -1032,9 +1050,9 @@ export default function AdminManagement() {
                 open={showBulkDelete}
                 onOpenChange={setShowBulkDelete}
                 kind="admin"
-                users={admins.filter((a) => selectedAdmins.has(a.id))}
+                users={Array.from(selectedAdmins.values())}
                 onSuccess={() => {
-                    setSelectedAdmins(new Set());
+                    setSelectedAdmins(new Map());
                     void mutate();
                 }}
             />

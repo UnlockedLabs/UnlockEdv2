@@ -398,6 +398,17 @@ func canResetUserPassword(currentUser *Claims, toUpdate models.UserRole) bool {
 	}
 }
 
+func canDeleteUser(currentUser *Claims, toDelete models.UserRole) bool {
+	switch toDelete {
+	case models.DepartmentAdmin:
+		return currentUser.canSwitchFacility()
+	case models.SystemAdmin:
+		return currentUser.Role == toDelete
+	default:
+		return currentUser.isAdmin()
+	}
+}
+
 func validateUser(user *models.User) string {
 	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsNumber(r) }) {
 		return "alphanum"
@@ -869,6 +880,12 @@ func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Reques
 	var failures []failedEntry
 	for i := range users {
 		user := &users[i]
+		if !canResetUserPassword(claims, user.Role) {
+			log.add("user_id", user.ID)
+			log.warn("bulk reset: caller not authorized for target role")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "not authorized to reset password for this user"})
+			continue
+		}
 		lockedStatus, err := srv.Db.IsAccountLocked(user.ID)
 		if err != nil {
 			log.add("user_id", user.ID)
@@ -998,6 +1015,12 @@ func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request,
 	var successCount int
 	var failures []failedEntry
 	for _, user := range users {
+		if !canDeleteUser(claims, user.Role) {
+			log.add("user_id", user.ID)
+			log.warn("bulk delete: caller not authorized for target role")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "not authorized to delete this user"})
+			continue
+		}
 		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
 			log.add("user_id", user.ID)
 			log.error("bulk delete: error deleting identity in kratos")
