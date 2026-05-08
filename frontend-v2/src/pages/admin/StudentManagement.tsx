@@ -836,7 +836,7 @@ export default function StudentManagement() {
                 <BulkResetPasswordDialog
                     open={bulkResetOpen}
                     onOpenChange={setBulkResetOpen}
-                    residents={getSelectedUsers()}
+                    users={getSelectedUsers()}
                     onSuccess={handleBulkSuccess}
                 />
                 <BulkDeactivateDialog
@@ -848,7 +848,7 @@ export default function StudentManagement() {
                 <BulkDeleteDialog
                     open={bulkDeleteOpen}
                     onOpenChange={setBulkDeleteOpen}
-                    residents={getSelectedUsers()}
+                    users={getSelectedUsers()}
                     onSuccess={handleBulkSuccess}
                 />
                 <BulkImportDialog

@@ -56,7 +56,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	validUserOrderByFields := []string{"name_last", "created_at", "last_login", "doc_id", "username"}
+	validUserOrderByFields := []string{"name_last", "created_at", "last_login", "doc_id", "username", "role", "facility_name"}
 	if !slices.Contains(validUserOrderByFields, args.OrderBy) {
 		args.OrderBy = "name_last"
 	}
@@ -64,6 +64,10 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	if args.OrderBy == "last_login" {
 		tx = tx.Joins("LEFT JOIN login_metrics ON login_metrics.user_id = users.id")
 		orderClause = adjustLastLoginOrderBy(orderClause)
+	}
+	if args.OrderBy == "facility_name" {
+		tx = tx.Joins("LEFT JOIN facilities ON facilities.id = users.facility_id")
+		orderClause = adjustFacilityNameOrderBy(orderClause)
 	}
 	if err := tx.Order(orderClause).
 		Offset(args.CalcOffset()).
@@ -113,9 +117,12 @@ func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int)
 	return &user, nil
 }
 
-func (db *DB) GetUsersByIDs(ctx context.Context, userIDs []uint, facID uint) ([]models.User, error) {
+func (db *DB) GetUsersByIDs(ctx context.Context, userIDs []uint, facID uint, roles ...models.UserRole) ([]models.User, error) {
 	users := make([]models.User, 0, len(userIDs))
-	tx := db.WithContext(ctx).Where("id IN ? AND role = ?", userIDs, models.Student)
+	tx := db.WithContext(ctx).Where("id IN ?", userIDs)
+	if len(roles) > 0 {
+		tx = tx.Where("role IN ?", roles)
+	}
 	if facID != 0 {
 		tx = tx.Where("facility_id = ?", facID)
 	}
@@ -800,6 +807,16 @@ func adjustLastLoginOrderBy(arg string) string {
 	}
 	if strings.Contains(arg, "last_login asc") {
 		return strings.Replace(arg, "last_login asc", "login_metrics.last_login asc NULLS FIRST", 1)
+	}
+	return arg
+}
+
+func adjustFacilityNameOrderBy(arg string) string {
+	if strings.Contains(arg, "facility_name ") {
+		arg = strings.Replace(arg, "facility_name", "facilities.name", 1)
+	}
+	if strings.Contains(arg, "facilities.name") {
+		return arg + ", users.name_last, users.name_first"
 	}
 	return arg
 }
