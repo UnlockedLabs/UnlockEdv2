@@ -30,25 +30,70 @@ interface BulkDialogProps {
     onSuccess: () => void;
 }
 
+interface BulkResetPasswordDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    users: User[];
+    onSuccess: () => void;
+    kind?: 'resident' | 'admin';
+}
+
 function formatNameLastFirst(r: User) {
     return `${r.name_last}, ${r.name_first}`;
 }
 
+interface BulkResetConfig {
+    singular: string;
+    plural: string;
+    heading: string;
+    distributeNote: string;
+    displayItem: (u: User) => string;
+    csvHeader: string;
+    csvRow: (r: BulkPasswordResult) => string;
+    csvFilenamePrefix: string;
+}
+
+const RESIDENT_CONFIG: BulkResetConfig = {
+    singular: 'resident',
+    plural: 'residents',
+    heading: 'Selected Residents',
+    distributeNote: 'distribute to residents',
+    displayItem: (u) => `${formatNameLastFirst(u)} (${u.doc_id ?? ''})`,
+    csvHeader: 'Resident ID,Name,Username,Temporary Password',
+    csvRow: (r) => `${r.doc_id},${r.name},${r.username},${r.temp_password}`,
+    csvFilenamePrefix: 'bulk-passwords'
+};
+
+const ADMIN_CONFIG: BulkResetConfig = {
+    singular: 'admin',
+    plural: 'admins',
+    heading: 'Selected Admins',
+    distributeNote: 'distribute to admins',
+    displayItem: (u) => `${formatNameLastFirst(u)} (${u.username})`,
+    csvHeader: 'Username,Name,Temporary Password',
+    csvRow: (r) => `${r.username},${r.name},${r.temp_password}`,
+    csvFilenamePrefix: 'bulk-admin-passwords'
+};
+
 export function BulkResetPasswordDialog({
     open,
     onOpenChange,
-    residents,
-    onSuccess
-}: BulkDialogProps) {
+    users,
+    onSuccess,
+    kind = 'resident'
+}: BulkResetPasswordDialogProps) {
     const { toaster } = useToast();
+    const cfg = kind === 'admin' ? ADMIN_CONFIG : RESIDENT_CONFIG;
     const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [completed, setCompleted] = useState(false);
     const [results, setResults] = useState<BulkPasswordResult[]>([]);
     const [failures, setFailures] = useState<BulkActionFailure[]>([]);
 
     useEffect(() => {
         if (!open) {
             setConfirmInput('');
+            setCompleted(false);
             setResults([]);
             setFailures([]);
         }
@@ -56,30 +101,36 @@ export function BulkResetPasswordDialog({
 
     const handleGenerate = async () => {
         setLoading(true);
-        const response = (await API.post<BulkPasswordResponse, object>(
-            'users/bulk/reset-password',
-            { user_ids: residents.map((r) => r.id) }
-        )) as ServerResponseOne<BulkPasswordResponse>;
-        setLoading(false);
-
-        if (response.success) {
-            setResults(response.data.successes ?? []);
-            setFailures(response.data.failures ?? []);
+        try {
+            const response = (await API.post<BulkPasswordResponse, object>(
+                'users/bulk/reset-password',
+                { user_ids: users.map((u) => u.id) }
+            )) as ServerResponseOne<BulkPasswordResponse>;
+            if (response.success) {
+                setResults(response.data.successes ?? []);
+                setFailures(response.data.failures ?? []);
+                setCompleted(true);
+            } else {
+                toaster(
+                    response.message ?? 'Failed to reset passwords',
+                    ToastState.error
+                );
+            }
+        } catch {
+            toaster('Failed to reset passwords', ToastState.error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDownload = () => {
         if (results.length === 0) return;
-        const header = 'Resident ID,Name,Username,Temporary Password';
-        const rows = results.map(
-            (r) => `${r.doc_id},${r.name},${r.username},${r.temp_password}`
-        );
-        const csv = [header, ...rows].join('\n');
+        const csv = [cfg.csvHeader, ...results.map(cfg.csvRow)].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `bulk-passwords-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `${cfg.csvFilenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
         toaster('Password file downloaded', ToastState.success);
@@ -88,7 +139,7 @@ export function BulkResetPasswordDialog({
     };
 
     const handleClose = (value: boolean) => {
-        if (!value && results.length > 0) {
+        if (!value && completed) {
             onSuccess();
         }
         onOpenChange(value);
@@ -100,20 +151,20 @@ export function BulkResetPasswordDialog({
                 <DialogHeader>
                     <DialogTitle>Bulk Reset Passwords</DialogTitle>
                     <DialogDescription>
-                        Generate new temporary passwords for{' '}
-                        {residents.length} selected resident
-                        {residents.length > 1 ? 's' : ''}
+                        Generate new temporary passwords for {users.length}{' '}
+                        selected {cfg.singular}
+                        {users.length > 1 ? 's' : ''}
                     </DialogDescription>
                 </DialogHeader>
 
-                {results.length === 0 ? (
+                {!completed ? (
                     <>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-start gap-3">
                                 <AlertCircle className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                 <div className="flex-1">
                                     <div className="font-medium text-sm text-blue-900 mb-1">
-                                        Selected Residents
+                                        {cfg.heading}
                                     </div>
                                     <p className="text-sm text-blue-800 mb-2">
                                         New temporary passwords will be
@@ -121,15 +172,18 @@ export function BulkResetPasswordDialog({
                                     </p>
                                     <div className="bg-white border border-blue-200 rounded p-3 max-h-48 overflow-y-auto">
                                         <ul className="text-sm text-gray-700 space-y-1">
-                                            {residents.map((r) => (
-                                                <li key={r.id}>
+                                            {users.map((u) => (
+                                                <li key={u.id}>
                                                     {'\u2022'}{' '}
-                                                    {formatNameLastFirst(r)} (
-                                                    {r.doc_id ?? ''})
+                                                    {cfg.displayItem(u)}
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
+                                    <p className="text-sm text-blue-800 mt-3">
+                                        You will need to distribute these
+                                        passwords securely.
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -138,7 +192,7 @@ export function BulkResetPasswordDialog({
                             <Label htmlFor="bulk-reset-confirm">
                                 Type{' '}
                                 <span className="font-mono font-semibold">
-                                    {residents.length}
+                                    {users.length}
                                 </span>{' '}
                                 to confirm
                             </Label>
@@ -148,7 +202,7 @@ export function BulkResetPasswordDialog({
                                 onChange={(e) =>
                                     setConfirmInput(e.target.value)
                                 }
-                                placeholder={`Type ${residents.length}`}
+                                placeholder={`Type ${users.length}`}
                             />
                         </div>
 
@@ -162,12 +216,14 @@ export function BulkResetPasswordDialog({
                             <Button
                                 onClick={() => void handleGenerate()}
                                 disabled={
-                                    confirmInput !==
-                                        String(residents.length) || loading
+                                    confirmInput !== String(users.length) ||
+                                    loading
                                 }
                                 className="bg-[#556830] hover:bg-[#203622]"
                             >
-                                Generate Passwords
+                                {loading
+                                    ? 'Generating...'
+                                    : 'Generate Passwords'}
                             </Button>
                         </DialogFooter>
                     </>
@@ -182,9 +238,9 @@ export function BulkResetPasswordDialog({
                                     </div>
                                     <p className="text-sm text-green-700 mt-1">
                                         {results.length} temporary password
-                                        {results.length !== 1 ? 's' : ''} created.
-                                        Download the CSV file to distribute to
-                                        residents.
+                                        {results.length !== 1 ? 's' : ''}{' '}
+                                        created. Download the CSV file to{' '}
+                                        {cfg.distributeNote}.
                                     </p>
                                 </div>
                             </div>
@@ -202,7 +258,9 @@ export function BulkResetPasswordDialog({
                                             <ul className="text-sm text-gray-700 space-y-1">
                                                 {failures.map((f) => (
                                                     <li key={f.user_id}>
-                                                        {'\u2022'} {f.name} ({f.username}): {f.reason}
+                                                        {'\u2022'} {f.name} (
+                                                        {f.username}):{' '}
+                                                        {f.reason}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -213,13 +271,22 @@ export function BulkResetPasswordDialog({
                         )}
 
                         <DialogFooter>
-                            <Button
-                                onClick={handleDownload}
-                                className="bg-[#556830] hover:bg-[#203622]"
-                            >
-                                <Download className="size-4 mr-2" />
-                                Download Password File
-                            </Button>
+                            {results.length > 0 ? (
+                                <Button
+                                    onClick={handleDownload}
+                                    className="bg-[#556830] hover:bg-[#203622]"
+                                >
+                                    <Download className="size-4 mr-2" />
+                                    Download Password File
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={() => onOpenChange(false)}
+                                    className="bg-[#556830] hover:bg-[#203622]"
+                                >
+                                    Close
+                                </Button>
+                            )}
                         </DialogFooter>
                     </>
                 )}
@@ -245,9 +312,11 @@ export function BulkDeactivateDialog({
     const handleDeactivate = async () => {
         setLoading(true);
         const response = (await API.post<BulkActionResponse, object>(
-            'users/bulk/deactivate', {
-            user_ids: residents.map((r) => r.id)
-        })) as ServerResponseOne<BulkActionResponse>;
+            'users/bulk/deactivate',
+            {
+                user_ids: residents.map((r) => r.id)
+            }
+        )) as ServerResponseOne<BulkActionResponse>;
         setLoading(false);
 
         if (response.success) {
@@ -294,9 +363,8 @@ export function BulkDeactivateDialog({
                                 <ul className="text-sm text-gray-700 space-y-1">
                                     {residents.map((r) => (
                                         <li key={r.id}>
-                                            {'\u2022'}{' '}
-                                            {formatNameLastFirst(r)} (
-                                            {r.doc_id ?? ''})
+                                            {'\u2022'} {formatNameLastFirst(r)}{' '}
+                                            ({r.doc_id ?? ''})
                                         </li>
                                     ))}
                                 </ul>
@@ -331,8 +399,7 @@ export function BulkDeactivateDialog({
                     <Button
                         onClick={() => void handleDeactivate()}
                         disabled={
-                            confirmInput !== String(residents.length) ||
-                            loading
+                            confirmInput !== String(residents.length) || loading
                         }
                         className="bg-orange-600 hover:bg-orange-700"
                     >
@@ -344,13 +411,49 @@ export function BulkDeactivateDialog({
     );
 }
 
+interface BulkDeleteDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    users: User[];
+    onSuccess: () => void;
+    kind?: 'resident' | 'admin';
+}
+
+interface BulkDeleteConfig {
+    singular: string;
+    plural: string;
+    title: string;
+    bodyDescription: (count: number) => string;
+    displayItem: (u: User) => string;
+}
+
+const RESIDENT_DELETE_CONFIG: BulkDeleteConfig = {
+    singular: 'resident',
+    plural: 'residents',
+    title: 'Delete Residents',
+    bodyDescription: () =>
+        'These resident accounts and all associated data will be permanently deleted:',
+    displayItem: (u) => `${formatNameLastFirst(u)} (${u.doc_id ?? ''})`
+};
+
+const ADMIN_DELETE_CONFIG: BulkDeleteConfig = {
+    singular: 'admin',
+    plural: 'admins',
+    title: 'Delete Admins',
+    bodyDescription: () =>
+        'These admin accounts and all associated data will be permanently deleted:',
+    displayItem: (u) => `${formatNameLastFirst(u)} (${u.username})`
+};
+
 export function BulkDeleteDialog({
     open,
     onOpenChange,
-    residents,
-    onSuccess
-}: BulkDialogProps) {
+    users,
+    onSuccess,
+    kind = 'resident'
+}: BulkDeleteDialogProps) {
     const { toaster } = useToast();
+    const cfg = kind === 'admin' ? ADMIN_DELETE_CONFIG : RESIDENT_DELETE_CONFIG;
     const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -360,33 +463,37 @@ export function BulkDeleteDialog({
 
     const handleDelete = async () => {
         setLoading(true);
-        const response = (await API.post<BulkActionResponse, object>(
-            'users/bulk/delete', {
-            user_ids: residents.map((r) => r.id)
-        })) as ServerResponseOne<BulkActionResponse>;
-        setLoading(false);
+        try {
+            const response = (await API.post<BulkActionResponse, object>(
+                'users/bulk/delete',
+                { user_ids: users.map((u) => u.id) }
+            )) as ServerResponseOne<BulkActionResponse>;
 
-        if (response.success) {
-            const { success_count, failures } = response.data;
-            const failedCount = failures?.length ?? 0;
-            const failedNames = failures
-                ?.map((f) => f.name?.trim() || `id ${f.user_id}`)
-                .join(', ');
-            const msg =
-                failedCount > 0
-                    ? `${success_count} resident${success_count !== 1 ? 's' : ''} deleted, ${failedCount} failed: ${failedNames}`
-                    : `${success_count} resident${success_count !== 1 ? 's' : ''} deleted`;
-            toaster(
-                msg,
-                failedCount > 0 ? ToastState.error : ToastState.success
-            );
-            onOpenChange(false);
-            onSuccess();
-        } else {
-            toaster(
-                response.message ?? 'Failed to delete residents',
-                ToastState.error
-            );
+            if (response.success) {
+                const { success_count, failures } = response.data;
+                const failedCount = failures?.length ?? 0;
+                const failedNames = failures?.map((f) => f.name).join(', ');
+                const label = success_count !== 1 ? cfg.plural : cfg.singular;
+                const msg =
+                    failedCount > 0
+                        ? `${success_count} ${label} deleted, ${failedCount} failed: ${failedNames}`
+                        : `${success_count} ${label} deleted`;
+                toaster(
+                    msg,
+                    failedCount > 0 ? ToastState.error : ToastState.success
+                );
+                onOpenChange(false);
+                onSuccess();
+            } else {
+                toaster(
+                    response.message ?? `Failed to delete ${cfg.plural}`,
+                    ToastState.error
+                );
+            }
+        } catch {
+            toaster(`Failed to delete ${cfg.plural}`, ToastState.error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -394,10 +501,11 @@ export function BulkDeleteDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Delete Residents</DialogTitle>
+                    <DialogTitle>{cfg.title}</DialogTitle>
                     <DialogDescription>
-                        Permanently delete {residents.length} selected
-                        resident{residents.length > 1 ? 's' : ''}
+                        Permanently delete {users.length} selected{' '}
+                        {cfg.singular}
+                        {users.length > 1 ? 's' : ''}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -409,16 +517,13 @@ export function BulkDeleteDialog({
                                 This action cannot be undone
                             </div>
                             <p className="text-sm text-red-800 mb-2">
-                                These resident accounts and all associated
-                                data will be permanently deleted:
+                                {cfg.bodyDescription(users.length)}
                             </p>
                             <div className="bg-white border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
                                 <ul className="text-sm text-gray-700 space-y-1">
-                                    {residents.map((r) => (
-                                        <li key={r.id}>
-                                            {'\u2022'}{' '}
-                                            {formatNameLastFirst(r)} (
-                                            {r.doc_id ?? ''})
+                                    {users.map((u) => (
+                                        <li key={u.id}>
+                                            {'\u2022'} {cfg.displayItem(u)}
                                         </li>
                                     ))}
                                 </ul>
@@ -431,7 +536,7 @@ export function BulkDeleteDialog({
                     <Label htmlFor="bulk-delete-confirm">
                         Type{' '}
                         <span className="font-mono font-semibold">
-                            {residents.length}
+                            {users.length}
                         </span>{' '}
                         to confirm deletion
                     </Label>
@@ -439,7 +544,7 @@ export function BulkDeleteDialog({
                         id="bulk-delete-confirm"
                         value={confirmInput}
                         onChange={(e) => setConfirmInput(e.target.value)}
-                        placeholder={`Type ${residents.length}`}
+                        placeholder={`Type ${users.length}`}
                     />
                 </div>
 
@@ -453,12 +558,15 @@ export function BulkDeleteDialog({
                     <Button
                         onClick={() => void handleDelete()}
                         disabled={
-                            confirmInput !== String(residents.length) ||
-                            loading
+                            confirmInput !== String(users.length) || loading
                         }
                         className="bg-red-600 hover:bg-red-700"
                     >
-                        Delete {residents.length} Residents
+                        {loading
+                            ? 'Deleting...'
+                            : `Delete ${users.length} ${
+                                  users.length === 1 ? cfg.singular : cfg.plural
+                              }`}
                     </Button>
                 </DialogFooter>
             </DialogContent>
