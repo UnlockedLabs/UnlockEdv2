@@ -14,7 +14,7 @@ SELECT
   (SELECT COUNT(*) FROM program_class_events
      WHERE class_id = ? AND deleted_at IS NULL) AS events,
   (SELECT COUNT(*) FROM program_completions
-     WHERE program_class_id = ?) AS completions,
+     WHERE program_class_id = ? AND deleted_at IS NULL) AS completions,
   (SELECT COUNT(*) FROM program_class_event_attendance pcea
      JOIN program_class_events e ON e.id = pcea.event_id
      WHERE e.class_id = ? AND pcea.deleted_at IS NULL) AS attendance_flags,
@@ -61,7 +61,7 @@ SELECT
   (SELECT COUNT(*) FROM program_class_events
      WHERE class_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS events,
   (SELECT COUNT(*) FROM program_completions
-     WHERE program_class_id IN (SELECT id FROM cls)) AS completions,
+     WHERE program_class_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS completions,
   (SELECT COUNT(*) FROM program_class_event_attendance pcea
      JOIN program_class_events e ON e.id = pcea.event_id
      WHERE e.class_id IN (SELECT id FROM cls) AND pcea.deleted_at IS NULL) AS attendance_flags,

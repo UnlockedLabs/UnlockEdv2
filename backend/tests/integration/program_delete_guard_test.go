@@ -169,6 +169,11 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedAcrossMultipleClasse
 	got := resp.GetData()
 	suite.Equal(int64(2), got.Classes)
 	suite.Equal(int64(1), got.Enrollments)
+	suite.Equal(int64(1), got.Events)
+
+	var count int64
+	suite.env.DB.Model(&models.Program{}).Where("id = ?", program.ID).Count(&count)
+	suite.Equal(int64(1), count, "program should still exist after blocked delete")
 }
 
 func (suite *ProgramDeleteGuardTestSuite) TestDelete_HistoryOnly_Succeeds() {

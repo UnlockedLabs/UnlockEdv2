@@ -254,7 +254,7 @@ func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
-	_, err = env.CreateTestEvent(class.ID, "")
+	_, err = env.CreateTestEvent(class.ID, "", instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users
@@ -312,7 +312,7 @@ func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
-	_, err = env.CreateTestEvent(class.ID, "")
+	_, err = env.CreateTestEvent(class.ID, "", instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users
@@ -448,7 +448,7 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
-	_, err = env.CreateTestEvent(class.ID, "")
+	_, err = env.CreateTestEvent(class.ID, "", instructor.ID)
 	require.NoError(t, err)
 
 	// Create test users

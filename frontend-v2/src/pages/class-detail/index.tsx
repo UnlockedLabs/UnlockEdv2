@@ -101,6 +101,7 @@ export default function ClassDetailPage() {
             };
         }>
     >(class_id ? `/api/program-classes/${class_id}/delete-check` : null);
+    const isDeleteCheckReady = deleteCheckResp !== undefined;
     const canDelete = deleteCheckResp?.data?.can_delete ?? false;
     const deleteBlockers = deleteCheckResp?.data?.blockers;
     const deleteBlockerReason = (() => {
@@ -217,7 +218,7 @@ export default function ClassDetailPage() {
                                                 </DropdownMenuItem>
                                             </div>
                                         </TooltipTrigger>
-                                        {!canDelete && (
+                                        {isDeleteCheckReady && !canDelete && (
                                             <TooltipContent side="left">
                                                 {deleteBlockerReason}
                                             </TooltipContent>
