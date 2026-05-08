@@ -30,3 +30,4 @@ jar
 /.claude
 /frontend-v2/node_modules/
 /frontend-v2/public/
+/frontend-v2/.vite/
