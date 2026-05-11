@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [react()],
+    plugins: [tailwindcss(), react()],
     resolve: {
         alias: { '@': path.resolve(__dirname, 'src') }
     },
@@ -13,7 +13,8 @@ export default defineConfig({
     },
     server: {
         host: '0.0.0.0',
-        port: 5173
+        port: 5173,
+        allowedHosts: ['frontend']
     },
     build: {
         sourcemap: true,
@@ -21,6 +22,9 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
+                        if (id.includes('@radix-ui')) return 'radix';
+                        if (id.includes('recharts')) return 'recharts';
+                        if (id.includes('react-router')) return 'router';
                         return id
                             .toString()
                             .split('node_modules/')[1]

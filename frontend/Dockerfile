@@ -1,8 +1,8 @@
-FROM node:21-alpine3.19 as builder
+FROM node:22-alpine3.19 as builder
 WORKDIR /app/
 COPY . .
 
-# VITE args and envrionment variables
+# VITE args and environment variables
 ARG VITE_PUBLIC_POSTHOG_KEY
 ARG VITE_PUBLIC_POSTHOG_HOST
 ARG VITE_DEPLOYMENT
