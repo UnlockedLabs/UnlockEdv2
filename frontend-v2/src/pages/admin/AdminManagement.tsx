@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import {
     Search,
@@ -167,6 +167,10 @@ export default function AdminManagement() {
 
     const [selectedAdmins, setSelectedAdmins] = useState<Map<number, User>>(new Map());
 
+    useEffect(() => {
+        setSelectedAdmins(new Map());
+    }, [searchQuery, facilityFilter, sortColumn, sortDirection]);
+
     const [showAddAdmin, setShowAddAdmin] = useState(false);
     const [showEditAdmin, setShowEditAdmin] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -218,7 +222,7 @@ export default function AdminManagement() {
         }
         return `/api/users?${params.toString()}`;
     }, [user, canSwitchFac, facilityFilter]);
-    const { data: statsResp } = useSWR<ServerResponseMany<User>, Error>(statsUrl);
+    const { data: statsResp, mutate: mutateStats } = useSWR<ServerResponseMany<User>, Error>(statsUrl);
     const allAdmins = statsResp?.data ?? [];
     const totalAdmins = statsResp?.meta?.total ?? allAdmins.length;
     const deptAdminCount = allAdmins.filter(
@@ -328,6 +332,7 @@ export default function AdminManagement() {
             setShowResetPassword(true);
             setSelectedAdmin(response.data.user);
             void mutate();
+            void mutateStats();
         } else {
             toaster(response.message || 'Failed to create administrator', ToastState.error);
         }
@@ -356,6 +361,7 @@ export default function AdminManagement() {
             setShowEditAdmin(false);
             setSelectedAdmin(null);
             void mutate();
+            void mutateStats();
         } else {
             toaster(response.message || 'Failed to update administrator', ToastState.error);
         }
@@ -397,6 +403,7 @@ export default function AdminManagement() {
             setDeleteConfirmUsername('');
             setSelectedAdmin(null);
             void mutate();
+            void mutateStats();
         } else {
             toaster(response.message || 'Failed to delete administrator', ToastState.error);
         }
@@ -1042,6 +1049,7 @@ export default function AdminManagement() {
                 onSuccess={() => {
                     setSelectedAdmins(new Map());
                     void mutate();
+                    void mutateStats();
                 }}
             />
 
@@ -1054,6 +1062,7 @@ export default function AdminManagement() {
                 onSuccess={() => {
                     setSelectedAdmins(new Map());
                     void mutate();
+                    void mutateStats();
                 }}
             />
         </div>
