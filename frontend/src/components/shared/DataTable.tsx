@@ -119,7 +119,7 @@ export function DataTable<T>({
                 </TableBody>
             </Table>
 
-            {(totalPages ?? 0) > 1 && page != null && onPageChange != null && (
+            {totalPages != null && totalPages > 1 && page != null && onPageChange != null && (
                 <div className="border-t border-border px-4 py-3">
                     <Pagination>
                         <PaginationContent>

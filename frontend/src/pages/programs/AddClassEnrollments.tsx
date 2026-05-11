@@ -201,7 +201,7 @@ export default function AddClassEnrollments() {
                         className="pl-9"
                     />
                 </div>
-                <Select value={sortQuery} onValueChange={setSortQuery}>
+                <Select value={sortQuery} onValueChange={(v) => setSortQuery(v as FilterResidentNames)}>
                     <SelectTrigger className="w-44">
                         <SelectValue />
                     </SelectTrigger>

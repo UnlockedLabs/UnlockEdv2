@@ -23,24 +23,24 @@ import {
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);
-    return new Date(year!, month! - 1, day);
+    return new Date(year, month - 1, day);
 }
 
 function getPreviousMonth(ym: string): string {
     const [y, m] = ym.split('-').map(Number);
-    if (m === 1) return `${y! - 1}-12`;
-    return `${y}-${String(m! - 1).padStart(2, '0')}`;
+    if (m === 1) return `${y - 1}-12`;
+    return `${y}-${String(m - 1).padStart(2, '0')}`;
 }
 
 function getNextMonth(ym: string): string {
     const [y, m] = ym.split('-').map(Number);
-    if (m === 12) return `${y! + 1}-01`;
-    return `${y}-${String(m! + 1).padStart(2, '0')}`;
+    if (m === 12) return `${y + 1}-01`;
+    return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 
 function formatMonthYear(ym: string): string {
     const [year, month] = ym.split('-').map(Number);
-    const date = new Date(year!, month! - 1, 1);
+    const date = new Date(year, month - 1, 1);
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 

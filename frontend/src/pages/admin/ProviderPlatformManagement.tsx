@@ -12,7 +12,6 @@ import { useAuth, hasFeature } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import API from '@/api/api';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FormModal } from '@/components/shared/FormModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';

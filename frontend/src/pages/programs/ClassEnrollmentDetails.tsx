@@ -11,7 +11,6 @@ import {
     EnrollmentStatus,
     SelectedClassStatus,
     ServerResponseMany,
-    ProgramCompletion,
     FilterResidentNames
 } from '@/types';
 import { getEnrollmentStatusColor } from '@/lib/formatters';
@@ -200,8 +199,11 @@ export default function ClassEnrollmentDetails() {
             return { Enrolled: 'Enrolled', Cancelled: 'Cancelled' };
         }
         if (clsInfo?.status === SelectedClassStatus.Active) {
-            const { Cancelled: _, ...rest } = ENROLLMENT_STATUS_OPTIONS;
-            return rest;
+            return Object.fromEntries(
+                Object.entries(ENROLLMENT_STATUS_OPTIONS).filter(
+                    ([k]) => k !== 'Cancelled'
+                )
+            );
         }
         return ENROLLMENT_STATUS_OPTIONS;
     }

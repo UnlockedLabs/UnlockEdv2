@@ -72,8 +72,8 @@ export default function OpenContentItemAccordion({
             !['library', 'video', 'helpful_link'].includes(item.content_type)
     );
 
-    if (libraries.length > 0) contentMap['Libraries'] = libraries;
-    if (videos.length > 0) contentMap['Videos'] = videos;
+    if (libraries.length > 0) contentMap.Libraries = libraries;
+    if (videos.length > 0) contentMap.Videos = videos;
     if (links.length > 0) contentMap['Helpful Links'] = links;
     if (others.length > 0) contentMap['All Others'] = others;
 

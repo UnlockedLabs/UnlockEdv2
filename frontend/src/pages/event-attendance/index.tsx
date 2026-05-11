@@ -17,8 +17,6 @@ import {
     ServerResponseMany
 } from '@/types';
 import { ClassEventInstance } from '@/types/events';
-import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
-import { ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
