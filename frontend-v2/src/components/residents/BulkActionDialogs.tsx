@@ -281,7 +281,7 @@ export function BulkResetPasswordDialog({
                                 </Button>
                             ) : (
                                 <Button
-                                    onClick={() => onOpenChange(false)}
+                                    onClick={() => handleClose(false)}
                                     className="bg-[#556830] hover:bg-[#203622]"
                                 >
                                     Close
