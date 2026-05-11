@@ -352,41 +352,41 @@ export function SessionDetailSheet({
                             </div>
                         </div>
 
-                        {!isCancelled && originalInstructorName && instructorName && (
-                            <div className="pt-6 border-t border-gray-200">
-                                <h4 className="text-sm text-gray-700 mb-3">Status</h4>
-                                <div className="flex items-start gap-2">
-                                    <Users className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm text-gray-900 mb-1">Instructor Change</div>
-                                        <p className="text-sm text-gray-600">
-                                            Session Instructor: {instructorName}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {!isCancelled && originalRoom && (
-                            <div className="pt-6 border-t border-gray-200">
-                                <h4 className="text-sm text-gray-700 mb-3">Status</h4>
-                                <div className="flex items-start gap-2">
-                                    <MapPin className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm text-gray-900 mb-1">Room Change</div>
-                                        <p className="text-sm text-gray-600">
-                                            Session Room: {room}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {(isCancelled || isCancelledReschedule || isRescheduledFrom || isRescheduledTo || hasAttendance) && (
+                        {(isCancelled ||
+                            isCancelledReschedule ||
+                            isRescheduledFrom ||
+                            isRescheduledTo ||
+                            hasAttendance ||
+                            (!isCancelled && (originalInstructorName || originalRoom))) && (
                             <div className="pt-6 border-t border-gray-200">
                                 <h4 className="text-sm text-gray-700 mb-3">
                                     Status
                                 </h4>
+                                <div className="space-y-4">
+
+                                {!isCancelled && originalInstructorName && instructorName && (
+                                    <div className="flex items-start gap-2">
+                                        <Users className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm text-gray-900 mb-1">Instructor Change</div>
+                                            <p className="text-sm text-gray-600">
+                                                Session Instructor: {instructorName}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isCancelled && originalRoom && (
+                                    <div className="flex items-start gap-2">
+                                        <MapPin className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm text-gray-900 mb-1">Room Change</div>
+                                            <p className="text-sm text-gray-600">
+                                                Session Room: {room}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {isCancelledReschedule && (
                                     <div className="space-y-4">
@@ -557,6 +557,7 @@ export function SessionDetailSheet({
                                         </div>
                                     </div>
                                 )}
+                                </div>
                             </div>
                         )}
 

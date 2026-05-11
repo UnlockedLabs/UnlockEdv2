@@ -866,6 +866,9 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 						originalInstructorName = event.InstructorName
 					}
 					instructorName = newInstructorName
+				} else if event.InstructorID == nil || *event.InstructorID != *override.InstructorID {
+					originalInstructorName = event.InstructorName
+					instructorName = "Unknown Instructor"
 				}
 			}
 			facilityEvent := models.FacilityProgramClassEvent{

@@ -112,14 +112,14 @@ export function getSessionChangeInfo(
     date: string
 ): SessionChangeInfo {
     for (const event of events) {
+        const result: SessionChangeInfo = {};
         for (const override of event.overrides ?? []) {
             if (override.is_cancelled) continue;
             const ovDate = parseOverrideDate(override.override_rrule);
             if (ovDate !== date) continue;
 
-            const result: SessionChangeInfo = {};
-
             if (
+                result.newRoom == null &&
                 override.room_id != null &&
                 override.room_id !== event.room_id &&
                 override.room_ref
@@ -129,6 +129,7 @@ export function getSessionChangeInfo(
             }
 
             if (
+                result.newInstructor == null &&
                 override.instructor_id != null &&
                 override.instructor_id !== event.instructor_id
             ) {
@@ -139,10 +140,9 @@ export function getSessionChangeInfo(
                     result.originalInstructor = `${event.instructor_ref.name_first} ${event.instructor_ref.name_last}`.trim();
                 }
             }
-
-            if (result.newRoom || result.originalRoom || result.newInstructor || result.originalInstructor) {
-                return result;
-            }
+        }
+        if (result.newRoom || result.originalRoom || result.newInstructor || result.originalInstructor) {
+            return result;
         }
     }
     return {};
