@@ -1,22 +1,24 @@
-import { Attendance, Room, SelectedClassStatus } from '@/common';
+import { Attendance, SelectedClassStatus } from './attendance';
+import { Room } from './facility';
+import { User } from './user';
 
-// ClassEventInstance represents a single scheduled class event with attendance records
 export interface ClassEventInstance extends ProgramClassEvent {
     event_id: number;
     date: string;
     class_time: string;
     attendance_records: ProgramClassEventAttendance[];
+    is_rescheduled?: boolean;
+    rescheduled_to_date?: string;
+    rescheduled_from_date?: string;
+    override_id?: number;
 }
 
-// TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
-// ShortCalendarEvent represents a basic calendar event with a title and time range.
 export interface ShortCalendarEvent {
     title: string;
     start: Date;
     end: Date;
 }
 
-// ProgramClassEventAttendance Represents a single user's attendance record for a class event, including status and notes.
 export interface ProgramClassEventAttendance {
     id: number;
     created_at: Date;
@@ -28,7 +30,6 @@ export interface ProgramClassEventAttendance {
     note: string;
 }
 
-// ProgramClassEvent represents a single class event, including scheduling, recurrence, and override rules.
 export interface ProgramClassEvent {
     id: number;
     class_id: number;
@@ -37,10 +38,12 @@ export interface ProgramClassEvent {
     room_ref?: Room;
     recurrence_rule: string;
     is_cancelled: boolean;
+    instructor_id?: number | null;
+    instructor_ref?: User | null;
+    reason?: string | null;
     overrides: ProgramClassEventOverride[];
 }
 
-// ProgramClassEventOverride represents an override or exception to a recurring class event, such as cancellations or rescheduling.
 export interface ProgramClassEventOverride {
     id: number;
     event_id: number;
@@ -50,12 +53,16 @@ export interface ProgramClassEventOverride {
     room_ref?: Room;
     is_cancelled: boolean;
     reason: string;
+    linked_override_event_id?: number;
+    instructor_id?: number | null;
+    instructor_ref?: User | null;
 }
 
-// FacilityProgramClassEvent represents a detailed scheduled class event at a facility, including instructor, program, calendar, and override info.
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
-    room: string; // populated from joined rooms table in calendar query
+    room: string;
+    original_room?: string;
     instructor_name: string;
+    original_instructor_name?: string;
     program_id: number;
     program_name: string;
     title: string;
@@ -70,7 +77,6 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     class_status: SelectedClassStatus;
 }
 
-// Instructor represents a user who can teach classes
 export interface Instructor {
     id: number;
     username: string;
@@ -79,7 +85,6 @@ export interface Instructor {
     email: string;
 }
 
-// Bulk cancellation preview data
 export interface BulkCancelSessionsPreview {
     sessionCount: number;
     upcomingSessionCount: number;
@@ -88,7 +93,6 @@ export interface BulkCancelSessionsPreview {
     classes: AffectedClass[];
 }
 
-// Individual class affected by bulk cancellation
 export interface AffectedClass {
     classId: number;
     className: string;
@@ -97,7 +101,6 @@ export interface AffectedClass {
     studentCount: number;
 }
 
-// Bulk cancellation request payload
 export interface BulkCancelSessionsRequest {
     instructorId: number;
     startDate: string;
@@ -105,7 +108,6 @@ export interface BulkCancelSessionsRequest {
     reason: string;
 }
 
-// Instructor class data response from API
 export interface InstructorClassData {
     id: number;
     name: string;
@@ -113,6 +115,10 @@ export interface InstructorClassData {
     enrolledCount: number;
     upcomingSessions: number;
     cancelledSessions: number;
+    startTime: string;
+    duration: string;
+    room: string;
+    sessionDates: string[];
 }
 
 export interface BulkCancelSessionsResponse {
