@@ -111,8 +111,8 @@ export function getSessionChangeInfo(
     events: ProgramClassEvent[],
     date: string
 ): SessionChangeInfo {
+    const result: SessionChangeInfo = {};
     for (const event of events) {
-        const result: SessionChangeInfo = {};
         for (const override of event.overrides ?? []) {
             if (override.is_cancelled) continue;
             const ovDate = parseOverrideDate(override.override_rrule);
@@ -141,11 +141,8 @@ export function getSessionChangeInfo(
                 }
             }
         }
-        if (result.newRoom || result.originalRoom || result.newInstructor || result.originalInstructor) {
-            return result;
-        }
     }
-    return {};
+    return result;
 }
 
 export function buildRoomOverrideMap(
