@@ -23,14 +23,9 @@ import {
     ChartBarIcon,
     BuildingOfficeIcon,
     CalendarIcon,
-    LightBulbIcon,
-    GlobeAltIcon,
     ChevronDownIcon,
     ChevronRightIcon,
     ArrowPathIcon,
-    BookmarkIcon,
-    TrophyIcon,
-    RocketLaunchIcon,
     QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 
@@ -236,44 +231,6 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                 />
             )}
 
-            {(hasFeature(user, FeatureAccess.ProviderAccess) ||
-                hasFeature(user, FeatureAccess.OpenContentAccess)) && (
-                <CollapsibleSection
-                    id="connected-learning"
-                    label="Connected Learning"
-                    icon={GlobeAltIcon}
-                    collapsed={collapsed}
-                    isActive={isActive([
-                        '/learning-insights',
-                        '/learning-platforms'
-                    ])}
-                    onNavigate={onNavigate}
-                    items={[
-                        ...(hasFeature(user, FeatureAccess.ProviderAccess)
-                            ? [
-                                  {
-                                      to: '/learning-insights',
-                                      icon: LightBulbIcon,
-                                      label: 'Learning Insights',
-                                      active: isActive(['/learning-insights'])
-                                  }
-                              ]
-                            : []),
-                        ...(hasFeature(user, FeatureAccess.ProviderAccess) &&
-                        canSwitchFacility(user)
-                            ? [
-                                  {
-                                      to: '/learning-platforms',
-                                      icon: GlobeAltIcon,
-                                      label: 'Learning Platforms',
-                                      active: isActive(['/learning-platforms'])
-                                  }
-                              ]
-                            : [])
-                    ]}
-                />
-            )}
-
             {hasFeature(user, FeatureAccess.OpenContentAccess) && (
                 <CollapsibleSection
                     id="knowledge-center"
@@ -303,7 +260,6 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
     const { tourState } = useTourContext();
     if (!user) return null;
     const hasOpen = hasFeature(user, FeatureAccess.OpenContentAccess);
-    const hasProvider = hasFeature(user, FeatureAccess.ProviderAccess);
     const hasProgram = hasFeature(user, FeatureAccess.ProgramAccess);
 
     const tourHighlight = (target: string) =>
@@ -325,7 +281,6 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
                     extraClassName={tourHighlight('#navigate-homepage')}
                 />
             ) : (
-                !hasProvider &&
                 !hasProgram && (
                     <NavLink
                         to="/temp-home"
@@ -348,34 +303,6 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
                     onClick={onNavigate}
                     extraClassName={tourHighlight('#visit-knowledge-center')}
                 />
-            )}
-            {hasProvider && (
-                <>
-                    <NavLink
-                        to="/learning-path"
-                        icon={RocketLaunchIcon}
-                        label="Learning Path"
-                        active={isActive(['/learning-path'])}
-                        collapsed={collapsed}
-                        onClick={onNavigate}
-                    />
-                    <NavLink
-                        to="/my-courses"
-                        icon={BookmarkIcon}
-                        label="My Courses"
-                        active={isActive(['/my-courses'])}
-                        collapsed={collapsed}
-                        onClick={onNavigate}
-                    />
-                    <NavLink
-                        to="/my-progress"
-                        icon={TrophyIcon}
-                        label="My Progress"
-                        active={isActive(['/my-progress'])}
-                        collapsed={collapsed}
-                        onClick={onNavigate}
-                    />
-                </>
             )}
             {hasProgram && (
                 <NavLink
