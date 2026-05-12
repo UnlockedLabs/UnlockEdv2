@@ -21,9 +21,11 @@ import {
 import { CancelEventModal } from '@/components/schedule/CancelEventModal';
 import { ChangeInstructorModal } from '@/components/schedule/ChangeInstructorModal';
 import { ChangeRoomModal } from '@/components/schedule/ChangeRoomModal';
-import { RescheduleSessionModal } from './RescheduleSessionModal';
-import { SessionDisplay } from './SessionsTab';
-import { findActiveOverride } from './session-utils';
+import { RescheduleSessionModal } from '@/pages/class-detail/RescheduleSessionModal';
+import {
+    findActiveOverride,
+    type SessionDisplay
+} from '@/pages/class-detail/session-utils';
 import {
     FacilityProgramClassEvent,
     ProgramClassEvent,
@@ -50,6 +52,26 @@ interface SessionDetailSheetProps {
     onUndoCancel?: () => void;
     onUndoReschedule?: () => void;
     allSessions?: SessionDisplay[];
+
+    // Optional variant hooks for calendar/admin-schedule usage.
+    /** Program name shown under the class title in Class Details. */
+    programName?: string;
+    /** Render the "Active" status badge (class_status === Active). */
+    showActiveBadge?: boolean;
+    /** Suppress the Rescheduled / Rescheduled-Class badges in the header. */
+    hideRescheduledBadge?: boolean;
+    /** Override the cancellation-undo button label (default: "Undo Cancellation"). */
+    cancellationActionLabel?: string;
+    /** When set, "Reschedule This Class" fires this callback instead of opening the built-in modal. */
+    onReschedule?: () => void;
+    /** Render a "Take Attendance" action (past + scheduled + not completed/cancelled). */
+    onTakeAttendance?: () => void;
+    /** Render a "View Full Class Details →" link at the bottom. */
+    onViewClassDetails?: () => void;
+    /** Pre-built FacilityProgramClassEvent for the cancel/change-room/change-instructor modals. If omitted, one is synthesized from session + classEvents. */
+    facilityEvent?: FacilityProgramClassEvent;
+    /** Force-disable the modify actions block (Reschedule/Cancel/Change Instructor/Change Room) regardless of session flags. */
+    disableModifyActions?: boolean;
 }
 
 function buildFacilityEvent(
@@ -113,7 +135,16 @@ export function SessionDetailSheet({
     onUndo,
     onUndoCancel,
     onUndoReschedule,
-    allSessions = []
+    allSessions = [],
+    programName,
+    showActiveBadge = false,
+    hideRescheduledBadge = false,
+    cancellationActionLabel = 'Undo Cancellation',
+    onReschedule,
+    onTakeAttendance,
+    onViewClassDetails,
+    facilityEvent: facilityEventOverride,
+    disableModifyActions = false
 }: SessionDetailSheetProps) {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -167,6 +198,7 @@ export function SessionDetailSheet({
     } = session;
 
     const canModify =
+        !disableModifyActions &&
         !hasAttendance &&
         !isCancelled &&
         !isRescheduledFrom &&
@@ -187,7 +219,8 @@ export function SessionDetailSheet({
         day: 'numeric'
     });
 
-    const facilityEvent = buildFacilityEvent(session, classId, classEvents);
+    const facilityEvent =
+        facilityEventOverride ?? buildFacilityEvent(session, classId, classEvents);
 
     const getStatusBadge = () => {
         if (isCancelled || isCancelledReschedule) {
@@ -200,7 +233,7 @@ export function SessionDetailSheet({
                 </Badge>
             );
         }
-        if (isRescheduledFrom) {
+        if (isRescheduledFrom && !hideRescheduledBadge) {
             return (
                 <Badge
                     variant="outline"
@@ -210,7 +243,7 @@ export function SessionDetailSheet({
                 </Badge>
             );
         }
-        if (isRescheduledTo) {
+        if (isRescheduledTo && !hideRescheduledBadge) {
             return (
                 <Badge
                     variant="outline"
@@ -227,6 +260,16 @@ export function SessionDetailSheet({
                     className="bg-green-50 text-[#556830] border-green-200"
                 >
                     Completed
+                </Badge>
+            );
+        }
+        if (showActiveBadge) {
+            return (
+                <Badge
+                    variant="outline"
+                    className="bg-green-50 text-[#556830] border-green-200"
+                >
+                    Active
                 </Badge>
             );
         }
@@ -254,6 +297,12 @@ export function SessionDetailSheet({
         onUndo();
         onClose();
     };
+
+    const showTakeAttendance =
+        !!onTakeAttendance &&
+        session.isPast &&
+        !isCancelled &&
+        !hasAttendance;
 
     return (
         <>
@@ -299,6 +348,11 @@ export function SessionDetailSheet({
                                         <div className="text-[#203622]">
                                             {className}
                                         </div>
+                                        {programName && (
+                                            <div className="text-sm text-gray-500">
+                                                {programName}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
@@ -322,16 +376,16 @@ export function SessionDetailSheet({
                                         </div>
                                         <div
                                             className={`text-[#203622] ${
-                                                originalRoom || isCancelled || isRescheduledFrom || isCancelledReschedule
+                                                !!originalRoom || isCancelled || isRescheduledFrom || isCancelledReschedule
                                                     ? 'line-through'
                                                     : ''
                                             }`}
                                         >
-                                            {originalRoom || room}
+                                            {originalRoom ?? room}
                                         </div>
                                     </div>
                                 </div>
-                                {(originalInstructorName || instructorName) && (
+                                {(originalInstructorName ?? instructorName) && (
                                     <div className="flex items-start gap-3">
                                         <Users className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
@@ -340,12 +394,12 @@ export function SessionDetailSheet({
                                             </div>
                                             <div
                                                 className={`text-[#203622] ${
-                                                    originalInstructorName || isCancelled || isRescheduledFrom || isCancelledReschedule
+                                                    !!originalInstructorName || isCancelled || isRescheduledFrom || isCancelledReschedule
                                                         ? 'line-through'
                                                         : ''
                                                 }`}
                                             >
-                                                {originalInstructorName || instructorName}
+                                                {originalInstructorName ?? instructorName}
                                             </div>
                                         </div>
                                     </div>
@@ -358,7 +412,7 @@ export function SessionDetailSheet({
                             isRescheduledFrom ||
                             isRescheduledTo ||
                             hasAttendance ||
-                            (!isCancelled && (originalInstructorName || originalRoom))) && (
+                            (!isCancelled && (originalInstructorName ?? originalRoom))) && (
                             <div className="pt-6 border-t border-gray-200">
                                 <h4 className="text-sm text-gray-700 mb-3">
                                     Status
@@ -414,7 +468,7 @@ export function SessionDetailSheet({
                                                 }}
                                                 className="w-full"
                                             >
-                                                Undo Cancellation
+                                                {cancellationActionLabel}
                                             </Button>
                                         </div>
                                         {rescheduledDate && (
@@ -482,7 +536,7 @@ export function SessionDetailSheet({
                                     </div>
                                 )}
 
-                                {isRescheduledTo && rescheduledDate && (
+                                {isRescheduledTo && (
                                     <div className="space-y-3">
                                         <div className="flex items-start gap-2">
                                             <CalendarClock className="size-4 text-blue-700 mt-0.5 flex-shrink-0" />
@@ -490,14 +544,16 @@ export function SessionDetailSheet({
                                                 <div className="text-sm text-gray-900 mb-1">
                                                     Rescheduled Class
                                                 </div>
-                                                <p className="text-sm text-gray-600">
-                                                    Originally scheduled for{' '}
-                                                    {new Date(rescheduledDate + 'T00:00:00').toLocaleDateString('en-US', {
-                                                        weekday: 'long',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
-                                                </p>
+                                                {rescheduledDate && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Originally scheduled for{' '}
+                                                        {new Date(rescheduledDate + 'T00:00:00').toLocaleDateString('en-US', {
+                                                            weekday: 'long',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                         <Button
@@ -536,7 +592,7 @@ export function SessionDetailSheet({
                                             }}
                                             className="w-full"
                                         >
-                                            Undo Cancellation
+                                            {cancellationActionLabel}
                                         </Button>
                                     </div>
                                 )}
@@ -562,53 +618,82 @@ export function SessionDetailSheet({
                             </div>
                         )}
 
-                        {canModify && (
+                        {(canModify || showTakeAttendance) && (
                             <div className="pt-6 border-t border-gray-200">
                                 <h4 className="text-sm text-gray-700 mb-3">
                                     Actions
                                 </h4>
                                 <div className="space-y-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setShowRescheduleModal(true)
-                                        }
-                                        className="w-full justify-start border-gray-300 hover:bg-gray-50"
-                                    >
-                                        <CalendarClock className="size-4 mr-2" />
-                                        Reschedule This Class
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setShowCancelModal(true)
-                                        }
-                                        className="w-full justify-start border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                                    >
-                                        <CalendarOff className="size-4 mr-2" />
-                                        Cancel This Class
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setShowChangeInstructor(true)
-                                        }
-                                        className="w-full justify-start border-gray-300 hover:bg-gray-50"
-                                    >
-                                        <Users className="size-4 mr-2" />
-                                        Change Instructor
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setShowChangeRoom(true)
-                                        }
-                                        className="w-full justify-start border-gray-300 hover:bg-gray-50"
-                                    >
-                                        <MapPin className="size-4 mr-2" />
-                                        Change Room
-                                    </Button>
+                                    {showTakeAttendance && onTakeAttendance && (
+                                        <Button
+                                            className="w-full justify-start bg-[#556830] hover:bg-[#203622] text-white"
+                                            onClick={onTakeAttendance}
+                                        >
+                                            <CheckCircle className="size-4 mr-2" />
+                                            Take Attendance
+                                        </Button>
+                                    )}
+                                    {canModify && (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (onReschedule) {
+                                                        onReschedule();
+                                                    } else {
+                                                        setShowRescheduleModal(true);
+                                                    }
+                                                }}
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <CalendarClock className="size-4 mr-2" />
+                                                Reschedule This Class
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setShowCancelModal(true)
+                                                }
+                                                className="w-full justify-start border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                                            >
+                                                <CalendarOff className="size-4 mr-2" />
+                                                Cancel This Class
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setShowChangeInstructor(true)
+                                                }
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <Users className="size-4 mr-2" />
+                                                Change Instructor
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setShowChangeRoom(true)
+                                                }
+                                                className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                            >
+                                                <MapPin className="size-4 mr-2" />
+                                                Change Room
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
+                            </div>
+                        )}
+
+                        {onViewClassDetails && !isCancelled && (
+                            <div className="pt-6 border-t border-gray-200">
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    onClick={onViewClassDetails}
+                                >
+                                    View Full Class Details →
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -625,7 +710,7 @@ export function SessionDetailSheet({
                 }}
             />
 
-            {showRescheduleModal && (
+            {showRescheduleModal && !onReschedule && (
                 <RescheduleSessionModal
                     open={showRescheduleModal}
                     onClose={() => setShowRescheduleModal(false)}
