@@ -33,7 +33,7 @@ import {
     ChangeInstructorSession
 } from './ChangeInstructorModal';
 import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
-import { SessionDetailSheet } from './SessionDetailSheet';
+import { SessionDetailSheet } from '@/components/schedule/SessionDetailSheet';
 import { formatClassTimeRange } from '@/lib/formatters';
 import {
     buildRescheduleMaps,
