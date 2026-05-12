@@ -13,7 +13,7 @@ import {
     formatClassTimeRange
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { SessionDetailSheet } from './SessionDetailSheet';
+import { SessionDetailSheet } from '@/components/schedule/SessionDetailSheet';
 import {
     buildRescheduleMaps,
     buildRoomOverrideMap,
