@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -109,8 +110,7 @@ export default function ProgramOverviewFacilityAdmin() {
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('classes');
-    const [historyPage, setHistoryPage] = useState(1);
-    const [historyPerPage, setHistoryPerPage] = useState(20);
+    const { page: historyPage, perPage: historyPerPage, setPage: setHistoryPage, setPerPage: setHistoryPerPage } = useUrlPagination(1, 20, 'history');
     const [statusModalOpen, setStatusModalOpen] = useState(false);
     const [selectedClass, setSelectedClass] = useState<Class | null>(null);
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -667,10 +667,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                 currentPage={historyPage}
                                 itemsPerPage={historyPerPage}
                                 onPageChange={setHistoryPage}
-                                onItemsPerPageChange={(val) => {
-                                    setHistoryPerPage(val);
-                                    setHistoryPage(1);
-                                }}
+                                onItemsPerPageChange={setHistoryPerPage}
                             />
                         </TabsContent>
                     </Tabs>

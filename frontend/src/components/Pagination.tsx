@@ -6,7 +6,8 @@ interface PaginationProps {
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (itemsPerPage: number) => void;
-  itemLabel?: string; // e.g., "programs", "classes", "residents"
+  itemLabel?: string;
+  instanceId?: string;
 }
 
 export function Pagination({
@@ -15,7 +16,8 @@ export function Pagination({
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
-  itemLabel = 'items'
+  itemLabel = 'items',
+  instanceId = 'pagination'
 }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -71,11 +73,11 @@ export function Pagination({
           </p>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="items-per-page" className="text-sm text-gray-600 dark:text-gray-400">
+            <label htmlFor={`${instanceId}-items-per-page`} className="text-sm text-gray-600 dark:text-gray-400">
               Items per page:
             </label>
             <select
-              id="items-per-page"
+              id={`${instanceId}-items-per-page`}
               value={itemsPerPage}
               onChange={(e) => {
                 onItemsPerPageChange(Number(e.target.value));
