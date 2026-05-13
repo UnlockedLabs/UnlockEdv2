@@ -48,7 +48,7 @@ export default function AuthenticatedLayout() {
     const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
     const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
     const isContentViewer = location.pathname.startsWith('/viewer/');
-    const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
+    const isResidentPage = ['/resident-programs', '/home'].includes(location.pathname);
     const isFullBleed =
         isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isAdmins || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule;
     const fullBleedWrapperClass =
