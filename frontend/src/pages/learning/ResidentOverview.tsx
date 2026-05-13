@@ -27,8 +27,6 @@ function getEnrollmentStatusStyle(status?: EnrollmentStatus): string {
 export default function ResidentOverview() {
     const { user } = useAuth();
 
-    if (!user) return null;
-
     const startDate = useMemo(() => {
         const d = new Date(Date.now() - 1000 * 60 * 60 * 24 * 90);
         return d.toISOString();
@@ -40,11 +38,15 @@ export default function ResidentOverview() {
 
     const { data: programsResp, isLoading } = useSWR<
         ServerResponseMany<ResidentProgramOverview>
-    >(`/api/users/${user.id}/programs`);
+    >(user ? `/api/users/${user.id}/programs` : null);
 
     const { data: eventsResp } = useSWR<ServerResponseMany<unknown>>(
-        `/api/student-calendar?start_dt=${startDate}&end_dt=${endDate}`
+        user
+            ? `/api/student-calendar?start_dt=${startDate}&end_dt=${endDate}`
+            : null
     );
+
+    if (!user) return null;
 
     const programs = programsResp?.data ?? [];
     const upcomingEvents = (eventsResp?.data ?? []).length;

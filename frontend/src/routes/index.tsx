@@ -4,7 +4,6 @@ import {
     KnowledgeCenterRoutes,
     KnowledgeCenterAdminRoutes
 } from './knowledge-routes';
-import { ProviderPlatformRoutes } from './provider-routes';
 import {
     ProgramRoutes,
     AdminProgramRoutes,
@@ -17,7 +16,6 @@ export const router = createBrowserRouter([
     AllUserRoutes,
     KnowledgeCenterRoutes,
     KnowledgeCenterAdminRoutes,
-    ProviderPlatformRoutes,
     ProgramRoutes,
     AdminProgramRoutes,
     DeptAdminProgramRoutes
