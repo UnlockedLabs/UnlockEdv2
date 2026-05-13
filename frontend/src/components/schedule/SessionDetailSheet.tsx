@@ -202,6 +202,7 @@ export function SessionDetailSheet({
         !hasAttendance &&
         !isCancelled &&
         !isRescheduledFrom &&
+        !isRescheduledTo &&
         !isCancelledReschedule;
 
     const eventId = instance.event_id ?? instance.id;
