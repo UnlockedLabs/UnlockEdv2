@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import {
     Search,
@@ -162,8 +163,7 @@ export default function AdminManagement() {
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
     const [facilityFilter, setFacilityFilter] = useState<string>('all');
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination();
 
     const [selectedAdmins, setSelectedAdmins] = useState<Map<number, User>>(new Map());
 
@@ -190,8 +190,8 @@ export default function AdminManagement() {
         if (!user) return null;
         const params = new URLSearchParams({
             search: searchQuery,
-            page: String(currentPage),
-            per_page: String(itemsPerPage),
+            page: String(page),
+            per_page: String(perPage),
             order_by: `${SORT_FIELD[sortColumn]} ${sortDirection}`,
             role: user.role
         });
@@ -199,7 +199,7 @@ export default function AdminManagement() {
             params.set('facility_id', facilityFilter);
         }
         return `/api/users?${params.toString()}`;
-    }, [user, searchQuery, currentPage, itemsPerPage, sortColumn, sortDirection, canSwitchFac, facilityFilter]);
+    }, [user, searchQuery, page, perPage, sortColumn, sortDirection, canSwitchFac, facilityFilter]);
 
     const { data, mutate, error, isLoading } = useSWR<ServerResponseMany<User>, Error>(usersUrl);
     const admins = data?.data ?? [];
@@ -251,7 +251,7 @@ export default function AdminManagement() {
             setSortColumn(column);
             setSortDirection('asc');
         }
-        setCurrentPage(1);
+        setPage(1);
     };
 
     const allOnPageSelected =
@@ -459,7 +459,7 @@ export default function AdminManagement() {
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
-                            setCurrentPage(1);
+                            setPage(1);
                         }}
                         className="pl-10"
                     />
@@ -469,7 +469,7 @@ export default function AdminManagement() {
                         value={facilityFilter}
                         onValueChange={(v) => {
                             setFacilityFilter(v);
-                            setCurrentPage(1);
+                            setPage(1);
                         }}
                     >
                         <SelectTrigger className="w-64">
@@ -706,13 +706,10 @@ export default function AdminManagement() {
 
                 <Pagination
                     totalItems={totalItems}
-                    itemsPerPage={itemsPerPage}
-                    currentPage={currentPage}
-                    onPageChange={setCurrentPage}
-                    onItemsPerPageChange={(value) => {
-                        setItemsPerPage(value);
-                        setCurrentPage(1);
-                    }}
+                    itemsPerPage={perPage}
+                    currentPage={page}
+                    onPageChange={setPage}
+                    onItemsPerPageChange={setPerPage}
                     itemLabel="admins"
                 />
             </div>

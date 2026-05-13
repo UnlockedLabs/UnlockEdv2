@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate } from 'react-router-dom';
 import { useTourContext } from '@/contexts/TourContext';
 import { targetToStepIndexMap } from '@/components/UnlockEdTour';
@@ -25,7 +26,7 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from '@/components/ui/tooltip';
-import { Pagination } from '@/components/shared/Pagination';
+import { Pagination } from '@/components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -75,8 +76,7 @@ export default function ResidentKnowledgeCenter() {
     const [searchQuery] = useDebounceValue(searchTerm, 500);
     const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
+    const { page: currentPage, perPage: itemsPerPage, setPage: setCurrentPage, setPerPage } = useUrlPagination(1, ITEMS_PER_PAGE);
 
     const { data: tagsData } = useSWR<ServerResponseMany<Option>>(
         '/api/tags'
@@ -476,10 +476,7 @@ export default function ResidentKnowledgeCenter() {
                         totalItems={filteredContent.length}
                         itemsPerPage={itemsPerPage}
                         onPageChange={setCurrentPage}
-                        onItemsPerPageChange={(v) => {
-                            setItemsPerPage(v);
-                            setCurrentPage(1);
-                        }}
+                        onItemsPerPageChange={setPerPage}
                     />
                 </>
             )}

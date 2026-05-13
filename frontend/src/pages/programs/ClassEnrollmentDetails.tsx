@@ -1,4 +1,6 @@
 import { useState, startTransition } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { Pagination } from '@/components/Pagination';
 import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -73,8 +75,7 @@ export default function ClassEnrollmentDetails() {
     const [sortQuery, setSortQuery] = useState<string>(FilterResidentNames['Resident Name (A-Z)']);
     const [viewMode, setViewMode] = useState<'enrolled' | 'other'>('enrolled');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [page, setPage] = useState(1);
-    const perPage = 20;
+    const { page, perPage, setPage, setPerPage } = useUrlPagination();
     const [selectedResidents, setSelectedResidents] = useState<number[]>([]);
     const [changeStatusValue, setChangeStatusValue] = useState<StatusChange>();
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -406,16 +407,15 @@ export default function ClassEnrollmentDetails() {
                     </TableBody>
                 </Table>
 
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 p-4 border-t">
-                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                            Previous
-                        </Button>
-                        <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
-                        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                            Next
-                        </Button>
-                    </div>
+                {(meta?.total ?? 0) > 0 && (
+                    <Pagination
+                        currentPage={page}
+                        totalItems={meta?.total ?? 0}
+                        itemsPerPage={perPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={setPerPage}
+                        itemLabel="enrollments"
+                    />
                 )}
             </div>
 

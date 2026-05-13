@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import {
     ProviderPlatform,
@@ -28,8 +29,7 @@ export default function ProviderUserManagement() {
 
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<ProviderUser | undefined>();
-    const [perPage] = useState(10);
-    const [currentPage, setCurrentPage] = useState(1);
+    const { page, perPage, setPage } = useUrlPagination(1, 10);
     const [search, setSearch] = useState('');
     const [debouncedSearch] = useDebounceValue(search, 400);
     const [provider, setProvider] = useState<ProviderPlatform | undefined>();
@@ -51,7 +51,7 @@ export default function ProviderUserManagement() {
     });
 
     const { data, mutate } = useSWR<ServerResponseMany<ProviderUser>>(
-        `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${debouncedSearch}&clear_cache=${cache}`
+        `/api/actions/provider-platforms/${providerId}/get-users?page=${page}&per_page=${perPage}&search=${debouncedSearch}&clear_cache=${cache}`
     );
 
     const { data: unmappedResp, mutate: mutateUnmapped } = useSWR<ServerResponseMany<User>>(
@@ -100,11 +100,7 @@ export default function ProviderUserManagement() {
 
     const handleSearchChange = (val: string) => {
         setSearch(val);
-        setCurrentPage(1);
-    };
-
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        setPage(1);
     };
 
     const toggleImportUser = (user: ProviderUser) => {
@@ -299,7 +295,7 @@ export default function ProviderUserManagement() {
                     emptyMessage="No users found."
                     page={meta.current_page}
                     totalPages={meta.last_page}
-                    onPageChange={handlePageChange}
+                    onPageChange={setPage}
                 />
 
                 <FormModal
