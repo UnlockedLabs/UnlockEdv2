@@ -30,7 +30,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Pagination } from '@/components/shared/Pagination';
+import { Pagination } from '@/components/Pagination';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useDebounceValue } from 'usehooks-ts';
 import { useToast } from '@/contexts/ToastContext';
 import {
@@ -318,8 +319,7 @@ export default function KnowledgeCenterManagement() {
     const [visibilityFilter, setVisibilityFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [currentTab, setCurrentTab] = useState('libraries');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const { page: currentPage, perPage: itemsPerPage, setPage: setCurrentPage, setPerPage } = useUrlPagination();
 
     const [showAddVideo, setShowAddVideo] = useState(false);
     const [showAddLink, setShowAddLink] = useState(false);
@@ -465,10 +465,7 @@ export default function KnowledgeCenterManagement() {
         currentPage * itemsPerPage
     );
 
-    const handleItemsPerPageChange = (v: number) => {
-        setItemsPerPage(v);
-        setCurrentPage(1);
-    };
+    const handleItemsPerPageChange = setPerPage;
 
     const pollVideos = (delay: number) => {
         if (!pollingRef.current) return;
