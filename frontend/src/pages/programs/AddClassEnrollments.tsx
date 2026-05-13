@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { Pagination } from '@/components/Pagination';
 import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -65,8 +67,7 @@ export default function AddClassEnrollments() {
 
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
-    const [page, setPage] = useState(1);
-    const perPage = 20;
+    const { page, perPage, setPage, setPerPage } = useUrlPagination();
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState(FilterResidentNames['Resident Name (A-Z)']);
@@ -273,16 +274,15 @@ export default function AddClassEnrollments() {
                         </TableBody>
                     </Table>
 
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-center gap-2 p-4 border-t">
-                            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                                Previous
-                            </Button>
-                            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
-                            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                                Next
-                            </Button>
-                        </div>
+                    {(meta?.total ?? 0) > 0 && (
+                        <Pagination
+                            currentPage={page}
+                            totalItems={meta?.total ?? 0}
+                            itemsPerPage={perPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={setPerPage}
+                            itemLabel="residents"
+                        />
                     )}
                 </div>
 

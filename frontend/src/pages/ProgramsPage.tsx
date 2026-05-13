@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -175,8 +176,7 @@ export default function ProgramsPage() {
         }
     };
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
 
     const toggleTypeFilter = (type: ProgramType) => {
         setSelectedTypes((prev) =>
@@ -286,8 +286,8 @@ export default function ProgramsPage() {
     }, [resp?.data, search, sort, selectedTypes, selectedStatuses]);
 
     const paginatedPrograms = filtered.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+        (page - 1) * perPage,
+        page * perPage
     );
 
     const stats = useMemo(() => {
@@ -989,17 +989,14 @@ export default function ProgramsPage() {
                         )}
 
                         {/* Pagination */}
-                        {filtered.length > itemsPerPage && (
+                        {filtered.length > perPage && (
                             <div className="mt-6">
                                 <Pagination
-                                    currentPage={currentPage}
+                                    currentPage={page}
                                     totalItems={filtered.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
-                                    onItemsPerPageChange={(val) => {
-                                        setItemsPerPage(val);
-                                        setCurrentPage(1);
-                                    }}
+                                    itemsPerPage={perPage}
+                                    onPageChange={setPage}
+                                    onItemsPerPageChange={setPerPage}
                                     itemLabel="items"
                                 />
                             </div>

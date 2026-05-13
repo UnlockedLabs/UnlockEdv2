@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import { Calendar } from 'lucide-react';
 import {
@@ -53,8 +54,7 @@ export default function ActivityHistoryCard({
     programId,
     residentId
 }: ActivityHistoryCardProps) {
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(20);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20, 'activity');
     const [filterQuery, setFilterQuery] = useState('');
 
     const endpoint = residentId
@@ -152,10 +152,7 @@ export default function ActivityHistoryCard({
                     totalItems={total}
                     itemsPerPage={perPage}
                     onPageChange={setPage}
-                    onItemsPerPageChange={(val) => {
-                        setPerPage(val);
-                        setPage(1);
-                    }}
+                    onItemsPerPageChange={setPerPage}
                     itemLabel="entries"
                 />
             )}

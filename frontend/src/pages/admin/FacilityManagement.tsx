@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { Search, Plus, Edit, ArrowUpDown, Building2 } from 'lucide-react';
@@ -68,8 +69,7 @@ export default function FacilityManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<SortColumn>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination();
 
     const [showAddFacility, setShowAddFacility] = useState(false);
     const [showEditFacility, setShowEditFacility] = useState(false);
@@ -120,8 +120,8 @@ export default function FacilityManagement() {
     });
 
     const paginated = sorted.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+        (page - 1) * perPage,
+        page * perPage
     );
 
     function toggleSort(column: SortColumn) {
@@ -212,7 +212,7 @@ export default function FacilityManagement() {
                             value={searchQuery}
                             onChange={(e) => {
                                 setSearchQuery(e.target.value);
-                                setCurrentPage(1);
+                                setPage(1);
                             }}
                             className="pl-10"
                         />
@@ -346,13 +346,10 @@ export default function FacilityManagement() {
 
                     <Pagination
                         totalItems={sorted.length}
-                        itemsPerPage={itemsPerPage}
-                        currentPage={currentPage}
-                        onPageChange={setCurrentPage}
-                        onItemsPerPageChange={(value) => {
-                            setItemsPerPage(value);
-                            setCurrentPage(1);
-                        }}
+                        itemsPerPage={perPage}
+                        currentPage={page}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={setPerPage}
                         itemLabel="facilities"
                     />
                 </div>
