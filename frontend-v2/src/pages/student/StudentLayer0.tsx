@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function StudentLayer0() {
@@ -21,6 +23,9 @@ export default function StudentLayer0() {
                     Please contact your administrator to get access to
                     application features
                 </p>
+                <Button asChild variant="secondary" className="mt-2">
+                    <Link to="/my-transcript">Learning Record B</Link>
+                </Button>
             </CardContent>
         </Card>
     );

@@ -9,6 +9,7 @@ import MobileNav from '@/components/navigation/MobileNav';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { TitleManager } from '@/components/TitleManager';
 import UnlockEdTour from '@/components/UnlockEdTour';
+import CaptureToFigmaButton from '@/components/CaptureToFigmaButton';
 import HelpCenter from '@/pages/HelpCenter';
 import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
@@ -16,7 +17,18 @@ import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
 
 import WebsocketSession from '@/session/websocket';
+import { isAnyDigitalTranscriptPath } from '@/pages/student/digital-transcript/digitalTranscriptRoutes';
 
+function getDeepestMatchWithTitle(matches: ReturnType<typeof useMatches>) {
+    return [...matches]
+        .filter(
+            (match) =>
+                typeof match.handle === 'object' &&
+                match.handle !== null &&
+                'title' in match.handle
+        )
+        .pop();
+}
 
 export default function AuthenticatedLayout() {
     const { user } = useAuth();
@@ -25,9 +37,9 @@ export default function AuthenticatedLayout() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const matches = useMatches();
     const location = useLocation();
-    const currentRoute = matches[matches.length - 1];
-    const routeData = currentRoute?.data as TitleHandler;
-    const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
+    const activeTitleMatch = getDeepestMatchWithTitle(matches);
+    const routeData = activeTitleMatch?.data as TitleHandler;
+    const routeHandle = activeTitleMatch?.handle as RouteTitleHandler<TitleHandler>;
     const pageTitle = resolveTitle(routeHandle, routeData);
     const { setPageTitle } = usePageTitle();
     const { breadcrumbItems: contextBreadcrumbs } = useBreadcrumb();
@@ -47,12 +59,13 @@ export default function AuthenticatedLayout() {
     const isAdmins = location.pathname === '/admins';
     const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
     const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
+    const isMyTranscript = isAnyDigitalTranscriptPath(location.pathname);
     const isContentViewer = location.pathname.startsWith('/viewer/');
     const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule;
+        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule || isMyTranscript;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule ? 'py-0' : 'py-4';
+        isDashboard || isProgramsList || isFacilities || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule || isMyTranscript ? 'py-0' : 'py-4';
     const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile && !isContentViewer;
     const isFacilityView =
         isProgramDetail &&
@@ -72,7 +85,7 @@ export default function AuthenticatedLayout() {
             } else {
                 setPageTitle('Program Details');
             }
-        } else if (pageTitle) {
+        } else {
             setPageTitle(pageTitle);
         }
     }, [isFacilityView, isProgramDetail, pageTitle, setPageTitle, user]);
@@ -101,7 +114,15 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isFacilities || isAdmins || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
+    const needsGrayBg =
+        isResidentProfile ||
+        isResidentsPage ||
+        isClassesPage ||
+        isFacilities ||
+        isAdmins ||
+        isKnowledgeCenter ||
+        isMyTranscript ||
+        (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
     const contentClass = `flex-1 min-h-full ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
@@ -162,6 +183,8 @@ export default function AuthenticatedLayout() {
                             )}
                         </div>
                     </div>
+
+                    <CaptureToFigmaButton />
 
                     {helpCenterOpen && (
                         <div className="w-80 shrink-0 bg-background border-l border-border animate-in slide-in-from-right duration-300 flex flex-col sticky top-0 h-[calc(100vh-4rem)]">

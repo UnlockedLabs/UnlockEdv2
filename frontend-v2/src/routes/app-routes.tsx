@@ -14,6 +14,8 @@ import ResetPassword from '@/pages/auth/ResetPassword';
 import Consent from '@/pages/auth/Consent';
 import { Navigate } from 'react-router-dom';
 import StudentLayer0 from '@/pages/student/StudentLayer0';
+import DigitalTranscriptHome from '@/pages/student/digital-transcript/DigitalTranscriptHome';
+import DigitalTranscriptEntryPage from '@/pages/student/digital-transcript/DigitalTranscriptEntryPage';
 import AdminManagement from '@/pages/admin/AdminManagement';
 import FacilityManagement from '@/pages/admin/FacilityManagement';
 import StudentManagement from '@/pages/admin/StudentManagement';
@@ -95,6 +97,26 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
         path: 'temp-home',
         element: <StudentLayer0 />,
         handle: { title: 'UnlockEd' }
+    },
+    {
+        path: 'my-transcript-a',
+        element: <DigitalTranscriptHome />,
+        handle: { title: 'Learning Record A' }
+    },
+    {
+        path: 'my-transcript-a/entry',
+        element: <DigitalTranscriptEntryPage />,
+        handle: { title: 'Log your achievements' }
+    },
+    {
+        path: 'my-transcript',
+        element: <DigitalTranscriptHome />,
+        handle: { title: 'Learning Record B' }
+    },
+    {
+        path: 'my-transcript/entry',
+        element: <DigitalTranscriptEntryPage />,
+        handle: { title: 'Log your achievements' }
     }
 ]);
 
