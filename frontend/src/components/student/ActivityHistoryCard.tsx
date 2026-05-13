@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import { Calendar } from 'lucide-react';
@@ -67,7 +67,12 @@ export default function ActivityHistoryCard({
         ServerResponseMany<ActivityHistoryResponse>
     >(endpoint);
 
+    const isFirstRender = useRef(true);
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         setPage(1);
     }, [filterQuery]);
 
