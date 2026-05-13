@@ -28,9 +28,43 @@ interface RescheduleLink {
     startTime?: string;
 }
 
-function parseLocalDate(dateStr: string): Date {
+export function parseLocalDate(dateStr: string): Date {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(y, m - 1, d);
+}
+
+export function formatShortDate(dateStr: string): string {
+    const d = parseLocalDate(dateStr);
+    return d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+export interface SessionPayload {
+    date: string;
+    dateLabel: string;
+    eventId: number;
+    classTime: string;
+    dateObj: Date;
+    dayName: string;
+}
+
+export function buildSessionPayload(session: SessionDisplay): SessionPayload {
+    return {
+        date: session.instance.date,
+        dateLabel: session.dateObj.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        }),
+        eventId: session.instance.event_id ?? session.instance.id,
+        classTime: session.instance.class_time,
+        dateObj: session.dateObj,
+        dayName: session.dayName
+    };
 }
 
 function parseOverrideDate(rrule: string): string | null {
