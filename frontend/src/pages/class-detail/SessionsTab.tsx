@@ -105,21 +105,12 @@ interface SessionsTabProps {
     onClassMutate: () => void;
 }
 
+import {
+    formatShortDate,
+    buildSessionPayload
+} from './session-utils';
+
 export type { SessionDisplay } from './session-utils';
-
-function parseLocalDate(dateStr: string): Date {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d);
-}
-
-function formatShortDate(dateStr: string): string {
-    const d = parseLocalDate(dateStr);
-    return d.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-    });
-}
 
 function getTimeCutoff(tf: TimeFilter): Date | null {
     if (tf === 'all') return null;
@@ -262,29 +253,6 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             return next;
         });
     };
-
-    const buildSessionPayload = (
-        session: SessionDisplay
-    ): {
-        date: string;
-        dateLabel: string;
-        eventId: number;
-        classTime: string;
-        dateObj: Date;
-        dayName: string;
-    } => ({
-        date: session.instance.date,
-        dateLabel: session.dateObj.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
-        }),
-        eventId: session.instance.event_id ?? session.instance.id,
-        classTime: session.instance.class_time,
-        dateObj: session.dateObj,
-        dayName: session.dayName
-    });
 
     const openChangeInstructor = (sessions: SessionDisplay[]) => {
         setChangeInstructorSessions(sessions.map(buildSessionPayload));

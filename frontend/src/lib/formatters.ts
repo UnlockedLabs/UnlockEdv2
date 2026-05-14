@@ -231,6 +231,22 @@ export function formatMonthYear(monthString: string): string {
     });
 }
 
+export function toDateInput(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function toTimeInput(d: Date): string {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function formatDurationStr(startTime: string, endTime: string): string {
+    const totalMin = timeToMinutes(endTime) - timeToMinutes(startTime);
+    if (totalMin <= 0) return '0h0m0s';
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    return `${hours}h${minutes}m0s`;
+}
+
 const WEEKDAY_NAMES: Record<number, string> = {
     0: 'Monday',
     1: 'Tuesday',
