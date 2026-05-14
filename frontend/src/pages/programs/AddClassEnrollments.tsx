@@ -83,8 +83,6 @@ export default function AddClassEnrollments() {
 
     const users = data?.data ?? [];
     const meta = data?.meta;
-    const totalPages = meta ? meta.last_page : 1;
-
     const enrolledCount =
         classInfo?.enrollments?.filter(
             (e) => e.enrollment_status === EnrollmentStatus.Enrolled
