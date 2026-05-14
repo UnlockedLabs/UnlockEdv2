@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface PaginationProps {
@@ -17,8 +18,10 @@ export function Pagination({
   onPageChange,
   onItemsPerPageChange,
   itemLabel = 'items',
-  instanceId = 'pagination'
+  instanceId
 }: PaginationProps) {
+  const generatedId = useId();
+  const itemsPerPageId = `${instanceId ?? `pagination-${generatedId}`}-items-per-page`;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -73,11 +76,11 @@ export function Pagination({
           </p>
 
           <div className="flex items-center gap-2">
-            <label htmlFor={`${instanceId}-items-per-page`} className="text-sm text-gray-600 dark:text-gray-400">
+            <label htmlFor={itemsPerPageId} className="text-sm text-gray-600 dark:text-gray-400">
               Items per page:
             </label>
             <select
-              id={`${instanceId}-items-per-page`}
+              id={itemsPerPageId}
               value={itemsPerPage}
               onChange={(e) => {
                 onItemsPerPageChange(Number(e.target.value));

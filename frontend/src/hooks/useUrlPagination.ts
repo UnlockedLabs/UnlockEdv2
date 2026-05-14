@@ -6,14 +6,11 @@ export function useUrlPagination(defaultPage = 1, defaultPerPage = 20, prefix = 
     const pageKey = prefix ? `${prefix}_page` : 'page';
     const perPageKey = prefix ? `${prefix}_per_page` : 'per_page';
 
-    const page = parseInt(
-        searchParams.get(pageKey) ?? defaultPage.toString(),
-        10
-    );
-    const perPage = parseInt(
-        searchParams.get(perPageKey) ?? defaultPerPage.toString(),
-        10
-    );
+    const parsedPage = parseInt(searchParams.get(pageKey) ?? '', 10);
+    const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : defaultPage;
+
+    const parsedPerPage = parseInt(searchParams.get(perPageKey) ?? '', 10);
+    const perPage = Number.isFinite(parsedPerPage) && parsedPerPage >= 1 ? parsedPerPage : defaultPerPage;
 
     const setPage = (newPage: number, options?: { replace?: boolean }) => {
         const params = new URLSearchParams(searchParams);
