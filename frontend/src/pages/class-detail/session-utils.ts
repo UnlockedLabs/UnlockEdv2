@@ -1,5 +1,5 @@
-import { ClassEventInstance, ProgramClassEvent, ProgramClassEventOverride } from '@/types/events';
-import { Attendance } from '@/types/attendance';
+import { ClassEventInstance, FacilityProgramClassEvent, ProgramClassEvent, ProgramClassEventOverride } from '@/types/events';
+import { Attendance, SelectedClassStatus } from '@/types/attendance';
 
 export interface SessionDisplay {
     instance: ClassEventInstance;
@@ -505,4 +505,46 @@ export function buildSessionDisplays(
     }
 
     return filtered;
+}
+
+export function buildFacilityEvent(
+    session: SessionDisplay,
+    classId: number,
+    classEvents: ProgramClassEvent[]
+): FacilityProgramClassEvent {
+    const eventId = session.instance.event_id ?? session.instance.id;
+    const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
+    const activeOverride = findActiveOverride(classEvents, session.instance.date);
+    const parts = session.instance.class_time.split('-');
+    const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
+    const [eh = 0, em = 0] = (parts[1] ?? '').split(':').map(Number);
+    const start = new Date(session.dateObj);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(session.dateObj);
+    end.setHours(eh, em, 0, 0);
+    return {
+        id: eventId,
+        class_id: classId,
+        duration: backingEvent?.duration ?? '',
+        room_id: activeOverride?.room_id ?? backingEvent?.room_id ?? 0,
+        recurrence_rule: backingEvent?.recurrence_rule ?? '',
+        is_cancelled: session.instance.is_cancelled,
+        instructor_id: activeOverride?.instructor_id ?? backingEvent?.instructor_id ?? null,
+        overrides: backingEvent?.overrides ?? [],
+        reason: null,
+        start,
+        end,
+        is_override: !!activeOverride || !!session.instance.override_id,
+        override_id: activeOverride?.id ?? session.instance.override_id ?? 0,
+        linked_override_event: null,
+        room: '',
+        instructor_name: '',
+        program_id: 0,
+        program_name: '',
+        title: '',
+        enrolled_users: '',
+        frequency: '',
+        credit_types: '',
+        class_status: SelectedClassStatus.Scheduled
+    };
 }
