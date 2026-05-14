@@ -135,6 +135,7 @@ export default function ResidentHome() {
                 target: '#resident-home'
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tourState.tourActive]);
 
     const featuredItems = featured?.data ?? [];

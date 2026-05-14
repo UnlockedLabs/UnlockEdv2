@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Video, ServerResponseOne } from '@/types';
+import { Video } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
@@ -25,10 +25,8 @@ export default function VideoViewer() {
 
     useEffect(() => {
         const fetchVideoData = async () => {
-            const resp = (await API.get(
-                `videos/${videoId}`
-            )) as ServerResponseOne<Video>;
-            if (resp.success) {
+            const resp = await API.get<Video>(`videos/${videoId}`);
+            if (resp.success && resp.type === 'one') {
                 setIsLoading(false);
                 setVideo(resp.data);
             } else {

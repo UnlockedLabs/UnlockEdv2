@@ -106,7 +106,7 @@ function buildFacilityEvent(
         end,
         is_override: !!activeOverride || !!session.instance.override_id,
         override_id: activeOverride?.id ?? session.instance.override_id ?? 0,
-        linked_override_event: null as unknown as FacilityProgramClassEvent,
+        linked_override_event: null,
         room: '',
         instructor_name: '',
         program_id: 0,
