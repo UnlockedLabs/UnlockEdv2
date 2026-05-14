@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -177,6 +177,15 @@ export default function ProgramsPage() {
     };
 
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
+
+    const isFirstRender = useRef(true);
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        setPage(1);
+    }, [search, sort, selectedTypes, selectedStatuses, setPage]);
 
     const toggleTypeFilter = (type: ProgramType) => {
         setSelectedTypes((prev) =>
