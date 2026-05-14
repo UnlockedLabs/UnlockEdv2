@@ -102,8 +102,6 @@ export default function ClassEnrollmentDetails() {
     const meta = data?.meta;
     const enrolledCount = viewMode === 'enrolled' ? meta?.total ?? 0 : otherData?.meta?.total ?? 0;
     const otherCount = viewMode === 'enrolled' ? otherData?.meta?.total ?? 0 : meta?.total ?? 0;
-    const totalPages = meta ? meta.last_page : 1;
-
     async function refreshEnrollments() {
         await Promise.all([mutate(), mutateOther()]);
     }
