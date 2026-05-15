@@ -103,7 +103,8 @@ export default function AuthenticatedLayout() {
 
     const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isFacilities || isAdmins || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 min-h-full ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const isSelfContainedFullBleed = isResidentKnowledgeCenter || isContentViewer;
+    const contentClass = `flex-1 ${isContentViewer ? 'h-full' : 'min-h-full'} ${isSelfContainedFullBleed ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
 
     return (
         <div className={rootClass}>
