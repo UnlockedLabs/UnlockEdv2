@@ -140,10 +140,7 @@ export const AdminProgramRoutes = declareAuthenticatedRoutes(
             path: 'program-classes/:class_id/events/:event_id/attendance/:date',
             loader: getClassTitle,
             element: <EventAttendance />,
-            handle: {
-                title: (data: TitleHandler) =>
-                    `${data.title}: Event Attendance`
-            }
+            handle: { title: 'Take Attendance' }
         }
     ],
     AdminRoles,

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ChangeLogEntry } from '@/types';
-import { parseRRule } from '../helperFunctions';
+import { parseRRule } from '@/lib/formatters';
 
 function formatValue(value: string): string {
     return value.replace(/_/g, ' ');

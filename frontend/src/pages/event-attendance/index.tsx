@@ -1,5 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import {
+    useParams,
+    useNavigate,
+    useLoaderData,
+    Navigate
+} from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
@@ -14,9 +19,20 @@ import {
     EnrollmentAttendance,
     Attendance,
     AttendanceReason,
+    BreadcrumbItem,
+    ClassLoaderData,
     ServerResponseMany
 } from '@/types';
 import { ClassEventInstance } from '@/types/events';
+import {
+    parseLocalDay,
+    formatTimeHM,
+    diffMinutes,
+    formatPartialTime
+} from '@/lib/formatters';
+import { PageHeader } from '@/components/shared';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs';
+import { ATTENDANCE_STATUSES } from './constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,31 +48,13 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 
-function parseLocalDay(dateStr: string): Date {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d);
-}
+const ATTENDANCE_REASON_VALUES = Object.values(AttendanceReason) as string[];
 
-function formatTimeHM(date: Date): string {
-    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-function diffMinutes(start?: string, end?: string): number | undefined {
-    if (!start || !end) return undefined;
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
-    if ([sh, sm, eh, em].some((v) => Number.isNaN(v))) return undefined;
-    const diff = (eh ?? 0) * 60 + (em ?? 0) - ((sh ?? 0) * 60 + (sm ?? 0));
-    return diff > 0 ? diff : undefined;
-}
-
-function formatPartialTime(mins?: number): string | null {
-    if (!mins || mins <= 0) return null;
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
+function toAttendanceReason(value?: string): AttendanceReason | '' {
+    if (!value) return '';
+    return ATTENDANCE_REASON_VALUES.includes(value)
+        ? (value as AttendanceReason)
+        : '';
 }
 
 interface RowState {
@@ -67,7 +65,7 @@ interface RowState {
     name_first: string;
     status: Attendance | '';
     note: string;
-    reason: string;
+    reason: AttendanceReason | '';
     check_in_at: string;
     check_out_at: string;
     showNoteField: boolean;
@@ -81,6 +79,8 @@ export default function EventAttendance() {
         date: string;
     }>();
     const navigate = useNavigate();
+    const loaderData = useLoaderData() as ClassLoaderData;
+    const className = loaderData?.class?.name ?? '';
     const [rows, setRows] = useState<RowState[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [initialized, setInitialized] = useState(false);
@@ -116,13 +116,6 @@ export default function EventAttendance() {
         return { check_in_at: '', check_out_at: '' };
     }, [dates?.data, event_id, date]);
 
-    const className = useMemo(() => {
-        const match = Array.isArray(dates?.data)
-            ? dates.data.find((d) => d.event_id === Number(event_id))
-            : undefined;
-        return match ? `Class #${class_id}` : `Class #${class_id}`;
-    }, [dates?.data, event_id, class_id]);
-
     useEffect(() => {
         if (!data?.data || initialized) return;
         const defaultCheckIn = scheduledTimes.check_in_at || '';
@@ -136,7 +129,7 @@ export default function EventAttendance() {
                 name_first: item.name_first,
                 status: item.attendance_status ?? '',
                 note: item.note ?? '',
-                reason: item.reason_category ?? '',
+                reason: toAttendanceReason(item.reason_category),
                 check_in_at: item.check_in_at ?? (hasExisting ? '' : defaultCheckIn),
                 check_out_at: item.check_out_at ?? '',
                 showNoteField: !!(item.note?.trim()),
@@ -204,6 +197,14 @@ export default function EventAttendance() {
         month: 'long',
         day: 'numeric'
     });
+
+    const breadcrumbItems: BreadcrumbItem[] = (
+        loaderData?.breadcrumbs ?? []
+    ).map((item, idx, arr) =>
+        idx === arr.length - 1
+            ? { ...item, label: `Take Attendance - ${formattedDate}` }
+            : item
+    );
 
     const summary = {
         present: rows.filter((r) => r.status === Attendance.Present).length,
@@ -330,80 +331,59 @@ export default function EventAttendance() {
         <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-5xl mx-auto px-6 py-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-[#203622] mb-2">
-                                Take Attendance
-                            </h1>
-                            <div className="text-gray-600">{className}</div>
-                            <div className="text-sm text-gray-500 mt-1">
-                                {formattedDate}
-                            </div>
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                            <Button
-                                variant="outline"
-                                onClick={handleMarkAllPresent}
-                                className="border-gray-300"
-                            >
-                                Mark All Present
-                            </Button>
-                            <Button
-                                onClick={() => { void handleSave(); }}
-                                disabled={isSaving}
-                                className="bg-[#556830] hover:bg-[#203622] text-white gap-2"
-                            >
-                                <Save className="size-4" />
-                                {isSaving ? 'Saving...' : 'Save Attendance'}
-                            </Button>
-                        </div>
-                    </div>
+                    {breadcrumbItems.length > 0 && (
+                        <Breadcrumbs items={breadcrumbItems} />
+                    )}
+                    <PageHeader
+                        title="Take Attendance"
+                        subtitle={className}
+                        meta={formattedDate}
+                        actions={
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleMarkAllPresent}
+                                    className="border-gray-300"
+                                >
+                                    Mark All Present
+                                </Button>
+                                <Button
+                                    onClick={() => { void handleSave(); }}
+                                    disabled={isSaving}
+                                    className="bg-[#556830] hover:bg-[#203622] text-white gap-2"
+                                >
+                                    <Save className="size-4" />
+                                    {isSaving ? 'Saving...' : 'Save Attendance'}
+                                </Button>
+                            </>
+                        }
+                    />
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <div className="flex items-center gap-2 mb-1">
-                                <CheckCircle className="size-5 text-[#556830]" />
-                                <span className="text-sm text-gray-700">
-                                    Present
-                                </span>
-                            </div>
-                            <div className="text-2xl text-[#203622]">
-                                {summary.present}
-                            </div>
-                        </div>
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Clock className="size-5 text-blue-600" />
-                                <span className="text-sm text-gray-700">
-                                    Partial
-                                </span>
-                            </div>
-                            <div className="text-2xl text-[#203622]">
-                                {summary.partial}
-                            </div>
-                        </div>
-                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                            <div className="flex items-center gap-2 mb-1">
-                                <AlertCircle className="size-5 text-purple-600" />
-                                <span className="text-sm text-gray-700">
-                                    Absent (Excused)
-                                </span>
-                            </div>
-                            <div className="text-2xl text-[#203622]">
-                                {summary.absentExcused}
-                            </div>
-                        </div>
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <div className="flex items-center gap-2 mb-1">
-                                <XCircle className="size-5 text-amber-600" />
-                                <span className="text-sm text-gray-700">
-                                    Absent (Unexcused)
-                                </span>
-                            </div>
-                            <div className="text-2xl text-[#203622]">
-                                {summary.absentUnexcused}
-                            </div>
-                        </div>
+                        <SummaryStatCard
+                            tone="green"
+                            icon={CheckCircle}
+                            label="Present"
+                            value={summary.present}
+                        />
+                        <SummaryStatCard
+                            tone="blue"
+                            icon={Clock}
+                            label="Partial"
+                            value={summary.partial}
+                        />
+                        <SummaryStatCard
+                            tone="purple"
+                            icon={AlertCircle}
+                            label="Absent (Excused)"
+                            value={summary.absentExcused}
+                        />
+                        <SummaryStatCard
+                            tone="amber"
+                            icon={XCircle}
+                            label="Absent (Unexcused)"
+                            value={summary.absentUnexcused}
+                        />
                     </div>
                 </div>
             </div>
@@ -465,42 +445,58 @@ export default function EventAttendance() {
     );
 }
 
-const STATUS_BUTTONS: {
-    status: Attendance;
-    label: string;
-    icon: typeof CheckCircle;
-    activeClass: string;
-    hoverBorder: string;
-}[] = [
-    {
-        status: Attendance.Present,
-        label: 'Present',
-        icon: CheckCircle,
-        activeClass: 'bg-[#556830] text-white border-[#556830]',
-        hoverBorder: 'hover:border-[#556830]'
+type SummaryTone = 'green' | 'blue' | 'purple' | 'amber';
+
+const SUMMARY_TONE: Record<
+    SummaryTone,
+    { bg: string; border: string; icon: string }
+> = {
+    green: {
+        bg: 'bg-green-50',
+        border: 'border-green-200',
+        icon: 'text-[#556830]'
     },
-    {
-        status: Attendance.Partial,
-        label: 'Partial',
-        icon: Clock,
-        activeClass: 'bg-blue-600 text-white border-blue-600',
-        hoverBorder: 'hover:border-blue-600'
+    blue: {
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        icon: 'text-blue-600'
     },
-    {
-        status: Attendance.Absent_Excused,
-        label: 'Absent (Excused)',
-        icon: AlertCircle,
-        activeClass: 'bg-purple-600 text-white border-purple-600',
-        hoverBorder: 'hover:border-purple-600'
+    purple: {
+        bg: 'bg-purple-50',
+        border: 'border-purple-200',
+        icon: 'text-purple-600'
     },
-    {
-        status: Attendance.Absent_Unexcused,
-        label: 'Absent (Unexcused)',
-        icon: XCircle,
-        activeClass: 'bg-amber-600 text-white border-amber-600',
-        hoverBorder: 'hover:border-amber-600'
+    amber: {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        icon: 'text-amber-600'
     }
-];
+};
+
+function SummaryStatCard({
+    tone,
+    icon: Icon,
+    label,
+    value
+}: {
+    tone: SummaryTone;
+    icon: typeof CheckCircle;
+    label: string;
+    value: number;
+}) {
+    const classes = SUMMARY_TONE[tone];
+    return (
+        <div
+            className={`${classes.bg} border ${classes.border} rounded-lg p-4`}
+        >
+            <div className="flex items-center gap-2 mb-1">
+                <Icon className={`size-5 ${classes.icon}`} />
+                <span className="text-sm text-gray-700">{label}</span>
+            </div>
+            <div className="text-2xl text-[#203622]">{value}</div>
+        </div>
+    );
+}
 
 function AttendanceRowCard({
     row,
@@ -535,7 +531,7 @@ function AttendanceRowCard({
                 </div>
 
                 <div className="flex gap-2 flex-wrap">
-                    {STATUS_BUTTONS.map((btn) => {
+                    {ATTENDANCE_STATUSES.map((btn) => {
                         const Icon = btn.icon;
                         const isActive = row.status === btn.status;
                         return (
@@ -546,8 +542,8 @@ function AttendanceRowCard({
                                 }
                                 className={`px-3 sm:px-4 py-2 rounded-lg border transition-colors text-sm flex items-center gap-1.5 ${
                                     isActive
-                                        ? btn.activeClass
-                                        : `bg-white text-gray-700 border-gray-300 ${btn.hoverBorder}`
+                                        ? btn.cardActiveClass
+                                        : `bg-white text-gray-700 border-gray-300 ${btn.cardHoverBorder}`
                                 }`}
                             >
                                 <Icon className="size-4" />
@@ -555,7 +551,7 @@ function AttendanceRowCard({
                                     {btn.label}
                                 </span>
                                 <span className="sm:hidden">
-                                    {btn.label.split(' ')[0]?.split('(')[0]}
+                                    {btn.shortLabel}
                                 </span>
                             </button>
                         );
@@ -615,26 +611,44 @@ function AttendanceRowCard({
 
             {isPresent && (
                 <div className="mt-4 sm:ml-[116px] space-y-3">
-                    <NoteOnly row={row} onUpdate={onUpdate} />
+                    <CollapsibleNoteField
+                        value={row.note}
+                        expanded={row.showNoteField}
+                        onExpand={() =>
+                            onUpdate(row.user_id, { showNoteField: true })
+                        }
+                        onCollapse={() =>
+                            onUpdate(row.user_id, { showNoteField: false })
+                        }
+                        onChange={(note) =>
+                            onUpdate(row.user_id, { note })
+                        }
+                    />
                 </div>
             )}
         </div>
     );
 }
 
-function NoteOnly({
-    row,
-    onUpdate
+function CollapsibleNoteField({
+    value,
+    expanded,
+    required = false,
+    onExpand,
+    onCollapse,
+    onChange
 }: {
-    row: RowState;
-    onUpdate: (userId: number, patch: Partial<RowState>) => void;
+    value: string;
+    expanded: boolean;
+    required?: boolean;
+    onExpand: () => void;
+    onCollapse: () => void;
+    onChange: (note: string) => void;
 }) {
-    if (!row.showNoteField) {
+    if (!expanded) {
         return (
             <button
-                onClick={() =>
-                    onUpdate(row.user_id, { showNoteField: true })
-                }
+                onClick={onExpand}
                 className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
             >
                 + Add a note
@@ -646,26 +660,31 @@ function NoteOnly({
         <div>
             <div className="flex items-center justify-between mb-1.5">
                 <Label className="text-sm text-gray-700">
-                    Note <span className="text-gray-500">(optional)</span>
+                    Note{' '}
+                    {required ? (
+                        <span className="text-red-600">*</span>
+                    ) : (
+                        <span className="text-gray-500">(optional)</span>
+                    )}
                 </Label>
                 <button
-                    onClick={() =>
-                        onUpdate(row.user_id, {
-                            showNoteField: false,
-                            note: ''
-                        })
-                    }
+                    onClick={() => {
+                        onChange('');
+                        onCollapse();
+                    }}
                     className="text-xs text-gray-500 hover:text-gray-700"
                 >
                     Remove
                 </button>
             </div>
             <Textarea
-                placeholder="Add additional details..."
-                value={row.note}
-                onChange={(e) =>
-                    onUpdate(row.user_id, { note: e.target.value })
+                placeholder={
+                    required
+                        ? 'Please specify...'
+                        : 'Add additional details...'
                 }
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
                 className="min-h-[80px] text-sm"
             />
         </div>
@@ -689,15 +708,16 @@ function ReasonAndNote({
                 </Label>
                 <Select
                     value={row.reason}
-                    onValueChange={(v) =>
+                    onValueChange={(v) => {
+                        const next = v as AttendanceReason;
                         onUpdate(row.user_id, {
-                            reason: v,
-                            ...(v !== AttendanceReason.Other &&
+                            reason: next,
+                            ...(next !== AttendanceReason.Other &&
                                 row.reason === AttendanceReason.Other && {
                                     note: ''
                                 })
-                        })
-                    }
+                        });
+                    }}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Select a reason" />
@@ -712,55 +732,18 @@ function ReasonAndNote({
                 </Select>
             </div>
 
-            {!row.showNoteField ? (
-                <button
-                    onClick={() =>
-                        onUpdate(row.user_id, { showNoteField: true })
-                    }
-                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                    + Add a note
-                </button>
-            ) : (
-                <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                        <Label className="text-sm text-gray-700">
-                            Note{' '}
-                            {noteRequired ? (
-                                <span className="text-red-600">*</span>
-                            ) : (
-                                <span className="text-gray-500">
-                                    (optional)
-                                </span>
-                            )}
-                        </Label>
-                        <button
-                            onClick={() =>
-                                onUpdate(row.user_id, {
-                                    showNoteField: false
-                                })
-                            }
-                            className="text-xs text-gray-500 hover:text-gray-700"
-                        >
-                            Remove
-                        </button>
-                    </div>
-                    <Textarea
-                        placeholder={
-                            noteRequired
-                                ? 'Please specify...'
-                                : 'Add additional details...'
-                        }
-                        value={row.note}
-                        onChange={(e) =>
-                            onUpdate(row.user_id, {
-                                note: e.target.value
-                            })
-                        }
-                        className="min-h-[80px] text-sm"
-                    />
-                </div>
-            )}
+            <CollapsibleNoteField
+                value={row.note}
+                expanded={row.showNoteField}
+                required={noteRequired}
+                onExpand={() =>
+                    onUpdate(row.user_id, { showNoteField: true })
+                }
+                onCollapse={() =>
+                    onUpdate(row.user_id, { showNoteField: false })
+                }
+                onChange={(note) => onUpdate(row.user_id, { note })}
+            />
         </>
     );
 }

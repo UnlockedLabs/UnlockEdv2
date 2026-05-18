@@ -11,12 +11,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LocalRowData } from './types';
-
-const ATTENDANCE_OPTIONS = [
-    { label: 'Present', value: Attendance.Present },
-    { label: 'Excused Absence', value: Attendance.Absent_Excused },
-    { label: 'Unexcused Absence', value: Attendance.Absent_Unexcused }
-];
+import { TABLE_ATTENDANCE_STATUSES } from './constants';
 
 function isPresentLike(status?: Attendance): boolean {
     return status === Attendance.Present || status === Attendance.Partial;
@@ -59,25 +54,20 @@ export function AttendanceRow({
             </TableCell>
             <TableCell className="min-w-[200px]">
                 <div className="flex gap-1">
-                    {ATTENDANCE_OPTIONS.map((opt) => (
+                    {TABLE_ATTENDANCE_STATUSES.map((opt) => (
                         <Button
-                            key={opt.value}
+                            key={opt.status}
                             type="button"
                             size="sm"
-                            variant={row.attendance_status === opt.value ? 'default' : 'outline'}
+                            variant={row.attendance_status === opt.status ? 'default' : 'outline'}
                             disabled={blockEdits}
                             className={cn(
                                 'text-xs px-2 py-1 h-7',
-                                row.attendance_status === opt.value &&
-                                    (opt.value === Attendance.Present
-                                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                                        : opt.value === Attendance.Absent_Excused
-                                          ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                                          : 'bg-red-500 hover:bg-red-600 text-white')
+                                row.attendance_status === opt.status && opt.tableActiveClass
                             )}
-                            onClick={() => onStatusChange(row.user_id, opt.value)}
+                            onClick={() => onStatusChange(row.user_id, opt.status)}
                         >
-                            {opt.label.split(' ')[0]}
+                            {opt.shortLabel}
                         </Button>
                     ))}
                 </div>

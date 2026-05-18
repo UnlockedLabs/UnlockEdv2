@@ -2,22 +2,37 @@ import { ReactNode } from 'react';
 
 interface PageHeaderProps {
     title: string;
-    subtitle?: string;
+    subtitle?: ReactNode;
+    meta?: ReactNode;
     actions?: ReactNode;
 }
 
-export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+export function PageHeader({
+    title,
+    subtitle,
+    meta,
+    actions
+}: PageHeaderProps) {
     return (
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
             <div>
-                <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+                <h1 className="text-[#203622] dark:text-white mb-2">
+                    {title}
+                </h1>
                 {subtitle && (
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <div className="text-gray-600 dark:text-gray-300">
                         {subtitle}
-                    </p>
+                    </div>
+                )}
+                {meta && (
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {meta}
+                    </div>
                 )}
             </div>
-            {actions && <div className="flex items-center gap-2">{actions}</div>}
+            {actions && (
+                <div className="flex items-center gap-2">{actions}</div>
+            )}
         </div>
     );
 }
