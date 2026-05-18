@@ -47,7 +47,7 @@ import {
     MapPin,
     Users
 } from 'lucide-react';
-import { Pagination } from '@/components/shared';
+import { Pagination } from '@/components/Pagination';
 import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
 import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
 
@@ -216,7 +216,7 @@ export default function ClassesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter]);
+    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter, setCurrentPage]);
 
     const paginatedClasses = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;

@@ -341,7 +341,7 @@ export default function KnowledgeCenterManagement() {
             setCategoryFilter('all');
         }
         setCurrentPage(1);
-    }, [currentTab]);
+    }, [currentTab, setCurrentPage]);
 
     const visibilityParam = useMemo(() => {
         if (
