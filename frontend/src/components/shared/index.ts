@@ -6,4 +6,3 @@ export { ConfirmDialog } from './ConfirmDialog';
 export { FormModal } from './FormModal';
 export { DataTable } from './DataTable';
 export type { Column } from './DataTable';
-export { Pagination } from '../Pagination';

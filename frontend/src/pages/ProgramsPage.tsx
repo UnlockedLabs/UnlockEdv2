@@ -998,7 +998,7 @@ export default function ProgramsPage() {
                         )}
 
                         {/* Pagination */}
-                        {filtered.length > perPage && (
+                        {filtered.length > 0 && (
                             <div className="mt-6">
                                 <Pagination
                                     currentPage={page}
