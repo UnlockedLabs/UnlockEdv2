@@ -195,6 +195,19 @@ html {
     display: none;
 }
 
+.tab-trigger {
+    @apply px-4 py-2.5 rounded-lg transition-all duration-200;
+}
+.tab-trigger[data-state='active'] {
+    @apply bg-[#556830] text-white shadow-xs;
+}
+.tab-trigger[data-state='inactive'] {
+    @apply text-muted-foreground;
+}
+.tab-trigger[data-state='inactive']:hover {
+    @apply text-foreground bg-muted;
+}
+
 input[type='checkbox']:focus {
     outline-color: #9ca3af;
 }

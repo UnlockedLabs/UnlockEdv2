@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const TAB_TRIGGER_CLASS =
-    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-xs data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-muted px-4 py-2.5 rounded-lg transition-all duration-200';
-
 const TAB_OPTIONS = [
     { name: 'Schedule', value: 'schedule' },
     { name: 'Enrollment', value: 'enrollments' },
@@ -42,7 +39,7 @@ export default function ProgramClassManagement() {
                         <TabsTrigger
                             key={tab.value}
                             value={tab.value}
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger"
                         >
                             {tab.name}
                         </TabsTrigger>

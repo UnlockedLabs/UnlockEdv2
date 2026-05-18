@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/shared/PageHeader';
+import { PageHeader } from '@/components/shared';
 import OperationalInsightsCharts from '@/components/charts/OperationalInsightsCharts';
 
 export default function OperationalInsightsPage() {

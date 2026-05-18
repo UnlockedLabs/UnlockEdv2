@@ -1,6 +1,7 @@
 import { FAQContent } from './FAQs';
 import Tour from '@/components/Tour';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { PageHeader } from '@/components/shared';
 
 export default function HelpCenter({ close }: { close?: () => void }) {
     if (close) {
@@ -14,9 +15,7 @@ export default function HelpCenter({ close }: { close?: () => void }) {
                         <XMarkIcon className="size-5 text-muted-foreground" />
                     </button>
                 </div>
-                <h1 className="text-xl font-bold text-foreground">
-                    Help Center
-                </h1>
+                <PageHeader title="Help Center" />
                 <Tour close={close} />
                 <FAQContent />
             </div>
@@ -26,14 +25,10 @@ export default function HelpCenter({ close }: { close?: () => void }) {
     return (
         <div className="bg-muted min-h-screen p-6">
             <div className="max-w-3xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">
-                        Help Center
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Find answers to common questions and get support.
-                    </p>
-                </div>
+                <PageHeader
+                    title="Help Center"
+                    subtitle="Find answers to common questions and get support."
+                />
 
                 <div className="bg-card rounded-lg border border-border p-6">
                     <h2 className="text-lg font-semibold text-foreground mb-2">

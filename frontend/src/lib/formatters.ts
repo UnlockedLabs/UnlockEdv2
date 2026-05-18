@@ -3,9 +3,28 @@ import { Class } from '@/types/program';
 import { ProgramClassEvent } from '@/types/events';
 import { RRule, Weekday } from 'rrule';
 
+export enum Timezones {
+    'CST' = 'America/Chicago',
+    'EST' = 'America/New_York',
+    'AKST' = 'America/Anchorage',
+    'PST' = 'America/Los_Angeles',
+    'MDT' = 'America/Denver',
+    'MST' = 'America/Phoenix'
+}
+
 const MONTH_NAMES = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
 ];
 
 export function formatDate(dateStr?: string): string {
@@ -32,21 +51,6 @@ export function formatRelativeTime(dateStr?: string): string {
     if (diffDays === 1) return '1 day ago';
     if (diffDays < 7) return `${diffDays} days ago`;
     return formatDate(dateStr);
-}
-
-export function formatDateTime(dateStr: string): string {
-    const dt = new Date(dateStr);
-    const date = dt.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-    const time = dt.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    });
-    return `${date} - ${time}`;
 }
 
 export function formatRoomConflictRange(
@@ -128,12 +132,6 @@ export function formatVideoDuration(seconds: number): string {
     return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export const parseDuration = (duration: number): string => {
-    const hours = Math.floor(duration / 3.612);
-    const minutes = Math.floor((duration % 3.612) / 6e10);
-    return `${hours}h ${minutes}m`;
-};
-
 export function parseDurationToMs(duration: string): number {
     const regex = /(\d+)h(\d+)m(\d+)s/;
     const groups = regex.exec(duration);
@@ -149,11 +147,88 @@ export function timeToMinutes(timeStr: string): number {
     return (hour ?? 0) * 60 + (minute ?? 0);
 }
 
-export function formatDurationStr(startTime: string, endTime: string): string {
-    const totalMin = timeToMinutes(endTime) - timeToMinutes(startTime);
-    const hours = Math.floor(totalMin / 60);
-    const minutes = totalMin % 60;
-    return `${hours}h${minutes}m0s`;
+export function parseLocalDay(isoDate: string): Date {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+export function formatTimeHM(date: Date): string {
+    return date
+        .toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        .trim();
+}
+
+export function diffMinutes(start?: string, end?: string): number | undefined {
+    if (!start || !end) return undefined;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    if ([sh, sm, eh, em].some((v) => Number.isNaN(v))) return undefined;
+    const diff = (eh ?? 0) * 60 + (em ?? 0) - ((sh ?? 0) * 60 + (sm ?? 0));
+    return diff > 0 ? diff : undefined;
+}
+
+export function formatPartialTime(mins?: number): string | null {
+    if (!mins || mins <= 0) return null;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+}
+
+export function fromLocalDateToNumericDateFormat(
+    date: Date,
+    timezone: string
+): string {
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        timeZone: timezone
+    });
+}
+
+export function parseRRule(
+    rRule: string,
+    timezone: string,
+    startDtOnly?: boolean
+): string {
+    try {
+        const rule = RRule.fromString(rRule);
+        const eventDate = startDtOnly
+            ? rule.options.dtstart
+            : (rule.after(new Date(0), true) ?? rule.options.dtstart);
+        if (!eventDate) return '';
+        return fromLocalDateToNumericDateFormat(eventDate, timezone);
+    } catch (error) {
+        void error;
+    }
+    return '';
+}
+
+export function getPreviousMonth(currentMonth: string): string {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const prevDate = new Date(year, month - 2);
+    return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function getNextMonth(currentMonth: string): string {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const nextDate = new Date(year, month);
+    return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function formatMonthYear(monthString: string): string {
+    const [year, month] = monthString.split('-').map(Number);
+    const date = new Date(year, month - 1);
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+    });
 }
 
 const WEEKDAY_NAMES: Record<number, string> = {
@@ -175,7 +250,10 @@ export interface ClassScheduleInfo {
 
 export function getInstructorName(events: ProgramClassEvent[]): string {
     if (!events?.length) return '';
-    const latest = events.reduce((max, e) => (e.id > max.id ? e : max), events[0]);
+    const latest = events.reduce(
+        (max, e) => (e.id > max.id ? e : max),
+        events[0]
+    );
     const ref = latest.instructor_ref;
     if (ref) return `${ref.name_first} ${ref.name_last}`.trim();
     return '';
@@ -183,7 +261,10 @@ export function getInstructorName(events: ProgramClassEvent[]): string {
 
 export function getInstructorId(events: ProgramClassEvent[]): number | null {
     if (!events?.length) return null;
-    const latest = events.reduce((max, e) => (e.id > max.id ? e : max), events[0]);
+    const latest = events.reduce(
+        (max, e) => (e.id > max.id ? e : max),
+        events[0]
+    );
     if (typeof latest.instructor_id === 'number') return latest.instructor_id;
     if (latest.instructor_ref?.id) return latest.instructor_ref.id;
     return null;
