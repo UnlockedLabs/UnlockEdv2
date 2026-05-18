@@ -33,10 +33,7 @@ import {
     ServerResponseOne
 } from '@/types';
 import { getInstructorName, getStatusColor } from '@/lib/formatters';
-import {
-    programTypeColors,
-    TAB_TRIGGER_CLASSES
-} from '@/pages/program-detail/constants';
+import { programTypeColors } from '@/pages/program-detail/constants';
 import { cn } from '@/lib/utils';
 import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
 import { ClassManagementFormInner } from '@/pages/programs/ClassManagementForm';
@@ -110,7 +107,12 @@ export default function ProgramOverviewFacilityAdmin() {
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('classes');
-    const { page: historyPage, perPage: historyPerPage, setPage: setHistoryPage, setPerPage: setHistoryPerPage } = useUrlPagination(1, 20, 'history');
+    const {
+        page: historyPage,
+        perPage: historyPerPage,
+        setPage: setHistoryPage,
+        setPerPage: setHistoryPerPage
+    } = useUrlPagination(1, 20, 'history');
     const [statusModalOpen, setStatusModalOpen] = useState(false);
     const [selectedClass, setSelectedClass] = useState<Class | null>(null);
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -118,10 +120,13 @@ export default function ProgramOverviewFacilityAdmin() {
     const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-    const [showCannotArchiveDialog, setShowCannotArchiveDialog] = useState(false);
+    const [showCannotArchiveDialog, setShowCannotArchiveDialog] =
+        useState(false);
     const [showReactivateDialog, setShowReactivateDialog] = useState(false);
     const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
-    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<string[]>([]);
+    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<
+        string[]
+    >([]);
 
     const facilityIdParam = searchParams.get('facility_id');
     const facilityId = facilityIdParam ? Number(facilityIdParam) : null;
@@ -132,7 +137,9 @@ export default function ProgramOverviewFacilityAdmin() {
 
     const { data: programResp, mutate: mutateProgram } = useSWR<
         ServerResponseOne<ProgramOverview>
-    >(`/api/programs/${program_id}${facilityId ? `?facility_id=${facilityId}` : ''}`);
+    >(
+        `/api/programs/${program_id}${facilityId ? `?facility_id=${facilityId}` : ''}`
+    );
     const program = programResp?.data;
 
     const { data: deleteCheckResp, mutate: mutateDeleteCheck } = useSWR<
@@ -220,7 +227,8 @@ export default function ProgramOverviewFacilityAdmin() {
             return;
         }
 
-        const blocking = (resp.data as { facilities: string[] }).facilities ?? [];
+        const blocking =
+            (resp.data as { facilities: string[] }).facilities ?? [];
         if (blocking.length > 0) {
             setArchiveBlockingFacilities(blocking);
             setShowCannotArchiveDialog(true);
@@ -312,8 +320,9 @@ export default function ProgramOverviewFacilityAdmin() {
         facilityFromProgram?.name ??
         facilityResp?.data?.name ??
         user?.facility?.name;
-    const showFacilityContextBanner =
-        Boolean(user && canSwitchFacility(user) && facilityId && facilityName);
+    const showFacilityContextBanner = Boolean(
+        user && canSwitchFacility(user) && facilityId && facilityName
+    );
 
     if (!program) {
         return (
@@ -492,7 +501,8 @@ export default function ProgramOverviewFacilityAdmin() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {programStatus === 'Archived' ? (
+                                                {programStatus ===
+                                                'Archived' ? (
                                                     <>
                                                         <SelectItem
                                                             value="Archived"
@@ -548,21 +558,30 @@ export default function ProgramOverviewFacilityAdmin() {
                                                         <DropdownMenuItem
                                                             variant="destructive"
                                                             onClick={() => {
-                                                                setDeleteConfirmationText('');
-                                                                setDeleteModalOpen(true);
+                                                                setDeleteConfirmationText(
+                                                                    ''
+                                                                );
+                                                                setDeleteModalOpen(
+                                                                    true
+                                                                );
                                                             }}
-                                                            disabled={!canDelete}
+                                                            disabled={
+                                                                !canDelete
+                                                            }
                                                         >
                                                             <Trash2 className="size-4" />
                                                             Delete Program
                                                         </DropdownMenuItem>
                                                     </div>
                                                 </TooltipTrigger>
-                                                {!canDelete && deleteBlockerReason && (
-                                                    <TooltipContent side="left">
-                                                        {deleteBlockerReason}
-                                                    </TooltipContent>
-                                                )}
+                                                {!canDelete &&
+                                                    deleteBlockerReason && (
+                                                        <TooltipContent side="left">
+                                                            {
+                                                                deleteBlockerReason
+                                                            }
+                                                        </TooltipContent>
+                                                    )}
                                             </Tooltip>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -608,25 +627,25 @@ export default function ProgramOverviewFacilityAdmin() {
                         <TabsList className="bg-white border border-gray-200 p-1 h-auto mb-2 gap-1">
                             <TabsTrigger
                                 value="classes"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Classes ({nonArchivedClasses.length})
                             </TabsTrigger>
                             <TabsTrigger
                                 value="details"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Program Details
                             </TabsTrigger>
                             <TabsTrigger
                                 value="performance"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Performance
                             </TabsTrigger>
                             <TabsTrigger
                                 value="history"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Audit History
                             </TabsTrigger>

@@ -1,4 +1,9 @@
-import { ProgramType, CreditType, FundingType, ProgramEffectiveStatus } from '@/types';
+import {
+    ProgramType,
+    CreditType,
+    FundingType,
+    ProgramEffectiveStatus
+} from '@/types';
 
 export type SortOption =
     | 'name-asc'
@@ -51,5 +56,3 @@ export const ALL_FUNDING_TYPES: FundingType[] = [
     FundingType.STATE_GRANTS,
     FundingType.OTHER
 ];
-
-export const TAB_TRIGGER_CLASSES = 'tab-trigger';

@@ -1,20 +1,25 @@
 import { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
     title: string;
     subtitle?: ReactNode;
     meta?: ReactNode;
     actions?: ReactNode;
+    className?: string;
 }
 
 export function PageHeader({
     title,
     subtitle,
     meta,
-    actions
+    actions,
+    className
 }: PageHeaderProps) {
     return (
-        <div className="flex items-start justify-between">
+        <div
+            className={cn('flex items-start justify-between', className)}
+        >
             <div>
                 <h1 className="text-[#203622] dark:text-white mb-2">
                     {title}

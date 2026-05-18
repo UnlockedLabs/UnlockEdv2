@@ -25,7 +25,7 @@ import {
     RectangleStackIcon,
     ListBulletIcon
 } from '@heroicons/react/24/outline';
-import { InfoTooltip } from '@/components/shared';
+import { InfoTooltip, PageHeader } from '@/components/shared';
 import {
     AlertCircle,
     Calendar,
@@ -135,7 +135,11 @@ function FacilityAdminView({
 
     return (
         <div>
-            <DashboardHeader title="Facility Dashboard" subtitle={facilityName} />
+            <PageHeader
+                title="Facility Dashboard"
+                subtitle={facilityName}
+                className="mb-[15px]"
+            />
 
             <MetricCards stats={stats} onNavigate={navigate} />
 
@@ -183,7 +187,7 @@ function DeptAdminView({
 
     return (
         <div>
-            <DashboardHeader title="Department Overview" />
+            <PageHeader title="Department Overview" className="mb-[15px]" />
 
             <MetricCards stats={stats} onNavigate={navigate} />
 
@@ -207,25 +211,6 @@ function DeptAdminView({
                     </div>
                 </div>
             </div>
-        </div>
-    );
-}
-
-function DashboardHeader({
-    title,
-    subtitle
-}: {
-    title: string;
-    subtitle?: string;
-}) {
-    return (
-        <div className="mb-6">
-            <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
-                {title}
-            </h1>
-            {subtitle && (
-                <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
-            )}
         </div>
     );
 }
@@ -406,7 +391,7 @@ function TodaysSchedule({
                     </div>
                 ) : (
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <Calendar className="size-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                        <Calendar className="size-12 mx-auto mb-[15px] text-gray-300 dark:text-gray-600" />
                         <p>
                             {isLoading
                                 ? "Loading today's schedule..."
@@ -462,7 +447,7 @@ function MissingAttendanceWidget({
 
             {missingAttendance.length > 0 ? (
                 <>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-[15px]">
                         {isDepartment
                             ? 'Past 3 days - across all facilities'
                             : 'Past 3 days'}
