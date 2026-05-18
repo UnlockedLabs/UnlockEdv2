@@ -5,7 +5,7 @@ import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { useDebounceValue } from 'usehooks-ts';
-import { Search, Users, CheckCircle, UserPlus, AlertTriangle } from 'lucide-react';
+import { Users, CheckCircle, UserPlus, AlertTriangle } from 'lucide-react';
 import API from '@/api/api';
 import {
     ClassLoaderData,
@@ -16,7 +16,7 @@ import {
     FilterResidentNames,
     ConflictDetail
 } from '@/types';
-import { PageHeader } from '@/components/shared';
+import { PageHeader, SearchInput } from '@/components/shared';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,7 +28,6 @@ import {
     AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -188,18 +187,15 @@ export default function AddClassEnrollments() {
             </Card>
 
             <div className="flex items-center gap-3">
-                <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search residents..."
-                        value={searchTerm}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            setPage(1);
-                        }}
-                        className="pl-9"
-                    />
-                </div>
+                <SearchInput
+                    value={searchTerm}
+                    onChange={(value) => {
+                        setSearchTerm(value);
+                        setPage(1);
+                    }}
+                    placeholder="Search residents..."
+                    className="w-64"
+                />
                 <Select value={sortQuery} onValueChange={(v) => setSortQuery(v as FilterResidentNames)}>
                     <SelectTrigger className="w-44">
                         <SelectValue />
