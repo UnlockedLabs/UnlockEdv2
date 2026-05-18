@@ -1408,7 +1408,7 @@ function AuditHistoryTab({
                     </div>
                 )}
             </CardContent>
-            {totalItems > itemsPerPage && (
+            {totalItems > 0 && (
                 <Pagination
                     currentPage={currentPage}
                     totalItems={totalItems}

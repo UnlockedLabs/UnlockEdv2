@@ -74,7 +74,7 @@ export default function ActivityHistoryCard({
             return;
         }
         setPage(1);
-    }, [filterQuery]);
+    }, [filterQuery, setPage]);
 
     const heading = programId ? 'Program History' : 'Account Overview';
     const entries = data?.data ?? [];
@@ -151,7 +151,7 @@ export default function ActivityHistoryCard({
                     })}
                 </div>
             )}
-            {total >= perPage && (
+            {total > 0 && (
                 <Pagination
                     currentPage={page}
                     totalItems={total}
