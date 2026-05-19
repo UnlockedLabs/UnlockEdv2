@@ -1,104 +1,36 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { useNavigate } from 'react-router-dom';
-import {
-    Calendar,
-    AlertCircle,
-    CheckCircle,
-    Filter,
-    CalendarClock,
-    CalendarOff,
-    X,
-    Users,
-    MapPin,
-    Undo2
-} from 'lucide-react';
+import { Calendar, AlertCircle } from 'lucide-react';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Class } from '@/types/program';
-import { ClassEventInstance, FacilityProgramClassEvent, ProgramClassEvent } from '@/types/events';
+import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
-import { SelectedClassStatus } from '@/types/attendance';
-import { RescheduleSessionModal } from './RescheduleSessionModal';
-import { CancelEventModal } from '@/components/schedule/CancelEventModal';
-import {
-    BulkCancelSessionsModal,
-    BulkCancelSession
-} from './BulkCancelSessionsModal';
-import {
-    ChangeInstructorModal,
-    ChangeInstructorSession
-} from './ChangeInstructorModal';
-import { ChangeRoomModal, ChangeRoomSession } from './ChangeRoomModal';
-import { SessionDetailSheet } from '@/components/schedule/SessionDetailSheet';
-import { formatClassTimeRange } from '@/lib/formatters';
+import { BulkCancelSession } from './BulkCancelSessionsModal';
+import { ChangeInstructorSession } from './ChangeInstructorModal';
+import { ChangeRoomSession } from './ChangeRoomModal';
+import { SessionRow } from './SessionRow';
+import { SessionsTabFilterBar } from './SessionsTabFilterBar';
+import { SessionsTabBulkActions } from './SessionsTabBulkActions';
+import { SessionsTabModals } from './SessionsTabModals';
 import {
     buildRescheduleMaps,
     buildRoomOverrideMap,
     buildCancellationReasonMap,
     buildSessionDisplays,
-    findActiveOverride,
     findCancelOverrideId,
-    getSessionChangeInfo,
+    buildSessionPayload,
     type SessionDisplay
 } from './session-utils';
-import { getInstructorName } from '@/lib/formatters';
-
-function buildFacilityEvent(
-    session: SessionDisplay,
-    classId: number,
-    classEvents: ProgramClassEvent[]
-): FacilityProgramClassEvent {
-    const eventId = session.instance.event_id ?? session.instance.id;
-    const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
-    const activeOverride = findActiveOverride(classEvents, session.instance.date);
-    const parts = session.instance.class_time.split('-');
-    const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
-    const [eh = 0, em = 0] = (parts[1] ?? '').split(':').map(Number);
-    const start = new Date(session.dateObj);
-    start.setHours(sh, sm, 0, 0);
-    const end = new Date(session.dateObj);
-    end.setHours(eh, em, 0, 0);
-    return {
-        id: eventId,
-        class_id: classId,
-        duration: backingEvent?.duration ?? '',
-        room_id: activeOverride?.room_id ?? backingEvent?.room_id ?? 0,
-        recurrence_rule: backingEvent?.recurrence_rule ?? '',
-        is_cancelled: session.instance.is_cancelled,
-        instructor_id: activeOverride?.instructor_id ?? backingEvent?.instructor_id ?? null,
-        overrides: backingEvent?.overrides ?? [],
-        reason: null,
-        start,
-        end,
-        is_override: !!activeOverride || !!session.instance.override_id,
-        override_id: activeOverride?.id ?? session.instance.override_id ?? 0,
-        linked_override_event: null as unknown as FacilityProgramClassEvent,
-        room: '',
-        instructor_name: '',
-        program_id: 0,
-        program_name: '',
-        title: '',
-        enrolled_users: '',
-        frequency: '',
-        credit_types: '',
-        class_status: SelectedClassStatus.Scheduled
-    };
-}
-
-type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
-type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
-
-const PAST_DISPLAY_LIMIT = 15;
-const UPCOMING_DISPLAY_LIMIT = 10;
-const TIME_FILTER_DAYS: Record<Exclude<TimeFilter, 'all'>, number> = {
-    week: 7,
-    '2weeks': 14,
-    month: 28
-};
+import {
+    useSessionFilters,
+    PAST_DISPLAY_LIMIT,
+    UPCOMING_DISPLAY_LIMIT,
+    type StatusFilter,
+    type TimeFilter
+} from './useSessionFilters';
 
 interface SessionsTabProps {
     cls: Class;
@@ -106,56 +38,6 @@ interface SessionsTabProps {
 }
 
 export type { SessionDisplay } from './session-utils';
-
-function parseLocalDate(dateStr: string): Date {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d);
-}
-
-function formatShortDate(dateStr: string): string {
-    const d = parseLocalDate(dateStr);
-    return d.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function getTimeCutoff(tf: TimeFilter): Date | null {
-    if (tf === 'all') return null;
-    const cutoff = new Date();
-    cutoff.setHours(0, 0, 0, 0);
-    cutoff.setDate(cutoff.getDate() - TIME_FILTER_DAYS[tf]);
-    return cutoff;
-}
-
-function FilterButton({
-    active,
-    onClick,
-    children,
-    disabled
-}: {
-    active: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-    disabled?: boolean;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            disabled={disabled}
-            className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
-                disabled
-                    ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                    : active
-                      ? 'bg-[#556830] text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-        >
-            {children}
-        </button>
-    );
-}
 
 export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     const navigate = useNavigate();
@@ -263,29 +145,6 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         });
     };
 
-    const buildSessionPayload = (
-        session: SessionDisplay
-    ): {
-        date: string;
-        dateLabel: string;
-        eventId: number;
-        classTime: string;
-        dateObj: Date;
-        dayName: string;
-    } => ({
-        date: session.instance.date,
-        dateLabel: session.dateObj.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
-        }),
-        eventId: session.instance.event_id ?? session.instance.id,
-        classTime: session.instance.class_time,
-        dateObj: session.dateObj,
-        dayName: session.dayName
-    });
-
     const openChangeInstructor = (sessions: SessionDisplay[]) => {
         setChangeInstructorSessions(sessions.map(buildSessionPayload));
         setShowChangeInstructor(true);
@@ -308,79 +167,18 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         [allSessions, selectedDates]
     );
 
-    const filtered = useMemo(() => {
-        let result = allSessions;
-        const cutoff = getTimeCutoff(timeFilter);
-
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-
-        if (statusFilter === 'all') {
-            if (cutoff) {
-                result = result.filter(
-                    (s) => s.dateObj >= cutoff && s.dateObj <= today
-                );
-            }
-        } else if (statusFilter === 'completed') {
-            result = result.filter(
-                (s) =>
-                    (s.isPast || s.isToday) &&
-                    s.hasAttendance &&
-                    !s.isCancelled &&
-                    !s.isRescheduledFrom
-            );
-            if (cutoff) {
-                result = result.filter((s) => s.dateObj >= cutoff);
-            }
-        } else if (statusFilter === 'missing') {
-            result = result.filter(
-                (s) =>
-                    s.isPast &&
-                    !s.hasAttendance &&
-                    !s.isCancelled &&
-                    !s.isRescheduledFrom
-            );
-            if (cutoff) {
-                result = result.filter((s) => s.dateObj >= cutoff);
-            }
-        } else if (statusFilter === 'upcoming') {
-            result = result.filter(
-                (s) => s.isUpcoming && !s.isCancelled && !s.isRescheduledFrom
-            );
-            result = [...result].reverse();
-        } else if (statusFilter === 'cancelled') {
-            result = result.filter(
-                (s) => s.isCancelled && !s.isRescheduledFrom
-            );
-            if (cutoff) {
-                result = result.filter((s) => s.dateObj >= cutoff);
-            }
-        }
-
-        return result;
-    }, [allSessions, statusFilter, timeFilter]);
-
-    const pastAndTodaySessions = useMemo(
-        () => filtered.filter((s) => s.isPast || s.isToday),
-        [filtered]
-    );
-
-    const upcomingSessions = useMemo(
-        () =>
-            filtered
-                .filter((s) => s.isUpcoming)
-                .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime()),
-        [filtered]
-    );
-
-    const displayedPast = showAllPast
-        ? pastAndTodaySessions
-        : pastAndTodaySessions.slice(0, PAST_DISPLAY_LIMIT);
-
-    const displayedUpcoming = upcomingSessions.slice(
-        0,
-        UPCOMING_DISPLAY_LIMIT
-    );
+    const {
+        filtered,
+        pastAndTodaySessions,
+        upcomingSessions,
+        displayedPast,
+        displayedUpcoming
+    } = useSessionFilters({
+        allSessions,
+        statusFilter,
+        timeFilter,
+        showAllPast
+    });
 
     const refreshData = async () => {
         await mutate();
@@ -462,131 +260,14 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
 
     return (
         <div className="bg-white rounded-lg border border-gray-200">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between mb-3">
-                    <div>
-                        <h3 className="text-[#203622]">Session Management</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                            View, cancel, or reschedule individual sessions
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <StatButton
-                            active={statusFilter === 'completed'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'completed'
-                                        ? 'all'
-                                        : 'completed'
-                                )
-                            }
-                            colorClass="bg-green-100 text-[#556830]"
-                        >
-                            {stats.completed} Completed
-                        </StatButton>
-                        <StatButton
-                            active={statusFilter === 'missing'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'missing'
-                                        ? 'all'
-                                        : 'missing'
-                                )
-                            }
-                            colorClass="bg-amber-100 text-amber-700"
-                        >
-                            {stats.missing} Missing
-                        </StatButton>
-                        <StatButton
-                            active={statusFilter === 'upcoming'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'upcoming'
-                                        ? 'all'
-                                        : 'upcoming'
-                                )
-                            }
-                            colorClass="bg-blue-100 text-blue-700"
-                        >
-                            {stats.upcoming} Upcoming
-                        </StatButton>
-                        <StatButton
-                            active={statusFilter === 'cancelled'}
-                            onClick={() =>
-                                handleStatusChange(
-                                    statusFilter === 'cancelled'
-                                        ? 'all'
-                                        : 'cancelled'
-                                )
-                            }
-                            colorClass="bg-gray-100 text-gray-700"
-                        >
-                            {stats.cancelled} Cancelled
-                        </StatButton>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Filter className="size-4 text-gray-400" />
-                    <div className="flex gap-2 flex-1">
-                        <FilterButton
-                            active={statusFilter === 'all'}
-                            onClick={() => handleStatusChange('all')}
-                        >
-                            All Sessions
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'completed'}
-                            onClick={() => handleStatusChange('completed')}
-                        >
-                            Completed
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'missing'}
-                            onClick={() => handleStatusChange('missing')}
-                        >
-                            Missing
-                        </FilterButton>
-                        <FilterButton
-                            active={statusFilter === 'upcoming'}
-                            onClick={() => handleStatusChange('upcoming')}
-                        >
-                            Upcoming
-                        </FilterButton>
-                    </div>
-                    <div className="h-6 w-px bg-gray-300" />
-                    <div className="flex gap-2">
-                        <FilterButton
-                            active={timeFilter === 'week'}
-                            onClick={() => handleTimeChange('week')}
-                            disabled={hideTimeFilter}
-                        >
-                            Last Week
-                        </FilterButton>
-                        <FilterButton
-                            active={timeFilter === '2weeks'}
-                            onClick={() => handleTimeChange('2weeks')}
-                            disabled={hideTimeFilter}
-                        >
-                            Last 2 Weeks
-                        </FilterButton>
-                        <FilterButton
-                            active={timeFilter === 'month'}
-                            onClick={() => handleTimeChange('month')}
-                            disabled={hideTimeFilter}
-                        >
-                            Last Month
-                        </FilterButton>
-                        <FilterButton
-                            active={timeFilter === 'all'}
-                            onClick={() => handleTimeChange('all')}
-                            disabled={hideTimeFilter}
-                        >
-                            All Time
-                        </FilterButton>
-                    </div>
-                </div>
-            </div>
+            <SessionsTabFilterBar
+                statusFilter={statusFilter}
+                timeFilter={timeFilter}
+                stats={stats}
+                hideTimeFilter={hideTimeFilter}
+                onStatusChange={handleStatusChange}
+                onTimeChange={handleTimeChange}
+            />
 
             {stats.missing > 0 && (
                 <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -706,527 +387,84 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 )}
             </div>
 
-            {rescheduleTarget && (
-                <RescheduleSessionModal
-                    open={!!rescheduleTarget}
-                    onClose={() => setRescheduleTarget(null)}
-                    classId={cls.id}
-                    eventId={
-                        rescheduleTarget.instance.event_id ??
-                        rescheduleTarget.instance.id
-                    }
-                    originalDate={rescheduleTarget.instance.date}
-                    dateLabel={rescheduleTarget.dateObj.toLocaleDateString(
-                        'en-US',
-                        {
-                            weekday: 'long',
-                            month: 'long',
-                            day: 'numeric'
-                        }
-                    )}
-                    currentRoom={cls.events?.[0]?.room_ref?.name}
-                    classTime={rescheduleTarget.instance.class_time}
-                    onRescheduled={() => void refreshData()}
-                />
-            )}
-
-            {showQuickCancel && quickCancelSession && (
-                <CancelEventModal
-                    open={showQuickCancel}
-                    onOpenChange={(open) => {
-                        setShowQuickCancel(open);
-                        if (!open) setQuickCancelSession(null);
-                    }}
-                    event={buildFacilityEvent(quickCancelSession, cls.id, cls.events ?? [])}
-                    onSuccess={() => {
-                        setShowQuickCancel(false);
-                        setQuickCancelSession(null);
-                        void refreshData();
-                    }}
-                    showApplyToFuture={false}
-                />
-            )}
-
-            <BulkCancelSessionsModal
-                open={showBulkCancelModal}
-                onOpenChange={setShowBulkCancelModal}
-                classId={cls.id}
-                sessions={cancelSessions}
-                onCancelled={() => {
+            <SessionsTabModals
+                cls={cls}
+                allSessions={allSessions}
+                roomOverrides={roomOverrides}
+                rescheduleTarget={rescheduleTarget}
+                onCloseReschedule={() => setRescheduleTarget(null)}
+                quickCancelSession={quickCancelSession}
+                showQuickCancel={showQuickCancel}
+                onQuickCancelOpenChange={(open) => {
+                    setShowQuickCancel(open);
+                    if (!open) setQuickCancelSession(null);
+                }}
+                onQuickCancelSuccess={() => {
+                    setShowQuickCancel(false);
+                    setQuickCancelSession(null);
+                    void refreshData();
+                }}
+                showBulkCancelModal={showBulkCancelModal}
+                onBulkCancelOpenChange={setShowBulkCancelModal}
+                cancelSessions={cancelSessions}
+                onBulkCancelled={() => {
                     setSelectedDates(new Set());
                     setCancelSessions([]);
                     void refreshData();
                 }}
+                showChangeInstructor={showChangeInstructor}
+                onCloseChangeInstructor={() => setShowChangeInstructor(false)}
+                changeInstructorSessions={changeInstructorSessions}
+                onInstructorChanged={() => {
+                    setSelectedDates(new Set());
+                    void refreshData();
+                }}
+                showChangeRoom={showChangeRoom}
+                onCloseChangeRoom={() => setShowChangeRoom(false)}
+                changeRoomSessions={changeRoomSessions}
+                onRoomChanged={() => {
+                    setSelectedDates(new Set());
+                    void refreshData();
+                }}
+                selectedSession={selectedSession}
+                onCloseDetailSheet={() => setSelectedSession(null)}
+                onMutate={() => void refreshData()}
+                onSelectedSessionUndo={() => {
+                    if (selectedSession) void handleUndo(selectedSession);
+                }}
+                onSelectedSessionUndoCancel={() => {
+                    if (selectedSession) void handleUndoCancel(selectedSession);
+                }}
+                onSelectedSessionUndoReschedule={() => {
+                    if (selectedSession) void handleUndo(selectedSession);
+                }}
             />
 
-            {showChangeInstructor && (
-                <ChangeInstructorModal
-                    open={showChangeInstructor}
-                    onClose={() => setShowChangeInstructor(false)}
-                    classId={cls.id}
-                    sessions={changeInstructorSessions}
-                    onChanged={() => {
-                        setSelectedDates(new Set());
-                        void refreshData();
-                    }}
-                    showSessionsList
-                />
-            )}
-
-            {showChangeRoom && (
-                <ChangeRoomModal
-                    open={showChangeRoom}
-                    onClose={() => setShowChangeRoom(false)}
-                    classId={cls.id}
-                    sessions={changeRoomSessions}
-                    onChanged={() => {
-                        setSelectedDates(new Set());
-                        void refreshData();
-                    }}
-                    showSessionsList
-                />
-            )}
-
-            {(() => {
-                const changeInfo = selectedSession
-                    ? getSessionChangeInfo(cls.events ?? [], selectedSession.instance.date)
-                    : {};
-                const baseRoom =
-                    (selectedSession
-                        ? roomOverrides.get(
-                              `${selectedSession.instance.date}|${selectedSession.instance.class_time?.split('-')[0]}`
-                          ) ?? roomOverrides.get(selectedSession.instance.date)
-                        : undefined) ??
-                    cls.events?.[0]?.room_ref?.name ??
-                    'TBD';
-                const baseInstructor = getInstructorName(cls.events ?? []);
-                return (
-                    <SessionDetailSheet
-                        session={selectedSession}
-                        onClose={() => setSelectedSession(null)}
-                        className={cls.name}
-                        facilityId={String(cls.facility_id)}
-                        classEvents={cls.events ?? []}
-                        classTime={
-                            selectedSession?.instance.class_time ??
-                            cls.events?.[0]?.duration ??
-                            ''
-                        }
-                        room={changeInfo.newRoom ?? baseRoom}
-                        originalRoom={changeInfo.originalRoom}
-                        instructorName={changeInfo.newInstructor ?? baseInstructor}
-                        originalInstructorName={changeInfo.originalInstructor}
-                        classId={cls.id}
-                        onMutate={() => void refreshData()}
-                        onUndo={() => {
-                            if (selectedSession) void handleUndo(selectedSession);
-                        }}
-                        onUndoCancel={() => {
-                            if (selectedSession) void handleUndoCancel(selectedSession);
-                        }}
-                        onUndoReschedule={() => {
-                            if (selectedSession) void handleUndo(selectedSession);
-                        }}
-                        allSessions={allSessions}
-                    />
-                );
-            })()}
-
-            {selectedDates.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4">
-                    <div className="flex items-center gap-6">
-                        <div className="text-sm">
-                            <span className="font-semibold text-[#203622]">
-                                {selectedDates.size}
-                            </span>
-                            <span className="text-gray-600 ml-1">
-                                {selectedDates.size === 1
-                                    ? 'session'
-                                    : 'sessions'}{' '}
-                                selected
-                            </span>
-                        </div>
-                        <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedDates(new Set())}
-                            >
-                                Clear Selection
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                    setCancelSessions(
-                                        selectedUpcomingSessions.map((s) => ({
-                                            date: s.instance.date,
-                                            dateObj: s.dateObj,
-                                            dayName: s.dayName,
-                                            eventId:
-                                                s.instance.event_id ??
-                                                s.instance.id,
-                                            classTime: s.instance.class_time
-                                        }))
-                                    );
-                                    setShowBulkCancelModal(true);
-                                }}
-                            >
-                                <CalendarOff className="size-4 mr-2" />
-                                Cancel Sessions
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    openChangeInstructor(
-                                        selectedUpcomingSessions
-                                    )
-                                }
-                            >
-                                <Users className="size-4 mr-2" />
-                                Change Instructor
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    openChangeRoom(selectedUpcomingSessions)
-                                }
-                            >
-                                <MapPin className="size-4 mr-2" />
-                                Change Room
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <SessionsTabBulkActions
+                selectedCount={selectedUpcomingSessions.length}
+                onClearSelection={() => setSelectedDates(new Set())}
+                onBulkCancelClick={() => {
+                    setCancelSessions(
+                        selectedUpcomingSessions.map((s) => ({
+                            date: s.instance.date,
+                            dateObj: s.dateObj,
+                            dayName: s.dayName,
+                            eventId:
+                                s.instance.event_id ?? s.instance.id,
+                            classTime: s.instance.class_time
+                        }))
+                    );
+                    setShowBulkCancelModal(true);
+                }}
+                onChangeInstructorClick={() =>
+                    openChangeInstructor(selectedUpcomingSessions)
+                }
+                onChangeRoomClick={() =>
+                    openChangeRoom(selectedUpcomingSessions)
+                }
+            />
         </div>
     );
 }
 
-function StatButton({
-    active,
-    onClick,
-    colorClass,
-    children
-}: {
-    active: boolean;
-    onClick: () => void;
-    colorClass: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                active
-                    ? `${colorClass} font-medium`
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-        >
-            {children}
-        </button>
-    );
-}
 
-function SessionRow({
-    session,
-    selected,
-    onToggle,
-    onClick,
-    onNavigateToAttendance,
-    onCancel,
-    onReschedule,
-    onUndo,
-    onUndoCancel
-}: {
-    session: SessionDisplay;
-    selected: boolean;
-    onToggle: () => void;
-    onClick: () => void;
-    onNavigateToAttendance: () => void;
-    onCancel: () => void;
-    onReschedule: () => void;
-    onUndo: () => void;
-    onUndoCancel: () => void;
-}) {
-    const dateLabel = session.dateObj.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
-
-    const {
-        isCancelled,
-        isRescheduledFrom,
-        isRescheduledTo,
-        isCancelledReschedule,
-        isToday,
-        hasAttendance,
-        isPast,
-        isUpcoming,
-        rescheduledDate,
-        rescheduledClassTime
-    } = session;
-
-    // Same-date time-only reschedule: both isRescheduledFrom and isRescheduledTo are true.
-    // Should display as a "to" row (blue) with one undo button, not a "from" row (gray dashed).
-    const isSameDateReschedule = isRescheduledFrom && isRescheduledTo && rescheduledDate === session.instance.date;
-
-    const getBorderClass = () => {
-        if (isRescheduledFrom)
-            return 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100';
-        if (isCancelledReschedule)
-            return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
-        if (isRescheduledTo)
-            return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
-        if (isCancelled)
-            return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
-        if (isToday) return 'border-blue-200 bg-blue-50 hover:bg-blue-100';
-        if (hasAttendance) return 'border-gray-200 hover:bg-[#E2E7EA]/30';
-        if (isPast)
-            return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50';
-        return 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
-    };
-
-    const getIcon = () => {
-        if (isRescheduledFrom)
-            return (
-                <CalendarClock className="size-5 text-gray-400 flex-shrink-0" />
-            );
-        if (isRescheduledTo)
-            return (
-                <CalendarClock className="size-5 text-blue-700 flex-shrink-0" />
-            );
-        if (isCancelled)
-            return (
-                <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
-            );
-        if (hasAttendance)
-            return (
-                <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
-            );
-        if (isPast)
-            return (
-                <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
-            );
-        return <Calendar className="size-5 text-gray-400 flex-shrink-0" />;
-    };
-
-    const showCheckbox =
-        isUpcoming && !isCancelled && !isRescheduledFrom && !isCancelledReschedule;
-    const showLineThrough = isCancelled || isRescheduledFrom || isCancelledReschedule;
-
-    return (
-        <div
-            onClick={onClick}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${getBorderClass()}`}
-        >
-            <div className="flex items-center gap-4 min-w-0">
-                {showCheckbox && (
-                    <Checkbox
-                        checked={selected}
-                        onCheckedChange={() => onToggle()}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                )}
-                {getIcon()}
-                <div className="min-w-0">
-                    <div className="text-sm font-medium text-[#203622]">
-                        <span
-                            className={showLineThrough ? 'line-through' : ''}
-                        >
-                            {session.dayName}, {dateLabel}
-                        </span>
-                        {isToday && (
-                            <Badge className="ml-2 bg-blue-500 text-white">
-                                Today
-                            </Badge>
-                        )}
-                        {isCancelled && (
-                            <Badge
-                                variant="outline"
-                                className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
-                            >
-                                Cancelled
-                            </Badge>
-                        )}
-                        {isRescheduledFrom && (
-                            <Badge
-                                variant="outline"
-                                className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
-                            >
-                                Rescheduled
-                            </Badge>
-                        )}
-                        {isRescheduledTo && (
-                            <Badge
-                                variant="outline"
-                                className="ml-2 bg-blue-100 text-blue-800 border-blue-300"
-                            >
-                                Rescheduled Class
-                            </Badge>
-                        )}
-                        {isCancelledReschedule && (
-                            <>
-                                <Badge
-                                    variant="outline"
-                                    className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
-                                >
-                                    Cancelled
-                                </Badge>
-                                <Badge
-                                    variant="outline"
-                                    className="ml-2 bg-blue-100 text-blue-800 border-blue-300"
-                                >
-                                    Rescheduled Class
-                                </Badge>
-                            </>
-                        )}
-                    </div>
-                    {isRescheduledFrom && rescheduledDate ? (
-                        <div className="text-xs text-gray-500 mt-0.5">
-                            &rarr; Moved to {formatShortDate(rescheduledDate)}
-                            {rescheduledClassTime &&
-                                ` at ${formatClassTimeRange(rescheduledClassTime)}`}
-                        </div>
-                    ) : (isRescheduledTo || isCancelledReschedule) ? (
-                        <div className="text-xs text-blue-700 mt-0.5">
-                            {formatClassTimeRange(session.instance.class_time)}
-                        </div>
-                    ) : (
-                        <div
-                            className={`text-xs text-gray-600 mt-0.5 ${showLineThrough ? 'line-through' : ''}`}
-                        >
-                            {formatClassTimeRange(session.instance.class_time)}
-                        </div>
-                    )}
-                </div>
-            </div>
-            <div
-                className="flex items-center gap-4"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {hasAttendance && !isRescheduledFrom && (
-                    <div className="text-sm text-gray-600 whitespace-nowrap">
-                        {session.attendedCount} / {session.totalEnrolled}{' '}
-                        attended (
-                        {session.totalEnrolled > 0
-                            ? Math.round(
-                                  (session.attendedCount /
-                                      session.totalEnrolled) *
-                                      100
-                              )
-                            : 0}
-                        %)
-                    </div>
-                )}
-                {isPast &&
-                    !hasAttendance &&
-                    !isCancelled &&
-                    !isRescheduledFrom && (
-                        <Badge
-                            variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200"
-                        >
-                            Missing
-                        </Badge>
-                    )}
-                {!isCancelled &&
-                    !isUpcoming &&
-                    !isRescheduledFrom && (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onNavigateToAttendance()}
-                            className="border-gray-300"
-                        >
-                            {hasAttendance ? 'Edit' : 'Take'} Attendance
-                        </Button>
-                    )}
-                {isCancelled && isUpcoming && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onUndo()}
-                        className="border-gray-300 hover:bg-gray-50"
-                    >
-                        <Undo2 className="size-4 mr-1.5" />
-                        Undo
-                    </Button>
-                )}
-                {isRescheduledFrom && isUpcoming && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onUndo()}
-                        className="border-amber-300 hover:bg-amber-50"
-                    >
-                        <Undo2 className="size-4 mr-1.5" />
-                        Undo
-                    </Button>
-                )}
-                {isCancelledReschedule && isUpcoming && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onUndoCancel()}
-                        className="border-gray-300 hover:bg-gray-50"
-                    >
-                        <Undo2 className="size-4 mr-1.5" />
-                        Undo
-                    </Button>
-                )}
-                {isRescheduledTo && isUpcoming && !isSameDateReschedule && (
-                    <>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onReschedule()}
-                            className="border-gray-300 hover:bg-gray-50"
-                        >
-                            <CalendarClock className="size-4 mr-1.5" />
-                            Reschedule
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onUndo()}
-                            className="border-gray-300 hover:bg-gray-50"
-                            title="Undo reschedule"
-                        >
-                            <Undo2 className="size-4" />
-                        </Button>
-                    </>
-                )}
-                {isUpcoming &&
-                    !isCancelled &&
-                    !isRescheduledFrom &&
-                    !isRescheduledTo &&
-                    !isCancelledReschedule && (
-                        <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onReschedule()}
-                                className="border-gray-300 hover:bg-gray-50"
-                            >
-                                <CalendarClock className="size-4 mr-1.5" />
-                                Reschedule
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onCancel()}
-                                className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                            >
-                                <X className="size-4 mr-1.5" />
-                                Cancel
-                            </Button>
-                        </>
-                    )}
-            </div>
-        </div>
-    );
-}

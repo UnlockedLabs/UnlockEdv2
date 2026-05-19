@@ -4,7 +4,6 @@ import useSWR, { useSWRConfig } from 'swr';
 import { Edit, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,35 +30,31 @@ import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
 import { EditClassModal } from './EditClassModal';
+import { LoadingSkeleton } from './LoadingSkeleton';
+import { ClassNotFoundCard } from './ClassNotFoundCard';
+
+interface DeleteBlockers {
+    enrollments?: number;
+    completions?: number;
+    attendance_flags?: number;
+    non_deletable_status?: string;
+}
+
+function getDeleteBlockerReason(blockers: DeleteBlockers | undefined): string {
+    if (blockers?.non_deletable_status)
+        return `Only Scheduled classes can be deleted (this class is ${blockers.non_deletable_status})`;
+    if ((blockers?.enrollments ?? 0) > 0)
+        return 'Cannot delete class with enrollment records';
+    if ((blockers?.completions ?? 0) > 0)
+        return 'Cannot delete class with program completions';
+    if ((blockers?.attendance_flags ?? 0) > 0)
+        return 'Cannot delete class with attendance records';
+    return 'Cannot delete class';
+}
 
 const TAB_TRIGGER_CLASS =
     'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
 
-function LoadingSkeleton() {
-    return (
-        <div className="bg-[#E2E7EA]">
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-6">
-                    <Skeleton className="h-8 w-32 mb-4" />
-                    <Skeleton className="h-10 w-80 mb-3" />
-                    <Skeleton className="h-5 w-48 mb-4" />
-                    <div className="grid grid-cols-5 gap-4">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-20 rounded-lg" />
-                        ))}
-                    </div>
-                </div>
-            </div>
-            <div className="max-w-7xl mx-auto px-6 py-6">
-                <div className="grid grid-cols-3 gap-6 mb-6">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-40 rounded-lg" />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
 
 export default function ClassDetailPage() {
     const { class_id } = useParams<{ class_id: string }>();
@@ -104,17 +99,7 @@ export default function ClassDetailPage() {
     const isDeleteCheckReady = deleteCheckResp !== undefined;
     const canDelete = deleteCheckResp?.data?.can_delete ?? false;
     const deleteBlockers = deleteCheckResp?.data?.blockers;
-    const deleteBlockerReason = (() => {
-        if (deleteBlockers?.non_deletable_status)
-            return `Only Scheduled classes can be deleted (this class is ${deleteBlockers.non_deletable_status})`;
-        if ((deleteBlockers?.enrollments ?? 0) > 0)
-            return 'Cannot delete class with enrollment records';
-        if ((deleteBlockers?.completions ?? 0) > 0)
-            return 'Cannot delete class with program completions';
-        if ((deleteBlockers?.attendance_flags ?? 0) > 0)
-            return 'Cannot delete class with attendance records';
-        return 'Cannot delete class';
-    })();
+    const deleteBlockerReason = getDeleteBlockerReason(deleteBlockers);
 
     const cls = classResp?.data;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
@@ -141,25 +126,7 @@ export default function ClassDetailPage() {
     if (isLoading) return <LoadingSkeleton />;
 
     if (!cls) {
-        return (
-            <div className="bg-[#E2E7EA] flex items-center justify-center">
-                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
-                    <h2 className="text-xl font-semibold text-[#203622] mb-2">
-                        Class Not Found
-                    </h2>
-                    <p className="text-gray-500 mb-4">
-                        The class you are looking for does not exist or you do
-                        not have access to it.
-                    </p>
-                    <Button
-                        onClick={() => navigate('/classes')}
-                        className="bg-[#556830] hover:bg-[#203622]"
-                    >
-                        Back to Classes
-                    </Button>
-                </div>
-            </div>
-        );
+        return <ClassNotFoundCard onBack={() => navigate('/classes')} />;
     }
 
     return (

@@ -1,5 +1,6 @@
 import { OpenContentItem } from '@/types';
 import { ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface TopContentListProps {
     heading: string;
@@ -8,12 +9,22 @@ interface TopContentListProps {
 }
 
 function ContentRow({ item }: { item: OpenContentItem }) {
+    const navigate = useNavigate();
+
+    const handleClick = () => {
+        if (item.content_type === 'video') {
+            navigate(`/viewer/videos/${item.content_id}`);
+        } else if (item.content_type === 'library') {
+            navigate(`/viewer/libraries/${item.content_id}`);
+        } else {
+            window.open(item.url, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     return (
-        <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:shadow-md transition-shadow"
+        <div
+            onClick={handleClick}
+            className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
                 <img
@@ -34,7 +45,7 @@ function ContentRow({ item }: { item: OpenContentItem }) {
                     </p>
                 )}
             </div>
-        </a>
+        </div>
     );
 }
 

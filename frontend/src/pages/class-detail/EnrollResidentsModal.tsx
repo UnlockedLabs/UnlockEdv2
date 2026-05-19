@@ -61,12 +61,9 @@ export function EnrollResidentsModal({
         >(`program-classes/${classId}/enrollment-conflicts`, {
             user_ids: userIds
         }).then((resp) => {
-            if (resp.success) {
-                const data = resp.data as unknown as {
-                    conflicts: ConflictDetail[];
-                };
+            if (resp.success && resp.type === 'one') {
                 const map = new Map<number, ConflictDetail>();
-                for (const c of data.conflicts ?? []) {
+                for (const c of resp.data.conflicts ?? []) {
                     map.set(c.user_id, c);
                 }
                 setConflictMap(map);
