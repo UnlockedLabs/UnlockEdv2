@@ -55,16 +55,17 @@ export function SessionRow({
         rescheduledClassTime
     } = session;
 
-    // Same-date time-only reschedule: both isRescheduledFrom and isRescheduledTo are true.
-    // Should display as a "to" row (blue) with one undo button, not a "from" row (gray dashed).
+    // Time-only reschedule (same date) renders as a "to" row, not a "from" row.
     const isSameDateReschedule = isRescheduledFrom && isRescheduledTo && rescheduledDate === session.instance.date;
+    const treatAsFrom = isRescheduledFrom && !isSameDateReschedule;
+    const treatAsTo = isRescheduledTo || isSameDateReschedule;
 
     const getBorderClass = () => {
-        if (isRescheduledFrom)
+        if (treatAsFrom)
             return 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100';
         if (isCancelledReschedule)
             return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
-        if (isRescheduledTo)
+        if (treatAsTo)
             return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
         if (isCancelled)
             return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
@@ -76,11 +77,11 @@ export function SessionRow({
     };
 
     const getIcon = () => {
-        if (isRescheduledFrom)
+        if (treatAsFrom)
             return (
                 <CalendarClock className="size-5 text-gray-400 flex-shrink-0" />
             );
-        if (isRescheduledTo)
+        if (treatAsTo)
             return (
                 <CalendarClock className="size-5 text-blue-700 flex-shrink-0" />
             );
@@ -100,8 +101,8 @@ export function SessionRow({
     };
 
     const showCheckbox =
-        isUpcoming && !isCancelled && !isRescheduledFrom && !isCancelledReschedule;
-    const showLineThrough = isCancelled || isRescheduledFrom || isCancelledReschedule;
+        isUpcoming && !isCancelled && !treatAsFrom && !isCancelledReschedule;
+    const showLineThrough = isCancelled || treatAsFrom || isCancelledReschedule;
 
     return (
         <div
@@ -137,7 +138,7 @@ export function SessionRow({
                                 Cancelled
                             </Badge>
                         )}
-                        {isRescheduledFrom && (
+                        {treatAsFrom && (
                             <Badge
                                 variant="outline"
                                 className="ml-2 bg-gray-100 text-gray-600 border-gray-300"
@@ -145,7 +146,7 @@ export function SessionRow({
                                 Rescheduled
                             </Badge>
                         )}
-                        {isRescheduledTo && (
+                        {treatAsTo && (
                             <Badge
                                 variant="outline"
                                 className="ml-2 bg-blue-100 text-blue-800 border-blue-300"
@@ -170,13 +171,13 @@ export function SessionRow({
                             </>
                         )}
                     </div>
-                    {isRescheduledFrom && rescheduledDate ? (
+                    {treatAsFrom && rescheduledDate ? (
                         <div className="text-xs text-gray-500 mt-0.5">
                             &rarr; Moved to {formatShortDate(rescheduledDate)}
                             {rescheduledClassTime &&
                                 ` at ${formatClassTimeRange(rescheduledClassTime)}`}
                         </div>
-                    ) : (isRescheduledTo || isCancelledReschedule) ? (
+                    ) : (treatAsTo || isCancelledReschedule) ? (
                         <div className="text-xs text-blue-700 mt-0.5">
                             {formatClassTimeRange(session.instance.class_time)}
                         </div>
@@ -193,7 +194,7 @@ export function SessionRow({
                 className="flex items-center gap-4"
                 onClick={(e) => e.stopPropagation()}
             >
-                {hasAttendance && !isRescheduledFrom && (
+                {hasAttendance && !treatAsFrom && (
                     <div className="text-sm text-gray-600 whitespace-nowrap">
                         {session.attendedCount} / {session.totalEnrolled}{' '}
                         attended (
@@ -210,7 +211,7 @@ export function SessionRow({
                 {isPast &&
                     !hasAttendance &&
                     !isCancelled &&
-                    !isRescheduledFrom && (
+                    !treatAsFrom && (
                         <Badge
                             variant="outline"
                             className="bg-amber-50 text-amber-700 border-amber-200"
@@ -220,7 +221,7 @@ export function SessionRow({
                     )}
                 {!isCancelled &&
                     !isUpcoming &&
-                    !isRescheduledFrom && (
+                    !treatAsFrom && (
                         <Button
                             size="sm"
                             variant="outline"
@@ -287,8 +288,8 @@ export function SessionRow({
                 )}
                 {isUpcoming &&
                     !isCancelled &&
-                    !isRescheduledFrom &&
-                    !isRescheduledTo &&
+                    !treatAsFrom &&
+                    !treatAsTo &&
                     !isCancelledReschedule && (
                         <>
                             <Button

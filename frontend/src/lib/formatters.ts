@@ -240,7 +240,10 @@ export function toTimeInput(d: Date): string {
 }
 
 export function formatDurationStr(startTime: string, endTime: string): string {
-    const totalMin = timeToMinutes(endTime) - timeToMinutes(startTime);
+    const startMin = timeToMinutes(startTime);
+    const endMin = timeToMinutes(endTime);
+    if (!Number.isFinite(startMin) || !Number.isFinite(endMin)) return '0h0m0s';
+    const totalMin = endMin - startMin;
     if (totalMin <= 0) return '0h0m0s';
     const hours = Math.floor(totalMin / 60);
     const minutes = totalMin % 60;

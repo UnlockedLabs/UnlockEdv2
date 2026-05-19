@@ -24,7 +24,7 @@ import {
     getPreviousMonth,
     getNextMonth,
     formatMonthYear
-} from '@/components/helperFunctions/formatting';
+} from '@/lib/formatters';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [year, month, day] = dateOnly.split('-').map(Number);

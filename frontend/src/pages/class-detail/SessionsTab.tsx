@@ -441,7 +441,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             />
 
             <SessionsTabBulkActions
-                selectedCount={selectedDates.size}
+                selectedCount={selectedUpcomingSessions.length}
                 onClearSelection={() => setSelectedDates(new Set())}
                 onBulkCancelClick={() => {
                     setCancelSessions(
