@@ -3,19 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { FormModal } from '@/components/shared';
 import { EnrollmentStatus } from '@/types/attendance';
 
 interface ChangeEnrollmentStatusModalProps {
@@ -77,91 +71,85 @@ export function ChangeEnrollmentStatusModal({
 
     if (classStatus === 'Scheduled') {
         return (
-            <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Change Enrollment Status</DialogTitle>
-                        <DialogDescription>
-                            {className} currently has a status of
-                            &quot;Scheduled&quot;. You may update enrollment
-                            status for {residentDisplayId} - {residentName} only
-                            once the class is &quot;Active&quot;.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex justify-end pt-2">
-                        <Button variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <FormModal
+                open={open}
+                onOpenChange={(isOpen) => !isOpen && onClose()}
+                title="Change Enrollment Status"
+                description={`${className} currently has a status of "Scheduled". You may update enrollment status for ${residentDisplayId} - ${residentName} only once the class is "Active".`}
+                className="max-w-md"
+                titleClassName="text-foreground"
+            >
+                <div className="flex justify-end pt-2">
+                    <Button variant="outline" onClick={onClose}>
+                        Cancel
+                    </Button>
+                </div>
+            </FormModal>
         );
     }
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Change Enrollment Status</DialogTitle>
-                    <DialogDescription>
-                        Update enrollment status for {residentDisplayId} -{' '}
-                        {residentName}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="status">New Status</Label>
-                        <Select
-                            value={newStatus}
-                            onValueChange={(value) =>
-                                setNewStatus(value as EnrollmentStatus)
-                            }
-                        >
-                            <SelectTrigger id="status">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {displayStatuses.map((status) => (
-                                    <SelectItem key={status} value={status}>
-                                        {status}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {needsReason && (
-                        <div>
-                            <Label htmlFor="reason">
-                                Reason for Incompletion *
-                            </Label>
-                            <Textarea
-                                id="reason"
-                                placeholder="Explain why this resident did not complete the class..."
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                rows={4}
-                                className="mt-1"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                This information will be saved in the enrollment
-                                history
-                            </p>
-                        </div>
-                    )}
-                    <div className="flex gap-2 justify-end pt-4">
-                        <Button variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={!canSubmit}
-                            className="bg-[#556830] hover:bg-[#203622]"
-                        >
-                            Update Status
-                        </Button>
-                    </div>
+        <FormModal
+            open={open}
+            onOpenChange={(isOpen) => !isOpen && onClose()}
+            title="Change Enrollment Status"
+            description={`Update enrollment status for ${residentDisplayId} - ${residentName}`}
+            className="max-w-md"
+            titleClassName="text-foreground"
+        >
+            <div className="space-y-4">
+                <div>
+                    <Label htmlFor="status">New Status</Label>
+                    <Select
+                        value={newStatus}
+                        onValueChange={(value) =>
+                            setNewStatus(value as EnrollmentStatus)
+                        }
+                    >
+                        <SelectTrigger id="status">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {displayStatuses.map((status) => (
+                                <SelectItem key={status} value={status}>
+                                    {status}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
-            </DialogContent>
-        </Dialog>
+                {needsReason && (
+                    <div>
+                        <Label htmlFor="reason">
+                            Reason for Incompletion *
+                        </Label>
+                        <Textarea
+                            id="reason"
+                            placeholder="Explain why this resident did not complete the class..."
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={4}
+                            className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            This information will be saved in the enrollment
+                            history
+                        </p>
+                    </div>
+                )}
+                <div className="flex gap-2 justify-end pt-4">
+                    <Button variant="outline" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        variant="brand"
+                    >
+                        Update Status
+                    </Button>
+                </div>
+            </div>
+        </FormModal>
     );
 }

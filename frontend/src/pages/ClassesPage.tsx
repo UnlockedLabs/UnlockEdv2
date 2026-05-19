@@ -22,13 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import {
     Select,
     SelectContent,
@@ -49,7 +43,7 @@ import {
 } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
-import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
+import { BulkCancelClassesModal } from '@/components/schedule/BulkCancelClassesModal';
 
 const STATUS_OPTIONS: { label: string; value: string }[] = [
     { label: 'Active & Scheduled', value: 'active_scheduled' },
@@ -447,22 +441,17 @@ export default function ClassesPage() {
                 </div>
             </div>
 
-            <Dialog
+            <FormModal
                 open={showFacilityModal}
                 onOpenChange={(open) => {
                     setShowFacilityModal(open);
                     if (!open) setFacilitySearch('');
                 }}
+                title="Create New Class"
+                description="Classes are organized within Programs. Which facility is this class for?"
+                titleClassName="text-foreground"
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create New Class</DialogTitle>
-                        <DialogDescription>
-                            Classes are organized within Programs. Which
-                            facility is this class for?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 mt-4">
+                <div className="space-y-3 mt-4">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                             <Input
@@ -505,27 +494,21 @@ export default function ClassesPage() {
                                 ))}
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+            </FormModal>
 
-            <Dialog
+            <FormModal
                 open={showCreateModal}
                 onOpenChange={(open) => {
                     setShowCreateModal(open);
                     if (!open) {
                         setProgramSearch('');
-                                        setSelectedFacilityForClass(null);
+                        setSelectedFacilityForClass(null);
                     }
                 }}
+                title="Create New Class"
+                description="Classes are organized within Programs. Which program is this class for?"
+                titleClassName="text-foreground"
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create New Class</DialogTitle>
-                        <DialogDescription>
-                            Classes are organized within Programs. Which
-                            program is this class for?
-                        </DialogDescription>
-                    </DialogHeader>
                     {crossFacility && selectedFacilityForClass && (() => {
                         const selectedFacility = facilities.find(
                             (f) => f.id === selectedFacilityForClass
@@ -599,8 +582,7 @@ export default function ClassesPage() {
                             )}
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+            </FormModal>
 
             {attendanceClass && (
                 <TakeAttendanceModal

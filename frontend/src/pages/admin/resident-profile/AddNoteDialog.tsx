@@ -1,17 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import API from '@/api/api';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { FormModal } from '@/components/shared';
 
 interface AddNoteDialogProps {
     open: boolean;
@@ -31,6 +25,10 @@ export function AddNoteDialog({
     const [note, setNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    useEffect(() => {
+        if (!open) setNote('');
+    }, [open]);
+
     const handleSubmit = async () => {
         if (!note.trim()) return;
         setSubmitting(true);
@@ -49,50 +47,38 @@ export function AddNoteDialog({
     };
 
     return (
-        <Dialog
+        <FormModal
             open={open}
-            onOpenChange={(val) => {
-                if (!val) setNote('');
-                onOpenChange(val);
-            }}
+            onOpenChange={onOpenChange}
+            title="Add Historical Note"
+            description={`Add context or supportive information to ${residentName}'s profile`}
+            titleClassName="text-foreground"
         >
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add Historical Note</DialogTitle>
-                    <DialogDescription>
-                        Add context or supportive information to{' '}
-                        {residentName}&apos;s profile
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="note">Note</Label>
-                        <Textarea
-                            id="note"
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="Add contextual information, support plans, or important updates..."
-                            rows={4}
-                            className="[overflow-wrap:anywhere] [field-sizing:normal]"
-                        />
-                    </div>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="note">Note</Label>
+                    <Textarea
+                        id="note"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Add contextual information, support plans, or important updates..."
+                        rows={4}
+                        className="[overflow-wrap:anywhere] [field-sizing:normal]"
+                    />
                 </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleSubmit()}
-                        disabled={submitting || !note.trim()}
-                        className="bg-[#556830] hover:bg-[#203622]"
-                    >
-                        Add Note
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                </Button>
+                <Button
+                    onClick={() => void handleSubmit()}
+                    disabled={submitting || !note.trim()}
+                    variant="brand"
+                >
+                    Add Note
+                </Button>
+            </DialogFooter>
+        </FormModal>
     );
 }

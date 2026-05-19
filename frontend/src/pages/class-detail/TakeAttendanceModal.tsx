@@ -2,13 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { CheckCircle, AlertCircle, Calendar } from 'lucide-react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,17 +129,15 @@ export function TakeAttendanceModal({
     const todayStr = new Date().toISOString().split('T')[0];
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Take Attendance - {className}</DialogTitle>
-                    <DialogDescription>
-                        Select which session you'd like to record or edit
-                        attendance for.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4 mt-4">
+        <FormModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={`Take Attendance - ${className}`}
+            description="Select which session you'd like to record or edit attendance for."
+            className="max-w-2xl"
+            titleClassName="text-foreground"
+        >
+            <div className="space-y-4 mt-4">
                     {todaySession && (
                         <div className="bg-[#E2E7EA] rounded-lg p-4 border-2 border-[#556830]">
                             <div className="flex items-center gap-2 mb-2">
@@ -168,7 +160,8 @@ export function TakeAttendanceModal({
                                 onClick={() =>
                                     handleSelectSession(todaySession)
                                 }
-                                className="w-full bg-[#556830] hover:bg-[#203622] text-white"
+                                variant="brand"
+                                className="w-full"
                             >
                                 {todaySession.hasAttendance
                                     ? `Edit Today's Attendance (${todaySession.attendedCount}/${todaySession.totalRecords})`
@@ -260,7 +253,6 @@ export function TakeAttendanceModal({
                         />
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }
