@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/tooltip';
 import { Pagination } from '@/components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Library,
     Video as VideoType,
@@ -38,6 +37,8 @@ import {
     Option
 } from '@/types';
 import { formatVideoDuration } from '@/lib/formatters';
+import { isAdministrator, useAuth } from '@/auth/useAuth';
+import { toast } from 'sonner';
 import API from '@/api/api';
 
 const ITEMS_PER_PAGE = 20;
@@ -48,6 +49,8 @@ interface ContentItem {
     title: string;
     description: string;
     featured: boolean;
+    favorited: boolean;
+    openContentProviderId?: number;
     imageUrl?: string | null;
     thumbnailUrl?: string | null;
     author?: string;
@@ -58,7 +61,10 @@ interface ContentItem {
 
 export default function ResidentKnowledgeCenter() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isAdminPreview = user ? isAdministrator(user) : false;
     const { tourState, setTourState } = useTourContext();
+    const [pendingFavorites, setPendingFavorites] = useState<Map<string, boolean>>(new Map());
 
     useEffect(() => {
         if (tourState?.tourActive) {
@@ -111,6 +117,8 @@ export default function ResidentKnowledgeCenter() {
             title: lib.title,
             description: lib.description ?? '',
             featured: !!lib.is_featured,
+            favorited: lib.is_favorited,
+            openContentProviderId: lib.open_content_provider_id,
             imageUrl: lib.thumbnail_url,
             url: lib.url,
             categories: lib.tags ?? []
@@ -127,6 +135,7 @@ export default function ResidentKnowledgeCenter() {
                 title: vid.title,
                 description: vid.description,
                 featured: !!vid.is_featured,
+                favorited: vid.is_favorited,
                 thumbnailUrl: `/api/photos/${vid.external_id}.jpg`,
                 author: vid.channel_title,
                 duration: vid.duration
@@ -140,6 +149,7 @@ export default function ResidentKnowledgeCenter() {
             title: link.title,
             description: link.description,
             featured: !!link.is_featured,
+            favorited: link.is_favorited,
             url: link.url
         }));
 
@@ -200,7 +210,54 @@ export default function ResidentKnowledgeCenter() {
         }
     };
 
+    const handleToggleFavorite = async (item: ContentItem) => {
+        const key = `${item.type}-${item.id}`;
+        const current = pendingFavorites.has(key)
+            ? pendingFavorites.get(key)!
+            : item.favorited;
+        const next = !current;
+
+        setPendingFavorites((prev) => {
+            const m = new Map(prev);
+            m.set(key, next);
+            return m;
+        });
+
+        let endpoint = '';
+        let payload: object = {};
+        if (item.type === 'video') {
+            endpoint = `videos/${item.id}/favorite`;
+        } else if (item.type === 'link') {
+            endpoint = `helpful-links/favorite/${item.id}`;
+        } else if (
+            item.url?.includes('/api/proxy/') &&
+            item.openContentProviderId
+        ) {
+            endpoint = `open-content/${item.id}/bookmark`;
+            payload = {
+                open_content_provider_id: item.openContentProviderId,
+                content_url: item.url
+            };
+        } else {
+            endpoint = `libraries/${item.id}/favorite`;
+        }
+
+        const resp = await API.put<object, object>(endpoint, payload);
+        if (!resp.success) {
+            setPendingFavorites((prev) => {
+                const m = new Map(prev);
+                m.set(key, current);
+                return m;
+            });
+            toast.error('Failed to update favorites');
+        }
+    };
+
     const ContentCard = ({ item }: { item: ContentItem }) => {
+        const favKey = `${item.type}-${item.id}`;
+        const favorited = pendingFavorites.has(favKey)
+            ? pendingFavorites.get(favKey)!
+            : item.favorited;
         const handleClick = () => {
             if (item.type === 'library') {
                 navigate(`/viewer/libraries/${item.id}`);
@@ -216,11 +273,35 @@ export default function ResidentKnowledgeCenter() {
                 className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative h-full flex flex-col"
                 onClick={handleClick}
             >
-                {item.featured && (
-                    <div className="absolute top-3 right-3">
-                        <Star className="size-5 text-[#F1B51C] fill-[#F1B51C]" />
-                    </div>
-                )}
+                {isAdminPreview
+                    ? item.featured && (
+                          <div className="absolute top-3 right-3">
+                              <Star className="size-5 text-[#F1B51C] fill-[#F1B51C]" />
+                          </div>
+                      )
+                    : (
+                          <button
+                              type="button"
+                              className="absolute top-3 right-3 p-1 rounded hover:bg-gray-100 transition-colors"
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleToggleFavorite(item);
+                              }}
+                              aria-label={
+                                  favorited
+                                      ? 'Remove from favorites'
+                                      : 'Add to favorites'
+                              }
+                          >
+                              <Star
+                                  className={
+                                      favorited
+                                          ? 'size-5 text-[#F1B51C] fill-[#F1B51C]'
+                                          : 'size-5 text-gray-400'
+                                  }
+                              />
+                          </button>
+                      )}
 
                 <div className="absolute top-3 left-3">
                     {item.type === 'library' && (
@@ -335,12 +416,8 @@ export default function ResidentKnowledgeCenter() {
     };
 
     return (
-        <div
-            className="h-full min-h-0 bg-[#E2E7EA]"
-            id="knowledge-center-landing"
-        >
-            <ScrollArea className="h-full" type="always">
-                <div className="max-w-7xl mx-auto px-6 py-8">
+        <div id="knowledge-center-landing">
+            <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="mb-8">
                     <h1 className="text-[#203622] mb-2">
                         Knowledge Center
@@ -480,8 +557,7 @@ export default function ResidentKnowledgeCenter() {
                     />
                 </>
             )}
-                </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 }

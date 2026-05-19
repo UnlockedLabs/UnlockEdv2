@@ -59,36 +59,26 @@ interface StatusBadgeProps {
     className?: string;
 }
 
+const STYLE_REGISTRY: {
+    variant: StatusBadgeProps['variant'];
+    styles: Record<string, string>;
+}[] = [
+    { variant: 'class', styles: classStatusStyles as Record<string, string> },
+    { variant: 'progClass', styles: progClassStatusStyles as Record<string, string> },
+    { variant: 'program', styles: programStatusStyles as Record<string, string> },
+    { variant: 'enrollment', styles: enrollmentStatusStyles },
+    { variant: 'resident', styles: residentStatusStyles }
+];
+
 function getStyleForStatus(
     status: StatusType,
     variant: StatusBadgeProps['variant']
 ): string {
-    if (variant === 'class' && status in classStatusStyles) {
-        return classStatusStyles[status as SelectedClassStatus];
-    }
-    if (variant === 'progClass' && status in progClassStatusStyles) {
-        return progClassStatusStyles[status as ProgClassStatus];
-    }
-    if (variant === 'program' && status in programStatusStyles) {
-        return programStatusStyles[status as ProgramEffectiveStatus];
-    }
-    if (variant === 'enrollment' && status in enrollmentStatusStyles) {
-        return enrollmentStatusStyles[status];
-    }
-    if (variant === 'resident' && status in residentStatusStyles) {
-        return residentStatusStyles[status];
-    }
-    if (variant === 'auto') {
-        if (status in classStatusStyles)
-            return classStatusStyles[status as SelectedClassStatus];
-        if (status in progClassStatusStyles)
-            return progClassStatusStyles[status as ProgClassStatus];
-        if (status in programStatusStyles)
-            return programStatusStyles[status as ProgramEffectiveStatus];
-        if (status in enrollmentStatusStyles)
-            return enrollmentStatusStyles[status];
-        if (status in residentStatusStyles)
-            return residentStatusStyles[status];
+    const key = String(status);
+    for (const entry of STYLE_REGISTRY) {
+        if ((entry.variant === variant || variant === 'auto') && key in entry.styles) {
+            return entry.styles[key];
+        }
     }
     return 'bg-muted text-foreground border-border';
 }

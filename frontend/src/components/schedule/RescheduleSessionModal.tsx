@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { toDateInput, toTimeInput, formatDurationStr } from '@/lib/formatters';
 
 interface RescheduleSessionModalProps {
     open: boolean;
@@ -22,22 +23,6 @@ interface RescheduleSessionModalProps {
     event: FacilityProgramClassEvent;
     rooms: Room[];
     onSuccess: () => void;
-}
-
-function toDateInput(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function toTimeInput(d: Date): string {
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function formatDuration(startTime: string, endTime: string): string {
-    const [sh, sm] = startTime.split(':').map(Number);
-    const [eh, em] = endTime.split(':').map(Number);
-    const totalMin = (eh ?? 0) * 60 + (em ?? 0) - ((sh ?? 0) * 60 + (sm ?? 0));
-    if (totalMin <= 0) return '0h0m0s';
-    return `${Math.floor(totalMin / 60)}h${totalMin % 60}m0s`;
 }
 
 export function RescheduleSessionModal({
@@ -76,7 +61,7 @@ export function RescheduleSessionModal({
 
         const effectiveStart = startTime || toTimeInput(event.start);
         const effectiveEnd = endTime || toTimeInput(event.end);
-        const duration = formatDuration(effectiveStart, effectiveEnd);
+        const duration = formatDurationStr(effectiveStart, effectiveEnd);
         if (duration === '0h0m0s') {
             toast.error('End time must be after start time');
             return;

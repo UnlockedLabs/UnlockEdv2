@@ -85,12 +85,22 @@ function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
 }
 
 function FavoriteItem({ item }: { item: OpenContentItem }) {
+    const navigate = useNavigate();
+
+    const handleClick = () => {
+        if (item.content_type === 'video') {
+            navigate(`/viewer/videos/${item.content_id}`);
+        } else if (item.content_type === 'library') {
+            navigate(`/viewer/libraries/${item.content_id}`);
+        } else {
+            window.open(item.url, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     return (
-        <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow"
+        <div
+            onClick={handleClick}
+            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
                 <img
@@ -102,7 +112,7 @@ function FavoriteItem({ item }: { item: OpenContentItem }) {
                 <div className="w-10 h-10 rounded bg-muted shrink-0" />
             )}
             <p className="text-sm text-foreground truncate">{item.title}</p>
-        </a>
+        </div>
     );
 }
 
@@ -135,6 +145,7 @@ export default function ResidentHome() {
                 target: '#resident-home'
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tourState.tourActive]);
 
     const featuredItems = featured?.data ?? [];
