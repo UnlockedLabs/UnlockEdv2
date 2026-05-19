@@ -3,14 +3,8 @@ import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import {
   Table,
   TableBody,
@@ -119,16 +113,14 @@ export function DetailedAttendanceDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>
-            Detailed Attendance - {enrollment.class_name}
-          </DialogTitle>
-          <DialogDescription>
-            Complete attendance record for this class
-          </DialogDescription>
-        </DialogHeader>
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Detailed Attendance - ${enrollment.class_name}`}
+      description="Complete attendance record for this class"
+      className="max-w-3xl"
+      titleClassName="text-foreground"
+    >
         <div className="py-4">
           <div className="mb-4 flex justify-end">
             <Button
@@ -239,7 +231,6 @@ export function DetailedAttendanceDialog({
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </FormModal>
   );
 }

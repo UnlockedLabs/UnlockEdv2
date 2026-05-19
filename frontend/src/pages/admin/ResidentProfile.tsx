@@ -8,7 +8,8 @@ import {
     ServerResponseMany,
     ResidentEngagementProfile,
     ResidentProgramOverview,
-    EnrollmentStatus
+    EnrollmentStatus,
+    Facility
 } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ResidentHeader } from './resident-profile/ResidentHeader';
@@ -20,12 +21,14 @@ import { CompletedPrograms } from './resident-profile/CompletedPrograms';
 import { IncompleteEnrollments } from './resident-profile/IncompleteEnrollments';
 import { HistoricalNotes } from './resident-profile/HistoricalNotes';
 import ActivityHistoryCard from '@/components/student/ActivityHistoryCard';
-import { EditProfileDialog } from './resident-profile/EditProfileDialog';
 import { ResetPasswordDialog } from './resident-profile/ResetPasswordDialog';
-import { DeactivateDialog } from './resident-profile/DeactivateDialog';
-import { DeleteDialog } from './resident-profile/DeleteDialog';
-import { TransferDialog } from './resident-profile/TransferDialog';
 import { AddNoteDialog } from './resident-profile/AddNoteDialog';
+import {
+    EditResidentDialog,
+    DeactivateDialog,
+    DeleteDialog,
+    TransferDialog
+} from '@/components/residents/ResidentDialogs';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
@@ -108,6 +111,14 @@ export default function ResidentProfile() {
         >
     >(residentId ? `/api/users/${residentId}/notes` : null);
     const notes = useMemo(() => notesResp?.data ?? [], [notesResp]);
+
+    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
+        '/api/facilities'
+    );
+    const facilities = useMemo(
+        () => facilitiesResp?.data ?? [],
+        [facilitiesResp]
+    );
 
     const [selectedEnrollment, setSelectedEnrollment] =
         useState<ResidentProgramOverview | null>(null);
@@ -232,10 +243,10 @@ export default function ResidentProfile() {
 
                 <ActivityHistoryCard residentId={residentId} />
 
-                <EditProfileDialog
+                <EditResidentDialog
                     open={editOpen}
                     onOpenChange={setEditOpen}
-                    user={residentUser}
+                    resident={residentUser}
                     onSuccess={handleActionSuccess}
                 />
                 <ResetPasswordDialog
@@ -246,18 +257,20 @@ export default function ResidentProfile() {
                 <DeactivateDialog
                     open={deactivateOpen}
                     onOpenChange={setDeactivateOpen}
-                    user={residentUser}
+                    resident={residentUser}
                     onSuccess={handleActionSuccess}
                 />
                 <DeleteDialog
                     open={deleteOpen}
                     onOpenChange={setDeleteOpen}
-                    user={residentUser}
+                    resident={residentUser}
+                    onSuccess={() => navigate('/residents')}
                 />
                 <TransferDialog
                     open={transferOpen}
                     onOpenChange={setTransferOpen}
-                    user={residentUser}
+                    resident={residentUser}
+                    facilities={facilities}
                     onSuccess={handleActionSuccess}
                 />
                 <AddNoteDialog

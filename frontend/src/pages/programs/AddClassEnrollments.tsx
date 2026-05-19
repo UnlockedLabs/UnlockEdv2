@@ -17,16 +17,7 @@ import {
     ConflictDetail
 } from '@/types';
 import { PageHeader, SearchInput } from '@/components/shared';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle
-} from '@/components/ui/alert-dialog';
+import { FormModal } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -312,56 +303,62 @@ export default function AddClassEnrollments() {
                 </div>
             </form>
 
-            <AlertDialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
-                <AlertDialogContent className="max-w-lg">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2 text-[#203622]">
-                            <AlertTriangle className="size-5 text-amber-600" />
-                            Scheduling Conflicts
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {conflicts.length} resident{conflicts.length === 1 ? '' : 's'} ha{conflicts.length === 1 ? 's' : 've'} scheduling conflicts with existing classes.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="max-h-60 overflow-y-auto space-y-2">
-                        {conflicts.map((c) => (
-                            <div
-                                key={`${c.user_id}-${c.conflicting_class}`}
-                                className="rounded-lg border border-amber-200 bg-amber-50/50 p-3"
-                            >
-                                <div className="font-medium text-sm text-[#203622]">
-                                    {c.user_name}
-                                </div>
-                                <div className="text-xs text-gray-600 mt-1">
-                                    Conflicts with <span className="font-medium">{c.conflicting_class}</span>
-                                </div>
-                                {(c.conflict_start || c.conflict_end) && (
-                                    <div className="text-xs text-gray-500 mt-0.5">
-                                        {c.conflict_start} - {c.conflict_end}
-                                    </div>
-                                )}
-                                {c.reason && (
-                                    <div className="text-xs text-gray-500 mt-0.5">
-                                        {c.reason}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                setShowConflictDialog(false);
-                                void submitEnrollment(true);
-                            }}
-                            className="bg-destructive text-white hover:bg-destructive/90"
+            <FormModal
+                open={showConflictDialog}
+                onOpenChange={setShowConflictDialog}
+                title={
+                    <span className="flex items-center gap-2">
+                        <AlertTriangle className="size-5 text-amber-600" />
+                        Scheduling Conflicts
+                    </span>
+                }
+                description={`${conflicts.length} resident${conflicts.length === 1 ? '' : 's'} ha${conflicts.length === 1 ? 's' : 've'} scheduling conflicts with existing classes.`}
+                className="max-w-lg"
+                preventOutsideClose
+            >
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                    {conflicts.map((c) => (
+                        <div
+                            key={`${c.user_id}-${c.conflicting_class}`}
+                            className="rounded-lg border border-amber-200 bg-amber-50/50 p-3"
                         >
-                            Enroll Anyway
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                            <div className="font-medium text-sm text-[#203622]">
+                                {c.user_name}
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">
+                                Conflicts with <span className="font-medium">{c.conflicting_class}</span>
+                            </div>
+                            {(c.conflict_start || c.conflict_end) && (
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                    {c.conflict_start} - {c.conflict_end}
+                                </div>
+                            )}
+                            {c.reason && (
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                    {c.reason}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-end gap-3 mt-4">
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowConflictDialog(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        onClick={() => {
+                            setShowConflictDialog(false);
+                            void submitEnrollment(true);
+                        }}
+                    >
+                        Enroll Anyway
+                    </Button>
+                </div>
+            </FormModal>
         </div>
     );
 }

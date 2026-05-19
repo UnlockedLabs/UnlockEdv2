@@ -2,19 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { FormModal } from '@/components/shared';
 import { SelectedClassStatus } from '@/types/attendance';
 import API from '@/api/api';
 import { toast } from 'sonner';
@@ -91,17 +85,15 @@ export function ChangeClassStatusModal({
     };
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>
-                        Change Class Status
-                    </DialogTitle>
-                    <DialogDescription>
-                        Update the status for {className}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
+        <FormModal
+            open={open}
+            onOpenChange={(isOpen) => !isOpen && onClose()}
+            title="Change Class Status"
+            description={`Update the status for ${className}`}
+            className="max-w-md"
+            titleClassName="text-foreground"
+        >
+            <div className="space-y-4">
                     <div>
                         <Label htmlFor="classStatus">New Status</Label>
                         <Select
@@ -134,17 +126,14 @@ export function ChangeClassStatusModal({
                             Cancel
                         </Button>
                         <Button
-                            onClick={() => {
-                                void handleSubmit();
-                            }}
+                            onClick={() => void handleSubmit()}
                             disabled={isSubmitting}
-                            className="bg-[#556830] hover:bg-[#203622]"
+                            variant="brand"
                         >
                             {isSubmitting ? 'Updating...' : 'Update Status'}
                         </Button>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }

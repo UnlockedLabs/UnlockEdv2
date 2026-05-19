@@ -7,13 +7,7 @@ import API from '@/api/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import { User, ConflictDetail, ServerResponseMany } from '@/types';
 
 interface EnrollResidentsModalProps {
@@ -124,23 +118,18 @@ export function EnrollResidentsModal({
     };
 
     return (
-        <Dialog
+        <FormModal
             open={open}
             onOpenChange={(isOpen) => {
                 if (!isOpen) handleClose();
             }}
+            title={`Enroll Residents in ${className}`}
+            description="Select residents to enroll in this class. You can select multiple residents at once."
+            className="max-w-3xl max-h-[85vh] flex flex-col p-0"
+            titleClassName="text-foreground text-xl"
+            descriptionClassName="text-base"
+            headerClassName="px-6 pt-6 pb-4"
         >
-            <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0">
-                <DialogHeader className="px-6 pt-6 pb-4">
-                    <DialogTitle className="text-xl">
-                        Enroll Residents in {className}
-                    </DialogTitle>
-                    <DialogDescription className="text-base">
-                        Select residents to enroll in this class. You can select
-                        multiple residents at once.
-                    </DialogDescription>
-                </DialogHeader>
-
                 <div className="px-6 pb-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
@@ -278,7 +267,7 @@ export function EnrollResidentsModal({
                                 isSubmitting ||
                                 wouldExceedCapacity
                             }
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            variant="brand"
                         >
                             {isSubmitting
                                 ? 'Enrolling...'
@@ -286,7 +275,6 @@ export function EnrollResidentsModal({
                         </Button>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }
