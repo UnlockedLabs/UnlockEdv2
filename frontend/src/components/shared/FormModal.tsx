@@ -6,15 +6,24 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface FormModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    title: string;
-    description?: string;
+    title: ReactNode;
+    description?: ReactNode;
     children: ReactNode;
     className?: string;
+    /** Extra classes for the title. Pass a `text-*` class to override the default brand-green color. */
+    titleClassName?: string;
+    /** Extra classes for the description. */
+    descriptionClassName?: string;
+    /** Extra classes for the DialogHeader wrapper (use when overriding DialogContent padding). */
+    headerClassName?: string;
     preventAutoFocus?: boolean;
+    /** Prevent the dialog from closing when the user clicks outside. */
+    preventOutsideClose?: boolean;
 }
 
 export function FormModal({
@@ -24,20 +33,27 @@ export function FormModal({
     description,
     children,
     className,
-    preventAutoFocus
+    titleClassName,
+    descriptionClassName,
+    headerClassName,
+    preventAutoFocus,
+    preventOutsideClose
 }: FormModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className={className}
                 onOpenAutoFocus={preventAutoFocus ? (e) => e.preventDefault() : undefined}
+                onPointerDownOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
             >
-                <DialogHeader>
-                    <DialogTitle className="text-[#203622]">
+                <DialogHeader className={headerClassName}>
+                    <DialogTitle className={cn('text-[#203622]', titleClassName)}>
                         {title}
                     </DialogTitle>
                     {description && (
-                        <DialogDescription>{description}</DialogDescription>
+                        <DialogDescription className={descriptionClassName}>
+                            {description}
+                        </DialogDescription>
                     )}
                 </DialogHeader>
                 {children}

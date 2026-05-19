@@ -20,14 +20,8 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from '@/components/ui/tooltip';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Pagination } from '@/components/Pagination';
@@ -839,56 +833,51 @@ export default function KnowledgeCenterManagement() {
                 </TabsContent>
             </Tabs>
 
-            <Dialog open={showAddVideo} onOpenChange={setShowAddVideo}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add YouTube Video</DialogTitle>
-                        <DialogDescription>
-                            Enter a YouTube URL to add a video to the Knowledge
-                            Center.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                        <div>
-                            <Label htmlFor="video-url">YouTube URL</Label>
-                            <Input
-                                id="video-url"
-                                placeholder="https://www.youtube.com/watch?v=..."
-                                value={videoFormData.url}
-                                onChange={(e) =>
-                                    setVideoFormData({ url: e.target.value })
-                                }
-                            />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowAddVideo(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-[#556830] hover:bg-[#203622] text-white"
-                                onClick={() => void handleAddVideo()}
-                                disabled={!videoFormData.url}
-                            >
-                                Add Video
-                            </Button>
-                        </div>
+            <FormModal
+                open={showAddVideo}
+                onOpenChange={setShowAddVideo}
+                title="Add YouTube Video"
+                description="Enter a YouTube URL to add a video to the Knowledge Center."
+                titleClassName="text-foreground"
+            >
+                <div className="space-y-4 pt-4">
+                    <div>
+                        <Label htmlFor="video-url">YouTube URL</Label>
+                        <Input
+                            id="video-url"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={videoFormData.url}
+                            onChange={(e) =>
+                                setVideoFormData({ url: e.target.value })
+                            }
+                        />
                     </div>
-                </DialogContent>
-            </Dialog>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAddVideo(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="brand"
+                            onClick={() => void handleAddVideo()}
+                            disabled={!videoFormData.url}
+                        >
+                            Add Video
+                        </Button>
+                    </div>
+                </div>
+            </FormModal>
 
-            <Dialog open={showAddLink} onOpenChange={setShowAddLink}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add Helpful Link</DialogTitle>
-                        <DialogDescription>
-                            Add a whitelisted website link for residents to
-                            access.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
+            <FormModal
+                open={showAddLink}
+                onOpenChange={setShowAddLink}
+                title="Add Helpful Link"
+                description="Add a whitelisted website link for residents to access."
+                titleClassName="text-foreground"
+            >
+                <div className="space-y-4 pt-4">
                         <div>
                             <Label htmlFor="link-title">Title *</Label>
                             <Input
@@ -942,7 +931,7 @@ export default function KnowledgeCenterManagement() {
                                 Cancel
                             </Button>
                             <Button
-                                className="bg-[#556830] hover:bg-[#203622] text-white"
+                                variant="brand"
                                 onClick={() => void handleAddLink()}
                                 disabled={
                                     !linkFormData.title ||
@@ -953,34 +942,30 @@ export default function KnowledgeCenterManagement() {
                                 Add Link
                             </Button>
                         </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </FormModal>
 
-            <Dialog
+            <FormModal
                 open={statusDialogOpen}
                 onOpenChange={setStatusDialogOpen}
+                title="Video Status"
+                titleClassName="text-foreground"
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Video Status</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {getStatusText()}
-                    </p>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setStatusDialogOpen(false);
-                                setTargetVideo(null);
-                            }}
-                        >
-                            Close
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {getStatusText()}
+                </p>
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setStatusDialogOpen(false);
+                            setTargetVideo(null);
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogFooter>
+            </FormModal>
         </div>
     );
 }

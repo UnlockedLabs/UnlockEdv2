@@ -14,14 +14,8 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import {
     Select,
     SelectContent,
@@ -355,18 +349,14 @@ export default function FacilityManagement() {
                 </div>
 
                 {/* Add Facility Dialog */}
-                <Dialog
+                <FormModal
                     open={showAddFacility}
                     onOpenChange={setShowAddFacility}
+                    title="Add New Facility"
+                    description="Create a new correctional facility"
+                    titleClassName="text-foreground"
                 >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add New Facility</DialogTitle>
-                            <DialogDescription>
-                                Create a new correctional facility
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
+                    <div className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="add-name">Facility Name</Label>
                                 <Input
@@ -408,37 +398,32 @@ export default function FacilityManagement() {
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowAddFacility(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={() => void handleAddFacility()}
-                                disabled={saving || !formData.name.trim()}
-                                className="bg-[#556830] hover:bg-[#203622] text-white"
-                            >
-                                {saving ? 'Adding...' : 'Add Facility'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAddFacility(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => void handleAddFacility()}
+                            disabled={saving || !formData.name.trim()}
+                            variant="brand"
+                        >
+                            {saving ? 'Adding...' : 'Add Facility'}
+                        </Button>
+                    </DialogFooter>
+                </FormModal>
 
                 {/* Edit Facility Dialog */}
-                <Dialog
+                <FormModal
                     open={showEditFacility}
                     onOpenChange={setShowEditFacility}
+                    title="Edit Facility"
+                    description="Update facility information"
+                    titleClassName="text-foreground"
                 >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Edit Facility</DialogTitle>
-                            <DialogDescription>
-                                Update facility information
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
+                    <div className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-name">Facility Name</Label>
                                 <Input
@@ -479,23 +464,22 @@ export default function FacilityManagement() {
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowEditFacility(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={() => void handleEditFacility()}
-                                disabled={saving || !formData.name.trim()}
-                                className="bg-[#556830] hover:bg-[#203622] text-white"
-                            >
-                                {saving ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditFacility(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => void handleEditFacility()}
+                            disabled={saving || !formData.name.trim()}
+                            variant="brand"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </DialogFooter>
+                </FormModal>
             </div>
         </div>
     );

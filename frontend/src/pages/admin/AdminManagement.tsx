@@ -38,14 +38,9 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormModal, TonedPanel } from '@/components/shared';
+import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -184,7 +179,11 @@ export default function AdminManagement() {
     const [showBulkDelete, setShowBulkDelete] = useState(false);
 
     const [formData, setFormData] = useState<AdminFormData>(emptyForm);
-    const [deleteConfirmUsername, setDeleteConfirmUsername] = useState('');
+
+    const deleteConfirm = useTypeToConfirm({
+        open: showDeleteDialog,
+        expected: selectedAdmin?.username ?? ''
+    });
 
     const usersUrl = useMemo(() => {
         if (!user) return null;
@@ -400,7 +399,6 @@ export default function AdminManagement() {
                 ToastState.success
             );
             setShowDeleteDialog(false);
-            setDeleteConfirmUsername('');
             setSelectedAdmin(null);
             void mutate();
             void mutateStats();
@@ -686,7 +684,6 @@ export default function AdminManagement() {
                                                     <DropdownMenuItem
                                                         onClick={() => {
                                                             setSelectedAdmin(admin);
-                                                            setDeleteConfirmUsername('');
                                                             setShowDeleteDialog(true);
                                                         }}
                                                         className="text-red-600"
@@ -715,15 +712,14 @@ export default function AdminManagement() {
             </div>
 
             {/* Add Admin Dialog */}
-            <Dialog open={showAddAdmin} onOpenChange={setShowAddAdmin}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add New Admin</DialogTitle>
-                        <DialogDescription>
-                            Create a new administrator account
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
+            <FormModal
+                open={showAddAdmin}
+                onOpenChange={setShowAddAdmin}
+                title="Add New Admin"
+                description="Create a new administrator account"
+                titleClassName="text-foreground"
+            >
+                <div className="space-y-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="firstName">First Name</Label>
@@ -819,28 +815,25 @@ export default function AdminManagement() {
                             </div>
                         )}
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowAddAdmin(false)}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleAddAdmin()}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
-                        >
-                            Add Admin
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowAddAdmin(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={() => void handleAddAdmin()} variant="brand">
+                        Add Admin
+                    </Button>
+                </DialogFooter>
+            </FormModal>
 
             {/* Edit Admin Dialog */}
-            <Dialog open={showEditAdmin} onOpenChange={setShowEditAdmin}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Admin</DialogTitle>
-                        <DialogDescription>Update administrator information</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
+            <FormModal
+                open={showEditAdmin}
+                onOpenChange={setShowEditAdmin}
+                title="Edit Admin"
+                description="Update administrator information"
+                titleClassName="text-foreground"
+            >
+                <div className="space-y-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-firstName">First Name</Label>
@@ -920,22 +913,18 @@ export default function AdminManagement() {
                             </div>
                         )}
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowEditAdmin(false)}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleEditAdmin()}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
-                        >
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowEditAdmin(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={() => void handleEditAdmin()} variant="brand">
+                        Save Changes
+                    </Button>
+                </DialogFooter>
+            </FormModal>
 
             {/* Reset Password / New Password Dialog */}
-            <Dialog
+            <FormModal
                 open={showResetPassword}
                 onOpenChange={(open) => {
                     setShowResetPassword(open);
@@ -944,18 +933,11 @@ export default function AdminManagement() {
                         setSelectedAdmin(null);
                     }
                 }}
+                title={passwordModalContext === 'create' ? 'New Password' : 'Password Reset'}
+                description={`New temporary password for ${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
+                titleClassName="text-foreground"
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {passwordModalContext === 'create' ? 'New Password' : 'Password Reset'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            New temporary password for {selectedAdmin?.name_first}{' '}
-                            {selectedAdmin?.name_last}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
+                <div className="py-4">
                         <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                             <div className="text-sm text-gray-600 mb-2">Temporary Password</div>
                             <div className="flex items-center gap-2">
@@ -976,66 +958,58 @@ export default function AdminManagement() {
                             prompted to change it on their next login.
                         </p>
                     </div>
-                    <DialogFooter>
-                        <Button
-                            onClick={() => setShowResetPassword(false)}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
-                        >
-                            Done
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                <DialogFooter>
+                    <Button
+                        onClick={() => setShowResetPassword(false)}
+                        variant="brand"
+                    >
+                        Done
+                    </Button>
+                </DialogFooter>
+            </FormModal>
 
             {/* Delete Dialog */}
-            <Dialog
+            <FormModal
                 open={showDeleteDialog}
-                onOpenChange={(open) => {
-                    setShowDeleteDialog(open);
-                    if (!open) setDeleteConfirmUsername('');
-                }}
+                onOpenChange={setShowDeleteDialog}
+                title="Delete Admin Account"
+                description="This action cannot be undone."
+                titleClassName="text-foreground"
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete Admin Account</DialogTitle>
-                        <DialogDescription>This action cannot be undone.</DialogDescription>
-                    </DialogHeader>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 my-4">
-                        <p className="text-sm text-red-900 mb-3">
-                            Permanently delete {selectedAdmin?.name_first}{' '}
-                            {selectedAdmin?.name_last}'s account? All associated data will be
-                            removed.
-                        </p>
-                        <div className="space-y-2">
-                            <Label htmlFor="delete-confirm">
-                                Type{' '}
-                                <span className="font-mono font-semibold">
-                                    {selectedAdmin?.username}
-                                </span>{' '}
-                                to confirm
-                            </Label>
-                            <Input
-                                id="delete-confirm"
-                                value={deleteConfirmUsername}
-                                onChange={(e) => setDeleteConfirmUsername(e.target.value)}
-                                placeholder={selectedAdmin?.username}
-                            />
-                        </div>
+                <TonedPanel tone="red" className="my-4">
+                    <p className="text-sm text-red-900 mb-3">
+                        Permanently delete {selectedAdmin?.name_first}{' '}
+                        {selectedAdmin?.name_last}'s account? All associated data will be
+                        removed.
+                    </p>
+                    <div className="space-y-2">
+                        <Label htmlFor="delete-confirm">
+                            Type{' '}
+                            <span className="font-mono font-semibold">
+                                {selectedAdmin?.username}
+                            </span>{' '}
+                            to confirm
+                        </Label>
+                        <Input
+                            id="delete-confirm"
+                            {...deleteConfirm.inputProps}
+                            placeholder={selectedAdmin?.username}
+                        />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleDelete()}
-                            disabled={deleteConfirmUsername !== selectedAdmin?.username}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            Delete Admin
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </TonedPanel>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => void handleDelete()}
+                        disabled={!deleteConfirm.matches}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                        Delete Admin
+                    </Button>
+                </DialogFooter>
+            </FormModal>
 
             {/* Bulk Reset Password Dialog */}
             <BulkResetPasswordDialog

@@ -13,14 +13,9 @@ import { useToast } from '@/contexts/ToastContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormModal, TonedPanel } from '@/components/shared';
+import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
 import { AlertCircle, CheckCircle, Download } from 'lucide-react';
 
 interface BulkDialogProps {
@@ -84,15 +79,17 @@ export function BulkResetPasswordDialog({
 }: BulkResetPasswordDialogProps) {
     const { toaster } = useToast();
     const cfg = kind === 'admin' ? ADMIN_CONFIG : RESIDENT_CONFIG;
-    const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [completed, setCompleted] = useState(false);
     const [results, setResults] = useState<BulkPasswordResult[]>([]);
     const [failures, setFailures] = useState<BulkActionFailure[]>([]);
+    const confirm = useTypeToConfirm({
+        open,
+        expected: String(users.length)
+    });
 
     useEffect(() => {
         if (!open) {
-            setConfirmInput('');
             setCompleted(false);
             setResults([]);
             setFailures([]);
@@ -146,152 +143,136 @@ export function BulkResetPasswordDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Bulk Reset Passwords</DialogTitle>
-                    <DialogDescription>
-                        Generate new temporary passwords for {users.length}{' '}
-                        selected {cfg.singular}
-                        {users.length > 1 ? 's' : ''}
-                    </DialogDescription>
-                </DialogHeader>
+        <FormModal
+            open={open}
+            onOpenChange={handleClose}
+            title="Bulk Reset Passwords"
+            description={`Generate new temporary passwords for ${users.length} selected ${cfg.singular}${users.length > 1 ? 's' : ''}`}
+            className="max-w-2xl"
+            titleClassName="text-foreground"
+        >
+            {!completed ? (
+                <>
+                    <TonedPanel tone="blue">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-medium text-sm text-blue-900 mb-1">
+                                    {cfg.heading}
+                                </div>
+                                <p className="text-sm text-blue-800 mb-2">
+                                    New temporary passwords will be generated
+                                    for:
+                                </p>
+                                <div className="bg-white border border-blue-200 rounded p-3 max-h-48 overflow-y-auto">
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                        {users.map((u) => (
+                                            <li key={u.id}>
+                                                {'•'}{' '}
+                                                {cfg.displayItem(u)}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <p className="text-sm text-blue-800 mt-3">
+                                    You will need to distribute these passwords
+                                    securely.
+                                </p>
+                            </div>
+                        </div>
+                    </TonedPanel>
 
-                {!completed ? (
-                    <>
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="bulk-reset-confirm">
+                            Type{' '}
+                            <span className="font-mono font-semibold">
+                                {users.length}
+                            </span>{' '}
+                            to confirm
+                        </Label>
+                        <Input
+                            id="bulk-reset-confirm"
+                            {...confirm.inputProps}
+                            placeholder={`Type ${users.length}`}
+                        />
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => void handleGenerate()}
+                            disabled={!confirm.matches || loading}
+                            variant="brand"
+                        >
+                            {loading ? 'Generating...' : 'Generate Passwords'}
+                        </Button>
+                    </DialogFooter>
+                </>
+            ) : (
+                <>
+                    <TonedPanel tone="green">
+                        <div className="flex items-center gap-3">
+                            <CheckCircle className="size-5 text-green-600" />
+                            <div>
+                                <div className="font-medium text-sm text-green-900">
+                                    Passwords Generated
+                                </div>
+                                <p className="text-sm text-green-700 mt-1">
+                                    {results.length} temporary password
+                                    {results.length !== 1 ? 's' : ''} created.
+                                    Download the CSV file to{' '}
+                                    {cfg.distributeNote}.
+                                </p>
+                            </div>
+                        </div>
+                    </TonedPanel>
+
+                    {failures.length > 0 && (
+                        <TonedPanel tone="red">
                             <div className="flex items-start gap-3">
-                                <AlertCircle className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                    <div className="font-medium text-sm text-blue-900 mb-1">
-                                        {cfg.heading}
+                                    <div className="font-medium text-sm text-red-900 mb-1">
+                                        {failures.length} failed
                                     </div>
-                                    <p className="text-sm text-blue-800 mb-2">
-                                        New temporary passwords will be
-                                        generated for:
-                                    </p>
-                                    <div className="bg-white border border-blue-200 rounded p-3 max-h-48 overflow-y-auto">
+                                    <div className="bg-white border border-red-200 rounded p-3 max-h-32 overflow-y-auto">
                                         <ul className="text-sm text-gray-700 space-y-1">
-                                            {users.map((u) => (
-                                                <li key={u.id}>
-                                                    {'\u2022'}{' '}
-                                                    {cfg.displayItem(u)}
+                                            {failures.map((f) => (
+                                                <li key={f.user_id}>
+                                                    {'•'} {f.name} (
+                                                    {f.username}): {f.reason}
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
-                                    <p className="text-sm text-blue-800 mt-3">
-                                        You will need to distribute these
-                                        passwords securely.
-                                    </p>
                                 </div>
                             </div>
-                        </div>
+                        </TonedPanel>
+                    )}
 
-                        <div className="space-y-2">
-                            <Label htmlFor="bulk-reset-confirm">
-                                Type{' '}
-                                <span className="font-mono font-semibold">
-                                    {users.length}
-                                </span>{' '}
-                                to confirm
-                            </Label>
-                            <Input
-                                id="bulk-reset-confirm"
-                                value={confirmInput}
-                                onChange={(e) =>
-                                    setConfirmInput(e.target.value)
-                                }
-                                placeholder={`Type ${users.length}`}
-                            />
-                        </div>
-
-                        <DialogFooter>
-                            <Button
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                            >
-                                Cancel
+                    <DialogFooter>
+                        {results.length > 0 ? (
+                            <Button onClick={handleDownload} variant="brand">
+                                <Download className="size-4 mr-2" />
+                                Download Password File
                             </Button>
+                        ) : (
                             <Button
-                                onClick={() => void handleGenerate()}
-                                disabled={
-                                    confirmInput !== String(users.length) ||
-                                    loading
-                                }
-                                className="bg-[#556830] hover:bg-[#203622]"
+                                onClick={() => handleClose(false)}
+                                variant="brand"
                             >
-                                {loading
-                                    ? 'Generating...'
-                                    : 'Generate Passwords'}
+                                Close
                             </Button>
-                        </DialogFooter>
-                    </>
-                ) : (
-                    <>
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <div className="flex items-center gap-3">
-                                <CheckCircle className="size-5 text-green-600" />
-                                <div>
-                                    <div className="font-medium text-sm text-green-900">
-                                        Passwords Generated
-                                    </div>
-                                    <p className="text-sm text-green-700 mt-1">
-                                        {results.length} temporary password
-                                        {results.length !== 1 ? 's' : ''}{' '}
-                                        created. Download the CSV file to{' '}
-                                        {cfg.distributeNote}.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {failures.length > 0 && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <div className="font-medium text-sm text-red-900 mb-1">
-                                            {failures.length} failed
-                                        </div>
-                                        <div className="bg-white border border-red-200 rounded p-3 max-h-32 overflow-y-auto">
-                                            <ul className="text-sm text-gray-700 space-y-1">
-                                                {failures.map((f) => (
-                                                    <li key={f.user_id}>
-                                                        {'\u2022'} {f.name} (
-                                                        {f.username}):{' '}
-                                                        {f.reason}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         )}
-
-                        <DialogFooter>
-                            {results.length > 0 ? (
-                                <Button
-                                    onClick={handleDownload}
-                                    className="bg-[#556830] hover:bg-[#203622]"
-                                >
-                                    <Download className="size-4 mr-2" />
-                                    Download Password File
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={() => handleClose(false)}
-                                    className="bg-[#556830] hover:bg-[#203622]"
-                                >
-                                    Close
-                                </Button>
-                            )}
-                        </DialogFooter>
-                    </>
-                )}
-            </DialogContent>
-        </Dialog>
+                    </DialogFooter>
+                </>
+            )}
+        </FormModal>
     );
 }
 
@@ -302,12 +283,11 @@ export function BulkDeactivateDialog({
     onSuccess
 }: BulkDialogProps) {
     const { toaster } = useToast();
-    const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (!open) setConfirmInput('');
-    }, [open]);
+    const confirm = useTypeToConfirm({
+        open,
+        expected: String(residents.length)
+    });
 
     const handleDeactivate = async () => {
         setLoading(true);
@@ -342,72 +322,62 @@ export function BulkDeactivateDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Deactivate Residents</DialogTitle>
-                    <DialogDescription>
-                        Deactivate {residents.length} selected resident
-                        {residents.length > 1 ? 's' : ''}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <AlertCircle className="size-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                            <div className="font-medium text-sm text-orange-900 mb-1">
-                                This will deactivate these accounts
-                            </div>
-                            <div className="bg-white border border-orange-200 rounded p-3 max-h-48 overflow-y-auto mt-2">
-                                <ul className="text-sm text-gray-700 space-y-1">
-                                    {residents.map((r) => (
-                                        <li key={r.id}>
-                                            {'\u2022'} {formatNameLastFirst(r)}{' '}
-                                            ({r.doc_id ?? ''})
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+        <FormModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Deactivate Residents"
+            description={`Deactivate ${residents.length} selected resident${residents.length > 1 ? 's' : ''}`}
+            titleClassName="text-foreground"
+        >
+            <TonedPanel tone="orange">
+                <div className="flex items-start gap-3">
+                    <AlertCircle className="size-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                        <div className="font-medium text-sm text-orange-900 mb-1">
+                            This will deactivate these accounts
+                        </div>
+                        <div className="bg-white border border-orange-200 rounded p-3 max-h-48 overflow-y-auto mt-2">
+                            <ul className="text-sm text-gray-700 space-y-1">
+                                {residents.map((r) => (
+                                    <li key={r.id}>
+                                        {'•'} {formatNameLastFirst(r)} (
+                                        {r.doc_id ?? ''})
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
+            </TonedPanel>
 
-                <div className="space-y-2">
-                    <Label htmlFor="bulk-deactivate-confirm">
-                        Type{' '}
-                        <span className="font-mono font-semibold">
-                            {residents.length}
-                        </span>{' '}
-                        to confirm
-                    </Label>
-                    <Input
-                        id="bulk-deactivate-confirm"
-                        value={confirmInput}
-                        onChange={(e) => setConfirmInput(e.target.value)}
-                        placeholder={`Type ${residents.length}`}
-                    />
-                </div>
+            <div className="space-y-2">
+                <Label htmlFor="bulk-deactivate-confirm">
+                    Type{' '}
+                    <span className="font-mono font-semibold">
+                        {residents.length}
+                    </span>{' '}
+                    to confirm
+                </Label>
+                <Input
+                    id="bulk-deactivate-confirm"
+                    {...confirm.inputProps}
+                    placeholder={`Type ${residents.length}`}
+                />
+            </div>
 
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleDeactivate()}
-                        disabled={
-                            confirmInput !== String(residents.length) || loading
-                        }
-                        className="bg-orange-600 hover:bg-orange-700"
-                    >
-                        Deactivate {residents.length} Accounts
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                </Button>
+                <Button
+                    onClick={() => void handleDeactivate()}
+                    disabled={!confirm.matches || loading}
+                    variant="warning"
+                >
+                    Deactivate {residents.length} Accounts
+                </Button>
+            </DialogFooter>
+        </FormModal>
     );
 }
 
@@ -454,12 +424,11 @@ export function BulkDeleteDialog({
 }: BulkDeleteDialogProps) {
     const { toaster } = useToast();
     const cfg = kind === 'admin' ? ADMIN_DELETE_CONFIG : RESIDENT_DELETE_CONFIG;
-    const [confirmInput, setConfirmInput] = useState('');
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (!open) setConfirmInput('');
-    }, [open]);
+    const confirm = useTypeToConfirm({
+        open,
+        expected: String(users.length)
+    });
 
     const handleDelete = async () => {
         setLoading(true);
@@ -498,78 +467,67 @@ export function BulkDeleteDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{cfg.title}</DialogTitle>
-                    <DialogDescription>
-                        Permanently delete {users.length} selected{' '}
-                        {cfg.singular}
-                        {users.length > 1 ? 's' : ''}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                            <div className="font-medium text-sm text-red-900 mb-1">
-                                This action cannot be undone
-                            </div>
-                            <p className="text-sm text-red-800 mb-2">
-                                {cfg.bodyDescription(users.length)}
-                            </p>
-                            <div className="bg-white border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
-                                <ul className="text-sm text-gray-700 space-y-1">
-                                    {users.map((u) => (
-                                        <li key={u.id}>
-                                            {'\u2022'} {cfg.displayItem(u)}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+        <FormModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={cfg.title}
+            description={`Permanently delete ${users.length} selected ${cfg.singular}${users.length > 1 ? 's' : ''}`}
+            titleClassName="text-foreground"
+        >
+            <TonedPanel tone="red">
+                <div className="flex items-start gap-3">
+                    <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                        <div className="font-medium text-sm text-red-900 mb-1">
+                            This action cannot be undone
+                        </div>
+                        <p className="text-sm text-red-800 mb-2">
+                            {cfg.bodyDescription(users.length)}
+                        </p>
+                        <div className="bg-white border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
+                            <ul className="text-sm text-gray-700 space-y-1">
+                                {users.map((u) => (
+                                    <li key={u.id}>
+                                        {'•'} {cfg.displayItem(u)}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
+            </TonedPanel>
 
-                <div className="space-y-2">
-                    <Label htmlFor="bulk-delete-confirm">
-                        Type{' '}
-                        <span className="font-mono font-semibold">
-                            {users.length}
-                        </span>{' '}
-                        to confirm deletion
-                    </Label>
-                    <Input
-                        id="bulk-delete-confirm"
-                        value={confirmInput}
-                        onChange={(e) => setConfirmInput(e.target.value)}
-                        placeholder={`Type ${users.length}`}
-                    />
-                </div>
+            <div className="space-y-2">
+                <Label htmlFor="bulk-delete-confirm">
+                    Type{' '}
+                    <span className="font-mono font-semibold">
+                        {users.length}
+                    </span>{' '}
+                    to confirm deletion
+                </Label>
+                <Input
+                    id="bulk-delete-confirm"
+                    {...confirm.inputProps}
+                    placeholder={`Type ${users.length}`}
+                />
+            </div>
 
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleDelete()}
-                        disabled={
-                            confirmInput !== String(users.length) || loading
-                        }
-                        className="bg-red-600 hover:bg-red-700"
-                    >
-                        {loading
-                            ? 'Deleting...'
-                            : `Delete ${users.length} ${
-                                  users.length === 1 ? cfg.singular : cfg.plural
-                              }`}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                </Button>
+                <Button
+                    onClick={() => void handleDelete()}
+                    disabled={!confirm.matches || loading}
+                    className="bg-red-600 hover:bg-red-700"
+                >
+                    {loading
+                        ? 'Deleting...'
+                        : `Delete ${users.length} ${
+                              users.length === 1 ? cfg.singular : cfg.plural
+                          }`}
+                </Button>
+            </DialogFooter>
+        </FormModal>
     );
 }

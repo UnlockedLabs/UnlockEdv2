@@ -4,19 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { FormModal } from '@/components/shared';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
@@ -143,18 +137,13 @@ export function RescheduleSessionModal({
     const today = new Date().toISOString().split('T')[0];
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="text-[#203622]">
-                        Reschedule Class
-                    </DialogTitle>
-                    <DialogDescription>
-                        Reschedule the class from {dateLabel}. You can change
-                        the date, time, and room.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+        <FormModal
+            open={open}
+            onOpenChange={(isOpen) => !isOpen && onClose()}
+            title="Reschedule Class"
+            description={`Reschedule the class from ${dateLabel}. You can change the date, time, and room.`}
+        >
+            <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="rescheduleDate">New Date</Label>
                         <Input
@@ -254,21 +243,18 @@ export function RescheduleSessionModal({
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => {
-                            void handleReschedule();
-                        }}
+                        onClick={() => void handleReschedule()}
                         disabled={
                             (!newDate && !newStartTime && !newEndTime && !newRoom) ||
                             isSubmitting
                         }
-                        className="bg-[#556830] hover:bg-[#203622] text-white"
+                        variant="brand"
                     >
                         {isSubmitting
                             ? 'Rescheduling...'
                             : 'Reschedule Class'}
                     </Button>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }

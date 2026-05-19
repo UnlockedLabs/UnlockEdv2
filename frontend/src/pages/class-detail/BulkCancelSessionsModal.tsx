@@ -4,19 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { FormModal, TonedPanel } from '@/components/shared';
 import API from '@/api/api';
 import { toast } from 'sonner';
 
@@ -96,18 +90,14 @@ export function BulkCancelSessionsModal({
     );
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-[#203622]">
-                        Cancel Sessions
-                    </DialogTitle>
-                    <DialogDescription>
-                        Review and confirm cancellation of {sessions.length}{' '}
-                        {sessions.length === 1 ? 'session' : 'sessions'}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+        <FormModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Cancel Sessions"
+            description={`Review and confirm cancellation of ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`}
+            className="max-w-2xl"
+        >
+            <div className="space-y-4 py-4">
                     <div>
                         <Label className="text-sm font-medium text-[#203622] mb-2 block">
                             Sessions to Cancel
@@ -186,7 +176,7 @@ export function BulkCancelSessionsModal({
                         </div>
                     )}
 
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <TonedPanel tone="amber">
                         <div className="flex gap-3">
                             <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
                             <div>
@@ -200,7 +190,7 @@ export function BulkCancelSessionsModal({
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </TonedPanel>
                 </div>
                 <div className="flex justify-end gap-3">
                     <Button
@@ -224,7 +214,6 @@ export function BulkCancelSessionsModal({
                             : `Cancel ${sessions.length} ${sessions.length === 1 ? 'Session' : 'Sessions'}`}
                     </Button>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }

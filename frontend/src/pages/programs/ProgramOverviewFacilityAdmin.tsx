@@ -9,7 +9,6 @@ import {
     Edit,
     MoreVertical,
     Trash2,
-    AlertCircle,
     BookOpen
 } from 'lucide-react';
 import {
@@ -49,15 +48,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -74,10 +65,12 @@ import {
 } from '@/components/ui/tooltip';
 import { Pagination } from '@/components/Pagination';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
+import { FormModal } from '@/components/shared';
 import {
     ArchiveConfirmDialog,
     CannotArchiveDialog,
-    ReactivateDialog
+    ReactivateDialog,
+    DeleteProgramDialog
 } from '@/components/programs/ProgramDialogs';
 
 type HeroIcon = React.ForwardRefExoticComponent<
@@ -117,7 +110,6 @@ export default function ProgramOverviewFacilityAdmin() {
     const [selectedClass, setSelectedClass] = useState<Class | null>(null);
     const [selectedStatus, setSelectedStatus] = useState('');
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
     const [showCannotArchiveDialog, setShowCannotArchiveDialog] =
@@ -383,7 +375,6 @@ export default function ProgramOverviewFacilityAdmin() {
         if (!program) return;
         const resp = await API.delete(`programs/${program.id}`);
         setDeleteModalOpen(false);
-        setDeleteConfirmationText('');
         if (resp.success) {
             toast.success(`Program "${program.name}" has been deleted`);
             navigate('/programs');
@@ -557,14 +548,11 @@ export default function ProgramOverviewFacilityAdmin() {
                                                     <div>
                                                         <DropdownMenuItem
                                                             variant="destructive"
-                                                            onClick={() => {
-                                                                setDeleteConfirmationText(
-                                                                    ''
-                                                                );
+                                                            onClick={() =>
                                                                 setDeleteModalOpen(
                                                                     true
-                                                                );
-                                                            }}
+                                                                )
+                                                            }
                                                             disabled={
                                                                 !canDelete
                                                             }
@@ -693,129 +681,60 @@ export default function ProgramOverviewFacilityAdmin() {
                 </div>
             </div>
 
-            <Dialog
+            <FormModal
                 open={statusModalOpen}
                 onOpenChange={handleCloseStatusModal}
+                title="Change Class Status"
+                description={`Update the status for ${selectedClass?.name ?? ''}.`}
+                titleClassName="text-foreground"
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Change Class Status</DialogTitle>
-                        <DialogDescription>
-                            Update the status for {selectedClass?.name}.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-0">
-                        <Label htmlFor="classStatus" className="mb-0">
-                            New Status
-                        </Label>
-                        <Select
-                            value={selectedStatus}
-                            onValueChange={(value) => {
-                                setSelectedStatus(value);
-                            }}
+                <div className="space-y-0">
+                    <Label htmlFor="classStatus" className="mb-0">
+                        New Status
+                    </Label>
+                    <Select
+                        value={selectedStatus}
+                        onValueChange={(value) => {
+                            setSelectedStatus(value);
+                        }}
+                    >
+                        <SelectTrigger
+                            id="classStatus"
+                            className="h-9 bg-[#f3f3f5] border-[#d0d5dd] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                         >
-                            <SelectTrigger
-                                id="classStatus"
-                                className="h-9 bg-[#f3f3f5] border-[#d0d5dd] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.values(ProgClassStatus).map((s) => (
-                                    <SelectItem key={s} value={s}>
-                                        {s}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <div className="h-2" />
-                        <p className="text-xs text-gray-500">
-                            {getStatusDescription(selectedStatus)}
-                        </p>
-                    </div>
-                    <DialogFooter className="mt-6 gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => handleCloseStatusModal(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSaveStatus}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
-                        >
-                            Update Status
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete Program</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete{' '}
-                            <strong>{program.name}</strong>? This action cannot
-                            be undone.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 my-4">
-                        <div className="flex gap-3">
-                            <AlertCircle className="size-5 text-red-600 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm text-red-900 font-medium mb-1">
-                                    Warning
-                                </p>
-                                <p className="text-sm text-red-700">
-                                    This will permanently delete the program and
-                                    all associated data from the system. This
-                                    operation is irreversible.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="space-y-4 mb-2">
-                        <div>
-                            <Label htmlFor="deleteConfirmation">
-                                To confirm, type the program name:{' '}
-                                <strong>{program.name}</strong>
-                            </Label>
-                            <Input
-                                id="deleteConfirmation"
-                                placeholder="Type program name to confirm"
-                                value={deleteConfirmationText}
-                                onChange={(event) =>
-                                    setDeleteConfirmationText(
-                                        event.target.value
-                                    )
-                                }
-                                className="mt-2 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="pt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setDeleteModalOpen(false);
-                                setDeleteConfirmationText('');
-                            }}
-                            className="px-4 border-[#c9cfd6] focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={() => void handleDeleteProgram()}
-                            disabled={deleteConfirmationText !== program.name}
-                            className="px-7 sm:ml-1 focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50"
-                        >
-                            <Trash2 className="size-4 mr-2" />
-                            Delete Program
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.values(ProgClassStatus).map((s) => (
+                                <SelectItem key={s} value={s}>
+                                    {s}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="h-2" />
+                    <p className="text-xs text-gray-500">
+                        {getStatusDescription(selectedStatus)}
+                    </p>
+                </div>
+                <DialogFooter className="mt-6 gap-3">
+                    <Button
+                        variant="outline"
+                        onClick={() => handleCloseStatusModal(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSaveStatus} variant="brand">
+                        Update Status
+                    </Button>
+                </DialogFooter>
+            </FormModal>
+            <DeleteProgramDialog
+                open={deleteModalOpen}
+                onOpenChange={setDeleteModalOpen}
+                programName={program.name}
+                onConfirm={() => void handleDeleteProgram()}
+            />
             <ReactivateDialog
                 open={showReactivateDialog}
                 onOpenChange={setShowReactivateDialog}

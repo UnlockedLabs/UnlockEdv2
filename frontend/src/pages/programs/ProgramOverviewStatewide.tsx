@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
-    AlertCircle,
     ArrowRight,
     ChevronDown,
     ChevronUp,
@@ -30,18 +29,10 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
     ArchiveConfirmDialog,
     CannotArchiveDialog,
-    ReactivateDialog
+    ReactivateDialog,
+    DeleteProgramDialog
 } from '@/components/programs/ProgramDialogs';
 import {
     Tooltip,
@@ -147,7 +138,6 @@ export default function ProgramOverviewStatewide() {
     const [showCannotArchiveDialog, setShowCannotArchiveDialog] = useState(false);
     const [showReactivateDialog, setShowReactivateDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
     const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<string[]>([]);
 
@@ -593,10 +583,9 @@ export default function ProgramOverviewStatewide() {
                                     <TooltipTrigger asChild>
                                         <div>
                                             <DropdownMenuItem
-                                                onClick={() => {
-                                                    setDeleteConfirmText('');
-                                                    setShowDeleteDialog(true);
-                                                }}
+                                                onClick={() =>
+                                                    setShowDeleteDialog(true)
+                                                }
                                                 disabled={!canDelete}
                                                 className="text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                                             >
@@ -1121,78 +1110,12 @@ export default function ProgramOverviewStatewide() {
                     facilities={archiveBlockingFacilities}
                 />
 
-                <Dialog
+                <DeleteProgramDialog
                     open={showDeleteDialog}
                     onOpenChange={setShowDeleteDialog}
-                >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle className="text-[#203622]">
-                                Delete Program
-                            </DialogTitle>
-                            <DialogDescription>
-                                Are you sure you want to delete{' '}
-                                <strong>{program.name}</strong>? This action
-                                cannot be undone.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 my-4">
-                            <div className="flex gap-3">
-                                <AlertCircle className="size-5 text-red-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm text-red-900 font-medium mb-1">
-                                        Warning
-                                    </p>
-                                    <p className="text-sm text-red-700">
-                                        This will permanently delete the program
-                                        and all associated data from the system.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="deleteConfirmation">
-                                    To confirm, type the program name:{' '}
-                                    <strong>{program.name}</strong>
-                                </Label>
-                                <Input
-                                    id="deleteConfirmation"
-                                    placeholder="Type program name to confirm"
-                                    value={deleteConfirmText}
-                                    onChange={(event) =>
-                                        setDeleteConfirmText(event.target.value)
-                                    }
-                                    className="mt-2"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setShowDeleteDialog(false);
-                                    setDeleteConfirmText('');
-                                }}
-                                className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                disabled={deleteConfirmText !== program.name}
-                                onClick={() => {
-                                    void handleDeleteProgram();
-                                    setShowDeleteDialog(false);
-                                    setDeleteConfirmText('');
-                                }}
-                            >
-                                <Trash2 className="size-4 mr-2" />
-                                Delete Program
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                    programName={program.name}
+                    onConfirm={() => void handleDeleteProgram()}
+                />
             </div>
         </div>
     );

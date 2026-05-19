@@ -1,24 +1,18 @@
 import { useState, useEffect, startTransition } from 'react';
 import useSWR from 'swr';
-import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
-import { useToast } from '@/contexts/ToastContext';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
-import API from '@/api/api';
 import {
     User,
     Facility,
     ServerResponseMany,
-    ServerResponseOne,
-    NewUserResponse,
-    ToastState
+    ServerResponseOne
 } from '@/types';
 import { formatLastActive } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -29,14 +23,6 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -53,6 +39,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { AddResidentDialog } from '@/components/residents/AddResidentDialog';
 import {
     EditResidentDialog,
     ResetPasswordConfirmDialog,
@@ -60,7 +47,7 @@ import {
     DeactivateDialog,
     DeleteDialog,
     TransferDialog
-} from '@/components/residents/ResidentModals';
+} from '@/components/residents/ResidentDialogs';
 import {
     BulkResetPasswordDialog,
     BulkDeactivateDialog,
@@ -88,14 +75,6 @@ import {
 type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
 type SortDir = 'asc' | 'desc';
 
-interface StudentFormData {
-    name_first: string;
-    name_last: string;
-    username: string;
-    doc_id?: string;
-    facility_id?: number;
-}
-
 interface UserStatsData {
     total: number;
     active: number;
@@ -104,7 +83,6 @@ interface UserStatsData {
 
 export default function StudentManagement() {
     const navigate = useNavigate();
-    const { toaster } = useToast();
     const { user } = useAuth();
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
 
@@ -163,8 +141,6 @@ export default function StudentManagement() {
     const userData = data?.data ?? [];
     const totalItems = data?.meta?.total ?? 0;
 
-    const addForm = useForm<StudentFormData>();
-
     const handleSearchChange = (value: string) => {
         startTransition(() => {
             setSearchTerm(value);
@@ -180,35 +156,6 @@ export default function StudentManagement() {
             setSortDir('asc');
         }
         setPage(1);
-    };
-
-    const handleAddUser = async (formData: StudentFormData) => {
-        const user = {
-            name_first: formData.name_first,
-            name_last: formData.name_last,
-            username: formData.username,
-            doc_id: formData.doc_id,
-            role: 'student' as const,
-            ...(formData.facility_id
-                ? { facility_id: formData.facility_id }
-                : {})
-        };
-        const response = (await API.post<NewUserResponse, object>('users', {
-            user
-        })) as ServerResponseOne<NewUserResponse>;
-
-        if (response.success) {
-            setAddDialogOpen(false);
-            toaster(`Resident ${formData.name_first} ${formData.name_last} added successfully`, ToastState.success);
-            addForm.reset();
-            void mutate();
-            void mutateStats();
-        } else {
-            toaster(
-                response.message || 'Failed to create resident',
-                ToastState.error
-            );
-        }
     };
 
     const handleMutate = () => {
@@ -292,8 +239,6 @@ export default function StudentManagement() {
         </TableHead>
     );
 
-    const isFormValid = addForm.watch('name_first') && addForm.watch('name_last') && addForm.watch('username');
-
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Header */}
@@ -322,17 +267,9 @@ export default function StudentManagement() {
                                 Bulk Import
                             </Button>
                             <Button
-                                onClick={() => {
-                                    addForm.reset();
-                                    if (showFacilityColumn && user) {
-                                        addForm.setValue(
-                                            'facility_id',
-                                            user.facility_id
-                                        );
-                                    }
-                                    setAddDialogOpen(true);
-                                }}
-                                className="gap-2 bg-[#556830] hover:bg-[#203622]"
+                                onClick={() => setAddDialogOpen(true)}
+                                variant="brand"
+                                className="gap-2"
                             >
                                 <Plus className="size-4" />
                                 Add Resident
@@ -658,134 +595,16 @@ export default function StudentManagement() {
                     </div>
                 )}
 
-                {/* Add Resident Dialog */}
-                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add New Resident</DialogTitle>
-                            <DialogDescription>
-                                Create a new resident profile in the system
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                void addForm.handleSubmit(
-                                    (d) => void handleAddUser(d)
-                                )(e);
-                            }}
-                        >
-                            <div className="space-y-4 py-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="add-first">
-                                            First Name
-                                        </Label>
-                                        <Input
-                                            id="add-first"
-                                            placeholder="First name"
-                                            {...addForm.register('name_first', {
-                                                required: true
-                                            })}
-                                            className="mt-2"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="add-last">
-                                            Last Name
-                                        </Label>
-                                        <Input
-                                            id="add-last"
-                                            placeholder="Last name"
-                                            {...addForm.register('name_last', {
-                                                required: true
-                                            })}
-                                            className="mt-2"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label htmlFor="add-username">
-                                        Username
-                                    </Label>
-                                    <Input
-                                        id="add-username"
-                                        placeholder="Enter username for login"
-                                        {...addForm.register('username', {
-                                            required: true
-                                        })}
-                                        className="mt-2"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="add-doc-id">
-                                        Resident ID
-                                    </Label>
-                                    <Input
-                                        id="add-doc-id"
-                                        placeholder="e.g., R001"
-                                        {...addForm.register('doc_id')}
-                                        className="mt-2"
-                                    />
-                                </div>
-                                {showFacilityColumn && (
-                                    <div>
-                                        <Label htmlFor="add-facility">
-                                            Facility
-                                        </Label>
-                                        <Select
-                                            value={
-                                                addForm.watch('facility_id')
-                                                    ? String(
-                                                          addForm.watch(
-                                                              'facility_id'
-                                                          )
-                                                      )
-                                                    : undefined
-                                            }
-                                            onValueChange={(v) =>
-                                                addForm.setValue(
-                                                    'facility_id',
-                                                    Number(v)
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger className="mt-2">
-                                                <SelectValue placeholder="Select facility" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {facilities.map((f) => (
-                                                    <SelectItem
-                                                        key={f.id}
-                                                        value={String(f.id)}
-                                                    >
-                                                        {f.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-                            </div>
-                            <DialogFooter className="pt-4">
-                                <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => setAddDialogOpen(false)}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={!isFormValid}
-                                    className="bg-[#556830] hover:bg-[#203622]"
-                                >
-                                    Add Resident
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <AddResidentDialog
+                    open={addDialogOpen}
+                    onOpenChange={setAddDialogOpen}
+                    facilities={facilities}
+                    showFacilityColumn={showFacilityColumn}
+                    defaultFacilityId={
+                        showFacilityColumn && user ? user.facility_id : undefined
+                    }
+                    onSuccess={handleMutate}
+                />
 
                 {/* Action Dialogs */}
                 {selectedUser && (

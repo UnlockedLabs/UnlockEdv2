@@ -3,19 +3,13 @@ import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { FormModal } from '@/components/shared';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
@@ -114,21 +108,18 @@ export function ChangeRoomModal({
   const useBulkLayout = showSessionsList || sessions.length > 1;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent
-        className={useBulkLayout ? 'max-w-2xl' : ''}
-        onPointerDownOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-[#203622]">
-            Change Room
-          </DialogTitle>
-          <DialogDescription>
-            {useBulkLayout
-              ? `Select a new room for ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`
-              : `Change the room for the class scheduled for ${sessions[0]?.dateLabel}`}
-          </DialogDescription>
-        </DialogHeader>
+    <FormModal
+      open={open}
+      onOpenChange={(isOpen) => !isOpen && onClose()}
+      title="Change Room"
+      description={
+        useBulkLayout
+          ? `Select a new room for ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`
+          : `Change the room for the class scheduled for ${sessions[0]?.dateLabel ?? ''}`
+      }
+      className={useBulkLayout ? 'max-w-2xl' : undefined}
+      preventOutsideClose
+    >
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="newRoom">New Room</Label>
@@ -279,16 +270,13 @@ export function ChangeRoomModal({
             Cancel
           </Button>
           <Button
-            onClick={() => {
-              void handleApply();
-            }}
+            onClick={() => void handleApply()}
             disabled={!selectedRoomId || isSubmitting}
-            className="bg-[#556830] hover:bg-[#203622] text-white"
+            variant="brand"
           >
             {isSubmitting ? 'Updating...' : 'Change Room'}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+    </FormModal>
   );
 }

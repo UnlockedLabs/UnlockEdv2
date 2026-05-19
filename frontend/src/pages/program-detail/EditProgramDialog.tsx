@@ -25,13 +25,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { FormModal } from '@/components/shared';
 import {
     ALL_PROGRAM_TYPES,
     ALL_CREDIT_TYPES,
@@ -191,16 +185,15 @@ export default function EditProgramDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Edit Program</DialogTitle>
-                    <DialogDescription>
-                        Make changes to the program details and categorization.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-6">
+        <FormModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Edit Program"
+            description="Make changes to the program details and categorization."
+            className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto"
+            titleClassName="text-foreground"
+        >
+            <div className="space-y-6">
                     <div>
                         <h4 className="text-sm text-gray-700 mb-3">
                             Basic Information
@@ -422,7 +415,8 @@ export default function EditProgramDialog({
                             Cancel
                         </Button>
                         <Button
-                            className="bg-[#556830] hover:bg-[#203622] text-white focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                            variant="brand"
+                            className="focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                             onClick={() => void handleSave()}
                             disabled={saving}
                         >
@@ -430,7 +424,6 @@ export default function EditProgramDialog({
                         </Button>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }

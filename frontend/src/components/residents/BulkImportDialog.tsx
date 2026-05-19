@@ -11,14 +11,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormModal, TonedPanel } from '@/components/shared';
 import { Upload, Download, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface BulkImportDialogProps {
@@ -132,15 +126,15 @@ export function BulkImportDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>Bulk Import Residents</DialogTitle>
-                    <DialogDescription>
-                        Import multiple resident accounts from a CSV file
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6 py-4">
+        <FormModal
+            open={open}
+            onOpenChange={handleOpenChange}
+            title="Bulk Import Residents"
+            description="Import multiple resident accounts from a CSV file"
+            className="max-w-3xl"
+            titleClassName="text-foreground"
+        >
+            <div className="space-y-6 py-4">
                     {step === 'upload' ? (
                         <>
                             <Label
@@ -214,7 +208,7 @@ export function BulkImportDialog({
                                 </div>
                             </Label>
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <TonedPanel tone="blue">
                                 <div className="flex items-start gap-3">
                                     <Download className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                     <div className="flex-1">
@@ -237,12 +231,12 @@ export function BulkImportDialog({
                                         </Button>
                                     </div>
                                 </div>
-                            </div>
+                            </TonedPanel>
                         </>
                     ) : (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <TonedPanel tone="green">
                                     <div className="flex items-center gap-2 mb-1">
                                         <CheckCircle className="size-5 text-green-600" />
                                         <div className="font-medium text-green-900">
@@ -255,8 +249,8 @@ export function BulkImportDialog({
                                     <div className="text-xs text-green-600 mt-1">
                                         Ready to import
                                     </div>
-                                </div>
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                </TonedPanel>
+                                <TonedPanel tone="red">
                                     <div className="flex items-center gap-2 mb-1">
                                         <AlertCircle className="size-5 text-red-600" />
                                         <div className="font-medium text-red-900">
@@ -269,7 +263,7 @@ export function BulkImportDialog({
                                     <div className="text-xs text-red-600 mt-1">
                                         Need correction
                                     </div>
-                                </div>
+                                </TonedPanel>
                             </div>
 
                             {invalidRows.length > 0 && (
@@ -329,7 +323,7 @@ export function BulkImportDialog({
                             )}
 
                             {invalidRows.length === 0 && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <TonedPanel tone="green">
                                     <div className="flex items-center gap-3">
                                         <CheckCircle className="size-5 text-green-600" />
                                         <div>
@@ -343,7 +337,7 @@ export function BulkImportDialog({
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </TonedPanel>
                             )}
                         </div>
                     )}
@@ -360,7 +354,7 @@ export function BulkImportDialog({
                             <Button
                                 onClick={() => void handleValidateCSV()}
                                 disabled={!uploadedFile || validating}
-                                className="bg-[#556830] hover:bg-[#203622]"
+                                variant="brand"
                             >
                                 {validating ? 'Validating...' : 'Validate CSV'}
                             </Button>
@@ -383,7 +377,7 @@ export function BulkImportDialog({
                                 disabled={
                                     validRows.length === 0 || creating
                                 }
-                                className="bg-[#556830] hover:bg-[#203622]"
+                                variant="brand"
                             >
                                 {creating
                                     ? 'Creating...'
@@ -392,7 +386,6 @@ export function BulkImportDialog({
                         </>
                     )}
                 </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        </FormModal>
     );
 }

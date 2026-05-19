@@ -7,3 +7,6 @@ export { FormModal } from './FormModal';
 export { DataTable } from './DataTable';
 export type { Column } from './DataTable';
 export { InfoTooltip } from './InfoTooltip';
+export { TonedPanel } from './TonedPanel';
+export type { PanelTone } from './TonedPanel';
+export { useTypeToConfirm } from './useTypeToConfirm';
