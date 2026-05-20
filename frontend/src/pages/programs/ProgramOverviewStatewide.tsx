@@ -250,18 +250,19 @@ export default function ProgramOverviewStatewide() {
         }
     }
 
-    async function handleDeleteProgram() {
-        if (!program) return;
+    async function handleDeleteProgram(): Promise<boolean> {
+        if (!program) return false;
         const resp = await API.delete(`programs/${program.id}`);
         if (resp.success) {
             toast.success(`Program "${program.name}" has been deleted`);
             navigate('/programs');
-            return;
+            return true;
         }
         if (resp.status === 409) {
             void mutateDeleteCheck();
         }
         toast.error(resp.message || 'Failed to delete program');
+        return false;
     }
 
     const facilityList = useMemo(() => {
@@ -1114,7 +1115,7 @@ export default function ProgramOverviewStatewide() {
                     open={showDeleteDialog}
                     onOpenChange={setShowDeleteDialog}
                     programName={program.name}
-                    onConfirm={() => void handleDeleteProgram()}
+                    onConfirm={handleDeleteProgram}
                 />
             </div>
         </div>
