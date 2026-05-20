@@ -1,6 +1,6 @@
 module UnlockEdv2
 
-go 1.25.7
+go 1.26.3
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.1
@@ -26,10 +26,8 @@ require (
 	gorm.io/gorm v1.31.1
 )
 
-require (
-	github.com/go-pdf/fpdf v0.9.0
-	github.com/xuri/excelize/v2 v2.10.0
-)
+require github.com/xuri/excelize/v2 v2.10.0
+
 require (
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.5 // indirect
 	github.com/richardlehane/mscfb v1.0.6 // indirect
