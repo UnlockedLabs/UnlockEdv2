@@ -30,7 +30,9 @@ export function useTypeToConfirm({
 
     return {
         value,
-        matches: value === expected,
+        // Never match an empty expected value — otherwise dialogs that fall back
+        // to an empty token (e.g. a missing resident doc_id) would skip the gate.
+        matches: expected.length > 0 && value === expected,
         inputProps: {
             value,
             onChange: (e) => setValue(e.target.value)

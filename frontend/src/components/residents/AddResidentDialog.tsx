@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import API from '@/api/api';
 import {
@@ -48,6 +48,7 @@ export function AddResidentDialog({
 }: AddResidentDialogProps) {
     const { toaster } = useToast();
     const form = useForm<AddResidentFormData>();
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
@@ -59,33 +60,39 @@ export function AddResidentDialog({
     }, [open, defaultFacilityId, form]);
 
     const handleAddUser = async (formData: AddResidentFormData) => {
-        const user = {
-            name_first: formData.name_first,
-            name_last: formData.name_last,
-            username: formData.username,
-            doc_id: formData.doc_id,
-            role: 'student' as const,
-            ...(formData.facility_id
-                ? { facility_id: formData.facility_id }
-                : {})
-        };
-        const response = (await API.post<NewUserResponse, object>('users', {
-            user
-        })) as ServerResponseOne<NewUserResponse>;
+        if (submitting) return;
+        setSubmitting(true);
+        try {
+            const user = {
+                name_first: formData.name_first,
+                name_last: formData.name_last,
+                username: formData.username,
+                doc_id: formData.doc_id,
+                role: 'student' as const,
+                ...(formData.facility_id
+                    ? { facility_id: formData.facility_id }
+                    : {})
+            };
+            const response = (await API.post<NewUserResponse, object>('users', {
+                user
+            })) as ServerResponseOne<NewUserResponse>;
 
-        if (response.success) {
-            onOpenChange(false);
-            toaster(
-                `Resident ${formData.name_first} ${formData.name_last} added successfully`,
-                ToastState.success
-            );
-            form.reset();
-            onSuccess();
-        } else {
-            toaster(
-                response.message || 'Failed to create resident',
-                ToastState.error
-            );
+            if (response.success) {
+                onOpenChange(false);
+                toaster(
+                    `Resident ${formData.name_first} ${formData.name_last} added successfully`,
+                    ToastState.success
+                );
+                form.reset();
+                onSuccess();
+            } else {
+                toaster(
+                    response.message || 'Failed to create resident',
+                    ToastState.error
+                );
+            }
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -191,10 +198,10 @@ export function AddResidentDialog({
                     </Button>
                     <Button
                         type="submit"
-                        disabled={!isFormValid}
+                        disabled={!isFormValid || submitting}
                         variant="brand"
                     >
-                        Add Resident
+                        {submitting ? 'Adding...' : 'Add Resident'}
                     </Button>
                 </DialogFooter>
             </form>

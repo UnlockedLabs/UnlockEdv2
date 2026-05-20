@@ -143,53 +143,57 @@ export function BulkCancelClassesModal({
         if (!canPreview) return;
         setLoading(true);
 
-        const resp = await API.get<InstructorClassData[]>(
-            `instructors/${selectedInstructor}/classes?start_date=${dateRange.start}&end_date=${dateRange.end}`
-        );
-
-        setLoading(false);
-
-        if (!resp.success) {
-            toast.error(resp.message ?? 'Failed to fetch session data');
-            return;
-        }
-
-        const classes: InstructorClassData[] = Array.isArray(resp.data) ? resp.data as InstructorClassData[] : [];
-        const upcomingClasses = classes.filter(
-            (c) => c.upcomingSessions > 0
-        );
-        const totalUpcoming = classes.reduce(
-            (sum, c) => sum + c.upcomingSessions,
-            0
-        );
-
-        if (totalUpcoming === 0) {
-            toast.error(
-                'No sessions found to cancel for the selected instructor and date range.'
+        try {
+            const resp = await API.get<InstructorClassData[]>(
+                `instructors/${selectedInstructor}/classes?start_date=${dateRange.start}&end_date=${dateRange.end}`
             );
-            return;
-        }
 
-        setPreview({
-            sessionCount: totalUpcoming,
-            classCount: upcomingClasses.length,
-            studentCount: classes.reduce(
-                (sum, c) => sum + c.enrolledCount,
+            if (!resp.success) {
+                toast.error(resp.message ?? 'Failed to fetch session data');
+                return;
+            }
+
+            const classes: InstructorClassData[] = Array.isArray(resp.data) ? resp.data as InstructorClassData[] : [];
+            const upcomingClasses = classes.filter(
+                (c) => c.upcomingSessions > 0
+            );
+            const totalUpcoming = classes.reduce(
+                (sum, c) => sum + c.upcomingSessions,
                 0
-            ),
-            classes: classes.map((c) => ({
-                classId: c.id,
-                className: c.name,
-                upcomingSessions: c.upcomingSessions,
-                cancelledSessions: c.cancelledSessions,
-                studentCount: c.enrolledCount,
-                startTime: c.startTime,
-                duration: c.duration,
-                room: c.room,
-                sessionDates: c.sessionDates ?? []
-            }))
-        });
-        setShowConfirmation(true);
+            );
+
+            if (totalUpcoming === 0) {
+                toast.error(
+                    'No sessions found to cancel for the selected instructor and date range.'
+                );
+                return;
+            }
+
+            setPreview({
+                sessionCount: totalUpcoming,
+                classCount: upcomingClasses.length,
+                studentCount: classes.reduce(
+                    (sum, c) => sum + c.enrolledCount,
+                    0
+                ),
+                classes: classes.map((c) => ({
+                    classId: c.id,
+                    className: c.name,
+                    upcomingSessions: c.upcomingSessions,
+                    cancelledSessions: c.cancelledSessions,
+                    studentCount: c.enrolledCount,
+                    startTime: c.startTime,
+                    duration: c.duration,
+                    room: c.room,
+                    sessionDates: c.sessionDates ?? []
+                }))
+            });
+            setShowConfirmation(true);
+        } catch {
+            toast.error('Failed to fetch session data');
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleConfirm() {
@@ -197,36 +201,40 @@ export function BulkCancelClassesModal({
         toast.dismiss();
         setLoading(true);
 
-        const request: BulkCancelSessionsRequest = {
-            instructorId: Number(selectedInstructor),
-            startDate: dateRange.start,
-            endDate: dateRange.end,
-            reason: finalReason
-        };
+        try {
+            const request: BulkCancelSessionsRequest = {
+                instructorId: Number(selectedInstructor),
+                startDate: dateRange.start,
+                endDate: dateRange.end,
+                reason: finalReason
+            };
 
-        const resp = await API.post<BulkCancelSessionsResponse, BulkCancelSessionsRequest>(
-            'program-classes/bulk-cancel',
-            request
-        );
+            const resp = await API.post<BulkCancelSessionsResponse, BulkCancelSessionsRequest>(
+                'program-classes/bulk-cancel',
+                request
+            );
 
-        setLoading(false);
-
-        if (resp.success) {
-            const data = resp.data as BulkCancelSessionsResponse | undefined;
-            if (data?.success) {
-                const msg =
-                    data.message ??
-                    `Successfully cancelled ${data.sessionCount} session${data.sessionCount === 1 ? '' : 's'} across ${data.classCount} class${data.classCount === 1 ? '' : 'es'}.`;
-                toast.success(msg);
-                void mutate();
-                handleClose();
+            if (resp.success) {
+                const data = resp.data as BulkCancelSessionsResponse | undefined;
+                if (data?.success) {
+                    const msg =
+                        data.message ??
+                        `Successfully cancelled ${data.sessionCount} session${data.sessionCount === 1 ? '' : 's'} across ${data.classCount} class${data.classCount === 1 ? '' : 'es'}.`;
+                    toast.success(msg);
+                    void mutate();
+                    handleClose();
+                } else {
+                    toast.error(
+                        'No sessions found to cancel for the selected instructor and date range.'
+                    );
+                }
             } else {
-                toast.error(
-                    'No sessions found to cancel for the selected instructor and date range.'
-                );
+                toast.error(resp.message ?? 'Failed to cancel sessions');
             }
-        } else {
-            toast.error(resp.message ?? 'Failed to cancel sessions');
+        } catch {
+            toast.error('Failed to cancel sessions');
+        } finally {
+            setLoading(false);
         }
     }
 
