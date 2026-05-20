@@ -1,5 +1,6 @@
 FROM ghcr.io/unlockedlabs/golang-jasper:latest
 
+ENV GOTOOLCHAIN=auto
 WORKDIR /app
 
 RUN go install github.com/air-verse/air@v1.61.0

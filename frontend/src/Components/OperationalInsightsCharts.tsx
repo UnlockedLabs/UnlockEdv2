@@ -7,7 +7,7 @@ import EngagementRateGraph from './EngagementRateGraph';
 import { useAuth, canSwitchFacility } from '@/useAuth';
 import DateRangePicker, {
     DateRangeValue,
-    makeLastNDaysRange
+    allTimeRange
 } from './inputs/DateRangePicker';
 
 const buildMetricsQuery = (
@@ -33,9 +33,7 @@ const rangeLabel = (range: DateRangeValue): string => {
 
 const OperationalInsights = () => {
     const [facility, setFacility] = useState('all');
-    const [dateRange, setDateRange] = useState<DateRangeValue>(() =>
-        makeLastNDaysRange(30)
-    );
+    const [dateRange, setDateRange] = useState<DateRangeValue>(allTimeRange);
     const [resetCache, setResetCache] = useState(false);
     const { user } = useAuth();
 
