@@ -215,7 +215,8 @@ interface DeleteProgramDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     programName: string;
-    onConfirm: () => void;
+    /** Resolve to `true` on success to dismiss the dialog; `false` keeps it open so the user can retry. */
+    onConfirm: () => Promise<boolean>;
 }
 
 export function DeleteProgramDialog({
@@ -226,9 +227,9 @@ export function DeleteProgramDialog({
 }: DeleteProgramDialogProps) {
     const confirm = useTypeToConfirm({ open, expected: programName });
 
-    function handleConfirm() {
-        onConfirm();
-        onOpenChange(false);
+    async function handleConfirm() {
+        const ok = await onConfirm();
+        if (ok) onOpenChange(false);
     }
 
     return (
@@ -278,7 +279,7 @@ export function DeleteProgramDialog({
                 <Button
                     variant="destructive"
                     disabled={!confirm.matches}
-                    onClick={handleConfirm}
+                    onClick={() => void handleConfirm()}
                 >
                     <Trash2 className="size-4 mr-2" />
                     Delete Program

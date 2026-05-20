@@ -371,19 +371,19 @@ export default function ProgramOverviewFacilityAdmin() {
         setSelectedClass(null);
     }
 
-    async function handleDeleteProgram() {
-        if (!program) return;
+    async function handleDeleteProgram(): Promise<boolean> {
+        if (!program) return false;
         const resp = await API.delete(`programs/${program.id}`);
-        setDeleteModalOpen(false);
         if (resp.success) {
             toast.success(`Program "${program.name}" has been deleted`);
             navigate('/programs');
-            return;
+            return true;
         }
         if (resp.status === 409) {
             void mutateDeleteCheck();
         }
         toast.error(resp.message || 'Failed to delete program');
+        return false;
     }
 
     function getStatusDescription(status: string) {
@@ -733,7 +733,7 @@ export default function ProgramOverviewFacilityAdmin() {
                 open={deleteModalOpen}
                 onOpenChange={setDeleteModalOpen}
                 programName={program.name}
-                onConfirm={() => void handleDeleteProgram()}
+                onConfirm={handleDeleteProgram}
             />
             <ReactivateDialog
                 open={showReactivateDialog}
