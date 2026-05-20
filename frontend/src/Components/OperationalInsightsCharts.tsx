@@ -1,16 +1,40 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import { FilterPastTime, DepartmentMetrics, ServerResponseOne } from '@/common';
+import { DepartmentMetrics, ServerResponseOne } from '@/common';
 import StatsCard from './StatsCard';
 import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
 import { useAuth, canSwitchFacility } from '@/useAuth';
-import DropdownControl from './inputs/DropdownControl';
+import DateRangePicker, {
+    DateRangeValue,
+    makeLastNDaysRange
+} from './inputs/DateRangePicker';
+
+const buildMetricsQuery = (
+    facility: string,
+    range: DateRangeValue,
+    resetCache: boolean
+) => {
+    const params = new URLSearchParams({ facility });
+    if (range.allTime) {
+        params.set('all_time', 'true');
+    } else {
+        params.set('start_date', range.startDate);
+        params.set('end_date', range.endDate);
+    }
+    if (resetCache) params.set('reset', 'true');
+    return `/api/department-metrics?${params.toString()}`;
+};
+
+const rangeLabel = (range: DateRangeValue): string => {
+    if (range.allTime) return 'all time';
+    return `from ${range.startDate} to ${range.endDate}`;
+};
 
 const OperationalInsights = () => {
     const [facility, setFacility] = useState('all');
-    const [timeFilter, setTimeFilter] = useState<FilterPastTime>(
-        FilterPastTime['Past 30 days']
+    const [dateRange, setDateRange] = useState<DateRangeValue>(() =>
+        makeLastNDaysRange(30)
     );
     const [resetCache, setResetCache] = useState(false);
     const { user } = useAuth();
@@ -18,13 +42,11 @@ const OperationalInsights = () => {
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseOne<DepartmentMetrics>,
         Error
-    >(
-        `/api/department-metrics?facility=${facility}&days=${timeFilter}&reset=${resetCache}`
-    );
+    >(buildMetricsQuery(facility, dateRange, resetCache));
 
     useEffect(() => {
         void mutate();
-    }, [facility, timeFilter, resetCache]);
+    }, [facility, dateRange, resetCache]);
 
     useEffect(() => {
         if (user && !canSwitchFacility(user)) {
@@ -37,6 +59,7 @@ const OperationalInsights = () => {
         metrics && new Date(metrics.last_cache).toLocaleString('en-US', {});
 
     const totalUsers = metrics?.data.total_residents ?? 0;
+    const periodLabel = rangeLabel(dateRange);
 
     return (
         <div className="overflow-x-hidden">
@@ -44,21 +67,12 @@ const OperationalInsights = () => {
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
                 <>
-                    <div className="flex items-end justify-between pb-4">
-                        <div className="flex flex-row gap-4">
-                            <div>
-                                <label
-                                    htmlFor="days"
-                                    className="label  leading-tight"
-                                >
-                                    <span className="label-text">Days</span>
-                                </label>
-                                <DropdownControl
-                                    enumType={FilterPastTime}
-                                    value={timeFilter}
-                                    setState={setTimeFilter}
-                                />
-                            </div>
+                    <div className="flex items-end justify-between pb-4 gap-4 flex-wrap">
+                        <div className="flex flex-row gap-4 flex-wrap items-end">
+                            <DateRangePicker
+                                value={dateRange}
+                                onChange={setDateRange}
+                            />
 
                             {canSwitchFacility(user!) && (
                                 <div>
@@ -120,11 +134,11 @@ const OperationalInsights = () => {
                                 (metrics.data.active_users / totalUsers) *
                                 100
                             ).toFixed(2)}% of total`}
-                            tooltip={`${
-                                timeFilter === FilterPastTime['All time']
+                            tooltip={
+                                dateRange.allTime
                                     ? 'All time number of users who have logged in'
-                                    : `Number of users who have logged in in the last ${timeFilter} days`
-                            }`}
+                                    : `Number of users who logged in ${periodLabel}`
+                            }
                         />
                         <StatsCard
                             title="Inactive Users"
@@ -136,11 +150,11 @@ const OperationalInsights = () => {
                                     ? 'User'
                                     : 'Users'
                             }
-                            tooltip={`${
-                                timeFilter === FilterPastTime['All time']
+                            tooltip={
+                                dateRange.allTime
                                     ? 'All time number of users who have not logged in'
-                                    : `Number of users who have not logged in in the last ${timeFilter} days`
-                            }`}
+                                    : `Number of users who did not log in ${periodLabel}`
+                            }
                         />
                         <StatsCard
                             title="New Users Added"
@@ -150,11 +164,11 @@ const OperationalInsights = () => {
                                     ? 'User'
                                     : 'Users'
                             }
-                            tooltip={`${
-                                timeFilter === FilterPastTime['All time']
+                            tooltip={
+                                dateRange.allTime
                                     ? 'All time number of new residents added'
-                                    : `Number of new residents added in the last ${timeFilter} days`
-                            }`}
+                                    : `New residents added ${periodLabel}`
+                            }
                         />
                         <StatsCard
                             title="Total Logins"
@@ -164,7 +178,11 @@ const OperationalInsights = () => {
                                     ? 'Login'
                                     : 'Logins'
                             }
-                            tooltip={`${timeFilter === FilterPastTime['All time'] ? 'All time number of logins' : `Number of logins in the last ${timeFilter} days`}`}
+                            tooltip={
+                                dateRange.allTime
+                                    ? 'All time number of logins'
+                                    : `Number of logins ${periodLabel}`
+                            }
                         />
                     </div>
 
