@@ -143,7 +143,7 @@ export function ChangeRoomModal({
                         <Button
                             onClick={() => void handleSubmit()}
                             disabled={submitting || !roomId}
-                            className="bg-[#556830] text-white hover:bg-[#203622]"
+                            className="bg-brand text-white hover:bg-brand-dark"
                         >
                             {submitting ? 'Saving...' : 'Change Room'}
                         </Button>

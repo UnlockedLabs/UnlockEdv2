@@ -115,14 +115,14 @@ function formatLastActive(dateString?: string | null) {
 function getRoleBadge(role: UserRole) {
     if (role === UserRole.SystemAdmin) {
         return (
-            <Badge className="bg-[#203622] text-white border-[#203622]">
+            <Badge className="bg-brand-dark text-white border-brand-dark">
                 System Admin
             </Badge>
         );
     }
     if (role === UserRole.DepartmentAdmin) {
         return (
-            <Badge className="bg-[#556830] text-white border-[#556830]">
+            <Badge className="bg-brand text-white border-brand">
                 Department Admin
             </Badge>
         );
@@ -433,14 +433,14 @@ export default function AdminManagement() {
             <div className="mb-8">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-[#203622]">Admin Management</h1>
+                        <h1 className="text-brand-dark">Admin Management</h1>
                         <p className="text-gray-600 mt-1">
                             Manage administrator accounts and permissions
                         </p>
                     </div>
                     <Button
                         onClick={openAddDialog}
-                        className="gap-2 bg-[#556830] hover:bg-[#203622] text-white"
+                        className="gap-2 bg-brand hover:bg-brand-dark text-white"
                     >
                         <Plus className="size-4" />
                         Add Admin
@@ -489,11 +489,11 @@ export default function AdminManagement() {
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="text-sm text-gray-600 mb-1">Total Admins</div>
-                    <div className="text-2xl font-medium text-[#203622]">{totalAdmins}</div>
+                    <div className="text-2xl font-medium text-brand-dark">{totalAdmins}</div>
                 </div>
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="text-sm text-gray-600 mb-1">Department Admins</div>
-                    <div className="text-2xl font-medium text-[#556830]">{deptAdminCount}</div>
+                    <div className="text-2xl font-medium text-brand">{deptAdminCount}</div>
                 </div>
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="text-sm text-gray-600 mb-1">Facility Admins</div>
@@ -503,10 +503,10 @@ export default function AdminManagement() {
 
             {/* Bulk action bar */}
             {selectedAdmins.size > 0 && (
-                <div className="fixed bottom-6 left-[calc(50%-7px)] -translate-x-1/2 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 z-50">
+                <div className="fixed bottom-6 left-[calc(50%-7px)] -translate-x-1/2 bg-surface-hover border border-gray-400 rounded-lg shadow-lg px-6 py-4 z-50">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">
-                            <span className="font-semibold text-[#203622]">
+                            <span className="font-semibold text-brand-dark">
                                 {selectedAdmins.size}
                             </span>
                             <span className="text-gray-600 ml-1">
@@ -941,7 +941,7 @@ export default function AdminManagement() {
                         <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                             <div className="text-sm text-gray-600 mb-2">Temporary Password</div>
                             <div className="flex items-center gap-2">
-                                <code className="flex-1 text-lg font-mono font-semibold text-[#203622] select-all">
+                                <code className="flex-1 text-lg font-mono font-semibold text-brand-dark select-all">
                                     {tempPassword}
                                 </code>
                                 <Button

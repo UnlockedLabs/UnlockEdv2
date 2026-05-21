@@ -284,7 +284,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="text-[#203622] mb-1">
+                    <h3 className="text-brand-dark mb-1">
                         Recurring Schedule Pattern
                     </h3>
                     <p className="text-sm text-gray-600">
@@ -296,10 +296,10 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
             <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA] rounded-lg">
-                        <Calendar className="size-5 text-[#556830] mt-0.5" />
+                    <div className="flex items-start gap-4 p-4 bg-surface-hover rounded-lg">
+                        <Calendar className="size-5 text-brand mt-0.5" />
                         <div>
-                            <div className="text-[#203622] mb-1">
+                            <div className="text-brand-dark mb-1">
                                 Regular Sessions
                             </div>
                             <div className="text-sm text-gray-600">
@@ -313,10 +313,10 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                             )}
                         </div>
                     </div>
-                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA] rounded-lg">
-                        <Clock className="size-5 text-[#556830] mt-0.5" />
+                    <div className="flex items-start gap-4 p-4 bg-surface-hover rounded-lg">
+                        <Clock className="size-5 text-brand mt-0.5" />
                         <div>
-                            <div className="text-[#203622] mb-1">
+                            <div className="text-brand-dark mb-1">
                                 Duration
                             </div>
                             <div className="text-sm text-gray-600">
@@ -336,7 +336,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-[#203622]">
+                        <h4 className="text-brand-dark">
                             {monthLabel}
                         </h4>
                         <p className="text-sm text-gray-600">
@@ -380,8 +380,8 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                                     !day.isCurrentMonth && 'bg-gray-50',
                                                     day.isToday && 'bg-blue-50',
                                                     showAsClass && day.isCurrentMonth && 'bg-green-50',
-                                                    isClickable && 'cursor-pointer hover:ring-2 hover:ring-[#556830] hover:ring-inset',
-                                                    selectedSession?.instance.date === day.dateStr && 'ring-2 ring-inset ring-[#556830]'
+                                                    isClickable && 'cursor-pointer hover:ring-2 hover:ring-brand hover:ring-inset',
+                                                    selectedSession?.instance.date === day.dateStr && 'ring-2 ring-inset ring-brand'
                                                 )}
                                             >
                                                 <div className="flex flex-col h-full">
@@ -407,7 +407,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
                                                     {showAsClass && day.isCurrentMonth && (
                                                         <div className="mt-1">
-                                                            <div className="text-xs bg-[#556830] text-white rounded px-1.5 py-0.5 inline-block">
+                                                            <div className="text-xs bg-brand text-white rounded px-1.5 py-0.5 inline-block">
                                                                 Class
                                                             </div>
                                                             <div className="text-xs text-gray-600 mt-1">

@@ -354,13 +354,13 @@ export default function ProgramsPage() {
         : 'Supporting resident growth and rehabilitation';
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] dark:bg-[#0a0a0a]">
+        <div className="min-h-[calc(100vh-4rem)] bg-surface-hover dark:bg-[#0a0a0a]">
             <div className="max-w-7xl mx-auto px-6 pt-[34px] pb-8">
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="text-2xl font-medium text-[#203622]">
+                            <h1 className="text-2xl font-medium text-brand-dark">
                                 Programs
                             </h1>
                         <p className="text-gray-600 mt-1.5 leading-[1.5]">
@@ -368,7 +368,7 @@ export default function ProgramsPage() {
                             </p>
                         </div>
                         <Button
-                            className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2 cursor-default"
+                            className="bg-brand-gold text-brand-dark hover:bg-[#d9a419] gap-2 cursor-default"
                             onClick={() => setShowAddProgram(!showAddProgram)}
                         >
                             <Plus className="size-5" />
@@ -567,7 +567,7 @@ export default function ProgramsPage() {
                 {/* Add Program Form */}
                 {showAddProgram && (
                     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                        <h3 className="text-[#203622] mb-4">
+                        <h3 className="text-brand-dark mb-4">
                             {isDeptAdminUser
                                 ? 'Create Statewide Program'
                                 : 'Add New Program'}
@@ -677,7 +677,7 @@ export default function ProgramsPage() {
                                                                     );
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
+                                                            className="rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -738,7 +738,7 @@ export default function ProgramsPage() {
                                                                     );
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
+                                                            className="rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -906,7 +906,7 @@ export default function ProgramsPage() {
                                                                                 );
                                                                             }
                                                                         }}
-                                                                        className="rounded-[4px] border-gray-300 text-[#556830] accent-[#556830] focus:outline-none focus-visible:outline-none"
+                                                                        className="rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none"
                                                                     />
                                                                 </span>
                                                                 <span className="text-sm text-gray-700">
@@ -950,7 +950,7 @@ export default function ProgramsPage() {
                                     Cancel
                                 </Button>
                                 <Button
-                                    className="bg-[#556830] hover:bg-[#203622] text-white"
+                                    className="bg-brand hover:bg-brand-dark text-white"
                                     onClick={() => void handleCreateProgram()}
                                     disabled={isSubmitting}
                                 >
@@ -1028,7 +1028,7 @@ function StatCard({
 }) {
     const cardContent = (
         <div className="bg-white rounded-lg border border-gray-200 p-6 cursor-help">
-            <p className="text-3xl text-[#203622] mb-1">{value}</p>
+            <p className="text-3xl text-brand-dark mb-1">{value}</p>
             <p className="text-sm text-gray-600">{label}</p>
         </div>
     );
@@ -1040,7 +1040,7 @@ function StatCard({
     return (
         <Tooltip>
             <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
-            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+            <TooltipContent className="bg-brand-dark text-white max-w-xs">
                 {tooltip}
             </TooltipContent>
         </Tooltip>
@@ -1065,13 +1065,13 @@ function ProgramCard({
 
     return (
         <Card
-            className="group cursor-pointer hover:shadow-lg hover:border-[#556830] transition-all bg-white !p-0"
+            className="group cursor-pointer hover:shadow-lg hover:border-brand transition-all bg-white !p-0"
             onClick={onClick}
         >
             <CardContent className="pt-6">
                 <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="flex-1">
-                        <h3 className="text-[#203622] mb-1 group-hover:text-[#556830] transition-colors">
+                        <h3 className="text-brand-dark mb-1 group-hover:text-brand transition-colors">
                             {program.program_name}
                         </h3>
                         {program.description && (
@@ -1150,7 +1150,7 @@ function ProgramCard({
                         <div className="pt-3 border-t border-gray-200">
                             <div className="text-sm text-gray-600">
                                 Active in{' '}
-                                <span className="text-[#203622] font-medium">
+                                <span className="text-brand-dark font-medium">
                                     {program.total_active_facilities}
                                 </span>{' '}
                                 {program.total_active_facilities === 1
@@ -1176,11 +1176,11 @@ function MetricBox({
     secondaryLines?: { value: string | number }[];
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
+        <div className="bg-surface-hover rounded-lg p-3">
             <div className="text-xs text-gray-600 mb-2">{label}</div>
             <div className="space-y-1">
                 <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl text-[#203622]">
+                    <span className="text-2xl text-brand-dark">
                         {primaryValue}
                     </span>
                     <span className="text-xs text-gray-500">
@@ -1211,8 +1211,8 @@ function getUtilizationRate(program: ProgramsOverviewTable): number {
 }
 
 function getPercentageColorClass(percentage: number): string {
-    if (percentage >= 75) return 'text-[#556830]';
-    if (percentage >= 50) return 'text-[#F1B51C]';
+    if (percentage >= 75) return 'text-brand';
+    if (percentage >= 50) return 'text-brand-gold';
     return 'text-red-600';
 }
 
@@ -1229,24 +1229,24 @@ function ProgramsTable({
         <TooltipProvider>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-[#E2E7EA] [&_tr]:border-b-0">
+                    <TableHeader className="bg-surface-hover [&_tr]:border-b-0">
                         <TableRow>
-                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[30%]">
+                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-brand-dark w-[30%]">
                                 Program
                             </TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[16%]">
+                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-brand-dark w-[16%]">
                                 Classes
                             </TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[16%]">
+                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-brand-dark w-[16%]">
                                 Enrollment
                             </TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[16%]">
+                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-brand-dark w-[16%]">
                                 Capacity
                             </TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[8%]">
+                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-brand-dark w-[8%]">
                                 Completion
                             </TableHead>
-                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[8%]">
+                            <TableHead className="text-left px-6 py-4 text-sm font-bold text-brand-dark w-[8%]">
                                 Attendance
                             </TableHead>
                         </TableRow>
@@ -1270,7 +1270,7 @@ function ProgramsTable({
                             return (
                                 <TableRow
                                     key={program.program_id}
-                                    className={`hover:bg-[#E2E7EA]/50 transition-colors cursor-pointer ${
+                                    className={`hover:bg-surface-hover/50 transition-colors cursor-pointer ${
                                         status ===
                                         ProgramEffectiveStatus.Archived
                                             ? 'opacity-40'
@@ -1296,7 +1296,7 @@ function ProgramsTable({
                                                     {status}
                                                 </Badge>
                                             )}
-                                            <div className="text-base text-[#203622] hover:text-[#556830] transition-colors font-medium mb-1.5">
+                                            <div className="text-base text-brand-dark hover:text-brand transition-colors font-medium mb-1.5">
                                                 {program.program_name}
                                             </div>
                                         </div>
@@ -1348,7 +1348,7 @@ function ProgramsTable({
                                     <TableCell className="px-6 py-4">
                                         <div className="text-sm text-gray-700">
                                             <div>
-                                                <span className="font-medium text-[#203622]">
+                                                <span className="font-medium text-brand-dark">
                                                     {program.total_active_classes ??
                                                         0}
                                                 </span>
@@ -1359,7 +1359,7 @@ function ProgramsTable({
                                                             active
                                                         </span>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                         Classes currently
                                                         running with enrolled
                                                         residents
@@ -1374,7 +1374,7 @@ function ProgramsTable({
                                                         total
                                                     </div>
                                                 </TooltipTrigger>
-                                                <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                     All classes for this program
                                                     (active, completed, and
                                                     scheduled)
@@ -1385,7 +1385,7 @@ function ProgramsTable({
                                     <TableCell className="px-6 py-4">
                                         <div className="text-sm text-gray-700">
                                             <div>
-                                                <span className="font-medium text-[#203622]">
+                                                <span className="font-medium text-brand-dark">
                                                     {program.total_active_enrollments ??
                                                         0}
                                                 </span>
@@ -1396,7 +1396,7 @@ function ProgramsTable({
                                                             currently
                                                         </span>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                         Residents currently
                                                         enrolled in this
                                                         program. A single
@@ -1412,7 +1412,7 @@ function ProgramsTable({
                                                         all-time
                                                     </div>
                                                 </TooltipTrigger>
-                                                <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                     Past enrollments including
                                                     completed, withdrawn,
                                                     dropped, failed to complete,
@@ -1423,7 +1423,7 @@ function ProgramsTable({
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
                                         <div className="text-sm">
-                                            <div className="font-medium text-[#203622]">
+                                            <div className="font-medium text-brand-dark">
                                                 {program.total_capacity ?? 0}
                                             </div>
                                             <Tooltip>
@@ -1433,7 +1433,7 @@ function ProgramsTable({
                                                         utilized
                                                     </div>
                                                 </TooltipTrigger>
-                                                <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                     Percentage of available
                                                     capacity currently filled
                                                 </TooltipContent>
@@ -1449,7 +1449,7 @@ function ProgramsTable({
                                                     {completionRate}%
                                                 </div>
                                             </TooltipTrigger>
-                                            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                            <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                 Percentage of residents who
                                                 successfully completed the
                                                 program out of all who have
@@ -1467,7 +1467,7 @@ function ProgramsTable({
                                                     {attendanceRate}%
                                                 </div>
                                             </TooltipTrigger>
-                                            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                            <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                 Average attendance rate across
                                                 all active classes in this
                                                 program

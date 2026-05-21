@@ -40,7 +40,7 @@ export function ActiveEnrollmentsTable({
     if (enrollments.length === 0) {
         return (
             <div className="bg-white rounded-lg border border-gray-200 mb-6 p-6">
-                <h2 className="text-lg font-semibold text-[#203622] mb-1">
+                <h2 className="text-lg font-semibold text-brand-dark mb-1">
                     Active Enrollments
                 </h2>
                 <p className="text-sm text-gray-500">No active enrollments</p>
@@ -51,7 +51,7 @@ export function ActiveEnrollmentsTable({
     return (
         <div className="bg-white rounded-lg border border-gray-200 mb-6">
             <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-[#203622]">
+                <h2 className="text-lg font-semibold text-brand-dark">
                     Active Enrollments
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">{enrollments.length} active class{enrollments.length !== 1 ? 'es' : ''} • All time</p>
@@ -113,7 +113,7 @@ export function ActiveEnrollmentsTable({
                                 key={`${enrollment.program_id}-${enrollment.class_id}`}
                             >
                                 <TableCell>
-                                    <div className="font-medium text-[#203622]">
+                                    <div className="font-medium text-brand-dark">
                                         {enrollment.program_name}
                                     </div>
                                     <div className="text-sm text-gray-600">
@@ -127,7 +127,7 @@ export function ActiveEnrollmentsTable({
                                     {formatDate(enrollment.start_date)}
                                 </TableCell>
                                 <TableCell>
-                                    <div className="font-medium text-[#203622]">
+                                    <div className="font-medium text-brand-dark">
                                         {present} of {total} sessions
                                     </div>
                                     <div className="text-sm text-gray-600">
@@ -162,7 +162,7 @@ export function ActiveEnrollmentsTable({
                     <Button
                         variant="ghost"
                         onClick={() => setShowAll(true)}
-                        className="w-full text-[#556830] hover:text-[#203622] hover:bg-gray-50"
+                        className="w-full text-brand hover:text-brand-dark hover:bg-gray-50"
                     >
                         <ChevronDown className="size-4 mr-2" />
                         See {hiddenCount} other{hiddenCount !== 1 ? 's' : ''}
@@ -174,7 +174,7 @@ export function ActiveEnrollmentsTable({
                     <Button
                         variant="ghost"
                         onClick={() => setShowAll(false)}
-                        className="w-full text-[#556830] hover:text-[#203622] hover:bg-gray-50"
+                        className="w-full text-brand hover:text-brand-dark hover:bg-gray-50"
                     >
                         <ChevronUp className="size-4 mr-2" />
                         Show less

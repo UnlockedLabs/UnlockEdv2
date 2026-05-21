@@ -270,13 +270,13 @@ export default function ResidentKnowledgeCenter() {
 
         return (
             <div
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative h-full flex flex-col"
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative h-full flex flex-col"
                 onClick={handleClick}
             >
                 {isAdminPreview
                     ? item.featured && (
                           <div className="absolute top-3 right-3">
-                              <Star className="size-5 text-[#F1B51C] fill-[#F1B51C]" />
+                              <Star className="size-5 text-brand-gold fill-brand-gold" />
                           </div>
                       )
                     : (
@@ -296,7 +296,7 @@ export default function ResidentKnowledgeCenter() {
                               <Star
                                   className={
                                       favorited
-                                          ? 'size-5 text-[#F1B51C] fill-[#F1B51C]'
+                                          ? 'size-5 text-brand-gold fill-brand-gold'
                                           : 'size-5 text-gray-400'
                                   }
                               />
@@ -305,19 +305,19 @@ export default function ResidentKnowledgeCenter() {
 
                 <div className="absolute top-3 left-3">
                     {item.type === 'library' && (
-                        <div className="bg-[#556830] text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <div className="bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1">
                             <BookOpen className="size-3" />
                             <span>Library</span>
                         </div>
                     )}
                     {item.type === 'video' && (
-                        <div className="bg-[#556830] text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <div className="bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1">
                             <Video className="size-3" />
                             <span>Video</span>
                         </div>
                     )}
                     {item.type === 'link' && (
-                        <div className="bg-[#556830] text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <div className="bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1">
                             <LinkIcon className="size-3" />
                             <span>Link</span>
                         </div>
@@ -347,7 +347,7 @@ export default function ResidentKnowledgeCenter() {
                         </div>
                     )}
                     <div className="flex-1 min-w-0 pr-8">
-                        <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                        <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
                             {item.title}
                         </h3>
                         {item.author && (
@@ -371,7 +371,7 @@ export default function ResidentKnowledgeCenter() {
                     <div className="mt-auto pt-3 border-t border-gray-100 flex items-center gap-2 overflow-hidden min-h-[2.5rem]">
                         <Badge
                             variant="secondary"
-                            className="bg-[#E2E7EA] text-gray-700 hover:bg-[#E2E7EA] text-xs shrink-0 max-w-48 truncate"
+                            className="bg-surface-hover text-gray-700 hover:bg-surface-hover text-xs shrink-0 max-w-48 truncate"
                         >
                             {item.categories[0]}
                         </Badge>
@@ -381,7 +381,7 @@ export default function ResidentKnowledgeCenter() {
                                     <TooltipTrigger asChild>
                                         <Badge
                                             variant="secondary"
-                                            className="bg-[#556830]/10 text-[#556830] hover:bg-[#556830]/10 text-xs cursor-help shrink-0"
+                                            className="bg-brand/10 text-brand hover:bg-brand/10 text-xs cursor-help shrink-0"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             +{item.categories.length - 1} more
@@ -402,7 +402,7 @@ export default function ResidentKnowledgeCenter() {
 
                 {item.type === 'link' && item.url && (
                     <div className="mt-auto pt-3 border-t border-gray-100 min-h-[2.5rem] flex items-center">
-                        <p className="text-sm text-[#556830] truncate">
+                        <p className="text-sm text-brand truncate">
                             {item.url}
                         </p>
                     </div>
@@ -419,7 +419,7 @@ export default function ResidentKnowledgeCenter() {
         <div id="knowledge-center-landing">
             <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="mb-8">
-                    <h1 className="text-[#203622] mb-2">
+                    <h1 className="text-brand-dark mb-2">
                         Knowledge Center
                     </h1>
                     <p className="text-gray-600">
@@ -449,8 +449,8 @@ export default function ResidentKnowledgeCenter() {
                         }}
                         className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
                             contentTypeFilter === 'all'
-                                ? 'bg-[#556830] text-white shadow-sm'
-                                : 'bg-white text-gray-600 hover:text-[#203622] hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-brand text-white shadow-sm'
+                                : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
                         }`}
                     >
                         All ({counts.all})
@@ -462,8 +462,8 @@ export default function ResidentKnowledgeCenter() {
                         }}
                         className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
                             contentTypeFilter === 'library'
-                                ? 'bg-[#556830] text-white shadow-sm'
-                                : 'bg-white text-gray-600 hover:text-[#203622] hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-brand text-white shadow-sm'
+                                : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
                         }`}
                     >
                         Libraries ({counts.library})
@@ -476,8 +476,8 @@ export default function ResidentKnowledgeCenter() {
                         }}
                         className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
                             contentTypeFilter === 'video'
-                                ? 'bg-[#556830] text-white shadow-sm'
-                                : 'bg-white text-gray-600 hover:text-[#203622] hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-brand text-white shadow-sm'
+                                : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
                         }`}
                     >
                         Videos ({counts.video})
@@ -490,8 +490,8 @@ export default function ResidentKnowledgeCenter() {
                         }}
                         className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
                             contentTypeFilter === 'link'
-                                ? 'bg-[#556830] text-white shadow-sm'
-                                : 'bg-white text-gray-600 hover:text-[#203622] hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-brand text-white shadow-sm'
+                                : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
                         }`}
                     >
                         Helpful Links ({counts.link})

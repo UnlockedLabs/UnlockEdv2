@@ -74,7 +74,7 @@ export function BulkGraduateModal({
                                     key={resident.id}
                                     className="px-3 py-2 text-sm"
                                 >
-                                    <span className="font-medium text-[#203622]">
+                                    <span className="font-medium text-brand-dark">
                                         {resident.displayId}
                                     </span>
                                     <span className="text-gray-600 ml-2">

@@ -931,7 +931,7 @@ export function ClassManagementFormInner({
                                                         disabled={
                                                             !newRoomName.trim()
                                                         }
-                                                        className="flex-1 bg-[#556830] hover:bg-[#203622]"
+                                                        className="flex-1 bg-brand hover:bg-brand-dark"
                                                         type="button"
                                                     >
                                                         Add Room
@@ -1036,7 +1036,7 @@ export function ClassManagementFormInner({
                                                         true
                                                     )
                                                 }
-                                                className="mt-1 h-7 text-xs text-[#556830] hover:text-[#203622] px-2"
+                                                className="mt-1 h-7 text-xs text-brand hover:text-brand-dark px-2"
                                                 type="button"
                                             >
                                                 Edit pattern
@@ -1189,7 +1189,7 @@ export function ClassManagementFormInner({
                                                     disabled={
                                                         !isCustomRecurrenceValid()
                                                     }
-                                                    className="flex-1 bg-[#556830] hover:bg-[#203622]"
+                                                    className="flex-1 bg-brand hover:bg-brand-dark"
                                                     type="button"
                                                 >
                                                     Apply Pattern
@@ -1223,8 +1223,8 @@ export function ClassManagementFormInner({
                                                         watchedDays.includes(
                                                             day.value
                                                         )
-                                                            ? 'bg-[#556830] text-white border-[#556830]'
-                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#556830]'
+                                                            ? 'bg-brand text-white border-brand'
+                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-brand'
                                                     } ${focusRingButton}`}
                                                 >
                                                     {day.label.slice(0, 3)}
@@ -1251,7 +1251,7 @@ export function ClassManagementFormInner({
                                 Cancel
                             </Button>
                             <Button
-                                className={`bg-[#556830] hover:bg-[#203622] text-white ${focusRingButton}`}
+                                className={`bg-brand hover:bg-brand-dark text-white ${focusRingButton}`}
                                 type="submit"
                                 disabled={isSubmitting}
                             >
@@ -1347,7 +1347,7 @@ export function ClassManagementFormInner({
                                                     ))}
                                                     <SelectItem
                                                         value="__add__"
-                                                        className="text-[#556830] font-medium"
+                                                        className="text-brand font-medium"
                                                     >
                                                         + Add Instructor
                                                     </SelectItem>
@@ -1416,7 +1416,7 @@ export function ClassManagementFormInner({
                                                     ))}
                                                     <SelectItem
                                                         value="__add__"
-                                                        className="text-[#556830] font-medium"
+                                                        className="text-brand font-medium"
                                                     >
                                                         + Add Room
                                                     </SelectItem>
@@ -1559,7 +1559,7 @@ export function ClassManagementFormInner({
                                                     watchedDays.includes(
                                                         day.value
                                                     )
-                                                        ? 'bg-[#556830] hover:bg-[#203622] text-white'
+                                                        ? 'bg-brand hover:bg-brand-dark text-white'
                                                         : 'border-gray-300'
                                                 }
                                                 onClick={() =>
@@ -1634,7 +1634,7 @@ export function ClassManagementFormInner({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
+                                className="bg-brand-gold text-foreground hover:bg-brand-gold/90"
                             >
                                 {isSubmitting
                                     ? 'Saving...'
@@ -1702,7 +1702,7 @@ export function ClassManagementFormInner({
                                 Cancel
                             </Button>
                             <Button
-                                className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                                className="bg-brand-dark text-white hover:bg-brand-dark/90"
                                 onClick={() => void handleAddRoom()}
                             >
                                 Create
@@ -1768,7 +1768,7 @@ export function ClassManagementFormInner({
                                 Cancel
                             </Button>
                             <Button
-                                className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                                className="bg-brand-dark text-white hover:bg-brand-dark/90"
                                 onClick={() => void handleAddInstructor()}
                             >
                                 Create

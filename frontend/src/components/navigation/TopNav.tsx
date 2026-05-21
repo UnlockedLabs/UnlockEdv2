@@ -45,7 +45,7 @@ export default function TopNav({
     return (
         <header className="h-16 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
             <div className="flex flex-col min-w-0">
-                <h1 className="text-xl text-[#203622] truncate">
+                <h1 className="text-xl text-brand-dark truncate">
                     {pageTitle}
                 </h1>
                 {isFacilityAdmin(user) && (
@@ -95,7 +95,7 @@ export default function TopNav({
                             size="sm"
                             className="gap-2"
                         >
-                            <div className="size-7 rounded-full bg-[#556830] dark:bg-[#8fb55e] flex items-center justify-center text-white text-xs font-medium">
+                            <div className="size-7 rounded-full bg-brand dark:bg-[#8fb55e] flex items-center justify-center text-white text-xs font-medium">
                                 {user.name_first?.[0]}
                                 {user.name_last?.[0]}
                             </div>

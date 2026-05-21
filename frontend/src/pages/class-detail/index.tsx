@@ -53,7 +53,7 @@ function getDeleteBlockerReason(blockers: DeleteBlockers | undefined): string {
 }
 
 const TAB_TRIGGER_CLASS =
-    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
+    'data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
 
 
 export default function ClassDetailPage() {
@@ -130,7 +130,7 @@ export default function ClassDetailPage() {
     }
 
     return (
-        <div className="bg-[#E2E7EA]">
+        <div className="bg-surface-hover">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
@@ -156,7 +156,7 @@ export default function ClassDetailPage() {
                                     onClick={() =>
                                         setShowAttendanceModal(true)
                                     }
-                                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]"
+                                    className="bg-brand-gold hover:bg-[#d9a419] text-brand-dark"
                                 >
                                     Take Attendance
                                 </Button>

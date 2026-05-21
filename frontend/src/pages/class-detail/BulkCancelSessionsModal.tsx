@@ -99,7 +99,7 @@ export function BulkCancelSessionsModal({
         >
             <div className="space-y-4 py-4">
                     <div>
-                        <Label className="text-sm font-medium text-[#203622] mb-2 block">
+                        <Label className="text-sm font-medium text-brand-dark mb-2 block">
                             Sessions to Cancel
                         </Label>
                         <div className="max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1">

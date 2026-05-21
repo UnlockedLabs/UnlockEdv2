@@ -232,9 +232,9 @@ export function SessionDetailStatusSection({
             {hasAttendance && (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-start gap-2">
-                        <CheckCircle className="size-4 text-[#556830] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="size-4 text-brand mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm text-[#556830] mb-1">
+                            <div className="text-sm text-brand mb-1">
                                 Attendance Taken
                             </div>
                             <p className="text-sm text-gray-600">

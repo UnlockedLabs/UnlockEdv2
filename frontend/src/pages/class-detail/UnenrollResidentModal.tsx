@@ -81,13 +81,13 @@ export function UnenrollResidentModal({
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Resident ID:</span>
-                        <span className="font-medium text-[#203622]">
+                        <span className="font-medium text-brand-dark">
                             {residentDisplayId}
                         </span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Name:</span>
-                        <span className="font-medium text-[#203622]">
+                        <span className="font-medium text-brand-dark">
                             {residentName}
                         </span>
                     </div>

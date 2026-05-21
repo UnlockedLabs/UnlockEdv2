@@ -67,7 +67,7 @@ function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
         >
             <Card className="hover:shadow-md transition-shadow h-full">
                 <CardContent className="p-4 flex items-start gap-3">
-                    <ExternalLink className="size-5 text-[#556830] shrink-0 mt-0.5" />
+                    <ExternalLink className="size-5 text-brand shrink-0 mt-0.5" />
                     <div className="min-w-0">
                         <h4 className="text-sm font-medium text-foreground line-clamp-1">
                             {link.title}
@@ -223,7 +223,7 @@ export default function ResidentHome() {
                 <aside className="hidden xl:block w-[320px] shrink-0 space-y-6 sticky top-6 self-start">
                     <div className="bg-card rounded-lg border border-border p-5">
                         <div className="flex items-center gap-2 mb-4">
-                            <Star className="size-5 text-[#F1B51C]" />
+                            <Star className="size-5 text-brand-gold" />
                             <h2 className="text-lg font-semibold text-foreground">
                                 Favorites
                             </h2>

@@ -172,10 +172,10 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                 aria-label="Select all residents"
                             />
                             <div>
-                                <h3 className="text-[#203622]">
+                                <h3 className="text-brand-dark">
                                     Enrolled Residents ({enrolledRows.length})
                                     {selectedIds.size > 0 && (
-                                        <span className="ml-2 text-[#556830]">
+                                        <span className="ml-2 text-brand">
                                             - {selectedIds.size} selected
                                         </span>
                                     )}
@@ -224,7 +224,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             return (
                                 <div
                                     key={enrollment.id}
-                                    className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                                    className="px-6 py-4 hover:bg-surface-hover/30 transition-colors"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-6 flex-1">
@@ -241,7 +241,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                 className="shrink-0"
                                             />
                                             <div className="w-[140px] shrink-0">
-                                                <div className="text-[#203622] font-medium">
+                                                <div className="text-brand-dark font-medium">
                                                     {enrollment.doc_id}
                                                 </div>
                                                 <div className="text-sm text-gray-600 mt-0.5">
@@ -253,7 +253,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                     <span className="text-sm text-gray-600">
                                                         Attendance:
                                                     </span>
-                                                    <span className="text-sm text-[#203622] font-medium">
+                                                    <span className="text-sm text-brand-dark font-medium">
                                                         {stats.rate}%
                                                     </span>
                                                     <span className="text-xs text-gray-500">
@@ -266,8 +266,8 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                     className="h-2 w-64"
                                                     indicatorClassName={
                                                         needsSupport
-                                                            ? 'bg-[#F1B51C]'
-                                                            : 'bg-[#556830]'
+                                                            ? 'bg-brand-gold'
+                                                            : 'bg-brand'
                                                     }
                                                 />
                                             </div>
@@ -311,7 +311,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                     >
                                                         <Badge
                                                             variant="outline"
-                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-[#556830]/20 flex items-center gap-1.5`}
+                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-brand/20 flex items-center gap-1.5`}
                                                         >
                                                             {changingStatus === enrollment.id
                                                                 ? 'Updating...'
@@ -387,7 +387,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                 <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">
-                            <span className="font-semibold text-[#203622]">
+                            <span className="font-semibold text-brand-dark">
                                 {selectedIds.size}
                             </span>
                             <span className="text-gray-500 ml-1">
@@ -407,7 +407,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             </Button>
                             <Button
                                 size="sm"
-                                className="bg-[#556830] hover:bg-[#203622]"
+                                className="bg-brand hover:bg-brand-dark"
                                 onClick={() => setShowBulkGraduateModal(true)}
                             >
                                 <CheckCircle className="size-4 mr-2" />

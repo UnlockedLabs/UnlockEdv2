@@ -415,7 +415,7 @@ export function EditClassModal({
       >
         <div className="space-y-6">
 <div className="space-y-4">
-            <h4 className="font-medium text-[#203622]">
+            <h4 className="font-medium text-brand-dark">
               Class Details
             </h4>
 
@@ -479,7 +479,7 @@ export function EditClassModal({
                   ))}
                   <SelectItem
                     value="__add__"
-                    className="text-[#556830] font-medium"
+                    className="text-brand font-medium"
                   >
                     + Add Instructor
                   </SelectItem>
@@ -560,7 +560,7 @@ export function EditClassModal({
             <textarea
               id="edit-description"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#556830] resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand resize-none"
               {...register('description', {
                 required: 'Description is required',
                 maxLength: {
@@ -577,7 +577,7 @@ export function EditClassModal({
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-medium text-[#203622]">
+            <h4 className="font-medium text-brand-dark">
               Schedule
             </h4>
 
@@ -638,7 +638,7 @@ export function EditClassModal({
                         ))}
                         <SelectItem
                           value="__add__"
-                          className="text-[#556830] font-medium"
+                          className="text-brand font-medium"
                         >
                           + Add Room
                         </SelectItem>
@@ -762,7 +762,7 @@ export function EditClassModal({
                     onClick={() =>
                       setShowCustomRecurrence(true)
                     }
-                    className="mt-1 h-7 text-xs text-[#556830] hover:text-[#203622] px-2"
+                    className="mt-1 h-7 text-xs text-brand hover:text-brand-dark px-2"
                   >
                     Edit pattern
                   </Button>
@@ -880,7 +880,7 @@ export function EditClassModal({
                       disabled={
                         !isCustomRecurrenceValid()
                       }
-                      className="flex-1 bg-[#556830] hover:bg-[#203622]"
+                      className="flex-1 bg-brand hover:bg-brand-dark"
                     >
                       Apply Pattern
                     </Button>
@@ -905,8 +905,8 @@ export function EditClassModal({
                               toggleDay(day)
                             }
                             className={`px-4 py-2 rounded-lg border transition-colors ${isSelected
-                                ? 'bg-[#556830] text-white border-[#556830]'
-                                : 'bg-white text-gray-700 border-gray-300 hover:border-[#556830]'
+                                ? 'bg-brand text-white border-brand'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-brand'
                               }`}
                           >
                             {day.slice(0, 3)}
@@ -921,7 +921,7 @@ export function EditClassModal({
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-medium text-[#203622]">Status</h4>
+            <h4 className="font-medium text-brand-dark">Status</h4>
             <div className="space-y-2">
               <Controller
                 name="status"
@@ -1035,7 +1035,7 @@ export function EditClassModal({
             type="button"
             disabled={isSubmitting}
             onClick={() => void handleSubmit(onSubmit)()}
-            className="bg-[#556830] hover:bg-[#203622] text-white"
+            className="bg-brand hover:bg-brand-dark text-white"
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -1065,7 +1065,7 @@ export function EditClassModal({
               Cancel
             </Button>
             <Button
-              className="bg-[#203622] text-white hover:bg-[#203622]/90"
+              className="bg-brand-dark text-white hover:bg-brand-dark/90"
               onClick={() => void handleAddRoom()}
             >
               Create
@@ -1129,7 +1129,7 @@ export function EditClassModal({
               Cancel
             </Button>
             <Button
-              className="bg-[#203622] text-white hover:bg-[#203622]/90"
+              className="bg-brand-dark text-white hover:bg-brand-dark/90"
               onClick={() => void handleAddInstructor()}
             >
               Create
@@ -1155,7 +1155,7 @@ export function EditClassModal({
             <p className="text-sm text-gray-500 mb-1">
               Temporary Password
             </p>
-            <p className="text-2xl font-bold text-[#203622] select-all">
+            <p className="text-2xl font-bold text-brand-dark select-all">
               {tempPassword}
             </p>
           </div>
@@ -1172,7 +1172,7 @@ export function EditClassModal({
               Copy
             </Button>
             <Button
-              className="bg-[#203622] text-white hover:bg-[#203622]/90"
+              className="bg-brand-dark text-white hover:bg-brand-dark/90"
               onClick={() => {
                 setShowPasswordModal(false);
                 setTempPassword('');

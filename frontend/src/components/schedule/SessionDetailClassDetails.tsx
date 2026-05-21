@@ -38,7 +38,7 @@ export function SessionDetailClassDetails({
                         <div className="text-sm text-gray-600 mb-0.5">
                             Class
                         </div>
-                        <div className="text-[#203622]">
+                        <div className="text-brand-dark">
                             {className}
                         </div>
                         {programName && (
@@ -55,7 +55,7 @@ export function SessionDetailClassDetails({
                             Time
                         </div>
                         <div
-                            className={`text-[#203622] ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
+                            className={`text-brand-dark ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                         >
                             {formatClassTimeRange(classTime)}
                         </div>
@@ -68,7 +68,7 @@ export function SessionDetailClassDetails({
                             Room
                         </div>
                         <div
-                            className={`text-[#203622] ${
+                            className={`text-brand-dark ${
                                 !!originalRoom || isCancelled || isRescheduledFrom || isCancelledReschedule
                                     ? 'line-through'
                                     : ''
@@ -86,7 +86,7 @@ export function SessionDetailClassDetails({
                                 Instructor
                             </div>
                             <div
-                                className={`text-[#203622] ${
+                                className={`text-brand-dark ${
                                     !!originalInstructorName || isCancelled || isRescheduledFrom || isCancelledReschedule
                                         ? 'line-through'
                                         : ''

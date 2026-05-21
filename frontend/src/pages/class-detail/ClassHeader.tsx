@@ -88,7 +88,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     return (
         <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-[#203622]">{cls.name}</h1>
+                <h1 className="text-brand-dark">{cls.name}</h1>
                 {isTerminal ? (
                     <Badge
                         variant="outline"
@@ -195,16 +195,16 @@ export function StatCards({
         <div className="grid grid-cols-3 gap-6 mb-6">
             <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-4">
-                    <Users className="size-5 text-[#556830] shrink-0" />
-                    <h3 className="text-[#203622] truncate">Enrollment</h3>
+                    <Users className="size-5 text-brand shrink-0" />
+                    <h3 className="text-brand-dark truncate">Enrollment</h3>
                 </div>
-                <div className="text-3xl text-[#203622] mb-2">
+                <div className="text-3xl text-brand-dark mb-2">
                     {cls.enrolled} / {cls.capacity}
                 </div>
                 <Progress
                     value={capacityPct}
                     className="h-2 mb-3"
-                    indicatorClassName="bg-[#556830]"
+                    indicatorClassName="bg-brand"
                 />
                 <div className="text-sm text-gray-600">
                     {spotsAvailable} {spotsAvailable === 1 ? 'spot' : 'spots'}{' '}
@@ -214,15 +214,15 @@ export function StatCards({
 
             <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-4">
-                    <Calendar className="size-5 text-[#556830] shrink-0" />
-                    <h3 className="text-[#203622] truncate">Attendance</h3>
+                    <Calendar className="size-5 text-brand shrink-0" />
+                    <h3 className="text-brand-dark truncate">Attendance</h3>
                 </div>
-                <div className="text-3xl text-[#203622] mb-2">{avgRate}%</div>
+                <div className="text-3xl text-brand-dark mb-2">{avgRate}%</div>
                 <Progress
                     value={avgRate}
                     className="h-2 mb-3"
                     indicatorClassName={
-                        avgRate >= 85 ? 'bg-[#556830]' : 'bg-[#F1B51C]'
+                        avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
                     }
                 />
                 <div className="text-sm text-gray-600">
@@ -232,17 +232,17 @@ export function StatCards({
 
             <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-4">
-                    <AlertCircle className="size-5 text-[#F1B51C] shrink-0" />
-                    <h3 className="text-[#203622] truncate">
+                    <AlertCircle className="size-5 text-brand-gold shrink-0" />
+                    <h3 className="text-brand-dark truncate">
                         At-Risk Residents
                     </h3>
                 </div>
-                <div className="text-3xl text-[#203622] mb-2">
+                <div className="text-3xl text-brand-dark mb-2">
                     {atRiskCount}
                 </div>
                 <div className="text-sm text-gray-600">
                     {atRiskCount === 0 ? (
-                        <span className="text-[#556830]">
+                        <span className="text-brand">
                             All residents engaged
                         </span>
                     ) : (
@@ -266,9 +266,9 @@ function InfoCard({
     smallValue?: boolean;
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
+        <div className="bg-surface-hover rounded-lg p-3">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
-            <div className={`text-[#203622]${smallValue ? ' text-sm' : ''}`}>
+            <div className={`text-brand-dark${smallValue ? ' text-sm' : ''}`}>
                 {value}
             </div>
             {sub && <div className="text-xs text-gray-600 mt-1">{sub}</div>}

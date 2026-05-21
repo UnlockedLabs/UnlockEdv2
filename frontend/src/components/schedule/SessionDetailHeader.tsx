@@ -58,7 +58,7 @@ function getStatusBadge(flags: StatusFlags): ReactNode {
         return (
             <Badge
                 variant="outline"
-                className="bg-green-50 text-[#556830] border-green-200"
+                className="bg-green-50 text-brand border-green-200"
             >
                 Completed
             </Badge>
@@ -68,7 +68,7 @@ function getStatusBadge(flags: StatusFlags): ReactNode {
         return (
             <Badge
                 variant="outline"
-                className="bg-green-50 text-[#556830] border-green-200"
+                className="bg-green-50 text-brand border-green-200"
             >
                 Active
             </Badge>
@@ -111,7 +111,7 @@ export function SessionDetailHeader(props: SessionDetailHeaderProps) {
         <div className="border-b border-gray-200 px-6 py-4">
             <div>
                 <h3
-                    className={`text-[#203622] mb-2 ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
+                    className={`text-brand-dark mb-2 ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                 >
                     {dateLabel}
                 </h3>

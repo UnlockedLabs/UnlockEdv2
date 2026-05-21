@@ -217,7 +217,7 @@ export default function ClassEnrollmentDetails() {
                             size="sm"
                             className={
                                 viewMode === 'enrolled'
-                                    ? 'bg-[#556830] text-white hover:bg-[#203622] rounded-r-none'
+                                    ? 'bg-brand text-white hover:bg-brand-dark rounded-r-none'
                                     : 'rounded-r-none'
                             }
                             onClick={() => handleViewModeChange('enrolled')}
@@ -229,7 +229,7 @@ export default function ClassEnrollmentDetails() {
                             size="sm"
                             className={
                                 viewMode === 'other'
-                                    ? 'bg-[#556830] text-white hover:bg-[#203622] rounded-l-none'
+                                    ? 'bg-brand text-white hover:bg-brand-dark rounded-l-none'
                                     : 'rounded-l-none'
                             }
                             onClick={() => handleViewModeChange('other')}
@@ -282,7 +282,7 @@ export default function ClassEnrollmentDetails() {
                     {selectedResidents.length > 0 && clsInfo?.status === SelectedClassStatus.Active && (
                         <Button
                             onClick={handleGraduateSelected}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                         >
                             <GraduationCap className="size-4 mr-1" />
                             Graduate Selected
@@ -291,7 +291,7 @@ export default function ClassEnrollmentDetails() {
                     <Button
                         disabled={blockEdits}
                         onClick={() => navigate(`/program-classes/${class_id}/enrollments/add`)}
-                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
+                        className="bg-brand-gold text-foreground hover:bg-brand-gold/90"
                     >
                         <Plus className="size-4" />
                         Add Resident
@@ -459,7 +459,7 @@ export default function ClassEnrollmentDetails() {
                         </Button>
                         <Button
                             disabled={!reason.trim()}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => void submitEnrollmentChange(reason)}
                         >
                             Confirm

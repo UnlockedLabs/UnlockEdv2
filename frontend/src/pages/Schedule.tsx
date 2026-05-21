@@ -326,7 +326,7 @@ export default function Schedule() {
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl text-[#203622] mb-2">
+                        <h1 className="text-2xl text-brand-dark mb-2">
                             {class_id ? 'Class Schedule' : 'Schedule'}
                         </h1>
                         <p className="text-gray-600">{subtitle}</p>
@@ -350,7 +350,7 @@ export default function Schedule() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             {isDepAdmin && (
                                 <div>
-                                    <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                    <label className="text-sm font-medium text-brand-dark mb-2 block">
                                         Facility
                                     </label>
                                     <Select
@@ -376,7 +376,7 @@ export default function Schedule() {
                             )}
 
                             <div>
-                                <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                <label className="text-sm font-medium text-brand-dark mb-2 block">
                                     Program
                                 </label>
                                 <Select value={selectedProgram} onValueChange={setSelectedProgram}>
@@ -395,7 +395,7 @@ export default function Schedule() {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                <label className="text-sm font-medium text-brand-dark mb-2 block">
                                     Instructor
                                 </label>
                                 <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>

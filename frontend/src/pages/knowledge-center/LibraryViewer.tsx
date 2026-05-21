@@ -183,7 +183,7 @@ export default function LibraryViewer() {
                 <div className="flex items-start justify-between mt-2">
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                            <h2 className="text-xl font-semibold text-[#203622]">
+                            <h2 className="text-xl font-semibold text-brand-dark">
                                 {libraryTitle}
                             </h2>
                             {isAdmin && libraryData && (
@@ -192,7 +192,7 @@ export default function LibraryViewer() {
                                         variant="outline"
                                         className={
                                             libraryData.visibility_status
-                                                ? 'bg-green-50 text-[#556830] border-green-200 text-xs'
+                                                ? 'bg-green-50 text-brand border-green-200 text-xs'
                                                 : 'bg-gray-50 text-gray-600 border-gray-200 text-xs'
                                         }
                                     >
@@ -218,7 +218,7 @@ export default function LibraryViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#E2E7EA]">
+            <div className="flex-1 bg-surface-hover">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <Skeleton className="w-full h-[600px]" />
@@ -294,7 +294,7 @@ export default function LibraryViewer() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                            className="bg-brand-dark text-white hover:bg-brand-dark/90"
                         >
                             Save
                         </Button>

@@ -34,7 +34,7 @@ export function SessionDetailActions({
                     <div className="space-y-2">
                         {showTakeAttendance && onTakeAttendance && (
                             <Button
-                                className="w-full justify-start bg-[#556830] hover:bg-[#203622] text-white"
+                                className="w-full justify-start bg-brand hover:bg-brand-dark text-white"
                                 onClick={onTakeAttendance}
                             >
                                 <CheckCircle className="size-4 mr-2" />

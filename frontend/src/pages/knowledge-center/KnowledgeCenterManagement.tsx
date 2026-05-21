@@ -56,7 +56,7 @@ interface CardHandlers {
 function LibraryCard({ library, handlers }: { library: Library; handlers: CardHandlers }) {
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative"
             onClick={() => handlers.onNavigate(`/viewer/libraries/${library.id}`)}
         >
             <TooltipProvider>
@@ -70,7 +70,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
                             <Star
-                                className={`size-4 ${library.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${library.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -88,7 +88,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     className="size-12 rounded flex-shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
                         {library.title}
                     </h3>
                 </div>
@@ -135,7 +135,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
     const available = videoIsAvailable(video);
     return (
         <div
-            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative`}
+            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative`}
             onClick={() => {
                 if (available) handlers.onNavigate(`/viewer/videos/${video.id}`);
             }}
@@ -151,7 +151,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
                             <Star
-                                className={`size-4 ${video.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${video.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -174,7 +174,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
                         {video.title}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -242,7 +242,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
 function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers: CardHandlers; onLinkClick: (link: HelpfulLink) => void }) {
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative"
             onClick={() => onLinkClick(link)}
         >
             <TooltipProvider>
@@ -256,7 +256,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                             className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
                         >
                             <Star
-                                className={`size-4 ${link.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${link.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -268,11 +268,11 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
                     {link.title}
                 </h3>
             </div>
-            <p className="text-sm text-[#556830] mb-2 truncate">{link.url}</p>
+            <p className="text-sm text-brand mb-2 truncate">{link.url}</p>
             <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                 {link.description}
             </p>
@@ -619,7 +619,7 @@ export default function KnowledgeCenterManagement() {
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-8">
-                <h1 className="text-[#203622] mb-2">Knowledge Center</h1>
+                <h1 className="text-brand-dark mb-2">Knowledge Center</h1>
                 <p className="text-gray-600">
                     Manage libraries, videos, and helpful links for residents.
                 </p>
@@ -677,19 +677,19 @@ export default function KnowledgeCenterManagement() {
                     <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
                         <TabsTrigger
                             value="libraries"
-                            className="data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
                         >
                             Libraries ({libTotal})
                         </TabsTrigger>
                         <TabsTrigger
                             value="videos"
-                            className="data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
                         >
                             Videos ({vidTotal})
                         </TabsTrigger>
                         <TabsTrigger
                             value="links"
-                            className="data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
                         >
                             Helpful Links ({linkTotal})
                         </TabsTrigger>
@@ -723,7 +723,7 @@ export default function KnowledgeCenterManagement() {
                     )}
                     {currentTab === 'videos' && (
                         <Button
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddVideo(true)}
                         >
                             <Plus className="size-4 mr-2" />
@@ -732,7 +732,7 @@ export default function KnowledgeCenterManagement() {
                     )}
                     {currentTab === 'links' && (
                         <Button
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddLink(true)}
                         >
                             <Plus className="size-4 mr-2" />

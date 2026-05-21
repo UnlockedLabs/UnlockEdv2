@@ -40,7 +40,7 @@ export function IncompleteEnrollments({
                         <div className="flex items-center gap-3">
                             <XCircle className="size-5 text-gray-500" />
                             <div className="text-left">
-                                <h2 className="text-lg font-semibold text-[#203622]">
+                                <h2 className="text-lg font-semibold text-brand-dark">
                                     Incomplete Enrollments
                                 </h2>
                                 <p className="text-sm text-gray-600 mt-1">
@@ -95,7 +95,7 @@ export function IncompleteEnrollments({
                                             key={`${enrollment.program_id}-${enrollment.class_id}`}
                                         >
                                             <TableCell>
-                                                <div className="font-medium text-[#203622]">
+                                                <div className="font-medium text-brand-dark">
                                                     {enrollment.program_name}
                                                 </div>
                                                 <div className="text-sm text-gray-600">

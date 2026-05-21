@@ -250,7 +250,7 @@ export default function StudentManagement() {
                     )}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-[#203622]">
+                            <h1 className="text-brand-dark">
                                 Residents
                             </h1>
                             <p className="text-gray-600 mt-1">
@@ -323,7 +323,7 @@ export default function StudentManagement() {
                         <div className="text-sm text-gray-600 mb-1">
                             Total Residents
                         </div>
-                        <div className="text-2xl font-medium text-[#203622]">
+                        <div className="text-2xl font-medium text-brand-dark">
                             {stats?.total ?? '\u2014'}
                         </div>
                     </div>
@@ -679,10 +679,10 @@ export default function StudentManagement() {
                 {/* Bulk Action Bar */}
                 {selectedResidents.size > 0 && (
                     <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
-                    <div className="bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
+                    <div className="bg-surface-hover border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
                         <div className="flex items-center gap-6">
                             <div className="text-sm">
-                                <span className="font-semibold text-[#203622]">
+                                <span className="font-semibold text-brand-dark">
                                     {selectedResidents.size}
                                 </span>
                                 <span className="text-gray-600 ml-1">

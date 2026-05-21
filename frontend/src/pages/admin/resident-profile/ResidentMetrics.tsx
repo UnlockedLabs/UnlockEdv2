@@ -45,20 +45,20 @@ export function ResidentMetrics({
                 label="Overall Attendance"
                 value={`${overallAttendancePercent}%`}
                 subtitle={`${sessionsAttended} of ${totalSessions} sessions`}
-                valueColor="text-[#556830]"
+                valueColor="text-brand"
                 valueMargin
             />
             <MetricCard
                 label="Active Enrollments"
                 value={activeEnrollments}
                 subtitle="Currently enrolled"
-                valueColor="text-[#203622]"
+                valueColor="text-brand-dark"
             />
             <MetricCard
                 label="Completed Programs"
                 value={completedPrograms}
                 subtitle="Successfully finished"
-                valueColor="text-[#556830]"
+                valueColor="text-brand"
             />
         </div>
     );

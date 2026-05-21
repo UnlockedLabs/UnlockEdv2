@@ -102,7 +102,7 @@ export default function AuthenticatedLayout() {
 
     const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isFacilities || isAdmins || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 min-h-full overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const contentClass = `flex-1 min-h-full overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-surface-hover' : ''}`;
 
     return (
         <div className={rootClass}>

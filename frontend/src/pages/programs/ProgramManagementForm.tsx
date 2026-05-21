@@ -364,7 +364,7 @@ export default function ProgramManagementForm() {
                     <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
+                        className="bg-brand-gold text-foreground hover:bg-brand-gold/90"
                     >
                         {isSubmitting
                             ? 'Saving...'

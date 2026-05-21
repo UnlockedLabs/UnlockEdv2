@@ -139,13 +139,13 @@ export function TakeAttendanceModal({
         >
             <div className="space-y-4 mt-4">
                     {todaySession && (
-                        <div className="bg-[#E2E7EA] rounded-lg p-4 border-2 border-[#556830]">
+                        <div className="bg-surface-hover rounded-lg p-4 border-2 border-brand">
                             <div className="flex items-center gap-2 mb-2">
-                                <Calendar className="size-5 text-[#556830]" />
-                                <span className="font-semibold text-[#203622]">
+                                <Calendar className="size-5 text-brand" />
+                                <span className="font-semibold text-brand-dark">
                                     Today's Session
                                 </span>
-                                <Badge className="bg-[#F1B51C] text-[#203622]">
+                                <Badge className="bg-brand-gold text-brand-dark">
                                     {todaySession.dateObj.toLocaleDateString(
                                         'en-US',
                                         {
@@ -172,7 +172,7 @@ export function TakeAttendanceModal({
 
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-semibold text-[#203622]">
+                            <h4 className="text-sm font-semibold text-brand-dark">
                                 Recent Sessions (Last 30 Days)
                             </h4>
                             {missingCount > 0 && (
@@ -200,19 +200,19 @@ export function TakeAttendanceModal({
                                         }
                                         className={`w-full text-left p-3 rounded-lg border transition-colors ${
                                             session.hasAttendance
-                                                ? 'border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/30'
+                                                ? 'border-gray-200 hover:border-brand hover:bg-surface-hover/30'
                                                 : 'border-amber-200 bg-amber-50/30 hover:border-amber-400 hover:bg-amber-50'
                                         }`}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 {session.hasAttendance ? (
-                                                    <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
+                                                    <CheckCircle className="size-5 text-brand flex-shrink-0" />
                                                 ) : (
-                                                    <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
+                                                    <AlertCircle className="size-5 text-brand-gold flex-shrink-0" />
                                                 )}
                                                 <div>
-                                                    <div className="text-sm font-medium text-[#203622]">
+                                                    <div className="text-sm font-medium text-brand-dark">
                                                         {session.dateObj.toLocaleDateString(
                                                             'en-US',
                                                             {

@@ -59,7 +59,7 @@ export default function VideoViewer() {
                 </p>
                 <Button
                     onClick={() => navigate(backPath)}
-                    className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                    className="bg-brand-dark text-white hover:bg-brand-dark/90"
                 >
                     Back to Knowledge Center
                 </Button>
@@ -89,7 +89,7 @@ export default function VideoViewer() {
                 <div className="flex items-start justify-between mt-2">
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                            <h2 className="text-xl font-semibold text-[#203622]">
+                            <h2 className="text-xl font-semibold text-brand-dark">
                                 {video?.title}
                             </h2>
                             {isAdmin && video && (
@@ -98,7 +98,7 @@ export default function VideoViewer() {
                                         variant="outline"
                                         className={
                                             video.visibility_status
-                                                ? 'bg-green-50 text-[#556830] border-green-200 text-xs'
+                                                ? 'bg-green-50 text-brand border-green-200 text-xs'
                                                 : 'bg-gray-50 text-gray-600 border-gray-200 text-xs'
                                         }
                                     >
@@ -132,7 +132,7 @@ export default function VideoViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#E2E7EA]">
+            <div className="flex-1 bg-surface-hover">
                 <video
                     width="100%"
                     height="100%"

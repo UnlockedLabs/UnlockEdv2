@@ -180,7 +180,7 @@ export function ReactivateDialog({
                     <input
                         type="radio"
                         name="reactivateStatus"
-                        className="accent-[#556830]"
+                        className="accent-brand"
                         checked={asAvailable}
                         onChange={() => setAsAvailable(true)}
                     />
@@ -190,7 +190,7 @@ export function ReactivateDialog({
                     <input
                         type="radio"
                         name="reactivateStatus"
-                        className="accent-[#556830]"
+                        className="accent-brand"
                         checked={!asAvailable}
                         onChange={() => setAsAvailable(false)}
                     />

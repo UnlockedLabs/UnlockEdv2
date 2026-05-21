@@ -19,7 +19,7 @@ export function SupportTab({ classId }: SupportTabProps) {
     return (
         <div className="bg-white rounded-lg border border-gray-200">
             <div className="border-b border-gray-200 px-6 py-4">
-                <h3 className="text-[#203622]">
+                <h3 className="text-brand-dark">
                     At-Risk Residents ({flagsResp?.meta?.total ?? 0})
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
@@ -28,8 +28,8 @@ export function SupportTab({ classId }: SupportTabProps) {
             </div>
             {flags.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                    <CheckCircle className="size-12 mx-auto mb-3 text-[#556830]" />
-                    <p className="font-medium text-[#203622]">
+                    <CheckCircle className="size-12 mx-auto mb-3 text-brand" />
+                    <p className="font-medium text-brand-dark">
                         All residents are engaged!
                     </p>
                     <p className="text-sm mt-1">
@@ -46,7 +46,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                             <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-6 flex-1">
                                     <div className="w-[160px] shrink-0">
-                                        <div className="text-[#203622] font-medium">
+                                        <div className="text-brand-dark font-medium">
                                             {flag.doc_id}
                                         </div>
                                         <div className="text-sm text-gray-600 mt-0.5">
@@ -58,7 +58,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                             <span className="text-sm text-gray-600">
                                                 Attendance:
                                             </span>
-                                            <span className="text-sm text-[#203622] font-medium">
+                                            <span className="text-sm text-brand-dark font-medium">
                                                 {flag.attendance_rate}%
                                             </span>
                                             <span className="text-xs text-gray-500">
@@ -69,7 +69,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                         <Progress
                                             value={flag.attendance_rate}
                                             className="h-2 w-64 mb-2"
-                                            indicatorClassName="bg-[#F1B51C]"
+                                            indicatorClassName="bg-brand-gold"
                                         />
                                         <div className="flex gap-4 text-xs text-gray-600">
                                             <span>

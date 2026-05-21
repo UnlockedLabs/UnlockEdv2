@@ -116,7 +116,7 @@ export default function FavoriteCard({
                             void handleUnfavorite();
                         }}
                     >
-                        <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                        <Star className="size-5 fill-brand-gold text-brand-gold" />
                     </button>
                 )}
                 <img
@@ -172,7 +172,7 @@ export default function FavoriteCard({
                         void handleUnfavorite();
                     }}
                 >
-                    <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                    <Star className="size-5 fill-brand-gold text-brand-gold" />
                 </button>
             )}
         </div>

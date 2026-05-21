@@ -83,7 +83,7 @@ export default function ActivityHistoryCard({
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-6">
-                <h3 className="text-[#203622]">{heading}</h3>
+                <h3 className="text-brand-dark">{heading}</h3>
                 <Select value={filterQuery} onValueChange={setFilterQuery}>
                     <SelectTrigger className="w-[160px]">
                         <SelectValue placeholder="Filter" />

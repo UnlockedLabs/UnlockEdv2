@@ -23,7 +23,7 @@ export function HistoricalNotes({
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-[#203622]">
+                <h2 className="text-lg font-semibold text-brand-dark">
                     Historical Notes
                 </h2>
                 {!isDeactivated && (

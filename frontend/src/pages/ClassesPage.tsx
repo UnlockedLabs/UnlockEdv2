@@ -223,7 +223,7 @@ export default function ClassesPage() {
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="text-[#203622]">
+                            <h1 className="text-brand-dark">
                                 Classes
                             </h1>
                             <p className="text-gray-600 mt-1">
@@ -240,7 +240,7 @@ export default function ClassesPage() {
                                 Cancel Classes by Instructor
                             </Button>
                             <Button
-                                className="bg-[#F1B51C] text-[#203622] hover:bg-[#d9a419] gap-2"
+                                className="bg-brand-gold text-brand-dark hover:bg-[#d9a419] gap-2"
                                 onClick={() => {
                                     if (crossFacility) {
                                         setShowFacilityModal(true);
@@ -273,7 +273,7 @@ export default function ClassesPage() {
                             variant={todayOnly ? 'default' : 'outline'}
                             className={cn(
                                 todayOnly
-                                    ? 'bg-[#556830] hover:bg-[#203622]'
+                                    ? 'bg-brand hover:bg-brand-dark'
                                     : ''
                             )}
                             onClick={() => setTodayOnly(!todayOnly)}
@@ -287,7 +287,7 @@ export default function ClassesPage() {
                             }
                             className={cn(
                                 attendanceConcerns
-                                    ? 'bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]'
+                                    ? 'bg-brand-gold hover:bg-[#d9a419] text-brand-dark'
                                     : ''
                             )}
                             onClick={() =>
@@ -374,24 +374,24 @@ export default function ClassesPage() {
 
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <table className="w-full">
-                        <thead className="bg-[#E2E7EA] border-b border-gray-200">
+                        <thead className="bg-surface-hover border-b border-gray-200">
                             <tr>
-                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[24%]">
+                                <th className="text-left px-6 py-4 text-sm text-brand-dark w-[24%]">
                                     Class Name
                                 </th>
-                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[15%]">
+                                <th className="text-left px-6 py-4 text-sm text-brand-dark w-[15%]">
                                     Instructor
                                 </th>
-                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[23%]">
+                                <th className="text-left px-6 py-4 text-sm text-brand-dark w-[23%]">
                                     Schedule
                                 </th>
-                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[14%]">
+                                <th className="text-left px-6 py-4 text-sm text-brand-dark w-[14%]">
                                     Enrollment
                                 </th>
-                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[10%]">
+                                <th className="text-left px-6 py-4 text-sm text-brand-dark w-[10%]">
                                     Status
                                 </th>
-                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[14%]">
+                                <th className="text-left px-6 py-4 text-sm text-brand-dark w-[14%]">
                                     Actions
                                 </th>
                             </tr>
@@ -485,9 +485,9 @@ export default function ClassesPage() {
                                             setFacilitySearch('');
                                             setShowCreateModal(true);
                                         }}
-                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/50 transition-colors"
+                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors"
                                     >
-                                        <div className="text-[#203622] font-medium">
+                                        <div className="text-brand-dark font-medium">
                                             {facility.name}
                                         </div>
                                     </button>
@@ -514,13 +514,13 @@ export default function ClassesPage() {
                             (f) => f.id === selectedFacilityForClass
                         );
                         return (
-                            <div className="bg-[#E2E7EA] rounded-lg p-3 border border-[#556830] mt-4">
+                            <div className="bg-surface-hover rounded-lg p-3 border border-brand mt-4">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="text-xs text-gray-600 mb-0.5">
                                             Selected Facility
                                         </div>
-                                        <div className="text-[#203622] font-medium">
+                                        <div className="text-brand-dark font-medium">
                                             {selectedFacility?.name}
                                         </div>
                                     </div>
@@ -567,9 +567,9 @@ export default function ClassesPage() {
                                         onClick={() =>
                                             handleProgramSelect(program.id)
                                         }
-                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/50 transition-colors"
+                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors"
                                     >
-                                        <div className="text-[#203622] font-medium">
+                                        <div className="text-brand-dark font-medium">
                                             {program.name}
                                         </div>
                                         {program.description && (
@@ -623,21 +623,21 @@ function ClassRow({
     return (
         <tr
             onClick={onClick}
-            className="hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors"
+            className="hover:bg-surface-hover/50 cursor-pointer transition-colors"
         >
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                     {today && cls.status === SelectedClassStatus.Active && (
-                        <div className="w-2 h-2 bg-[#F1B51C] rounded-full flex-shrink-0" />
+                        <div className="w-2 h-2 bg-brand-gold rounded-full flex-shrink-0" />
                     )}
                     <div>
-                        <div className="text-[#203622] hover:text-[#556830] transition-colors font-medium">
+                        <div className="text-brand-dark hover:text-brand transition-colors font-medium">
                             {cls.name}
                         </div>
                         <Link
                             to={`/programs/${cls.program_id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-sm text-[#556830] hover:text-[#203622] hover:underline mt-0.5 block"
+                            className="text-sm text-brand hover:text-brand-dark hover:underline mt-0.5 block"
                         >
                             {cls.program?.name ?? 'Program'}
                         </Link>
@@ -697,9 +697,9 @@ function ClassRow({
                         className="h-1.5"
                         indicatorClassName={cn(
                             enrollPct >= 80
-                                ? 'bg-[#556830]'
+                                ? 'bg-brand'
                                 : enrollPct >= 50
-                                  ? 'bg-[#F1B51C]'
+                                  ? 'bg-brand-gold'
                                   : 'bg-gray-400'
                         )}
                     />
@@ -718,7 +718,7 @@ function ClassRow({
                     <Button
                         size="sm"
                         variant="outline"
-                        className="border-[#556830] text-[#556830] hover:bg-[#556830] hover:text-white"
+                        className="border-brand text-brand hover:bg-brand hover:text-white"
                         onClick={(e) => {
                             e.stopPropagation();
                             onAttendance();
