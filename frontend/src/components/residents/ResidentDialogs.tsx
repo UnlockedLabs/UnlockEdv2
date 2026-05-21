@@ -253,7 +253,7 @@ export function ResetPasswordResultDialog({
                         Temporary Password
                     </div>
                     <div className="flex items-center gap-2">
-                        <code className="flex-1 text-lg font-mono font-semibold text-[#203622]">
+                        <code className="flex-1 text-lg font-mono font-semibold text-brand-dark">
                             {tempPassword}
                         </code>
                         <Button
@@ -689,7 +689,7 @@ export function TransferDialog({
                                 className="text-sm font-medium"
                             >
                                 Type{' '}
-                                <span className="font-mono font-semibold text-[#203622]">
+                                <span className="font-mono font-semibold text-brand-dark">
                                     {displayId}
                                 </span>{' '}
                                 to confirm

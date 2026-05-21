@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
         /** Primary brand action: light brand green that darkens on hover. */
-        brand: "bg-[#556830] text-white hover:bg-[#203622]",
+        brand: "bg-brand text-white hover:bg-brand-dark",
         /** Non-destructive warning (e.g. deactivate, archive). */
         warning: "bg-orange-600 text-white hover:bg-orange-700",
       },

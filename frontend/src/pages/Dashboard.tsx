@@ -750,7 +750,7 @@ function MetricCards({
                 tooltipAction={
                     <button
                         onClick={() => onNavigate('/classes')}
-                        className="text-brand-gold hover:text-[#d9a419] flex items-center gap-1 text-xs"
+                        className="text-brand-gold hover:text-brand-gold-dark flex items-center gap-1 text-xs"
                     >
                         View classes <ExternalLink className="size-3" />
                     </button>

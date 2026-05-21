@@ -368,7 +368,7 @@ export default function ProgramsPage() {
                             </p>
                         </div>
                         <Button
-                            className="bg-brand-gold text-brand-dark hover:bg-[#d9a419] gap-2 cursor-default"
+                            className="bg-brand-gold text-brand-dark hover:bg-brand-gold-dark gap-2 cursor-default"
                             onClick={() => setShowAddProgram(!showAddProgram)}
                         >
                             <Plus className="size-5" />

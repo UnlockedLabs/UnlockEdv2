@@ -117,7 +117,7 @@ export default function ClassesTab({
                     onClick={() =>
                         navigate('/programs/' + programId + '/classes')
                     }
-                    className="bg-brand-gold hover:bg-[#d9a419] text-brand-dark gap-2"
+                    className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark gap-2"
                 >
                     <Plus className="size-5" />
                     Create New Class

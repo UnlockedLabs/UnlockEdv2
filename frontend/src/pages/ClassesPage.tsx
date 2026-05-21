@@ -240,7 +240,7 @@ export default function ClassesPage() {
                                 Cancel Classes by Instructor
                             </Button>
                             <Button
-                                className="bg-brand-gold text-brand-dark hover:bg-[#d9a419] gap-2"
+                                className="bg-brand-gold text-brand-dark hover:bg-brand-gold-dark gap-2"
                                 onClick={() => {
                                     if (crossFacility) {
                                         setShowFacilityModal(true);
@@ -287,7 +287,7 @@ export default function ClassesPage() {
                             }
                             className={cn(
                                 attendanceConcerns
-                                    ? 'bg-brand-gold hover:bg-[#d9a419] text-brand-dark'
+                                    ? 'bg-brand-gold hover:bg-brand-gold-dark text-brand-dark'
                                     : ''
                             )}
                             onClick={() =>

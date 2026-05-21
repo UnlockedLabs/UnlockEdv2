@@ -156,7 +156,7 @@ export default function ClassDetailPage() {
                                     onClick={() =>
                                         setShowAttendanceModal(true)
                                     }
-                                    className="bg-brand-gold hover:bg-[#d9a419] text-brand-dark"
+                                    className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark"
                                 >
                                     Take Attendance
                                 </Button>

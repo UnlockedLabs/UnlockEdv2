@@ -42,6 +42,7 @@
     --brand: #556830;
     --brand-dark: #203622;
     --brand-gold: #F1B51C;
+    --brand-gold-dark: #d9a419;
     --surface-hover: #E2E7EA;
 }
 
@@ -121,6 +122,7 @@
     --color-brand: var(--brand);
     --color-brand-dark: var(--brand-dark);
     --color-brand-gold: var(--brand-gold);
+    --color-brand-gold-dark: var(--brand-gold-dark);
     --color-surface-hover: var(--surface-hover);
 }
 
