@@ -485,7 +485,7 @@ export default function ClassesPage() {
                                             setFacilitySearch('');
                                             setShowCreateModal(true);
                                         }}
-                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors"
+                                        className="list-card"
                                     >
                                         <div className="text-brand-dark font-medium">
                                             {facility.name}
@@ -567,7 +567,7 @@ export default function ClassesPage() {
                                         onClick={() =>
                                             handleProgramSelect(program.id)
                                         }
-                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors"
+                                        className="list-card"
                                     >
                                         <div className="text-brand-dark font-medium">
                                             {program.name}

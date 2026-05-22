@@ -218,6 +218,18 @@ html {
     @apply text-foreground bg-muted;
 }
 
+.option-card {
+    @apply w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-brand hover:bg-gray-50 cursor-pointer transition-all text-left;
+}
+
+.list-card {
+    @apply w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors;
+}
+
+.filter-button {
+    @apply w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50;
+}
+
 input[type='checkbox']:focus {
     outline-color: #9ca3af;
 }

@@ -468,7 +468,7 @@ export default function ProgramsPage() {
                         {/* Program Type Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
+                                <button className="filter-button">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>
@@ -509,7 +509,7 @@ export default function ProgramsPage() {
                         {/* Status Filter */}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50">
+                                <button className="filter-button">
                                     <div className="flex items-center gap-2">
                                         <Filter className="size-4" />
                                         <span>

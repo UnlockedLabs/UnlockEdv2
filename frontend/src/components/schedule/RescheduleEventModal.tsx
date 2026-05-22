@@ -40,7 +40,7 @@ export function RescheduleEventModal({
             <div className="space-y-3 py-4">
                 <button
                     onClick={onSingleSession}
-                    className="w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-brand hover:bg-gray-50 cursor-pointer transition-all text-left"
+                    className="option-card"
                 >
                     <Calendar className="size-5 text-brand mt-0.5 shrink-0" />
                     <div className="flex-1">
@@ -53,7 +53,7 @@ export function RescheduleEventModal({
 
                 <button
                     onClick={onSeriesReschedule}
-                    className="w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-brand hover:bg-gray-50 cursor-pointer transition-all text-left"
+                    className="option-card"
                 >
                     <Repeat className="size-5 text-brand mt-0.5 shrink-0" />
                     <div className="flex-1">
