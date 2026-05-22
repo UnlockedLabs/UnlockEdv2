@@ -281,7 +281,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="card-block p-6">
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h3 className="text-brand-dark mb-1">

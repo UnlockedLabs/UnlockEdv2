@@ -292,7 +292,7 @@ html {
 }
 
 .card-block {
-    @apply bg-white rounded-lg border border-gray-200 mb-6;
+    @apply bg-white rounded-lg border border-gray-200;
 }
 
 .input-icon-left {
@@ -313,6 +313,42 @@ html {
 
 .list-item-btn {
     @apply w-full justify-start border-gray-300 hover:bg-gray-50;
+}
+
+.form-label {
+    @apply text-sm font-medium text-brand-dark mb-2 block;
+}
+
+.section-footer {
+    @apply px-6 py-4 bg-gray-50 border-t border-gray-200;
+}
+
+.btn-brand-dark {
+    @apply bg-brand-dark text-white hover:bg-brand-dark/90;
+}
+
+.badge-amber {
+    @apply bg-amber-50 text-amber-700 border-amber-200;
+}
+
+.caption-clamp {
+    @apply text-xs text-muted-foreground line-clamp-2;
+}
+
+.section-heading {
+    @apply text-xl font-semibold text-foreground mb-4;
+}
+
+.lead-icon {
+    @apply size-5 text-gray-400 mt-0.5 flex-shrink-0;
+}
+
+.lead-icon-sm {
+    @apply size-4 text-gray-600 mt-0.5 flex-shrink-0;
+}
+
+.clickable-row {
+    @apply flex items-center gap-2 text-sm cursor-pointer;
 }
 
 input[type='checkbox']:focus {

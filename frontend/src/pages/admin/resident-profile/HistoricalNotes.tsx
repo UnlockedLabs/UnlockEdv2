@@ -21,7 +21,7 @@ export function HistoricalNotes({
     onAddNote
 }: HistoricalNotesProps) {
     return (
-        <div className="card-block p-6 overflow-hidden">
+        <div className="card-block p-6 overflow-hidden mb-6">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-brand-dark">
                     Historical Notes

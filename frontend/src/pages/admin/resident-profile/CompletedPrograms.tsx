@@ -14,7 +14,7 @@ export function CompletedPrograms({
     onViewDetails
 }: CompletedProgramsProps) {
     return (
-        <div className="card-block p-6">
+        <div className="card-block p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-brand-dark">
                     Completed Programs & Achievements

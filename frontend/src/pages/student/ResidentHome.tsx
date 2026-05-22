@@ -48,7 +48,7 @@ function FeaturedLibraryCard({
                             {library.title}
                         </h4>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
+                    <p className="caption-clamp">
                         {library.description ?? ''}
                     </p>
                 </CardContent>
@@ -158,7 +158,7 @@ export default function ResidentHome() {
                 <div className="flex-1 space-y-8">
                     {featuredItems.length > 0 && (
                         <section>
-                            <h2 className="text-xl font-semibold text-foreground mb-4">
+                            <h2 className="section-heading">
                                 Featured Content
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -178,7 +178,7 @@ export default function ResidentHome() {
                     )}
 
                     <section>
-                        <h2 className="text-xl font-semibold text-foreground mb-4">
+                        <h2 className="section-heading">
                             Pick Up Where You Left Off
                         </h2>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="end-tour">
@@ -205,7 +205,7 @@ export default function ResidentHome() {
 
                     {links.length > 0 && (
                         <section>
-                            <h2 className="text-xl font-semibold text-foreground mb-4">
+                            <h2 className="section-heading">
                                 Helpful Links
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

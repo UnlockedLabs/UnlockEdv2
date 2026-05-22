@@ -33,7 +33,7 @@ export function SessionDetailClassDetails({
             </h4>
             <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                    <Calendar className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Calendar className="lead-icon" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-600 mb-0.5">
                             Class
@@ -49,7 +49,7 @@ export function SessionDetailClassDetails({
                     </div>
                 </div>
                 <div className="flex items-start gap-3">
-                    <Clock className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Clock className="lead-icon" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-600 mb-0.5">
                             Time
@@ -62,7 +62,7 @@ export function SessionDetailClassDetails({
                     </div>
                 </div>
                 <div className="flex items-start gap-3">
-                    <MapPin className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <MapPin className="lead-icon" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-600 mb-0.5">
                             Room
@@ -80,7 +80,7 @@ export function SessionDetailClassDetails({
                 </div>
                 {(originalInstructorName ?? instructorName) && (
                     <div className="flex items-start gap-3">
-                        <Users className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <Users className="lead-icon" />
                         <div className="flex-1 min-w-0">
                             <div className="text-sm text-gray-600 mb-0.5">
                                 Instructor

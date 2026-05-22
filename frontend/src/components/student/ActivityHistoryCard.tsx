@@ -81,7 +81,7 @@ export default function ActivityHistoryCard({
     const total = data?.meta?.total ?? entries.length;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+        <div className="card-block p-4 sm:p-6">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-brand-dark">{heading}</h3>
                 <Select value={filterQuery} onValueChange={setFilterQuery}>

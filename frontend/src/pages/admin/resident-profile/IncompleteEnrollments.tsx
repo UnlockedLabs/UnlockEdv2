@@ -34,7 +34,7 @@ export function IncompleteEnrollments({
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="card-block">
                 <CollapsibleTrigger asChild>
                     <button className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3">

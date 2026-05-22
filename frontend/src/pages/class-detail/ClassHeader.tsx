@@ -193,7 +193,7 @@ export function StatCards({
 
     return (
         <div className="grid grid-cols-3 gap-6 mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Users className="size-5 text-brand shrink-0" />
                     <h3 className="text-brand-dark truncate">Enrollment</h3>
@@ -212,7 +212,7 @@ export function StatCards({
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Calendar className="size-5 text-brand shrink-0" />
                     <h3 className="text-brand-dark truncate">Attendance</h3>
@@ -230,7 +230,7 @@ export function StatCards({
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <AlertCircle className="size-5 text-brand-gold shrink-0" />
                     <h3 className="text-brand-dark truncate">

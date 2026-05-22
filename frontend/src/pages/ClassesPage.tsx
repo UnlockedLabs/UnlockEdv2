@@ -256,7 +256,7 @@ export default function ClassesPage() {
                     </div>
                 </div>
 
-                <div className="card-block p-4">
+                <div className="card-block p-4 mb-6">
                     <div className="flex gap-4 items-center flex-wrap">
                         <div className="flex-1 relative min-w-[300px]">
                             <Search className="input-icon-left size-5" />
@@ -372,7 +372,7 @@ export default function ClassesPage() {
                     {attendanceConcerns && ' with attendance concerns'}
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="card-block overflow-hidden">
                     <table className="w-full">
                         <thead className="bg-surface-hover border-b border-gray-200">
                             <tr>

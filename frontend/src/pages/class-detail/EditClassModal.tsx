@@ -1065,7 +1065,7 @@ export function EditClassModal({
               Cancel
             </Button>
             <Button
-              className="bg-brand-dark text-white hover:bg-brand-dark/90"
+              className="btn-brand-dark"
               onClick={() => void handleAddRoom()}
             >
               Create
@@ -1129,7 +1129,7 @@ export function EditClassModal({
               Cancel
             </Button>
             <Button
-              className="bg-brand-dark text-white hover:bg-brand-dark/90"
+              className="btn-brand-dark"
               onClick={() => void handleAddInstructor()}
             >
               Create
@@ -1172,7 +1172,7 @@ export function EditClassModal({
               Copy
             </Button>
             <Button
-              className="bg-brand-dark text-white hover:bg-brand-dark/90"
+              className="btn-brand-dark"
               onClick={() => {
                 setShowPasswordModal(false);
                 setTempPassword('');

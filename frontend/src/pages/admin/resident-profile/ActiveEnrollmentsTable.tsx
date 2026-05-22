@@ -39,7 +39,7 @@ export function ActiveEnrollmentsTable({
 
     if (enrollments.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 mb-6 p-6">
+            <div className="card-block mb-6 p-6">
                 <h2 className="text-lg font-semibold text-brand-dark mb-1">
                     Active Enrollments
                 </h2>
@@ -49,7 +49,7 @@ export function ActiveEnrollmentsTable({
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 mb-6">
+        <div className="card-block mb-6">
             <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-brand-dark">
                     Active Enrollments

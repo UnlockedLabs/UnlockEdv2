@@ -294,7 +294,7 @@ export default function LibraryViewer() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-brand-dark text-white hover:bg-brand-dark/90"
+                            className="btn-brand-dark"
                         >
                             Save
                         </Button>

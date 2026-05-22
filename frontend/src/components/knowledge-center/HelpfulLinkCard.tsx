@@ -190,7 +190,7 @@ export default function HelpfulLinkCard({
                 <h3 className="text-sm font-medium text-foreground">
                     {link.title}
                 </h3>
-                <p className="text-xs text-muted-foreground line-clamp-2">
+                <p className="caption-clamp">
                     {link.description}
                 </p>
             </div>

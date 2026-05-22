@@ -214,7 +214,7 @@ export default function FacilityManagement() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     <Table>
                         <TableHeader>
                             <TableRow>

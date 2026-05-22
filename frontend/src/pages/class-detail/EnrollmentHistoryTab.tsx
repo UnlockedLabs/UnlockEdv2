@@ -68,7 +68,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
     }, [historicalEnrollments, statusFilter, timeFilter]);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="card-block">
             <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <div>

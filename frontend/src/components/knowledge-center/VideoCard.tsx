@@ -190,7 +190,7 @@ export default function VideoCard({
                 <p className="text-xs text-muted-foreground">
                     {video.channel_title} - {toMinutes(video.duration)}
                 </p>
-                <p className="text-xs text-muted-foreground line-clamp-2">
+                <p className="caption-clamp">
                     {available
                         ? video.description
                         : getVideoErrorMessage(video)}

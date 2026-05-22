@@ -124,7 +124,7 @@ export default function ClassesTab({
                 </Button>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="card-block">
                 {programClasses.length > 0 ? (
                     <div>
                         {activeScheduledClasses.length > 0 && (
@@ -154,7 +154,7 @@ export default function ClassesTab({
 
                         {completedClasses.length > 0 && (
                             <div className="divide-y divide-gray-200">
-                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Completed Classes (
                                         {completedClasses.length}
@@ -180,7 +180,7 @@ export default function ClassesTab({
 
                         {cancelledClasses.length > 0 && (
                             <div className="divide-y divide-gray-200">
-                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Cancelled Classes (
                                         {cancelledClasses.length}
@@ -206,7 +206,7 @@ export default function ClassesTab({
 
                         {pausedClasses.length > 0 && (
                             <div className="divide-y divide-gray-200">
-                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Paused Classes (
                                         {pausedClasses.length}

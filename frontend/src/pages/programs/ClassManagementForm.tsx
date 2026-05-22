@@ -1702,7 +1702,7 @@ export function ClassManagementFormInner({
                                 Cancel
                             </Button>
                             <Button
-                                className="bg-brand-dark text-white hover:bg-brand-dark/90"
+                                className="btn-brand-dark"
                                 onClick={() => void handleAddRoom()}
                             >
                                 Create
@@ -1768,7 +1768,7 @@ export function ClassManagementFormInner({
                                 Cancel
                             </Button>
                             <Button
-                                className="bg-brand-dark text-white hover:bg-brand-dark/90"
+                                className="btn-brand-dark"
                                 onClick={() => void handleAddInstructor()}
                             >
                                 Create

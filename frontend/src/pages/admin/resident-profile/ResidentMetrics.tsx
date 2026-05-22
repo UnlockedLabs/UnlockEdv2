@@ -20,7 +20,7 @@ function MetricCard({
     valueMargin?: boolean;
 }) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="card-block p-4">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
             <div
                 className={`text-2xl font-medium ${valueMargin ? 'mb-1' : ''} ${valueColor}`}

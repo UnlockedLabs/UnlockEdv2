@@ -424,7 +424,7 @@ export default function ProgramsPage() {
                 </TooltipProvider>
 
                 {/* Filters */}
-                <div className="card-block p-4">
+                <div className="card-block p-4 mb-6">
                     <div className="flex gap-4">
                         <div className="relative flex-1">
                             <Search className="input-icon-left size-5" />
@@ -566,7 +566,7 @@ export default function ProgramsPage() {
 
                 {/* Add Program Form */}
                 {showAddProgram && (
-                    <div className="card-block p-6">
+                    <div className="card-block p-6 mb-6">
                         <h3 className="text-brand-dark mb-4">
                             {isDeptAdminUser
                                 ? 'Create Statewide Program'
@@ -964,7 +964,7 @@ export default function ProgramsPage() {
                 )}
 
                 {filtered.length === 0 ? (
-                    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                    <div className="card-block p-12 text-center">
                         <p className="text-gray-600 mb-2">No programs found</p>
                         <p className="text-sm text-gray-500">
                             Try adjusting your search or filters
@@ -1027,7 +1027,7 @@ function StatCard({
     tooltip?: string;
 }) {
     const cardContent = (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 cursor-help">
+        <div className="card-block p-6 cursor-help">
             <p className="text-3xl text-brand-dark mb-1">{value}</p>
             <p className="text-sm text-gray-600">{label}</p>
         </div>
@@ -1227,7 +1227,7 @@ function ProgramsTable({
 
     return (
         <TooltipProvider>
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="card-block overflow-hidden">
                 <Table>
                     <TableHeader className="bg-surface-hover [&_tr]:border-b-0">
                         <TableRow>

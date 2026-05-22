@@ -607,7 +607,7 @@ export default function ProgramOverviewStatewide() {
                 </div>
 
                 <div className="grid grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Total Enrollment
                         </div>
@@ -618,7 +618,7 @@ export default function ProgramOverviewStatewide() {
                             of {totalCapacity} capacity
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Total Classes
                         </div>
@@ -629,7 +629,7 @@ export default function ProgramOverviewStatewide() {
                             across {facilityList.length} facilities
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Avg Completion Rate
                         </div>
@@ -640,7 +640,7 @@ export default function ProgramOverviewStatewide() {
                             of historical residents
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Avg Attendance Rate
                         </div>
@@ -653,7 +653,7 @@ export default function ProgramOverviewStatewide() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     <div className="p-6 border-b border-gray-200">
                         <h2 className="text-brand-dark">
                             Performance by Facility

@@ -847,7 +847,7 @@ function ClassesTab({
             </div>
 
             {showCreateForm && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="card-block p-6">
                     <h3 className="text-brand-dark mb-4">Create New Class</h3>
                     <ClassManagementFormInner
                         programId={programId}
@@ -878,7 +878,7 @@ function ClassesTab({
                     </p>
                 </div>
             ) : (
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     {activeScheduledClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
                             <div className="px-6 py-4 bg-gray-50">
@@ -907,7 +907,7 @@ function ClassesTab({
 
                     {completedClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="section-footer">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Completed Classes ({completedClasses.length}
                                     )
@@ -931,7 +931,7 @@ function ClassesTab({
 
                     {cancelledClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="section-footer">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Cancelled Classes ({cancelledClasses.length}
                                     )
@@ -955,7 +955,7 @@ function ClassesTab({
 
                     {pausedClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="section-footer">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Paused Classes ({pausedClasses.length})
                                 </h3>

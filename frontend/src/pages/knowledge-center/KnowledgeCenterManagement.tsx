@@ -100,7 +100,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                 className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="clickable-row">
                     <Switch
                         checked={library.visibility_status}
                         onCheckedChange={() =>
@@ -215,7 +215,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="clickable-row">
                     <Switch
                         checked={video.visibility_status}
                         onCheckedChange={() =>
@@ -280,7 +280,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="clickable-row">
                     <Switch
                         checked={link.visibility_status}
                         onCheckedChange={() =>
@@ -625,7 +625,7 @@ export default function KnowledgeCenterManagement() {
                 </p>
             </div>
 
-            <div className="card-block p-4">
+            <div className="card-block p-4 mb-6">
                 <div className="flex gap-4">
                     <div className="relative flex-1">
                         <Search className="input-icon-left size-5" />

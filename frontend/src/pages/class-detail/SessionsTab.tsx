@@ -259,7 +259,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     );
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="card-block">
             <SessionsTabFilterBar
                 statusFilter={statusFilter}
                 timeFilter={timeFilter}

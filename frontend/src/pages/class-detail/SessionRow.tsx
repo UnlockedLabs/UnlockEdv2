@@ -214,7 +214,7 @@ export function SessionRow({
                     !treatAsFrom && (
                         <Badge
                             variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200"
+                            className="badge-amber"
                         >
                             Missing
                         </Badge>

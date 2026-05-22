@@ -59,7 +59,7 @@ export default function VideoViewer() {
                 </p>
                 <Button
                     onClick={() => navigate(backPath)}
-                    className="bg-brand-dark text-white hover:bg-brand-dark/90"
+                    className="btn-brand-dark"
                 >
                     Back to Knowledge Center
                 </Button>

@@ -487,15 +487,15 @@ export default function AdminManagement() {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="card-block p-4">
                     <div className="text-sm text-gray-600 mb-1">Total Admins</div>
                     <div className="text-2xl font-medium text-brand-dark">{totalAdmins}</div>
                 </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="card-block p-4">
                     <div className="text-sm text-gray-600 mb-1">Department Admins</div>
                     <div className="text-2xl font-medium text-brand">{deptAdminCount}</div>
                 </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="card-block p-4">
                     <div className="text-sm text-gray-600 mb-1">Facility Admins</div>
                     <div className="text-2xl font-medium text-blue-700">{facilityAdminCount}</div>
                 </div>
@@ -543,7 +543,7 @@ export default function AdminManagement() {
             )}
 
             {/* Table */}
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="card-block">
                 <Table>
                     <TableHeader>
                         <TableRow>

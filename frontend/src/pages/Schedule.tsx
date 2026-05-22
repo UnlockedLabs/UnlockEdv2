@@ -333,7 +333,7 @@ export default function Schedule() {
                         <p className="text-gray-600">{subtitle}</p>
                     </div>
                     {class_id && (
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label className="clickable-row">
                             <input
                                 type="checkbox"
                                 checked={showAllClasses}
@@ -351,7 +351,7 @@ export default function Schedule() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             {isDepAdmin && (
                                 <div>
-                                    <label className="text-sm font-medium text-brand-dark mb-2 block">
+                                    <label className="form-label">
                                         Facility
                                     </label>
                                     <Select
@@ -377,7 +377,7 @@ export default function Schedule() {
                             )}
 
                             <div>
-                                <label className="text-sm font-medium text-brand-dark mb-2 block">
+                                <label className="form-label">
                                     Program
                                 </label>
                                 <Select value={selectedProgram} onValueChange={setSelectedProgram}>
@@ -396,7 +396,7 @@ export default function Schedule() {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-brand-dark mb-2 block">
+                                <label className="form-label">
                                     Instructor
                                 </label>
                                 <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>

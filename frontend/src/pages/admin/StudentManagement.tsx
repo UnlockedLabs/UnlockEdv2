@@ -319,7 +319,7 @@ export default function StudentManagement() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="card-block p-4">
                         <div className="text-sm text-gray-600 mb-1">
                             Total Residents
                         </div>
@@ -327,7 +327,7 @@ export default function StudentManagement() {
                             {stats?.total ?? '\u2014'}
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="card-block p-4">
                         <div className="text-sm text-gray-600 mb-1">
                             Active Accounts
                         </div>
@@ -335,7 +335,7 @@ export default function StudentManagement() {
                             {stats?.active ?? '\u2014'}
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="card-block p-4">
                         <div className="text-sm text-gray-600 mb-1">
                             Inactive Accounts
                         </div>
@@ -357,7 +357,7 @@ export default function StudentManagement() {
                         ))}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-lg border border-gray-200">
+                    <div className="card-block">
                         <Table>
                             <TableHeader>
                                 <TableRow>

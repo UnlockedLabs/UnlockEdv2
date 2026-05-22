@@ -194,7 +194,7 @@ export function ChangeRoomModal({
 
           {applyToFuture && futureSessions.length > 0 && (
             <div>
-              <Label className="text-sm font-medium text-brand-dark mb-2 block">
+              <Label className="form-label">
                 Sessions to Update
               </Label>
               <div className="scroll-panel">
@@ -226,7 +226,7 @@ export function ChangeRoomModal({
 
           {useBulkLayout && sessions.length > 0 && (
             <div>
-              <Label className="text-sm font-medium text-brand-dark mb-2 block">
+              <Label className="form-label">
                 Sessions to Update
               </Label>
               <div className="scroll-panel">

@@ -389,7 +389,7 @@ export default function EventAttendance() {
             </div>
 
             <div className="max-w-5xl mx-auto px-6 py-6">
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     <div className="border-b border-gray-200 px-6 py-4">
                         <h3 className="text-brand-dark font-semibold">
                             Roster ({rows.length})

@@ -202,7 +202,7 @@ export function EnrollResidentsModal({
                     )}
                 </div>
 
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="section-footer">
                     <div className="flex items-center justify-between mb-4">
                         <div className="text-sm">
                             <div className="flex items-center gap-6">

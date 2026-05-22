@@ -159,7 +159,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
 
     return (
         <div className="space-y-4">
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="card-block">
                 <div className="border-b border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
@@ -285,7 +285,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                             {needsSupport && (
                                                 <Badge
                                                     variant="outline"
-                                                    className="bg-amber-50 text-amber-700 border-amber-200"
+                                                    className="badge-amber"
                                                 >
                                                     Needs Support
                                                 </Badge>

@@ -106,7 +106,7 @@ export function AuditTab({ classId }: AuditTabProps) {
     const total = auditResp?.meta?.total ?? entries.length;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+        <div className="card-block p-4 sm:p-6">
             <h3 className="text-brand-dark mb-6">Audit History</h3>
             {entries.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">

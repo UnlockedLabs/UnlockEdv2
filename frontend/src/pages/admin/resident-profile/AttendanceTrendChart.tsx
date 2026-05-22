@@ -22,7 +22,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
 
     if (data.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+            <div className="card-block p-5 mb-6">
                 <h3 className="text-base font-semibold text-brand-dark mb-2">
                     Attendance Trend
                 </h3>
@@ -34,7 +34,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+        <div className="card-block p-5 mb-6">
             <h3 className="text-base font-semibold text-brand-dark mb-2">
                 Attendance Trend
             </h3>

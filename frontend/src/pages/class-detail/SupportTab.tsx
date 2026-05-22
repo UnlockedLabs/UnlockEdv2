@@ -17,7 +17,7 @@ export function SupportTab({ classId }: SupportTabProps) {
     const flags = flagsResp?.data ?? [];
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="card-block">
             <div className="border-b border-gray-200 px-6 py-4">
                 <h3 className="text-brand-dark">
                     At-Risk Residents ({flagsResp?.meta?.total ?? 0})
@@ -87,7 +87,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                 </div>
                                 <Badge
                                     variant="outline"
-                                    className="bg-amber-50 text-amber-700 border-amber-200"
+                                    className="badge-amber"
                                 >
                                     <AlertCircle className="size-3 mr-1" />
                                     Needs Support

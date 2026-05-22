@@ -177,7 +177,7 @@ export default function LibraryCard({
                 <h3 className="text-sm font-medium text-foreground">
                     {library.title}
                 </h3>
-                <p className="text-xs text-muted-foreground line-clamp-2">
+                <p className="caption-clamp">
                     {library.description}
                 </p>
             </div>

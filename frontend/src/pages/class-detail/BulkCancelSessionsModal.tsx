@@ -99,7 +99,7 @@ export function BulkCancelSessionsModal({
         >
             <div className="space-y-4 py-4">
                     <div>
-                        <Label className="text-sm font-medium text-brand-dark mb-2 block">
+                        <Label className="form-label">
                             Sessions to Cancel
                         </Label>
                         <div className="scroll-panel">

@@ -427,7 +427,7 @@ export default function ResidentKnowledgeCenter() {
                     </p>
                 </div>
 
-            <div className="card-block p-4" id="knowledge-center-search">
+            <div className="card-block p-4 mb-6" id="knowledge-center-search">
                 <div className="relative">
                     <Search className="input-icon-left size-5" />
                     <Input
