@@ -270,7 +270,7 @@ export default function ResidentKnowledgeCenter() {
 
         return (
             <div
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative h-full flex flex-col"
+                className="media-card group h-full flex flex-col"
                 onClick={handleClick}
             >
                 {isAdminPreview

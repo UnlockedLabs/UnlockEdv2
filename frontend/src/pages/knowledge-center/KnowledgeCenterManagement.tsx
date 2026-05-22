@@ -56,7 +56,7 @@ interface CardHandlers {
 function LibraryCard({ library, handlers }: { library: Library; handlers: CardHandlers }) {
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative"
+            className="media-card group"
             onClick={() => handlers.onNavigate(`/viewer/libraries/${library.id}`)}
         >
             <TooltipProvider>
@@ -242,7 +242,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
 function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers: CardHandlers; onLinkClick: (link: HelpfulLink) => void }) {
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative"
+            className="media-card group"
             onClick={() => onLinkClick(link)}
         >
             <TooltipProvider>
@@ -677,19 +677,19 @@ export default function KnowledgeCenterManagement() {
                     <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
                         <TabsTrigger
                             value="libraries"
-                            className="data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="tab-trigger-brand"
                         >
                             Libraries ({libTotal})
                         </TabsTrigger>
                         <TabsTrigger
                             value="videos"
-                            className="data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="tab-trigger-brand"
                         >
                             Videos ({vidTotal})
                         </TabsTrigger>
                         <TabsTrigger
                             value="links"
-                            className="data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-brand-dark data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="tab-trigger-brand"
                         >
                             Helpful Links ({linkTotal})
                         </TabsTrigger>

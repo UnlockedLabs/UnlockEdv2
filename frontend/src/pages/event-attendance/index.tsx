@@ -151,7 +151,7 @@ export default function EventAttendance() {
 
     if (datesLoading || isLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-gray-500">Loading...</div>
             </div>
         );
@@ -159,7 +159,7 @@ export default function EventAttendance() {
 
     if (error) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-red-600">Error loading attendance data</div>
             </div>
         );
@@ -172,7 +172,7 @@ export default function EventAttendance() {
 
     if (!scheduled) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-red-600">
                     No class session was scheduled for this date.
                 </div>
@@ -182,7 +182,7 @@ export default function EventAttendance() {
 
     if (isFutureDay) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-red-600">
                     This session is scheduled for a future date. Attendance
                     will be available after it occurs.

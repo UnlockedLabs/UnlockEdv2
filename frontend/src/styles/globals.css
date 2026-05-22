@@ -218,6 +218,19 @@ html {
     @apply text-foreground bg-muted;
 }
 
+.tab-trigger-brand {
+    @apply px-4 py-2.5 rounded-lg transition-all duration-200;
+}
+.tab-trigger-brand[data-state='active'] {
+    @apply bg-brand text-white shadow-sm;
+}
+.tab-trigger-brand[data-state='inactive'] {
+    @apply text-gray-600;
+}
+.tab-trigger-brand[data-state='inactive']:hover {
+    @apply text-brand-dark bg-gray-50;
+}
+
 .option-card {
     @apply w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-brand hover:bg-gray-50 cursor-pointer transition-all text-left;
 }
@@ -228,6 +241,22 @@ html {
 
 .filter-button {
     @apply w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50;
+}
+
+.media-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer relative;
+}
+
+.menu-icon {
+    @apply pointer-events-none absolute left-2 flex size-3.5 items-center justify-center;
+}
+
+.full-page-center {
+    @apply min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center;
+}
+
+.scroll-panel {
+    @apply max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1;
 }
 
 input[type='checkbox']:focus {

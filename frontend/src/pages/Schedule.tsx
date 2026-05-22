@@ -29,6 +29,7 @@ import { RescheduleSeriesModal } from '@/components/schedule/RescheduleSeriesMod
 import { RestoreEventModal } from '@/components/schedule/RestoreEventModal';
 import { SessionDetailSheet } from '@/components/schedule/SessionDetailSheet';
 import type { SessionDisplay } from '@/pages/class-detail/session-utils';
+import { BRAND, BRAND_DARK } from '@/lib/brand';
 
 const localizer = momentLocalizer(moment);
 
@@ -243,8 +244,8 @@ export default function Schedule() {
 
     const eventStyleGetter = (event: CalendarEvent) => {
         const e = event.resource;
-        let backgroundColor = '#556830';
-        let borderColor = '#203622';
+        let backgroundColor = BRAND;
+        let borderColor = BRAND_DARK;
         if (e.is_cancelled) {
             backgroundColor = '#9ca3af';
             borderColor = '#6b7280';

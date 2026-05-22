@@ -2,6 +2,7 @@ import { initialTourState, useTourContext } from '@/contexts/TourContext';
 import { useTheme } from 'next-themes';
 import Joyride, { CallBackProps, EVENTS } from 'react-joyride';
 import { useNavigate } from 'react-router-dom';
+import { BRAND, BRAND_DARK } from '@/lib/brand';
 
 export const targetToStepIndexMap = {
     '#resident-home': 0,
@@ -33,9 +34,9 @@ export default function UnlockEdTour() {
         resolvedTheme === 'dark'
             ? {
                   options: {
-                      arrowColor: '#203622',
-                      backgroundColor: '#203622',
-                      primaryColor: '#556830',
+                      arrowColor: BRAND_DARK,
+                      backgroundColor: BRAND_DARK,
+                      primaryColor: BRAND,
                       textColor: '#EEEEEE'
                   }
               }
@@ -43,7 +44,7 @@ export default function UnlockEdTour() {
                   options: {
                       arrowColor: '#FFFFFF',
                       backgroundColor: '#FFFFFF',
-                      primaryColor: '#203622',
+                      primaryColor: BRAND_DARK,
                       textColor: '#222222'
                   }
               };
