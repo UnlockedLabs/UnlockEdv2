@@ -233,7 +233,7 @@ export default function ChangePasswordForm() {
                 <Button
                     type="submit"
                     disabled={processing || !isValid}
-                    className="bg-brand-gold text-foreground hover:bg-brand-gold/90 font-semibold"
+                    className="btn-gold"
                 >
                     {processing ? (
                         <Loader2 className="size-4 animate-spin" />

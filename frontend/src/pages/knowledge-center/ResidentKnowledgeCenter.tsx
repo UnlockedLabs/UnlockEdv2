@@ -347,7 +347,7 @@ export default function ResidentKnowledgeCenter() {
                         </div>
                     )}
                     <div className="flex-1 min-w-0 pr-8">
-                        <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
+                        <h3 className="card-title-link">
                             {item.title}
                         </h3>
                         {item.author && (
@@ -528,7 +528,7 @@ export default function ResidentKnowledgeCenter() {
             </div>
 
             {paginatedContent.length === 0 ? (
-                <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                <div className="empty-state">
                     <p className="text-gray-500">No resources found.</p>
                 </div>
             ) : (

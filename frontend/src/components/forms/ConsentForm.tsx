@@ -59,7 +59,7 @@ export default function ConsentForm() {
                     <Button
                         type="button"
                         onClick={() => void accept()}
-                        className="bg-brand-gold text-foreground hover:bg-brand-gold/90 font-semibold"
+                        className="btn-gold"
                     >
                         Accept
                     </Button>

@@ -67,7 +67,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                                 e.stopPropagation();
                                 handlers.onToggleFeatured(library.id, 'library', !!library.is_featured);
                             }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                            className="btn-corner"
                         >
                             <Star
                                 className={`size-4 ${library.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
@@ -88,7 +88,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     className="size-12 rounded flex-shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
+                    <h3 className="card-title-link">
                         {library.title}
                     </h3>
                 </div>
@@ -148,7 +148,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                                 e.stopPropagation();
                                 handlers.onToggleFeatured(video.id, 'video', !!video.is_featured);
                             }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                            className="btn-corner"
                         >
                             <Star
                                 className={`size-4 ${video.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
@@ -174,7 +174,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
+                    <h3 className="card-title-link">
                         {video.title}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -253,7 +253,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                                 e.stopPropagation();
                                 handlers.onToggleFeatured(link.id, 'link', !!link.is_featured);
                             }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                            className="btn-corner"
                         >
                             <Star
                                 className={`size-4 ${link.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
@@ -268,7 +268,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="text-brand-dark group-hover:text-brand transition-colors line-clamp-1">
+                <h3 className="card-title-link">
                     {link.title}
                 </h3>
             </div>
@@ -743,7 +743,7 @@ export default function KnowledgeCenterManagement() {
 
                 <TabsContent value="libraries" className="space-y-4">
                     {libraries.length === 0 ? (
-                        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                        <div className="empty-state">
                             <p className="text-gray-500">
                                 No libraries found.
                             </p>
@@ -772,7 +772,7 @@ export default function KnowledgeCenterManagement() {
 
                 <TabsContent value="videos" className="space-y-4">
                     {videos.length === 0 ? (
-                        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                        <div className="empty-state">
                             <p className="text-gray-500">No videos found.</p>
                         </div>
                     ) : (
@@ -804,7 +804,7 @@ export default function KnowledgeCenterManagement() {
 
                 <TabsContent value="links" className="space-y-4">
                     {helpfulLinks.length === 0 ? (
-                        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                        <div className="empty-state">
                             <p className="text-gray-500">
                                 No helpful links found.
                             </p>
