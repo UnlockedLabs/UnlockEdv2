@@ -291,7 +291,7 @@ export default function ClassEnrollmentDetails() {
                     <Button
                         disabled={blockEdits}
                         onClick={() => navigate(`/program-classes/${class_id}/enrollments/add`)}
-                        className="bg-brand-gold text-foreground hover:bg-brand-gold/90"
+                        className="btn-gold-thin"
                     >
                         <Plus className="size-4" />
                         Add Resident

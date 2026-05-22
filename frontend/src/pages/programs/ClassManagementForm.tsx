@@ -1263,7 +1263,7 @@ export function ClassManagementFormInner({
 
                 {!embedded && (
                     <>
-                        <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                        <div className="section-card">
                             <h2 className="text-lg font-semibold text-foreground">
                                 Class Information
                             </h2>
@@ -1446,7 +1446,7 @@ export function ClassManagementFormInner({
                         </div>
 
                         {isNewClass && (
-                            <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                            <div className="section-card">
                                 <h2 className="text-lg font-semibold text-foreground">
                                     Scheduling
                                 </h2>
@@ -1579,7 +1579,7 @@ export function ClassManagementFormInner({
                             </div>
                         )}
 
-                        <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                        <div className="section-card">
                             <h2 className="text-lg font-semibold text-foreground">
                                 Status
                             </h2>
@@ -1634,7 +1634,7 @@ export function ClassManagementFormInner({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-brand-gold text-foreground hover:bg-brand-gold/90"
+                                className="btn-gold-thin"
                             >
                                 {isSubmitting
                                     ? 'Saving...'

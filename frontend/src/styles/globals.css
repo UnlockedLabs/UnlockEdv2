@@ -275,6 +275,46 @@ html {
     @apply bg-brand-gold text-foreground hover:bg-brand-gold/90 font-semibold;
 }
 
+.btn-gold-thin {
+    @apply bg-brand-gold text-foreground hover:bg-brand-gold/90;
+}
+
+.th-muted {
+    @apply text-left py-3 px-5 text-muted-foreground font-medium;
+}
+
+.section-card {
+    @apply bg-card rounded-lg border border-border p-6 space-y-4;
+}
+
+.field-readonly {
+    @apply border border-gray-300 rounded-md px-3 py-2 bg-gray-50;
+}
+
+.card-block {
+    @apply bg-white rounded-lg border border-gray-200 mb-6;
+}
+
+.input-icon-left {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400;
+}
+
+.checkbox-brand {
+    @apply rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none;
+}
+
+.row-with-border {
+    @apply flex items-center justify-between pt-3 border-t border-gray-100;
+}
+
+.brand-tag {
+    @apply bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1;
+}
+
+.list-item-btn {
+    @apply w-full justify-start border-gray-300 hover:bg-gray-50;
+}
+
 input[type='checkbox']:focus {
     outline-color: #9ca3af;
 }

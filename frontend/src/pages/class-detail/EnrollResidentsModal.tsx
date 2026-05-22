@@ -129,7 +129,7 @@ export function EnrollResidentsModal({
         >
                 <div className="px-6 pb-4">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                        <Search className="input-icon-left size-4" />
                         <Input
                             placeholder="Search by resident ID or name..."
                             value={searchTerm}

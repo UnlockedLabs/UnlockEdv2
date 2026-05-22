@@ -200,7 +200,7 @@ export default function FacilityManagement() {
                 {/* Search */}
                 <div className="mb-6">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 size-5" />
+                        <Search className="input-icon-left size-5" />
                         <Input
                             placeholder="Search facilities..."
                             value={searchQuery}

@@ -424,10 +424,10 @@ export default function ProgramsPage() {
                 </TooltipProvider>
 
                 {/* Filters */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                <div className="card-block p-4">
                     <div className="flex gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                            <Search className="input-icon-left size-5" />
                             <Input
                                 placeholder="Search programs..."
                                 value={search}
@@ -566,7 +566,7 @@ export default function ProgramsPage() {
 
                 {/* Add Program Form */}
                 {showAddProgram && (
-                    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                    <div className="card-block p-6">
                         <h3 className="text-brand-dark mb-4">
                             {isDeptAdminUser
                                 ? 'Create Statewide Program'
@@ -677,7 +677,7 @@ export default function ProgramsPage() {
                                                                     );
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none"
+                                                            className="checkbox-brand"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -738,7 +738,7 @@ export default function ProgramsPage() {
                                                                     );
                                                                 }
                                                             }}
-                                                            className="rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none"
+                                                            className="checkbox-brand"
                                                         />
                                                     </span>
                                                     <span className="text-sm text-gray-700">
@@ -906,7 +906,7 @@ export default function ProgramsPage() {
                                                                                 );
                                                                             }
                                                                         }}
-                                                                        className="rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none"
+                                                                        className="checkbox-brand"
                                                                     />
                                                                 </span>
                                                                 <span className="text-sm text-gray-700">

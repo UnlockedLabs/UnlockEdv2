@@ -97,7 +97,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                 {library.description}
             </p>
             <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -212,7 +212,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 </div>
             )}
             <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -277,7 +277,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 {link.description}
             </p>
             <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -625,10 +625,10 @@ export default function KnowledgeCenterManagement() {
                 </p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="card-block p-4">
                 <div className="flex gap-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                        <Search className="input-icon-left size-5" />
                         <Input
                             placeholder="Search across all content..."
                             value={searchTerm}

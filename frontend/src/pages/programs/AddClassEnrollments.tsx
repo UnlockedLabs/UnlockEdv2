@@ -295,7 +295,7 @@ export default function AddClassEnrollments() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-brand-gold text-foreground hover:bg-brand-gold/90"
+                            className="btn-gold-thin"
                         >
                             Enroll Residents
                         </Button>

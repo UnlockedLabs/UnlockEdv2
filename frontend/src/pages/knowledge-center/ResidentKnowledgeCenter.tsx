@@ -305,19 +305,19 @@ export default function ResidentKnowledgeCenter() {
 
                 <div className="absolute top-3 left-3">
                     {item.type === 'library' && (
-                        <div className="bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <div className="brand-tag">
                             <BookOpen className="size-3" />
                             <span>Library</span>
                         </div>
                     )}
                     {item.type === 'video' && (
-                        <div className="bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <div className="brand-tag">
                             <Video className="size-3" />
                             <span>Video</span>
                         </div>
                     )}
                     {item.type === 'link' && (
-                        <div className="bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <div className="brand-tag">
                             <LinkIcon className="size-3" />
                             <span>Link</span>
                         </div>
@@ -427,9 +427,9 @@ export default function ResidentKnowledgeCenter() {
                     </p>
                 </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6" id="knowledge-center-search">
+            <div className="card-block p-4" id="knowledge-center-search">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                    <Search className="input-icon-left size-5" />
                     <Input
                         placeholder="Search for resources..."
                         value={searchTerm}

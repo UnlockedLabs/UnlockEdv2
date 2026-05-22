@@ -46,7 +46,7 @@ export function SessionDetailActions({
                                 <Button
                                     variant="outline"
                                     onClick={onRescheduleClick}
-                                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                    className="list-item-btn"
                                 >
                                     <CalendarClock className="size-4 mr-2" />
                                     Reschedule This Class
@@ -62,7 +62,7 @@ export function SessionDetailActions({
                                 <Button
                                     variant="outline"
                                     onClick={onChangeInstructorClick}
-                                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                    className="list-item-btn"
                                 >
                                     <Users className="size-4 mr-2" />
                                     Change Instructor
@@ -70,7 +70,7 @@ export function SessionDetailActions({
                                 <Button
                                     variant="outline"
                                     onClick={onChangeRoomClick}
-                                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                                    className="list-item-btn"
                                 >
                                     <MapPin className="size-4 mr-2" />
                                     Change Room

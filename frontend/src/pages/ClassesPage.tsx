@@ -256,10 +256,10 @@ export default function ClassesPage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                <div className="card-block p-4">
                     <div className="flex gap-4 items-center flex-wrap">
                         <div className="flex-1 relative min-w-[300px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                            <Search className="input-icon-left size-5" />
                             <Input
                                 placeholder="Search classes, programs, or instructors..."
                                 value={searchQuery}
@@ -453,7 +453,7 @@ export default function ClassesPage() {
             >
                 <div className="space-y-3 mt-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                            <Search className="input-icon-left size-4" />
                             <Input
                                 placeholder="Search facilities..."
                                 value={facilitySearch}
@@ -541,7 +541,7 @@ export default function ClassesPage() {
                     })()}
                     <div className="space-y-3 mt-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                            <Search className="input-icon-left size-4" />
                             <Input
                                 placeholder="Search programs..."
                                 value={programSearch}

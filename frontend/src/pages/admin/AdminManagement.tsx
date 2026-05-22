@@ -451,7 +451,7 @@ export default function AdminManagement() {
             {/* Filters */}
             <div className="mb-6 flex gap-4">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 size-5" />
+                    <Search className="input-icon-left size-5" />
                     <Input
                         placeholder="Search by name or username..."
                         value={searchQuery}
@@ -808,7 +808,7 @@ export default function AdminManagement() {
                                         </SelectContent>
                                     </Select>
                                 ) : (
-                                    <div className="border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                                    <div className="field-readonly">
                                         {user?.facility?.name ?? '—'}
                                     </div>
                                 )}
@@ -858,7 +858,7 @@ export default function AdminManagement() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-username">Username</Label>
-                            <div className="border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                            <div className="field-readonly">
                                 {formData.username}
                             </div>
                             <p className="text-xs text-gray-500">
@@ -867,7 +867,7 @@ export default function AdminManagement() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-role">Role</Label>
-                            <div className="border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                            <div className="field-readonly">
                                 {getRoleLabel(formData.role)}
                             </div>
                             <p className="text-xs text-gray-500">
@@ -903,7 +903,7 @@ export default function AdminManagement() {
                                         </SelectContent>
                                     </Select>
                                 ) : (
-                                    <div className="border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                                    <div className="field-readonly">
                                         {selectedAdmin?.facility?.name ??
                                             facilityById.get(formData.facility_id ?? 0)?.name ??
                                             user?.facility?.name ??

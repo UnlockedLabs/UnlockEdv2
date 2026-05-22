@@ -162,7 +162,7 @@ export default function LibraryViewer() {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-[calc(100vh-4rem)]">
             <div className="px-6 py-3 border-b border-gray-200 bg-white" id="library-viewer-sub-page">
                 <div className="flex items-center justify-between">
                     <Breadcrumbs

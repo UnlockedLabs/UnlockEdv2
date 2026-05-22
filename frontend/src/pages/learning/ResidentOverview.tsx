@@ -80,22 +80,22 @@ export default function ResidentOverview() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-border bg-muted/50">
-                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
+                                            <th className="th-muted">
                                                 Program
                                             </th>
-                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
+                                            <th className="th-muted">
                                                 Class
                                             </th>
-                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
+                                            <th className="th-muted">
                                                 Status
                                             </th>
-                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
+                                            <th className="th-muted">
                                                 Enrollment
                                             </th>
-                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
+                                            <th className="th-muted">
                                                 Start Date
                                             </th>
-                                            <th className="text-left py-3 px-5 text-muted-foreground font-medium">
+                                            <th className="th-muted">
                                                 Attendance
                                             </th>
                                         </tr>

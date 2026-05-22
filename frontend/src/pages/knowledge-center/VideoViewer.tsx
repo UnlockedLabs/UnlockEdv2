@@ -68,7 +68,7 @@ export default function VideoViewer() {
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-[calc(100vh-4rem)]">
             <div className="px-6 py-3 border-b border-gray-200 bg-white">
                 <div className="flex items-center justify-between">
                     <Breadcrumbs
@@ -132,14 +132,12 @@ export default function VideoViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-surface-hover">
+            <div className="flex-1 bg-surface-hover flex items-center justify-center p-6">
                 <video
-                    width="100%"
-                    height="100%"
                     controls
                     onError={handleError}
                     src={`/api/proxy/videos/${video?.id}`}
-                    className="w-full h-full"
+                    className="max-w-full max-h-full object-contain"
                 >
                     Your browser does not support the video tag.
                 </video>

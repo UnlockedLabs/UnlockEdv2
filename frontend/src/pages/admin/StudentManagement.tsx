@@ -281,7 +281,7 @@ export default function StudentManagement() {
                 {/* Search + Filter */}
                 <div className="mb-6 flex gap-4">
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 size-5" />
+                        <Search className="input-icon-left size-5" />
                         <Input
                             placeholder="Search by name, username, or ID..."
                             value={searchTerm}
