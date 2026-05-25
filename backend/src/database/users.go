@@ -411,20 +411,23 @@ func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64,
 
 func (db *DB) GetLoginActivity(args *models.QueryContext, start, end *time.Time, facilityID *uint) ([]models.LoginActivity, error) {
 	acitvity := make([]models.LoginActivity, 0, 3)
-	var query *gorm.DB
-	if start == nil || end == nil {
-		query = db.WithContext(args.Ctx).Raw(`SELECT time_interval, total_logins
-						FROM login_activity
-						ORDER BY total_logins DESC
-						LIMIT 3;`)
-	} else {
-		query = db.WithContext(args.Ctx).Raw(`SELECT time_interval, total_logins
-						FROM login_activity
-						WHERE time_interval >= ? AND time_interval < ?
-						ORDER BY total_logins DESC
-						LIMIT 3;`, *start, *end)
+	sql := `SELECT time_interval, total_logins
+			FROM login_activity`
+	conds := make([]string, 0, 2)
+	params := make([]any, 0, 3)
+	if facilityID != nil {
+		conds = append(conds, "facility_id = ?")
+		params = append(params, *facilityID)
 	}
-	if err := query.Scan(&acitvity).Error; err != nil {
+	if start != nil && end != nil {
+		conds = append(conds, "time_interval >= ? AND time_interval < ?")
+		params = append(params, *start, *end)
+	}
+	if len(conds) > 0 {
+		sql += " WHERE " + strings.Join(conds, " AND ")
+	}
+	sql += " ORDER BY total_logins DESC LIMIT 3;"
+	if err := db.WithContext(args.Ctx).Raw(sql, params...).Scan(&acitvity).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "login_activity")
 	}
 	return acitvity, nil

@@ -37,14 +37,10 @@ const OperationalInsights = () => {
     const [resetCache, setResetCache] = useState(false);
     const { user } = useAuth();
 
-    const { data, error, isLoading, mutate } = useSWR<
+    const { data, error, isLoading } = useSWR<
         ServerResponseOne<DepartmentMetrics>,
         Error
     >(buildMetricsQuery(facility, dateRange, resetCache));
-
-    useEffect(() => {
-        void mutate();
-    }, [facility, dateRange, resetCache]);
 
     useEffect(() => {
         if (user && !canSwitchFacility(user)) {
