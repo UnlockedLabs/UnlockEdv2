@@ -1,28 +1,41 @@
 import {
-    FilterPastTime,
     Library,
     OpenContentItem,
     ServerResponseMany,
     UserRole
 } from '@/common';
 import TopContentList from '@/Components/dashboard/TopContentList';
-import DropdownControl from '@/Components/inputs/DropdownControl';
+import DateRangePicker, {
+    DateRangeValue,
+    allTimeRange
+} from '@/Components/inputs/DateRangePicker';
 import { ExpandableCardGrid } from '@/Components/dashboard';
 import LibraryCard from '@/Components/LibraryCard';
 import { useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
+const buildLibrariesActivityQuery = (range: DateRangeValue) => {
+    const params = new URLSearchParams({ per_page: '5' });
+    if (range.allTime) {
+        params.set('all_time', 'true');
+    } else {
+        params.set('start_date', range.startDate);
+        params.set('end_date', range.endDate);
+    }
+    return `api/libraries/activity?${params.toString()}`;
+};
+
 export default function AdminLayer1() {
     const navigate = useNavigate();
     const { featured } = useLoaderData() as {
         featured: Library[];
     };
-    const [timeFilter, setTimeFilter] = useState('7');
+    const [dateRange, setDateRange] = useState<DateRangeValue>(allTimeRange);
     const { data: facilityLibraries } = useSWR<
         ServerResponseMany<OpenContentItem>,
         Error
-    >(`api/libraries/activity?days=${timeFilter}&per_page=5`);
+    >(buildLibrariesActivityQuery(dateRange));
     const { data: favoritedLibraries } = useSWR<
         ServerResponseMany<OpenContentItem>,
         Error
@@ -47,12 +60,9 @@ export default function AdminLayer1() {
                 )}
             </ExpandableCardGrid>
 
-            <div className="flex flex-row justify-between items-center">
+            <div className="flex flex-row justify-between items-end gap-4 flex-wrap">
                 <h2>Insights</h2>
-                <DropdownControl
-                    enumType={FilterPastTime}
-                    setState={setTimeFilter}
-                />
+                <DateRangePicker value={dateRange} onChange={setDateRange} />
             </div>
             <div className="grid grid-cols-2 gap-6">
                 <TopContentList
