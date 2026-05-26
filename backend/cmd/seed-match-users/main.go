@@ -53,7 +53,14 @@ func main() {
 		First(&provider).Error; err != nil {
 		log.Fatalf("no enabled Canvas provider found: %v", err)
 	}
-	log.Printf("Using provider: %s (%s)", provider.Name, provider.BaseUrl)
+	// Allow overriding the Canvas URL for local runs outside Docker
+	baseURL := provider.BaseUrl
+	if override := os.Getenv("CANVAS_BASE_URL"); override != "" {
+		baseURL = override
+		log.Printf("Using provider: %s (%s, overridden to %s)", provider.Name, provider.BaseUrl, baseURL)
+	} else {
+		log.Printf("Using provider: %s (%s)", provider.Name, baseURL)
+	}
 
 	accessKey, err := decryptAccessKey(provider.AccessKey)
 	if err != nil {
@@ -68,9 +75,9 @@ func main() {
 	log.Printf("Using facility: %s (id=%d)", facility.Name, facility.ID)
 
 	// Fetch Canvas users
-	canvasUsers, err := fetchCanvasUsers(provider.BaseUrl, provider.AccountID, accessKey)
+	canvasUsers, err := fetchCanvasUsers(baseURL, provider.AccountID, accessKey)
 	if err != nil {
-		log.Fatalf("fetch canvas users: %v", err)
+		log.Fatalf("fetch canvas users: %v\n\nTip: if Canvas is in Docker, set CANVAS_BASE_URL to its external URL, e.g.:\n  CANVAS_BASE_URL=http://localhost:3000 make seed-match-users", err)
 	}
 	if len(canvasUsers) == 0 {
 		log.Fatal("no Canvas users returned — check the provider URL and access key")

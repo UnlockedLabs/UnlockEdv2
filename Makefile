@@ -71,7 +71,7 @@ seed: ascii_art
 	go run $(SEED_MAIN)
 
 seed-match-users: ascii_art
-	cd backend && go run cmd/seed-match-users/main.go
+	cd backend && set -a && . ../.env && set +a && go run cmd/seed-match-users/main.go
 
 build: ascii_art
 	@if [ -z "$(ACCOUNT_ID)" ]; then \
