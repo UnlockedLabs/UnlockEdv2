@@ -23,6 +23,19 @@ import Dashboard from '@/pages/Dashboard';
 import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
+import FeatureControl from '@/pages/admin/FeatureControl';
+
+const systemAdminRoutes = declareAuthenticatedRoutes(
+    [
+        {
+            path: 'feature-control',
+            element: <FeatureControl />,
+            errorElement: <Error />,
+            handle: { title: 'Feature Control' }
+        }
+    ],
+    [UserRole.SystemAdmin]
+);
 
 const deptAdminRoutes = declareAuthenticatedRoutes(
     [
@@ -153,7 +166,7 @@ export const globalRoutes = {
 };
 
 export const AdminRoutes = {
-    children: [deptAdminRoutes, adminRoutes]
+    children: [systemAdminRoutes, deptAdminRoutes, adminRoutes]
 };
 
 export const AllUserRoutes = {
