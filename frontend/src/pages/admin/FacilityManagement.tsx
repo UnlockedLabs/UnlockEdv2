@@ -175,7 +175,7 @@ export default function FacilityManagement() {
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-[#203622]">Facilities</h1>
+                            <h1 className="text-brand-dark">Facilities</h1>
                             <p className="text-gray-600 mt-1">
                                 Manage correctional facilities and their
                                 configurations
@@ -189,7 +189,7 @@ export default function FacilityManagement() {
                                 });
                                 setShowAddFacility(true);
                             }}
-                            className="gap-2 bg-[#556830] hover:bg-[#203622] text-white"
+                            className="gap-2 bg-brand hover:bg-brand-dark text-white"
                         >
                             <Plus className="size-4" />
                             Add Facility
@@ -200,7 +200,7 @@ export default function FacilityManagement() {
                 {/* Search */}
                 <div className="mb-6">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 size-5" />
+                        <Search className="input-icon-left size-5" />
                         <Input
                             placeholder="Search facilities..."
                             value={searchQuery}
@@ -214,7 +214,7 @@ export default function FacilityManagement() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -286,7 +286,7 @@ export default function FacilityManagement() {
                                         key={facility.id}
                                         className="cursor-pointer hover:bg-gray-50"
                                     >
-                                        <TableCell className="font-medium text-[#203622]">
+                                        <TableCell className="font-medium text-brand-dark">
                                             {facility.name}
                                         </TableCell>
                                         <TableCell className="text-sm text-gray-600">

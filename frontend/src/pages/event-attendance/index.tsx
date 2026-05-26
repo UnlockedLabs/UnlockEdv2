@@ -151,7 +151,7 @@ export default function EventAttendance() {
 
     if (datesLoading || isLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-gray-500">Loading...</div>
             </div>
         );
@@ -159,7 +159,7 @@ export default function EventAttendance() {
 
     if (error) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-red-600">Error loading attendance data</div>
             </div>
         );
@@ -172,7 +172,7 @@ export default function EventAttendance() {
 
     if (!scheduled) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-red-600">
                     No class session was scheduled for this date.
                 </div>
@@ -182,7 +182,7 @@ export default function EventAttendance() {
 
     if (isFutureDay) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="full-page-center">
                 <div className="text-red-600">
                     This session is scheduled for a future date. Attendance
                     will be available after it occurs.
@@ -328,7 +328,7 @@ export default function EventAttendance() {
     }
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+        <div className="min-h-[calc(100vh-4rem)] bg-surface-hover">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-5xl mx-auto px-6 py-6">
                     {breadcrumbItems.length > 0 && (
@@ -350,7 +350,7 @@ export default function EventAttendance() {
                                 <Button
                                     onClick={() => { void handleSave(); }}
                                     disabled={isSaving}
-                                    className="bg-[#556830] hover:bg-[#203622] text-white gap-2"
+                                    className="bg-brand hover:bg-brand-dark text-white gap-2"
                                 >
                                     <Save className="size-4" />
                                     {isSaving ? 'Saving...' : 'Save Attendance'}
@@ -389,9 +389,9 @@ export default function EventAttendance() {
             </div>
 
             <div className="max-w-5xl mx-auto px-6 py-6">
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     <div className="border-b border-gray-200 px-6 py-4">
-                        <h3 className="text-[#203622] font-semibold">
+                        <h3 className="text-brand-dark font-semibold">
                             Roster ({rows.length})
                         </h3>
                         <p className="text-sm text-gray-600 mt-1">
@@ -434,7 +434,7 @@ export default function EventAttendance() {
                     <Button
                         onClick={() => { void handleSave(); }}
                         disabled={isSaving}
-                        className="bg-[#556830] hover:bg-[#203622] text-white gap-2"
+                        className="bg-brand hover:bg-brand-dark text-white gap-2"
                     >
                         <Save className="size-4" />
                         {isSaving ? 'Saving...' : 'Save Attendance'}
@@ -454,7 +454,7 @@ const SUMMARY_TONE: Record<
     green: {
         bg: 'bg-green-50',
         border: 'border-green-200',
-        icon: 'text-[#556830]'
+        icon: 'text-brand'
     },
     blue: {
         bg: 'bg-blue-50',
@@ -493,7 +493,7 @@ function SummaryStatCard({
                 <Icon className={`size-5 ${classes.icon}`} />
                 <span className="text-sm text-gray-700">{label}</span>
             </div>
-            <div className="text-2xl text-[#203622]">{value}</div>
+            <div className="text-2xl text-brand-dark">{value}</div>
         </div>
     );
 }
@@ -519,10 +519,10 @@ function AttendanceRowCard({
         : null;
 
     return (
-        <div className="px-4 sm:px-6 py-5 hover:bg-[#E2E7EA]/30 transition-colors">
+        <div className="px-4 sm:px-6 py-5 hover:bg-surface-hover/30 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <div className="min-w-[70px] sm:min-w-[100px] shrink-0">
-                    <div className="text-[#203622] font-medium">
+                    <div className="text-brand-dark font-medium">
                         {row.doc_id}
                     </div>
                     <div className="text-sm text-gray-600 mt-0.5">

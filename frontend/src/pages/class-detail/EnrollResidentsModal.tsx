@@ -129,7 +129,7 @@ export function EnrollResidentsModal({
         >
                 <div className="px-6 pb-4">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                        <Search className="input-icon-left size-4" />
                         <Input
                             placeholder="Search by resident ID or name..."
                             value={searchTerm}
@@ -158,7 +158,7 @@ export function EnrollResidentsModal({
                                         key={user.id}
                                         className={`flex items-center gap-4 px-6 py-4 cursor-pointer transition-colors ${
                                             isSelected
-                                                ? 'bg-[#556830]/5'
+                                                ? 'bg-brand/5'
                                                 : 'hover:bg-gray-50'
                                         }`}
                                     >
@@ -171,7 +171,7 @@ export function EnrollResidentsModal({
                                         />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-3 mb-1">
-                                                <span className="font-medium text-[#203622]">
+                                                <span className="font-medium text-brand-dark">
                                                     {user.doc_id}
                                                 </span>
                                                 <span className="text-gray-700">
@@ -202,7 +202,7 @@ export function EnrollResidentsModal({
                     )}
                 </div>
 
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="section-footer">
                     <div className="flex items-center justify-between mb-4">
                         <div className="text-sm">
                             <div className="flex items-center gap-6">
@@ -210,7 +210,7 @@ export function EnrollResidentsModal({
                                     <span className="text-gray-600">
                                         Currently Enrolled:{' '}
                                     </span>
-                                    <span className="font-semibold text-[#203622]">
+                                    <span className="font-semibold text-brand-dark">
                                         {enrolled} / {capacity}
                                     </span>
                                 </div>
@@ -219,7 +219,7 @@ export function EnrollResidentsModal({
                                         Remaining Spots:{' '}
                                     </span>
                                     <span
-                                        className={`font-semibold ${remainingSpots === 0 ? 'text-red-600' : 'text-[#556830]'}`}
+                                        className={`font-semibold ${remainingSpots === 0 ? 'text-red-600' : 'text-brand'}`}
                                     >
                                         {remainingSpots}
                                     </span>
@@ -229,7 +229,7 @@ export function EnrollResidentsModal({
                                         Selected:{' '}
                                     </span>
                                     <span
-                                        className={`font-semibold ${wouldExceedCapacity ? 'text-red-600' : 'text-[#203622]'}`}
+                                        className={`font-semibold ${wouldExceedCapacity ? 'text-red-600' : 'text-brand-dark'}`}
                                     >
                                         {selectedCount}
                                     </span>

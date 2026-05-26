@@ -82,13 +82,13 @@ export default function LibraryCard({
     const FavoriteIcon = () => {
         if (isAdmin) {
             return favorite ? (
-                <Flag className="size-5 text-[#F1B51C]" />
+                <Flag className="size-5 text-brand-gold" />
             ) : (
                 <FlagOff className="size-5" />
             );
         }
         return favorite ? (
-            <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+            <Star className="size-5 fill-brand-gold text-brand-gold" />
         ) : (
             <StarOff className="size-5" />
         );
@@ -151,7 +151,7 @@ export default function LibraryCard({
                                 onCheckedChange={() =>
                                     void handleToggleAction('toggle')
                                 }
-                                className="data-[state=checked]:bg-[#556830]"
+                                className="data-[state=checked]:bg-brand"
                             />
                             <span className="text-xs text-muted-foreground">
                                 {visible ? 'Visible' : 'Hidden'}
@@ -177,7 +177,7 @@ export default function LibraryCard({
                 <h3 className="text-sm font-medium text-foreground">
                     {library.title}
                 </h3>
-                <p className="text-xs text-muted-foreground line-clamp-2">
+                <p className="caption-clamp">
                     {library.description}
                 </p>
             </div>
@@ -212,7 +212,7 @@ export default function LibraryCard({
                             onCheckedChange={() =>
                                 void handleToggleAction('toggle')
                             }
-                            className="data-[state=checked]:bg-[#556830]"
+                            className="data-[state=checked]:bg-brand"
                         />
                         <span className="text-xs text-muted-foreground">
                             {visible ? 'Visible' : 'Hidden'}

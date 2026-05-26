@@ -14,12 +14,12 @@ export function CompletedPrograms({
     onViewDetails
 }: CompletedProgramsProps) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div className="card-block p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-[#203622]">
+                <h2 className="text-lg font-semibold text-brand-dark">
                     Completed Programs & Achievements
                 </h2>
-                <Badge className="bg-[#556830] text-white border-[#556830]">
+                <Badge className="bg-brand text-white border-brand">
                     {programs.length} Completed
                 </Badge>
             </div>
@@ -43,7 +43,7 @@ export function CompletedPrograms({
                             >
                                 <CheckCircle2 className="size-6 text-green-700 shrink-0" />
                                 <div className="flex-1">
-                                    <div className="font-medium text-[#203622]">
+                                    <div className="font-medium text-brand-dark">
                                         {program.program_name}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">

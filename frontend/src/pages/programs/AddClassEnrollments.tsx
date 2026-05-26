@@ -159,17 +159,17 @@ export default function AddClassEnrollments() {
                     </h2>
                     <div className="grid grid-cols-3 gap-6">
                         <StatItem
-                            icon={<Users className="size-5 text-[#556830]" />}
+                            icon={<Users className="size-5 text-brand" />}
                             label="Current Enrollment"
                             value={enrolledCount}
                         />
                         <StatItem
-                            icon={<CheckCircle className="size-5 text-[#556830]" />}
+                            icon={<CheckCircle className="size-5 text-brand" />}
                             label="Maximum Capacity"
                             value={classInfo?.capacity ?? 0}
                         />
                         <StatItem
-                            icon={<UserPlus className="size-5 text-[#556830]" />}
+                            icon={<UserPlus className="size-5 text-brand" />}
                             label="Available Spots"
                             value={remainingCapacity}
                         />
@@ -295,7 +295,7 @@ export default function AddClassEnrollments() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
+                            className="btn-gold-thin"
                         >
                             Enroll Residents
                         </Button>
@@ -322,7 +322,7 @@ export default function AddClassEnrollments() {
                             key={`${c.user_id}-${c.conflicting_class}`}
                             className="rounded-lg border border-amber-200 bg-amber-50/50 p-3"
                         >
-                            <div className="font-medium text-sm text-[#203622]">
+                            <div className="font-medium text-sm text-brand-dark">
                                 {c.user_name}
                             </div>
                             <div className="text-xs text-gray-600 mt-1">

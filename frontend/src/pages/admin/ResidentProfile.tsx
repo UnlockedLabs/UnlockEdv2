@@ -153,7 +153,7 @@ export default function ResidentProfile() {
 
     if (isLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+            <div className="min-h-[calc(100vh-4rem)] bg-surface-hover">
                 <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
                     <Skeleton className="h-5 w-48" />
                     <Skeleton className="h-36 w-full" />
@@ -179,12 +179,12 @@ export default function ResidentProfile() {
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
                     <button
                         onClick={() => navigate('/residents')}
-                        className="hover:text-[#556830] transition-colors"
+                        className="hover:text-brand transition-colors"
                     >
                         Residents
                     </button>
                     <ChevronRight className="size-4" />
-                    <span className="text-[#203622] font-medium">
+                    <span className="text-brand-dark font-medium">
                         {residentUser.name_first}{' '}
                         {residentUser.name_last}
                     </span>

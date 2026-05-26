@@ -271,7 +271,7 @@ export function BulkCancelClassesModal({
             {!showConfirmation ? (
                 <div className="space-y-5 py-4">
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium text-[#203622]">
+                        <Label className="text-sm font-medium text-brand-dark">
                             Instructor{' '}
                             <span className="text-red-500">*</span>
                         </Label>
@@ -296,7 +296,7 @@ export function BulkCancelClassesModal({
                     </div>
 
                     <div>
-                        <Label className="text-sm font-medium text-[#203622] mb-3 block">
+                        <Label className="text-sm font-medium text-brand-dark mb-3 block">
                             Date Range{' '}
                             <span className="text-red-500">*</span>
                         </Label>
@@ -336,7 +336,7 @@ export function BulkCancelClassesModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium text-[#203622]">
+                        <Label className="text-sm font-medium text-brand-dark">
                             Cancellation Reason{' '}
                             <span className="text-red-500">*</span>
                         </Label>
@@ -356,7 +356,7 @@ export function BulkCancelClassesModal({
 
                     {isOther && (
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium text-[#203622]">
+                            <Label className="text-sm font-medium text-brand-dark">
                                 Details{' '}
                                 <span className="text-red-500">*</span>
                             </Label>
@@ -405,13 +405,13 @@ export function BulkCancelClassesModal({
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Instructor:</span>
-                                <span className="font-medium text-[#203622]">
+                                <span className="font-medium text-brand-dark">
                                     {instructorName}
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Date Range:</span>
-                                <span className="font-medium text-[#203622]">
+                                <span className="font-medium text-brand-dark">
                                     {new Date(dateRange.start).toLocaleDateString('en-US', {
                                         month: 'short',
                                         day: 'numeric',
@@ -427,7 +427,7 @@ export function BulkCancelClassesModal({
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Reason:</span>
-                                <span className="font-medium text-[#203622]">
+                                <span className="font-medium text-brand-dark">
                                     {finalReason}
                                 </span>
                             </div>
@@ -450,7 +450,7 @@ export function BulkCancelClassesModal({
 
                     {preview && preview.classes.length > 0 && (
                         <div className="space-y-3">
-                            <Label className="text-sm font-medium text-[#203622]">
+                            <Label className="text-sm font-medium text-brand-dark">
                                 Affected Classes ({preview.classCount})
                             </Label>
                             <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-md">
@@ -463,7 +463,7 @@ export function BulkCancelClassesModal({
                                                 className="p-4 hover:bg-gray-50"
                                             >
                                                 <div className="flex items-start justify-between mb-3">
-                                                    <h4 className="font-medium text-[#203622]">
+                                                    <h4 className="font-medium text-brand-dark">
                                                         {cls.className}
                                                     </h4>
                                                     <Badge className="bg-red-100 text-red-700 border-red-300 flex-shrink-0">

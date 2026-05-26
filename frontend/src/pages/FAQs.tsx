@@ -40,7 +40,7 @@ export function FAQContent({ compact = false }: { compact?: boolean }) {
                                                     faq.question
                                                 )
                                             }
-                                            className="px-4 text-foreground hover:no-underline hover:text-[#556830]"
+                                            className="px-4 text-foreground hover:no-underline hover:text-brand"
                                         >
                                             {faq.question}
                                         </AccordionTrigger>

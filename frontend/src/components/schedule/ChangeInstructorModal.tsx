@@ -152,7 +152,7 @@ export function ChangeInstructorModal({
                     <Button
                         onClick={() => void handleSubmit()}
                         disabled={submitting || !instructorId}
-                        className="bg-[#556830] text-white hover:bg-[#203622]"
+                        className="bg-brand text-white hover:bg-brand-dark"
                     >
                         {submitting ? 'Saving...' : 'Change Instructor'}
                     </Button>

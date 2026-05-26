@@ -70,7 +70,7 @@ export default function TopContentList({
             {items.length < 5 && (
                 <button
                     onClick={onViewAll}
-                    className="flex items-center gap-2 mt-3 text-sm text-[#556830] hover:underline"
+                    className="flex items-center gap-2 mt-3 text-sm text-brand hover:underline"
                 >
                     <ExternalLink className="size-4" />
                     Explore other content

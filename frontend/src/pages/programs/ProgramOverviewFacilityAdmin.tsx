@@ -404,7 +404,7 @@ export default function ProgramOverviewFacilityAdmin() {
     }
 
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
+        <div className="min-h-screen bg-surface-hover">
             {showFacilityContextBanner && (
                 <div className="bg-blue-50 border-b border-blue-200">
                     <div className="max-w-7xl mx-auto px-6 py-3">
@@ -444,13 +444,13 @@ export default function ProgramOverviewFacilityAdmin() {
                 >
                     <Breadcrumbs items={breadcrumbs} className="mb-6" />
                     <div className="flex items-start gap-6">
-                        <div className="bg-[#556830] p-4 rounded-lg flex items-center justify-center shrink-0">
+                        <div className="bg-brand p-4 rounded-lg flex items-center justify-center shrink-0">
                             <Icon className="size-10 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between mb-2">
                                 <div>
-                                    <h1 className="text-[#203622] mb-2">
+                                    <h1 className="text-brand-dark mb-2">
                                         {program.name}
                                     </h1>
                                     {program.program_types?.length > 0 && (
@@ -601,7 +601,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                 <MetricBox
                                     label="Funding"
                                     value={fundingDisplay || '-'}
-                                    valueClassName="text-sm text-[#203622]"
+                                    valueClassName="text-sm text-brand-dark"
                                 />
                             </div>
                         </div>
@@ -778,9 +778,9 @@ function MetricBox({
     valueClassName?: string;
 }) {
     return (
-        <div className="rounded-lg p-3 bg-[#E2E7EA]">
+        <div className="rounded-lg p-3 bg-surface-hover">
             <p className="text-sm text-gray-600 mb-1">{label}</p>
-            <p className={valueClassName ?? 'text-2xl text-[#203622]'}>
+            <p className={valueClassName ?? 'text-2xl text-brand-dark'}>
                 {value}
             </p>
             {subtitle && (
@@ -828,7 +828,7 @@ function ClassesTab({
         <div className="space-y-4 pb-6">
             <div className="flex items-center justify-between mt-4">
                 <div>
-                    <h2 className="text-[#203622]">Classes</h2>
+                    <h2 className="text-brand-dark">Classes</h2>
                     <p className="text-sm text-gray-600 mt-1">
                         All classes offered under this program
                     </p>
@@ -839,7 +839,7 @@ function ClassesTab({
                         if (!canAddClass) return;
                         setShowCreateForm((prev) => !prev);
                     }}
-                    className="bg-[#F1B51C] text-[#203622] hover:bg-[#F1B51C]/90"
+                    className="bg-brand-gold text-brand-dark hover:bg-brand-gold/90"
                 >
                     <Plus className="size-5" />
                     {showCreateForm ? 'Cancel' : 'Create New Class'}
@@ -847,8 +847,8 @@ function ClassesTab({
             </div>
 
             {showCreateForm && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-[#203622] mb-4">Create New Class</h3>
+                <div className="card-block p-6">
+                    <h3 className="text-brand-dark mb-4">Create New Class</h3>
                     <ClassManagementFormInner
                         programId={programId}
                         facilityId={facilityId}
@@ -878,7 +878,7 @@ function ClassesTab({
                     </p>
                 </div>
             ) : (
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     {activeScheduledClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
                             <div className="px-6 py-4 bg-gray-50">
@@ -897,7 +897,7 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/detail`
                                         )
                                     }
-                                    className="hover:bg-[#E2E7EA]/50"
+                                    className="hover:bg-surface-hover/50"
                                     editableStatus
                                     showEnrollment
                                 />
@@ -907,7 +907,7 @@ function ClassesTab({
 
                     {completedClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="section-footer">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Completed Classes ({completedClasses.length}
                                     )
@@ -931,7 +931,7 @@ function ClassesTab({
 
                     {cancelledClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="section-footer">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Cancelled Classes ({cancelledClasses.length}
                                     )
@@ -955,7 +955,7 @@ function ClassesTab({
 
                     {pausedClasses.length > 0 && (
                         <div className="divide-y divide-gray-200">
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="section-footer">
                                 <h3 className="text-sm font-medium text-gray-700">
                                     Paused Classes ({pausedClasses.length})
                                 </h3>
@@ -1013,9 +1013,9 @@ function ClassRow({
     const attendanceClass =
         attendanceRate !== null
             ? attendanceRate >= 85
-                ? 'text-[#556830]'
+                ? 'text-brand'
                 : attendanceRate >= 70
-                  ? 'text-[#F1B51C]'
+                  ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
     const showCompletion = cls.status === SelectedClassStatus.Completed;
@@ -1027,9 +1027,9 @@ function ClassRow({
     const completionClass =
         completionRate !== null
             ? completionRate >= 85
-                ? 'text-[#556830]'
+                ? 'text-brand'
                 : completionRate >= 70
-                  ? 'text-[#F1B51C]'
+                  ? 'text-brand-gold'
                   : 'text-gray-700'
             : 'text-gray-500';
 
@@ -1044,7 +1044,7 @@ function ClassRow({
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-[#203622] hover:text-[#556830] transition-colors">
+                        <h4 className="text-brand-dark hover:text-brand transition-colors">
                             {cls.name}
                         </h4>
                         {editableStatus ? (
@@ -1114,14 +1114,14 @@ function ClassRow({
                             <span className="text-sm text-gray-600">
                                 Enrollment
                             </span>
-                            <span className="text-sm text-[#203622]">
+                            <span className="text-sm text-brand-dark">
                                 {cls.enrolled} / {cls.capacity}
                             </span>
                         </div>
                         <Progress
                             value={enrollPct}
                             className="h-2"
-                            indicatorClassName="bg-[#556830]"
+                            indicatorClassName="bg-brand"
                         />
                     </div>
                 )}
@@ -1140,7 +1140,7 @@ function ProgramDetailsTab({ program }: { program: ProgramOverview }) {
     return (
         <Card className="bg-background p-0">
             <CardContent className="p-6 space-y-6">
-                <h3 className="text-[#203622] mb-6 font-normal">
+                <h3 className="text-brand-dark mb-6 font-normal">
                     Program Details
                 </h3>
 
@@ -1234,59 +1234,59 @@ function PerformanceTab({
     return (
         <Card className="bg-background p-0">
             <CardContent className="p-6 space-y-4">
-                <h3 className="text-[#203622] mb-6 font-normal">
+                <h3 className="text-brand-dark mb-6 font-normal">
                     Performance Metrics
                 </h3>
                 <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-surface-hover rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Total Enrollment
                         </p>
-                        <p className="text-3xl text-[#203622] mb-2">
+                        <p className="text-3xl text-brand-dark mb-2">
                             {totalEnrolled}
                         </p>
                         <Progress
                             value={capacityPct}
                             className="h-2"
-                            indicatorClassName="bg-[#556830]"
+                            indicatorClassName="bg-brand"
                         />
                         <p className="text-xs text-gray-500 mt-2">
                             {capacityPct}% of capacity
                         </p>
                     </div>
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-surface-hover rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Average Class Size
                         </p>
-                        <p className="text-3xl text-[#203622] mb-2">
+                        <p className="text-3xl text-brand-dark mb-2">
                             {avgClassSize}
                         </p>
                         <p className="text-xs text-gray-500 mt-2">
                             residents per class
                         </p>
                     </div>
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-surface-hover rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Active Classes
                         </p>
-                        <p className="text-3xl text-[#203622] mb-2">
+                        <p className="text-3xl text-brand-dark mb-2">
                             {activeClassCount}
                         </p>
                         <p className="text-xs text-gray-500 mt-2">
                             out of {totalClassCount} total
                         </p>
                     </div>
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-surface-hover rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Completion Rate
                         </p>
-                        <p className="text-3xl text-[#203622] mb-2">
+                        <p className="text-3xl text-brand-dark mb-2">
                             {Math.round(completionRate)}%
                         </p>
                         <Progress
                             value={completionRate}
                             className="h-2"
-                            indicatorClassName="bg-[#556830]"
+                            indicatorClassName="bg-brand"
                         />
                         <p className="text-xs text-gray-500 mt-2">&nbsp;</p>
                     </div>
@@ -1315,7 +1315,7 @@ function AuditHistoryTab({
     return (
         <Card className="bg-background p-0">
             <CardContent className="p-6 space-y-4">
-                <h3 className="text-[#203622] mb-6 font-normal">
+                <h3 className="text-brand-dark mb-6 font-normal">
                     Audit History
                 </h3>
                 {entries.length === 0 ? (

@@ -188,7 +188,7 @@ export default function ClassEvents() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-[#556830] hover:text-foreground"
+                                                    className="text-brand hover:text-foreground"
                                                     onClick={() =>
                                                         handleAttendanceClick(event.event_id, event.date)
                                                     }

@@ -482,14 +482,14 @@ export default function ProgramOverviewStatewide() {
     ];
 
     return (
-        <div className="flex-1 bg-[#E2E7EA]">
+        <div className="flex-1 bg-surface-hover">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <Breadcrumbs items={breadcrumbs} className="mb-6" />
 
                 <div className="flex items-start justify-between mb-8">
                     <div className="flex items-start gap-4">
                         <div>
-                            <h1 className="text-[#203622] mb-2">
+                            <h1 className="text-brand-dark mb-2">
                                 {program.name}
                             </h1>
                             <p className="text-gray-600 max-w-3xl">
@@ -531,7 +531,7 @@ export default function ProgramOverviewStatewide() {
                                 onClick={() => {
                                     void handleProgramStatusChange('Available');
                                 }}
-                                className="gap-2 bg-[#556830] hover:bg-[#203622] text-white border-[#556830] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                className="gap-2 bg-brand hover:bg-brand-dark text-white border-brand focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                             >
                                 Mark as Available
                             </Button>
@@ -607,44 +607,44 @@ export default function ProgramOverviewStatewide() {
                 </div>
 
                 <div className="grid grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Total Enrollment
                         </div>
-                        <div className="text-3xl text-[#203622] mb-1">
+                        <div className="text-3xl text-brand-dark mb-1">
                             {totalEnrolled}
                         </div>
                         <div className="text-xs text-gray-500">
                             of {totalCapacity} capacity
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Total Classes
                         </div>
-                        <div className="text-3xl text-[#203622] mb-1">
+                        <div className="text-3xl text-brand-dark mb-1">
                             {totalClasses}
                         </div>
                         <div className="text-xs text-gray-500">
                             across {facilityList.length} facilities
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Avg Completion Rate
                         </div>
-                        <div className="text-3xl text-[#203622] mb-1">
+                        <div className="text-3xl text-brand-dark mb-1">
                             {avgCompletionRate}%
                         </div>
                         <div className="text-xs text-gray-500">
                             of historical residents
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Avg Attendance Rate
                         </div>
-                        <div className="text-3xl text-[#203622] mb-1">
+                        <div className="text-3xl text-brand-dark mb-1">
                             {avgAttendanceRate}%
                         </div>
                         <div className="text-xs text-gray-500">
@@ -653,9 +653,9 @@ export default function ProgramOverviewStatewide() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="card-block">
                     <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-[#203622]">
+                        <h2 className="text-brand-dark">
                             Performance by Facility
                         </h2>
                         <p className="text-sm text-gray-600 mt-1">
@@ -752,7 +752,7 @@ export default function ProgramOverviewStatewide() {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-medium text-[#203622]">
+                                                <div className="font-medium text-brand-dark">
                                                     {stat.facilityName}
                                                 </div>
                                             </TableCell>
@@ -768,7 +768,7 @@ export default function ProgramOverviewStatewide() {
                                                                     active
                                                                 </span>
                                                             </TooltipTrigger>
-                                                            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                            <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                                 Classes
                                                                 currently
                                                                 running with
@@ -786,7 +786,7 @@ export default function ProgramOverviewStatewide() {
                                                                 total
                                                             </div>
                                                         </TooltipTrigger>
-                                                        <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                             All classes for this
                                                             program (active,
                                                             completed, and
@@ -809,7 +809,7 @@ export default function ProgramOverviewStatewide() {
                                                                     current
                                                                 </span>
                                                             </TooltipTrigger>
-                                                            <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                            <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                                 Residents
                                                                 currently
                                                                 enrolled in this
@@ -830,7 +830,7 @@ export default function ProgramOverviewStatewide() {
                                                                 historical
                                                             </div>
                                                         </TooltipTrigger>
-                                                        <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                             Past enrollments
                                                             including completed,
                                                             withdrawn, dropped,
@@ -844,7 +844,7 @@ export default function ProgramOverviewStatewide() {
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                                                         <div
-                                                            className="bg-[#556830] rounded-full h-2"
+                                                            className="bg-brand rounded-full h-2"
                                                             style={{
                                                                 width: `${Math.min(
                                                                     stat.utilization,
@@ -862,7 +862,7 @@ export default function ProgramOverviewStatewide() {
                                                                 %
                                                             </span>
                                                         </TooltipTrigger>
-                                                        <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                             Percentage of
                                                             available capacity
                                                             currently filled
@@ -890,7 +890,7 @@ export default function ProgramOverviewStatewide() {
                                                             %
                                                         </span>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                         Percentage of residents
                                                         who successfully
                                                         completed the program
@@ -920,7 +920,7 @@ export default function ProgramOverviewStatewide() {
                                                             %
                                                         </span>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-[#203622] text-white max-w-xs">
+                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
                                                         Average attendance rate
                                                         across all active
                                                         classes in this program
@@ -937,7 +937,7 @@ export default function ProgramOverviewStatewide() {
                                                             stat.facilityId
                                                         );
                                                     }}
-                                                    className="gap-2 text-[#556830] hover:text-[#203622] hover:bg-[#E2E7EA] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                                    className="gap-2 text-brand hover:text-brand-dark hover:bg-surface-hover focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                                                 >
                                                     View at Facility
                                                     <ArrowRight className="size-4" />
@@ -1053,7 +1053,7 @@ export default function ProgramOverviewStatewide() {
                                                                                                 `/program-classes/${cls.id}/detail`
                                                                                             );
                                                                                         }}
-                                                                                        className="gap-2 text-[#556830] hover:text-[#203622] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                                                                        className="gap-2 text-brand hover:text-brand-dark focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                                                                                     >
                                                                                         View
                                                                                         Class

@@ -48,7 +48,7 @@ function FeaturedLibraryCard({
                             {library.title}
                         </h4>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
+                    <p className="caption-clamp">
                         {library.description ?? ''}
                     </p>
                 </CardContent>
@@ -67,7 +67,7 @@ function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
         >
             <Card className="hover:shadow-md transition-shadow h-full">
                 <CardContent className="p-4 flex items-start gap-3">
-                    <ExternalLink className="size-5 text-[#556830] shrink-0 mt-0.5" />
+                    <ExternalLink className="size-5 text-brand shrink-0 mt-0.5" />
                     <div className="min-w-0">
                         <h4 className="text-sm font-medium text-foreground line-clamp-1">
                             {link.title}
@@ -158,7 +158,7 @@ export default function ResidentHome() {
                 <div className="flex-1 space-y-8">
                     {featuredItems.length > 0 && (
                         <section>
-                            <h2 className="text-xl font-semibold text-foreground mb-4">
+                            <h2 className="section-heading">
                                 Featured Content
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -178,7 +178,7 @@ export default function ResidentHome() {
                     )}
 
                     <section>
-                        <h2 className="text-xl font-semibold text-foreground mb-4">
+                        <h2 className="section-heading">
                             Pick Up Where You Left Off
                         </h2>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="end-tour">
@@ -205,7 +205,7 @@ export default function ResidentHome() {
 
                     {links.length > 0 && (
                         <section>
-                            <h2 className="text-xl font-semibold text-foreground mb-4">
+                            <h2 className="section-heading">
                                 Helpful Links
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -223,7 +223,7 @@ export default function ResidentHome() {
                 <aside className="hidden xl:block w-[320px] shrink-0 space-y-6 sticky top-6 self-start">
                     <div className="bg-card rounded-lg border border-border p-5">
                         <div className="flex items-center gap-2 mb-4">
-                            <Star className="size-5 text-[#F1B51C]" />
+                            <Star className="size-5 text-brand-gold" />
                             <h2 className="text-lg font-semibold text-foreground">
                                 Favorites
                             </h2>

@@ -47,7 +47,7 @@ export function FormModal({
                 onPointerDownOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
             >
                 <DialogHeader className={headerClassName}>
-                    <DialogTitle className={cn('text-[#203622]', titleClassName)}>
+                    <DialogTitle className={cn('text-brand-dark', titleClassName)}>
                         {title}
                     </DialogTitle>
                     {description && (

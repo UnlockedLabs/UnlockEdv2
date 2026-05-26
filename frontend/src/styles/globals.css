@@ -39,6 +39,11 @@
     --sidebar-accent-foreground: #1a1a1a;
     --sidebar-border: #e5e5e5;
     --sidebar-ring: #b3b3b3;
+    --brand: #556830;
+    --brand-dark: #203622;
+    --brand-gold: #F1B51C;
+    --brand-gold-dark: #d9a419;
+    --surface-hover: #E2E7EA;
 }
 
 .dark {
@@ -114,6 +119,11 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-brand: var(--brand);
+    --color-brand-dark: var(--brand-dark);
+    --color-brand-gold: var(--brand-gold);
+    --color-brand-gold-dark: var(--brand-gold-dark);
+    --color-surface-hover: var(--surface-hover);
 }
 
 @layer base {
@@ -208,6 +218,139 @@ html {
     @apply text-foreground bg-muted;
 }
 
+.tab-trigger-brand {
+    @apply px-4 py-2.5 rounded-lg transition-all duration-200;
+}
+.tab-trigger-brand[data-state='active'] {
+    @apply bg-brand text-white shadow-sm;
+}
+.tab-trigger-brand[data-state='inactive'] {
+    @apply text-gray-600;
+}
+.tab-trigger-brand[data-state='inactive']:hover {
+    @apply text-brand-dark bg-gray-50;
+}
+
+.option-card {
+    @apply w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-brand hover:bg-gray-50 cursor-pointer transition-all text-left;
+}
+
+.list-card {
+    @apply w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors;
+}
+
+.filter-button {
+    @apply w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50;
+}
+
+.media-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer relative;
+}
+
+.menu-icon {
+    @apply pointer-events-none absolute left-2 flex size-3.5 items-center justify-center;
+}
+
+.full-page-center {
+    @apply min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center;
+}
+
+.scroll-panel {
+    @apply max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1;
+}
+
+.empty-state {
+    @apply text-center py-12 bg-white border border-gray-200 rounded-lg;
+}
+
+.btn-corner {
+    @apply absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors;
+}
+
+.card-title-link {
+    @apply text-brand-dark group-hover:text-brand transition-colors line-clamp-1;
+}
+
+.btn-gold {
+    @apply bg-brand-gold text-foreground hover:bg-brand-gold/90 font-semibold;
+}
+
+.btn-gold-thin {
+    @apply bg-brand-gold text-foreground hover:bg-brand-gold/90;
+}
+
+.th-muted {
+    @apply text-left py-3 px-5 text-muted-foreground font-medium;
+}
+
+.section-card {
+    @apply bg-card rounded-lg border border-border p-6 space-y-4;
+}
+
+.field-readonly {
+    @apply border border-gray-300 rounded-md px-3 py-2 bg-gray-50;
+}
+
+.card-block {
+    @apply bg-white rounded-lg border border-gray-200;
+}
+
+.input-icon-left {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400;
+}
+
+.checkbox-brand {
+    @apply rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none;
+}
+
+.row-with-border {
+    @apply flex items-center justify-between pt-3 border-t border-gray-100;
+}
+
+.brand-tag {
+    @apply bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1;
+}
+
+.list-item-btn {
+    @apply w-full justify-start border-gray-300 hover:bg-gray-50;
+}
+
+.form-label {
+    @apply text-sm font-medium text-brand-dark mb-2 block;
+}
+
+.section-footer {
+    @apply px-6 py-4 bg-gray-50 border-t border-gray-200;
+}
+
+.btn-brand-dark {
+    @apply bg-brand-dark text-white hover:bg-brand-dark/90;
+}
+
+.badge-amber {
+    @apply bg-amber-50 text-amber-700 border-amber-200;
+}
+
+.caption-clamp {
+    @apply text-xs text-muted-foreground line-clamp-2;
+}
+
+.section-heading {
+    @apply text-xl font-semibold text-foreground mb-4;
+}
+
+.lead-icon {
+    @apply size-5 text-gray-400 mt-0.5 flex-shrink-0;
+}
+
+.lead-icon-sm {
+    @apply size-4 text-gray-600 mt-0.5 flex-shrink-0;
+}
+
+.clickable-row {
+    @apply flex items-center gap-2 text-sm cursor-pointer;
+}
+
 input[type='checkbox']:focus {
     outline-color: #9ca3af;
 }
@@ -282,7 +425,7 @@ input[type='checkbox']:focus {
     align-items: center;
 }
 
-.rbc-toolbar button {
+.unlocked-calendar .rbc-toolbar button {
     padding: 8px 16px;
     border: 1px solid #e5e7eb;
     background-color: white;
@@ -293,19 +436,32 @@ input[type='checkbox']:focus {
     transition: all 0.2s;
 }
 
-.rbc-toolbar button:hover {
+.unlocked-calendar .rbc-toolbar button:hover {
     background-color: #f9fafb;
     border-color: #556830;
 }
 
-.rbc-toolbar button.rbc-active {
+.unlocked-calendar .rbc-toolbar button.rbc-active {
     background-color: #556830;
     color: white;
     border-color: #556830;
 }
 
-.rbc-toolbar button.rbc-active:hover {
+.unlocked-calendar .rbc-toolbar button.rbc-active:hover {
     background-color: #203622;
+}
+
+.unlocked-calendar .rbc-toolbar button:focus {
+    background-color: #d1d5db;
+    color: #374151;
+    border-color: #e5e7eb;
+    outline: none;
+}
+
+.unlocked-calendar .rbc-toolbar button.rbc-active:focus {
+    background-color: #d1d5db;
+    color: #374151;
+    border-color: #e5e7eb;
 }
 
 .unlocked-calendar .rbc-month-view,

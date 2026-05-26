@@ -52,10 +52,6 @@ function getDeleteBlockerReason(blockers: DeleteBlockers | undefined): string {
     return 'Cannot delete class';
 }
 
-const TAB_TRIGGER_CLASS =
-    'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
-
-
 export default function ClassDetailPage() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
@@ -130,7 +126,7 @@ export default function ClassDetailPage() {
     }
 
     return (
-        <div className="bg-[#E2E7EA]">
+        <div className="bg-surface-hover min-h-screen">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
@@ -156,7 +152,7 @@ export default function ClassDetailPage() {
                                     onClick={() =>
                                         setShowAttendanceModal(true)
                                     }
-                                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622]"
+                                    className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark"
                                 >
                                     Take Attendance
                                 </Button>
@@ -209,37 +205,37 @@ export default function ClassDetailPage() {
                     <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
                         <TabsTrigger
                             value="roster"
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger-brand"
                         >
                             Roster ({cls.enrolled})
                         </TabsTrigger>
                         <TabsTrigger
                             value="support"
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger-brand"
                         >
                             At-Risk ({atRiskCount})
                         </TabsTrigger>
                         <TabsTrigger
                             value="sessions"
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger-brand"
                         >
                             Sessions
                         </TabsTrigger>
                         <TabsTrigger
                             value="schedule"
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger-brand"
                         >
                             Schedule
                         </TabsTrigger>
                         <TabsTrigger
                             value="enrollment-history"
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger-brand"
                         >
                             Enrollment History
                         </TabsTrigger>
                         <TabsTrigger
                             value="audit"
-                            className={TAB_TRIGGER_CLASS}
+                            className="tab-trigger-brand"
                         >
                             Audit History
                         </TabsTrigger>

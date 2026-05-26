@@ -9,6 +9,7 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { LoginActivity, UserEngagementTimes } from '@/types';
+import { BRAND, BRAND_DARK, SURFACE_HOVER } from '@/lib/brand';
 
 interface EngagementRateGraphProps {
     viewType: 'peakLogin' | 'userEngagement';
@@ -129,15 +130,15 @@ export default function EngagementRateGraph({
                     }}
                 />
                 <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #E2E7EA' }}
+                    contentStyle={{ backgroundColor: '#fff', border: `1px solid ${SURFACE_HOVER}` }}
                 />
                 <Line
                     type="monotone"
                     dataKey={viewType === 'peakLogin' ? 'logins' : 'hours'}
-                    stroke="#556830"
+                    stroke={BRAND}
                     strokeWidth={3}
-                    dot={{ r: 3, fill: '#556830' }}
-                    activeDot={{ r: 5, fill: '#203622' }}
+                    dot={{ r: 3, fill: BRAND }}
+                    activeDot={{ r: 5, fill: BRAND_DARK }}
                 />
             </LineChart>
         </ResponsiveContainer>

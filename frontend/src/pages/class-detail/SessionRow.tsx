@@ -70,10 +70,10 @@ export function SessionRow({
         if (isCancelled)
             return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
         if (isToday) return 'border-blue-200 bg-blue-50 hover:bg-blue-100';
-        if (hasAttendance) return 'border-gray-200 hover:bg-[#E2E7EA]/30';
+        if (hasAttendance) return 'border-gray-200 hover:bg-surface-hover/30';
         if (isPast)
             return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50';
-        return 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
+        return 'border-gray-200 bg-gray-50 hover:bg-surface-hover/30';
     };
 
     const getIcon = () => {
@@ -91,11 +91,11 @@ export function SessionRow({
             );
         if (hasAttendance)
             return (
-                <CheckCircle className="size-5 text-[#556830] flex-shrink-0" />
+                <CheckCircle className="size-5 text-brand flex-shrink-0" />
             );
         if (isPast)
             return (
-                <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0" />
+                <AlertCircle className="size-5 text-brand-gold flex-shrink-0" />
             );
         return <Calendar className="size-5 text-gray-400 flex-shrink-0" />;
     };
@@ -119,7 +119,7 @@ export function SessionRow({
                 )}
                 {getIcon()}
                 <div className="min-w-0">
-                    <div className="text-sm font-medium text-[#203622]">
+                    <div className="text-sm font-medium text-brand-dark">
                         <span
                             className={showLineThrough ? 'line-through' : ''}
                         >
@@ -214,7 +214,7 @@ export function SessionRow({
                     !treatAsFrom && (
                         <Badge
                             variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200"
+                            className="badge-amber"
                         >
                             Missing
                         </Badge>

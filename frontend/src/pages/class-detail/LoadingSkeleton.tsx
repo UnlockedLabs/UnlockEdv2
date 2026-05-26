@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function LoadingSkeleton() {
     return (
-        <div className="bg-[#E2E7EA]">
+        <div className="bg-surface-hover">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Skeleton className="h-8 w-32 mb-4" />

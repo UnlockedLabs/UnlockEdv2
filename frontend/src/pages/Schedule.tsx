@@ -29,6 +29,7 @@ import { RescheduleSeriesModal } from '@/components/schedule/RescheduleSeriesMod
 import { RestoreEventModal } from '@/components/schedule/RestoreEventModal';
 import { SessionDetailSheet } from '@/components/schedule/SessionDetailSheet';
 import type { SessionDisplay } from '@/pages/class-detail/session-utils';
+import { BRAND, BRAND_DARK } from '@/lib/brand';
 
 const localizer = momentLocalizer(moment);
 
@@ -243,8 +244,8 @@ export default function Schedule() {
 
     const eventStyleGetter = (event: CalendarEvent) => {
         const e = event.resource;
-        let backgroundColor = '#556830';
-        let borderColor = '#203622';
+        let backgroundColor = BRAND;
+        let borderColor = BRAND_DARK;
         if (e.is_cancelled) {
             backgroundColor = '#9ca3af';
             borderColor = '#6b7280';
@@ -326,13 +327,13 @@ export default function Schedule() {
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl text-[#203622] mb-2">
+                        <h1 className="text-2xl text-brand-dark mb-2">
                             {class_id ? 'Class Schedule' : 'Schedule'}
                         </h1>
                         <p className="text-gray-600">{subtitle}</p>
                     </div>
                     {class_id && (
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label className="clickable-row">
                             <input
                                 type="checkbox"
                                 checked={showAllClasses}
@@ -350,7 +351,7 @@ export default function Schedule() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             {isDepAdmin && (
                                 <div>
-                                    <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                    <label className="form-label">
                                         Facility
                                     </label>
                                     <Select
@@ -376,7 +377,7 @@ export default function Schedule() {
                             )}
 
                             <div>
-                                <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                <label className="form-label">
                                     Program
                                 </label>
                                 <Select value={selectedProgram} onValueChange={setSelectedProgram}>
@@ -395,7 +396,7 @@ export default function Schedule() {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-[#203622] mb-2 block">
+                                <label className="form-label">
                                     Instructor
                                 </label>
                                 <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>

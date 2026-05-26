@@ -259,7 +259,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     );
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="card-block">
             <SessionsTabFilterBar
                 statusFilter={statusFilter}
                 timeFilter={timeFilter}
@@ -273,9 +273,9 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                 <div className="mx-6 mt-6 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
-                            <AlertCircle className="size-5 text-[#F1B51C] flex-shrink-0 mt-0.5" />
+                            <AlertCircle className="size-5 text-brand-gold flex-shrink-0 mt-0.5" />
                             <div>
-                                <div className="font-medium text-[#203622]">
+                                <div className="font-medium text-brand-dark">
                                     {stats.missing}{' '}
                                     {stats.missing === 1
                                         ? 'Session'
@@ -315,7 +315,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
-                                        <h4 className="text-[#203622] font-medium">
+                                        <h4 className="text-brand-dark font-medium">
                                             Past & Today
                                         </h4>
                                         <p className="text-sm text-gray-600 mt-0.5">
@@ -340,7 +340,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                                             onClick={() =>
                                                 setShowAllPast(!showAllPast)
                                             }
-                                            className="text-[#556830] hover:text-[#203622] underline"
+                                            className="text-brand hover:text-brand-dark underline"
                                         >
                                             {showAllPast
                                                 ? 'Show Less'
@@ -355,7 +355,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
-                                        <h4 className="text-[#203622] font-medium">
+                                        <h4 className="text-brand-dark font-medium">
                                             Upcoming Sessions
                                         </h4>
                                         <p className="text-sm text-gray-600 mt-0.5">

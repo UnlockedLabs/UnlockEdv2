@@ -142,7 +142,7 @@ export default function HelpfulLinkCard({
                                 }
                             >
                                 {favorite ? (
-                                    <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                                    <Star className="size-5 fill-brand-gold text-brand-gold" />
                                 ) : (
                                     <StarOff className="size-5" />
                                 )}
@@ -164,7 +164,7 @@ export default function HelpfulLinkCard({
                                 onCheckedChange={() =>
                                     void handleToggleAction('toggle')
                                 }
-                                className="data-[state=checked]:bg-[#556830]"
+                                className="data-[state=checked]:bg-brand"
                             />
                             <span className="text-xs text-muted-foreground">
                                 {visible ? 'Visible' : 'Hidden'}
@@ -190,7 +190,7 @@ export default function HelpfulLinkCard({
                 <h3 className="text-sm font-medium text-foreground">
                     {link.title}
                 </h3>
-                <p className="text-xs text-muted-foreground line-clamp-2">
+                <p className="caption-clamp">
                     {link.description}
                 </p>
             </div>
@@ -230,7 +230,7 @@ export default function HelpfulLinkCard({
                         }
                     >
                         {favorite ? (
-                            <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                            <Star className="size-5 fill-brand-gold text-brand-gold" />
                         ) : (
                             <StarOff className="size-5" />
                         )}
@@ -246,7 +246,7 @@ export default function HelpfulLinkCard({
                             onCheckedChange={() =>
                                 void handleToggleAction('toggle')
                             }
-                            className="data-[state=checked]:bg-[#556830]"
+                            className="data-[state=checked]:bg-brand"
                         />
                         <span className="text-xs text-muted-foreground">
                             {visible ? 'Visible' : 'Hidden'}

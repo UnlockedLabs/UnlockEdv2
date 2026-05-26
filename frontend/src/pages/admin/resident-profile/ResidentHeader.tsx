@@ -48,11 +48,11 @@ export function ResidentHeader({
     const statusLabel = isDeactivated ? 'Inactive' : 'Active';
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div className="card-block p-6 mb-6">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-[#203622]">
+                        <h1 className="text-brand-dark">
                             {user.name_first} {user.name_last}
                         </h1>
                         {statusLabel === 'Active' ? (
