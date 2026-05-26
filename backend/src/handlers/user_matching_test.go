@@ -23,6 +23,26 @@ func TestNameSimilarity(t *testing.T) {
 	require.Less(t, score2, 0.60)
 }
 
+func TestMatchUsersOneToOne(t *testing.T) {
+	// Two Canvas users with the same name should not both match the same UnlockEd user.
+	canvas := []models.ImportUser{
+		{NameFirst: "John", NameLast: "Smith", ExternalUserID: "c1"},
+		{NameFirst: "John", NameLast: "Smith", ExternalUserID: "c2"}, // duplicate name
+	}
+	unlocked := []models.User{
+		{NameFirst: "John", NameLast: "Smith"},
+	}
+	unlocked[0].ID = 1
+
+	result := matchUsers(canvas, unlocked)
+
+	// Only one Canvas user can match the single UnlockEd user; the other must be unmatched.
+	total := len(result.AutoConfirmed) + len(result.Ambiguous) + len(result.Unmatched)
+	require.Equal(t, 2, total)
+	require.Equal(t, 1, len(result.AutoConfirmed))
+	require.Equal(t, 1, len(result.Unmatched))
+}
+
 func TestMatchUsers(t *testing.T) {
 	// "Marie Laberge" vs "Marie Lambert" = 5 edits over 13 chars ≈ 0.615 → ambiguous
 	canvas := []models.ImportUser{

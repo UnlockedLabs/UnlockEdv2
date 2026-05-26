@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/adrg/strutil"
@@ -66,30 +67,61 @@ func nameSimilarity(a, b string) float64 {
 
 // --- Matching logic ---
 
+type matchCandidate struct {
+	canvasIdx int
+	unlockIdx int
+	score     float64
+}
+
+// matchUsers performs greedy 1:1 matching. All pairs are scored, sorted by
+// score descending, then assigned greedily — each Canvas user and each
+// UnlockEd user can only appear in one match.
 func matchUsers(canvasUsers []models.ImportUser, unlockEdUsers []models.User) MatchUsersResponse {
+	// Score every canvas×unlocked pair
+	candidates := make([]matchCandidate, 0, len(canvasUsers)*len(unlockEdUsers))
+	for ci, cu := range canvasUsers {
+		canvasName := cu.NameFirst + " " + cu.NameLast
+		for ui, u := range unlockEdUsers {
+			score := nameSimilarity(canvasName, u.NameFirst+" "+u.NameLast)
+			candidates = append(candidates, matchCandidate{ci, ui, score})
+		}
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].score > candidates[j].score
+	})
+
+	assignedCanvas := make([]bool, len(canvasUsers))
+	assignedUnlock := make([]bool, len(unlockEdUsers))
+	bestForCanvas := make([]matchCandidate, len(canvasUsers))
+
+	for _, c := range candidates {
+		if assignedCanvas[c.canvasIdx] || assignedUnlock[c.unlockIdx] {
+			continue
+		}
+		if c.score < 0.50 {
+			break // remaining candidates all score below threshold
+		}
+		assignedCanvas[c.canvasIdx] = true
+		assignedUnlock[c.unlockIdx] = true
+		bestForCanvas[c.canvasIdx] = c
+	}
+
 	result := MatchUsersResponse{
 		AutoConfirmed: []UserMatchResult{},
 		Ambiguous:     []UserMatchResult{},
 		Unmatched:     []models.ImportUser{},
 	}
-	for _, cu := range canvasUsers {
-		canvasName := cu.NameFirst + " " + cu.NameLast
-		bestScore := 0.0
-		var bestUser *models.User
-		for i, u := range unlockEdUsers {
-			score := nameSimilarity(canvasName, u.NameFirst+" "+u.NameLast)
-			if score > bestScore {
-				bestScore = score
-				bestUser = &unlockEdUsers[i]
-			}
-		}
-		switch {
-		case bestScore >= 0.90:
-			result.AutoConfirmed = append(result.AutoConfirmed, UserMatchResult{CanvasUser: cu, SuggestedUser: bestUser, Score: bestScore})
-		case bestScore >= 0.50:
-			result.Ambiguous = append(result.Ambiguous, UserMatchResult{CanvasUser: cu, SuggestedUser: bestUser, Score: bestScore})
-		default:
+	for ci, cu := range canvasUsers {
+		if !assignedCanvas[ci] {
 			result.Unmatched = append(result.Unmatched, cu)
+			continue
+		}
+		c := bestForCanvas[ci]
+		mr := UserMatchResult{CanvasUser: cu, SuggestedUser: &unlockEdUsers[c.unlockIdx], Score: c.score}
+		if c.score >= 0.90 {
+			result.AutoConfirmed = append(result.AutoConfirmed, mr)
+		} else {
+			result.Ambiguous = append(result.Ambiguous, mr)
 		}
 	}
 	return result
