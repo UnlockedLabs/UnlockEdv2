@@ -50,6 +50,7 @@ export function DeleteClassModal({
                     This action cannot be undone.
                 </>
             }
+            preventOutsideClose
         >
             <TonedPanel tone="red" className="my-4">
                 <div className="flex gap-3">
