@@ -19,7 +19,7 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
+.PHONY: help prod dev migrate-fresh seed seed-match-users build-binaries init kolibri migrate reset migration install-dep
 
 
 help: ascii_art
@@ -69,6 +69,9 @@ kolibri: ascii_art
 
 seed: ascii_art
 	go run $(SEED_MAIN)
+
+seed-match-users: ascii_art
+	cd backend && go run cmd/seed-match-users/main.go
 
 build: ascii_art
 	@if [ -z "$(ACCOUNT_ID)" ]; then \
