@@ -21,7 +21,7 @@ export function PageHeader({
             className={cn('flex items-start justify-between', className)}
         >
             <div>
-                <h1 className="text-brand-dark dark:text-white mb-2">
+                <h1 className="text-2xl font-semibold text-brand-dark dark:text-white mb-2">
                     {title}
                 </h1>
                 {subtitle && (

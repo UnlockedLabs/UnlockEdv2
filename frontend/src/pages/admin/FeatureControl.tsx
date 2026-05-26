@@ -106,8 +106,8 @@ export default function FeatureControl() {
                         />
                     </div>
 
-                    <div className="mt-4 bg-muted rounded-md p-4">
-                        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+                    <div className="mt-4 bg-[#E2E7EA] rounded-md p-4">
+                        <div className="flex items-start gap-2 mb-4 text-sm text-gray-700">
                             <AlertCircle className="size-4 shrink-0" />
                             <span>Sub-features (only available when Knowledge Center is enabled)</span>
                         </div>
@@ -266,10 +266,10 @@ function SubFeatureRow({
             className={`flex items-start justify-between ${!parentEnabled ? 'opacity-50' : ''}`}
         >
             <div className="flex-1 pr-4">
-                <h4 className="text-sm font-medium text-brand-dark dark:text-white">
+                <h4 className="text-sm font-medium text-[#203622]">
                     {label}
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1">{description}</p>
+                <p className="text-xs text-gray-600 mt-1">{description}</p>
             </div>
             <Switch
                 checked={enabled}
