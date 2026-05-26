@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"github.com/adrg/strutil"
+	"github.com/adrg/strutil/metrics"
 )
 
 // --- Types ---
@@ -37,46 +40,28 @@ type ApplyMatchesResponse struct {
 	Failed  []string `json:"failed"`
 }
 
-// --- Levenshtein ---
+// --- Similarity metrics ---
 
-func levenshtein(a, b string) int {
-	ra, rb := []rune(a), []rune(b)
-	la, lb := len(ra), len(rb)
-	dp := make([][]int, la+1)
-	for i := range dp {
-		dp[i] = make([]int, lb+1)
-		dp[i][0] = i
-	}
-	for j := 0; j <= lb; j++ {
-		dp[0][j] = j
-	}
-	for i := 1; i <= la; i++ {
-		for j := 1; j <= lb; j++ {
-			if ra[i-1] == rb[j-1] {
-				dp[i][j] = dp[i-1][j-1]
-			} else {
-				dp[i][j] = 1 + min(dp[i-1][j], min(dp[i][j-1], dp[i-1][j-1]))
-			}
-		}
-	}
-	return dp[la][lb]
-}
+var (
+	jwMetric = metrics.NewJaroWinkler()
+	swgMetric = func() *metrics.SmithWatermanGotoh {
+		swg := metrics.NewSmithWatermanGotoh()
+		swg.CaseSensitive = false
+		swg.GapPenalty = -0.1
+		swg.Substitution = metrics.MatchMismatch{Match: 1, Mismatch: -0.5}
+		return swg
+	}()
+)
 
+// nameSimilarity returns a composite score (0–1) combining Jaro-Winkler (60%)
+// and Smith-Waterman-Gotoh (40%). JW is weighted higher because it is designed
+// for person names; SWG adds sensitivity to partial/substring matches.
 func nameSimilarity(a, b string) float64 {
 	a = strings.ToLower(strings.TrimSpace(a))
 	b = strings.ToLower(strings.TrimSpace(b))
-	if a == b {
-		return 1.0
-	}
-	ra, rb := []rune(a), []rune(b)
-	maxLen := len(ra)
-	if len(rb) > maxLen {
-		maxLen = len(rb)
-	}
-	if maxLen == 0 {
-		return 1.0
-	}
-	return 1.0 - float64(levenshtein(a, b))/float64(maxLen)
+	jw := strutil.Similarity(a, b, jwMetric)
+	swg := strutil.Similarity(a, b, swgMetric)
+	return 0.6*jw + 0.4*swg
 }
 
 // --- Matching logic ---
