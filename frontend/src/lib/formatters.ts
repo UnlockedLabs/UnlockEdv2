@@ -1,0 +1,424 @@
+import { Video } from '@/types/content';
+import { Class } from '@/types/program';
+import { ProgramClassEvent } from '@/types/events';
+import { RRule, Weekday } from 'rrule';
+
+export enum Timezones {
+    'CST' = 'America/Chicago',
+    'EST' = 'America/New_York',
+    'AKST' = 'America/Anchorage',
+    'PST' = 'America/Los_Angeles',
+    'MDT' = 'America/Denver',
+    'MST' = 'America/Phoenix'
+}
+
+const MONTH_NAMES = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+];
+
+export function formatDate(dateStr?: string): string {
+    if (!dateStr) return '-';
+    const datePart = dateStr.split('T')[0];
+    const parts = datePart.split('-');
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+    const year = parts[0];
+    return `${MONTH_NAMES[month]} ${day}, ${year}`;
+}
+
+export function formatRelativeTime(dateStr?: string): string {
+    if (!dateStr) return '-';
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return formatDate(dateStr);
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return formatDate(dateStr);
+}
+
+export function formatRoomConflictRange(
+    startISO: string,
+    endISO: string,
+    timeZone: string
+): string {
+    const start = new Date(startISO);
+    const end = new Date(endISO);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return `${startISO} - ${endISO}`;
+    }
+
+    const dateFmt = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    const timeFmt = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    const startDate = dateFmt.format(start);
+    const endDate = dateFmt.format(end);
+    const startTime = timeFmt.format(start);
+    const endTime = timeFmt.format(end);
+
+    if (startDate === endDate) return `${startDate} ${startTime} - ${endTime}`;
+    return `${startDate} ${startTime} - ${endDate} ${endTime}`;
+}
+
+export function formatLastActive(dateStr?: string | null): string {
+    if (!dateStr) return '\u2014';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${Math.max(diffMins, 1)}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) {
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+export function getVideoErrorMessage(video: Video): string | undefined {
+    return video.video_download_attempts.find(
+        (attempt) => attempt.error_message !== ''
+    )?.error_message;
+}
+
+export function videoIsAvailable(vid: Video): boolean {
+    return vid.availability === 'available';
+}
+
+export function formatVideoDuration(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+export function parseDurationToMs(duration: string): number {
+    const regex = /(\d+)h(\d+)m(\d+)s/;
+    const groups = regex.exec(duration);
+    if (!groups) return 0;
+    const hours = parseInt(groups[1] ?? '0', 10);
+    const minutes = parseInt(groups[2] ?? '0', 10);
+    const seconds = parseInt(groups[3] ?? '0', 10);
+    return hours * 3600000 + minutes * 60000 + seconds * 1000;
+}
+
+export function timeToMinutes(timeStr: string): number {
+    const [hour, minute] = timeStr.split(':').map(Number);
+    return (hour ?? 0) * 60 + (minute ?? 0);
+}
+
+export function parseLocalDay(isoDate: string): Date {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+export function formatTimeHM(date: Date): string {
+    return date
+        .toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        .trim();
+}
+
+export function diffMinutes(start?: string, end?: string): number | undefined {
+    if (!start || !end) return undefined;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    if ([sh, sm, eh, em].some((v) => Number.isNaN(v))) return undefined;
+    const diff = (eh ?? 0) * 60 + (em ?? 0) - ((sh ?? 0) * 60 + (sm ?? 0));
+    return diff > 0 ? diff : undefined;
+}
+
+export function formatPartialTime(mins?: number): string | null {
+    if (!mins || mins <= 0) return null;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+}
+
+export function fromLocalDateToNumericDateFormat(
+    date: Date,
+    timezone: string
+): string {
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        timeZone: timezone
+    });
+}
+
+export function parseRRule(
+    rRule: string,
+    timezone: string,
+    startDtOnly?: boolean
+): string {
+    try {
+        const rule = RRule.fromString(rRule);
+        const eventDate = startDtOnly
+            ? rule.options.dtstart
+            : (rule.after(new Date(0), true) ?? rule.options.dtstart);
+        if (!eventDate) return '';
+        return fromLocalDateToNumericDateFormat(eventDate, timezone);
+    } catch (error) {
+        void error;
+    }
+    return '';
+}
+
+export function getPreviousMonth(currentMonth: string): string {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const prevDate = new Date(year, month - 2);
+    return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function getNextMonth(currentMonth: string): string {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const nextDate = new Date(year, month);
+    return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function formatMonthYear(monthString: string): string {
+    const [year, month] = monthString.split('-').map(Number);
+    const date = new Date(year, month - 1);
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+export function toDateInput(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function toTimeInput(d: Date): string {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function formatDurationStr(startTime: string, endTime: string): string {
+    const startMin = timeToMinutes(startTime);
+    const endMin = timeToMinutes(endTime);
+    if (!Number.isFinite(startMin) || !Number.isFinite(endMin)) return '0h0m0s';
+    const totalMin = endMin - startMin;
+    if (totalMin <= 0) return '0h0m0s';
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    return `${hours}h${minutes}m0s`;
+}
+
+const WEEKDAY_NAMES: Record<number, string> = {
+    0: 'Monday',
+    1: 'Tuesday',
+    2: 'Wednesday',
+    3: 'Thursday',
+    4: 'Friday',
+    5: 'Saturday',
+    6: 'Sunday'
+};
+
+export interface ClassScheduleInfo {
+    days: string[];
+    startTime: string;
+    endTime: string;
+    room: string;
+}
+
+export function getInstructorName(events: ProgramClassEvent[]): string {
+    if (!events?.length) return '';
+    const latest = events.reduce(
+        (max, e) => (e.id > max.id ? e : max),
+        events[0]
+    );
+    const ref = latest.instructor_ref;
+    if (ref) return `${ref.name_first} ${ref.name_last}`.trim();
+    return '';
+}
+
+export function getInstructorId(events: ProgramClassEvent[]): number | null {
+    if (!events?.length) return null;
+    const latest = events.reduce(
+        (max, e) => (e.id > max.id ? e : max),
+        events[0]
+    );
+    if (typeof latest.instructor_id === 'number') return latest.instructor_id;
+    if (latest.instructor_ref?.id) return latest.instructor_ref.id;
+    return null;
+}
+
+export function getClassSchedule(cls: Class): ClassScheduleInfo {
+    const event = cls.events?.find((e) => !e.is_cancelled);
+    if (!event) return { days: [], startTime: '', endTime: '', room: '' };
+
+    let days: string[] = [];
+    let startTime = '';
+
+    try {
+        const cleaned = event.recurrence_rule.replace(
+            /DTSTART;TZID=[^:]+:/,
+            'DTSTART:'
+        );
+        const rule = RRule.fromString(cleaned);
+        days =
+            rule.options.byweekday?.map(
+                (d: number | Weekday) =>
+                    WEEKDAY_NAMES[typeof d === 'number' ? d : d.weekday] ?? ''
+            ) ?? [];
+
+        if (rule.options.dtstart) {
+            const dt = rule.options.dtstart;
+            const h = String(dt.getUTCHours()).padStart(2, '0');
+            const m = String(dt.getUTCMinutes()).padStart(2, '0');
+            startTime = `${h}:${m}`;
+        }
+    } catch {
+        /* rrule parse failure - leave defaults */
+    }
+
+    const durationMs = parseDurationToMs(event.duration);
+    let endTime = '';
+    if (startTime && durationMs > 0) {
+        const startMinutes = timeToMinutes(startTime);
+        const totalMinutes = startMinutes + durationMs / 60000;
+        const endH = String(Math.floor(totalMinutes / 60) % 24).padStart(
+            2,
+            '0'
+        );
+        const endM = String(Math.floor(totalMinutes % 60)).padStart(2, '0');
+        endTime = `${endH}:${endM}`;
+    }
+
+    const room = event.room_ref?.name ?? '';
+
+    return { days, startTime, endTime, room };
+}
+
+export function isClassToday(cls: Class): boolean {
+    const schedule = getClassSchedule(cls);
+    const now = new Date();
+    const todayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    if (!schedule.days.includes(todayName)) {
+        return false;
+    }
+
+    const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+    );
+    const endOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999
+    );
+    const start = cls.start_dt ? new Date(cls.start_dt) : null;
+    const end = cls.end_dt ? new Date(cls.end_dt) : null;
+    const startOk =
+        !start || Number.isNaN(start.getTime()) || start <= endOfToday;
+    const endOk = !end || Number.isNaN(end.getTime()) || end >= startOfToday;
+
+    return startOk && endOk;
+}
+
+export function getStatusColor(status: string): string {
+    switch (status) {
+        case 'Active':
+            return 'bg-green-50 text-brand border-green-200';
+        case 'Scheduled':
+            return 'bg-blue-50 text-blue-700 border-blue-200';
+        case 'Completed':
+            return 'bg-gray-50 text-gray-700 border-gray-200';
+        case 'Paused':
+            return 'bg-amber-50 text-amber-700 border-amber-200';
+        case 'Cancelled':
+            return 'bg-red-50 text-red-700 border-red-200';
+        default:
+            return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+}
+
+export function formatTime12h(time: string): string {
+    if (!time) return '';
+    const [h, m] = time.split(':').map(Number);
+    const hour = h ?? 0;
+    const minute = m ?? 0;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
+}
+
+export function formatClassTimeRange(range: string): string {
+    if (!range) return '';
+    const [start, end] = range.split('-').map((s) => s.trim());
+    if (start && end) return `${formatTime12h(start)} - ${formatTime12h(end)}`;
+    if (start) return formatTime12h(start);
+    if (end) return formatTime12h(end);
+    return '';
+}
+
+export function formatEnrollmentStatus(status: string): string {
+    return status.replace(/^Incomplete:\s*/i, '');
+}
+
+export function getEnrollmentStatusColor(status: string): string {
+    if (status === 'Enrolled')
+        return 'bg-green-50 text-brand border-green-200';
+    if (status === 'Completed')
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (status.includes('Withdrawn'))
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+    if (status.includes('Dropped'))
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+    if (status.includes('Segregated'))
+        return 'bg-orange-100 text-orange-700 border-orange-300';
+    if (status.includes('Failed'))
+        return 'bg-red-100 text-red-700 border-red-300';
+    return 'bg-gray-100 text-gray-700 border-gray-300';
+}

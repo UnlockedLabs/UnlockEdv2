@@ -43,7 +43,7 @@ reset: ascii_art
 
 init: ascii_art
 	@echo 'Installing dependencies...'
-	go install github.com/pressly/goose/v3/cmd/goose@latest && go install github.com/air-verse/air@latest && cd frontend && yarn install && yarn prepare && cd ..
+	go install github.com/pressly/goose/v3/cmd/goose@latest && go install github.com/air-verse/air@latest && cd frontend && yarn install && cd ..
 	@echo 'Dependencies installed successfully.'
 	./config/zims.sh
 	docker compose up $(BUILD_RECREATE)

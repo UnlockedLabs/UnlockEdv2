@@ -1,0 +1,541 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    --font-size: 16px;
+    --background: #ffffff;
+    --foreground: #0a0a0a;
+    --card: #ffffff;
+    --card-foreground: #0a0a0a;
+    --popover: #ffffff;
+    --popover-foreground: #0a0a0a;
+    --primary: #030213;
+    --primary-foreground: #ffffff;
+    --secondary: #ececf0;
+    --secondary-foreground: #030213;
+    --muted: #ececf0;
+    --muted-foreground: #717182;
+    --accent: #e9ebef;
+    --accent-foreground: #030213;
+    --destructive: #d4183d;
+    --destructive-foreground: #ffffff;
+    --border: rgba(0, 0, 0, 0.1);
+    --input: transparent;
+    --input-background: #f3f3f5;
+    --switch-background: #cbced4;
+    --ring: #b3b3b3;
+    --chart-1: #e76f51;
+    --chart-2: #2a9d8f;
+    --chart-3: #264653;
+    --chart-4: #e9c46a;
+    --chart-5: #f4a261;
+    --radius: 0.625rem;
+    --sidebar: #fafafa;
+    --sidebar-foreground: #0a0a0a;
+    --sidebar-primary: #030213;
+    --sidebar-primary-foreground: #fafafa;
+    --sidebar-accent: #f5f5f5;
+    --sidebar-accent-foreground: #1a1a1a;
+    --sidebar-border: #e5e5e5;
+    --sidebar-ring: #b3b3b3;
+    --brand: #556830;
+    --brand-dark: #203622;
+    --brand-gold: #F1B51C;
+    --brand-gold-dark: #d9a419;
+    --surface-hover: #E2E7EA;
+}
+
+.dark {
+    --background: #0a0a0a;
+    --foreground: #fafafa;
+    --card: #141414;
+    --card-foreground: #fafafa;
+    --popover: #0a0a0a;
+    --popover-foreground: #fafafa;
+    --primary: #fafafa;
+    --primary-foreground: #1a1a1a;
+    --secondary: #262626;
+    --secondary-foreground: #fafafa;
+    --muted: #262626;
+    --muted-foreground: #b3b3b3;
+    --accent: #262626;
+    --accent-foreground: #fafafa;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #ef4444;
+    --border: #262626;
+    --input: #262626;
+    --ring: #525252;
+    --chart-1: #3b82f6;
+    --chart-2: #34d399;
+    --chart-3: #f4a261;
+    --chart-4: #a855f7;
+    --chart-5: #ef4444;
+    --sidebar: #1a1a1a;
+    --sidebar-foreground: #fafafa;
+    --sidebar-primary: #3b82f6;
+    --sidebar-primary-foreground: #fafafa;
+    --sidebar-accent: #262626;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #262626;
+    --sidebar-ring: #525252;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-input-background: var(--input-background);
+    --color-switch-background: var(--switch-background);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-brand: var(--brand);
+    --color-brand-dark: var(--brand-dark);
+    --color-brand-gold: var(--brand-gold);
+    --color-brand-gold-dark: var(--brand-gold-dark);
+    --color-surface-hover: var(--surface-hover);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground overflow-hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+    :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
+        h1 {
+            font-size: var(--text-2xl);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.5;
+        }
+
+        h2 {
+            font-size: var(--text-xl);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.5;
+        }
+
+        h3 {
+            font-size: var(--text-lg);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.5;
+        }
+
+        h4 {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.5;
+        }
+
+        p {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-normal);
+            line-height: 1.5;
+        }
+
+        label {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.5;
+        }
+
+        button {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-medium);
+            line-height: 1.5;
+        }
+
+        input {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-normal);
+            line-height: 1.5;
+        }
+    }
+}
+
+html {
+    font-size: var(--font-size);
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-trigger {
+    @apply px-4 py-2.5 rounded-lg transition-all duration-200;
+}
+.tab-trigger[data-state='active'] {
+    @apply bg-[#556830] text-white shadow-xs;
+}
+.tab-trigger[data-state='inactive'] {
+    @apply text-muted-foreground;
+}
+.tab-trigger[data-state='inactive']:hover {
+    @apply text-foreground bg-muted;
+}
+
+.tab-trigger-brand {
+    @apply px-4 py-2.5 rounded-lg transition-all duration-200;
+}
+.tab-trigger-brand[data-state='active'] {
+    @apply bg-brand text-white shadow-sm;
+}
+.tab-trigger-brand[data-state='inactive'] {
+    @apply text-gray-600;
+}
+.tab-trigger-brand[data-state='inactive']:hover {
+    @apply text-brand-dark bg-gray-50;
+}
+
+.option-card {
+    @apply w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-brand hover:bg-gray-50 cursor-pointer transition-all text-left;
+}
+
+.list-card {
+    @apply w-full text-left p-4 rounded-lg border border-gray-200 hover:border-brand hover:bg-surface-hover/50 transition-colors;
+}
+
+.filter-button {
+    @apply w-[220px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors cursor-default focus-visible:outline-none focus-visible:border-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400/50;
+}
+
+.media-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer relative;
+}
+
+.menu-icon {
+    @apply pointer-events-none absolute left-2 flex size-3.5 items-center justify-center;
+}
+
+.full-page-center {
+    @apply min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center;
+}
+
+.scroll-panel {
+    @apply max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1;
+}
+
+.empty-state {
+    @apply text-center py-12 bg-white border border-gray-200 rounded-lg;
+}
+
+.btn-corner {
+    @apply absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors;
+}
+
+.card-title-link {
+    @apply text-brand-dark group-hover:text-brand transition-colors line-clamp-1;
+}
+
+.btn-gold {
+    @apply bg-brand-gold text-foreground hover:bg-brand-gold/90 font-semibold;
+}
+
+.btn-gold-thin {
+    @apply bg-brand-gold text-foreground hover:bg-brand-gold/90;
+}
+
+.th-muted {
+    @apply text-left py-3 px-5 text-muted-foreground font-medium;
+}
+
+.section-card {
+    @apply bg-card rounded-lg border border-border p-6 space-y-4;
+}
+
+.field-readonly {
+    @apply border border-gray-300 rounded-md px-3 py-2 bg-gray-50;
+}
+
+.card-block {
+    @apply bg-white rounded-lg border border-gray-200;
+}
+
+.input-icon-left {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400;
+}
+
+.checkbox-brand {
+    @apply rounded-[4px] border-gray-300 text-brand accent-brand focus:outline-none focus-visible:outline-none;
+}
+
+.row-with-border {
+    @apply flex items-center justify-between pt-3 border-t border-gray-100;
+}
+
+.brand-tag {
+    @apply bg-brand text-white px-2 py-1 rounded text-xs flex items-center gap-1;
+}
+
+.list-item-btn {
+    @apply w-full justify-start border-gray-300 hover:bg-gray-50;
+}
+
+.form-label {
+    @apply text-sm font-medium text-brand-dark mb-2 block;
+}
+
+.section-footer {
+    @apply px-6 py-4 bg-gray-50 border-t border-gray-200;
+}
+
+.btn-brand-dark {
+    @apply bg-brand-dark text-white hover:bg-brand-dark/90;
+}
+
+.badge-amber {
+    @apply bg-amber-50 text-amber-700 border-amber-200;
+}
+
+.caption-clamp {
+    @apply text-xs text-muted-foreground line-clamp-2;
+}
+
+.section-heading {
+    @apply text-xl font-semibold text-foreground mb-4;
+}
+
+.lead-icon {
+    @apply size-5 text-gray-400 mt-0.5 flex-shrink-0;
+}
+
+.lead-icon-sm {
+    @apply size-4 text-gray-600 mt-0.5 flex-shrink-0;
+}
+
+.clickable-row {
+    @apply flex items-center gap-2 text-sm cursor-pointer;
+}
+
+input[type='checkbox']:focus {
+    outline-color: #9ca3af;
+}
+
+/* React Big Calendar custom styling (match redesign target) */
+.unlocked-calendar .rbc-calendar {
+    font-family: inherit;
+}
+
+.unlocked-calendar .rbc-header {
+    padding: 12px 4px;
+    font-weight: 500;
+    color: #203622;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.unlocked-calendar .rbc-button-link:focus {
+    outline: none;
+}
+
+.unlocked-calendar .rbc-button-link:focus-visible {
+    outline: 2px solid rgba(156, 163, 175, 0.4);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.unlocked-calendar .rbc-date-cell > a:focus {
+    outline: none;
+}
+
+.unlocked-calendar .rbc-date-cell > a:focus-visible {
+    outline: 2px solid rgba(156, 163, 175, 0.4);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.unlocked-calendar .rbc-today {
+    background-color: #f0fdf4;
+}
+
+.unlocked-calendar .rbc-off-range-bg {
+    background-color: #f9fafb;
+}
+
+.unlocked-calendar .rbc-event {
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    background-color: #556830;
+    border-color: #203622;
+}
+
+.unlocked-calendar .rbc-event-content {
+    line-height: 1.25;
+}
+
+.unlocked-calendar .rbc-event-label {
+    font-size: 0.6875rem;
+}
+
+.unlocked-calendar .rbc-event:hover {
+    opacity: 0.9;
+}
+
+.unlocked-calendar .rbc-toolbar {
+    padding: 16px 0;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.unlocked-calendar .rbc-toolbar button {
+    padding: 8px 16px;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    color: #374151;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.unlocked-calendar .rbc-toolbar button:hover {
+    background-color: #f9fafb;
+    border-color: #556830;
+}
+
+.unlocked-calendar .rbc-toolbar button.rbc-active {
+    background-color: #556830;
+    color: white;
+    border-color: #556830;
+}
+
+.unlocked-calendar .rbc-toolbar button.rbc-active:hover {
+    background-color: #203622;
+}
+
+.unlocked-calendar .rbc-toolbar button:focus {
+    background-color: #d1d5db;
+    color: #374151;
+    border-color: #e5e7eb;
+    outline: none;
+}
+
+.unlocked-calendar .rbc-toolbar button.rbc-active:focus {
+    background-color: #d1d5db;
+    color: #374151;
+    border-color: #e5e7eb;
+}
+
+.unlocked-calendar .rbc-month-view,
+.unlocked-calendar .rbc-time-view,
+.unlocked-calendar .rbc-agenda-view {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.unlocked-calendar .rbc-time-slot {
+    border-top: 1px solid #f3f4f6;
+}
+
+.unlocked-calendar .rbc-day-slot .rbc-time-slot {
+    border-top: 1px solid #f3f4f6;
+}
+
+.unlocked-calendar .rbc-current-time-indicator {
+    background-color: #556830;
+    height: 2px;
+}
+
+.unlocked-calendar .rbc-agenda-date-cell,
+.unlocked-calendar .rbc-agenda-time-cell {
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.unlocked-calendar .rbc-agenda-event-cell {
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.unlocked-calendar .rbc-show-more {
+    background-color: transparent;
+    color: #556830;
+    font-weight: 500;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.unlocked-calendar .rbc-show-more:hover {
+    background-color: #f0fdf4;
+    text-decoration: underline;
+}
+
+/* Sheet slide animation — targeting Radix dialog data-state directly */
+@keyframes sheet-slide-in-right {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+@keyframes sheet-slide-out-right {
+    from { transform: translateX(0); }
+    to   { transform: translateX(100%); }
+}
+@keyframes sheet-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes sheet-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+[data-slot="sheet-content"][data-state="open"] {
+    animation: sheet-slide-in-right 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-slot="sheet-content"][data-state="closed"] {
+    animation: sheet-slide-out-right 200ms ease-in;
+}
+[data-slot="sheet-overlay"][data-state="open"] {
+    animation: sheet-fade-in 300ms ease-out;
+}
+[data-slot="sheet-overlay"][data-state="closed"] {
+    animation: sheet-fade-out 200ms ease-in;
+}

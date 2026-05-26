@@ -25,21 +25,20 @@ with a collection of Events held at a particular Facility
 */
 type ProgramClass struct {
 	DatabaseFields
-	ProgramID      uint        `json:"program_id" gorm:"not null"`
-	FacilityID     uint        `json:"facility_id" gorm:"not null"`
-	Capacity       int64       `json:"capacity" gorm:"not null"`
-	Name           string      `json:"name" gorm:"size:255" validate:"required,max=255"`
-	InstructorID   *uint       `json:"instructor_id"`
-	Instructor     *User       `json:"instructor" gorm:"foreignKey:InstructorID;references:ID"`
-	InstructorName string      `json:"instructor_name" gorm:"size:255" validate:"omitempty,max=255"`
-	Description    string      `json:"description" gorm:"not null" validate:"required,max=255"`
-	ArchivedAt     *time.Time  `json:"archived_at"`
-	StartDt        time.Time   `gorm:"type:date" json:"start_dt"`
-	EndDt          *time.Time  `gorm:"type:date" json:"end_dt"`
-	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
-	CreditHours    *int64      `json:"credit_hours"`
-	Enrolled       int64       `json:"enrolled" gorm:"-"`
-	Completed      int64       `json:"completed" gorm:"-"`
+	ProgramID        uint        `json:"program_id" gorm:"not null"`
+	FacilityID       uint        `json:"facility_id" gorm:"not null"`
+	Capacity         int64       `json:"capacity" gorm:"not null"`
+	Name             string      `json:"name" gorm:"size:255" validate:"required,max=255"`
+	InstructorID     *uint       `json:"instructor_id" gorm:"-"`
+	UpdateInstructor bool        `json:"-" gorm:"-"`
+	Description      string      `json:"description" gorm:"not null" validate:"required,max=255"`
+	ArchivedAt       *time.Time  `json:"archived_at"`
+	StartDt          time.Time   `gorm:"type:date" json:"start_dt"`
+	EndDt            *time.Time  `gorm:"type:date" json:"end_dt"`
+	Status           ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
+	CreditHours      *int64      `json:"credit_hours"`
+	Enrolled         int64       `json:"enrolled" gorm:"-"`
+	Completed        int64       `json:"completed" gorm:"-"`
 
 	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -49,6 +48,18 @@ type ProgramClass struct {
 }
 
 func (ProgramClass) TableName() string { return "program_classes" }
+
+type TodaysScheduleItem struct {
+	ClassID        uint   `json:"class_id"`
+	ClassName      string `json:"class_name"`
+	InstructorName string `json:"instructor_name"`
+	FacilityID     uint   `json:"facility_id"`
+	FacilityName   string `json:"facility_name"`
+	EventID        uint   `json:"event_id"`
+	Date           string `json:"date"`
+	StartTime      string `json:"start_time"`
+	Room           string `json:"room"`
+}
 
 func (c *ProgramClass) BeforeCreate(tx *gorm.DB) error {
 	if err := c.DatabaseFields.BeforeCreate(tx); err != nil {
@@ -162,10 +173,7 @@ func (e *ProgramClassEnrollment) BeforeCreate(tx *gorm.DB) (err error) {
 
 // BeforeUpdate hook that runs to set enrolled_at if enrolling in an Active class or enrollment_ended_at if entering a terminal state while class is Active|Paused.
 func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
-	// allow calling code to override
-	if !tx.Statement.Changed("enrollment_status") ||
-		tx.Statement.Changed("enrolled_at") ||
-		tx.Statement.Changed("enrollment_ended_at") {
+	if !tx.Statement.Changed("enrollment_status") {
 		return nil
 	}
 
@@ -185,7 +193,14 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 
 	var classID int
 	if v, ok := tx.Get("class_id"); ok {
-		classID = v.(int)
+		switch val := v.(type) {
+		case int:
+			classID = val
+		case uint:
+			classID = int(val)
+		default:
+			return fmt.Errorf("unexpected type for 'class_id': %T", val)
+		}
 	}
 
 	var classStatus ClassStatus
@@ -199,13 +214,17 @@ func (e *ProgramClassEnrollment) BeforeUpdate(tx *gorm.DB) (err error) {
 	}
 
 	// This likely gets hit when we introduce "Waitlist" as a status
-	if newEnrollmentStatus == Enrolled && classStatus == Active {
+	if newEnrollmentStatus == Enrolled && classStatus == Active && !tx.Statement.Changed("enrolled_at") {
 		tx.Statement.SetColumn("enrolled_at", time.Now().UTC())
 		// ? do we need to worry about updating fields to the same value (enrolled -> enrolled)?
 	}
 
-	// This is when an enrollment ends while the class remains active
-	if IsTerminalEnrollment(newEnrollmentStatus) && (classStatus == Active || classStatus == Paused) {
+	// Clear enrollment_ended_at when status becomes Enrolled (reactivation)
+	if newEnrollmentStatus == Enrolled && (classStatus == Active || classStatus == Paused) {
+		tx.Statement.SetColumn("enrollment_ended_at", nil)
+	}
+
+	if IsTerminalEnrollment(newEnrollmentStatus) {
 		tx.Statement.SetColumn("enrollment_ended_at", time.Now().UTC())
 	}
 
@@ -219,8 +238,13 @@ func IsTerminalEnrollment(s ProgramEnrollmentStatus) bool {
 
 type ProgramClassDetail struct {
 	ProgramClass
-	FacilityName string `json:"facility_name"`
-	Enrolled     int    `json:"enrolled"`
+	FacilityName          string  `json:"facility_name"`
+	Enrolled              int     `json:"enrolled"`
+	HistoricalEnrollments int     `json:"historical_enrollments"`
+	Schedule              string  `json:"schedule"`
+	Room                  string  `json:"room"`
+	AttendanceRate        float64 `json:"attendance_rate"`
+	Completed             int     `json:"completed"`
 }
 
 type ProgramEnrollmentStatus string
@@ -293,20 +317,6 @@ type ConflictDetail struct {
 	Reason           string    `json:"reason"`
 }
 
-// GetInstructorNameForJSON returns instructor name with backward compatibility
-// Frontend should check instructor object first, then fallback to instructor_name
-func (pc *ProgramClass) GetInstructorNameForJSON() string {
-	// If we have instructor relationship, use it
-	if pc.Instructor != nil {
-		if pc.Instructor.NameFirst != "" && pc.Instructor.NameLast != "" {
-			return pc.Instructor.NameFirst + " " + pc.Instructor.NameLast
-		}
-		return pc.Instructor.Username
-	}
-	// Fallback to legacy instructor_name field
-	return pc.InstructorName
-}
-
 type BulkCancelSessionsRequest struct {
 	InstructorID int    `json:"instructorId" validate:"required,min=0"`
 	StartDate    string `json:"startDate" validate:"required"`
@@ -341,10 +351,14 @@ type Instructor struct {
 }
 
 type InstructorClassData struct {
-	ID                int    `json:"id"`
-	Name              string `json:"name"`
-	SessionCount      int    `json:"sessionCount"`
-	EnrolledCount     int    `json:"enrolledCount"`
-	UpcomingSessions  int    `json:"upcomingSessions"`
-	CancelledSessions int    `json:"cancelledSessions"`
+	ID                int      `json:"id"`
+	Name              string   `json:"name"`
+	SessionCount      int      `json:"sessionCount"`
+	EnrolledCount     int      `json:"enrolledCount"`
+	UpcomingSessions  int      `json:"upcomingSessions"`
+	CancelledSessions int      `json:"cancelledSessions"`
+	StartTime         string   `json:"startTime"`
+	Duration          string   `json:"duration"`
+	Room              string   `json:"room"`
+	SessionDates      []string `json:"sessionDates" gorm:"-"`
 }

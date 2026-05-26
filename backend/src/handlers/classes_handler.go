@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -41,6 +42,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
+		adminFeatureRoute("GET /api/program-classes/missing-attendance", srv.handleGetMissingAttendanceForFacility, axx),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/missing-attendance", srv.handleGetMissingAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-rate", srv.handleGetCumulativeAttendanceRate, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
@@ -56,6 +58,8 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 			return err == nil
 		}),
 		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}", srv.handleDeleteClass, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/delete-check", srv.handleGetClassDeleteCheck, axx, resolver),
 	}
 }
 
@@ -65,7 +69,8 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	args := srv.getQueryContext(r)
-	classes, err := srv.Db.GetProgramClassDetailsByID(id, &args)
+	service := services.NewClassesService(srv.Db)
+	classes, err := service.GetProgramClassDetailsForProgram(&args, id)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
@@ -88,7 +93,15 @@ func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sL
 
 func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
-	classes, err := srv.Db.GetClassesForFacility(&args)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityParam := r.URL.Query().Get("facility")
+	var facilityID *uint
+	if facilityParam == "all" && claims.canSwitchFacility() {
+		facilityID = nil
+	} else {
+		facilityID = &args.FacilityID
+	}
+	classes, err := srv.Db.GetClasses(&args, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -124,7 +137,9 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil || instructorName == "" {
 		return newBadRequestServiceError(err, "invalid instructor selected")
 	}
-	class.InstructorName = instructorName
+	for i := range class.Events {
+		class.Events[i].InstructorID = class.InstructorID
+	}
 
 	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
@@ -178,30 +193,24 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		}
 	}
 
+	existing, err := srv.Db.GetClassByID(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if existing.CannotUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
+	}
+
 	if instructorIDProvided {
 		if class.InstructorID == nil || *class.InstructorID == 0 {
 			class.InstructorID = nil
-			class.InstructorName = "Unassigned"
 		} else {
-
 			instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
 			if err != nil || instructorName == "" {
 				return newBadRequestServiceError(err, "invalid instructor selected")
 			}
-			class.InstructorName = instructorName
 		}
-	} else {
-
-		existing, err := srv.Db.GetClassByID(id)
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		class.InstructorID = existing.InstructorID
-		class.InstructorName = existing.InstructorName
-	}
-
-	if class.CannotUpdateClass() {
-		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
+		class.UpdateInstructor = true
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
@@ -288,7 +297,9 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	historyEvents = append(historyEvents, createdByDetails)
+	if createdByDetails.Action != "" {
+		historyEvents = append(historyEvents, createdByDetails)
+	}
 	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
 }
 
@@ -329,6 +340,49 @@ func (srv *Server) handleGetMissingAttendance(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, totalMissing)
+}
+
+func (srv *Server) handleGetMissingAttendanceForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	case "":
+		facilityId = &args.FacilityID
+	default:
+		facilityId = &args.FacilityID
+	}
+
+	days := 3
+	if daysQuery := r.URL.Query().Get("days"); daysQuery != "" {
+		if parsedDays, err := strconv.Atoi(daysQuery); err == nil {
+			days = parsedDays
+		}
+	}
+
+	service := services.NewClassesService(srv.Db)
+	items, err := service.GetMissingAttendanceForFacility(&args, facilityId, days)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	args.Total = int64(len(items))
+	if !args.All {
+		start := args.CalcOffset()
+		if start < len(items) {
+			end := start + args.PerPage
+			if end > len(items) {
+				end = len(items)
+			}
+			items = items[start:end]
+		} else {
+			items = []models.MissingAttendanceItem{}
+		}
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, items, args.IntoMeta())
 }
 
 func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -421,4 +475,47 @@ func (c *BulkCancelClaimsAdapter) GetFacilityID() uint {
 
 func (c *BulkCancelClaimsAdapter) GetTimezone() string {
 	return c.TimeZone
+}
+
+func (srv *Server) handleGetClassDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	log.add("class_id", id)
+	blockers, err := srv.Db.ClassBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		CanDelete bool                          `json:"can_delete"`
+		Blockers  models.DeleteBlockingChildren `json:"blockers"`
+	}{
+		CanDelete: !blockers.HasAny(),
+		Blockers:  blockers,
+	}
+	return writeJsonResponse(w, http.StatusOK, payload)
+}
+
+func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	log.add("class_id", id)
+
+	blockers, err := srv.Db.ClassBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if blockers.HasAny() {
+		log.info("class delete blocked by child records")
+		return writeDeleteConflictResponse(w, "cannot delete: class has child records", blockers)
+	}
+
+	if err := srv.Db.DeleteClass(id); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	log.info("class deleted")
+	return writeJsonResponse(w, http.StatusNoContent, "Class deleted successfully")
 }

@@ -1,0 +1,487 @@
+import { useMemo, useState } from 'react';
+import useSWR from 'swr';
+import { Search, CheckCircle, Plus, Edit, MoreVertical, UserMinus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger
+} from '@/components/ui/tooltip';
+import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
+import { ClassEventInstance } from '@/types/events';
+import { ServerResponseMany } from '@/types/server';
+import { getEnrollmentStatusColor, formatEnrollmentStatus } from '@/lib/formatters';
+import { computeAttendanceByUser } from '@/lib/attendance-utils';
+import API from '@/api/api';
+import { toast } from 'sonner';
+import { ChangeEnrollmentStatusModal } from './ChangeEnrollmentStatusModal';
+import { UnenrollResidentModal } from './UnenrollResidentModal';
+import { BulkGraduateModal } from './BulkGraduateModal';
+import { EnrollResidentsModal } from './EnrollResidentsModal';
+
+interface RosterTabProps {
+    classId: number;
+    classStatus: string;
+    className: string;
+    capacity: number;
+    enrolled: number;
+    flaggedUserIds: Set<number>;
+    onClassMutate: () => void;
+}
+
+function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
+    const allStatuses = Object.values(EnrollmentStatus).filter((s) => s !== currentStatus);
+    if (classStatus === 'Completed' || classStatus === 'Cancelled') return [];
+    if (classStatus === 'Scheduled') return [];
+    if (classStatus === 'Active') return allStatuses.filter((s) => s !== EnrollmentStatus.Cancelled);
+    return allStatuses;
+}
+
+export function RosterTab({ classId, classStatus, className, capacity, enrolled, flaggedUserIds, onClassMutate }: RosterTabProps) {
+    const [search, setSearch] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [changingStatus, setChangingStatus] = useState<number | null>(null);
+    const [statusModalEnrollment, setStatusModalEnrollment] =
+        useState<ClassEnrollment | null>(null);
+    const [unenrollTarget, setUnenrollTarget] = useState<ClassEnrollment | null>(null);
+    const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
+
+    const { data: enrollmentResp, mutate } = useSWR<
+        ServerResponseMany<ClassEnrollment>
+    >(
+        `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(EnrollmentStatus.Enrolled)}&per_page=1000`
+    );
+
+    const { data: eventsResp } = useSWR<
+        ServerResponseMany<ClassEventInstance>
+    >(`/api/program-classes/${classId}/events?all=true`);
+
+    const enrolledRows = enrollmentResp?.data ?? [];
+
+    const attendanceMap = useMemo(() => {
+        return computeAttendanceByUser(eventsResp?.data ?? []);
+    }, [eventsResp]);
+
+    const filteredRows = useMemo(() => {
+        if (!search.trim()) return enrolledRows;
+        const q = search.toLowerCase();
+        return enrolledRows.filter(
+            (r) =>
+                r.doc_id?.toLowerCase().includes(q) ||
+                r.name_full?.toLowerCase().includes(q)
+        );
+    }, [enrolledRows, search]);
+
+    const toggleSelection = (id: number) => {
+        const next = new Set(selectedIds);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        setSelectedIds(next);
+    };
+
+    const toggleAll = () => {
+        if (selectedIds.size === filteredRows.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredRows.map((r) => r.id)));
+        }
+    };
+
+    const handleBulkGraduate = async () => {
+        const enrollmentIds = Array.from(selectedIds);
+        const userIds = enrolledRows
+            .filter((e) => enrollmentIds.includes(e.id))
+            .map((e) => e.user_id);
+        const resp = await API.patch<
+            unknown,
+            { enrollment_status: string; user_ids: number[] }
+        >(`program-classes/${classId}/enrollments`, {
+            enrollment_status: EnrollmentStatus.Completed,
+            user_ids: userIds
+        });
+        if (resp.success) {
+            toast.success(
+                `${userIds.length} ${userIds.length === 1 ? 'resident' : 'residents'} graduated successfully`
+            );
+            setSelectedIds(new Set());
+            void mutate();
+            onClassMutate();
+        } else {
+            toast.error(resp.message || 'Failed to graduate residents');
+        }
+    };
+
+    const handleStatusChange = async (
+        enrollment: ClassEnrollment,
+        newStatus: EnrollmentStatus,
+        reason: string
+    ) => {
+        setChangingStatus(enrollment.id);
+        const body: {
+            enrollment_status: string;
+            user_ids: number[];
+            change_reason?: string;
+        } = {
+            enrollment_status: newStatus,
+            user_ids: [enrollment.user_id]
+        };
+        if (reason.trim()) {
+            body.change_reason = reason.trim();
+        }
+        const resp = await API.patch<unknown, typeof body>(
+            `program-classes/${classId}/enrollments`,
+            body
+        );
+        if (resp.success) {
+            toast.success(`Status updated to ${newStatus}`);
+            void mutate();
+            onClassMutate();
+        } else {
+            toast.error(resp.message || 'Failed to update status');
+        }
+        setChangingStatus(null);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="card-block">
+                <div className="border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-4">
+                            <Checkbox
+                                checked={
+                                    selectedIds.size === filteredRows.length &&
+                                    filteredRows.length > 0
+                                }
+                                onCheckedChange={toggleAll}
+                                aria-label="Select all residents"
+                            />
+                            <div>
+                                <h3 className="text-brand-dark">
+                                    Enrolled Residents ({enrolledRows.length})
+                                    {selectedIds.size > 0 && (
+                                        <span className="ml-2 text-brand">
+                                            - {selectedIds.size} selected
+                                        </span>
+                                    )}
+                                </h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    View enrollment and track engagement
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="outline"
+                            className="border-gray-300"
+                            onClick={() => setShowEnrollModal(true)}
+                        >
+                            <Plus className="size-4 mr-2" />
+                            Enroll Resident
+                        </Button>
+                    </div>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+                        <Input
+                            type="text"
+                            placeholder="Search by resident ID or name..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-10 w-full"
+                        />
+                    </div>
+                </div>
+                <div className="divide-y divide-gray-200">
+                    {filteredRows.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <Search className="size-12 mx-auto mb-3 text-gray-400" />
+                            <p>No residents found</p>
+                            <p className="text-sm mt-1">
+                                Try adjusting your search
+                            </p>
+                        </div>
+                    ) : (
+                        filteredRows.map((enrollment) => {
+                            const stats = attendanceMap.get(
+                                enrollment.user_id
+                            ) ?? { attended: 0, total: 0, rate: 0 };
+                            const needsSupport = flaggedUserIds.has(enrollment.user_id);
+
+                            return (
+                                <div
+                                    key={enrollment.id}
+                                    className="px-6 py-4 hover:bg-surface-hover/30 transition-colors"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-6 flex-1">
+                                            <Checkbox
+                                                checked={selectedIds.has(
+                                                    enrollment.id
+                                                )}
+                                                onCheckedChange={() =>
+                                                    toggleSelection(
+                                                        enrollment.id
+                                                    )
+                                                }
+                                                aria-label={`Select ${enrollment.doc_id}`}
+                                                className="shrink-0"
+                                            />
+                                            <div className="w-[140px] shrink-0">
+                                                <div className="text-brand-dark font-medium">
+                                                    {enrollment.doc_id}
+                                                </div>
+                                                <div className="text-sm text-gray-600 mt-0.5">
+                                                    {enrollment.name_full}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="text-sm text-gray-600">
+                                                        Attendance:
+                                                    </span>
+                                                    <span className="text-sm text-brand-dark font-medium">
+                                                        {stats.rate}%
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        ({stats.attended}/
+                                                        {stats.total} sessions)
+                                                    </span>
+                                                </div>
+                                                <Progress
+                                                    value={stats.rate}
+                                                    className="h-2 w-64"
+                                                    indicatorClassName={
+                                                        needsSupport
+                                                            ? 'bg-brand-gold'
+                                                            : 'bg-brand'
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm text-gray-600">
+                                                Enrolled:{' '}
+                                                {new Date(
+                                                    enrollment.enrolled_at ??
+                                                        enrollment.created_at
+                                                ).toLocaleDateString(
+                                                    'en-CA'
+                                                )}
+                                            </span>
+                                            {needsSupport && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="badge-amber"
+                                                >
+                                                    Needs Support
+                                                </Badge>
+                                            )}
+                                            {(() => {
+                                                const allowed = getAllowedStatuses(classStatus, enrollment.enrollment_status);
+                                                const isScheduled = classStatus === 'Scheduled';
+                                                if (allowed.length === 0 && !isScheduled) {
+                                                    return (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={getEnrollmentStatusColor(enrollment.enrollment_status)}
+                                                        >
+                                                            {formatEnrollmentStatus(enrollment.enrollment_status)}
+                                                        </Badge>
+                                                    );
+                                                }
+                                                return (
+                                                    <button
+                                                        className="group"
+                                                        disabled={changingStatus === enrollment.id}
+                                                        onClick={() => setStatusModalEnrollment(enrollment)}
+                                                    >
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-brand/20 flex items-center gap-1.5`}
+                                                        >
+                                                            {changingStatus === enrollment.id
+                                                                ? 'Updating...'
+                                                                : formatEnrollmentStatus(enrollment.enrollment_status)}
+                                                            <Edit className="size-3 text-current opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                        </Badge>
+                                                    </button>
+                                                );
+                                            })()}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-8 w-8 p-0">
+                                                    <MoreVertical className="size-4" />
+                                                    <span className="sr-only">
+                                                        Resident actions
+                                                    </span>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="z-[100]"
+                                                >
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            setStatusModalEnrollment(
+                                                                enrollment
+                                                            )
+                                                        }
+                                                    >
+                                                        <Edit className="size-4 mr-2" />
+                                                        Change Status
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div>
+                                                                <DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() =>
+                                                                        setUnenrollTarget(
+                                                                            enrollment
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        stats.total >
+                                                                        0
+                                                                    }
+                                                                >
+                                                                    <UserMinus className="size-4 mr-2" />
+                                                                    Unenroll
+                                                                    Resident
+                                                                </DropdownMenuItem>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        {stats.total > 0 && (
+                                                            <TooltipContent side="left">
+                                                                Cannot unenroll
+                                                                after attendance
+                                                                has been taken
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+
+            {selectedIds.size > 0 && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
+                    <div className="flex items-center gap-6">
+                        <div className="text-sm">
+                            <span className="font-semibold text-brand-dark">
+                                {selectedIds.size}
+                            </span>
+                            <span className="text-gray-500 ml-1">
+                                {selectedIds.size === 1
+                                    ? 'resident'
+                                    : 'residents'}{' '}
+                                selected
+                            </span>
+                        </div>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedIds(new Set())}
+                            >
+                                Clear Selection
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="bg-brand hover:bg-brand-dark"
+                                onClick={() => setShowBulkGraduateModal(true)}
+                            >
+                                <CheckCircle className="size-4 mr-2" />
+                                Graduate Selected
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {statusModalEnrollment && (
+                <ChangeEnrollmentStatusModal
+                    open={!!statusModalEnrollment}
+                    onClose={() => setStatusModalEnrollment(null)}
+                    residentDisplayId={statusModalEnrollment.doc_id ?? ''}
+                    residentName={statusModalEnrollment.name_full ?? ''}
+                    className={className}
+                    classStatus={classStatus}
+                    currentStatus={statusModalEnrollment.enrollment_status}
+                    allowedStatuses={getAllowedStatuses(
+                        classStatus,
+                        statusModalEnrollment.enrollment_status
+                    )}
+                    onStatusChange={(newStatus, reason) =>
+                        void handleStatusChange(
+                            statusModalEnrollment,
+                            newStatus,
+                            reason
+                        )
+                    }
+                />
+            )}
+
+            {unenrollTarget && (
+                <UnenrollResidentModal
+                    open={!!unenrollTarget}
+                    onClose={() => setUnenrollTarget(null)}
+                    classId={classId}
+                    userId={unenrollTarget.user_id}
+                    residentDisplayId={unenrollTarget.doc_id ?? ''}
+                    residentName={unenrollTarget.name_full ?? ''}
+                    onUnenrolled={() => { void mutate(); onClassMutate(); }}
+                />
+            )}
+
+            <BulkGraduateModal
+                open={showBulkGraduateModal}
+                onClose={() => setShowBulkGraduateModal(false)}
+                className={className}
+                classStatus={classStatus}
+                selectedResidents={Array.from(selectedIds)
+                    .map((enrollmentId) => {
+                        const e = enrolledRows.find((r) => r.id === enrollmentId);
+                        return e
+                            ? {
+                                  id: e.id,
+                                  displayId: e.doc_id ?? '',
+                                  name: e.name_full ?? ''
+                              }
+                            : null;
+                    })
+                    .filter((r): r is NonNullable<typeof r> => r !== null)}
+                onConfirm={handleBulkGraduate}
+            />
+
+            <EnrollResidentsModal
+                open={showEnrollModal}
+                onOpenChange={setShowEnrollModal}
+                classId={classId}
+                className={className}
+                capacity={capacity}
+                enrolled={enrolled}
+                onEnrolled={() => { void mutate(); onClassMutate(); }}
+            />
+        </div>
+    );
+}

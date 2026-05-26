@@ -32,19 +32,55 @@ func (a Attendance) HumanReadable() string {
 	}
 }
 
+var rruleDayAbbrev = map[string]string{
+	"MO": "M", "TU": "T", "WE": "W", "TH": "Th", "FR": "F", "SA": "Sa", "SU": "Su",
+}
+
+func FormatScheduleFromRRule(rruleStr string) string {
+	if rruleStr == "" {
+		return ""
+	}
+	opts, err := rrule.StrToROption(rruleStr)
+	if err != nil {
+		return ""
+	}
+	days := make([]string, 0, len(opts.Byweekday))
+	for _, wd := range opts.Byweekday {
+		full := strings.ToUpper(wd.String()[:2])
+		if abbr, ok := rruleDayAbbrev[full]; ok {
+			days = append(days, abbr)
+		}
+	}
+	timeStr := ""
+	if !opts.Dtstart.IsZero() {
+		timeStr = opts.Dtstart.Format("3:04 PM")
+	}
+	if len(days) > 0 && timeStr != "" {
+		return strings.Join(days, "/") + " " + timeStr
+	}
+	if len(days) > 0 {
+		return strings.Join(days, "/")
+	}
+	return timeStr
+}
+
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
-	ClassID        uint   `json:"class_id" gorm:"not null" validate:"required"`
-	Duration       string `json:"duration" gorm:"not null" validate:"required"`
-	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" validate:"required"`
-	RoomID         *uint  `json:"room_id" gorm:"not null"`
+	ClassID        uint    `json:"class_id" gorm:"not null" validate:"required"`
+	Duration       string  `json:"duration" gorm:"not null" validate:"required"`
+	RecurrenceRule string  `json:"recurrence_rule" gorm:"not null" validate:"required"`
+	RoomID         *uint   `json:"room_id" gorm:"not null"`
+	InstructorID   *uint   `json:"instructor_id" gorm:"not null" validate:"required"`
+	Reason         *string `json:"reason"`
+	IsCancelled    bool    `json:"is_cancelled"`
 
 	/* Foreign keys */
-	Class     *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
-	RoomRef   *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
-	Attendees []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
-	Overrides []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
+	Class      *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
+	RoomRef    *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Instructor *User                         `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
+	Attendees  []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
+	Overrides  []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
 }
 
 type DateRange struct {
@@ -134,10 +170,12 @@ type ProgramClassEventOverride struct {
 	RoomID                *uint  `json:"room_id"`
 	Reason                string `json:"reason"`
 	LinkedOverrideEventID *uint  `json:"linked_override_event_id"`
+	InstructorID          *uint  `json:"instructor_id"`
 
 	/* Foreign keys */
-	Event   *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
-	RoomRef *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Event      *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	RoomRef    *Room              `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
+	Instructor *User              `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
 }
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
@@ -213,12 +251,24 @@ func (p *ProgramClassEventAttendance) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+type AttendanceRecordResponse struct {
+	UserID           uint   `json:"user_id"`
+	Date             string `json:"date"`
+	AttendanceStatus string `json:"attendance_status"`
+	Note             string `json:"note"`
+	MarkedBy         string `json:"marked_by"`
+}
+
 type ClassEventInstance struct {
-	EventID           uint                          `json:"event_id"`
-	ClassTime         string                        `json:"class_time"` // e.g. "12:00-14:00"
-	Date              string                        `json:"date"`
-	AttendanceRecords []ProgramClassEventAttendance `json:"attendance_records"`
-	IsCancelled       bool                          `json:"is_cancelled"`
+	EventID             uint                          `json:"event_id"`
+	ClassTime           string                        `json:"class_time"` // e.g. "12:00-14:00"
+	Date                string                        `json:"date"`
+	AttendanceRecords   []ProgramClassEventAttendance `json:"attendance_records"`
+	IsCancelled         bool                          `json:"is_cancelled"`
+	IsRescheduled       bool                          `json:"is_rescheduled"`
+	RescheduledToDate   string                        `json:"rescheduled_to_date,omitempty"`
+	RescheduledFromDate string                        `json:"rescheduled_from_date,omitempty"`
+	OverrideID          uint                          `json:"override_id,omitempty"`
 }
 
 type EnrollmentAttendance struct {
@@ -249,10 +299,32 @@ const (
 )
 
 type AttendanceFlag struct {
-	NameFirst string             `json:"name_first"`
-	NameLast  string             `json:"name_last"`
-	DocID     string             `json:"doc_id"`
-	FlagType  AttendanceFlagType `json:"flag_type"`
+	NameFirst           string             `json:"name_first"`
+	NameLast            string             `json:"name_last"`
+	DocID               string             `json:"doc_id"`
+	FlagType            AttendanceFlagType `json:"flag_type"`
+	UserID              uint               `json:"user_id"`
+	TotalSessions       int                `json:"total_sessions"`
+	AttendedSessions    int                `json:"attended_sessions"`
+	MissedSessions      int                `json:"missed_sessions"`
+	AttendanceRate      int                `json:"attendance_rate"`
+	ConsecutiveAbsences int                `json:"consecutive_absences"`
+}
+
+type MissingAttendanceItem struct {
+	ClassID      uint   `json:"class_id"`
+	ClassName    string `json:"class_name"`
+	FacilityName string `json:"facility_name,omitempty"`
+	EventID      uint   `json:"event_id"`
+	Date         string `json:"date"`
+	StartTime    string `json:"start_time"`
+}
+
+type MissingAttendanceClass struct {
+	ID           uint   `json:"id"`
+	Name         string `json:"name"`
+	FacilityName string `json:"facility_name"`
+	FacilityID   uint   `json:"facility_id"`
 }
 
 type EventDates struct {
@@ -261,20 +333,41 @@ type EventDates struct {
 	ClassTime string `json:"class_time"` // e.g. "12:00-14:00"
 }
 
+// GetInstructorFromEvents returns the instructor ID and display name from the
+// event with the highest ID, mirroring the frontend getInstructorName utility.
+func GetInstructorFromEvents(events []ProgramClassEvent) (*uint, string) {
+	var maxEvent *ProgramClassEvent
+	for i := range events {
+		if maxEvent == nil || events[i].ID > maxEvent.ID {
+			maxEvent = &events[i]
+		}
+	}
+	if maxEvent == nil {
+		return nil, ""
+	}
+	name := ""
+	if maxEvent.Instructor != nil {
+		name = strings.TrimSpace(maxEvent.Instructor.NameFirst + " " + maxEvent.Instructor.NameLast)
+	}
+	return maxEvent.InstructorID, name
+}
+
 type FacilityProgramClassEvent struct {
 	ProgramClassEvent
-	Room                string                     `json:"room" gorm:"->"` // read-only, populated from joined rooms table
-	InstructorName      string                     `json:"instructor_name"`
-	ProgramID           uint                       `json:"program_id"`
-	ProgramName         string                     `json:"program_name"`
-	ClassName           string                     `json:"title"`
-	IsCancelled         bool                       `json:"is_cancelled"`
-	IsOverride          bool                       `json:"is_override"`
-	EnrolledUsers       string                     `json:"enrolled_users"`
-	StartTime           *time.Time                 `json:"start"`
-	EndTime             *time.Time                 `json:"end"`
-	Frequency           string                     `json:"frequency"`
-	ClassStatus         ClassStatus                `json:"class_status"`
-	OverrideID          uint                       `json:"override_id"`
-	LinkedOverrideEvent *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
+	Room                   string                     `json:"room" gorm:"->"` // read-only, populated from joined rooms table
+	OriginalRoom           string                     `json:"original_room,omitempty" gorm:"-"`
+	InstructorName         string                     `json:"instructor_name"`
+	OriginalInstructorName string                     `json:"original_instructor_name,omitempty" gorm:"-"`
+	ProgramID              uint                       `json:"program_id"`
+	ProgramName            string                     `json:"program_name"`
+	ClassName              string                     `json:"title"`
+	IsCancelled            bool                       `json:"is_cancelled"`
+	IsOverride             bool                       `json:"is_override"`
+	EnrolledUsers          string                     `json:"enrolled_users"`
+	StartTime              *time.Time                 `json:"start"`
+	EndTime                *time.Time                 `json:"end"`
+	Frequency              string                     `json:"frequency"`
+	ClassStatus            ClassStatus                `json:"class_status"`
+	OverrideID             uint                       `json:"override_id"`
+	LinkedOverrideEvent    *FacilityProgramClassEvent `json:"linked_override_event" gorm:"-"`
 }

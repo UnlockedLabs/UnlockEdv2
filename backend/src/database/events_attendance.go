@@ -257,12 +257,18 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		where c.id = ?
 		and e.enrollment_status = 'Enrolled'
 		and c.status = 'Active'
+		and u.deleted_at is null
 		and exists (select 1 from program_class_events evt
 				inner join program_class_event_attendance att on att.event_id = evt.id
 				where evt.class_id = c.id
 						and att.attendance_status is not null
 		)`
-	noAttendanceSQL := `and not exists (select 1 from program_class_events evt
+	noAttendanceSQL := `and exists (select 1 from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id
+					and att.user_id = e.user_id
+		)
+		and not exists (select 1 from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
@@ -280,7 +286,19 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 						and att.user_id = e.user_id
 						and att.attendance_status = 'absent_unexcused'
 		) >= 3`
-	//count for pagination
+
+	statsSQL := `,
+		e.user_id,
+		(select count(*) from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id and att.user_id = e.user_id
+		) as total_sessions,
+		(select count(*) from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id and att.user_id = e.user_id
+				and att.attendance_status in ('present','partial')
+		) as attended_sessions`
+
 	countQuery := fmt.Sprintf(`select count(*) from (
 			select u.id %s %s
 			union all
@@ -291,20 +309,82 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		return nil, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 
-	attendanceQuery := fmt.Sprintf(`select name_first, name_last, doc_id, flag_type from (
+	attendanceQuery := fmt.Sprintf(`select name_first, name_last, doc_id, flag_type, user_id, total_sessions, attended_sessions from (
 			select u.name_first, u.name_last,
-			u.doc_id, 'no_attendance' as flag_type %s %s
+			u.doc_id, 'no_attendance' as flag_type %s %s %s
 			union all
 			select u.name_first, u.name_last,
-			u.doc_id, 'multiple_absences' as flag_type %s %s
+			u.doc_id, 'multiple_absences' as flag_type %s %s %s
 		) AS attendance_flags
 		ORDER BY name_last, name_first
-		LIMIT ? OFFSET ?`, attendanceCoreSQL, noAttendanceSQL, attendanceCoreSQL, multiAbsencesSQL)
+		LIMIT ? OFFSET ?`, statsSQL, attendanceCoreSQL, noAttendanceSQL, statsSQL, attendanceCoreSQL, multiAbsencesSQL)
 	if err := db.WithContext(args.Ctx).Raw(attendanceQuery, classID, classID, args.PerPage, args.CalcOffset()).Scan(&flags).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 
+	for i := range flags {
+		flags[i].MissedSessions = flags[i].TotalSessions - flags[i].AttendedSessions
+		if flags[i].TotalSessions > 0 {
+			flags[i].AttendanceRate = int(float64(flags[i].AttendedSessions) / float64(flags[i].TotalSessions) * 100)
+		}
+	}
+
+	if len(flags) > 0 {
+		if err := db.computeConsecutiveAbsences(classID, flags); err != nil {
+			return nil, err
+		}
+	}
+
 	return flags, nil
+}
+
+func (db *DB) computeConsecutiveAbsences(classID int, flags []models.AttendanceFlag) error {
+	userIDs := make([]uint, len(flags))
+	for i, f := range flags {
+		userIDs[i] = f.UserID
+	}
+
+	type record struct {
+		UserID           uint   `gorm:"column:user_id"`
+		Date             string `gorm:"column:date"`
+		AttendanceStatus string `gorm:"column:attendance_status"`
+	}
+	var records []record
+	if err := db.Raw(`
+		SELECT att.user_id, att.date, att.attendance_status
+		FROM program_class_event_attendance att
+		INNER JOIN program_class_events evt ON evt.id = att.event_id
+		WHERE evt.class_id = ? AND att.user_id IN ?
+		ORDER BY att.user_id, att.date DESC`,
+		classID, userIDs,
+	).Scan(&records).Error; err != nil {
+		return newNotFoundDBError(err, "consecutive absences")
+	}
+
+	byUser := make(map[uint]int)
+	var currentUser uint
+	var counting bool
+	for _, r := range records {
+		if r.UserID != currentUser {
+			currentUser = r.UserID
+			counting = true
+			byUser[currentUser] = 0
+		}
+		if !counting {
+			continue
+		}
+		switch r.AttendanceStatus {
+		case "present", "partial":
+			counting = false
+		case "absent_excused", "absent_unexcused":
+			byUser[currentUser]++
+		}
+	}
+
+	for i := range flags {
+		flags[i].ConsecutiveAbsences = byUser[flags[i].UserID]
+	}
+	return nil
 }
 
 func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int, error) {
@@ -399,6 +479,87 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 	return missingAttendanceCount, nil
 }
 
+func (db *DB) GetActiveClassesForMissingAttendance(args *models.QueryContext, facilityID *uint) ([]models.MissingAttendanceClass, error) {
+	var missClasses []models.MissingAttendanceClass
+	classQuery := db.WithContext(args.Ctx).
+		Table("program_classes c").
+		Select("c.id, c.name, f.name as facility_name, c.facility_id").
+		Joins("JOIN facilities f ON f.id = c.facility_id").
+		Where("c.status = ?", models.Active).
+		Where("c.archived_at IS NULL")
+	if facilityID != nil {
+		classQuery = classQuery.Where("c.facility_id = ?", *facilityID)
+	}
+	if err := classQuery.Find(&missClasses).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_classes")
+	}
+	return missClasses, nil
+}
+
+func (db *DB) GetActiveClassesWithEvents(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
+	var classes []models.ProgramClass
+	classQuery := db.WithContext(args.Ctx).
+		Model(&models.ProgramClass{}).
+		Preload("Events.Overrides").
+		Preload("Events.RoomRef").
+		Preload("Events.Instructor").
+		Preload("Facility").
+		Where("status = ?", models.Active).
+		Where("archived_at IS NULL")
+	if facilityID != nil {
+		classQuery = classQuery.Where("facility_id = ?", *facilityID)
+	}
+	if err := classQuery.Find(&classes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_classes")
+	}
+	return classes, nil
+}
+
+func (db *DB) GetClassEventsWithOverrides(args *models.QueryContext, classIDs []uint) ([]models.ProgramClassEvent, error) {
+	var events []models.ProgramClassEvent
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEvent{}).
+		Preload("Overrides").
+		Preload("RoomRef").
+		Where("class_id IN ?", classIDs).
+		Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	return events, nil
+}
+
+type AttendanceCount struct {
+	EventID uint   `json:"event_id"`
+	Date    string `json:"date"`
+	Count   int64  `json:"count"`
+}
+
+func (db *DB) GetAttendanceCountsForEvents(args *models.QueryContext, eventIDs []uint, dates []string) ([]AttendanceCount, error) {
+	var attendanceCounts []AttendanceCount
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEventAttendance{}).
+		Select("event_id, date, COUNT(*) as count").
+		Where("event_id IN ? AND date IN ?", eventIDs, dates).
+		Group("event_id, date").
+		Scan(&attendanceCounts).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_event_attendance")
+	}
+	return attendanceCounts, nil
+}
+
+func (db *DB) GetActiveEnrollmentsForClasses(args *models.QueryContext, classIDs []uint) ([]models.ProgramClassEnrollment, error) {
+	var enrollments []models.ProgramClassEnrollment
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEnrollment{}).
+		Select("class_id, enrolled_at, enrollment_ended_at").
+		Where("class_id IN ?", classIDs).
+		Where("enrollment_status = ?", models.Enrolled).
+		Find(&enrollments).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	return enrollments, nil
+}
+
 func (db *DB) CreateAttendanceAuditTrail(ctx context.Context, att *models.ProgramClassEventAttendance, adminID *uint, className string) error {
 
 	sessionDateParsed, err := time.ParseInLocation("2006-01-02", att.Date, time.Local)
@@ -448,4 +609,50 @@ func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID i
 		return 0, newNotFoundDBError(err, "program_class_event_attendance")
 	}
 	return attendanceRate, nil
+}
+
+func (db *DB) GetCumulativeAttendanceRatesForClasses(ctx context.Context, classIDs []uint) (map[uint]float64, error) {
+	if len(classIDs) == 0 {
+		return map[uint]float64{}, nil
+	}
+	today := time.Now().Format("2006-01-02")
+	sql := `
+	WITH attendance_credits AS (
+		SELECT
+			pce.class_id,
+			CASE
+				WHEN pcea.attendance_status = 'present' THEN 1.0
+				WHEN pcea.attendance_status = 'partial' THEN LEAST(
+					COALESCE(pcea.minutes_attended, pcea.scheduled_minutes, 0)::numeric /
+					NULLIF(COALESCE(pcea.scheduled_minutes, pcea.minutes_attended, 0), 0),
+					1
+				)
+				ELSE 0
+			END as credit
+		FROM program_class_event_attendance pcea
+		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
+		WHERE pce.class_id IN ? AND pcea.date <= ?
+	)
+	SELECT class_id,
+		COALESCE(
+			SUM(credit) * 100.0 / NULLIF(COUNT(*), 0),
+			0
+		) as attendance_percentage
+	FROM attendance_credits
+	GROUP BY class_id`
+
+	type row struct {
+		ClassID        uint    `gorm:"column:class_id"`
+		AttendanceRate float64 `gorm:"column:attendance_percentage"`
+	}
+	rows := []row{}
+	if err := db.WithContext(ctx).Raw(sql, classIDs, today).Scan(&rows).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program_class_event_attendance")
+	}
+
+	out := make(map[uint]float64, len(classIDs))
+	for _, r := range rows {
+		out[r.ClassID] = r.AttendanceRate
+	}
+	return out, nil
 }

@@ -25,6 +25,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
 		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
 		adminFeatureRoute("GET /api/programs/{id}/archive-check", srv.handleGetProgramArchiveCheck, axx),
+		adminFeatureRoute("GET /api/programs/{id}/delete-check", srv.handleGetProgramDeleteCheck, axx),
 		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
@@ -100,7 +101,13 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 	}
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	facility_id := claims.FacilityID
+	facilityID := claims.FacilityID
+	args := srv.getQueryContext(r)
+	if args.Params.Get("facility_id") != "" {
+		facilityID = args.FacilityID
+	} else if claims.canSwitchFacility() {
+		facilityID = 0
+	}
 
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
@@ -108,7 +115,7 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 
-	overview, err := srv.Db.FetchEnrollmentMetrics(id, facility_id)
+	overview, err := srv.Db.FetchEnrollmentMetrics(id, facilityID)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
@@ -255,12 +262,42 @@ func (srv *Server) handleGetProgramArchiveCheck(w http.ResponseWriter, r *http.R
 	return writeJsonResponse(w, http.StatusOK, payload)
 }
 
+func (srv *Server) handleGetProgramDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	log.add("program_id", id)
+	blockers, err := srv.Db.ProgramBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		CanDelete bool                          `json:"can_delete"`
+		Blockers  models.DeleteBlockingChildren `json:"blockers"`
+	}{
+		CanDelete: !blockers.HasAny(),
+		Blockers:  blockers,
+	}
+	return writeJsonResponse(w, http.StatusOK, payload)
+}
+
 func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	log.add("program_id", id)
+
+	blockers, err := srv.Db.ProgramBlockingChildren(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if blockers.HasAny() {
+		log.info("program delete blocked by child records")
+		return writeDeleteConflictResponse(w, "cannot delete: program has child records", blockers)
+	}
+
 	if err = srv.Db.DeleteProgram(id); err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -283,7 +320,9 @@ func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	historyEvents = append(historyEvents, createdByDetails)
+	if createdByDetails.Action != "" {
+		historyEvents = append(historyEvents, createdByDetails)
+	}
 	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
 }
 

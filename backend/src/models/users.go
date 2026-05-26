@@ -201,13 +201,16 @@ type ResidentProgramClassInfo struct {
 	StartDate            string                  `json:"start_date"`
 	EndDate              string                  `json:"end_date"`
 	AttendancePercentage string                  `json:"attendance_percentage"`
-	ClassID              uint                    `json:"class_id" `
+	ClassID              uint                    `json:"class_id"`
 	ProgramID            uint                    `json:"program_id"`
+	EnrollmentID         uint                    `json:"enrollment_id"`
 	PresentAttendance    int                     `json:"present_attendance"`
 	AbsentAttendance     int                     `json:"absent_attendance"`
 	CreditTypes          string                  `json:"credit_types"`
 	UpdatedAt            string                  `json:"updated_at"`
 	ChangeReason         string                  `json:"change_reason"`
+	Schedule             string                  `json:"schedule"`
+	RecurrenceRule       string                  `json:"-"`
 }
 
 // calculates the attendance percentage, sets the feild AttendancePercentage and returns it's value
@@ -223,6 +226,34 @@ func (rpc *ResidentProgramClassInfo) CalculateAttendancePercentage() string {
 		rpc.AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
 	}
 	return rpc.AttendancePercentage
+}
+
+type UserNote struct {
+	DatabaseFields
+	UserID uint   `json:"user_id" gorm:"not null"`
+	Note   string `json:"note" gorm:"not null"`
+
+	Creator *User `json:"creator,omitempty" gorm:"foreignKey:CreateUserID;references:ID"`
+}
+
+func (UserNote) TableName() string { return "user_notes" }
+
+type UserNoteResponse struct {
+	ID    uint      `json:"id"`
+	Date  time.Time `json:"date"`
+	Admin string    `json:"admin"`
+	Note  string    `json:"note"`
+}
+
+type WeeklyAttendanceTrend struct {
+	Week string  `json:"week"`
+	Rate float64 `json:"rate"`
+}
+
+type WeeklyAttendanceRow struct {
+	WeekStart    time.Time
+	PresentCount float64
+	TotalCount   float64
 }
 
 type ResidentTransferProgramConflicts struct {

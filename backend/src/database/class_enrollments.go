@@ -353,7 +353,7 @@ type EnrollmentDetails struct {
 func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, classId int, status string) ([]EnrollmentDetails, error) {
 	content := make([]EnrollmentDetails, 0, args.PerPage)
 	search := args.SearchQuery()
-	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ', ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_first || ' ' || u.name_last as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
 		Joins("JOIN program_classes c ON pse.class_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN users u ON pse.user_id = u.id AND u.deleted_at IS NULL").
 		Joins("LEFT JOIN program_completions pc ON pc.user_id = pse.user_id AND pc.program_class_id = ?", classId).
@@ -380,21 +380,24 @@ func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, cl
 	return content, nil
 }
 
-func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64, []models.ProgramClassEventAttendance, error) {
-	content := []models.ProgramClassEventAttendance{}
+func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64, []models.AttendanceRecordResponse, error) {
+	content := []models.AttendanceRecordResponse{}
 	var total int64
 	tx := db.Table("program_class_event_attendance att").
-		Select("*").
-		Joins("JOIN program_class_events evt ON att.event_id = evt.id and evt.deleted_at IS NULL").
-		Joins("JOIN program_classes ps ON evt.class_id = ps.id and ps.deleted_at IS NULL").
-		Joins("JOIN program_class_enrollments pse ON ps.id = pse.class_id and pse.deleted_at IS NULL").
+		Select(`att.user_id, att.date, att.attendance_status, att.note,
+			COALESCE(CONCAT(admin.name_first, ' ', admin.name_last), '') AS marked_by`).
+		Joins("JOIN program_class_events evt ON att.event_id = evt.id AND evt.deleted_at IS NULL").
+		Joins("JOIN program_classes ps ON evt.class_id = ps.id AND ps.deleted_at IS NULL").
+		Joins("JOIN program_class_enrollments pse ON ps.id = pse.class_id AND pse.deleted_at IS NULL").
+		Joins("LEFT JOIN users admin ON att.create_user_id = admin.id").
 		Where("pse.id = ?", id).
+		Where("att.user_id = pse.user_id").
 		Where("att.deleted_at IS NULL")
 
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "class event")
 	}
-	if err := tx.Limit(perPage).
+	if err := tx.Order("att.date DESC").Limit(perPage).
 		Offset(calcOffset(page, perPage)).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "class event attendance")

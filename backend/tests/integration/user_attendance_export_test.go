@@ -50,7 +50,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 	class1, err := env.CreateTestClass(program, facility1, models.Active, &instructor1.ID)
 	require.NoError(t, err)
 
-	event1, err := env.CreateTestEvent(class1.ID, "")
+	event1, err := env.CreateTestEvent(class1.ID, "", instructor1.ID)
 	require.NoError(t, err)
 
 	date1 := time.Now().AddDate(0, 0, -5).Format("2006-01-02")
@@ -222,7 +222,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		class2, err := env.CreateTestClass(program, facility1, models.Active, &instructor2.ID)
 		require.NoError(t, err)
 
-		event2, err := env.CreateTestEvent(class2.ID, "")
+		event2, err := env.CreateTestEvent(class2.ID, "", instructor2.ID)
 		require.NoError(t, err)
 
 		enrollDate := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -10)
@@ -310,10 +310,10 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		class4, err := env.CreateTestClass(program, facility1, models.Active, &instructor4.ID)
 		require.NoError(t, err)
 
-		event3, err := env.CreateTestEvent(class3.ID, "")
+		event3, err := env.CreateTestEvent(class3.ID, "", instructor3.ID)
 		require.NoError(t, err)
 
-		event4, err := env.CreateTestEvent(class4.ID, "")
+		event4, err := env.CreateTestEvent(class4.ID, "", instructor4.ID)
 		require.NoError(t, err)
 
 		enrollDate := time.Now().AddDate(0, 0, -10)

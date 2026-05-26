@@ -100,6 +100,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		"duration":        "2h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251101T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20251130T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	resp := NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -195,6 +196,7 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 		"duration":        "2h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251104T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20251130T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	eventResp := NewRequest[*models.ProgramClassEvent](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -210,12 +212,14 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 			"duration":        "2h",
 			"room_id":         roomID,
 			"recurrence_rule": "DTSTART:20260203T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20260228T000000Z",
+			"instructor_id":   instructor.ID,
 		},
 		"closed_event_series": map[string]interface{}{
 			"id":              event.ID,
 			"duration":        "2h",
 			"room_id":         roomID,
 			"recurrence_rule": "DTSTART:20251104T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20251130T000000Z",
+			"instructor_id":   instructor.ID,
 		},
 	}
 
@@ -265,6 +269,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 		"duration":        "1h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251202T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20251220T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	eventResp := NewRequest[*models.ProgramClassEvent](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -326,7 +331,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 	class, err := env.CreateTestClass(program, facility, models.Scheduled, &instructor.ID)
 	require.NoError(t, err)
 
-	_, err = env.CreateTestEvent(class.ID, "")
+	_, err = env.CreateTestEvent(class.ID, "", instructor.ID)
 	require.NoError(t, err)
 
 	updateData := map[string]interface{}{
@@ -341,6 +346,7 @@ func runTestCannotModifyEventsForCompletedClasses(t *testing.T, env *TestEnv, fa
 		"duration":        "1h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20240101T100000Z\nRRULE:FREQ=WEEKLY;COUNT=4",
+		"instructor_id":   instructor.ID,
 	}
 
 	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", class.ID), eventPayload).
@@ -418,6 +424,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 		"duration":        "1h30m",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20251220T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20260131T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	eventResp := NewRequest[*models.ProgramClassEvent](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).
@@ -485,6 +492,7 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 		"duration":        "1h",
 		"room_id":         roomID,
 		"recurrence_rule": "DTSTART:20260108T180000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20260228T000000Z",
+		"instructor_id":   instructor.ID,
 	}
 
 	eventResp := NewRequest[*models.ProgramClassEvent](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", createdClass.ID), eventPayload).

@@ -3,10 +3,14 @@ package handlers
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
@@ -17,8 +21,12 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
+		adminFeatureRoute("GET /api/program-classes/todays-schedule", srv.handleGetTodaysSchedule, axx),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/events/{event_id}", srv.handlePatchEventOverride, axx, resolver),
 		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_override_id}/uncancel", srv.handleUncancelOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/uncancel-series", srv.handleUncancelSeries, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
 	}
@@ -39,6 +47,7 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 			return newInvalidIdServiceError(err, "class_id")
 		}
 	}
+
 	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -57,6 +66,40 @@ func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Reque
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, events)
+}
+
+func (srv *Server) handleGetTodaysSchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	default:
+		facilityId = &args.FacilityID
+	}
+
+	service := services.NewClassesService(srv.Db)
+	items, err := service.GetTodaysSchedule(&args, facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	args.Total = int64(len(items))
+	if !args.All {
+		start := args.CalcOffset()
+		if start < len(items) {
+			end := start + args.PerPage
+			if end > len(items) {
+				end = len(items)
+			}
+			items = items[start:end]
+		} else {
+			items = []models.TodaysScheduleItem{}
+		}
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, items, args.IntoMeta())
 }
 
 func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -102,12 +145,14 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 			return newDatabaseServiceError(err)
 		}
 		eventIDUint := uint(eventId)
+		classIDUint := uint(classID)
 		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
 			RoomID:         *override.RoomID,
 			RecurrenceRule: override.OverrideRrule,
 			Duration:       override.Duration,
 			ExcludeEventID: &eventIDUint,
+			ExcludeClassID: &classIDUint,
 		})
 		if err != nil {
 			return newDatabaseServiceError(err)
@@ -121,6 +166,186 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Override(s) created successfully")
+}
+
+type patchEventOverrideRequest struct {
+	Date         string `json:"date"`
+	StartTime    string `json:"start_time"`
+	IsCancelled  bool   `json:"is_cancelled"`
+	Reason       string `json:"reason"`
+	RoomID       *uint  `json:"room_id"`
+	InstructorID *uint  `json:"instructor_id"`
+	NewDate      string `json:"new_date"`
+	NewStartTime string `json:"new_start_time"`
+	NewEndTime   string `json:"new_end_time"`
+}
+
+func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
+	eventId, err := strconv.Atoi(r.PathValue("event_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event_id")
+	}
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	cannotCreateOverride, err := srv.cannotUpdateEvent(classID)
+	if err != nil {
+		return err
+	}
+	if cannotCreateOverride {
+		return newBadRequestServiceError(errors.New("cannot create an event override for a completed or cancelled class"), "cannot create event override")
+	}
+	var req patchEventOverrideRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if req.Date == "" {
+		return newBadRequestServiceError(errors.New("date is required"), "date is required")
+	}
+	if len(req.Reason) > 255 {
+		return newBadRequestServiceError(errors.New("reason exceeds maximum length of 255 characters"), "reason exceeds maximum length of 255 characters")
+	}
+	if req.InstructorID != nil {
+		class, err := srv.Db.GetClassByID(classID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		name, err := srv.Db.GetInstructorNameByID(*req.InstructorID, class.FacilityID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if name == "" {
+			return newForbiddenServiceError(errors.New("instructor does not belong to this facility"), "instructor not authorized for this facility")
+		}
+	}
+	ctx := srv.getQueryContext(r)
+	event, err := srv.Db.GetEventById(eventId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	eventRule, err := event.GetRRuleWithTimezone(ctx.Timezone)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	// Use GetDTStart() (same as createEventInstances) to get the canonical time.
+	// OrigOptions.Dtstart.In(tz) can give a different hour due to DST on the
+	// DTSTART date vs the target date. GetDTStart() is what the instance generator uses.
+	eventStart := eventRule.GetDTStart()
+	canonicalHour := eventStart.Hour()
+	canonicalMinute := eventStart.Minute()
+
+	buildRRule := func(dateStr string, optionalTime string) (string, error) {
+		dateOnly, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return "", err
+		}
+		hour, minute := canonicalHour, canonicalMinute
+		if optionalTime != "" {
+			parts := strings.Split(optionalTime, ":")
+			if len(parts) == 2 {
+				hour, _ = strconv.Atoi(parts[0])
+				minute, _ = strconv.Atoi(parts[1])
+			}
+		}
+		cleanDate := dateOnly.Format("20060102")
+		return fmt.Sprintf("DTSTART;TZID=%s:%sT%02d%02d00\nRRULE:FREQ=DAILY;COUNT=1",
+			ctx.Timezone, cleanDate, hour, minute), nil
+	}
+
+	originalRRule, err := buildRRule(req.Date, req.StartTime)
+	if err != nil {
+		return newBadRequestServiceError(err, "invalid date format")
+	}
+
+	if req.NewDate != "" {
+		newRRule, err := buildRRule(req.NewDate, req.NewStartTime)
+		if err != nil {
+			return newBadRequestServiceError(err, "invalid new_date format")
+		}
+		newDuration := event.Duration
+		if req.NewStartTime != "" && req.NewEndTime != "" {
+			startParts := strings.Split(req.NewStartTime, ":")
+			endParts := strings.Split(req.NewEndTime, ":")
+			if len(startParts) == 2 && len(endParts) == 2 {
+				sh, _ := strconv.Atoi(startParts[0])
+				sm, _ := strconv.Atoi(startParts[1])
+				eh, _ := strconv.Atoi(endParts[0])
+				em, _ := strconv.Atoi(endParts[1])
+				dur := time.Duration(eh-sh)*time.Hour + time.Duration(em-sm)*time.Minute
+				if dur > 0 {
+					newDuration = dur.String()
+				}
+			}
+		}
+		newRoomID := event.RoomID
+		if req.RoomID != nil {
+			newRoomID = req.RoomID
+		}
+		rescheduleReason := "rescheduled"
+		if req.Reason != "" {
+			rescheduleReason = req.Reason
+		}
+		overrides := []*models.ProgramClassEventOverride{
+			{
+				EventID:       uint(eventId),
+				ClassID:       uint(classID),
+				Duration:      event.Duration,
+				OverrideRrule: originalRRule,
+				IsCancelled:   true,
+				Reason:        rescheduleReason,
+			},
+			{
+				EventID:       uint(eventId),
+				ClassID:       uint(classID),
+				Duration:      newDuration,
+				OverrideRrule: newRRule,
+				IsCancelled:   false,
+				RoomID:        newRoomID,
+			},
+		}
+		if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, overrides); err != nil {
+			return newDatabaseServiceError(err)
+		}
+		return writeJsonResponse(w, http.StatusOK, "Event rescheduled successfully")
+	}
+
+	overrideDuration := event.Duration
+	overrideRRule := originalRRule
+	if req.NewStartTime != "" {
+		overrideRRule, err = buildRRule(req.Date, req.NewStartTime)
+		if err != nil {
+			return newBadRequestServiceError(err, "invalid start time")
+		}
+		if req.NewEndTime != "" {
+			startParts := strings.Split(req.NewStartTime, ":")
+			endParts := strings.Split(req.NewEndTime, ":")
+			if len(startParts) == 2 && len(endParts) == 2 {
+				sh, _ := strconv.Atoi(startParts[0])
+				sm, _ := strconv.Atoi(startParts[1])
+				eh, _ := strconv.Atoi(endParts[0])
+				em, _ := strconv.Atoi(endParts[1])
+				dur := time.Duration(eh-sh)*time.Hour + time.Duration(em-sm)*time.Minute
+				if dur > 0 {
+					overrideDuration = dur.String()
+				}
+			}
+		}
+	}
+	override := &models.ProgramClassEventOverride{
+		EventID:       uint(eventId),
+		ClassID:       uint(classID),
+		Duration:      overrideDuration,
+		OverrideRrule: overrideRRule,
+		IsCancelled:   req.IsCancelled,
+		Reason:        req.Reason,
+		RoomID:        req.RoomID,
+		InstructorID:  req.InstructorID,
+	}
+	if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, []*models.ProgramClassEventOverride{override}); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Override created successfully")
 }
 
 func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -142,11 +367,45 @@ func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Requ
 	log.add("class_id", classID)
 	log.add("event_override_id", id)
 	args := srv.getQueryContext(r)
-	err = srv.WithUserContext(r).DeleteOverrideEvent(&args, id, classID)
+	undoAppliedFuture := r.URL.Query().Get("undo_applied_future") == "true"
+	err = srv.WithUserContext(r).DeleteOverrideEvent(&args, id, classID, undoAppliedFuture)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "Event override(s) deleted successfully")
+}
+
+func (srv *Server) handleUncancelSeries(w http.ResponseWriter, r *http.Request, log sLog) error {
+	eventID, err := strconv.Atoi(r.PathValue("event_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event_id")
+	}
+	var req struct {
+		RestoreDate string `json:"restore_date"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if req.RestoreDate == "" {
+		return newBadRequestServiceError(errors.New("restore date is required"), "restore date is required")
+	}
+	ctx := srv.getQueryContext(r)
+	if err := srv.Db.UncancelEventSeries(&ctx, uint(eventID), req.RestoreDate); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Series uncancelled successfully")
+}
+
+func (srv *Server) handleUncancelOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
+	overrideID, err := strconv.Atoi(r.PathValue("event_override_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "event override ID")
+	}
+	ctx := srv.getQueryContext(r)
+	if err := srv.Db.UncancelOverride(&ctx, uint(overrideID)); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Override uncancelled successfully")
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -222,7 +481,10 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 			return newDatabaseServiceError(err)
 		}
 		var excludeEventID *uint
-		if eventSeriesRequest.EventSeries.ID > 0 {
+		if eventSeriesRequest.ClosedEventSeries.ID > 0 {
+			closedID := eventSeriesRequest.ClosedEventSeries.ID
+			excludeEventID = &closedID
+		} else if eventSeriesRequest.EventSeries.ID > 0 {
 			excludeEventID = &eventSeriesRequest.EventSeries.ID
 		}
 		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
@@ -247,10 +509,11 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	}
 	eventSeriesRequest.EventSeries.ClassID = uint(classID)
 	eventSeriesRequest.ClosedEventSeries.ClassID = uint(classID)
-	events := []models.ProgramClassEvent{
-		eventSeriesRequest.EventSeries,
-		eventSeriesRequest.ClosedEventSeries,
+	var events []models.ProgramClassEvent
+	if eventSeriesRequest.EventSeries.RecurrenceRule != "" {
+		events = append(events, eventSeriesRequest.EventSeries)
 	}
+	events = append(events, eventSeriesRequest.ClosedEventSeries)
 	var maxEvent *models.ProgramClassEvent
 	for i := range allEvents {
 		if maxEvent == nil || allEvents[i].ID > maxEvent.ID {
@@ -324,7 +587,8 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	}
 
 	qryCtx := srv.getQueryContext(r)
-	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year, userId)
+	allInstances := r.URL.Query().Get("all") == "true"
+	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year, userId, allInstances)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

@@ -126,7 +126,11 @@ func init() {
 
 func securityHeadersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Frame-Options", "DENY")
+		if strings.HasPrefix(r.URL.Path, "/api/proxy/") {
+			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		} else {
+			w.Header().Set("X-Frame-Options", "DENY")
+		}
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if os.Getenv("APP_ENV") != "dev" {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
@@ -576,6 +580,19 @@ func writeConflictResponse(w http.ResponseWriter, conflicts []models.RoomConflic
 	resp := models.Resource[[]models.RoomConflict]{
 		Message: "room is already booked during this time",
 		Data:    conflicts,
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return newResponseServiceError(err)
+	}
+	return nil
+}
+
+func writeDeleteConflictResponse(w http.ResponseWriter, message string, blockers models.DeleteBlockingChildren) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+	resp := models.Resource[models.DeleteBlockingChildren]{
+		Message: message,
+		Data:    blockers,
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		return newResponseServiceError(err)

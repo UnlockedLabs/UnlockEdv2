@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,8 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
 		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
+		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
+		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
 		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
 		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
@@ -266,6 +269,52 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 	}
 
 	return writeJsonResponse(w, http.StatusOK, cachedData)
+}
+
+func (srv *Server) handleClassDashboardMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	default:
+		facilityId = &args.FacilityID
+	}
+
+	metrics, err := srv.Db.GetClassDashboardMetrics(&args, facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, metrics)
+}
+
+func (srv *Server) handleFacilityHealthSummary(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facility := r.URL.Query().Get("facility")
+	var facilityID *uint
+	if facility == "all" && claims.canSwitchFacility() {
+		facilityID = nil
+	} else {
+		facilityID = &args.FacilityID
+	}
+
+	days := 3
+	if daysQuery := r.URL.Query().Get("days"); daysQuery != "" {
+		if parsedDays, err := strconv.Atoi(daysQuery); err == nil {
+			days = parsedDays
+		}
+	}
+
+	service := services.NewClassesService(srv.Db)
+	summaries, err := service.GetFacilityHealthSummaries(&args, facilityID, days)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writeJsonResponse(w, http.StatusOK, summaries)
 }
 
 /**

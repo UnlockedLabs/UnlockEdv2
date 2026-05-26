@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/jasper"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -23,21 +24,27 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	return []routeDef{
 		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
 		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		validatedRoute("GET /api/users/{id}/attendance-trend", srv.handleGetUserAttendanceTrend, resolver),
+		validatedRoute("GET /api/users/{id}/notes", srv.handleGetUserNotes, resolver),
+		validatedAdminRoute("POST /api/users/{id}/notes", srv.handleCreateUserNote, FacilityAdminResolver("users", "id")),
 		/* admin */
+		newAdminRoute("GET /api/users/stats", srv.handleGetUserStats),
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
 		newDeptAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
 		validatedAdminRoute("POST /api/users/{id}/student-password", srv.handleResetStudentPassword, func(tx *database.DB, r *http.Request) bool {
-			var role string
-			return tx.WithContext(r.Context()).Model(&models.User{}).Select("role").Where("id = ?", r.PathValue("id")).First(&role).Error == nil &&
-				canResetUserPassword(r.Context().Value(ClaimsKey).(*Claims), models.UserRole(role))
+			role, err := tx.GetUserRoleByID(r.Context(), r.PathValue("id"))
+			return err == nil && canResetUserPassword(r.Context().Value(ClaimsKey).(*Claims), role)
 		}),
 		validatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 		newAdminRoute("POST /api/users/bulk/upload", srv.handleBulkUpload),
 		newAdminRoute("POST /api/users/bulk/create", srv.handleBulkCreate),
+		newAdminRoute("POST /api/users/bulk/reset-password", srv.handleBulkResetPassword),
+		newAdminRoute("POST /api/users/bulk/deactivate", srv.handleBulkDeactivateUsers),
+		newAdminRoute("POST /api/users/bulk/delete", srv.handleBulkDeleteUsers),
 		validatedAdminRoute("POST /api/users/{id}/deactivate", srv.handleDeactivateUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/usage-report", srv.handleGenerateUsageReportPDF, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/attendance-export", srv.handleExportResidentAttendanceCSV, UserRoleResolver("id")),
@@ -78,6 +85,10 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			return newDatabaseServiceError(err)
 		}
 	default:
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() && r.URL.Query().Get("facility_id") == "" {
+			args.FacilityID = 0
+		}
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 		if err != nil {
 			log.add("facility_id", args.FacilityID)
@@ -86,6 +97,26 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
+}
+
+func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var facilityID *uint
+	if fid := r.URL.Query().Get("facility_id"); fid != "" {
+		id, err := strconv.Atoi(fid)
+		if err != nil {
+			return newInvalidIdServiceError(err, "facility ID")
+		}
+		ref := uint(id)
+		facilityID = &ref
+	} else if !claims.canSwitchFacility() {
+		facilityID = &claims.FacilityID
+	}
+	stats, err := srv.Db.GetUserStats(r.Context(), facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, stats)
 }
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
@@ -175,10 +206,10 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	log.add("created_username", reqForm.User.Username)
 	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, reqForm.User.DocID)
 	if userNameExists {
-		return newBadRequestServiceError(err, "userexists")
+		return newBadRequestServiceError(err, "Username already exists")
 	}
 	if docExists {
-		return newBadRequestServiceError(err, "docexists")
+		return newBadRequestServiceError(err, "Doc ID already exists")
 	}
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
 		return unicode.IsLetter(char) || unicode.IsDigit(char)
@@ -367,6 +398,17 @@ func canResetUserPassword(currentUser *Claims, toUpdate models.UserRole) bool {
 	}
 }
 
+func canDeleteUser(currentUser *Claims, toDelete models.UserRole) bool {
+	switch toDelete {
+	case models.DepartmentAdmin:
+		return currentUser.canSwitchFacility()
+	case models.SystemAdmin:
+		return currentUser.Role == toDelete
+	default:
+		return currentUser.isAdmin()
+	}
+}
+
 func validateUser(user *models.User) string {
 	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsNumber(r) }) {
 		return "alphanum"
@@ -489,8 +531,69 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 	}
 	for i := range userPrograms {
 		userPrograms[i].CalculateAttendancePercentage()
+		userPrograms[i].Schedule = models.FormatScheduleFromRRule(userPrograms[i].RecurrenceRule)
 	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
+}
+
+func (srv *Server) handleGetUserAttendanceTrend(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	weeks := 8
+	if wk := r.URL.Query().Get("weeks"); wk != "" {
+		if parsed, err := strconv.Atoi(wk); err == nil && parsed > 0 {
+			weeks = parsed
+		}
+	}
+	service := services.NewUsersService(srv.Db)
+	trends, err := service.GetWeeklyAttendanceTrend(r.Context(), userId, weeks)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, trends)
+}
+
+func (srv *Server) handleGetUserNotes(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	notes, err := srv.Db.GetUserNotes(r.Context(), uint(userId))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, notes)
+}
+
+func (srv *Server) handleCreateUserNote(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var body struct {
+		Note string `json:"note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return newBadRequestServiceError(err, "invalid request body")
+	}
+	if strings.TrimSpace(body.Note) == "" {
+		return newBadRequestServiceError(errors.New("note is required"), "note cannot be empty")
+	}
+	note := &models.UserNote{
+		UserID: uint(userId),
+		Note:   strings.TrimSpace(body.Note),
+	}
+	note.CreateUserID = &claims.UserID
+	if err := srv.Db.CreateUserNote(r.Context(), note); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, "Note added successfully")
 }
 
 func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -697,7 +800,17 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newUnauthorizedServiceError()
 	}
 
-	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, queryCtx.All)
+	allFacilities := claims.canSwitchFacility() || queryCtx.All
+	var classID *uint
+	if cid := r.URL.Query().Get("class_id"); cid != "" {
+		parsed, err := strconv.Atoi(cid)
+		if err != nil {
+			return newInvalidIdServiceError(err, "class_id")
+		}
+		ref := uint(parsed)
+		classID = &ref
+	}
+	csvData, err := srv.Db.GetResidentAttendanceCSVData(r.Context(), uint(userID), claims.FacilityID, allFacilities, classID)
 	if err != nil {
 		log.add("user_id", userID)
 		return newDatabaseServiceError(err)
@@ -708,8 +821,12 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 		return newInternalServerServiceError(err, "Failed to convert attendance data to CSV format")
 	}
 
+	docLabel := strings.TrimSpace(user.DocID)
+	if docLabel == "" {
+		docLabel = fmt.Sprintf("User%d", userID)
+	}
 	date := time.Now().Format("2006-01-02")
-	filename := fmt.Sprintf("Attendance-%s-%s.csv", user.DocID, date)
+	filename := fmt.Sprintf("Attendance-%s-%s.csv", docLabel, date)
 
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
@@ -725,4 +842,220 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 	log.info("Exported resident attendance CSV")
 
 	return nil
+}
+
+func (srv *Server) handleBulkResetPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var req struct {
+		UserIDs []uint `json:"user_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.UserIDs) == 0 {
+		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
+	}
+	var facID uint
+	if !claims.canSwitchFacility() {
+		facID = claims.FacilityID
+	}
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID, models.Student, models.FacilityAdmin, models.DepartmentAdmin)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	type successEntry struct {
+		UserID       uint   `json:"user_id"`
+		Username     string `json:"username"`
+		Name         string `json:"name"`
+		DocID        string `json:"doc_id"`
+		TempPassword string `json:"temp_password"`
+	}
+	type failedEntry struct {
+		UserID   uint   `json:"user_id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Reason   string `json:"reason"`
+	}
+	var successes []successEntry
+	var failures []failedEntry
+	for i := range users {
+		user := &users[i]
+		if !canResetUserPassword(claims, user.Role) {
+			log.add("user_id", user.ID)
+			log.warn("bulk reset: caller not authorized for target role")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "not authorized to reset password for this user"})
+			continue
+		}
+		lockedStatus, err := srv.Db.IsAccountLocked(user.ID)
+		if err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk reset: error checking locked status")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error checking locked status"})
+			continue
+		}
+		if lockedStatus.IsLocked {
+			if err := srv.Db.ResetFailedLoginAttempts(user.ID); err != nil {
+				log.add("user_id", user.ID)
+				log.error("bulk reset: error resetting failed login attempts")
+				failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error resetting failed login attempts"})
+				continue
+			}
+		}
+		newPass, err := user.CreateTempPassword()
+		if err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk reset: error creating temp password")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error creating temp password"})
+			continue
+		}
+		if user.KratosID == "" {
+			if err := srv.HandleCreateUserKratos(user.Username, newPass); err != nil {
+				log.add("user_id", user.ID)
+				log.error("bulk reset: error creating user in kratos")
+				failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error creating identity"})
+				continue
+			}
+		} else {
+			kratosC := claimsFromUser(user)
+			kratosC.PasswordReset = true
+			if err := srv.handleUpdatePasswordKratos(kratosC, newPass, true); err != nil {
+				log.add("user_id", user.ID)
+				log.error("bulk reset: error updating password in kratos")
+				failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error updating password"})
+				continue
+			}
+		}
+		resetPw := models.NewUserAccountHistory(user.ID, models.ResetPassword, &claims.UserID, nil, nil)
+		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), resetPw); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk reset: error inserting account history")
+		}
+		successes = append(successes, successEntry{
+			UserID:       user.ID,
+			Username:     user.Username,
+			Name:         user.NameFirst + " " + user.NameLast,
+			DocID:        user.DocID,
+			TempPassword: newPass,
+		})
+	}
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
+		"successes": successes,
+		"failures":  failures,
+	})
+}
+
+func (srv *Server) handleBulkDeactivateUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var req struct {
+		UserIDs []uint `json:"user_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.UserIDs) == 0 {
+		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
+	}
+	var facID uint
+	if !claims.canSwitchFacility() {
+		facID = claims.FacilityID
+	}
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID, models.Student)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	type failedEntry struct {
+		UserID   uint   `json:"user_id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Reason   string `json:"reason"`
+	}
+	var successCount int
+	var failures []failedEntry
+	for _, user := range users {
+		if err := srv.Db.DeactivateUser(r.Context(), user.ID, &claims.UserID); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk deactivate: error deactivating user")
+			failures = append(failures, failedEntry{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deactivating user"})
+			continue
+		}
+		successCount++
+	}
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
+		"success_count": successCount,
+		"failed_count":  len(failures),
+		"failures":      failures,
+	})
+}
+
+type bulkUserFailure struct {
+	UserID   uint   `json:"user_id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Reason   string `json:"reason"`
+}
+
+func reportMissingUserIDs(requested []uint, found []models.User) []bulkUserFailure {
+	seen := make(map[uint]struct{}, len(found))
+	for _, u := range found {
+		seen[u.ID] = struct{}{}
+	}
+	var missing []bulkUserFailure
+	for _, id := range requested {
+		if _, ok := seen[id]; !ok {
+			missing = append(missing, bulkUserFailure{
+				UserID: id,
+				Reason: "not found or out of scope",
+			})
+		}
+	}
+	return missing
+}
+
+func (srv *Server) handleBulkDeleteUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var req struct {
+		UserIDs []uint `json:"user_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.UserIDs) == 0 {
+		return newBadRequestServiceError(errors.New("no user IDs provided"), "user_ids is required")
+	}
+	var facID uint
+	if !claims.canSwitchFacility() {
+		facID = claims.FacilityID
+	}
+	users, err := srv.Db.GetUsersByIDs(r.Context(), req.UserIDs, facID, models.Student, models.FacilityAdmin, models.DepartmentAdmin)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	var successCount int
+	failures := reportMissingUserIDs(req.UserIDs, users)
+	for _, user := range users {
+		if !canDeleteUser(claims, user.Role) {
+			log.add("user_id", user.ID)
+			log.warn("bulk delete: caller not authorized for target role")
+			failures = append(failures, bulkUserFailure{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "not authorized to delete this user"})
+			continue
+		}
+		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk delete: error deleting identity in kratos")
+			failures = append(failures, bulkUserFailure{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deleting identity"})
+			continue
+		}
+		if err := srv.WithUserContext(r).DeleteUser(int(user.ID)); err != nil {
+			log.add("user_id", user.ID)
+			log.error("bulk delete: error deleting user")
+			failures = append(failures, bulkUserFailure{UserID: user.ID, Username: user.Username, Name: user.NameFirst + " " + user.NameLast, Reason: "error deleting user"})
+			continue
+		}
+		successCount++
+	}
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
+		"success_count": successCount,
+		"failed_count":  len(failures),
+		"failures":      failures,
+	})
 }

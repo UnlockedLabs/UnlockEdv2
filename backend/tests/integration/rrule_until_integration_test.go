@@ -36,7 +36,7 @@ func TestClassCompletedAddsUntilDate(t *testing.T) {
 	require.NoError(t, err)
 
 	indefiniteRRule := "DTSTART:20240101T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH"
-	event, err := env.CreateTestEventWithRRule(class.ID, indefiniteRRule)
+	event, err := env.CreateTestEventWithRRule(class.ID, indefiniteRRule, instructor.ID)
 	require.NoError(t, err)
 
 	originalRule, err := env.GetEventRecurrenceRule(event.ID)
@@ -94,7 +94,7 @@ func TestClassCancelledAddsUntilDate(t *testing.T) {
 	require.NoError(t, err)
 
 	indefiniteRRule := "DTSTART:20240715T150000Z\nRRULE:FREQ=DAILY;INTERVAL=2"
-	event, err := env.CreateTestEventWithRRule(class.ID, indefiniteRRule)
+	event, err := env.CreateTestEventWithRRule(class.ID, indefiniteRRule, instructor.ID)
 	require.NoError(t, err)
 
 	originalRule, err := env.GetEventRecurrenceRule(event.ID)
@@ -151,10 +151,10 @@ func TestMultipleEventsGetUntilDate(t *testing.T) {
 	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
 
-	event1, err := env.CreateTestEventWithRRule(class.ID, "DTSTART:20240721T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR")
+	event1, err := env.CreateTestEventWithRRule(class.ID, "DTSTART:20240721T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR", instructor.ID)
 	require.NoError(t, err)
 
-	event2, err := env.CreateTestEventWithRRule(class.ID, "DTSTART:20240722T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH")
+	event2, err := env.CreateTestEventWithRRule(class.ID, "DTSTART:20240722T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH", instructor.ID)
 	require.NoError(t, err)
 
 	rule1, err := env.GetEventRecurrenceRule(event1.ID)
@@ -226,7 +226,7 @@ func TestExistingUntilDateReplaced(t *testing.T) {
 	existingUntilDate := src.FormatDateForUntil(futureDate)
 	ruleWithExistingUntil := fmt.Sprintf("DTSTART:20240721T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=%s", existingUntilDate)
 
-	event, err := env.CreateTestEventWithRRule(class.ID, ruleWithExistingUntil)
+	event, err := env.CreateTestEventWithRRule(class.ID, ruleWithExistingUntil, instructor.ID)
 	require.NoError(t, err)
 
 	originalRule, err := env.GetEventRecurrenceRule(event.ID)

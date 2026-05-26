@@ -35,22 +35,54 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) AS total_enrollments,
 		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
 		CASE
-			WHEN COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) = 0 THEN 0
-			WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN 1 END) = 0
-				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END)
-			THEN 100
-			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(CASE WHEN pce.enrolled_at IS NOT NULL THEN 1 END) * 100
+			WHEN COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) = 0 THEN 0
+			ELSE COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrollment_status = 'Completed' THEN 1 END) * 1.0
+				/ COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) * 100
 		END AS completion_rate
 	`
 
-	if err := db.Table("program_class_enrollments pce").
+	tx := db.Table("program_class_enrollments pce").
 		Select(query).
 		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
-		Where("pc.program_id = ?", programID).
-		Where("pc.facility_id = ?", facilityId).
-		Scan(&metrics).Error; err != nil {
+		Where("pc.program_id = ?", programID)
+	if facilityId != 0 {
+		tx = tx.Where("pc.facility_id = ?", facilityId)
+	}
+
+	if err := tx.Scan(&metrics).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
+
+	partialAttendanceSQL := buildPartialAttendanceSQL(db.Name(), "pcea")
+	attendanceQuery := fmt.Sprintf(`
+		SELECT
+			COALESCE(SUM(
+				CASE
+					WHEN pcea.attendance_status = 'present' THEN 1
+					WHEN pcea.attendance_status = 'partial' THEN %s
+					ELSE 0
+				END
+			) * 100.0 /
+				NULLIF(COUNT(CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END), 0), 0) AS attendance_rate
+		FROM program_classes pc
+		LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+		WHERE pc.program_id = ?`, partialAttendanceSQL)
+
+	attendanceArgs := []any{programID}
+	if facilityId != 0 {
+		attendanceQuery += " AND pc.facility_id = ?"
+		attendanceArgs = append(attendanceArgs, facilityId)
+	}
+
+	var attendanceResult struct {
+		AttendanceRate float64 `json:"attendance_rate"`
+	}
+	if err := db.Raw(attendanceQuery, attendanceArgs...).Scan(&attendanceResult).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_event_attendance")
+	}
+	metrics.AttendanceRate = attendanceResult.AttendanceRate
 	return &metrics, nil
 }
 
@@ -80,9 +112,9 @@ func (db *DB) GetProgramActiveClassFacilities(ctx context.Context, id uint) ([]s
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
-		Preload("Facilities").
 		Preload("ProgramTypes").
-		Preload("ProgramCreditTypes")
+		Preload("ProgramCreditTypes").
+		Preload("FacilitiesPrograms.Facility")
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_types t ON t.program_id = programs.id").Where("t.id IN (?)", args.Tags)
 	}
@@ -97,6 +129,13 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	}
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
+	}
+	for i := range content {
+		for _, fp := range content[i].FacilitiesPrograms {
+			if fp.Facility != nil {
+				content[i].Facilities = append(content[i].Facilities, *fp.Facility)
+			}
+		}
 	}
 	return content, nil
 }
@@ -343,10 +382,30 @@ func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id uint) ([]stri
 }
 
 func (db *DB) DeleteProgram(id int) error {
-	if err := db.Delete(&models.Program{}, id).Error; err != nil {
-		return newDeleteDBError(err, "programs")
-	}
-	return nil
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("class_id IN (SELECT id FROM program_classes WHERE program_id = ?)", id).
+			Delete(&models.ProgramClassEvent{}).Error; err != nil {
+			return newDeleteDBError(err, "program_class_events")
+		}
+		if err := tx.Exec(`DELETE FROM change_log_entries
+			WHERE (table_name = 'programs' AND parent_ref_id = ?)
+			   OR (table_name = 'program_classes'
+			       AND parent_ref_id IN (SELECT id FROM program_classes WHERE program_id = ?))`,
+			id, id).Error; err != nil {
+			return newDeleteDBError(err, "change_log_entries")
+		}
+		if err := tx.Exec(`DELETE FROM program_classes_history
+			WHERE (table_name = 'program_classes'
+			       AND parent_ref_id IN (SELECT id FROM program_classes WHERE program_id = ?))
+			   OR (table_name = 'programs' AND parent_ref_id = ?)`,
+			id, id).Error; err != nil {
+			return newDeleteDBError(err, "program_classes_history")
+		}
+		if err := tx.Delete(&models.Program{}, id).Error; err != nil {
+			return newDeleteDBError(err, "programs")
+		}
+		return nil
+	})
 }
 
 func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
@@ -567,15 +626,19 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 
 	baseQuery := db.WithContext(args.Ctx).Model(&models.Program{})
 
+	facilityScoped := adminRole == models.FacilityAdmin || adminRole == models.SystemAdmin
 	var selectFields string
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		selectFields = `
 			programs.id AS program_id,
 			programs.name AS program_name,
+			programs.description AS description,
 			programs.archived_at AS archived_at,
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
+			mr.total_active_classes AS total_active_classes,
+			mr.total_capacity AS total_capacity,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -587,11 +650,14 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		selectFields = `
 			programs.id AS program_id,
 			programs.name AS program_name,
+			programs.description AS description,
 			programs.archived_at AS archived_at,
 			mr.total_active_facilities AS total_active_facilities,
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
+			mr.total_active_classes AS total_active_classes,
+			mr.total_capacity AS total_capacity,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -602,20 +668,27 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 
 	var currentMetricsSubquery string
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		currentMetricsSubquery = fmt.Sprintf(`
 			LEFT JOIN (
 				SELECT
 					p.id as program_id,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
-					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
+					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
+					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
+					class_stats.total_capacity
 				FROM programs p
 				JOIN facilities_programs fp ON fp.program_id = p.id
 				LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = %d
 				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
+				LEFT JOIN (
+					SELECT pc2.program_id, COALESCE(SUM(CASE WHEN pc2.status = 'Active' THEN pc2.capacity ELSE 0 END), 0) AS total_capacity
+					FROM program_classes pc2
+					GROUP BY pc2.program_id
+				) AS class_stats ON class_stats.program_id = p.id
 				WHERE fp.facility_id = %d
-				GROUP BY p.id
+				GROUP BY p.id, class_stats.total_capacity
 			) AS mr ON mr.program_id = programs.id
 		`, args.FacilityID, args.FacilityID)
 	} else {
@@ -626,12 +699,19 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN p.is_active = true AND p.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
-					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes
+					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
+					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
+					class_stats.total_capacity
 				FROM programs p
 				LEFT JOIN facilities_programs fp ON fp.program_id = p.id
 				LEFT JOIN program_classes pc ON pc.program_id = p.id
 				LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
-				GROUP BY p.id
+				LEFT JOIN (
+					SELECT pc2.program_id, COALESCE(SUM(CASE WHEN pc2.status = 'Active' THEN pc2.capacity ELSE 0 END), 0) AS total_capacity
+					FROM program_classes pc2
+					GROUP BY pc2.program_id
+				) AS class_stats ON class_stats.program_id = p.id
+				GROUP BY p.id, class_stats.total_capacity
 			) AS mr ON mr.program_id = programs.id
 		`
 	}
@@ -645,7 +725,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 
 	var facilityFilterForRates string
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		facilityFilterForRates = fmt.Sprintf("AND pc.facility_id = %d", args.FacilityID)
 	}
 
@@ -688,7 +768,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			GROUP BY program_id
 		) AS pct ON pct.program_id = programs.id`)
 
-	if adminRole == models.FacilityAdmin {
+	if facilityScoped {
 		tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", args.FacilityID)
 	}
 
@@ -714,7 +794,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			op, num := parseOperatorAndValue(val)
 			tx = tx.Where(fmt.Sprintf("mr.total_classes %s ?", op), num)
 		case "mr.total_active_facilities":
-			if adminRole != models.FacilityAdmin {
+			if !facilityScoped {
 				op, num := parseOperatorAndValue(val)
 				tx = tx.Where(fmt.Sprintf("mr.total_active_facilities %s ?", op), num)
 			}
@@ -764,7 +844,10 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		tx = tx.Order(args.OrderClause("programs.created_at desc"))
 	}
 
-	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
+	if !args.All {
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
+	}
+	if err := tx.Scan(&programsTable).Error; err != nil {
 		return programsTable, newGetRecordsDBError(err, "programs table")
 	}
 
@@ -801,47 +884,48 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 		Joins("JOIN facilities f ON f.id = u.facility_id").
 		Joins("LEFT JOIN program_completions c on c.program_class_id = pc.id and c.user_id = u.id").
 		Joins("LEFT JOIN program_class_events pce on pce.class_id = pc.id").
+		Joins("LEFT JOIN users iu ON iu.id = pce.instructor_id").
 		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id = pce.id AND pca.user_id = u.id").
 		Select(`
-	           f.name AS facility_name,
-	           p.name AS program_name,
-	           pc.name AS class_name,
-		       pc.instructor_name AS instructor_name,
-			   u.id as unlock_ed_id,
-	           u.doc_id AS resident_id,
+				f.name AS facility_name,
+				p.name AS program_name,
+				pc.name AS class_name,
+				COALESCE(iu.name_first || ' ' || iu.name_last, '') AS instructor_name,
+				u.id as unlock_ed_id,
+				u.doc_id AS resident_id,
 				u.name_last AS name_last,
 				u.name_first AS name_first,
-	           pe.created_at as enrollment_date,
-			   COALESCE(
-	           CASE
-	               WHEN c.id IS NOT NULL THEN c.created_at
-	               WHEN pe.enrollment_status IN (?) THEN pe.updated_at
-	               END,
-	               pc.end_dt
+				pe.created_at as enrollment_date,
+				COALESCE(
+				CASE
+					WHEN c.id IS NOT NULL THEN c.created_at
+					WHEN pe.enrollment_status IN (?) THEN pe.updated_at
+					END,
+					pc.end_dt
 	 		) as end_date,
-	           pe.enrollment_status AS end_status,
-	           CASE
-	               WHEN COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END) = 0 THEN 0
-	               ELSE
-	                   COALESCE(
-	                       SUM(
-							   CASE
-								   WHEN pca.attendance_status = 'present' THEN 1
-								   WHEN pca.attendance_status = 'partial' THEN `+partialAttendanceSQL+`
-								   ELSE 0
-							   END
-						   ) * 100.0 /
-	                       NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
-	                       0
-	                   )
-	           END AS attendance_percentage`, statuses).
+				pe.enrollment_status AS end_status,
+				CASE
+					WHEN COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END) = 0 THEN 0
+					ELSE
+						COALESCE(
+							SUM(
+								CASE
+									WHEN pca.attendance_status = 'present' THEN 1
+									WHEN pca.attendance_status = 'partial' THEN `+partialAttendanceSQL+`
+									ELSE 0
+								END
+							) * 100.0 /
+							NULLIF(COUNT(CASE WHEN pca.attendance_status IS NOT NULL AND pca.attendance_status != '' THEN 1 END), 0),
+							0
+						)
+				END AS attendance_percentage`, statuses).
 		Where(`
 			(
 				c.id IS NOT NULL
 				OR pe.enrollment_status IN (?)
 			)
 		`, statuses).
-		Group("u.id, u.doc_id, f.name, p.name, pc.name,pc.instructor_name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
+		Group("u.id, u.doc_id, f.name, p.name, pc.name, iu.name_first, iu.name_last, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at, pc.end_dt").
 		Order("f.name ASC, p.name ASC, pc.name ASC, end_date DESC")
 
 	if !args.All {

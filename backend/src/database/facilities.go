@@ -22,6 +22,34 @@ func (db *DB) GetAllFacilities(page, itemsPerPage int) (int64, []models.Facility
 	return total, facilities, nil
 }
 
+func (db *DB) GetAllFacilitiesWithStats(args *models.QueryContext) ([]models.FacilityWithStats, error) {
+	if err := db.Model(&models.Facility{}).Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facilities")
+	}
+	const query = `SELECT
+			f.id, f.name, f.timezone, f.created_at, f.updated_at,
+			COUNT(DISTINCT CASE WHEN p.is_active = true AND p.archived_at IS NULL AND p.deleted_at IS NULL THEN p.id END) AS active_programs,
+			COUNT(DISTINCT CASE WHEN pc.status IN ('Active') AND pc.archived_at IS NULL AND pc.deleted_at IS NULL THEN pc.id END) AS active_classes,
+			COUNT(DISTINCT CASE WHEN u.role = 'student' AND u.deleted_at IS NULL AND u.deactivated_at IS NULL THEN u.id END) AS total_residents
+		FROM facilities f
+		LEFT JOIN facilities_programs fp ON fp.facility_id = f.id
+			AND fp.deleted_at IS NULL
+		LEFT JOIN programs p ON p.id = fp.program_id
+			AND p.deleted_at IS NULL
+		LEFT JOIN program_classes pc ON pc.facility_id = f.id
+			AND pc.deleted_at IS NULL
+		LEFT JOIN users u ON u.facility_id = f.id
+		WHERE f.deleted_at IS NULL
+		GROUP BY f.id, f.name, f.timezone, f.created_at, f.updated_at
+		ORDER BY f.name ASC
+	`
+	var results []models.FacilityWithStats
+	if err := db.Raw(query).Offset(args.CalcOffset()).Limit(args.PerPage).Scan(&results).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facilities")
+	}
+	return results, nil
+}
+
 func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {
 	var facility models.Facility
 	if err := db.Where("id = ?", fmt.Sprintf("%d", id)).First(&facility).Error; err != nil {

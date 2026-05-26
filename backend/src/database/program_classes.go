@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
 	"gorm.io/gorm"
@@ -38,7 +39,11 @@ func parseDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.RoomRef").Preload("Enrollments").Preload("Program").Preload("Instructor").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Events.Overrides.Instructor").Preload("Events.Overrides.RoomRef").Preload("Events.RoomRef").
+		Preload("Events.Instructor").Preload("Enrollments", func(tx *gorm.DB) *gorm.DB {
+		return tx.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+	}).
+		Preload("Program").Preload("Facility").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments, completed int
@@ -57,16 +62,45 @@ func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 }
 
 func (db *DB) GetClassesForFacility(args *models.QueryContext) ([]models.ProgramClass, error) {
+	return db.GetClasses(args, &args.FacilityID)
+}
+
+func (db *DB) GetClasses(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
 	content := []models.ProgramClass{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{}).Where("facility_id = ?", args.FacilityID)
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramClass{}).Where("archived_at IS NULL")
+	if facilityID != nil {
+		tx = tx.Where("facility_id = ?", *facilityID)
+	}
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ?", args.SearchQuery())
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
 	}
-	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
+
+	tx = tx.Preload("Events").Preload("Events.RoomRef").
+		Preload("Enrollments", func(db *gorm.DB) *gorm.DB {
+			return db.Joins("JOIN users ON users.id = program_class_enrollments.user_id AND users.deleted_at IS NULL")
+		}).
+		Preload("Program").Preload("Facility")
+	if !args.All {
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
+	}
+	if err := tx.Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program classes")
+	}
+	for i := range content {
+		var enrollments, completed int
+		for _, e := range content[i].Enrollments {
+			switch e.EnrollmentStatus {
+			case models.Enrolled:
+				enrollments++
+			case models.EnrollmentCompleted:
+				completed++
+			}
+		}
+		content[i].Enrolled = int64(enrollments)
+		content[i].Completed = int64(completed)
 	}
 	return content, nil
 }
@@ -133,41 +167,52 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 		}
 	}
 
-	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled", "instructor"}
+	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "facility_id", "start_dt", "end_dt", "program", "enrolled", "completed", "archived_at", "instructor", "instructor_id"}
 	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, models.DerefUint(content.UpdateUserID), ignoredFieldNames)
 	allChanges = append(allChanges, classLogEntries...)
 
-	originalInstructorID := existing.InstructorID
+	existingID := existing.ID
 
 	var needsRoomUpdate bool
 	var newRoomID *uint
 	var eventID uint
-	if len(content.Events) > 0 && len(existing.Events) > 0 && content.Events[0].RoomID != nil {
-		existingRoomID := existing.Events[0].RoomID
-		if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
-			needsRoomUpdate = true
-			newRoomID = content.Events[0].RoomID
-			eventID = existing.Events[0].ID
+	var needsScheduleUpdate bool
+	var newRecurrenceRule string
+	var newDuration string
+	if len(content.Events) > 0 && len(existing.Events) > 0 {
+		eventID = existing.Events[0].ID
+		if content.Events[0].RoomID != nil {
+			existingRoomID := existing.Events[0].RoomID
+			if existingRoomID == nil || *content.Events[0].RoomID != *existingRoomID {
+				needsRoomUpdate = true
+				newRoomID = content.Events[0].RoomID
+			}
+		}
+		if content.Events[0].RecurrenceRule != "" && content.Events[0].RecurrenceRule != existing.Events[0].RecurrenceRule {
+			needsScheduleUpdate = true
+			newRecurrenceRule = content.Events[0].RecurrenceRule
+		}
+		if content.Events[0].Duration != "" && content.Events[0].Duration != existing.Events[0].Duration {
+			needsScheduleUpdate = true
+			newDuration = content.Events[0].Duration
 		}
 	}
 
+	originalStatus := existing.Status
+
 	models.UpdateStruct(existing, content)
+	existing.ID = existingID
 
-	instructorIDChanged := false
-	if originalInstructorID == nil && content.InstructorID != nil {
-		instructorIDChanged = true
-	} else if originalInstructorID != nil && content.InstructorID == nil {
-		instructorIDChanged = true
-	} else if originalInstructorID != nil && content.InstructorID != nil && *originalInstructorID != *content.InstructorID {
-		instructorIDChanged = true
+	if content.UpdateInstructor {
+		if err := trans.Model(&models.ProgramClassEvent{}).
+			Where("class_id = ?", existing.ID).
+			Update("instructor_id", content.InstructorID).Error; err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "program class event instructor")
+		}
 	}
 
-	if instructorIDChanged {
-		existing.InstructorID = content.InstructorID
-		existing.InstructorName = content.InstructorName
-	}
-
-	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Updates(&existing).Error; err != nil {
+	if err := trans.Session(&gorm.Session{FullSaveAssociations: false}).Model(&models.ProgramClass{}).Where("id = ?", existing.ID).Updates(existing).Error; err != nil {
 		trans.Rollback()
 		return nil, nil, newUpdateDBError(err, "program classes")
 	}
@@ -178,6 +223,100 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 			return nil, nil, newUpdateDBError(err, "program class event room")
 		}
 		existing.Events[0].RoomID = newRoomID
+		var roomName string
+		if newRoomID != nil {
+			var room models.Room
+			if err := trans.Select("name").First(&room, *newRoomID).Error; err == nil {
+				roomName = room.Name
+			}
+		}
+		allChanges = append(allChanges, *models.NewChangeLogEntry("program_classes", "event_room_changed", nil, &roomName, existing.ID, models.DerefUint(content.UpdateUserID)))
+	}
+
+	if needsScheduleUpdate {
+		if newRecurrenceRule != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("recurrence_rule", newRecurrenceRule).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newUpdateDBError(err, "program class event recurrence rule")
+			}
+		}
+		if newDuration != "" {
+			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", eventID).Update("duration", newDuration).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newUpdateDBError(err, "program class event duration")
+			}
+		}
+		oldRule := existing.Events[0].RecurrenceRule
+		allChanges = append(allChanges, *models.NewChangeLogEntry("program_classes", "event_rescheduled_series", &oldRule, &newRecurrenceRule, existing.ID, models.DerefUint(content.UpdateUserID)))
+	}
+
+	newStatus := existing.Status
+	if newStatus != originalStatus && (newStatus == models.Completed || newStatus == models.Cancelled) {
+		completionTime := time.Now().UTC()
+		if err := db.UpdateClassEventRRuleUntilDate(trans, []int{id}, completionTime); err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "updating class event rrule until date")
+		}
+
+		var enrollmentStatus models.ProgramEnrollmentStatus
+		if newStatus == models.Cancelled {
+			enrollmentStatus = models.EnrollmentCancelled
+		} else {
+			enrollmentStatus = models.EnrollmentCompleted
+		}
+
+		if err := trans.
+			Model(&models.ProgramClassEnrollment{}).
+			Where("class_id = ? AND enrollment_status = ?", id, models.Enrolled).
+			Set("class_id", id).
+			Update("enrollment_status", enrollmentStatus).
+			Error; err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "class enrollment statuses")
+		}
+
+		if newStatus == models.Completed {
+			var completedEnrollments []models.ProgramClassEnrollment
+			if err := trans.
+				Preload("User.Facility").
+				Preload("Class.Program.ProgramCreditTypes").
+				Preload("Class.FacilityProg").
+				Where("class_id = ? AND enrollment_status = ?", id, models.EnrollmentCompleted).
+				Find(&completedEnrollments).Error; err != nil {
+				trans.Rollback()
+				return nil, nil, newNotFoundDBError(err, "fetching completed enrollments")
+			}
+
+			if len(completedEnrollments) > 0 {
+				var admin models.User
+				if err := trans.First(&admin, "id = ?", models.DerefUint(content.UpdateUserID)).Error; err != nil {
+					trans.Rollback()
+					return nil, nil, newNotFoundDBError(err, "admin user")
+				}
+
+				completions := make([]models.ProgramCompletion, 0, len(completedEnrollments))
+				for _, enrollment := range completedEnrollments {
+					completions = append(completions, models.ProgramCompletion{
+						ProgramClassID:      enrollment.ClassID,
+						FacilityName:        enrollment.User.Facility.Name,
+						ProgramName:         enrollment.Class.Program.Name,
+						ProgramOwner:        enrollment.Class.GetProgramOwnerOrEmpty(),
+						ProgramID:           enrollment.Class.ProgramID,
+						AdminEmail:          admin.Email,
+						ProgramClassStartDt: enrollment.Class.StartDt,
+						CreditType:          enrollment.Class.Program.GetUniqueCreditTypeString(),
+						ProgramClassName:    enrollment.Class.Name,
+						UserID:              enrollment.UserID,
+						EnrolledOnDt:        enrollment.CreatedAt,
+					})
+				}
+
+				if err := trans.Create(&completions).Error; err != nil {
+					trans.Rollback()
+					return nil, nil, newCreateDBError(err, "enrollment completions")
+				}
+			}
+		}
 	}
 
 	if len(allChanges) > 0 {
@@ -226,15 +365,22 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	query := db.WithContext(args.Ctx).Table("program_classes ps").
 		Select(`ps.*,
 		fac.name as facility_name,
-		count(pse.id) as enrolled
+		count(CASE WHEN pse.enrollment_status = 'Enrolled' THEN 1 END) as enrolled,
+		count(CASE WHEN pse.enrollment_status = 'Completed' THEN 1 END) as completed,
+		count(CASE WHEN pse.enrollment_status IN ('Completed', 'Incomplete: Withdrawn', 'Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transfered') THEN 1 END) as historical_enrollments
 		`).
 		Joins(`join facilities fac on fac.id = ps.facility_id
 			AND fac.deleted_at IS NULL`).
-		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id
-			and enrollment_status = 'Enrolled'`). //TODO Enrolled may change here
-		Where(`ps.program_id = ?
-			and ps.facility_id = ?`, id, args.FacilityID).
-		Group("ps.id,fac.name")
+		Joins(`left outer join program_class_enrollments pse on pse.class_id = ps.id`). //TODO Enrollment statuses may change here
+		Where("ps.program_id = ?", id)
+
+	if args.Params.Get("facility_id") != "" {
+		query = query.Where("ps.facility_id = ?", args.FacilityID)
+	} else if !args.CanSwitchFacility {
+		query = query.Where("ps.facility_id = ?", args.FacilityID)
+	}
+
+	query = query.Group("ps.id,fac.name")
 	if args.Search != "" {
 		query = query.Where("LOWER(ps.name) LIKE ? OR LOWER(ps.description) LIKE ?", args.SearchQuery(), args.SearchQuery())
 	}
@@ -250,7 +396,12 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		classIDs = append(classIDs, detail.ID)
 	}
 	events := []models.ProgramClassEvent{}
-	if err := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id IN (?)", classIDs).Find(&events).Error; err != nil {
+	if err := db.Model(&models.ProgramClassEvent{}).
+		Preload("RoomRef").
+		Preload("Overrides").
+		Preload("Overrides.RoomRef").
+		Where("class_id IN (?)", classIDs).
+		Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 	eventMap := make(map[uint][]models.ProgramClassEvent)
@@ -367,8 +518,7 @@ func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint) (string,
 	err := db.Table("users").
 		Select("COALESCE(name_first || ' ' || name_last, username)").
 		Where("id = ? AND facility_id = ? AND role IN ?",
-			instructorID, facilityID,
-			[]models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}).
+			instructorID, facilityID, []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}).
 		Scan(&instructorName).Error
 	if err != nil {
 		return "", err
@@ -390,7 +540,7 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 					0 as upcoming_sessions,
 					0 as cancelled_sessions`, models.Enrolled).
 			Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
-			Where("pc.instructor_id IS NULL AND pc.facility_id = ?", facilityID).
+			Where("NOT EXISTS (SELECT 1 FROM program_class_events WHERE class_id = pc.id AND instructor_id IS NOT NULL) AND pc.facility_id = ?", facilityID).
 			Where("pc.status != ?", models.Cancelled).
 			Group("pc.id, pc.name").
 			Order("pc.name")
@@ -403,7 +553,7 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 					0 as upcoming_sessions,
 					0 as cancelled_sessions`, models.Enrolled).
 			Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
-			Where("pc.instructor_id = ? AND pc.facility_id = ?", instructorID, facilityID).
+			Where("EXISTS (SELECT 1 FROM program_class_events WHERE class_id = pc.id AND instructor_id = ?) AND pc.facility_id = ?", instructorID, facilityID).
 			Where("pc.status != ?", models.Cancelled).
 			Group("pc.id, pc.name").
 			Order("pc.name")
@@ -419,7 +569,7 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 	}
 
 	for i := range classes {
-		totalSessions, upcomingSessions, cancelledSessions, err := db.calculateSessionCounts(classes[i].ID, start, end)
+		totalSessions, upcomingSessions, cancelledSessions, sessionDates, err := db.calculateSessionCounts(classes[i].ID, start, end)
 		if err != nil {
 			return nil, err
 		}
@@ -427,12 +577,35 @@ func (db *DB) GetClassesByInstructor(instructorID, facilityID int, startDate, en
 		classes[i].SessionCount = totalSessions
 		classes[i].UpcomingSessions = upcomingSessions
 		classes[i].CancelledSessions = cancelledSessions
+		classes[i].SessionDates = sessionDates
+
+		var event struct {
+			RecurrenceRule string `gorm:"column:recurrence_rule"`
+			Duration       string `gorm:"column:duration"`
+			RoomName       string `gorm:"column:room_name"`
+		}
+		db.Table("program_class_events pce").
+			Select("pce.recurrence_rule, pce.duration, COALESCE(r.name, '') as room_name").
+			Joins("LEFT JOIN rooms r ON r.id = pce.room_id").
+			Where("pce.class_id = ?", classes[i].ID).
+			Order("pce.created_at ASC").
+			Limit(1).
+			Scan(&event)
+
+		if event.RecurrenceRule != "" {
+			rule, rErr := rrule.StrToRRule(event.RecurrenceRule)
+			if rErr == nil {
+				classes[i].StartTime = rule.GetDTStart().Format("15:04")
+			}
+		}
+		classes[i].Duration = event.Duration
+		classes[i].Room = event.RoomName
 	}
 
 	return classes, nil
 }
 
-func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) (int, int, int, error) {
+func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) (int, int, int, []string, error) {
 
 	var events []struct {
 		models.ProgramClassEvent
@@ -440,10 +613,11 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 	}
 
 	if err := db.Preload("Overrides").Where("class_id = ?", classID).Find(&events).Error; err != nil {
-		return 0, 0, 0, newGetRecordsDBError(err, "class events")
+		return 0, 0, 0, nil, newGetRecordsDBError(err, "class events")
 	}
 
 	var totalSessions, upcomingSessions, cancelledSessions int
+	var sessionDates []string
 
 	for _, event := range events {
 		rule, err := rrule.StrToRRule(event.RecurrenceRule)
@@ -474,8 +648,10 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 
 		actualUpcoming := 0
 		for _, occurrence := range occurrences {
-			if !cancelledDates[occurrence.Format("2006-01-02")] {
+			dateStr := occurrence.Format("2006-01-02")
+			if !cancelledDates[dateStr] {
 				actualUpcoming++
+				sessionDates = append(sessionDates, dateStr)
 			}
 		}
 		upcomingSessions += actualUpcoming
@@ -483,7 +659,7 @@ func (db *DB) calculateSessionCounts(classID int, startDate, endDate time.Time) 
 		cancelledSessions += cancelledInDateRange
 	}
 
-	return totalSessions, upcomingSessions, cancelledSessions, nil
+	return totalSessions, upcomingSessions, cancelledSessions, sessionDates, nil
 }
 
 func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facilityID int, claims BulkCancelClaims) (*models.BulkCancelSessionsResponse, error) {
@@ -519,12 +695,12 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		query = tx.Table("program_class_events pce").
 			Select("pce.*").
 			Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
-			Where("pc.instructor_id IS NULL AND pc.facility_id = ?", facilityID)
+			Where("pce.instructor_id IS NULL AND pc.facility_id = ?", facilityID)
 	} else {
 		query = tx.Table("program_class_events pce").
 			Select("pce.*").
 			Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
-			Where("pc.instructor_id = ? AND pc.facility_id = ?", req.InstructorID, facilityID)
+			Where("pce.instructor_id = ? AND pc.facility_id = ?", req.InstructorID, facilityID)
 	}
 
 	if err := query.Find(&baseEvents).Error; err != nil {
@@ -801,4 +977,22 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 	}
 
 	return response, nil
+}
+
+func (db *DB) DeleteClass(id int) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("class_id = ?", id).Delete(&models.ProgramClassEvent{}).Error; err != nil {
+			return newDeleteDBError(err, "program_class_events")
+		}
+		if err := tx.Exec(`DELETE FROM change_log_entries WHERE table_name = 'program_classes' AND parent_ref_id = ?`, id).Error; err != nil {
+			return newDeleteDBError(err, "change_log_entries")
+		}
+		if err := tx.Exec(`DELETE FROM program_classes_history WHERE table_name = 'program_classes' AND parent_ref_id = ?`, id).Error; err != nil {
+			return newDeleteDBError(err, "program_classes_history")
+		}
+		if err := tx.Delete(&models.ProgramClass{}, "id = ?", id).Error; err != nil {
+			return newDeleteDBError(err, "program class")
+		}
+		return nil
+	})
 }

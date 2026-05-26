@@ -50,6 +50,7 @@ func TestSchedulingConflictDetection(t *testing.T) {
 		Duration:       "1h",
 		RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR;DTSTART=20240101T100000Z", // UTC
 		RoomID:         &room.ID,
+		InstructorID:   &instructorA.ID,
 	}
 	err = env.DB.Create(&eventA).Error
 	require.NoError(t, err)
@@ -60,6 +61,7 @@ func TestSchedulingConflictDetection(t *testing.T) {
 		Duration:       "1h",
 		RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR;DTSTART=20240101T103000Z", // UTC, overlaps by 30 mins
 		RoomID:         &room.ID,
+		InstructorID:   &instructorB.ID,
 	}
 	err = env.DB.Create(&eventB).Error
 	require.NoError(t, err)

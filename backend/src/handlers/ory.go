@@ -48,6 +48,9 @@ func (srv *Server) deleteAllKratosIdentities(ctx context.Context) error {
 }
 
 func (srv *Server) deleteIdentityInKratos(ctx context.Context, kratosId *string) error {
+	if kratosId == nil || *kratosId == "" {
+		return nil
+	}
 	resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(ctx, *kratosId).Execute()
 	if err != nil {
 		log.WithField("identity", kratosId).Errorln("unable to delete identity from Ory Kratos")
@@ -204,6 +207,10 @@ func (srv *Server) updateFacilityInKratosIdentity(userID int, transFacilityID in
 	if err != nil {
 		log.Errorf("error retrieving user with id %d: %v", userID, err)
 		return err
+	}
+	if user.KratosID == "" {
+		log.Errorf("user %d has no Kratos identity ID, skipping identity update", userID)
+		return nil
 	}
 	identity, resp, err := srv.OryClient.IdentityAPI.GetIdentity(ctx, user.KratosID).Execute()
 	if err != nil {
