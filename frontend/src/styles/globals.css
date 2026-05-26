@@ -451,6 +451,19 @@ input[type='checkbox']:focus {
     background-color: #203622;
 }
 
+.unlocked-calendar .rbc-toolbar button:focus {
+    background-color: #d1d5db;
+    color: #374151;
+    border-color: #e5e7eb;
+    outline: none;
+}
+
+.unlocked-calendar .rbc-toolbar button.rbc-active:focus {
+    background-color: #d1d5db;
+    color: #374151;
+    border-color: #e5e7eb;
+}
+
 .unlocked-calendar .rbc-month-view,
 .unlocked-calendar .rbc-time-view,
 .unlocked-calendar .rbc-agenda-view {
