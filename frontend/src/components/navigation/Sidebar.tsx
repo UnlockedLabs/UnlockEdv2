@@ -4,6 +4,7 @@ import {
     isAdministrator,
     hasFeature,
     canSwitchFacility,
+    isSysAdmin,
     handleLogout
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
@@ -26,7 +27,8 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     ArrowPathIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -185,6 +187,16 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                         onClick={onNavigate}
                     />
                 </>
+            )}
+            {isSysAdmin(user) && (
+                <NavLink
+                    to="/feature-control"
+                    icon={AdjustmentsHorizontalIcon}
+                    label="Feature Control"
+                    active={isActive(['/feature-control'])}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                />
             )}
             <NavLink
                 to="/operational-insights"
