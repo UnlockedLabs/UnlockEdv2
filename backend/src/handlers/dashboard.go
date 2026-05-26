@@ -122,6 +122,44 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	return writeJsonResponse(w, http.StatusOK, cachedData)
 }
 
+func parseDateRangeRequest(r *http.Request) (*time.Time, *time.Time, string, error) {
+	q := r.URL.Query()
+	if q.Get("all_time") == "true" {
+		return nil, nil, "all", nil
+	}
+	metricsDateFormat := "2006-01-02"
+	startStr := q.Get("start_date")
+	endStr := q.Get("end_date")
+	if startStr == "" && endStr == "" {
+		end := time.Now()
+		start := end.AddDate(0, 0, -30)
+		startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
+		endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, end.Location()).AddDate(0, 0, 1)
+		return &startDay, &endDay, fmt.Sprintf("%s_%s", startDay.Format(metricsDateFormat), endDay.Format(metricsDateFormat)), nil
+	}
+	if startStr == "" || endStr == "" {
+		return nil, nil, "", newBadRequestServiceError(fmt.Errorf("start date and end date are both required"), "date range")
+	}
+	start, err := time.Parse(metricsDateFormat, startStr)
+	if err != nil {
+		return nil, nil, "", newInvalidQueryParamServiceError(err, "start_date")
+	}
+	end, err := time.Parse(metricsDateFormat, endStr)
+	if err != nil {
+		return nil, nil, "", newInvalidQueryParamServiceError(err, "end_date")
+	}
+	if end.Before(start) {
+		return nil, nil, "", newBadRequestServiceError(fmt.Errorf("end date must be on or after start date"), "date range")
+	}
+	today := time.Now()
+	todayMidnight := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	if end.After(todayMidnight) {
+		return nil, nil, "", newBadRequestServiceError(fmt.Errorf("end date cannot be in the future"), "date range")
+	}
+	endExclusive := end.AddDate(0, 0, 1)
+	return &start, &endExclusive, fmt.Sprintf("%s_%s", start.Format(metricsDateFormat), end.Format(metricsDateFormat)), nil
+}
+
 type DashboardMetrics struct {
 	ActiveUsers       int64                  `json:"active_users"`
 	TotalLogins       int64                  `json:"total_logins"`
@@ -163,25 +201,18 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 		}
 		facilityName = facility.Name
 	}
-	var days int
-	daysQ := r.URL.Query().Get("days")
-	if daysQ == "" {
-		days = 30
-	} else {
-		numDays, err := strconv.Atoi(daysQ)
-		if err != nil {
-			numDays = -1
-		}
-		days = numDays
+	start, end, rangeKey, err := parseDateRangeRequest(r)
+	if err != nil {
+		return err
 	}
-	key := fmt.Sprintf("%s-%d", facility, days)
+	key := fmt.Sprintf("%s-%s", facility, rangeKey)
 	cached, err := srv.buckets[LoginMetrics].Get(key)
 	if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
-		activeUsers, totalDays, err := srv.Db.GetNumberOfActiveUsersForTimePeriod(&args, true, days, facilityId)
+		activeUsers, totalDays, err := srv.Db.GetNumberOfActiveUsersForTimePeriod(&args, true, start, end, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		totalLogins, err := srv.Db.GetTotalLogins(&args, days, facilityId)
+		totalLogins, err := srv.Db.GetTotalLogins(&args, start, end, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -189,11 +220,11 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		newResidentsAdded, err := srv.Db.NewUsersInTimePeriod(&args, days, facilityId)
+		newResidentsAdded, err := srv.Db.NewUsersInTimePeriod(&args, start, end, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		loginTimes, err := srv.Db.GetLoginActivity(&args, days, facilityId)
+		loginTimes, err := srv.Db.GetLoginActivity(&args, start, end, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
