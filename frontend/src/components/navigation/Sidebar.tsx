@@ -97,7 +97,7 @@ export default function Sidebar({
                     {!collapsed ? (
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-full bg-[#556830] flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                <div className="size-10 rounded-full bg-brand flex items-center justify-center text-white font-semibold flex-shrink-0">
                                     {user.name_first?.[0]}
                                     {user.name_last?.[0]}
                                 </div>
@@ -264,7 +264,7 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
 
     const tourHighlight = (target: string) =>
         tourState.tourActive && tourState.target === target
-            ? 'animate-pulse border-2 border-[#F1B51C] rounded-xl'
+            ? 'animate-pulse border-2 border-brand-gold rounded-xl'
             : undefined;
 
     return (
@@ -371,7 +371,7 @@ function NavLink({
             className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
                 active
-                    ? 'bg-[#556830] text-white'
+                    ? 'bg-brand text-white'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-accent',
                 extraClassName
             )}
@@ -454,7 +454,7 @@ function CollapsibleSection({
                 className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
                     isActive
-                        ? 'text-[#556830] dark:text-[#8fb55e]'
+                        ? 'text-brand dark:text-[#8fb55e]'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-accent'
                 )}
             >
@@ -483,7 +483,7 @@ function CollapsibleSection({
                             className={cn(
                                 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm',
                                 item.active
-                                    ? 'bg-[#556830]/10 dark:bg-[#556830]/20 text-[#556830] dark:text-[#8fb55e]'
+                                    ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-[#8fb55e]'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-accent'
                             )}
                         >

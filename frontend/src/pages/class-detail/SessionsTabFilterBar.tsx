@@ -36,7 +36,7 @@ function FilterButton({
                 disabled
                     ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                     : active
-                      ? 'bg-[#556830] text-white'
+                      ? 'bg-brand text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
         >
@@ -82,7 +82,7 @@ export function SessionsTabFilterBar({
         <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between mb-3">
                 <div>
-                    <h3 className="text-[#203622]">Session Management</h3>
+                    <h3 className="text-brand-dark">Session Management</h3>
                     <p className="text-sm text-gray-600 mt-1">
                         View, cancel, or reschedule individual sessions
                     </p>
@@ -97,7 +97,7 @@ export function SessionsTabFilterBar({
                                     : 'completed'
                             )
                         }
-                        colorClass="bg-green-100 text-[#556830]"
+                        colorClass="bg-green-100 text-brand"
                     >
                         {stats.completed} Completed
                     </StatButton>

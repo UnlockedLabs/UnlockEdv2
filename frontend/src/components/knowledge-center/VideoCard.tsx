@@ -97,7 +97,7 @@ export default function VideoCard({
                         }}
                     >
                         {favorite ? (
-                            <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                            <Star className="size-5 fill-brand-gold text-brand-gold" />
                         ) : (
                             <StarOff className="size-5" />
                         )}
@@ -134,7 +134,7 @@ export default function VideoCard({
                                     onCheckedChange={() =>
                                         void handleToggleAction('visibility')
                                     }
-                                    className="data-[state=checked]:bg-[#556830]"
+                                    className="data-[state=checked]:bg-brand"
                                 />
                                 <span className="text-xs text-muted-foreground">
                                     {visible ? 'Visible' : 'Hidden'}
@@ -190,7 +190,7 @@ export default function VideoCard({
                 <p className="text-xs text-muted-foreground">
                     {video.channel_title} - {toMinutes(video.duration)}
                 </p>
-                <p className="text-xs text-muted-foreground line-clamp-2">
+                <p className="caption-clamp">
                     {available
                         ? video.description
                         : getVideoErrorMessage(video)}
@@ -205,7 +205,7 @@ export default function VideoCard({
                         }}
                     >
                         {favorite ? (
-                            <Star className="size-5 fill-[#F1B51C] text-[#F1B51C]" />
+                            <Star className="size-5 fill-brand-gold text-brand-gold" />
                         ) : (
                             <StarOff className="size-5" />
                         )}
@@ -222,7 +222,7 @@ export default function VideoCard({
                                 onCheckedChange={() =>
                                     void handleToggleAction('visibility')
                                 }
-                                className="data-[state=checked]:bg-[#556830]"
+                                className="data-[state=checked]:bg-brand"
                             />
                             <span className="text-xs text-muted-foreground">
                                 {visible ? 'Visible' : 'Hidden'}

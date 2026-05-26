@@ -145,7 +145,7 @@ export function BulkImportDialog({
                                     className={`border-2 border-dashed rounded-lg p-8 transition-all ${
                                         uploadedFile
                                             ? 'border-green-500 bg-green-50 hover:bg-green-100'
-                                            : 'border-gray-300 hover:border-[#556830] hover:bg-gray-50'
+                                            : 'border-gray-300 hover:border-brand hover:bg-gray-50'
                                     }`}
                                 >
                                     <div className="flex items-center gap-6">
@@ -161,7 +161,7 @@ export function BulkImportDialog({
                                                 className={`text-base font-medium block mb-2 ${
                                                     uploadedFile
                                                         ? 'text-green-700'
-                                                        : 'text-[#556830]'
+                                                        : 'text-brand'
                                                 }`}
                                             >
                                                 {uploadedFile
@@ -192,7 +192,7 @@ export function BulkImportDialog({
                                                                 )
                                                                 ?.click();
                                                         }}
-                                                        className="text-sm text-[#556830] hover:text-[#203622] underline font-medium"
+                                                        className="text-sm text-brand hover:text-brand-dark underline font-medium"
                                                     >
                                                         Choose a different file
                                                     </button>

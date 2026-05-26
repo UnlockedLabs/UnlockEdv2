@@ -198,7 +198,7 @@ export default function OperationalInsightsCharts() {
                     label="Residents"
                     tooltip="Total number of residents in the facility"
                     icon={<UsersIcon className="size-5 text-white" />}
-                    iconBg="bg-[#203622]"
+                    iconBg="bg-brand-dark"
                 />
                 <StatsCard
                     title="Active Users"
@@ -206,7 +206,7 @@ export default function OperationalInsightsCharts() {
                     label={`${activePercent}% of total`}
                     tooltip={`Users who have logged in during ${timeLabel}`}
                     icon={<ArrowTrendingUpIcon className="size-5 text-white" />}
-                    iconBg="bg-[#556830]"
+                    iconBg="bg-brand"
                 />
                 <StatsCard
                     title="Inactive Users"
@@ -228,7 +228,7 @@ export default function OperationalInsightsCharts() {
                     }
                     tooltip={`New residents added during ${timeLabel}`}
                     icon={<UserPlusIcon className="size-5 text-white" />}
-                    iconBg="bg-[#F1B51C]"
+                    iconBg="bg-brand-gold"
                 />
                 <StatsCard
                     title="Total Logins"
@@ -238,7 +238,7 @@ export default function OperationalInsightsCharts() {
                     }
                     tooltip={`Total login count during ${timeLabel}`}
                     icon={<ArrowTrendingUpIcon className="size-5 text-white" />}
-                    iconBg="bg-[#556830]"
+                    iconBg="bg-brand"
                 />
             </div>
 

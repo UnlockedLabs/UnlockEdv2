@@ -23,8 +23,8 @@ export const ATTENDANCE_STATUSES: AttendanceStatusConfig[] = [
         label: 'Present',
         shortLabel: 'Present',
         icon: CheckCircle,
-        cardActiveClass: 'bg-[#556830] text-white border-[#556830]',
-        cardHoverBorder: 'hover:border-[#556830]',
+        cardActiveClass: 'bg-brand text-white border-brand',
+        cardHoverBorder: 'hover:border-brand',
         tableActiveClass: 'bg-green-600 hover:bg-green-700 text-white'
     },
     {

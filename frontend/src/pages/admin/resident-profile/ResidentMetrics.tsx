@@ -20,7 +20,7 @@ function MetricCard({
     valueMargin?: boolean;
 }) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="card-block p-4">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
             <div
                 className={`text-2xl font-medium ${valueMargin ? 'mb-1' : ''} ${valueColor}`}
@@ -45,20 +45,20 @@ export function ResidentMetrics({
                 label="Overall Attendance"
                 value={`${overallAttendancePercent}%`}
                 subtitle={`${sessionsAttended} of ${totalSessions} sessions`}
-                valueColor="text-[#556830]"
+                valueColor="text-brand"
                 valueMargin
             />
             <MetricCard
                 label="Active Enrollments"
                 value={activeEnrollments}
                 subtitle="Currently enrolled"
-                valueColor="text-[#203622]"
+                valueColor="text-brand-dark"
             />
             <MetricCard
                 label="Completed Programs"
                 value={completedPrograms}
                 subtitle="Successfully finished"
-                valueColor="text-[#556830]"
+                valueColor="text-brand"
             />
         </div>
     );

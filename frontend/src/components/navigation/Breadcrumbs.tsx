@@ -26,7 +26,7 @@ export default function Breadcrumbs({
             {item.href && !isLast ? (
               <button
                 onClick={() => navigate(item.href!)}
-                className="text-sm text-[#556830] hover:text-[#203622] hover:underline transition-colors"
+                className="text-sm text-brand hover:text-brand-dark hover:underline transition-colors"
               >
                 {item.label}
               </button>

@@ -68,11 +68,11 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
     }, [historicalEnrollments, statusFilter, timeFilter]);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="card-block">
             <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <div>
-                        <h3 className="text-[#203622]">
+                        <h3 className="text-brand-dark">
                             Enrollment History ({historicalEnrollments.length})
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
@@ -156,12 +156,12 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                     {filtered.map((enrollment) => (
                         <div
                             key={enrollment.id}
-                            className="px-4 sm:px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                            className="px-4 sm:px-6 py-4 hover:bg-surface-hover/30 transition-colors"
                         >
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex items-start gap-3 sm:gap-6 flex-1">
                                     <div className="w-[160px] shrink-0">
-                                        <div className="text-[#203622] font-medium truncate">
+                                        <div className="text-brand-dark font-medium truncate">
                                             {enrollment.doc_id}
                                         </div>
                                         <div className="text-sm text-gray-500 mt-0.5 truncate">
@@ -213,11 +213,11 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                             )}
                                         </div>
                                         {enrollment.change_reason && (
-                                            <div className="mt-3 p-3 bg-[#E2E7EA]/60 rounded-md">
+                                            <div className="mt-3 p-3 bg-surface-hover/60 rounded-md">
                                                 <div className="text-xs text-gray-500 font-medium mb-1">
                                                     Reason:
                                                 </div>
-                                                <div className="text-sm text-[#203622]">
+                                                <div className="text-sm text-brand-dark">
                                                     {enrollment.change_reason}
                                                 </div>
                                             </div>

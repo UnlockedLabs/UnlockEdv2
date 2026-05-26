@@ -56,7 +56,7 @@ interface CardHandlers {
 function LibraryCard({ library, handlers }: { library: Library; handlers: CardHandlers }) {
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+            className="media-card group"
             onClick={() => handlers.onNavigate(`/viewer/libraries/${library.id}`)}
         >
             <TooltipProvider>
@@ -67,10 +67,10 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                                 e.stopPropagation();
                                 handlers.onToggleFeatured(library.id, 'library', !!library.is_featured);
                             }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                            className="btn-corner"
                         >
                             <Star
-                                className={`size-4 ${library.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${library.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -88,7 +88,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     className="size-12 rounded flex-shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    <h3 className="card-title-link">
                         {library.title}
                     </h3>
                 </div>
@@ -97,10 +97,10 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                 {library.description}
             </p>
             <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="clickable-row">
                     <Switch
                         checked={library.visibility_status}
                         onCheckedChange={() =>
@@ -135,7 +135,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
     const available = videoIsAvailable(video);
     return (
         <div
-            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative`}
+            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative`}
             onClick={() => {
                 if (available) handlers.onNavigate(`/viewer/videos/${video.id}`);
             }}
@@ -148,10 +148,10 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                                 e.stopPropagation();
                                 handlers.onToggleFeatured(video.id, 'video', !!video.is_featured);
                             }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                            className="btn-corner"
                         >
                             <Star
-                                className={`size-4 ${video.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${video.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -174,7 +174,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                    <h3 className="card-title-link">
                         {video.title}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -212,10 +212,10 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 </div>
             )}
             <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="clickable-row">
                     <Switch
                         checked={video.visibility_status}
                         onCheckedChange={() =>
@@ -242,7 +242,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
 function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers: CardHandlers; onLinkClick: (link: HelpfulLink) => void }) {
     return (
         <div
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg hover:border-[#556830] transition-all cursor-pointer group relative"
+            className="media-card group"
             onClick={() => onLinkClick(link)}
         >
             <TooltipProvider>
@@ -253,10 +253,10 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                                 e.stopPropagation();
                                 handlers.onToggleFeatured(link.id, 'link', !!link.is_featured);
                             }}
-                            className="absolute top-3 right-3 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                            className="btn-corner"
                         >
                             <Star
-                                className={`size-4 ${link.is_featured ? 'text-[#F1B51C] fill-[#F1B51C]' : 'text-gray-300'}`}
+                                className={`size-4 ${link.is_featured ? 'text-brand-gold fill-brand-gold' : 'text-gray-300'}`}
                             />
                         </button>
                     </TooltipTrigger>
@@ -268,19 +268,19 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="text-[#203622] group-hover:text-[#556830] transition-colors line-clamp-1">
+                <h3 className="card-title-link">
                     {link.title}
                 </h3>
             </div>
-            <p className="text-sm text-[#556830] mb-2 truncate">{link.url}</p>
+            <p className="text-sm text-brand mb-2 truncate">{link.url}</p>
             <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                 {link.description}
             </p>
             <div
-                className="flex items-center justify-between pt-3 border-t border-gray-100"
+                className="row-with-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="clickable-row">
                     <Switch
                         checked={link.visibility_status}
                         onCheckedChange={() =>
@@ -619,16 +619,16 @@ export default function KnowledgeCenterManagement() {
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-8">
-                <h1 className="text-[#203622] mb-2">Knowledge Center</h1>
+                <h1 className="text-brand-dark mb-2">Knowledge Center</h1>
                 <p className="text-gray-600">
                     Manage libraries, videos, and helpful links for residents.
                 </p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="card-block p-4 mb-6">
                 <div className="flex gap-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                        <Search className="input-icon-left size-5" />
                         <Input
                             placeholder="Search across all content..."
                             value={searchTerm}
@@ -677,19 +677,19 @@ export default function KnowledgeCenterManagement() {
                     <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
                         <TabsTrigger
                             value="libraries"
-                            className="data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="tab-trigger-brand"
                         >
                             Libraries ({libTotal})
                         </TabsTrigger>
                         <TabsTrigger
                             value="videos"
-                            className="data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="tab-trigger-brand"
                         >
                             Videos ({vidTotal})
                         </TabsTrigger>
                         <TabsTrigger
                             value="links"
-                            className="data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200"
+                            className="tab-trigger-brand"
                         >
                             Helpful Links ({linkTotal})
                         </TabsTrigger>
@@ -723,7 +723,7 @@ export default function KnowledgeCenterManagement() {
                     )}
                     {currentTab === 'videos' && (
                         <Button
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddVideo(true)}
                         >
                             <Plus className="size-4 mr-2" />
@@ -732,7 +732,7 @@ export default function KnowledgeCenterManagement() {
                     )}
                     {currentTab === 'links' && (
                         <Button
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddLink(true)}
                         >
                             <Plus className="size-4 mr-2" />
@@ -743,7 +743,7 @@ export default function KnowledgeCenterManagement() {
 
                 <TabsContent value="libraries" className="space-y-4">
                     {libraries.length === 0 ? (
-                        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                        <div className="empty-state">
                             <p className="text-gray-500">
                                 No libraries found.
                             </p>
@@ -772,7 +772,7 @@ export default function KnowledgeCenterManagement() {
 
                 <TabsContent value="videos" className="space-y-4">
                     {videos.length === 0 ? (
-                        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                        <div className="empty-state">
                             <p className="text-gray-500">No videos found.</p>
                         </div>
                     ) : (
@@ -804,7 +804,7 @@ export default function KnowledgeCenterManagement() {
 
                 <TabsContent value="links" className="space-y-4">
                     {helpfulLinks.length === 0 ? (
-                        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                        <div className="empty-state">
                             <p className="text-gray-500">
                                 No helpful links found.
                             </p>

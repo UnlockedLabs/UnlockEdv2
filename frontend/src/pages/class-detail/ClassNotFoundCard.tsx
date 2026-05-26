@@ -6,9 +6,9 @@ interface ClassNotFoundCardProps {
 
 export function ClassNotFoundCard({ onBack }: ClassNotFoundCardProps) {
     return (
-        <div className="bg-[#E2E7EA] flex items-center justify-center">
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
-                <h2 className="text-xl font-semibold text-[#203622] mb-2">
+        <div className="bg-surface-hover flex items-center justify-center">
+            <div className="card-block p-8 text-center max-w-md">
+                <h2 className="text-xl font-semibold text-brand-dark mb-2">
                     Class Not Found
                 </h2>
                 <p className="text-gray-500 mb-4">
@@ -17,7 +17,7 @@ export function ClassNotFoundCard({ onBack }: ClassNotFoundCardProps) {
                 </p>
                 <Button
                     onClick={onBack}
-                    className="bg-[#556830] hover:bg-[#203622]"
+                    className="bg-brand hover:bg-brand-dark"
                 >
                     Back to Classes
                 </Button>

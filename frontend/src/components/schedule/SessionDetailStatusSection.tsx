@@ -59,7 +59,7 @@ export function SessionDetailStatusSection({
 
             {!isCancelled && originalInstructorName && instructorName && (
                 <div className="flex items-start gap-2">
-                    <Users className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                    <Users className="lead-icon-sm" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-900 mb-1">Instructor Change</div>
                         <p className="text-sm text-gray-600">
@@ -71,7 +71,7 @@ export function SessionDetailStatusSection({
 
             {!isCancelled && originalRoom && (
                 <div className="flex items-start gap-2">
-                    <MapPin className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                    <MapPin className="lead-icon-sm" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-900 mb-1">Room Change</div>
                         <p className="text-sm text-gray-600">
@@ -85,7 +85,7 @@ export function SessionDetailStatusSection({
                 <div className="space-y-4">
                     <div className="space-y-3">
                         <div className="flex items-start gap-2">
-                            <CalendarOff className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <CalendarOff className="lead-icon-sm" />
                             <div className="flex-1 min-w-0">
                                 <div className="text-sm text-gray-900 mb-1">
                                     Class Cancelled
@@ -206,7 +206,7 @@ export function SessionDetailStatusSection({
             {isCancelled && (
                 <div className="space-y-3">
                     <div className="flex items-start gap-2">
-                        <CalendarOff className="size-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                        <CalendarOff className="lead-icon-sm" />
                         <div className="flex-1 min-w-0">
                             <div className="text-sm text-gray-900 mb-1">
                                 Class Cancelled
@@ -232,9 +232,9 @@ export function SessionDetailStatusSection({
             {hasAttendance && (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-start gap-2">
-                        <CheckCircle className="size-4 text-[#556830] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="size-4 text-brand mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm text-[#556830] mb-1">
+                            <div className="text-sm text-brand mb-1">
                                 Attendance Taken
                             </div>
                             <p className="text-sm text-gray-600">

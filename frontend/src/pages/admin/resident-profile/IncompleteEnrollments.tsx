@@ -34,13 +34,13 @@ export function IncompleteEnrollments({
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="card-block">
                 <CollapsibleTrigger asChild>
                     <button className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3">
                             <XCircle className="size-5 text-gray-500" />
                             <div className="text-left">
-                                <h2 className="text-lg font-semibold text-[#203622]">
+                                <h2 className="text-lg font-semibold text-brand-dark">
                                     Incomplete Enrollments
                                 </h2>
                                 <p className="text-sm text-gray-600 mt-1">
@@ -95,7 +95,7 @@ export function IncompleteEnrollments({
                                             key={`${enrollment.program_id}-${enrollment.class_id}`}
                                         >
                                             <TableCell>
-                                                <div className="font-medium text-[#203622]">
+                                                <div className="font-medium text-brand-dark">
                                                     {enrollment.program_name}
                                                 </div>
                                                 <div className="text-sm text-gray-600">

@@ -19,10 +19,10 @@ export function SessionsTabBulkActions({
     if (selectedCount === 0) return null;
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-hover border border-gray-400 rounded-lg shadow-lg px-6 py-4">
             <div className="flex items-center gap-6">
                 <div className="text-sm">
-                    <span className="font-semibold text-[#203622]">
+                    <span className="font-semibold text-brand-dark">
                         {selectedCount}
                     </span>
                     <span className="text-gray-600 ml-1">

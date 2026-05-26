@@ -33,12 +33,12 @@ export function SessionDetailClassDetails({
             </h4>
             <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                    <Calendar className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Calendar className="lead-icon" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-600 mb-0.5">
                             Class
                         </div>
-                        <div className="text-[#203622]">
+                        <div className="text-brand-dark">
                             {className}
                         </div>
                         {programName && (
@@ -49,26 +49,26 @@ export function SessionDetailClassDetails({
                     </div>
                 </div>
                 <div className="flex items-start gap-3">
-                    <Clock className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Clock className="lead-icon" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-600 mb-0.5">
                             Time
                         </div>
                         <div
-                            className={`text-[#203622] ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
+                            className={`text-brand-dark ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                         >
                             {formatClassTimeRange(classTime)}
                         </div>
                     </div>
                 </div>
                 <div className="flex items-start gap-3">
-                    <MapPin className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <MapPin className="lead-icon" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-600 mb-0.5">
                             Room
                         </div>
                         <div
-                            className={`text-[#203622] ${
+                            className={`text-brand-dark ${
                                 !!originalRoom || isCancelled || isRescheduledFrom || isCancelledReschedule
                                     ? 'line-through'
                                     : ''
@@ -80,13 +80,13 @@ export function SessionDetailClassDetails({
                 </div>
                 {(originalInstructorName ?? instructorName) && (
                     <div className="flex items-start gap-3">
-                        <Users className="size-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <Users className="lead-icon" />
                         <div className="flex-1 min-w-0">
                             <div className="text-sm text-gray-600 mb-0.5">
                                 Instructor
                             </div>
                             <div
-                                className={`text-[#203622] ${
+                                className={`text-brand-dark ${
                                     !!originalInstructorName || isCancelled || isRescheduledFrom || isCancelledReschedule
                                         ? 'line-through'
                                         : ''

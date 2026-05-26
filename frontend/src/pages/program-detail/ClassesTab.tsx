@@ -32,12 +32,12 @@ function ClassRow({
     return (
         <div
             onClick={onClick}
-            className={`p-6 hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors ${className ?? ''}`}
+            className={`p-6 hover:bg-surface-hover/50 cursor-pointer transition-colors ${className ?? ''}`}
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-[#203622] hover:text-[#556830] transition-colors">
+                        <h4 className="text-brand-dark hover:text-brand transition-colors">
                             {cls.name}
                         </h4>
                         <Badge
@@ -59,7 +59,7 @@ function ClassRow({
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-600">Attendance:</span>
-                        <span className="font-medium text-[#556830]">--</span>
+                        <span className="font-medium text-brand">--</span>
                     </div>
                 </div>
                 <div className="ml-6 min-w-[200px]">
@@ -67,14 +67,14 @@ function ClassRow({
                         <span className="text-sm text-gray-600">
                             Enrollment
                         </span>
-                        <span className="text-sm text-[#203622]">
+                        <span className="text-sm text-brand-dark">
                             {cls.enrolled} / {cls.capacity}
                         </span>
                     </div>
                     <Progress
                         value={enrollmentPercent}
                         className="h-2"
-                        indicatorClassName="bg-[#556830]"
+                        indicatorClassName="bg-brand"
                     />
                 </div>
             </div>
@@ -108,7 +108,7 @@ export default function ClassesTab({
         <>
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h2 className="text-[#203622]">Classes</h2>
+                    <h2 className="text-brand-dark">Classes</h2>
                     <p className="text-sm text-gray-600 mt-1">
                         All classes offered under this program
                     </p>
@@ -117,14 +117,14 @@ export default function ClassesTab({
                     onClick={() =>
                         navigate('/programs/' + programId + '/classes')
                     }
-                    className="bg-[#F1B51C] hover:bg-[#d9a419] text-[#203622] gap-2"
+                    className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark gap-2"
                 >
                     <Plus className="size-5" />
                     Create New Class
                 </Button>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="card-block">
                 {programClasses.length > 0 ? (
                     <div>
                         {activeScheduledClasses.length > 0 && (
@@ -154,7 +154,7 @@ export default function ClassesTab({
 
                         {completedClasses.length > 0 && (
                             <div className="divide-y divide-gray-200">
-                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Completed Classes (
                                         {completedClasses.length}
@@ -180,7 +180,7 @@ export default function ClassesTab({
 
                         {cancelledClasses.length > 0 && (
                             <div className="divide-y divide-gray-200">
-                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Cancelled Classes (
                                         {cancelledClasses.length}
@@ -206,7 +206,7 @@ export default function ClassesTab({
 
                         {pausedClasses.length > 0 && (
                             <div className="divide-y divide-gray-200">
-                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Paused Classes (
                                         {pausedClasses.length}

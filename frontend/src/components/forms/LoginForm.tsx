@@ -202,7 +202,7 @@ export default function LoginForm() {
                 <Button
                     type="submit"
                     disabled={processing}
-                    className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90 font-semibold"
+                    className="btn-gold"
                 >
                     {processing ? (
                         <Loader2 className="size-4 animate-spin" />

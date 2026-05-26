@@ -40,11 +40,11 @@ export function RescheduleEventModal({
             <div className="space-y-3 py-4">
                 <button
                     onClick={onSingleSession}
-                    className="w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-[#556830] hover:bg-gray-50 cursor-pointer transition-all text-left"
+                    className="option-card"
                 >
-                    <Calendar className="size-5 text-[#556830] mt-0.5 shrink-0" />
+                    <Calendar className="size-5 text-brand mt-0.5 shrink-0" />
                     <div className="flex-1">
-                        <div className="font-medium text-[#203622] mb-1">This session only</div>
+                        <div className="font-medium text-brand-dark mb-1">This session only</div>
                         <p className="text-sm text-gray-600">
                             Reschedule only the session on {sessionDateShort}
                         </p>
@@ -53,11 +53,11 @@ export function RescheduleEventModal({
 
                 <button
                     onClick={onSeriesReschedule}
-                    className="w-full flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-[#556830] hover:bg-gray-50 cursor-pointer transition-all text-left"
+                    className="option-card"
                 >
-                    <Repeat className="size-5 text-[#556830] mt-0.5 shrink-0" />
+                    <Repeat className="size-5 text-brand mt-0.5 shrink-0" />
                     <div className="flex-1">
-                        <div className="font-medium text-[#203622] mb-1">This and all future sessions</div>
+                        <div className="font-medium text-brand-dark mb-1">This and all future sessions</div>
                         <p className="text-sm text-gray-600">
                             Change the recurring schedule pattern starting from {sessionDateShort} onwards
                         </p>

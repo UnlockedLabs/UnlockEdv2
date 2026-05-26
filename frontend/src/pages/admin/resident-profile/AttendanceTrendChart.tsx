@@ -7,6 +7,7 @@ import {
     ResponsiveContainer,
     Tooltip
 } from 'recharts';
+import { BRAND } from '@/lib/brand';
 
 interface AttendanceTrendChartProps {
     data: { week: string; rate: number }[];
@@ -21,8 +22,8 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
 
     if (data.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
-                <h3 className="text-base font-semibold text-[#203622] mb-2">
+            <div className="card-block p-5 mb-6">
+                <h3 className="text-base font-semibold text-brand-dark mb-2">
                     Attendance Trend
                 </h3>
                 <p className="text-sm text-gray-500">
@@ -33,8 +34,8 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
-            <h3 className="text-base font-semibold text-[#203622] mb-2">
+        <div className="card-block p-5 mb-6">
+            <h3 className="text-base font-semibold text-brand-dark mb-2">
                 Attendance Trend
             </h3>
             <p className="text-sm text-gray-600 mb-3">
@@ -69,9 +70,9 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                     <Line
                         type="monotone"
                         dataKey="rate"
-                        stroke="#556830"
+                        stroke={BRAND}
                         strokeWidth={2}
-                        dot={{ fill: '#556830', r: 4 }}
+                        dot={{ fill: BRAND, r: 4 }}
                         name="Attendance Rate (%)"
                     />
                 </LineChart>

@@ -225,7 +225,7 @@ export function RescheduleSeriesModal({
                         <Button
                             onClick={() => void handleSubmit()}
                             disabled={submitting}
-                            className="bg-[#556830] hover:bg-[#203622] text-white"
+                            className="bg-brand hover:bg-brand-dark text-white"
                         >
                             {submitting ? 'Saving...' : 'Reschedule Series'}
                         </Button>

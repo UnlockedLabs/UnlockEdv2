@@ -193,7 +193,7 @@ function DeptAdminView({
 
             <div className="space-y-6">
                 <div>
-                    <h2 className="text-[#203622] dark:text-white mb-4">
+                    <h2 className="text-brand-dark dark:text-white mb-4">
                         Facility Health Overview
                     </h2>
                     <FacilityHealthTable rows={facilityRows} />
@@ -238,7 +238,7 @@ function MetricCard({
         <SurfaceCard className="p-4">
             <div className="flex items-center gap-3 mb-3">
                 <div className={cn('p-2 rounded', iconBg)}>{icon}</div>
-                <div className="text-2xl text-[#203622] dark:text-white">
+                <div className="text-2xl text-brand-dark dark:text-white">
                     {value}
                 </div>
                 <InfoTooltip className="ml-auto">
@@ -325,7 +325,7 @@ function TodaysSchedule({
         <SurfaceCard>
             <div className="border-b border-gray-200 dark:border-[#262626] px-6 py-4 flex items-center justify-between">
                 <div>
-                    <h2 className="text-[#203622] dark:text-white">
+                    <h2 className="text-brand-dark dark:text-white">
                         Today's Schedule
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -334,7 +334,7 @@ function TodaysSchedule({
                 </div>
                 <button
                     onClick={() => navigate('/classes')}
-                    className="text-sm text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-white transition-colors"
+                    className="text-sm text-brand hover:text-brand-dark dark:text-[#8fb55e] dark:hover:text-white transition-colors"
                 >
                     View all classes &rarr;
                 </button>
@@ -346,7 +346,7 @@ function TodaysSchedule({
                             return (
                                 <div
                                     key={`${item.class_id}-${item.event_id}-${item.date}-${item.start_time}`}
-                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#E2E7EA] dark:bg-[#262626] rounded-lg hover:bg-gray-100 dark:hover:bg-[#262626]/80 transition-colors group"
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-surface-hover dark:bg-[#262626] rounded-lg hover:bg-gray-100 dark:hover:bg-[#262626]/80 transition-colors group"
                                 >
                                     <div
                                         onClick={() =>
@@ -359,12 +359,12 @@ function TodaysSchedule({
                                     >
                                         <div className="flex items-center gap-2 min-w-[80px] shrink-0">
                                             <Clock className="size-4 text-gray-500 dark:text-gray-400" />
-                                            <span className="text-sm text-[#203622] dark:text-white">
+                                            <span className="text-sm text-brand-dark dark:text-white">
                                                 {formatTime12h(item.start_time)}
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-[#203622] dark:text-white group-hover:text-[#556830] transition-colors truncate">
+                                            <div className="text-brand-dark dark:text-white group-hover:text-brand transition-colors truncate">
                                                 {item.class_name}
                                             </div>
                                             <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -381,7 +381,7 @@ function TodaysSchedule({
                                             e.stopPropagation();
                                             onNavigate(item);
                                         }}
-                                        className="bg-[#556830] hover:bg-[#203622] text-white w-full sm:w-auto"
+                                        className="bg-brand hover:bg-brand-dark text-white w-full sm:w-auto"
                                     >
                                         Take Attendance
                                     </Button>
@@ -439,8 +439,8 @@ function MissingAttendanceWidget({
     return (
         <SurfaceCard className="p-6">
             <div className="flex items-center gap-2 mb-4">
-                <AlertCircle className="size-5 text-[#F1B51C]" />
-                <h3 className="text-[#203622] dark:text-white">
+                <AlertCircle className="size-5 text-brand-gold" />
+                <h3 className="text-brand-dark dark:text-white">
                     Missing Attendance
                 </h3>
             </div>
@@ -463,7 +463,7 @@ function MissingAttendanceWidget({
                                 <div
                                     key={`${item.class_id}-${item.date}-${item.event_id}`}
                                     className={cn(
-                                        'p-3 bg-amber-50 dark:bg-[#262626] border border-amber-200 dark:border-[#F1B51C]/30 rounded-lg',
+                                        'p-3 bg-amber-50 dark:bg-[#262626] border border-amber-200 dark:border-brand-gold/30 rounded-lg',
                                         isDepartment
                                             ? 'hover:bg-amber-100 dark:hover:bg-[#262626]/80 transition-colors cursor-pointer'
                                             : undefined
@@ -482,7 +482,7 @@ function MissingAttendanceWidget({
                                             {item.facility_name}
                                         </div>
                                     )}
-                                    <div className="text-sm text-[#203622] dark:text-[#F1B51C] mb-1">
+                                    <div className="text-sm text-brand-dark dark:text-brand-gold mb-1">
                                         {item.class_name}
                                     </div>
                                     <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -503,7 +503,7 @@ function MissingAttendanceWidget({
                                                         item.date
                                                 )
                                             }
-                                            className="w-full text-xs border-[#F1B51C] text-[#F1B51C] hover:bg-[#F1B51C] hover:text-white dark:border-[#F1B51C] dark:text-[#F1B51C]"
+                                            className="w-full text-xs border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-white dark:border-brand-gold dark:text-brand-gold"
                                         >
                                             Take Attendance
                                         </Button>
@@ -515,7 +515,7 @@ function MissingAttendanceWidget({
                     {!showAll && remainingCount > 0 && (
                         <button
                             onClick={() => setShowAll(true)}
-                            className="w-full mt-3 py-2 text-sm text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-white hover:bg-[#E2E7EA] dark:hover:bg-[#262626] rounded-lg transition-colors flex items-center justify-center gap-2"
+                            className="w-full mt-3 py-2 text-sm text-brand hover:text-brand-dark dark:text-[#8fb55e] dark:hover:text-white hover:bg-surface-hover dark:hover:bg-[#262626] rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                             Show {remainingCount} more{' '}
                             <ChevronDown className="size-4" />
@@ -528,7 +528,7 @@ function MissingAttendanceWidget({
                 </div>
             ) : (
                 <div className="text-sm text-gray-500 dark:text-gray-400 py-4">
-                    <CheckCircle className="size-8 mx-auto mb-2 text-[#556830] dark:text-[#8fb55e]" />
+                    <CheckCircle className="size-8 mx-auto mb-2 text-brand dark:text-[#8fb55e]" />
                     <p className="text-center">All attendance up to date</p>
                 </div>
             )}
@@ -539,7 +539,7 @@ function MissingAttendanceWidget({
 function QuickActions({ navigate }: { navigate: (path: string) => void }) {
     return (
         <SurfaceCard className="p-6">
-            <h3 className="text-[#203622] dark:text-white mb-4">
+            <h3 className="text-brand-dark dark:text-white mb-4">
                 Quick Actions
             </h3>
             <div className="space-y-3">
@@ -547,9 +547,9 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => navigate('/programs')}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-[#E2E7EA] dark:hover:bg-[#262626]/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-surface-hover dark:hover:bg-[#262626]/80 text-brand-dark dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
                         >
-                            <RectangleStackIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                            <RectangleStackIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                             <span className="text-sm">View All Programs</span>
                         </button>
                     </TooltipTrigger>
@@ -562,9 +562,9 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => navigate('/classes')}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-[#E2E7EA] dark:hover:bg-[#262626]/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-surface-hover dark:hover:bg-[#262626]/80 text-brand-dark dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
                         >
-                            <ListBulletIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                            <ListBulletIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                             <span className="text-sm">Browse Classes</span>
                         </button>
                     </TooltipTrigger>
@@ -591,21 +591,21 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
     return (
         <SurfaceCard className="overflow-hidden">
             <table className="w-full">
-                <thead className="bg-[#E2E7EA] dark:bg-[#262626] border-b border-gray-200 dark:border-[#262626]">
+                <thead className="bg-surface-hover dark:bg-[#262626] border-b border-gray-200 dark:border-[#262626]">
                     <tr>
-                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                        <th className="text-left px-6 py-3 text-sm text-brand-dark dark:text-white">
                             Facility
                         </th>
-                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                        <th className="text-left px-6 py-3 text-sm text-brand-dark dark:text-white">
                             Programs
                         </th>
-                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                        <th className="text-left px-6 py-3 text-sm text-brand-dark dark:text-white">
                             Active Classes
                         </th>
-                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                        <th className="text-left px-6 py-3 text-sm text-brand-dark dark:text-white">
                             Enrollment
                         </th>
-                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                        <th className="text-left px-6 py-3 text-sm text-brand-dark dark:text-white">
                             <div className="flex items-center gap-1">
                                 Missing Attendance
                                 <InfoTooltip iconClassName="size-3.5">
@@ -616,7 +616,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                                 </InfoTooltip>
                             </div>
                         </th>
-                        <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
+                        <th className="text-left px-6 py-3 text-sm text-brand-dark dark:text-white">
                             <div className="flex items-center gap-1">
                                 Attendance Concerns
                                 <InfoTooltip iconClassName="size-3.5">
@@ -633,10 +633,10 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                     {rows.map((row) => (
                         <tr
                             key={row.facility_id}
-                            className="hover:bg-[#E2E7EA]/50 dark:hover:bg-[#262626]/50 cursor-pointer transition-colors"
+                            className="hover:bg-surface-hover/50 dark:hover:bg-[#262626]/50 cursor-pointer transition-colors"
                         >
                             <td className="px-6 py-4">
-                                <div className="text-[#203622] dark:text-white hover:text-[#556830] dark:hover:text-[#8fb55e] transition-colors">
+                                <div className="text-brand-dark dark:text-white hover:text-brand dark:hover:text-[#8fb55e] transition-colors">
                                     {row.facility_name}
                                 </div>
                             </td>
@@ -658,7 +658,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                             <td className="px-6 py-4">
                                 {row.missing_attendance > 0 ? (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-[#F1B51C]">
+                                        <span className="text-sm text-brand-gold">
                                             {row.missing_attendance}
                                         </span>
                                         <span className="text-xs text-gray-500">
@@ -667,7 +667,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-1">
-                                        <CheckCircle className="size-4 text-[#556830] dark:text-[#8fb55e]" />
+                                        <CheckCircle className="size-4 text-brand dark:text-[#8fb55e]" />
                                         <span className="text-xs text-gray-500">
                                             Up to date
                                         </span>
@@ -677,7 +677,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                             <td className="px-6 py-4">
                                 {row.attendance_concerns > 0 ? (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-amber-600 dark:text-[#F1B51C]">
+                                        <span className="text-sm text-amber-600 dark:text-brand-gold">
                                             {row.attendance_concerns}
                                         </span>
                                         <span className="text-xs text-gray-500">
@@ -686,7 +686,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-1">
-                                        <CheckCircle className="size-4 text-[#556830] dark:text-[#8fb55e]" />
+                                        <CheckCircle className="size-4 text-brand dark:text-[#8fb55e]" />
                                         <span className="text-xs text-gray-500">
                                             None
                                         </span>
@@ -712,9 +712,9 @@ function MetricCards({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <MetricCard
                 icon={
-                    <AcademicCapIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                    <AcademicCapIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                 }
-                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                iconBg="bg-surface-hover dark:bg-[#262626]"
                 label="Active Classes"
                 value={stats.activeClasses}
                 tooltip="Classes currently in Active status with enrolled residents"
@@ -722,9 +722,9 @@ function MetricCards({
             />
             <MetricCard
                 icon={
-                    <UsersIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                    <UsersIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                 }
-                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                iconBg="bg-surface-hover dark:bg-[#262626]"
                 label="Total Enrollment"
                 value={stats.totalEnrollment}
                 tooltip="Number of residents enrolled across all active classes"
@@ -732,16 +732,16 @@ function MetricCards({
             />
             <MetricCard
                 icon={
-                    <ChartBarIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
+                    <ChartBarIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                 }
-                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                iconBg="bg-surface-hover dark:bg-[#262626]"
                 label="Capacity Utilization"
                 value={`${stats.capacityUtilization}%`}
                 tooltip="Percentage of available seats filled across all classes"
                 subtitle={`${stats.totalEnrollment} of ${stats.totalCapacity} seats`}
             />
             <MetricCard
-                icon={<AlertCircle className="size-5 text-[#F1B51C]" />}
+                icon={<AlertCircle className="size-5 text-brand-gold" />}
                 iconBg="bg-amber-50 dark:bg-[#262626]"
                 label="Attendance Concerns"
                 value={stats.attendanceConcerns}
@@ -750,7 +750,7 @@ function MetricCards({
                 tooltipAction={
                     <button
                         onClick={() => onNavigate('/classes')}
-                        className="text-[#F1B51C] hover:text-[#d9a419] flex items-center gap-1 text-xs"
+                        className="text-brand-gold hover:text-brand-gold-dark flex items-center gap-1 text-xs"
                     >
                         View classes <ExternalLink className="size-3" />
                     </button>

@@ -201,7 +201,7 @@ export default function ProgramManagementForm() {
                 }}
                 className="space-y-6"
             >
-                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="section-card">
                     <h2 className="text-lg font-semibold text-foreground">
                         Program Information
                     </h2>
@@ -297,7 +297,7 @@ export default function ProgramManagementForm() {
                     </div>
                 </div>
 
-                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="section-card">
                     <h2 className="text-lg font-semibold text-foreground">Availability</h2>
 
                     {user && canSwitchFacility(user) && facilities.length > 0 && (
@@ -364,7 +364,7 @@ export default function ProgramManagementForm() {
                     <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-[#F1B51C] text-foreground hover:bg-[#F1B51C]/90"
+                        className="btn-gold-thin"
                     >
                         {isSubmitting
                             ? 'Saving...'

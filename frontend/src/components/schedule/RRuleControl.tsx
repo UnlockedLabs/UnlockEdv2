@@ -137,7 +137,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
                                     onClick={() => toggleDay(day.value)}
                                     className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
                                         days.includes(day.value)
-                                            ? 'bg-[#556830] text-white border-[#556830]'
+                                            ? 'bg-brand text-white border-brand'
                                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                     }`}
                                 >
