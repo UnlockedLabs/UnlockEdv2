@@ -150,6 +150,7 @@ export function BulkResetPasswordDialog({
             description={`Generate new temporary passwords for ${users.length} selected ${cfg.singular}${users.length > 1 ? 's' : ''}`}
             className="max-w-2xl"
             titleClassName="text-foreground"
+            preventOutsideClose
         >
             {!completed ? (
                 <>
@@ -327,6 +328,7 @@ export function BulkDeactivateDialog({
             title="Deactivate Residents"
             description={`Deactivate ${residents.length} selected resident${residents.length > 1 ? 's' : ''}`}
             titleClassName="text-foreground"
+            preventOutsideClose
         >
             <TonedPanel tone="orange">
                 <div className="flex items-start gap-3">
@@ -472,6 +474,7 @@ export function BulkDeleteDialog({
             title={cfg.title}
             description={`Permanently delete ${users.length} selected ${cfg.singular}${users.length > 1 ? 's' : ''}`}
             titleClassName="text-foreground"
+            preventOutsideClose
         >
             <TonedPanel tone="red">
                 <div className="flex items-start gap-3">

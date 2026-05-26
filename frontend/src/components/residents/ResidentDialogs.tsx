@@ -341,6 +341,7 @@ export function DeactivateDialog({
             title="Deactivate Account"
             description={`You are about to deactivate ${resident.name_first} ${resident.name_last}'s account.`}
             titleClassName="text-foreground"
+            preventOutsideClose
         >
             <div className="py-4 space-y-4">
                 <ul className="space-y-2 text-sm text-gray-700">
@@ -466,6 +467,7 @@ export function DeleteDialog({
             title="Delete Resident"
             description={`Are you sure you want to delete ${resident.name_first} ${resident.name_last}?`}
             titleClassName="text-foreground"
+            preventOutsideClose
         >
             <div className="py-4 space-y-4">
                 <p className="text-sm text-red-600 font-medium">
@@ -583,6 +585,7 @@ export function TransferDialog({
             description={`Move ${resident.name_last}, ${resident.name_first} to a different facility`}
             className="max-w-2xl"
             titleClassName="text-foreground"
+            preventOutsideClose
         >
             <div className="space-y-6 py-4">
                 <div className="space-y-3">
