@@ -389,46 +389,45 @@ func (db *DB) LogUserSessionEnded(userID uint, sessionID string) {
 	}
 }
 
-func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, active bool, days int, facilityId *uint) (int64, int, error) {
+func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, active bool, start, end *time.Time, facilityId *uint) (int64, int, error) {
 	var count int64
 	var tx *gorm.DB
 	join := "JOIN login_metrics on users.id = login_metrics.user_id"
 	tx = db.WithContext(args.Ctx).Model(&models.User{})
-	if days == -1 {
+	var totalDays int
+	if start == nil || end == nil {
 		tx = tx.Joins(join)
 		sysAdmin, err := db.GetSystemAdmin(args.Ctx)
 		if err != nil {
-			return 0, days, err
+			return 0, 0, err
 		}
-		days = int(time.Since(sysAdmin.CreatedAt).Hours() / 24)
+		totalDays = int(time.Since(sysAdmin.CreatedAt).Hours() / 24)
 	} else {
-		daysAgo := time.Now().AddDate(0, 0, -days)
 		if active {
-			join += " AND login_metrics.last_login > ?"
+			tx = tx.Joins(join+" AND login_metrics.last_login >= ? AND login_metrics.last_login < ?", *start, *end)
 		} else {
-			join += " AND login_metrics.last_login < ?"
+			tx = tx.Joins(join+" AND login_metrics.last_login < ?", *start)
 		}
-		tx = tx.Joins(join, daysAgo)
+		totalDays = int(end.Sub(*start).Hours() / 24)
 	}
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
 	tx = tx.Where("role = 'student'")
 	if err := tx.Count(&count).Error; err != nil {
-		return 0, days, newGetRecordsDBError(err, "users")
+		return 0, totalDays, newGetRecordsDBError(err, "users")
 	}
-	if days == 0 {
-		days = 1
+	if totalDays <= 0 {
+		totalDays = 1
 	}
-	return count, days, nil
+	return count, totalDays, nil
 }
 
-func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
+func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, start, end *time.Time, facilityId *uint) (int64, error) {
 	var resident_count int64
-	daysAgo := time.Now().AddDate(0, 0, -days)
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
-	if days != -1 {
-		tx = tx.Where("created_at >= ?", daysAgo)
+	if start != nil && end != nil {
+		tx = tx.Where("created_at >= ? AND created_at < ?", *start, *end)
 	}
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
@@ -439,12 +438,11 @@ func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facility
 	return resident_count, nil
 }
 
-func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
+func (db *DB) GetTotalLogins(args *models.QueryContext, start, end *time.Time, facilityId *uint) (int64, error) {
 	var total sql.NullInt64
 	tx := db.WithContext(args.Ctx).Model(&models.LoginActivity{}).Select("SUM(COALESCE(total_logins, 0))")
-	if days != -1 {
-		daysAgo := time.Now().AddDate(0, 0, -days)
-		tx = tx.Where("time_interval >= ?", daysAgo)
+	if start != nil && end != nil {
+		tx = tx.Where("time_interval >= ? AND time_interval < ?", *start, *end)
 	}
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
@@ -470,23 +468,25 @@ func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64,
 	return totalResidents, nil
 }
 
-func (db *DB) GetLoginActivity(args *models.QueryContext, days int, facilityID *uint) ([]models.LoginActivity, error) {
+func (db *DB) GetLoginActivity(args *models.QueryContext, start, end *time.Time, facilityID *uint) ([]models.LoginActivity, error) {
 	acitvity := make([]models.LoginActivity, 0, 3)
-	var query *gorm.DB
-	if days == -1 {
-		query = db.WithContext(args.Ctx).Raw(`SELECT time_interval, total_logins
-						FROM login_activity
-						ORDER BY total_logins DESC
-						LIMIT 3;`)
-	} else {
-		daysAgo := time.Now().AddDate(0, 0, -days)
-		query = db.WithContext(args.Ctx).Raw(`SELECT time_interval, total_logins
-						FROM login_activity
-						WHERE time_interval >= ?
-						ORDER BY total_logins DESC
-						LIMIT 3;`, daysAgo)
+	sql := `SELECT time_interval, total_logins
+			FROM login_activity`
+	conds := make([]string, 0, 2)
+	params := make([]any, 0, 3)
+	if facilityID != nil {
+		conds = append(conds, "facility_id = ?")
+		params = append(params, *facilityID)
 	}
-	if err := query.Scan(&acitvity).Error; err != nil {
+	if start != nil && end != nil {
+		conds = append(conds, "time_interval >= ? AND time_interval < ?")
+		params = append(params, *start, *end)
+	}
+	if len(conds) > 0 {
+		sql += " WHERE " + strings.Join(conds, " AND ")
+	}
+	sql += " ORDER BY total_logins DESC LIMIT 3;"
+	if err := db.WithContext(args.Ctx).Raw(sql, params...).Scan(&acitvity).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "login_activity")
 	}
 	return acitvity, nil

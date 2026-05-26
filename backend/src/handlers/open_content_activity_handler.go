@@ -41,11 +41,11 @@ func (srv *Server) handleGetTopFacilityLibraries(w http.ResponseWriter, r *http.
 	args := srv.getQueryContext(r)
 	facilityId := srv.getFacilityID(r)
 	_, perPage := srv.getPaginationInfo(r)
-	days, err := strconv.Atoi(r.URL.Query().Get("days"))
+	start, end, _, err := parseDateRangeRequest(r)
 	if err != nil {
-		days = -1
+		return err
 	}
-	topLibraries, err := srv.Db.GetTopFacilityLibraries(&args, int(facilityId), perPage, days)
+	topLibraries, err := srv.Db.GetTopFacilityLibraries(&args, int(facilityId), perPage, start, end)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

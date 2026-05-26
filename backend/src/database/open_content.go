@@ -351,15 +351,14 @@ func (db *DB) GetTopUserOpenContent(id int, args *models.QueryContext) ([]models
 	return content, nil
 }
 
-func (db *DB) GetTopFacilityLibraries(args *models.QueryContext, id int, perPage int, days int) ([]models.OpenContentItem, error) {
+func (db *DB) GetTopFacilityLibraries(args *models.QueryContext, id int, perPage int, start, end *time.Time) ([]models.OpenContentItem, error) {
 	libraries := make([]models.OpenContentItem, 0, perPage)
-	daysAgo := time.Now().AddDate(0, 0, -days)
 	tx := db.WithContext(args.Ctx).Table("open_content_activities oca").
 		Select("l.title, l.url, l.thumbnail_url as thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as type, count(l.id) as visits").
 		Joins("JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id and l.deleted_at is null").
 		Where("oca.facility_id = ?", id)
-	if days != -1 {
-		tx = tx.Where("oca.request_ts >= ?", daysAgo)
+	if start != nil && end != nil {
+		tx = tx.Where("oca.request_ts >= ? AND oca.request_ts < ?", *start, *end)
 	}
 	if err := tx.
 		Group("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id").
