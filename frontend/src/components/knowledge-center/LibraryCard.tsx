@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, StarOff, Flag, FlagOff, Search } from 'lucide-react';
 import { Library, ToastState, UserRole, ViewType } from '@/types';
 import { useAuth, isAdministrator, AdminRoles } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import API from '@/api/api';
@@ -177,9 +177,7 @@ export default function LibraryCard({
                 <h3 className="text-sm font-medium text-foreground">
                     {library.title}
                 </h3>
-                <p className="caption-clamp">
-                    {library.description}
-                </p>
+                <p className="caption-clamp">{library.description}</p>
             </div>
             <div className="flex items-center gap-2">
                 {onSearchClick && (

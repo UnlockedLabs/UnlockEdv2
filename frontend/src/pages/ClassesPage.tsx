@@ -82,13 +82,19 @@ export default function ClassesPage() {
     const [facilityFilter, setFacilityFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showFacilityModal, setShowFacilityModal] = useState(false);
-    const [selectedFacilityForClass, setSelectedFacilityForClass] =
-        useState<number | null>(null);
+    const [selectedFacilityForClass, setSelectedFacilityForClass] = useState<
+        number | null
+    >(null);
     const [facilitySearch, setFacilitySearch] = useState('');
     const [programSearch, setProgramSearch] = useState('');
     const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
     const [showBulkCancel, setShowBulkCancel] = useState(false);
-    const { page: currentPage, perPage: itemsPerPage, setPage: setCurrentPage, setPerPage: setItemsPerPage } = useUrlPagination();
+    const {
+        page: currentPage,
+        perPage: itemsPerPage,
+        setPage: setCurrentPage,
+        setPerPage: setItemsPerPage
+    } = useUrlPagination();
 
     const crossFacility = user ? canSwitchFacility(user) : false;
 
@@ -108,8 +114,11 @@ export default function ClassesPage() {
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
         crossFacility ? '/api/facilities' : null
     );
-    const allClasses = classesResp?.data ?? [];
-    const facilities = facilitiesResp?.data ?? [];
+    const allClasses = useMemo(() => classesResp?.data ?? [], [classesResp]);
+    const facilities = useMemo(
+        () => facilitiesResp?.data ?? [],
+        [facilitiesResp]
+    );
 
     const facilityClasses = useMemo(() => {
         if (crossFacility || !user) return allClasses;
@@ -195,7 +204,9 @@ export default function ClassesPage() {
                     cls.status === SelectedClassStatus.Scheduled
             );
         } else if (statusFilter !== 'all') {
-            result = result.filter((cls) => cls.status === (statusFilter as SelectedClassStatus));
+            result = result.filter(
+                (cls) => cls.status === (statusFilter as SelectedClassStatus)
+            );
         }
 
         return result;
@@ -210,7 +221,15 @@ export default function ClassesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter, setCurrentPage]);
+    }, [
+        searchQuery,
+        todayOnly,
+        attendanceConcerns,
+        facilityFilter,
+        programFilter,
+        statusFilter,
+        setCurrentPage
+    ]);
 
     const paginatedClasses = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -219,13 +238,11 @@ export default function ClassesPage() {
 
     return (
         <>
-        <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto px-6 py-8">
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="text-brand-dark">
-                                Classes
-                            </h1>
+                            <h1 className="text-brand-dark">Classes</h1>
                             <p className="text-gray-600 mt-1">
                                 Manage and monitor all classes at your facility
                             </p>
@@ -263,18 +280,14 @@ export default function ClassesPage() {
                             <Input
                                 placeholder="Search classes, programs, or instructors..."
                                 value={searchQuery}
-                                onChange={(e) =>
-                                    setSearchQuery(e.target.value)
-                                }
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
                             />
                         </div>
                         <Button
                             variant={todayOnly ? 'default' : 'outline'}
                             className={cn(
-                                todayOnly
-                                    ? 'bg-brand hover:bg-brand-dark'
-                                    : ''
+                                todayOnly ? 'bg-brand hover:bg-brand-dark' : ''
                             )}
                             onClick={() => setTodayOnly(!todayOnly)}
                         >
@@ -282,9 +295,7 @@ export default function ClassesPage() {
                             Today Only
                         </Button>
                         <Button
-                            variant={
-                                attendanceConcerns ? 'default' : 'outline'
-                            }
+                            variant={attendanceConcerns ? 'default' : 'outline'}
                             className={cn(
                                 attendanceConcerns
                                     ? 'bg-brand-gold hover:bg-brand-gold-dark text-brand-dark'
@@ -334,10 +345,7 @@ export default function ClassesPage() {
                                     All Programs
                                 </SelectItem>
                                 {programOptions.map(([id, name]) => (
-                                    <SelectItem
-                                        key={id}
-                                        value={String(id)}
-                                    >
+                                    <SelectItem key={id} value={String(id)}>
                                         {name}
                                     </SelectItem>
                                 ))}
@@ -406,8 +414,7 @@ export default function ClassesPage() {
                                         <Users className="size-12 mx-auto mb-3 text-gray-300" />
                                         <p>No classes found</p>
                                         <p className="text-sm mt-1">
-                                            Try adjusting your search or
-                                            filters
+                                            Try adjusting your search or filters
                                         </p>
                                     </td>
                                 </tr>
@@ -452,48 +459,44 @@ export default function ClassesPage() {
                 titleClassName="text-foreground"
             >
                 <div className="space-y-3 mt-4">
-                        <div className="relative">
-                            <Search className="input-icon-left size-4" />
-                            <Input
-                                placeholder="Search facilities..."
-                                value={facilitySearch}
-                                onChange={(e) =>
-                                    setFacilitySearch(e.target.value)
-                                }
-                                className="pl-10"
-                            />
-                        </div>
-                        <div className="max-h-[400px] overflow-y-auto space-y-2">
-                            {facilities
-                                .filter(
-                                    (f) =>
-                                        !facilitySearch ||
-                                        f.name
-                                            .toLowerCase()
-                                            .includes(
-                                                facilitySearch.toLowerCase()
-                                            )
-                                )
-                                .map((facility) => (
-                                    <button
-                                        key={facility.id}
-                                        onClick={() => {
-                                            setSelectedFacilityForClass(
-                                                facility.id
-                                            );
-                                            setShowFacilityModal(false);
-                                            setFacilitySearch('');
-                                            setShowCreateModal(true);
-                                        }}
-                                        className="list-card"
-                                    >
-                                        <div className="text-brand-dark font-medium">
-                                            {facility.name}
-                                        </div>
-                                    </button>
-                                ))}
-                        </div>
+                    <div className="relative">
+                        <Search className="input-icon-left size-4" />
+                        <Input
+                            placeholder="Search facilities..."
+                            value={facilitySearch}
+                            onChange={(e) => setFacilitySearch(e.target.value)}
+                            className="pl-10"
+                        />
                     </div>
+                    <div className="max-h-[400px] overflow-y-auto space-y-2">
+                        {facilities
+                            .filter(
+                                (f) =>
+                                    !facilitySearch ||
+                                    f.name
+                                        .toLowerCase()
+                                        .includes(facilitySearch.toLowerCase())
+                            )
+                            .map((facility) => (
+                                <button
+                                    key={facility.id}
+                                    onClick={() => {
+                                        setSelectedFacilityForClass(
+                                            facility.id
+                                        );
+                                        setShowFacilityModal(false);
+                                        setFacilitySearch('');
+                                        setShowCreateModal(true);
+                                    }}
+                                    className="list-card"
+                                >
+                                    <div className="text-brand-dark font-medium">
+                                        {facility.name}
+                                    </div>
+                                </button>
+                            ))}
+                    </div>
+                </div>
             </FormModal>
 
             <FormModal
@@ -509,7 +512,9 @@ export default function ClassesPage() {
                 description="Classes are organized within Programs. Which program is this class for?"
                 titleClassName="text-foreground"
             >
-                    {crossFacility && selectedFacilityForClass && (() => {
+                {crossFacility &&
+                    selectedFacilityForClass &&
+                    (() => {
                         const selectedFacility = facilities.find(
                             (f) => f.id === selectedFacilityForClass
                         );
@@ -539,49 +544,49 @@ export default function ClassesPage() {
                             </div>
                         );
                     })()}
-                    <div className="space-y-3 mt-4">
-                        <div className="relative">
-                            <Search className="input-icon-left size-4" />
-                            <Input
-                                placeholder="Search programs..."
-                                value={programSearch}
-                                onChange={(e) => {
-                                    setProgramSearch(e.target.value);
-                                                            }}
-                                className="pl-10"
-                            />
-                        </div>
-                        <div className="max-h-[400px] overflow-y-auto space-y-2">
-                            {!programsResp ? (
-                                <p className="text-center text-gray-500 py-8">
-                                    Loading programs...
-                                </p>
-                            ) : filteredPrograms.length === 0 ? (
-                                <p className="text-center text-gray-500 py-8">
-                                    No programs found.
-                                </p>
-                            ) : (
-                                filteredPrograms.map((program) => (
-                                    <button
-                                        key={program.id}
-                                        onClick={() =>
-                                            handleProgramSelect(program.id)
-                                        }
-                                        className="list-card"
-                                    >
-                                        <div className="text-brand-dark font-medium">
-                                            {program.name}
-                                        </div>
-                                        {program.description && (
-                                            <div className="text-sm text-gray-600 mt-1">
-                                                {program.description}
-                                            </div>
-                                        )}
-                                    </button>
-                                ))
-                            )}
-                        </div>
+                <div className="space-y-3 mt-4">
+                    <div className="relative">
+                        <Search className="input-icon-left size-4" />
+                        <Input
+                            placeholder="Search programs..."
+                            value={programSearch}
+                            onChange={(e) => {
+                                setProgramSearch(e.target.value);
+                            }}
+                            className="pl-10"
+                        />
                     </div>
+                    <div className="max-h-[400px] overflow-y-auto space-y-2">
+                        {!programsResp ? (
+                            <p className="text-center text-gray-500 py-8">
+                                Loading programs...
+                            </p>
+                        ) : filteredPrograms.length === 0 ? (
+                            <p className="text-center text-gray-500 py-8">
+                                No programs found.
+                            </p>
+                        ) : (
+                            filteredPrograms.map((program) => (
+                                <button
+                                    key={program.id}
+                                    onClick={() =>
+                                        handleProgramSelect(program.id)
+                                    }
+                                    className="list-card"
+                                >
+                                    <div className="text-brand-dark font-medium">
+                                        {program.name}
+                                    </div>
+                                    {program.description && (
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            {program.description}
+                                        </div>
+                                    )}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
             </FormModal>
 
             {attendanceClass && (
@@ -648,11 +653,9 @@ function ClassRow({
                             </div>
                         )}
                         {showFacility &&
-                            (cls.facility_name ||
-                                cls.facility?.name) && (
+                            (cls.facility_name || cls.facility?.name) && (
                                 <div className="text-xs text-gray-500 mt-1">
-                                    {cls.facility_name ||
-                                        cls.facility?.name}
+                                    {cls.facility_name || cls.facility?.name}
                                 </div>
                             )}
                     </div>
@@ -706,10 +709,7 @@ function ClassRow({
                 </div>
             </td>
             <td className="px-6 py-4">
-                <Badge
-                    variant="outline"
-                    className={getStatusColor(cls.status)}
-                >
+                <Badge variant="outline" className={getStatusColor(cls.status)}>
                     {cls.status}
                 </Badge>
             </td>

@@ -8,7 +8,7 @@ import {
     ViewType
 } from '@/types';
 import { isAdministrator, useAuth } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import API from '@/api/api';
 
 interface FavoriteCardProps {
@@ -144,9 +144,7 @@ export default function FavoriteCard({
                     : 'cursor-pointer hover:shadow-md transition-shadow'
             }`}
             title={
-                isDisabled
-                    ? 'This content is no longer accessible'
-                    : undefined
+                isDisabled ? 'This content is no longer accessible' : undefined
             }
             onClick={isDisabled ? undefined : handleCardClick}
         >

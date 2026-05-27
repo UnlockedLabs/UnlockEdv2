@@ -13,13 +13,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Building2, LogOut } from 'lucide-react';
-import { usePageTitle } from '@/contexts/PageTitleContext';
+import { usePageTitle } from '@/contexts/usePageTitle';
 
-export default function TopNav({
-    facilities
-}: {
-    facilities?: Facility[];
-}) {
+export default function TopNav({ facilities }: { facilities?: Facility[] }) {
     const { user } = useAuth();
     const { pageTitle } = usePageTitle();
 
@@ -36,8 +32,7 @@ export default function TopNav({
             if (params.get('page') !== null) {
                 params.set('page', '1');
             }
-            const paramsString =
-                params.size > 0 ? '?' + params.toString() : '';
+            const paramsString = params.size > 0 ? '?' + params.toString() : '';
             window.location.href = window.location.pathname + paramsString;
         }
     };
@@ -61,11 +56,7 @@ export default function TopNav({
                 facilities.length > 0 ? (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="gap-2"
-                            >
+                            <Button variant="ghost" size="sm" className="gap-2">
                                 <Building2 className="h-4 w-4" />
                                 <span className="hidden sm:inline truncate max-w-[8rem]">
                                     {user.facility.name}
@@ -87,14 +78,9 @@ export default function TopNav({
                     </DropdownMenu>
                 ) : null}
 
-
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2"
-                        >
+                        <Button variant="ghost" size="sm" className="gap-2">
                             <div className="size-7 rounded-full bg-brand dark:bg-[#8fb55e] flex items-center justify-center text-white text-xs font-medium">
                                 {user.name_first?.[0]}
                                 {user.name_last?.[0]}

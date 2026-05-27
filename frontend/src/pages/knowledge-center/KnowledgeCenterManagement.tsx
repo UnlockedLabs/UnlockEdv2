@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Pagination } from '@/components/Pagination';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useDebounceValue } from 'usehooks-ts';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import {
     Library,
     Video,
@@ -46,18 +46,33 @@ import {
 } from '@/lib/formatters';
 import API from '@/api/api';
 
-
 interface CardHandlers {
-    onToggleFeatured: (id: number, type: 'library' | 'video' | 'link', isFeatured: boolean) => void;
-    onToggleVisibility: (id: number, type: 'library' | 'video' | 'link', isVisible: boolean) => void;
+    onToggleFeatured: (
+        id: number,
+        type: 'library' | 'video' | 'link',
+        isFeatured: boolean
+    ) => void;
+    onToggleVisibility: (
+        id: number,
+        type: 'library' | 'video' | 'link',
+        isVisible: boolean
+    ) => void;
     onNavigate: (path: string) => void;
 }
 
-function LibraryCard({ library, handlers }: { library: Library; handlers: CardHandlers }) {
+function LibraryCard({
+    library,
+    handlers
+}: {
+    library: Library;
+    handlers: CardHandlers;
+}) {
     return (
         <div
             className="media-card group"
-            onClick={() => handlers.onNavigate(`/viewer/libraries/${library.id}`)}
+            onClick={() =>
+                handlers.onNavigate(`/viewer/libraries/${library.id}`)
+            }
         >
             <TooltipProvider>
                 <Tooltip>
@@ -65,7 +80,11 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(library.id, 'library', !!library.is_featured);
+                                handlers.onToggleFeatured(
+                                    library.id,
+                                    'library',
+                                    !!library.is_featured
+                                );
                             }}
                             className="btn-corner"
                         >
@@ -88,9 +107,7 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     className="size-12 rounded flex-shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="card-title-link">
-                        {library.title}
-                    </h3>
+                    <h3 className="card-title-link">{library.title}</h3>
                 </div>
             </div>
             <p className="text-sm text-gray-600 line-clamp-2 mb-3">
@@ -104,13 +121,19 @@ function LibraryCard({ library, handlers }: { library: Library; handlers: CardHa
                     <Switch
                         checked={library.visibility_status}
                         onCheckedChange={() =>
-                            handlers.onToggleVisibility(library.id, 'library', library.visibility_status)
+                            handlers.onToggleVisibility(
+                                library.id,
+                                'library',
+                                library.visibility_status
+                            )
                         }
                     />
                     <span className="text-gray-700">Visible</span>
                 </label>
                 <Badge
-                    variant={library.visibility_status ? 'default' : 'secondary'}
+                    variant={
+                        library.visibility_status ? 'default' : 'secondary'
+                    }
                     className={
                         library.visibility_status
                             ? 'bg-green-100 text-green-800 hover:bg-green-100'
@@ -137,7 +160,8 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
         <div
             className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative`}
             onClick={() => {
-                if (available) handlers.onNavigate(`/viewer/videos/${video.id}`);
+                if (available)
+                    handlers.onNavigate(`/viewer/videos/${video.id}`);
             }}
         >
             <TooltipProvider>
@@ -146,7 +170,11 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(video.id, 'video', !!video.is_featured);
+                                handlers.onToggleFeatured(
+                                    video.id,
+                                    'video',
+                                    !!video.is_featured
+                                );
                             }}
                             className="btn-corner"
                         >
@@ -174,9 +202,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="card-title-link">
-                        {video.title}
-                    </h3>
+                    <h3 className="card-title-link">{video.title}</h3>
                     <p className="text-sm text-gray-500">
                         {video.channel_title}
                     </p>
@@ -189,9 +215,11 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
             ) : (
                 <div className="mb-3" onClick={(e) => e.stopPropagation()}>
                     <p className="text-sm text-red-600 mb-2">
-                        {getVideoErrorMessage(video) ?? 'Video is processing...'}
+                        {getVideoErrorMessage(video) ??
+                            'Video is processing...'}
                     </p>
-                    {video.video_download_attempts.length < MAX_DOWNLOAD_ATTEMPTS && (
+                    {video.video_download_attempts.length <
+                        MAX_DOWNLOAD_ATTEMPTS && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -219,7 +247,11 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     <Switch
                         checked={video.visibility_status}
                         onCheckedChange={() =>
-                            handlers.onToggleVisibility(video.id, 'video', video.visibility_status)
+                            handlers.onToggleVisibility(
+                                video.id,
+                                'video',
+                                video.visibility_status
+                            )
                         }
                     />
                     <span className="text-gray-700">Visible</span>
@@ -239,19 +271,28 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
     );
 }
 
-function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers: CardHandlers; onLinkClick: (link: HelpfulLink) => void }) {
+function LinkCard({
+    link,
+    handlers,
+    onLinkClick
+}: {
+    link: HelpfulLink;
+    handlers: CardHandlers;
+    onLinkClick: (link: HelpfulLink) => void;
+}) {
     return (
-        <div
-            className="media-card group"
-            onClick={() => onLinkClick(link)}
-        >
+        <div className="media-card group" onClick={() => onLinkClick(link)}>
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handlers.onToggleFeatured(link.id, 'link', !!link.is_featured);
+                                handlers.onToggleFeatured(
+                                    link.id,
+                                    'link',
+                                    !!link.is_featured
+                                );
                             }}
                             className="btn-corner"
                         >
@@ -268,9 +309,7 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="card-title-link">
-                    {link.title}
-                </h3>
+                <h3 className="card-title-link">{link.title}</h3>
             </div>
             <p className="text-sm text-brand mb-2 truncate">{link.url}</p>
             <p className="text-sm text-gray-600 line-clamp-2 mb-3">
@@ -284,7 +323,11 @@ function LinkCard({ link, handlers, onLinkClick }: { link: HelpfulLink; handlers
                     <Switch
                         checked={link.visibility_status}
                         onCheckedChange={() =>
-                            handlers.onToggleVisibility(link.id, 'link', link.visibility_status)
+                            handlers.onToggleVisibility(
+                                link.id,
+                                'link',
+                                link.visibility_status
+                            )
                         }
                     />
                     <span className="text-gray-700">Visible</span>
@@ -313,7 +356,12 @@ export default function KnowledgeCenterManagement() {
     const [visibilityFilter, setVisibilityFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [currentTab, setCurrentTab] = useState('libraries');
-    const { page: currentPage, perPage: itemsPerPage, setPage: setCurrentPage, setPerPage } = useUrlPagination();
+    const {
+        page: currentPage,
+        perPage: itemsPerPage,
+        setPage: setCurrentPage,
+        setPerPage
+    } = useUrlPagination();
 
     const [showAddVideo, setShowAddVideo] = useState(false);
     const [showAddLink, setShowAddLink] = useState(false);
@@ -352,29 +400,24 @@ export default function KnowledgeCenterManagement() {
         return `&tags=${categoryFilter}`;
     }, [categoryFilter]);
 
-    const { data: tagsData } = useSWR<ServerResponseMany<Option>>(
-        '/api/tags'
-    );
+    const { data: tagsData } = useSWR<ServerResponseMany<Option>>('/api/tags');
     const categories = tagsData?.data ?? [];
 
-    const {
-        data: libData,
-        mutate: mutateLibs
-    } = useSWR<ServerResponseMany<Library>>(
+    const { data: libData, mutate: mutateLibs } = useSWR<
+        ServerResponseMany<Library>
+    >(
         `/api/libraries?page=1&per_page=500&order_by=title&order=asc${visibilityParam}&search=${searchQuery}${categoryParam}`
     );
 
-    const {
-        data: vidData,
-        mutate: mutateVids
-    } = useSWR<ServerResponseMany<Video>>(
+    const { data: vidData, mutate: mutateVids } = useSWR<
+        ServerResponseMany<Video>
+    >(
         `/api/videos?page=1&per_page=500&order_by=title&order=asc${visibilityParam}&search=${searchQuery}`
     );
 
-    const {
-        data: linkData,
-        mutate: mutateLinks
-    } = useSWR<ServerResponseOne<HelpfulLinkAndSort>>(
+    const { data: linkData, mutate: mutateLinks } = useSWR<
+        ServerResponseOne<HelpfulLinkAndSort>
+    >(
         `/api/helpful-links?search=${searchQuery}&page=1&per_page=500&order_by=title&order=asc`
     );
 
@@ -410,7 +453,10 @@ export default function KnowledgeCenterManagement() {
     }, [vidData?.data, visibilityFilter]);
 
     const vidTotal = useMemo(() => {
-        if (visibilityFilter === 'featured' || visibilityFilter === 'not-featured')
+        if (
+            visibilityFilter === 'featured' ||
+            visibilityFilter === 'not-featured'
+        )
             return videos.length;
         return vidData?.meta?.total ?? 0;
     }, [vidData?.meta?.total, visibilityFilter, videos.length]);
@@ -425,9 +471,7 @@ export default function KnowledgeCenterManagement() {
                       ? false
                       : null;
             if (vis !== null) {
-                return items.filter(
-                    (link) => link.visibility_status === vis
-                );
+                return items.filter((link) => link.visibility_status === vis);
             }
             if (visibilityFilter === 'featured') {
                 return items.filter((link) => link.is_featured);
@@ -554,10 +598,7 @@ export default function KnowledgeCenterManagement() {
     };
 
     const handleAddLink = async () => {
-        const resp = await API.put<null, object>(
-            'helpful-links',
-            linkFormData
-        );
+        const resp = await API.put<null, object>('helpful-links', linkFormData);
         if (resp.success) {
             toaster('Link added successfully', ToastState.success);
             setShowAddLink(false);
@@ -588,10 +629,10 @@ export default function KnowledgeCenterManagement() {
     };
 
     const handleLinkClick = async (link: HelpfulLink) => {
-        const resp = await API.put<
-            { url: string },
-            object
-        >(`helpful-links/activity/${link.id}`, {});
+        const resp = await API.put<{ url: string }, object>(
+            `helpful-links/activity/${link.id}`,
+            {}
+        );
         if (resp.success && resp.data) {
             window.open(
                 (resp.data as { url: string }).url ?? link.url,
@@ -611,8 +652,10 @@ export default function KnowledgeCenterManagement() {
     };
 
     const cardHandlers: CardHandlers = {
-        onToggleFeatured: (id, type, isFeatured) => void handleToggleFeatured(id, type, isFeatured),
-        onToggleVisibility: (id, type, isVisible) => void handleToggleVisibility(id, type, isVisible),
+        onToggleFeatured: (id, type, isFeatured) =>
+            void handleToggleFeatured(id, type, isFeatured),
+        onToggleVisibility: (id, type, isVisible) =>
+            void handleToggleVisibility(id, type, isVisible),
         onNavigate: (path) => navigate(path)
     };
 
@@ -654,9 +697,7 @@ export default function KnowledgeCenterManagement() {
                             <SelectItem value="visible">
                                 Visible Only
                             </SelectItem>
-                            <SelectItem value="hidden">
-                                Hidden Only
-                            </SelectItem>
+                            <SelectItem value="hidden">Hidden Only</SelectItem>
                             <SelectItem value="featured">
                                 Featured Only
                             </SelectItem>
@@ -744,9 +785,7 @@ export default function KnowledgeCenterManagement() {
                 <TabsContent value="libraries" className="space-y-4">
                     {libraries.length === 0 ? (
                         <div className="empty-state">
-                            <p className="text-gray-500">
-                                No libraries found.
-                            </p>
+                            <p className="text-gray-500">No libraries found.</p>
                         </div>
                     ) : (
                         <>
@@ -783,7 +822,9 @@ export default function KnowledgeCenterManagement() {
                                         key={video.id}
                                         video={video}
                                         handlers={cardHandlers}
-                                        onRetry={(v) => void handleRetryVideo(v)}
+                                        onRetry={(v) =>
+                                            void handleRetryVideo(v)
+                                        }
                                         onViewStatus={(v) => {
                                             setTargetVideo(v);
                                             setStatusDialogOpen(true);
@@ -817,7 +858,9 @@ export default function KnowledgeCenterManagement() {
                                         key={link.id}
                                         link={link}
                                         handlers={cardHandlers}
-                                        onLinkClick={(l) => void handleLinkClick(l)}
+                                        onLinkClick={(l) =>
+                                            void handleLinkClick(l)
+                                        }
                                     />
                                 ))}
                             </div>
@@ -878,70 +921,68 @@ export default function KnowledgeCenterManagement() {
                 titleClassName="text-foreground"
             >
                 <div className="space-y-4 pt-4">
-                        <div>
-                            <Label htmlFor="link-title">Title *</Label>
-                            <Input
-                                id="link-title"
-                                placeholder="Enter link title"
-                                value={linkFormData.title}
-                                onChange={(e) =>
-                                    setLinkFormData({
-                                        ...linkFormData,
-                                        title: e.target.value
-                                    })
-                                }
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="link-url">URL *</Label>
-                            <Input
-                                id="link-url"
-                                placeholder="https://example.com"
-                                value={linkFormData.url}
-                                onChange={(e) =>
-                                    setLinkFormData({
-                                        ...linkFormData,
-                                        url: e.target.value
-                                    })
-                                }
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="link-description">
-                                Description *
-                            </Label>
-                            <Textarea
-                                id="link-description"
-                                placeholder="Enter a brief description of this resource"
-                                value={linkFormData.description}
-                                onChange={(e) =>
-                                    setLinkFormData({
-                                        ...linkFormData,
-                                        description: e.target.value
-                                    })
-                                }
-                                rows={3}
-                            />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowAddLink(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="brand"
-                                onClick={() => void handleAddLink()}
-                                disabled={
-                                    !linkFormData.title ||
-                                    !linkFormData.url ||
-                                    !linkFormData.description
-                                }
-                            >
-                                Add Link
-                            </Button>
-                        </div>
+                    <div>
+                        <Label htmlFor="link-title">Title *</Label>
+                        <Input
+                            id="link-title"
+                            placeholder="Enter link title"
+                            value={linkFormData.title}
+                            onChange={(e) =>
+                                setLinkFormData({
+                                    ...linkFormData,
+                                    title: e.target.value
+                                })
+                            }
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="link-url">URL *</Label>
+                        <Input
+                            id="link-url"
+                            placeholder="https://example.com"
+                            value={linkFormData.url}
+                            onChange={(e) =>
+                                setLinkFormData({
+                                    ...linkFormData,
+                                    url: e.target.value
+                                })
+                            }
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="link-description">Description *</Label>
+                        <Textarea
+                            id="link-description"
+                            placeholder="Enter a brief description of this resource"
+                            value={linkFormData.description}
+                            onChange={(e) =>
+                                setLinkFormData({
+                                    ...linkFormData,
+                                    description: e.target.value
+                                })
+                            }
+                            rows={3}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAddLink(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="brand"
+                            onClick={() => void handleAddLink()}
+                            disabled={
+                                !linkFormData.title ||
+                                !linkFormData.url ||
+                                !linkFormData.description
+                            }
+                        >
+                            Add Link
+                        </Button>
+                    </div>
                 </div>
             </FormModal>
 

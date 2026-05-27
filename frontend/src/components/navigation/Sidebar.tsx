@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import Brand from '@/components/Brand';
 import { Button } from '@/components/ui/button';
-import { useTourContext } from '@/contexts/TourContext';
+import { useTourContext } from '@/contexts/useTourContext';
 import { LogOut } from 'lucide-react';
 import {
     HomeIcon,
@@ -237,9 +237,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     label="Knowledge Center"
                     icon={BookOpenIcon}
                     collapsed={collapsed}
-                    isActive={isActive([
-                        '/knowledge-center-management'
-                    ])}
+                    isActive={isActive(['/knowledge-center-management'])}
                     onNavigate={onNavigate}
                     items={[
                         {
@@ -255,7 +253,12 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
     );
 }
 
-function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: NavSectionProps) {
+function StudentNav({
+    collapsed,
+    isActive,
+    onNavigate,
+    onToggleHelpCenter
+}: NavSectionProps) {
     const { user } = useAuth();
     const { tourState } = useTourContext();
     if (!user) return null;
@@ -389,12 +392,7 @@ interface NavButtonProps {
     onClick?: () => void;
 }
 
-function NavButton({
-    icon: Icon,
-    label,
-    collapsed,
-    onClick
-}: NavButtonProps) {
+function NavButton({ icon: Icon, label, collapsed, onClick }: NavButtonProps) {
     return (
         <button
             onClick={onClick}

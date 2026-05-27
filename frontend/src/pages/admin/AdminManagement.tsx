@@ -11,7 +11,7 @@ import {
     KeyRound
 } from 'lucide-react';
 import { useAuth, isSysAdmin, canSwitchFacility } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import API from '@/api/api';
 import { UserRole } from '@/types/user';
 import {
@@ -128,7 +128,10 @@ function getRoleBadge(role: UserRole) {
         );
     }
     return (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+        <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-300"
+        >
             Facility Admin
         </Badge>
     );
@@ -160,7 +163,9 @@ export default function AdminManagement() {
 
     const { page, perPage, setPage, setPerPage } = useUrlPagination();
 
-    const [selectedAdmins, setSelectedAdmins] = useState<Map<number, User>>(new Map());
+    const [selectedAdmins, setSelectedAdmins] = useState<Map<number, User>>(
+        new Map()
+    );
 
     useEffect(() => {
         setSelectedAdmins(new Map());
@@ -173,7 +178,9 @@ export default function AdminManagement() {
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [tempPassword, setTempPassword] = useState('');
     const [passwordCopied, setPasswordCopied] = useState(false);
-    const [passwordModalContext, setPasswordModalContext] = useState<'create' | 'reset'>('reset');
+    const [passwordModalContext, setPasswordModalContext] = useState<
+        'create' | 'reset'
+    >('reset');
 
     const [showBulkResetPassword, setShowBulkResetPassword] = useState(false);
     const [showBulkDelete, setShowBulkDelete] = useState(false);
@@ -198,9 +205,21 @@ export default function AdminManagement() {
             params.set('facility_id', facilityFilter);
         }
         return `/api/users?${params.toString()}`;
-    }, [user, searchQuery, page, perPage, sortColumn, sortDirection, canSwitchFac, facilityFilter]);
+    }, [
+        user,
+        searchQuery,
+        page,
+        perPage,
+        sortColumn,
+        sortDirection,
+        canSwitchFac,
+        facilityFilter
+    ]);
 
-    const { data, mutate, error, isLoading } = useSWR<ServerResponseMany<User>, Error>(usersUrl);
+    const { data, mutate, error, isLoading } = useSWR<
+        ServerResponseMany<User>,
+        Error
+    >(usersUrl);
     const admins = data?.data ?? [];
     const totalItems = data?.meta?.total ?? 0;
 
@@ -221,7 +240,10 @@ export default function AdminManagement() {
         }
         return `/api/users?${params.toString()}`;
     }, [user, canSwitchFac, facilityFilter]);
-    const { data: statsResp, mutate: mutateStats } = useSWR<ServerResponseMany<User>, Error>(statsUrl);
+    const { data: statsResp, mutate: mutateStats } = useSWR<
+        ServerResponseMany<User>,
+        Error
+    >(statsUrl);
     const allAdmins = statsResp?.data ?? [];
     const totalAdmins = statsResp?.meta?.total ?? allAdmins.length;
     const deptAdminCount = allAdmins.filter(
@@ -234,7 +256,10 @@ export default function AdminManagement() {
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
         canSwitchFac ? '/api/facilities' : null
     );
-    const facilities = facilitiesResp?.data ?? [];
+    const facilities = useMemo(
+        () => facilitiesResp?.data ?? [],
+        [facilitiesResp]
+    );
 
     const facilityById = useMemo(() => {
         const map = new Map<number, Facility>();
@@ -280,7 +305,9 @@ export default function AdminManagement() {
     const openAddDialog = () => {
         setFormData({
             ...emptyForm,
-            role: canManageDeptAdmins ? UserRole.DepartmentAdmin : UserRole.FacilityAdmin,
+            role: canManageDeptAdmins
+                ? UserRole.DepartmentAdmin
+                : UserRole.FacilityAdmin,
             facility_id: user?.facility_id ?? null
         });
         setShowAddAdmin(true);
@@ -300,8 +327,15 @@ export default function AdminManagement() {
     };
 
     const handleAddAdmin = async () => {
-        if (!formData.name_first.trim() || !formData.name_last.trim() || !formData.username.trim()) {
-            toaster('First name, last name, and username are required', ToastState.error);
+        if (
+            !formData.name_first.trim() ||
+            !formData.name_last.trim() ||
+            !formData.username.trim()
+        ) {
+            toaster(
+                'First name, last name, and username are required',
+                ToastState.error
+            );
             return;
         }
         const payload = {
@@ -333,7 +367,10 @@ export default function AdminManagement() {
             void mutate();
             void mutateStats();
         } else {
-            toaster(response.message || 'Failed to create administrator', ToastState.error);
+            toaster(
+                response.message || 'Failed to create administrator',
+                ToastState.error
+            );
         }
     };
 
@@ -344,7 +381,9 @@ export default function AdminManagement() {
             name_last: formData.name_last,
             username: formData.username,
             email: formData.email,
-            ...(canSwitchFac && formData.role === UserRole.FacilityAdmin && formData.facility_id
+            ...(canSwitchFac &&
+            formData.role === UserRole.FacilityAdmin &&
+            formData.facility_id
                 ? { facility_id: formData.facility_id }
                 : {})
         };
@@ -362,7 +401,10 @@ export default function AdminManagement() {
             void mutate();
             void mutateStats();
         } else {
-            toaster(response.message || 'Failed to update administrator', ToastState.error);
+            toaster(
+                response.message || 'Failed to update administrator',
+                ToastState.error
+            );
         }
     };
 
@@ -389,7 +431,10 @@ export default function AdminManagement() {
     const handleDelete = async () => {
         if (!selectedAdmin) return;
         if (selectedAdmin.role === UserRole.SystemAdmin) {
-            toaster('System administrators cannot be deleted', ToastState.error);
+            toaster(
+                'System administrators cannot be deleted',
+                ToastState.error
+            );
             return;
         }
         const response = await API.delete(`users/${selectedAdmin.id}`);
@@ -403,7 +448,10 @@ export default function AdminManagement() {
             void mutate();
             void mutateStats();
         } else {
-            toaster(response.message || 'Failed to delete administrator', ToastState.error);
+            toaster(
+                response.message || 'Failed to delete administrator',
+                ToastState.error
+            );
         }
     };
 
@@ -476,7 +524,10 @@ export default function AdminManagement() {
                         <SelectContent>
                             <SelectItem value="all">All Facilities</SelectItem>
                             {facilities.map((facility) => (
-                                <SelectItem key={facility.id} value={String(facility.id)}>
+                                <SelectItem
+                                    key={facility.id}
+                                    value={String(facility.id)}
+                                >
                                     {facility.name}
                                 </SelectItem>
                             ))}
@@ -488,16 +539,28 @@ export default function AdminManagement() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="card-block p-4">
-                    <div className="text-sm text-gray-600 mb-1">Total Admins</div>
-                    <div className="text-2xl font-medium text-brand-dark">{totalAdmins}</div>
+                    <div className="text-sm text-gray-600 mb-1">
+                        Total Admins
+                    </div>
+                    <div className="text-2xl font-medium text-brand-dark">
+                        {totalAdmins}
+                    </div>
                 </div>
                 <div className="card-block p-4">
-                    <div className="text-sm text-gray-600 mb-1">Department Admins</div>
-                    <div className="text-2xl font-medium text-brand">{deptAdminCount}</div>
+                    <div className="text-sm text-gray-600 mb-1">
+                        Department Admins
+                    </div>
+                    <div className="text-2xl font-medium text-brand">
+                        {deptAdminCount}
+                    </div>
                 </div>
                 <div className="card-block p-4">
-                    <div className="text-sm text-gray-600 mb-1">Facility Admins</div>
-                    <div className="text-2xl font-medium text-blue-700">{facilityAdminCount}</div>
+                    <div className="text-sm text-gray-600 mb-1">
+                        Facility Admins
+                    </div>
+                    <div className="text-2xl font-medium text-blue-700">
+                        {facilityAdminCount}
+                    </div>
                 </div>
             </div>
 
@@ -510,7 +573,8 @@ export default function AdminManagement() {
                                 {selectedAdmins.size}
                             </span>
                             <span className="text-gray-600 ml-1">
-                                {selectedAdmins.size === 1 ? 'admin' : 'admins'} selected
+                                {selectedAdmins.size === 1 ? 'admin' : 'admins'}{' '}
+                                selected
                             </span>
                         </div>
                         <div className="flex gap-3">
@@ -599,19 +663,27 @@ export default function AdminManagement() {
                                     <ArrowUpDown className="size-4" />
                                 </div>
                             </TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right">
+                                Actions
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {error ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-32 text-center text-destructive">
+                                <TableCell
+                                    colSpan={7}
+                                    className="h-32 text-center text-destructive"
+                                >
                                     Failed to load administrators.
                                 </TableCell>
                             </TableRow>
                         ) : isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-32 text-center text-gray-500">
+                                <TableCell
+                                    colSpan={7}
+                                    className="h-32 text-center text-gray-500"
+                                >
                                     Loading administrators...
                                 </TableCell>
                             </TableRow>
@@ -620,16 +692,23 @@ export default function AdminManagement() {
                                 <TableCell colSpan={7} className="h-32">
                                     <div className="flex flex-col items-center gap-2">
                                         <Users className="size-12 text-gray-300" />
-                                        <p className="text-gray-500">No admins found</p>
+                                        <p className="text-gray-500">
+                                            No admins found
+                                        </p>
                                     </div>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             admins.map((admin) => (
-                                <TableRow key={admin.id} className="hover:bg-gray-50">
+                                <TableRow
+                                    key={admin.id}
+                                    className="hover:bg-gray-50"
+                                >
                                     <TableCell>
                                         <Checkbox
-                                            checked={selectedAdmins.has(admin.id)}
+                                            checked={selectedAdmins.has(
+                                                admin.id
+                                            )}
                                             onCheckedChange={() =>
                                                 toggleSelectAdmin(admin)
                                             }
@@ -642,19 +721,25 @@ export default function AdminManagement() {
                                     <TableCell className="text-sm text-gray-600">
                                         {admin.username}
                                     </TableCell>
-                                    <TableCell>{getRoleBadge(admin.role)}</TableCell>
+                                    <TableCell>
+                                        {getRoleBadge(admin.role)}
+                                    </TableCell>
                                     <TableCell className="text-sm text-gray-600">
                                         {facilityNameFor(admin)}
                                     </TableCell>
                                     <TableCell className="text-sm text-gray-600">
-                                        {formatLastActive(admin.login_metrics?.last_login)}
+                                        {formatLastActive(
+                                            admin.login_metrics?.last_login
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => openEditDialog(admin)}
+                                                onClick={() =>
+                                                    openEditDialog(admin)
+                                                }
                                                 className="h-8 w-8 p-0"
                                                 title="Edit admin"
                                             >
@@ -663,7 +748,11 @@ export default function AdminManagement() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => void handleResetPassword(admin)}
+                                                onClick={() =>
+                                                    void handleResetPassword(
+                                                        admin
+                                                    )
+                                                }
                                                 className="h-8 w-8 p-0"
                                                 title="Reset password"
                                             >
@@ -677,17 +766,29 @@ export default function AdminManagement() {
                                                         className="h-8 w-8 p-0"
                                                     >
                                                         <MoreVertical className="size-4" />
-                                                        <span className="sr-only">More actions</span>
+                                                        <span className="sr-only">
+                                                            More actions
+                                                        </span>
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48">
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="w-48"
+                                                >
                                                     <DropdownMenuItem
                                                         onClick={() => {
-                                                            setSelectedAdmin(admin);
-                                                            setShowDeleteDialog(true);
+                                                            setSelectedAdmin(
+                                                                admin
+                                                            );
+                                                            setShowDeleteDialog(
+                                                                true
+                                                            );
                                                         }}
                                                         className="text-red-600"
-                                                        disabled={admin.role === UserRole.SystemAdmin}
+                                                        disabled={
+                                                            admin.role ===
+                                                            UserRole.SystemAdmin
+                                                        }
                                                     >
                                                         Delete Admin
                                                     </DropdownMenuItem>
@@ -720,106 +821,124 @@ export default function AdminManagement() {
                 titleClassName="text-foreground"
             >
                 <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="firstName">First Name</Label>
-                                <Input
-                                    id="firstName"
-                                    value={formData.name_first}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name_first: e.target.value })
-                                    }
-                                    placeholder="John"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="lastName">Last Name</Label>
-                                <Input
-                                    id="lastName"
-                                    value={formData.name_last}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name_last: e.target.value })
-                                    }
-                                    placeholder="Doe"
-                                />
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
+                            <Label htmlFor="firstName">First Name</Label>
                             <Input
-                                id="username"
-                                value={formData.username}
+                                id="firstName"
+                                value={formData.name_first}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, username: e.target.value })
+                                    setFormData({
+                                        ...formData,
+                                        name_first: e.target.value
+                                    })
                                 }
-                                placeholder="jdoe"
+                                placeholder="John"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="role">Role</Label>
-                            <Select
-                                value={formData.role}
-                                onValueChange={(value) =>
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input
+                                id="lastName"
+                                value={formData.name_last}
+                                onChange={(e) =>
                                     setFormData({
                                         ...formData,
-                                        role: value as UserRole
+                                        name_last: e.target.value
                                     })
                                 }
-                            >
-                                <SelectTrigger id="role">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={UserRole.DepartmentAdmin}>
-                                        Department Admin
-                                    </SelectItem>
-                                    <SelectItem value={UserRole.FacilityAdmin}>
-                                        Facility Admin
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                                placeholder="Doe"
+                            />
                         </div>
-                        {formData.role === UserRole.FacilityAdmin && (
-                            <div className="space-y-2">
-                                <Label htmlFor="facility">Facility</Label>
-                                {canSwitchFac ? (
-                                    <Select
-                                        value={
-                                            formData.facility_id
-                                                ? String(formData.facility_id)
-                                                : ''
-                                        }
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                facility_id: Number(value)
-                                            })
-                                        }
-                                    >
-                                        <SelectTrigger id="facility">
-                                            <SelectValue placeholder="Select facility" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {facilities.map((facility) => (
-                                                <SelectItem key={facility.id} value={String(facility.id)}>
-                                                    {facility.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <div className="field-readonly">
-                                        {user?.facility?.name ?? '—'}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                            id="username"
+                            value={formData.username}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    username: e.target.value
+                                })
+                            }
+                            placeholder="jdoe"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="role">Role</Label>
+                        <Select
+                            value={formData.role}
+                            onValueChange={(value) =>
+                                setFormData({
+                                    ...formData,
+                                    role: value as UserRole
+                                })
+                            }
+                        >
+                            <SelectTrigger id="role">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={UserRole.DepartmentAdmin}>
+                                    Department Admin
+                                </SelectItem>
+                                <SelectItem value={UserRole.FacilityAdmin}>
+                                    Facility Admin
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {formData.role === UserRole.FacilityAdmin && (
+                        <div className="space-y-2">
+                            <Label htmlFor="facility">Facility</Label>
+                            {canSwitchFac ? (
+                                <Select
+                                    value={
+                                        formData.facility_id
+                                            ? String(formData.facility_id)
+                                            : ''
+                                    }
+                                    onValueChange={(value) =>
+                                        setFormData({
+                                            ...formData,
+                                            facility_id: Number(value)
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="facility">
+                                        <SelectValue placeholder="Select facility" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {facilities.map((facility) => (
+                                            <SelectItem
+                                                key={facility.id}
+                                                value={String(facility.id)}
+                                            >
+                                                {facility.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="field-readonly">
+                                    {user?.facility?.name ?? '—'}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAddAdmin(false)}>
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowAddAdmin(false)}
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={() => void handleAddAdmin()} variant="brand">
+                    <Button
+                        onClick={() => void handleAddAdmin()}
+                        variant="brand"
+                    >
                         Add Admin
                     </Button>
                 </DialogFooter>
@@ -834,90 +953,107 @@ export default function AdminManagement() {
                 titleClassName="text-foreground"
             >
                 <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-firstName">First Name</Label>
-                                <Input
-                                    id="edit-firstName"
-                                    value={formData.name_first}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name_first: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-lastName">Last Name</Label>
-                                <Input
-                                    id="edit-lastName"
-                                    value={formData.name_last}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name_last: e.target.value })
-                                    }
-                                />
-                            </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-firstName">First Name</Label>
+                            <Input
+                                id="edit-firstName"
+                                value={formData.name_first}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        name_first: e.target.value
+                                    })
+                                }
+                            />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-username">Username</Label>
-                            <div className="field-readonly">
-                                {formData.username}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                                Usernames cannot be changed after account creation
-                            </p>
+                            <Label htmlFor="edit-lastName">Last Name</Label>
+                            <Input
+                                id="edit-lastName"
+                                value={formData.name_last}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        name_last: e.target.value
+                                    })
+                                }
+                            />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-role">Role</Label>
-                            <div className="field-readonly">
-                                {getRoleLabel(formData.role)}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                                Role cannot be changed after account creation
-                            </p>
-                        </div>
-                        {formData.role === UserRole.FacilityAdmin && (
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-facility">Facility</Label>
-                                {canSwitchFac ? (
-                                    <Select
-                                        value={
-                                            formData.facility_id
-                                                ? String(formData.facility_id)
-                                                : ''
-                                        }
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                facility_id: Number(value)
-                                            })
-                                        }
-                                    >
-                                        <SelectTrigger id="edit-facility">
-                                            <SelectValue placeholder="Select facility" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {facilities.map((facility) => (
-                                                <SelectItem key={facility.id} value={String(facility.id)}>
-                                                    {facility.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <div className="field-readonly">
-                                        {selectedAdmin?.facility?.name ??
-                                            facilityById.get(formData.facility_id ?? 0)?.name ??
-                                            user?.facility?.name ??
-                                            '—'}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-username">Username</Label>
+                        <div className="field-readonly">
+                            {formData.username}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Usernames cannot be changed after account creation
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-role">Role</Label>
+                        <div className="field-readonly">
+                            {getRoleLabel(formData.role)}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Role cannot be changed after account creation
+                        </p>
+                    </div>
+                    {formData.role === UserRole.FacilityAdmin && (
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-facility">Facility</Label>
+                            {canSwitchFac ? (
+                                <Select
+                                    value={
+                                        formData.facility_id
+                                            ? String(formData.facility_id)
+                                            : ''
+                                    }
+                                    onValueChange={(value) =>
+                                        setFormData({
+                                            ...formData,
+                                            facility_id: Number(value)
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="edit-facility">
+                                        <SelectValue placeholder="Select facility" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {facilities.map((facility) => (
+                                            <SelectItem
+                                                key={facility.id}
+                                                value={String(facility.id)}
+                                            >
+                                                {facility.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="field-readonly">
+                                    {selectedAdmin?.facility?.name ??
+                                        facilityById.get(
+                                            formData.facility_id ?? 0
+                                        )?.name ??
+                                        user?.facility?.name ??
+                                        '—'}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowEditAdmin(false)}>
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowEditAdmin(false)}
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={() => void handleEditAdmin()} variant="brand">
+                    <Button
+                        onClick={() => void handleEditAdmin()}
+                        variant="brand"
+                    >
                         Save Changes
                     </Button>
                 </DialogFooter>
@@ -933,31 +1069,37 @@ export default function AdminManagement() {
                         setSelectedAdmin(null);
                     }
                 }}
-                title={passwordModalContext === 'create' ? 'New Password' : 'Password Reset'}
+                title={
+                    passwordModalContext === 'create'
+                        ? 'New Password'
+                        : 'Password Reset'
+                }
                 description={`New temporary password for ${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
                 titleClassName="text-foreground"
             >
                 <div className="py-4">
-                        <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
-                            <div className="text-sm text-gray-600 mb-2">Temporary Password</div>
-                            <div className="flex items-center gap-2">
-                                <code className="flex-1 text-lg font-mono font-semibold text-brand-dark select-all">
-                                    {tempPassword}
-                                </code>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => copyToClipboard(tempPassword)}
-                                >
-                                    {passwordCopied ? 'Copied!' : 'Copy'}
-                                </Button>
-                            </div>
+                    <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                        <div className="text-sm text-gray-600 mb-2">
+                            Temporary Password
                         </div>
-                        <p className="text-sm text-gray-600 mt-4">
-                            Share this password securely with the administrator. They will be
-                            prompted to change it on their next login.
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <code className="flex-1 text-lg font-mono font-semibold text-brand-dark select-all">
+                                {tempPassword}
+                            </code>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyToClipboard(tempPassword)}
+                            >
+                                {passwordCopied ? 'Copied!' : 'Copy'}
+                            </Button>
+                        </div>
                     </div>
+                    <p className="text-sm text-gray-600 mt-4">
+                        Share this password securely with the administrator.
+                        They will be prompted to change it on their next login.
+                    </p>
+                </div>
                 <DialogFooter>
                     <Button
                         onClick={() => setShowResetPassword(false)}
@@ -979,8 +1121,8 @@ export default function AdminManagement() {
                 <TonedPanel tone="red" className="my-4">
                     <p className="text-sm text-red-900 mb-3">
                         Permanently delete {selectedAdmin?.name_first}{' '}
-                        {selectedAdmin?.name_last}'s account? All associated data will be
-                        removed.
+                        {selectedAdmin?.name_last}'s account? All associated
+                        data will be removed.
                     </p>
                     <div className="space-y-2">
                         <Label htmlFor="delete-confirm">
@@ -998,7 +1140,10 @@ export default function AdminManagement() {
                     </div>
                 </TonedPanel>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowDeleteDialog(false)}
+                    >
                         Cancel
                     </Button>
                     <Button

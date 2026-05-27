@@ -13,8 +13,8 @@ import TopContentList from '@/components/dashboard/TopContentList';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, Star } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
-import { useTourContext } from '@/contexts/TourContext';
-import { targetToStepIndexMap } from '@/components/UnlockEdTour';
+import { useTourContext } from '@/contexts/useTourContext';
+import { targetToStepIndexMap } from '@/contexts/tourState';
 
 interface ResidentHomeData {
     helpfulLinks: HelpfulLink[];
@@ -48,9 +48,7 @@ function FeaturedLibraryCard({
                             {library.title}
                         </h4>
                     </div>
-                    <p className="caption-clamp">
-                        {library.description ?? ''}
-                    </p>
+                    <p className="caption-clamp">{library.description ?? ''}</p>
                 </CardContent>
             </Card>
         </div>
@@ -128,9 +126,8 @@ export default function ResidentHome() {
     const { data: favorites } = useSWR<ServerResponseMany<OpenContentItem>>(
         '/api/open-content/favorite-groupings'
     );
-    const { data: helpfulLinks } = useSWR<ServerResponseOne<HelpfulLinkAndSort>>(
-        '/api/helpful-links'
-    );
+    const { data: helpfulLinks } =
+        useSWR<ServerResponseOne<HelpfulLinkAndSort>>('/api/helpful-links');
 
     useEffect(() => {
         if (tourState.tourActive && tourState.target === '#navigate-homepage') {
@@ -181,7 +178,10 @@ export default function ResidentHome() {
                         <h2 className="section-heading">
                             Pick Up Where You Left Off
                         </h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="end-tour">
+                        <div
+                            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                            id="end-tour"
+                        >
                             <div id="top-content">
                                 <TopContentList
                                     heading="Your Top Content"
@@ -205,9 +205,7 @@ export default function ResidentHome() {
 
                     {links.length > 0 && (
                         <section>
-                            <h2 className="section-heading">
-                                Helpful Links
-                            </h2>
+                            <h2 className="section-heading">Helpful Links</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {links.map((link) => (
                                     <HelpfulLinkCard

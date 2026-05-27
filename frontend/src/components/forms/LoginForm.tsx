@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { useTourContext } from '@/contexts/TourContext';
+import { useTourContext } from '@/contexts/useTourContext';
 
 interface Inputs {
     identifier: string;
@@ -47,8 +47,9 @@ export default function LoginForm() {
         formState: { errors }
     } = useForm<Inputs>();
 
+    const isLockedOut = lockedOutSeconds !== null && lockedOutSeconds > 0;
     useEffect(() => {
-        if (lockedOutSeconds === null || lockedOutSeconds <= 0) return;
+        if (!isLockedOut) return;
         const timer = setInterval(() => {
             setLockedOutSeconds((prev) => {
                 if (prev === null || prev <= 1) {
@@ -59,7 +60,7 @@ export default function LoginForm() {
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [lockedOutSeconds !== null && lockedOutSeconds > 0]);
+    }, [isLockedOut]);
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         if (user) {
@@ -193,9 +194,7 @@ export default function LoginForm() {
             </div>
 
             {errorMessage && (
-                <p className="mt-3 text-sm text-destructive">
-                    {renderError()}
-                </p>
+                <p className="mt-3 text-sm text-destructive">{renderError()}</p>
             )}
 
             <div className="flex items-center justify-end mt-6">

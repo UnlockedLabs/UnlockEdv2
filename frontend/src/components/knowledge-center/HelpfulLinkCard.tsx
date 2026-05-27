@@ -10,7 +10,7 @@ import {
     ServerResponseOne
 } from '@/types';
 import { useAuth, isAdministrator, AdminRoles } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import API from '@/api/api';
@@ -190,9 +190,7 @@ export default function HelpfulLinkCard({
                 <h3 className="text-sm font-medium text-foreground">
                     {link.title}
                 </h3>
-                <p className="caption-clamp">
-                    {link.description}
-                </p>
+                <p className="caption-clamp">{link.description}</p>
             </div>
             <div className="flex items-center gap-2">
                 {isAdmin ? (
@@ -225,9 +223,7 @@ export default function HelpfulLinkCard({
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
-                        onClick={(e) =>
-                            void handleToggleAction('favorite', e)
-                        }
+                        onClick={(e) => void handleToggleAction('favorite', e)}
                     >
                         {favorite ? (
                             <Star className="size-5 fill-brand-gold text-brand-gold" />

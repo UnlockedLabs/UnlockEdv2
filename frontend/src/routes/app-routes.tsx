@@ -1,4 +1,4 @@
-import { declareAuthenticatedRoutes } from '@/auth/RouteGuard';
+import { declareAuthenticatedRoutes } from '@/auth/declareAuthenticatedRoutes';
 import {
     AdminRoles,
     AllRoles,

@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { Search, CheckCircle, Plus, Edit, MoreVertical, UserMinus } from 'lucide-react';
+import {
+    Search,
+    CheckCircle,
+    Plus,
+    Edit,
+    MoreVertical,
+    UserMinus
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,7 +28,10 @@ import {
 import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
-import { getEnrollmentStatusColor, formatEnrollmentStatus } from '@/lib/formatters';
+import {
+    getEnrollmentStatusColor,
+    formatEnrollmentStatus
+} from '@/lib/formatters';
 import { computeAttendanceByUser } from '@/lib/attendance-utils';
 import API from '@/api/api';
 import { toast } from 'sonner';
@@ -40,21 +50,36 @@ interface RosterTabProps {
     onClassMutate: () => void;
 }
 
-function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
-    const allStatuses = Object.values(EnrollmentStatus).filter((s) => s !== currentStatus);
+function getAllowedStatuses(
+    classStatus: string,
+    currentStatus: EnrollmentStatus
+): EnrollmentStatus[] {
+    const allStatuses = Object.values(EnrollmentStatus).filter(
+        (s) => s !== currentStatus
+    );
     if (classStatus === 'Completed' || classStatus === 'Cancelled') return [];
     if (classStatus === 'Scheduled') return [];
-    if (classStatus === 'Active') return allStatuses.filter((s) => s !== EnrollmentStatus.Cancelled);
+    if (classStatus === 'Active')
+        return allStatuses.filter((s) => s !== EnrollmentStatus.Cancelled);
     return allStatuses;
 }
 
-export function RosterTab({ classId, classStatus, className, capacity, enrolled, flaggedUserIds, onClassMutate }: RosterTabProps) {
+export function RosterTab({
+    classId,
+    classStatus,
+    className,
+    capacity,
+    enrolled,
+    flaggedUserIds,
+    onClassMutate
+}: RosterTabProps) {
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [changingStatus, setChangingStatus] = useState<number | null>(null);
     const [statusModalEnrollment, setStatusModalEnrollment] =
         useState<ClassEnrollment | null>(null);
-    const [unenrollTarget, setUnenrollTarget] = useState<ClassEnrollment | null>(null);
+    const [unenrollTarget, setUnenrollTarget] =
+        useState<ClassEnrollment | null>(null);
     const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
 
@@ -64,11 +89,14 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
         `/api/program-classes/${classId}/enrollments?status=${encodeURIComponent(EnrollmentStatus.Enrolled)}&per_page=1000`
     );
 
-    const { data: eventsResp } = useSWR<
-        ServerResponseMany<ClassEventInstance>
-    >(`/api/program-classes/${classId}/events?all=true`);
+    const { data: eventsResp } = useSWR<ServerResponseMany<ClassEventInstance>>(
+        `/api/program-classes/${classId}/events?all=true`
+    );
 
-    const enrolledRows = enrollmentResp?.data ?? [];
+    const enrolledRows = useMemo(
+        () => enrollmentResp?.data ?? [],
+        [enrollmentResp]
+    );
 
     const attendanceMap = useMemo(() => {
         return computeAttendanceByUser(eventsResp?.data ?? []);
@@ -219,7 +247,9 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             const stats = attendanceMap.get(
                                 enrollment.user_id
                             ) ?? { attended: 0, total: 0, rate: 0 };
-                            const needsSupport = flaggedUserIds.has(enrollment.user_id);
+                            const needsSupport = flaggedUserIds.has(
+                                enrollment.user_id
+                            );
 
                             return (
                                 <div
@@ -278,9 +308,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                 {new Date(
                                                     enrollment.enrolled_at ??
                                                         enrollment.created_at
-                                                ).toLocaleDateString(
-                                                    'en-CA'
-                                                )}
+                                                ).toLocaleDateString('en-CA')}
                                             </span>
                                             {needsSupport && (
                                                 <Badge
@@ -291,31 +319,53 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                 </Badge>
                                             )}
                                             {(() => {
-                                                const allowed = getAllowedStatuses(classStatus, enrollment.enrollment_status);
-                                                const isScheduled = classStatus === 'Scheduled';
-                                                if (allowed.length === 0 && !isScheduled) {
+                                                const allowed =
+                                                    getAllowedStatuses(
+                                                        classStatus,
+                                                        enrollment.enrollment_status
+                                                    );
+                                                const isScheduled =
+                                                    classStatus === 'Scheduled';
+                                                if (
+                                                    allowed.length === 0 &&
+                                                    !isScheduled
+                                                ) {
                                                     return (
                                                         <Badge
                                                             variant="outline"
-                                                            className={getEnrollmentStatusColor(enrollment.enrollment_status)}
+                                                            className={getEnrollmentStatusColor(
+                                                                enrollment.enrollment_status
+                                                            )}
                                                         >
-                                                            {formatEnrollmentStatus(enrollment.enrollment_status)}
+                                                            {formatEnrollmentStatus(
+                                                                enrollment.enrollment_status
+                                                            )}
                                                         </Badge>
                                                     );
                                                 }
                                                 return (
                                                     <button
                                                         className="group"
-                                                        disabled={changingStatus === enrollment.id}
-                                                        onClick={() => setStatusModalEnrollment(enrollment)}
+                                                        disabled={
+                                                            changingStatus ===
+                                                            enrollment.id
+                                                        }
+                                                        onClick={() =>
+                                                            setStatusModalEnrollment(
+                                                                enrollment
+                                                            )
+                                                        }
                                                     >
                                                         <Badge
                                                             variant="outline"
                                                             className={`${getEnrollmentStatusColor(enrollment.enrollment_status)} cursor-pointer transition-all hover:shadow-sm hover:ring-2 hover:ring-brand/20 flex items-center gap-1.5`}
                                                         >
-                                                            {changingStatus === enrollment.id
+                                                            {changingStatus ===
+                                                            enrollment.id
                                                                 ? 'Updating...'
-                                                                : formatEnrollmentStatus(enrollment.enrollment_status)}
+                                                                : formatEnrollmentStatus(
+                                                                      enrollment.enrollment_status
+                                                                  )}
                                                             <Edit className="size-3 text-current opacity-60 group-hover:opacity-100 transition-opacity" />
                                                         </Badge>
                                                     </button>
@@ -449,7 +499,10 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                     userId={unenrollTarget.user_id}
                     residentDisplayId={unenrollTarget.doc_id ?? ''}
                     residentName={unenrollTarget.name_full ?? ''}
-                    onUnenrolled={() => { void mutate(); onClassMutate(); }}
+                    onUnenrolled={() => {
+                        void mutate();
+                        onClassMutate();
+                    }}
                 />
             )}
 
@@ -460,7 +513,9 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                 classStatus={classStatus}
                 selectedResidents={Array.from(selectedIds)
                     .map((enrollmentId) => {
-                        const e = enrolledRows.find((r) => r.id === enrollmentId);
+                        const e = enrolledRows.find(
+                            (r) => r.id === enrollmentId
+                        );
                         return e
                             ? {
                                   id: e.id,
@@ -480,7 +535,10 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                 className={className}
                 capacity={capacity}
                 enrolled={enrolled}
-                onEnrolled={() => { void mutate(); onClassMutate(); }}
+                onEnrolled={() => {
+                    void mutate();
+                    onClassMutate();
+                }}
             />
         </div>
     );
