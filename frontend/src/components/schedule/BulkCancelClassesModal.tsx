@@ -3,11 +3,7 @@ import { toast } from 'sonner';
 import useSWR, { KeyedMutator } from 'swr';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
-import {
-    CancelEventReason,
-    Class,
-    ServerResponseMany
-} from '@/types';
+import { CancelEventReason, Class, ServerResponseMany } from '@/types';
 import {
     Instructor,
     InstructorClassData,
@@ -87,9 +83,7 @@ export function BulkCancelClassesModal({
     const [preview, setPreview] = useState<PreviewData | null>(null);
 
     const { data: instructorsResp } = useSWR<ServerResponseMany<Instructor>>(
-        open && facilityId
-            ? `/api/facilities/${facilityId}/instructors`
-            : null
+        open && facilityId ? `/api/facilities/${facilityId}/instructors` : null
     );
     const instructors = useMemo(() => {
         const list = instructorsResp?.data ?? [];
@@ -114,7 +108,8 @@ export function BulkCancelClassesModal({
         return { totalSessions, totalClasses };
     }, [previewResp]);
 
-    const isOther = reason === CancelEventReason['Other (add note)'];
+    const isOther =
+        reason === (CancelEventReason['Other (add note)'] as string);
     const finalReason = isOther ? customReason.trim() : reason;
 
     const canPreview =
@@ -153,7 +148,9 @@ export function BulkCancelClassesModal({
                 return;
             }
 
-            const classes: InstructorClassData[] = Array.isArray(resp.data) ? resp.data as InstructorClassData[] : [];
+            const classes: InstructorClassData[] = Array.isArray(resp.data)
+                ? (resp.data as InstructorClassData[])
+                : [];
             const upcomingClasses = classes.filter(
                 (c) => c.upcomingSessions > 0
             );
@@ -209,13 +206,15 @@ export function BulkCancelClassesModal({
                 reason: finalReason
             };
 
-            const resp = await API.post<BulkCancelSessionsResponse, BulkCancelSessionsRequest>(
-                'program-classes/bulk-cancel',
-                request
-            );
+            const resp = await API.post<
+                BulkCancelSessionsResponse,
+                BulkCancelSessionsRequest
+            >('program-classes/bulk-cancel', request);
 
             if (resp.success) {
-                const data = resp.data as BulkCancelSessionsResponse | undefined;
+                const data = resp.data as
+                    | BulkCancelSessionsResponse
+                    | undefined;
                 if (data?.success) {
                     const msg =
                         data.message ??
@@ -243,9 +242,7 @@ export function BulkCancelClassesModal({
         const inst = instructors.find(
             (i) => i.id === Number(selectedInstructor)
         );
-        return inst
-            ? `${inst.name_first} ${inst.name_last}`
-            : '';
+        return inst ? `${inst.name_first} ${inst.name_last}` : '';
     }, [selectedInstructor, instructors]);
 
     const title = showConfirmation ? (
@@ -272,8 +269,7 @@ export function BulkCancelClassesModal({
                 <div className="space-y-5 py-4">
                     <div className="space-y-2">
                         <Label className="text-sm font-medium text-brand-dark">
-                            Instructor{' '}
-                            <span className="text-red-500">*</span>
+                            Instructor <span className="text-red-500">*</span>
                         </Label>
                         <Select
                             value={selectedInstructor}
@@ -297,8 +293,7 @@ export function BulkCancelClassesModal({
 
                     <div>
                         <Label className="text-sm font-medium text-brand-dark mb-3 block">
-                            Date Range{' '}
-                            <span className="text-red-500">*</span>
+                            Date Range <span className="text-red-500">*</span>
                         </Label>
                         <div className="flex gap-3">
                             <div className="flex-1 space-y-1">
@@ -357,8 +352,7 @@ export function BulkCancelClassesModal({
                     {isOther && (
                         <div className="space-y-2">
                             <Label className="text-sm font-medium text-brand-dark">
-                                Details{' '}
-                                <span className="text-red-500">*</span>
+                                Details <span className="text-red-500">*</span>
                             </Label>
                             <Textarea
                                 value={customReason}
@@ -377,10 +371,20 @@ export function BulkCancelClassesModal({
                                 <AlertCircle className="size-4 text-blue-700 mt-0.5 flex-shrink-0" />
                                 <div className="text-sm text-blue-900">
                                     <strong>Preview:</strong> This will affect{' '}
-                                    <strong>{inlinePreview.totalSessions}</strong>{' '}
-                                    {inlinePreview.totalSessions === 1 ? 'session' : 'sessions'} across{' '}
-                                    <strong>{inlinePreview.totalClasses}</strong>{' '}
-                                    {inlinePreview.totalClasses === 1 ? 'class' : 'classes'}.
+                                    <strong>
+                                        {inlinePreview.totalSessions}
+                                    </strong>{' '}
+                                    {inlinePreview.totalSessions === 1
+                                        ? 'session'
+                                        : 'sessions'}{' '}
+                                    across{' '}
+                                    <strong>
+                                        {inlinePreview.totalClasses}
+                                    </strong>{' '}
+                                    {inlinePreview.totalClasses === 1
+                                        ? 'class'
+                                        : 'classes'}
+                                    .
                                 </div>
                             </div>
                         </TonedPanel>
@@ -404,25 +408,34 @@ export function BulkCancelClassesModal({
                     <TonedPanel tone="red">
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-600">Instructor:</span>
+                                <span className="text-gray-600">
+                                    Instructor:
+                                </span>
                                 <span className="font-medium text-brand-dark">
                                     {instructorName}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-600">Date Range:</span>
+                                <span className="text-gray-600">
+                                    Date Range:
+                                </span>
                                 <span className="font-medium text-brand-dark">
-                                    {new Date(dateRange.start).toLocaleDateString('en-US', {
+                                    {new Date(
+                                        dateRange.start
+                                    ).toLocaleDateString('en-US', {
                                         month: 'short',
                                         day: 'numeric',
                                         year: 'numeric'
                                     })}{' '}
                                     -{' '}
-                                    {new Date(dateRange.end).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                    })}
+                                    {new Date(dateRange.end).toLocaleDateString(
+                                        'en-US',
+                                        {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        }
+                                    )}
                                 </span>
                             </div>
                             <div className="flex justify-between">
@@ -432,7 +445,9 @@ export function BulkCancelClassesModal({
                                 </span>
                             </div>
                             <div className="flex justify-between pt-2 border-t border-red-300">
-                                <span className="text-gray-600">Total Sessions:</span>
+                                <span className="text-gray-600">
+                                    Total Sessions:
+                                </span>
                                 <span className="font-bold text-red-700">
                                     {preview?.sessionCount ?? 0}
                                 </span>
@@ -468,7 +483,8 @@ export function BulkCancelClassesModal({
                                                     </h4>
                                                     <Badge className="bg-red-100 text-red-700 border-red-300 flex-shrink-0">
                                                         {cls.upcomingSessions}{' '}
-                                                        {cls.upcomingSessions === 1
+                                                        {cls.upcomingSessions ===
+                                                        1
                                                             ? 'session'
                                                             : 'sessions'}
                                                     </Badge>
@@ -478,33 +494,60 @@ export function BulkCancelClassesModal({
                                                         <div className="flex items-center gap-1.5">
                                                             <Clock className="size-3.5 flex-shrink-0" />
                                                             <span>
-                                                                {formatTimeRange(cls.startTime, cls.duration)}
+                                                                {formatTimeRange(
+                                                                    cls.startTime,
+                                                                    cls.duration
+                                                                )}
                                                             </span>
                                                         </div>
                                                     )}
                                                     {cls.room && (
                                                         <div className="flex items-center gap-1.5">
                                                             <MapPin className="size-3.5 flex-shrink-0" />
-                                                            <span>{cls.room}</span>
+                                                            <span>
+                                                                {cls.room}
+                                                            </span>
                                                         </div>
                                                     )}
                                                     <div className="flex items-center gap-1.5">
                                                         <Users className="size-3.5 flex-shrink-0" />
                                                         <span>
-                                                            {cls.studentCount} residents enrolled
+                                                            {cls.studentCount}{' '}
+                                                            residents enrolled
                                                         </span>
                                                     </div>
                                                 </div>
-                                                {cls.sessionDates.length > 0 && (
+                                                {cls.sessionDates.length >
+                                                    0 && (
                                                     <div className="flex flex-wrap gap-1 mt-3">
-                                                        {cls.sessionDates.slice(0, 5).map((date) => (
-                                                            <span key={date} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                                                {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                            </span>
-                                                        ))}
-                                                        {cls.sessionDates.length > 5 && (
+                                                        {cls.sessionDates
+                                                            .slice(0, 5)
+                                                            .map((date) => (
+                                                                <span
+                                                                    key={date}
+                                                                    className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                                                                >
+                                                                    {new Date(
+                                                                        date +
+                                                                            'T00:00:00'
+                                                                    ).toLocaleDateString(
+                                                                        'en-US',
+                                                                        {
+                                                                            month: 'short',
+                                                                            day: 'numeric'
+                                                                        }
+                                                                    )}
+                                                                </span>
+                                                            ))}
+                                                        {cls.sessionDates
+                                                            .length > 5 && (
                                                             <span className="text-xs text-gray-500 px-2 py-1">
-                                                                +{cls.sessionDates.length - 5} more
+                                                                +
+                                                                {cls
+                                                                    .sessionDates
+                                                                    .length -
+                                                                    5}{' '}
+                                                                more
                                                             </span>
                                                         )}
                                                     </div>
@@ -520,9 +563,9 @@ export function BulkCancelClassesModal({
                         <div className="flex items-start gap-2">
                             <AlertCircle className="size-4 text-yellow-700 mt-0.5 flex-shrink-0" />
                             <div className="text-sm text-yellow-900">
-                                <strong>Warning:</strong> This action will cancel all
-                                selected sessions. Residents will need to be notified of
-                                these cancellations.
+                                <strong>Warning:</strong> This action will
+                                cancel all selected sessions. Residents will
+                                need to be notified of these cancellations.
                             </div>
                         </div>
                     </TonedPanel>

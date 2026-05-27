@@ -186,10 +186,10 @@ export async function handleLogout(): Promise<void> {
 
 export const getDashboardLink = (user?: User) => {
     if (!user) return '/';
-    return isAdministrator(user) ? getAdminLink(user) : getResidentLink(user);
+    return isAdministrator(user) ? getAdminLink() : getResidentLink(user);
 };
 
-const getAdminLink = (_user: User): string => {
+const getAdminLink = (): string => {
     return '/dashboard';
 };
 

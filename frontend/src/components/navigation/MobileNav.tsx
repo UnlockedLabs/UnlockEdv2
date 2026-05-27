@@ -10,18 +10,16 @@ export default function MobileNav() {
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="md:hidden"
-                >
+                <Button variant="ghost" size="sm" className="md:hidden">
                     <Menu className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
                 <Sidebar
                     collapsed={false}
-                    onToggleCollapse={() => {}}
+                    onToggleCollapse={() => {
+                        // no-op: mobile nav doesn't collapse
+                    }}
                     onNavigate={() => setOpen(false)}
                 />
             </SheetContent>
