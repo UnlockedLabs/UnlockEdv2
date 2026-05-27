@@ -108,6 +108,8 @@ export function CannotArchiveDialog({
             open={open}
             onOpenChange={onOpenChange}
             title={`Cannot Archive ${programName}`}
+            titleClassName="text-3xl"
+            closeButtonClassName="opacity-100 text-gray-500"
         >
             <div className="flex flex-col gap-4 mt-2">
                 <p className="text-sm text-gray-600">
@@ -135,7 +137,7 @@ export function CannotArchiveDialog({
                 <Button
                     variant="outline"
                     onClick={() => onOpenChange(false)}
-                    className="border-gray-300"
+                    className="border-gray-300 bg-accent text-accent-foreground"
                 >
                     Close
                 </Button>
