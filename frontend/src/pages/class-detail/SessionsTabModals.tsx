@@ -145,6 +145,7 @@ export function SessionsTabModals({
                     open={showChangeInstructor}
                     onClose={onCloseChangeInstructor}
                     classId={cls.id}
+                    classFacilityId={cls.facility_id}
                     sessions={changeInstructorSessions}
                     onChanged={onInstructorChanged}
                     showSessionsList

@@ -1,272 +1,50 @@
-import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { FormModal } from '@/components/shared';
-import { bulkPatchEvents } from '@/api/bulkPatchEvents';
-import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
+import {
+    BulkSessionFieldModal,
+    BulkSessionFieldSession
+} from './BulkSessionFieldModal';
 
-export interface ChangeRoomSession {
-  date: string;
-  dateLabel: string;
-  eventId: number;
-  classTime: string;
-  dateObj?: Date;
-  dayName?: string;
-}
+export type ChangeRoomSession = BulkSessionFieldSession;
 
 interface ChangeRoomModalProps {
-  open: boolean;
-  onClose: () => void;
-  classId: number;
-  sessions: ChangeRoomSession[];
-  onChanged: () => void;
-  applyToFuture?: boolean;
-  setApplyToFuture?: (apply: boolean) => void;
-  futureSessions?: ChangeRoomSession[];
-  showSessionsList?: boolean;
+    open: boolean;
+    onClose: () => void;
+    classId: number;
+    sessions: ChangeRoomSession[];
+    onChanged: () => void;
+    applyToFuture?: boolean;
+    setApplyToFuture?: (apply: boolean) => void;
+    futureSessions?: ChangeRoomSession[];
+    showSessionsList?: boolean;
 }
 
-export function ChangeRoomModal({
-  open,
-  onClose,
-  classId,
-  sessions,
-  onChanged,
-  applyToFuture,
-  setApplyToFuture,
-  futureSessions = [],
-  showSessionsList = false
-}: ChangeRoomModalProps) {
-  const [selectedRoomId, setSelectedRoomId] = useState('');
-  const [reason, setReason] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const ROOM_REASON_OPTIONS = [
+    { value: 'room_unavailable', label: 'Room Unavailable' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'capacity_issue', label: 'Capacity Issue' },
+    { value: 'equipment_needed', label: 'Equipment Needed' },
+    { value: 'other', label: 'Other' }
+];
 
-  const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-    open ? '/api/rooms' : null
-  );
-  const rooms = roomsResp?.data ?? [];
-
-  useEffect(() => {
-    if (open) {
-      setSelectedRoomId('');
-      setReason('');
-    }
-  }, [open]);
-
-  const handleApply = async () => {
-    if (!selectedRoomId) return;
-    setIsSubmitting(true);
-
-    const allSessions = applyToFuture && futureSessions.length > 0
-      ? [...sessions, ...futureSessions]
-      : sessions;
-
-    const { ok, fail } = await bulkPatchEvents(classId, allSessions, (s) => ({
-      date: s.date,
-      start_time: s.classTime?.split('-')[0],
-      is_cancelled: false,
-      room_id: Number(selectedRoomId)
+export function ChangeRoomModal(props: ChangeRoomModalProps) {
+    const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
+        props.open ? '/api/rooms' : null
+    );
+    const options = (roomsResp?.data ?? []).map((room) => ({
+        id: room.id,
+        label: room.name
     }));
 
-    const room = rooms.find((r) => String(r.id) === selectedRoomId);
-    const roomName = room?.name ?? '';
-    if (ok) {
-      const msg =
-        ok === 1
-          ? `Room changed to ${roomName}`
-          : `Room changed to ${roomName} for ${ok} sessions`;
-      toast.success(msg);
-    }
-    if (fail)
-      toast.error(
-        `Failed to update ${fail} session${fail === 1 ? '' : 's'}`
-      );
-    onClose();
-    onChanged();
-    setIsSubmitting(false);
-  };
-
-  const useBulkLayout = showSessionsList || sessions.length > 1;
-
-  return (
-    <FormModal
-      open={open}
-      onOpenChange={(isOpen) => !isOpen && onClose()}
-      title="Change Room"
-      description={
-        useBulkLayout
-          ? `Select a new room for ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`
-          : `Change the room for the class scheduled for ${sessions[0]?.dateLabel ?? ''}`
-      }
-      className={useBulkLayout ? 'max-w-2xl' : undefined}
-      preventOutsideClose
-    >
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="newRoom">New Room</Label>
-            <Select
-              value={selectedRoomId}
-              onValueChange={setSelectedRoomId}
-            >
-              <SelectTrigger id="newRoom">
-                <SelectValue placeholder="Select room" />
-              </SelectTrigger>
-              <SelectContent>
-                {rooms.map((room) => (
-                  <SelectItem
-                    key={room.id}
-                    value={String(room.id)}
-                  >
-                    {room.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="room-change-reason">
-              Reason for Change
-            </Label>
-            <Select
-              value={reason}
-              onValueChange={setReason}
-            >
-              <SelectTrigger id="room-change-reason">
-                <SelectValue placeholder="Select a reason" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="room_unavailable">
-                  Room Unavailable
-                </SelectItem>
-                <SelectItem value="maintenance">
-                  Maintenance
-                </SelectItem>
-                <SelectItem value="capacity_issue">
-                  Capacity Issue
-                </SelectItem>
-                <SelectItem value="equipment_needed">
-                  Equipment Needed
-                </SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {setApplyToFuture && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="apply-room-to-future"
-                checked={applyToFuture}
-                onChange={(e) =>
-                  setApplyToFuture(e.target.checked)
-                }
-                className="size-4 rounded border-gray-300"
-              />
-              <Label
-                htmlFor="apply-room-to-future"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Apply this change to all future sessions
-              </Label>
-            </div>
-          )}
-
-          {applyToFuture && futureSessions.length > 0 && (
-            <div>
-              <Label className="form-label">
-                Sessions to Update
-              </Label>
-              <div className="scroll-panel">
-                {[...futureSessions]
-                  .sort(
-                    (a, b) =>
-                      (a.dateObj?.getTime() ?? 0) -
-                      (b.dateObj?.getTime() ?? 0)
-                  )
-                  .map((sess) => (
-                    <div
-                      key={sess.date}
-                      className="text-sm text-gray-700"
-                    >
-                      {sess.dayName ?? ''},{' '}
-                      {sess.dateObj?.toLocaleDateString(
-                        'en-US',
-                        {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        }
-                      ) ?? sess.dateLabel}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {useBulkLayout && sessions.length > 0 && (
-            <div>
-              <Label className="form-label">
-                Sessions to Update
-              </Label>
-              <div className="scroll-panel">
-                {[...sessions]
-                  .sort(
-                    (a, b) =>
-                      (a.dateObj?.getTime() ?? 0) -
-                      (b.dateObj?.getTime() ?? 0)
-                  )
-                  .map((s) => (
-                    <div
-                      key={s.date}
-                      className="text-sm text-gray-700"
-                    >
-                      {s.dateObj?.toLocaleDateString(
-                        'en-US',
-                        {
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        }
-                      ) ?? s.dateLabel}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              onClose();
-              setSelectedRoomId('');
-              setReason('');
-              if (setApplyToFuture) setApplyToFuture(false);
-            }}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => void handleApply()}
-            disabled={!selectedRoomId || isSubmitting}
-            variant="brand"
-          >
-            {isSubmitting ? 'Updating...' : 'Change Room'}
-          </Button>
-        </div>
-    </FormModal>
-  );
+    return (
+        <BulkSessionFieldModal
+            {...props}
+            title="Change Room"
+            subject="Room"
+            idPrefix="room"
+            options={options}
+            payloadKey="room_id"
+            reasonOptions={ROOM_REASON_OPTIONS}
+        />
+    );
 }

@@ -14,6 +14,7 @@ interface EnrollResidentsModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     classId: number;
+    classFacilityId: number;
     className: string;
     capacity: number;
     enrolled: number;
@@ -24,6 +25,7 @@ export function EnrollResidentsModal({
     open,
     onOpenChange,
     classId,
+    classFacilityId,
     className,
     capacity,
     enrolled,
@@ -41,7 +43,7 @@ export function EnrollResidentsModal({
     const encodedSearch = encodeURIComponent(searchQuery);
     const { data: usersResp } = useSWR<ServerResponseMany<User>>(
         open
-            ? `/api/users?search=${encodedSearch}&per_page=50&order_by=name_last asc&role=student&class_id=${classId}&include=only_unenrolled`
+            ? `/api/users?search=${encodedSearch}&per_page=50&order_by=name_last&order=asc&class_id=${classId}&facility_id=${classFacilityId}&include=only_unenrolled`
             : null
     );
     const users = useMemo(() => usersResp?.data ?? [], [usersResp?.data]);
