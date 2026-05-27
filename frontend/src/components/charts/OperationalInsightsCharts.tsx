@@ -40,7 +40,14 @@ interface StatsCardProps {
     iconBg: string;
 }
 
-function StatsCard({ title, value, label, tooltip, icon, iconBg }: StatsCardProps) {
+function StatsCard({
+    title,
+    value,
+    label,
+    tooltip,
+    icon,
+    iconBg
+}: StatsCardProps) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -53,7 +60,9 @@ function StatsCard({ title, value, label, tooltip, icon, iconBg }: StatsCardProp
                         <p className="text-2xl font-semibold text-foreground">
                             {value}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            {label}
+                        </p>
                     </div>
                 </div>
             </TooltipTrigger>
@@ -71,7 +80,8 @@ export default function OperationalInsightsCharts() {
     const { user } = useAuth();
 
     const { data, error, isLoading, mutate } = useSWR<
-        ServerResponseOne<DepartmentMetrics>
+        ServerResponseOne<DepartmentMetrics>,
+        Error
     >(
         `/api/department-metrics?facility=${facility}&days=${timeFilter}&reset=${resetCache}`
     );
@@ -106,7 +116,9 @@ export default function OperationalInsightsCharts() {
     if (error) {
         return (
             <div className="bg-card rounded-lg border border-border p-8 text-center">
-                <p className="text-red-600">Error loading operational insights data.</p>
+                <p className="text-red-600">
+                    Error loading operational insights data.
+                </p>
             </div>
         );
     }
@@ -233,9 +245,7 @@ export default function OperationalInsightsCharts() {
                 <StatsCard
                     title="Total Logins"
                     value={metrics.data.total_logins.toLocaleString()}
-                    label={
-                        metrics.data.total_logins === 1 ? 'Login' : 'Logins'
-                    }
+                    label={metrics.data.total_logins === 1 ? 'Login' : 'Logins'}
                     tooltip={`Total login count during ${timeLabel}`}
                     icon={<ArrowTrendingUpIcon className="size-5 text-white" />}
                     iconBg="bg-brand"

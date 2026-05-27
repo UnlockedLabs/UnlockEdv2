@@ -54,7 +54,11 @@ export default function ActivityHistoryCard({
     programId,
     residentId
 }: ActivityHistoryCardProps) {
-    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20, 'activity');
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(
+        1,
+        20,
+        'activity'
+    );
     const [filterQuery, setFilterQuery] = useState('');
 
     const endpoint = residentId
@@ -64,7 +68,8 @@ export default function ActivityHistoryCard({
           : null;
 
     const { data, error, isLoading } = useSWR<
-        ServerResponseMany<ActivityHistoryResponse>
+        ServerResponseMany<ActivityHistoryResponse>,
+        Error
     >(endpoint);
 
     const isFirstRender = useRef(true);

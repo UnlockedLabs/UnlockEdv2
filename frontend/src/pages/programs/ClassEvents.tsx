@@ -43,13 +43,19 @@ function formatClassTime(dateStr: string, timeRange: string): string {
     return `${startDateTime.toLocaleTimeString([], options)} - ${endDateTime.toLocaleTimeString([], options)}`;
 }
 
-function getEventStatus(cls: Class | undefined, event: ClassEventInstance): string {
+function getEventStatus(
+    cls: Class | undefined,
+    event: ClassEventInstance
+): string {
     const eventDate = toLocalMidnight(event.date).getTime();
     const today = new Date().setHours(0, 0, 0, 0);
-    if (cls?.status === SelectedClassStatus.Cancelled || event.is_cancelled) return 'Cancelled';
+    if (cls?.status === SelectedClassStatus.Cancelled || event.is_cancelled)
+        return 'Cancelled';
     if (eventDate > today) return 'Scheduled';
     const expectedCount =
-        cls?.status === SelectedClassStatus.Completed ? cls.completed : cls?.enrolled;
+        cls?.status === SelectedClassStatus.Completed
+            ? cls.completed
+            : cls?.enrolled;
     if (event.attendance_records?.length === expectedCount) return 'Marked';
     return 'Unmarked';
 }
@@ -78,10 +84,12 @@ export default function ClassEvents() {
     const { data, isLoading } = useSWR<ServerResponseMany<ClassEventInstance>>(
         `/api/program-classes/${class_id}/events?month=${month}&year=${year}&per_page=31`
     );
-    const events = data?.data ?? [];
+    const events = useMemo(() => data?.data ?? [], [data]);
 
     const eventDates = useMemo(() => events.map((e) => e.date), [events]);
-    const { data: historicalResponse } = useSWR<{ data: Record<string, number> }>(
+    const { data: historicalResponse } = useSWR<{
+        data: Record<string, number>;
+    }>(
         eventDates.length > 0
             ? `/api/program-classes/${class_id}/historical-enrollment-batch?dates=${eventDates.join(',')}`
             : null
@@ -93,13 +101,21 @@ export default function ClassEvents() {
     );
     const thisClass = classResp?.data;
 
-    const blockEdits = isCompletedCancelledOrArchived(thisClass ?? ({} as Class));
+    const blockEdits = isCompletedCancelledOrArchived(
+        thisClass ?? ({} as Class)
+    );
 
-    const hasEarlier = !thisClass?.start_dt || getPreviousMonth(currentMonth) >= thisClass.start_dt.substring(0, 7);
-    const hasLater = !thisClass?.end_dt || getNextMonth(currentMonth) <= thisClass.end_dt.substring(0, 7);
+    const hasEarlier =
+        !thisClass?.start_dt ||
+        getPreviousMonth(currentMonth) >= thisClass.start_dt.substring(0, 7);
+    const hasLater =
+        !thisClass?.end_dt ||
+        getNextMonth(currentMonth) <= thisClass.end_dt.substring(0, 7);
 
     function handleAttendanceClick(eventId: number, date: string) {
-        navigate(`/program-classes/${class_id}/events/${eventId}/attendance/${date}`);
+        navigate(
+            `/program-classes/${class_id}/events/${eventId}/attendance/${date}`
+        );
     }
 
     return (
@@ -110,7 +126,9 @@ export default function ClassEvents() {
                         variant="outline"
                         size="sm"
                         disabled={!hasEarlier}
-                        onClick={() => setCurrentMonth(getPreviousMonth(currentMonth))}
+                        onClick={() =>
+                            setCurrentMonth(getPreviousMonth(currentMonth))
+                        }
                     >
                         <ChevronLeft className="size-4" />
                     </Button>
@@ -121,7 +139,9 @@ export default function ClassEvents() {
                         variant="outline"
                         size="sm"
                         disabled={!hasLater}
-                        onClick={() => setCurrentMonth(getNextMonth(currentMonth))}
+                        onClick={() =>
+                            setCurrentMonth(getNextMonth(currentMonth))
+                        }
                     >
                         <ChevronRight className="size-4" />
                     </Button>
@@ -129,7 +149,9 @@ export default function ClassEvents() {
             </div>
 
             {isLoading && (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="text-center py-8 text-muted-foreground">
+                    Loading...
+                </div>
             )}
 
             {!isLoading && events.length === 0 && (
@@ -152,22 +174,37 @@ export default function ClassEvents() {
                         </TableHeader>
                         <TableBody>
                             {events.map((event) => {
-                                const eventStatus = getEventStatus(thisClass, event);
+                                const eventStatus = getEventStatus(
+                                    thisClass,
+                                    event
+                                );
                                 const future = isFutureDate(event.date);
-                                const isViewOnly = blockEdits || event.is_cancelled;
-                                const presentCount = event.attendance_records?.length ?? 0;
-                                const enrolled = historicalData?.[event.date] ?? thisClass?.enrolled ?? 0;
+                                const isViewOnly =
+                                    blockEdits || event.is_cancelled;
+                                const presentCount =
+                                    event.attendance_records?.length ?? 0;
+                                const enrolled =
+                                    historicalData?.[event.date] ??
+                                    thisClass?.enrolled ??
+                                    0;
 
                                 return (
-                                    <TableRow key={`${event.event_id}-${event.date}`}>
+                                    <TableRow
+                                        key={`${event.event_id}-${event.date}`}
+                                    >
                                         <TableCell>
-                                            {toLocalMidnight(event.date).toLocaleDateString('en-US', {
+                                            {toLocalMidnight(
+                                                event.date
+                                            ).toLocaleDateString('en-US', {
                                                 month: '2-digit',
                                                 day: '2-digit'
                                             })}
                                         </TableCell>
                                         <TableCell>
-                                            {formatClassTime(event.date, event.class_time)}
+                                            {formatClassTime(
+                                                event.date,
+                                                event.class_time
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             {presentCount} / {enrolled}
@@ -179,10 +216,15 @@ export default function ClassEvents() {
                                             {future ? (
                                                 <span className="text-sm text-muted-foreground">
                                                     Available on{' '}
-                                                    {toLocalMidnight(event.date).toLocaleDateString('en-US', {
-                                                        month: 'numeric',
-                                                        day: 'numeric'
-                                                    })}
+                                                    {toLocalMidnight(
+                                                        event.date
+                                                    ).toLocaleDateString(
+                                                        'en-US',
+                                                        {
+                                                            month: 'numeric',
+                                                            day: 'numeric'
+                                                        }
+                                                    )}
                                                 </span>
                                             ) : (
                                                 <Button
@@ -190,7 +232,10 @@ export default function ClassEvents() {
                                                     size="sm"
                                                     className="text-brand hover:text-foreground"
                                                     onClick={() =>
-                                                        handleAttendanceClick(event.event_id, event.date)
+                                                        handleAttendanceClick(
+                                                            event.event_id,
+                                                            event.date
+                                                        )
                                                     }
                                                 >
                                                     {isViewOnly ? (

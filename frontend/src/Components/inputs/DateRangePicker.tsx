@@ -14,7 +14,7 @@ interface DateRangePickerProps {
 
 const ISO = 'yyyy-MM-dd';
 
-export const allTimeRange: DateRangeValue = {
+const allTimeRange: DateRangeValue = {
     startDate: '',
     endDate: '',
     allTime: true

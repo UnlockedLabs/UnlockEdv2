@@ -7,6 +7,7 @@ node_modules/
 Claude.md
 AGENTS.md
 .github/workflows/test.yml
+/frontend/.husky/staged-files
 jar
 /config/logs
 /logs/*.log

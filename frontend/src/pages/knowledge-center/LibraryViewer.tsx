@@ -2,11 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import {
-    Library,
-    ServerResponseOne,
-    ToastState
-} from '@/types';
+import { Library, ServerResponseOne, ToastState } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
 import { useToast } from '@/contexts/ToastContext';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
@@ -120,7 +116,7 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId, url]);
+    }, [libraryId, url, navigate]);
 
     useEffect(() => {
         if (tourState.tourActive) {
@@ -136,16 +132,15 @@ export default function LibraryViewer() {
                 });
             }
         }
+        // Mount-only: advance tour once when LibraryViewer opens.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleBookmarkSubmit = async (data: BookmarkFormData) => {
-        const response = await API.put(
-            `open-content/${libraryId}/bookmark`,
-            {
-                name: data.favoriteName,
-                open_content_provider_id: providerID
-            }
-        );
+        const response = await API.put(`open-content/${libraryId}/bookmark`, {
+            name: data.favoriteName,
+            open_content_provider_id: providerID
+        });
         if (response.success) {
             toaster('Library added to favorites', ToastState.success);
         } else {
@@ -163,7 +158,10 @@ export default function LibraryViewer() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)]">
-            <div className="px-6 py-3 border-b border-gray-200 bg-white" id="library-viewer-sub-page">
+            <div
+                className="px-6 py-3 border-b border-gray-200 bg-white"
+                id="library-viewer-sub-page"
+            >
                 <div className="flex items-center justify-between">
                     <Breadcrumbs
                         items={[
@@ -268,8 +266,8 @@ export default function LibraryViewer() {
             >
                 <form
                     onSubmit={(e) => {
-                        void bookmarkForm.handleSubmit((d) =>
-                            void handleBookmarkSubmit(d)
+                        void bookmarkForm.handleSubmit(
+                            (d) => void handleBookmarkSubmit(d)
                         )(e);
                     }}
                     className="space-y-4"
@@ -292,10 +290,7 @@ export default function LibraryViewer() {
                         >
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            className="btn-brand-dark"
-                        >
+                        <Button type="submit" className="btn-brand-dark">
                             Save
                         </Button>
                     </div>

@@ -27,7 +27,7 @@ ReactDOM.createRoot(document.querySelector('#root')!).render(
                             const error = new Error(res.statusText);
                             throw error;
                         }
-                        return res.json();
+                        return res.json() as Promise<unknown>;
                     }
                 }}
             >
