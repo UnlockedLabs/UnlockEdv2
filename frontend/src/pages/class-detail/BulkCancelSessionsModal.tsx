@@ -11,7 +11,7 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { FormModal, TonedPanel } from '@/components/shared';
-import API from '@/api/api';
+import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
 
 export interface BulkCancelSession {
@@ -53,23 +53,13 @@ export function BulkCancelSessionsModal({
 
     const handleCancel = async () => {
         setIsSubmitting(true);
-        let ok = 0;
-        let fail = 0;
 
-        for (const s of sessions) {
-            const startTime = s.classTime?.split('-')[0];
-            const resp = await API.patch(
-                `program-classes/${classId}/events/${s.eventId}`,
-                {
-                    date: s.date,
-                    start_time: startTime,
-                    is_cancelled: true,
-                    reason: reason === 'other' ? note.trim() : reason
-                }
-            );
-            if (resp.success) ok++;
-            else fail++;
-        }
+        const { ok, fail } = await bulkPatchEvents(classId, sessions, (s) => ({
+            date: s.date,
+            start_time: s.classTime?.split('-')[0],
+            is_cancelled: true,
+            reason: reason === 'other' ? note.trim() : reason
+        }));
 
         if (ok)
             toast.success(

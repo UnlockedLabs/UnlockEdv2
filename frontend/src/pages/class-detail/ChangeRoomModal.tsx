@@ -10,7 +10,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { FormModal } from '@/components/shared';
-import API from '@/api/api';
+import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
 
@@ -65,27 +65,17 @@ export function ChangeRoomModal({
   const handleApply = async () => {
     if (!selectedRoomId) return;
     setIsSubmitting(true);
-    let ok = 0;
-    let fail = 0;
 
     const allSessions = applyToFuture && futureSessions.length > 0
       ? [...sessions, ...futureSessions]
       : sessions;
 
-    for (const s of allSessions) {
-      const startTime = s.classTime?.split('-')[0];
-      const resp = await API.patch(
-        `program-classes/${classId}/events/${s.eventId}`,
-        {
-          date: s.date,
-          start_time: startTime,
-          is_cancelled: false,
-          room_id: Number(selectedRoomId)
-        }
-      );
-      if (resp.success) ok++;
-      else fail++;
-    }
+    const { ok, fail } = await bulkPatchEvents(classId, allSessions, (s) => ({
+      date: s.date,
+      start_time: s.classTime?.split('-')[0],
+      is_cancelled: false,
+      room_id: Number(selectedRoomId)
+    }));
 
     const room = rooms.find((r) => String(r.id) === selectedRoomId);
     const roomName = room?.name ?? '';
