@@ -42,6 +42,7 @@ import { EnrollResidentsModal } from './EnrollResidentsModal';
 
 interface RosterTabProps {
     classId: number;
+    classFacilityId: number;
     classStatus: string;
     className: string;
     capacity: number;
@@ -66,6 +67,7 @@ function getAllowedStatuses(
 
 export function RosterTab({
     classId,
+    classFacilityId,
     classStatus,
     className,
     capacity,
@@ -532,6 +534,7 @@ export function RosterTab({
                 open={showEnrollModal}
                 onOpenChange={setShowEnrollModal}
                 classId={classId}
+                classFacilityId={classFacilityId}
                 className={className}
                 capacity={capacity}
                 enrolled={enrolled}

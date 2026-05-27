@@ -1,33 +1,18 @@
-import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
-import { FormModal } from '@/components/shared';
 import { useAuth } from '@/auth/useAuth';
-import { bulkPatchEvents } from '@/api/bulkPatchEvents';
-import { toast } from 'sonner';
-import { User, ServerResponseMany } from '@/types';
+import { User, UserRole, ServerResponseMany } from '@/types';
+import {
+    BulkSessionFieldModal,
+    BulkSessionFieldSession
+} from './BulkSessionFieldModal';
 
-export interface ChangeInstructorSession {
-    date: string;
-    dateLabel: string;
-    eventId: number;
-    classTime: string;
-    dateObj?: Date;
-    dayName?: string;
-}
+export type ChangeInstructorSession = BulkSessionFieldSession;
 
 interface ChangeInstructorModalProps {
     open: boolean;
     onClose: () => void;
     classId: number;
+    classFacilityId: number;
     sessions: ChangeInstructorSession[];
     onChanged: () => void;
     applyToFuture?: boolean;
@@ -36,238 +21,40 @@ interface ChangeInstructorModalProps {
     showSessionsList?: boolean;
 }
 
-export function ChangeInstructorModal({
-    open,
-    onClose,
-    classId,
-    sessions,
-    onChanged,
-    applyToFuture,
-    setApplyToFuture,
-    futureSessions = [],
-    showSessionsList = false
-}: ChangeInstructorModalProps) {
+const INSTRUCTOR_REASON_OPTIONS = [
+    { value: 'instructor_unavailable', label: 'Instructor Unavailable' },
+    { value: 'instructor_illness', label: 'Instructor Illness' },
+    { value: 'scheduling_conflict', label: 'Scheduling Conflict' },
+    { value: 'personal_emergency', label: 'Personal Emergency' },
+    { value: 'other', label: 'Other' }
+];
+
+export function ChangeInstructorModal(props: ChangeInstructorModalProps) {
+    const { classFacilityId, ...rest } = props;
     const { user } = useAuth();
-    const [selectedInstructorId, setSelectedInstructorId] = useState('');
-    const [reason, setReason] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const roleParam =
+        user?.role === UserRole.FacilityAdmin
+            ? 'facility_admin'
+            : 'department_admin';
     const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
-        open && user ? `/api/users?role=${user.role}&per_page=100` : null
+        props.open && user
+            ? `/api/users?role=${roleParam}&facility_id=${classFacilityId}&per_page=100`
+            : null
     );
-    const instructors = instructorsResp?.data ?? [];
-
-    useEffect(() => {
-        if (open) {
-            setSelectedInstructorId('');
-            setReason('');
-        }
-    }, [open]);
-
-    const handleApply = async () => {
-        if (!selectedInstructorId) return;
-        setIsSubmitting(true);
-
-        const allSessions = applyToFuture && futureSessions.length > 0
-            ? [...sessions, ...futureSessions]
-            : sessions;
-
-        const { ok, fail } = await bulkPatchEvents(classId, allSessions, (s) => ({
-            date: s.date,
-            start_time: s.classTime?.split('-')[0],
-            is_cancelled: false,
-            instructor_id: Number(selectedInstructorId)
-        }));
-
-        const instructor = instructors.find(
-            (i) => String(i.id) === selectedInstructorId
-        );
-        const instructorName = instructor
-            ? `${instructor.name_first} ${instructor.name_last}`
-            : '';
-        if (ok) {
-            const msg =
-                ok === 1
-                    ? `Instructor changed to ${instructorName}`
-                    : `Instructor changed to ${instructorName} for ${ok} sessions`;
-            toast.success(msg);
-        }
-        if (fail)
-            toast.error(
-                `Failed to update ${fail} session${fail === 1 ? '' : 's'}`
-            );
-        onClose();
-        onChanged();
-        setIsSubmitting(false);
-    };
-
-    const useBulkLayout = showSessionsList || sessions.length > 1;
+    const options = (instructorsResp?.data ?? []).map((inst) => ({
+        id: inst.id,
+        label: `${inst.name_first} ${inst.name_last}`
+    }));
 
     return (
-        <FormModal
-            open={open}
-            onOpenChange={(isOpen) => !isOpen && onClose()}
+        <BulkSessionFieldModal
+            {...rest}
             title="Change Instructor"
-            description={
-                useBulkLayout
-                    ? `Select a new instructor for ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'}`
-                    : `Change the instructor for the class scheduled for ${sessions[0]?.dateLabel ?? ''}`
-            }
-            className={useBulkLayout ? 'max-w-2xl' : undefined}
-            preventOutsideClose
-        >
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="newInstructor">New Instructor</Label>
-                    <Select
-                        value={selectedInstructorId}
-                        onValueChange={setSelectedInstructorId}
-                    >
-                        <SelectTrigger id="newInstructor">
-                            <SelectValue placeholder="Select instructor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {instructors.map((inst) => (
-                                <SelectItem
-                                    key={inst.id}
-                                    value={String(inst.id)}
-                                >
-                                    {inst.name_first} {inst.name_last}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="change-reason">Reason for Change</Label>
-                    <Select value={reason} onValueChange={setReason}>
-                        <SelectTrigger id="change-reason">
-                            <SelectValue placeholder="Select a reason" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="instructor_unavailable">
-                                Instructor Unavailable
-                            </SelectItem>
-                            <SelectItem value="instructor_illness">
-                                Instructor Illness
-                            </SelectItem>
-                            <SelectItem value="scheduling_conflict">
-                                Scheduling Conflict
-                            </SelectItem>
-                            <SelectItem value="personal_emergency">
-                                Personal Emergency
-                            </SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {setApplyToFuture && (
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id="apply-instructor-to-future"
-                            checked={applyToFuture}
-                            onChange={(e) =>
-                                setApplyToFuture(e.target.checked)
-                            }
-                            className="size-4 rounded border-gray-300"
-                        />
-                        <Label
-                            htmlFor="apply-instructor-to-future"
-                            className="text-sm font-normal cursor-pointer"
-                        >
-                            Apply this change to all future sessions
-                        </Label>
-                    </div>
-                )}
-
-                {applyToFuture && futureSessions.length > 0 && (
-                    <div>
-                        <Label className="form-label">
-                            Sessions to Update
-                        </Label>
-                        <div className="scroll-panel">
-                            {[...futureSessions]
-                                .sort(
-                                    (a, b) =>
-                                        (a.dateObj?.getTime() ?? 0) -
-                                        (b.dateObj?.getTime() ?? 0)
-                                )
-                                .map((sess) => (
-                                    <div
-                                        key={sess.date}
-                                        className="text-sm text-gray-700"
-                                    >
-                                        {sess.dayName ?? ''},{' '}
-                                        {sess.dateObj?.toLocaleDateString(
-                                            'en-US',
-                                            {
-                                                month: 'long',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            }
-                                        ) ?? sess.dateLabel}
-                                    </div>
-                                ))}
-                        </div>
-                    </div>
-                )}
-
-                {useBulkLayout && sessions.length > 0 && (
-                    <div>
-                        <Label className="form-label">
-                            Sessions to Update
-                        </Label>
-                        <div className="scroll-panel">
-                            {[...sessions]
-                                .sort(
-                                    (a, b) =>
-                                        (a.dateObj?.getTime() ?? 0) -
-                                        (b.dateObj?.getTime() ?? 0)
-                                )
-                                .map((s) => (
-                                    <div
-                                        key={s.date}
-                                        className="text-sm text-gray-700"
-                                    >
-                                        {s.dateObj?.toLocaleDateString(
-                                            'en-US',
-                                            {
-                                                weekday: 'long',
-                                                month: 'long',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            }
-                                        ) ?? s.dateLabel}
-                                    </div>
-                                ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-            <div className="flex justify-end gap-3">
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        onClose();
-                        setSelectedInstructorId('');
-                        setReason('');
-                        if (setApplyToFuture) setApplyToFuture(false);
-                    }}
-                    disabled={isSubmitting}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() => void handleApply()}
-                    disabled={!selectedInstructorId || isSubmitting}
-                    variant="brand"
-                >
-                    {isSubmitting ? 'Updating...' : 'Change Instructor'}
-                </Button>
-            </div>
-        </FormModal>
+            subject="Instructor"
+            idPrefix="instructor"
+            options={options}
+            payloadKey="instructor_id"
+            reasonOptions={INSTRUCTOR_REASON_OPTIONS}
+        />
     );
 }
