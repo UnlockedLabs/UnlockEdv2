@@ -21,6 +21,8 @@ interface FormModalProps {
     descriptionClassName?: string;
     /** Extra classes for the DialogHeader wrapper (use when overriding DialogContent padding). */
     headerClassName?: string;
+    /** Extra classes for the close (X) button. */
+    closeButtonClassName?: string;
     preventAutoFocus?: boolean;
     /** Prevent the dialog from closing when the user clicks outside. */
     preventOutsideClose?: boolean;
@@ -36,6 +38,7 @@ export function FormModal({
     titleClassName,
     descriptionClassName,
     headerClassName,
+    closeButtonClassName,
     preventAutoFocus,
     preventOutsideClose
 }: FormModalProps) {
@@ -43,6 +46,7 @@ export function FormModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className={className}
+                closeButtonClassName={closeButtonClassName}
                 onOpenAutoFocus={preventAutoFocus ? (e) => e.preventDefault() : undefined}
                 onPointerDownOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
             >
