@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { FormModal } from '@/components/shared';
 import API from '@/api/api';
+import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
 import { formatTime12h } from '@/lib/formatters';
@@ -96,24 +97,21 @@ export function RescheduleSessionModal({
         if (applyToFuture && futureSessions.length > 0) {
             const hasTimeOrRoom = newStartTime || newEndTime || newRoom;
             if (hasTimeOrRoom) {
-                let ok = 0;
-                let fail = 0;
-                for (const s of futureSessions) {
-                    const futureBody: Record<string, unknown> = {
-                        date: s.date,
-                        new_date: s.date,
-                        reason: 'applied_future'
-                    };
-                    if (newStartTime) futureBody.new_start_time = newStartTime;
-                    if (newEndTime) futureBody.new_end_time = newEndTime;
-                    if (newRoom) futureBody.room_id = Number(newRoom);
-                    const futureResp = await API.patch(
-                        `program-classes/${classId}/events/${s.eventId}`,
-                        futureBody
-                    );
-                    if (futureResp.success) ok++;
-                    else fail++;
-                }
+                const { ok, fail } = await bulkPatchEvents(
+                    classId,
+                    futureSessions,
+                    (s) => {
+                        const futureBody: Record<string, unknown> = {
+                            date: s.date,
+                            new_date: s.date,
+                            reason: 'applied_future'
+                        };
+                        if (newStartTime) futureBody.new_start_time = newStartTime;
+                        if (newEndTime) futureBody.new_end_time = newEndTime;
+                        if (newRoom) futureBody.room_id = Number(newRoom);
+                        return futureBody;
+                    }
+                );
                 if (fail) {
                     toast.error(
                         `Failed to update ${fail} future session${fail === 1 ? '' : 's'}`

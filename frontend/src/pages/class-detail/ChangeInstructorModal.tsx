@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { FormModal } from '@/components/shared';
 import { useAuth } from '@/auth/useAuth';
-import API from '@/api/api';
+import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
 import { User, ServerResponseMany } from '@/types';
 
@@ -67,27 +67,17 @@ export function ChangeInstructorModal({
     const handleApply = async () => {
         if (!selectedInstructorId) return;
         setIsSubmitting(true);
-        let ok = 0;
-        let fail = 0;
 
         const allSessions = applyToFuture && futureSessions.length > 0
             ? [...sessions, ...futureSessions]
             : sessions;
 
-        for (const s of allSessions) {
-            const startTime = s.classTime?.split('-')[0];
-            const resp = await API.patch(
-                `program-classes/${classId}/events/${s.eventId}`,
-                {
-                    date: s.date,
-                    start_time: startTime,
-                    is_cancelled: false,
-                    instructor_id: Number(selectedInstructorId)
-                }
-            );
-            if (resp.success) ok++;
-            else fail++;
-        }
+        const { ok, fail } = await bulkPatchEvents(classId, allSessions, (s) => ({
+            date: s.date,
+            start_time: s.classTime?.split('-')[0],
+            is_cancelled: false,
+            instructor_id: Number(selectedInstructorId)
+        }));
 
         const instructor = instructors.find(
             (i) => String(i.id) === selectedInstructorId
