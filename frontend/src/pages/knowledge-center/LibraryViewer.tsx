@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Library, ServerResponseOne, ToastState } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { FormModal } from '@/components/shared/FormModal';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import API from '@/api/api';
-import { useTourContext } from '@/contexts/TourContext';
-import { targetToStepIndexMap } from '@/components/UnlockEdTour';
+import { useTourContext } from '@/contexts/useTourContext';
+import { targetToStepIndexMap } from '@/contexts/tourState';
 
 interface UrlNavState {
     url?: string;

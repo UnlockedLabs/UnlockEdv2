@@ -1,4 +1,4 @@
-import { declareAuthenticatedRoutes } from '@/auth/RouteGuard';
+import { declareAuthenticatedRoutes } from '@/auth/declareAuthenticatedRoutes';
 import { AdminRoles, AllRoles } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import { getStudentLevel1Data } from '@/loaders/routeLoaders';
@@ -23,31 +23,30 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
         [FeatureAccess.OpenContentAccess]
     );
 
-export const KnowledgeCenterRoutes: RouteObject =
-    declareAuthenticatedRoutes(
-        [
-            {
-                path: 'home',
-                element: <ResidentHome />,
-                loader: getStudentLevel1Data,
-                handle: { title: 'Home' }
-            },
-            {
-                path: 'knowledge-center',
-                element: <ResidentKnowledgeCenter />,
-                handle: { title: 'Knowledge Center' }
-            },
-            {
-                path: 'viewer/libraries/:id',
-                element: <LibraryViewer />,
-                errorElement: <Error />
-            },
-            {
-                path: 'viewer/videos/:id',
-                element: <VideoViewer />,
-                errorElement: <Error />
-            }
-        ],
-        AllRoles,
-        [FeatureAccess.OpenContentAccess]
-    );
+export const KnowledgeCenterRoutes: RouteObject = declareAuthenticatedRoutes(
+    [
+        {
+            path: 'home',
+            element: <ResidentHome />,
+            loader: getStudentLevel1Data,
+            handle: { title: 'Home' }
+        },
+        {
+            path: 'knowledge-center',
+            element: <ResidentKnowledgeCenter />,
+            handle: { title: 'Knowledge Center' }
+        },
+        {
+            path: 'viewer/libraries/:id',
+            element: <LibraryViewer />,
+            errorElement: <Error />
+        },
+        {
+            path: 'viewer/videos/:id',
+            element: <VideoViewer />,
+            errorElement: <Error />
+        }
+    ],
+    AllRoles,
+    [FeatureAccess.OpenContentAccess]
+);

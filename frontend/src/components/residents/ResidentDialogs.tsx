@@ -10,7 +10,7 @@ import {
     ResetPasswordResponse,
     ToastState
 } from '@/types';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -281,10 +281,7 @@ export function ResetPasswordResultDialog({
                 </p>
             </div>
             <DialogFooter>
-                <Button
-                    onClick={() => onOpenChange(false)}
-                    variant="brand"
-                >
+                <Button onClick={() => onOpenChange(false)} variant="brand">
                     Done
                 </Button>
             </DialogFooter>
@@ -557,8 +554,7 @@ export function TransferDialog({
             'users/resident-transfer',
             {
                 user_id: resident.id,
-                curr_facility_id:
-                    resident.facility?.id ?? resident.facility_id,
+                curr_facility_id: resident.facility?.id ?? resident.facility_id,
                 trans_facility_id: Number(transferFacilityId)
             }
         );

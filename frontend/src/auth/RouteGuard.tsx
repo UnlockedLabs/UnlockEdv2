@@ -2,15 +2,12 @@ import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AUTHCALLBACK, hasFeature, useAuth } from '@/auth/useAuth';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW, UserRole } from '@/types';
-import { AuthProvider } from '@/auth/AuthProvider';
 import { PageTitleProvider } from '@/contexts/PageTitleContext';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import type { RouteObject } from 'react-router-dom';
-import Error from '@/pages/Error';
 
-function RouteGuard({
+export default function RouteGuard({
     allowedRoles,
     features
 }: {
@@ -43,20 +40,4 @@ function RouteGuard({
             </PageTitleProvider>
         </ToastProvider>
     );
-}
-
-export function declareAuthenticatedRoutes(
-    routes: RouteObject[],
-    roles?: UserRole[],
-    features?: FeatureAccess[]
-): RouteObject {
-    return {
-        element: (
-            <AuthProvider>
-                <RouteGuard allowedRoles={roles} features={features} />
-            </AuthProvider>
-        ),
-        errorElement: <Error />,
-        children: routes
-    };
 }

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useTourContext } from '@/contexts/TourContext';
+import { useTourContext } from '@/contexts/useTourContext';
 import { Button } from '@/components/ui/button';
 
 export default function Tour({ close }: { close: () => void }) {

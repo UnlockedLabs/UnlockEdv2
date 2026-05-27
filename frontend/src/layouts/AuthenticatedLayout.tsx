@@ -10,13 +10,12 @@ import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { TitleManager } from '@/components/TitleManager';
 import UnlockEdTour from '@/components/UnlockEdTour';
 import HelpCenter from '@/pages/HelpCenter';
-import { usePageTitle } from '@/contexts/PageTitleContext';
-import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import { usePageTitle } from '@/contexts/usePageTitle';
+import { useBreadcrumb } from '@/contexts/useBreadcrumb';
 import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
 
 import WebsocketSession from '@/session/websocket';
-
 
 export default function AuthenticatedLayout() {
     const { user } = useAuth();
@@ -36,8 +35,13 @@ export default function AuthenticatedLayout() {
         routeBreadcrumbs.length > 0 ? routeBreadcrumbs : contextBreadcrumbs;
     const isProgramDetail = /^\/programs\/\d+$/.test(location.pathname);
     const isResidentProfile = /^\/residents\/\w+$/.test(location.pathname);
-    const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(location.pathname);
-    const isEventAttendance = /^\/program-classes\/\d+\/events\/\d+\/attendance\//.test(location.pathname);
+    const isClassDetail = /^\/program-classes\/\d+\/detail$/.test(
+        location.pathname
+    );
+    const isEventAttendance =
+        /^\/program-classes\/\d+\/events\/\d+\/attendance\//.test(
+            location.pathname
+        );
     const isClassesPage = location.pathname === '/classes';
     const isResidentsPage = location.pathname === '/residents';
     const isDashboard = location.pathname.startsWith('/dashboard');
@@ -45,14 +49,49 @@ export default function AuthenticatedLayout() {
     const isFacilities = location.pathname === '/facilities';
     const isSchedule = location.pathname === '/schedule';
     const isAdmins = location.pathname === '/admins';
-    const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
+    const isKnowledgeCenter =
+        location.pathname === '/knowledge-center-management' ||
+        location.pathname === '/knowledge-center';
     const isContentViewer = location.pathname.startsWith('/viewer/');
-    const isResidentPage = ['/resident-programs', '/home'].includes(location.pathname);
+    const isResidentPage = ['/resident-programs', '/home'].includes(
+        location.pathname
+    );
     const isFullBleed =
-        isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isAdmins || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule;
+        isProgramDetail ||
+        isResidentProfile ||
+        isResidentsPage ||
+        isClassDetail ||
+        isEventAttendance ||
+        isClassesPage ||
+        isDashboard ||
+        isProgramsList ||
+        isFacilities ||
+        isAdmins ||
+        isKnowledgeCenter ||
+        isContentViewer ||
+        isResidentPage ||
+        isSchedule;
     const fullBleedWrapperClass =
-        isDashboard || isProgramsList || isFacilities || isAdmins || isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isClassesPage || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule ? 'py-0' : 'py-4';
-    const showBreadcrumbs = breadcrumbItems.length > 0 && !isProgramDetail && !isResidentProfile && !isContentViewer;
+        isDashboard ||
+        isProgramsList ||
+        isFacilities ||
+        isAdmins ||
+        isProgramDetail ||
+        isResidentProfile ||
+        isResidentsPage ||
+        isClassDetail ||
+        isClassesPage ||
+        isKnowledgeCenter ||
+        isContentViewer ||
+        isResidentPage ||
+        isSchedule
+            ? 'py-0'
+            : 'py-4';
+    const showBreadcrumbs =
+        breadcrumbItems.length > 0 &&
+        !isProgramDetail &&
+        !isResidentProfile &&
+        !isContentViewer;
     const isFacilityView =
         isProgramDetail &&
         user !== undefined &&
@@ -74,7 +113,14 @@ export default function AuthenticatedLayout() {
         } else if (pageTitle) {
             setPageTitle(pageTitle);
         }
-    }, [isFacilityView, isProgramDetail, pageTitle, setPageTitle, user]);
+    }, [
+        isContentViewer,
+        isFacilityView,
+        isProgramDetail,
+        pageTitle,
+        setPageTitle,
+        user
+    ]);
 
     useEffect(() => {
         if (user && canSwitchFacility(user)) {
@@ -100,7 +146,14 @@ export default function AuthenticatedLayout() {
 
     if (!user) return null;
 
-    const needsGrayBg = isResidentProfile || isResidentsPage || isClassesPage || isFacilities || isAdmins || isKnowledgeCenter || (isProgramDetail && canSwitchFacility(user));
+    const needsGrayBg =
+        isResidentProfile ||
+        isResidentsPage ||
+        isClassesPage ||
+        isFacilities ||
+        isAdmins ||
+        isKnowledgeCenter ||
+        (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
     const contentClass = `flex-1 min-h-full overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-surface-hover' : ''}`;
 
@@ -124,26 +177,32 @@ export default function AuthenticatedLayout() {
                         <MobileNav />
                     </div>
                     <div className="flex-1">
-                        <TopNav
-                            facilities={facilities}
-                        />
+                        <TopNav facilities={facilities} />
                     </div>
                 </div>
 
                 <TitleManager />
                 <UnlockEdTour />
 
-                <div className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}>
-                    <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}>
+                <div
+                    className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}
+                >
+                    <div
+                        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}
+                    >
                         <div className={contentClass}>
                             {isFullBleed ? (
                                 isClassDetail || isEventAttendance ? (
                                     <Outlet />
                                 ) : (
-                                    <div className={`${fullBleedWrapperClass} h-full`}>
+                                    <div
+                                        className={`${fullBleedWrapperClass} h-full`}
+                                    >
                                         {showBreadcrumbs && (
                                             <div className="max-w-7xl mx-auto px-6 mb-4">
-                                                <Breadcrumbs items={breadcrumbItems} />
+                                                <Breadcrumbs
+                                                    items={breadcrumbItems}
+                                                />
                                             </div>
                                         )}
                                         <Outlet />
@@ -153,7 +212,9 @@ export default function AuthenticatedLayout() {
                                 <div className="max-w-7xl mx-auto px-6 py-4">
                                     {showBreadcrumbs && (
                                         <div className="mb-4">
-                                            <Breadcrumbs items={breadcrumbItems} />
+                                            <Breadcrumbs
+                                                items={breadcrumbItems}
+                                            />
                                         </div>
                                     )}
                                     <Outlet />
@@ -165,7 +226,9 @@ export default function AuthenticatedLayout() {
                     {helpCenterOpen && (
                         <div className="w-80 shrink-0 bg-background border-l border-border animate-in slide-in-from-right duration-300 flex flex-col sticky top-0 h-[calc(100vh-4rem)]">
                             <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 py-4">
-                                <HelpCenter close={() => setHelpCenterOpen(false)} />
+                                <HelpCenter
+                                    close={() => setHelpCenterOpen(false)}
+                                />
                             </div>
                         </div>
                     )}

@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, StarOff } from 'lucide-react';
-import { Video, ToastState, UserRole, ViewType, ServerResponseMany } from '@/types';
+import {
+    Video,
+    ToastState,
+    UserRole,
+    ViewType,
+    ServerResponseMany
+} from '@/types';
 import { useAuth, isAdministrator, AdminRoles } from '@/auth/useAuth';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { videoIsAvailable, getVideoErrorMessage } from '@/lib/formatters';
@@ -80,9 +86,7 @@ export default function VideoCard({
         return (
             <div
                 className={`bg-card rounded-lg border cursor-pointer hover:shadow-md transition-shadow relative ${
-                    available
-                        ? 'border-border'
-                        : 'border-destructive border-2'
+                    available ? 'border-border' : 'border-destructive border-2'
                 }`}
                 onClick={() =>
                     available && navigate(`/viewer/videos/${video.id}`)
@@ -120,8 +124,8 @@ export default function VideoCard({
                     <p className="text-xs text-muted-foreground h-10 leading-5 line-clamp-2">
                         {available
                             ? video.description
-                            : getVideoErrorMessage(video) ??
-                              'Video currently unavailable. May be in the process of downloading. Please check back later.'}
+                            : (getVideoErrorMessage(video) ??
+                              'Video currently unavailable. May be in the process of downloading. Please check back later.')}
                     </p>
                     {isAdmin &&
                         (available ? (
@@ -174,9 +178,7 @@ export default function VideoCard({
             className={`bg-card rounded-lg border p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow ${
                 available ? 'border-border' : 'border-destructive border-2'
             }`}
-            onClick={() =>
-                available && navigate(`/viewer/videos/${video.id}`)
-            }
+            onClick={() => available && navigate(`/viewer/videos/${video.id}`)}
         >
             <img
                 src={thumbnailSrc}

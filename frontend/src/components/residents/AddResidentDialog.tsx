@@ -7,7 +7,7 @@ import {
     ServerResponseOne,
     ToastState
 } from '@/types';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

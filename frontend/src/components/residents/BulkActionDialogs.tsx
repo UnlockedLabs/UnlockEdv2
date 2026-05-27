@@ -9,7 +9,7 @@ import {
     ServerResponseOne,
     ToastState
 } from '@/types';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -168,8 +168,7 @@ export function BulkResetPasswordDialog({
                                     <ul className="text-sm text-gray-700 space-y-1">
                                         {users.map((u) => (
                                             <li key={u.id}>
-                                                {'•'}{' '}
-                                                {cfg.displayItem(u)}
+                                                {'•'} {cfg.displayItem(u)}
                                             </li>
                                         ))}
                                     </ul>
@@ -244,8 +243,8 @@ export function BulkResetPasswordDialog({
                                         <ul className="text-sm text-gray-700 space-y-1">
                                             {failures.map((f) => (
                                                 <li key={f.user_id}>
-                                                    {'•'} {f.name} (
-                                                    {f.username}): {f.reason}
+                                                    {'•'} {f.name} ({f.username}
+                                                    ): {f.reason}
                                                 </li>
                                             ))}
                                         </ul>

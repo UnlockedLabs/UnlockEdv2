@@ -1,26 +1,9 @@
-import { initialTourState, useTourContext } from '@/contexts/TourContext';
+import { initialTourState, targetToStepIndexMap } from '@/contexts/tourState';
+import { useTourContext } from '@/contexts/useTourContext';
 import { useTheme } from 'next-themes';
 import Joyride, { CallBackProps, EVENTS } from 'react-joyride';
 import { useNavigate } from 'react-router-dom';
 import { BRAND, BRAND_DARK } from '@/lib/brand';
-
-export const targetToStepIndexMap = {
-    '#resident-home': 0,
-    '#visit-knowledge-center': 1,
-    '#knowledge-center-landing': 2,
-    '#knowledge-center-tabs': 3,
-    '#knowledge-center-search': 4,
-    '#knowledge-center-filters': 5,
-    '#knowledge-center-search-lib': 6,
-    '#knowledge-center-fav-lib': 7,
-    '#knowledge-center-enter-library': 8,
-    '#library-viewer-sub-page': 9,
-    '#library-viewer-favorite': 10,
-    '#navigate-homepage': 11,
-    '#top-content': 12,
-    '#popular-content': 13,
-    '#end-tour': 14
-};
 
 export default function UnlockEdTour() {
     const {
