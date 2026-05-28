@@ -119,7 +119,7 @@ export default function FavoriteCard({
                     alt={favorite.title}
                     className="h-16 mx-auto object-contain"
                 />
-                <h3 className="text-sm font-medium text-foreground text-center line-clamp-2 min-h-[2.5rem]">
+                <h3 className="text-sm font-medium text-foreground text-center line-clamp-2 min-h-10">
                     {favorite.title}
                 </h3>
                 <p className="text-xs text-muted-foreground text-center">
@@ -146,7 +146,7 @@ export default function FavoriteCard({
             <img
                 src={getThumbnailUrl(favorite)}
                 alt={favorite.title}
-                className="w-12 h-12 flex-shrink-0 object-contain"
+                className="w-12 h-12 shrink-0 object-contain"
             />
             <div className="flex flex-col flex-1 min-w-0">
                 <h3 className="text-sm font-medium text-foreground">

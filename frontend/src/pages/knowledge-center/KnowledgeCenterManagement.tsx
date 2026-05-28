@@ -103,7 +103,7 @@ function LibraryCard({
                 <img
                     src={library.thumbnail_url ?? ''}
                     alt={library.title}
-                    className="size-12 rounded flex-shrink-0 border border-gray-200"
+                    className="size-12 rounded shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
                     <h3 className="card-title-link">{library.title}</h3>
@@ -190,7 +190,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 </Tooltip>
             </TooltipProvider>
             <div className="flex items-start gap-3 mb-3">
-                <div className="relative flex-shrink-0">
+                <div className="relative shrink-0">
                     <img
                         src={`/api/photos/${video.external_id}.jpg`}
                         alt={video.title}

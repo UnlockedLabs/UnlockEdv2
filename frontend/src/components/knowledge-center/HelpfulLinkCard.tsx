@@ -95,13 +95,13 @@ export default function HelpfulLinkCard({
                         <img
                             src={link.thumbnail_url ?? ''}
                             alt={link.title}
-                            className="w-12 h-12 flex-shrink-0 object-cover"
+                            className="w-12 h-12 shrink-0 object-cover"
                         />
-                        <h3 className="text-sm font-medium text-foreground line-clamp-2 min-h-[2.5rem]">
+                        <h3 className="text-sm font-medium text-foreground line-clamp-2 min-h-10">
                             {link.title}
                         </h3>
                     </div>
-                    <div className="flex self-start gap-1 flex-shrink-0">
+                    <div className="flex self-start gap-1 shrink-0">
                         {isAdmin ? (
                             showModal && (
                                 <>
@@ -179,7 +179,7 @@ export default function HelpfulLinkCard({
             <img
                 src={link.thumbnail_url ?? ''}
                 alt={link.title}
-                className="w-16 h-16 flex-shrink-0 object-cover"
+                className="w-16 h-16 shrink-0 object-cover"
             />
             <div className="flex flex-col flex-1 min-w-0">
                 <h3 className="text-sm font-medium text-foreground">

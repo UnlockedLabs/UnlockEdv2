@@ -151,7 +151,7 @@ export function BulkResetPasswordDialog({
                 <>
                     <TonedPanel tone="blue">
                         <div className="flex items-start gap-3">
-                            <AlertCircle className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <AlertCircle className="size-5 text-blue-600 mt-0.5 shrink-0" />
                             <div className="flex-1">
                                 <div className="font-medium text-sm text-blue-900 mb-1">
                                     {cfg.heading}
@@ -230,7 +230,7 @@ export function BulkResetPasswordDialog({
                     {failures.length > 0 && (
                         <TonedPanel tone="red">
                             <div className="flex items-start gap-3">
-                                <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                <AlertCircle className="size-5 text-red-600 mt-0.5 shrink-0" />
                                 <div className="flex-1">
                                     <div className="font-medium text-sm text-red-900 mb-1">
                                         {failures.length} failed
@@ -320,7 +320,7 @@ export function BulkDeactivateDialog({
         >
             <TonedPanel tone="orange">
                 <div className="flex items-start gap-3">
-                    <AlertCircle className="size-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <AlertCircle className="size-5 text-orange-600 mt-0.5 shrink-0" />
                     <div className="flex-1">
                         <div className="font-medium text-sm text-orange-900 mb-1">
                             This will deactivate these accounts
@@ -459,7 +459,7 @@ export function BulkDeleteDialog({
         >
             <TonedPanel tone="red">
                 <div className="flex items-start gap-3">
-                    <AlertCircle className="size-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <AlertCircle className="size-5 text-red-600 mt-0.5 shrink-0" />
                     <div className="flex-1">
                         <div className="font-medium text-sm text-red-900 mb-1">
                             This action cannot be undone
