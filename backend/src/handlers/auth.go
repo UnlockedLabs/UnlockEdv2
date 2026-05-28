@@ -370,6 +370,14 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	}
 	log.add("username_to_reset", user.Username)
 	if claims.Role == models.SystemAdmin && form.FacilityName != "" {
+		if strings.TrimSpace(form.Timezone) == "" {
+			tx.Rollback()
+			return newBadRequestServiceError(errors.New("timezone is required"), "Timezone is required")
+		}
+		if _, err := time.LoadLocation(form.Timezone); err != nil {
+			tx.Rollback()
+			return newBadRequestServiceError(err, "Invalid timezone")
+		}
 		facility := models.Facility{Name: form.FacilityName, Timezone: form.Timezone}
 		if err := srv.WithUserContext(r).UpdateFacility(&facility, 1); err != nil {
 			tx.Rollback()

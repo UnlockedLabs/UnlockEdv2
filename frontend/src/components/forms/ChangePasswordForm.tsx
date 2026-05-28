@@ -24,6 +24,12 @@ interface Inputs {
     timezone: string;
 }
 
+function getDefaultTimezone(): string {
+    const allowed = Object.values(Timezones) as string[];
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return allowed.includes(browserTz) ? browserTz : Timezones.CST;
+}
+
 export default function ChangePasswordForm() {
     const navigate = useNavigate();
     const [errorMessage, setErrorMessage] = useState('');
@@ -36,7 +42,9 @@ export default function ChangePasswordForm() {
         reset,
         setValue,
         formState: { errors }
-    } = useForm<Inputs>();
+    } = useForm<Inputs>({
+        defaultValues: { timezone: getDefaultTimezone() }
+    });
 
     useEffect(() => {
         const getUser = async () => {
@@ -55,11 +63,14 @@ export default function ChangePasswordForm() {
     const password = useWatch({ control, name: 'password' });
     const confirm = useWatch({ control, name: 'confirm' });
     const facility = useWatch({ control, name: 'facility_name' });
+    const timezone = useWatch({ control, name: 'timezone' });
 
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);
     const passwordsMatch = password === confirm;
-    const isValid = isLengthValid && hasNumber && passwordsMatch;
+    const validTimezone = !isFirstLogin || !!timezone;
+    const isValid =
+        isLengthValid && hasNumber && passwordsMatch && validTimezone;
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
 
@@ -207,9 +218,18 @@ export default function ChangePasswordForm() {
                         <Label htmlFor="timezone" className="text-foreground">
                             Timezone
                         </Label>
+                        <Input
+                            type="hidden"
+                            {...register('timezone', {
+                                required: 'Timezone is required'
+                            })}
+                        />
                         <Select
+                            value={timezone}
                             onValueChange={(value) =>
-                                setValue('timezone', value)
+                                setValue('timezone', value, {
+                                    shouldValidate: true
+                                })
                             }
                         >
                             <SelectTrigger>
@@ -225,6 +245,11 @@ export default function ChangePasswordForm() {
                                 )}
                             </SelectContent>
                         </Select>
+                        {errors.timezone && (
+                            <p className="text-sm text-destructive">
+                                {errors.timezone.message}
+                            </p>
+                        )}
                     </div>
                 </>
             )}
