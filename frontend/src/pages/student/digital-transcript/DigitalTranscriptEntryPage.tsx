@@ -4,8 +4,15 @@ import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
-import { ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
 import {
@@ -23,9 +30,6 @@ import { LearningRecordExportContent } from './LearningRecordExportContent';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 import { readLearningRecordExportRows } from './transcriptEntrySessionStorage';
 import type { TranscriptEntry } from '@/types/digital-transcript';
-
-const digitalTranscriptBackLinkClassName =
-    'group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80';
 
 export default function DigitalTranscriptEntryPage() {
     const navigate = useNavigate();
@@ -153,6 +157,7 @@ export default function DigitalTranscriptEntryPage() {
                             rows={exportRows}
                             residentName={residentName}
                             filledSectionsOnly
+                            documentVariant={isFunnel ? 'funnel' : 'default'}
                         />
                     </div>,
                     document.body
@@ -163,10 +168,12 @@ export default function DigitalTranscriptEntryPage() {
                     className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3 print:hidden"
                 >
                     {isFunnel ? (
-                        <button
+                        <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             data-slot="digital-transcript-back"
-                            className={digitalTranscriptBackLinkClassName}
+                            className="group gap-1.5 text-primary hover:bg-muted hover:text-primary"
                             onClick={requestLeave}
                         >
                             <span
@@ -176,7 +183,7 @@ export default function DigitalTranscriptEntryPage() {
                                 ←
                             </span>
                             Back
-                        </button>
+                        </Button>
                     ) : (
                         <DigitalTranscriptBackLink to={base}>Back</DigitalTranscriptBackLink>
                     )}
@@ -233,6 +240,7 @@ export default function DigitalTranscriptEntryPage() {
                         upsertCommittedEntry={upsertCommittedEntry}
                         deleteCommittedEntry={deleteCommittedEntry}
                         onExportRowsChange={handleExportRowsChange}
+                        funnelOnSave={isFunnel ? handleSave : undefined}
                         onRegisterFunnelToolbar={
                             isFunnel ? handleRegisterFunnelToolbar : undefined
                         }
@@ -249,16 +257,33 @@ export default function DigitalTranscriptEntryPage() {
                 </div>
             </div>
             {isFunnel ? (
-                <ConfirmDialog
-                    open={leaveConfirmOpen}
-                    onOpenChange={setLeaveConfirmOpen}
-                    title="Leave without saving?"
-                    description="Your changes haven't been saved yet. If you leave now, they won't be added to your record."
-                    confirmLabel="Leave"
-                    cancelLabel="Keep editing"
-                    variant="destructive"
-                    onConfirm={handleConfirmLeave}
-                />
+                <AlertDialog open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Save your changes?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                You have unsaved changes. Would you like to save them before leaving?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={handleConfirmLeave}
+                            >
+                                Leave without saving
+                            </Button>
+                            <Button
+                                type="button"
+                                className="bg-[#556830] text-white hover:bg-[#203622]"
+                                onClick={handleSave}
+                            >
+                                Save Changes
+                            </Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             ) : null}
         </div>
     );

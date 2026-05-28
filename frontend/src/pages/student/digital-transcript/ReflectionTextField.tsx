@@ -17,6 +17,8 @@ interface ReflectionTextFieldProps {
     onChange: (v: string) => void;
     fieldKey: ReflectionTextFieldKey;
     nudge?: ReflectionTextNudge;
+    /** Funnel: show nudge hint between label and input instead of below. */
+    descriptionAboveInput?: boolean;
 }
 
 export function ReflectionTextField({
@@ -25,7 +27,8 @@ export function ReflectionTextField({
     value,
     onChange,
     fieldKey,
-    nudge: nudgeOverride
+    nudge: nudgeOverride,
+    descriptionAboveInput = false
 }: ReflectionTextFieldProps) {
     const nudge = nudgeOverride ?? REFLECTION_TEXT_NUDGES[fieldKey];
     const len = value.length;
@@ -39,9 +42,15 @@ export function ReflectionTextField({
         else onChange(next.slice(0, nudge.maxLength));
     }
 
+    const showDescriptionAbove = descriptionAboveInput && Boolean(nudge.hint);
+    const showDescriptionBelow = !descriptionAboveInput && Boolean(nudge.hint);
+
     return (
         <div className="space-y-2">
             <Label htmlFor={id}>{label}</Label>
+            {showDescriptionAbove ? (
+                <p className="text-xs leading-relaxed text-muted-foreground">{nudge.hint}</p>
+            ) : null}
             <div
                 className={cn(
                     'overflow-hidden rounded-lg border border-border/80 bg-muted/30 shadow-none',
@@ -69,7 +78,7 @@ export function ReflectionTextField({
                 </div>
             </div>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                {nudge.hint ? (
+                {showDescriptionBelow ? (
                     <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
                         {nudge.hint}
                     </p>

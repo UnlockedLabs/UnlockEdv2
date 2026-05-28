@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/shared';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { TranscriptEntry } from '@/types/digital-transcript';
@@ -25,9 +26,11 @@ import {
 } from './AchievementsRecordPreview';
 import { AchievementRow } from './AchievementRow';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
+import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
 import {
     countFunnelFieldsAnswered,
     countFunnelStepFieldsAnswered,
+    funnelCompletionTier,
     FUNNEL_FORM_FIELD_TOTAL,
     FUNNEL_FORM_STEPS,
     TOP_SKILLS_MAX
@@ -146,6 +149,8 @@ interface DigitalTranscriptWysiwygEntryProps {
     deleteCommittedEntry: (id: string) => TranscriptEntrySession | null;
     /** Live session rows for PDF export (includes in-progress autosaved work). */
     onExportRowsChange?: (rows: TranscriptEntry[]) => void;
+    /** Funnel: same handler as toolbar Save changes (validate, commit, navigate). */
+    funnelOnSave?: () => void;
     /** Funnel: register Save / Cancel / unsaved-check for the entry toolbar. */
     onRegisterFunnelToolbar?: (handlers: FunnelToolbarHandlers) => void;
     /** Funnel: PDF download wired from the entry page (rendered in the preview pane). */
@@ -161,6 +166,7 @@ export function DigitalTranscriptWysiwygEntry({
     upsertCommittedEntry,
     deleteCommittedEntry,
     onExportRowsChange,
+    funnelOnSave,
     onRegisterFunnelToolbar,
     funnelDownload
 }: DigitalTranscriptWysiwygEntryProps) {
@@ -442,6 +448,14 @@ export function DigitalTranscriptWysiwygEntry({
     );
 
     const funnelEntry = isFunnel ? (displayRows[0] ?? null) : null;
+    const funnelAnswered = funnelEntry
+        ? countFunnelFieldsAnswered(funnelEntry)
+        : 0;
+    const funnelCompletionBadgeBg = funnelEntry
+        ? CONFIDENCE_LEVEL_SOLID[
+              funnelCompletionTier(funnelAnswered, FUNNEL_FORM_FIELD_TOTAL) - 1
+          ]
+        : null;
 
     const expandedId = session?.expandedId ?? null;
 
@@ -473,13 +487,13 @@ export function DigitalTranscriptWysiwygEntry({
             data-slot="transcript-wysiwyg-outer"
             className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden"
         >
-            {isFunnel && funnelEntry ? (
+            {isFunnel && funnelEntry && funnelCompletionBadgeBg ? (
                 <Card
                     data-slot="funnel-form-progress"
                     className="mx-4 mt-4 shrink-0 p-4"
                 >
                     <div className="flex items-start gap-4">
-                        <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
+                        <div className="grid min-w-0 flex-1 grid-cols-3 gap-4">
                             {FUNNEL_FORM_STEPS.map((step, index) => {
                                 const answered = countFunnelStepFieldsAnswered(
                                     index,
@@ -493,15 +507,15 @@ export function DigitalTranscriptWysiwygEntry({
                                     <div key={step.id} className="min-w-0 space-y-1.5">
                                         <span
                                             className={cn(
-                                                'block text-xs font-medium leading-snug',
+                                                'block text-xs leading-snug',
                                                 isActive
-                                                    ? 'text-[#556830]'
-                                                    : 'text-muted-foreground'
+                                                    ? 'font-bold text-foreground'
+                                                    : 'font-medium text-muted-foreground'
                                             )}
                                         >
                                             {step.title} ({answered}/{total})
                                         </span>
-                                        <span className="block h-0.5 overflow-hidden rounded-full bg-muted">
+                                        <span className="block h-2 overflow-hidden rounded-full bg-muted">
                                             <span
                                                 className="block h-full rounded-full bg-[#556830] transition-[width] duration-200"
                                                 style={{ width: `${fillPct}%` }}
@@ -513,10 +527,16 @@ export function DigitalTranscriptWysiwygEntry({
                                 );
                             })}
                         </div>
-                        <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                            {countFunnelFieldsAnswered(funnelEntry)} / {FUNNEL_FORM_FIELD_TOTAL}{' '}
+                        <Badge
+                            variant="secondary"
+                            className={cn(
+                                'shrink-0 self-center border-border/60 px-2.5 py-1 text-xs font-medium tabular-nums text-black',
+                                funnelCompletionBadgeBg
+                            )}
+                        >
+                            {funnelAnswered} / {FUNNEL_FORM_FIELD_TOTAL}{' '}
                             questions answered
-                        </p>
+                        </Badge>
                     </div>
                 </Card>
             ) : null}
@@ -560,6 +580,7 @@ export function DigitalTranscriptWysiwygEntry({
                                         showSaveErrors={saveErrorRowId === entry.id}
                                         activeStep={activeStep}
                                         onActiveStepChange={setActiveStep}
+                                        onSave={funnelOnSave}
                                         showDelete={committedIds.has(entry.id)}
                                         onDeleteRequest={() => setDeleteConfirmFor(entry)}
                                     />

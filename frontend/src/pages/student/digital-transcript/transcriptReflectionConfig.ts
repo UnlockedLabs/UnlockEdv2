@@ -229,6 +229,49 @@ export const FUNNEL_FORM_STEPS: readonly FunnelFormStepConfig[] = [
 
 export const FUNNEL_FORM_STEP_COUNT = FUNNEL_FORM_STEPS.length;
 
+/** Funnel live preview — first-person captions above each answer. */
+export const FUNNEL_PREVIEW_LABELS: Record<ReflectionAnswerKey, string> = {
+    oneSentence: 'In my own words',
+    whatMadeYouFinish: 'What kept me going',
+    pride: 'How it changed me',
+    standoutMoment: 'A moment that stood out for me',
+    adviceToPeer: "What I'd tell others",
+    confidence: 'My confidence in the future',
+    topSkills: 'Skills I gained',
+    goalConnection: 'Where this leads for me'
+};
+
+/** Funnel form — helper text below question label, above input. */
+export const FUNNEL_FIELD_DESCRIPTIONS: Record<ReflectionAnswerKey, string> = {
+    oneSentence:
+        'Sum it up in your own words — this becomes the first thing someone reads about your achievement.',
+    whatMadeYouFinish: 'Think about what drove you to keep going, even when it was hard.',
+    pride: 'Reflect on any shift in your confidence, attitude, or how you relate to the people around you.',
+    standoutMoment:
+        'A specific memory or person makes your record more personal and memorable.',
+    adviceToPeer: 'Your honest take could help someone else decide to take this step.',
+    confidence: 'Choose on a scale of 1 to 5, where 5 means you feel most confident.',
+    topSkills: 'List the skills or knowledge you walked away with — even small ones count.',
+    goalConnection: 'Connecting this program to a goal shows momentum and intention.'
+};
+
+export interface FunnelPreviewSection {
+    id: string;
+    title: string;
+    fields: readonly ReflectionAnswerKey[];
+}
+
+/** Funnel preview — reflection fields grouped by form section (metadata excluded). */
+export const FUNNEL_PREVIEW_SECTIONS: readonly FunnelPreviewSection[] = FUNNEL_FORM_STEPS.map(
+    (step) => ({
+        id: step.id,
+        title: step.title,
+        fields: step.fields.filter(
+            (f): f is ReflectionAnswerKey => f !== 'programName' && f !== 'completionDate'
+        )
+    })
+);
+
 /** Funnel editor — 200-char limits for all paragraph fields. */
 export const FUNNEL_REFLECTION_TEXT_NUDGES: Record<
     Exclude<ReflectionTextFieldKey, 'topSkillsParagraph'> | 'topSkillsParagraph',
@@ -236,14 +279,32 @@ export const FUNNEL_REFLECTION_TEXT_NUDGES: Record<
 > = {
     oneSentence: {
         ...FUNNEL_TEXT_NUDGE_200,
-        hint: 'This line becomes the headline on your record card.'
+        hint: FUNNEL_FIELD_DESCRIPTIONS.oneSentence
     },
-    whatMadeYouFinish: FUNNEL_TEXT_NUDGE_200,
-    pride: FUNNEL_TEXT_NUDGE_200,
-    standoutMoment: FUNNEL_TEXT_NUDGE_200,
-    adviceToPeer: FUNNEL_TEXT_NUDGE_200,
-    goalConnection: FUNNEL_TEXT_NUDGE_200,
-    topSkillsParagraph: FUNNEL_TEXT_NUDGE_200
+    whatMadeYouFinish: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: FUNNEL_FIELD_DESCRIPTIONS.whatMadeYouFinish
+    },
+    pride: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: FUNNEL_FIELD_DESCRIPTIONS.pride
+    },
+    standoutMoment: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: FUNNEL_FIELD_DESCRIPTIONS.standoutMoment
+    },
+    adviceToPeer: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: FUNNEL_FIELD_DESCRIPTIONS.adviceToPeer
+    },
+    goalConnection: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: FUNNEL_FIELD_DESCRIPTIONS.goalConnection
+    },
+    topSkillsParagraph: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: FUNNEL_FIELD_DESCRIPTIONS.topSkills
+    }
 };
 
 export function funnelStepFieldLabel(field: FunnelStepField): string {
@@ -283,6 +344,14 @@ function funnelFieldAnswered(entry: TranscriptEntry, field: FunnelStepField): bo
     return Boolean(entry[field].trim());
 }
 
+/** Whether a funnel reflection field has a non-empty answer (preview visibility). */
+export function funnelReflectionFieldAnswered(
+    entry: TranscriptEntry,
+    key: ReflectionAnswerKey
+): boolean {
+    return funnelFieldAnswered(entry, key);
+}
+
 /** True when every field in the funnel step has a non-empty answer. */
 export function isFunnelStepComplete(stepIndex: number, entry: TranscriptEntry): boolean {
     const step = FUNNEL_FORM_STEPS[stepIndex];
@@ -309,6 +378,12 @@ export function countFunnelFieldsAnswered(entry: TranscriptEntry): number {
         (sum, _, index) => sum + countFunnelStepFieldsAnswered(index, entry),
         0
     );
+}
+
+/** Maps answered count to tiers 1–5; 10 fields → one tier per 2 answers. */
+export function funnelCompletionTier(answered: number, total: number): number {
+    if (total <= 0) return 1;
+    return Math.min(5, Math.max(1, Math.ceil(answered / (total / 5))));
 }
 
 export interface ReflectionCategorySection {

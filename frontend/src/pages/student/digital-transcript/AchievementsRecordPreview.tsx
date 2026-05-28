@@ -49,6 +49,7 @@ export function AchievementsRecordPreview({
             anchorId={anchorId}
             hidePreviewHeader={isFunnel}
             embeddedLivePreview={isFunnel}
+            documentVariant={isFunnel ? 'funnel' : 'default'}
         />
     );
 

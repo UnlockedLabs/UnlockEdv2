@@ -1,7 +1,10 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import { LearningRecordDocument } from './LearningRecordDocument';
+import {
+    LearningRecordDocument,
+    type LearningRecordDocumentVariant
+} from './LearningRecordDocument';
 import { programsCompletedLabel } from './learningRecordResidentName';
 
 export function LearningRecordPreviewHeader({
@@ -37,6 +40,7 @@ export interface LearningRecordExportContentProps {
     hidePreviewHeader?: boolean;
     /** Funnel live preview: parent card supplies padding and background. */
     embeddedLivePreview?: boolean;
+    documentVariant?: LearningRecordDocumentVariant;
 }
 
 export const LearningRecordExportContent = forwardRef<
@@ -50,10 +54,12 @@ export const LearningRecordExportContent = forwardRef<
         className,
         filledSectionsOnly = false,
         hidePreviewHeader = false,
-        embeddedLivePreview = false
+        embeddedLivePreview = false,
+        documentVariant = 'default'
     },
     ref
 ) {
+    const isFunnel = documentVariant === 'funnel';
     const highlightAnchor = Boolean(anchorId) && !filledSectionsOnly;
     const showPreviewHeader = !hidePreviewHeader;
     const shellClassName = embeddedLivePreview
@@ -92,14 +98,15 @@ export const LearningRecordExportContent = forwardRef<
                     programCount={rows.length}
                 />
             ) : null}
-            <div className="flex flex-col gap-5 pb-4">
+            <div className={cn('flex flex-col pb-4', isFunnel ? 'gap-3' : 'gap-5')}>
                 {rows.map((entry) => (
                     <article
                         key={entry.id}
                         data-achievement-block
                         data-achievement-id={entry.id}
                         className={cn(
-                            'break-inside-avoid rounded-lg border border-border/80 bg-card p-5 shadow-none sm:p-6',
+                            'break-inside-avoid rounded-lg border border-border/80 bg-card shadow-none',
+                            isFunnel ? 'overflow-hidden p-0' : 'p-5 sm:p-6',
                             highlightAnchor &&
                                 entry.id !== anchorId &&
                                 'opacity-[0.35] transition-opacity duration-300 ease-out'
@@ -107,7 +114,9 @@ export const LearningRecordExportContent = forwardRef<
                     >
                         <LearningRecordDocument
                             source={entry}
+                            residentName={residentName}
                             layout="record"
+                            documentVariant={documentVariant}
                             showReadiness={false}
                             emptyPreviewVariant={filledSectionsOnly ? 'placeholder' : 'skeleton'}
                             filledSectionsOnly={filledSectionsOnly}

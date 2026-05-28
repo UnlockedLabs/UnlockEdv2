@@ -21,6 +21,8 @@ interface AchievementFormProps {
     /** Controlled step index (lifted for Save validation jump to step 0). */
     activeStep: number;
     onActiveStepChange: (step: number) => void;
+    /** Funnel: same handler as toolbar Save changes. */
+    onSave?: () => void;
 }
 
 export function AchievementForm({
@@ -28,7 +30,8 @@ export function AchievementForm({
     onChange,
     showSaveErrors,
     activeStep,
-    onActiveStepChange
+    onActiveStepChange,
+    onSave
 }: AchievementFormProps) {
     const stepConfig = FUNNEL_FORM_STEPS[activeStep];
     const isFirstStep = activeStep === 0;
@@ -88,6 +91,14 @@ export function AchievementForm({
                         onClick={() => onActiveStepChange(activeStep + 1)}
                     >
                         Next
+                    </Button>
+                ) : onSave ? (
+                    <Button
+                        type="button"
+                        className="ml-auto bg-[#556830] text-white hover:bg-[#203622]"
+                        onClick={onSave}
+                    >
+                        Finish
                     </Button>
                 ) : null}
             </div>

@@ -1,8 +1,19 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal, flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Download, Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import {
     Table,
@@ -12,17 +23,33 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import { ConfirmDialog, EmptyState, PageHeader } from '@/components/shared';
+import { EmptyState, PageHeader } from '@/components/shared';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
+import { cn } from '@/lib/utils';
+import {
+    downloadLearningRecordPdf,
+    learningRecordPdfFilename
+} from '@/utils/downloadLearningRecordPdf';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
     countAnsweredReflections,
     reflectionSlotsTotal
 } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
+import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
 import { getDigitalTranscriptBasePath, setDigitalTranscriptStorageContext } from './digitalTranscriptRoutes';
-import { getLearningRecordFormVariant } from './learningRecordPrototypes';
+import {
+    getLearningRecordFormVariant,
+    type LearningRecordFormVariant
+} from './learningRecordPrototypes';
 import { DigitalTranscriptEyebrow, DigitalTranscriptShell } from './DigitalTranscriptShell';
+import { LearningRecordExportContent } from './LearningRecordExportContent';
+import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 import { TranscriptResumePreview } from './TranscriptResumePreview';
+import {
+    countFunnelFieldsAnswered,
+    funnelCompletionTier,
+    FUNNEL_FORM_FIELD_TOTAL
+} from './transcriptReflectionConfig';
 
 /** Decorative sample for the home CTA thumbnail (not persisted). */
 const ACHIEVEMENT_LOG_THUMBNAIL_SAMPLE: TranscriptEntry = {
@@ -69,26 +96,40 @@ function savedOnDeviceLabel(count: number): string {
     return `You have ${count} ${word} saved on this device`;
 }
 
-function ReadinessCell({ entry }: { entry: TranscriptEntry }) {
-    const filled = countAnsweredReflections(entry);
-    const total = reflectionSlotsTotal();
-    const pct = Math.round((filled / total) * 100);
+function getEntryQuestionsProgress(
+    entry: TranscriptEntry,
+    formVariant: LearningRecordFormVariant
+): { answered: number; total: number } {
+    if (formVariant === 'funnel') {
+        return {
+            answered: countFunnelFieldsAnswered(entry),
+            total: FUNNEL_FORM_FIELD_TOTAL
+        };
+    }
+    return {
+        answered: countAnsweredReflections(entry),
+        total: reflectionSlotsTotal()
+    };
+}
+
+function QuestionsAnsweredBadge({
+    answered,
+    total
+}: {
+    answered: number;
+    total: number;
+}) {
+    const tier = funnelCompletionTier(answered, total);
+    const bg = CONFIDENCE_LEVEL_SOLID[tier - 1];
     return (
-        <div className="flex w-full max-w-[4.5rem] flex-col gap-1">
-            <span className="text-xs font-medium tabular-nums text-foreground">
-                {filled}/{total}
-            </span>
-            <div
-                className="h-1 w-full max-w-[3.25rem] overflow-hidden rounded-full bg-muted"
-                role="img"
-                aria-label={`${filled} of ${total} reflections`}
-            >
-                <div
-                    className="h-full rounded-full bg-primary/45 transition-[width] dark:bg-primary/50"
-                    style={{ width: `${pct}%` }}
-                />
-            </div>
-        </div>
+        <span
+            className={cn(
+                'inline-flex items-center rounded-md border border-border/60 px-2.5 py-0.5 text-xs font-medium text-black',
+                bg
+            )}
+        >
+            {answered} / {total}
+        </span>
     );
 }
 
@@ -96,20 +137,26 @@ interface SavedEntriesSectionProps {
     entries: TranscriptEntry[];
     entriesNewestFirst: TranscriptEntry[];
     entryPath: string;
+    formVariant: LearningRecordFormVariant;
     sectionHeading: ReactNode;
     headerAction?: ReactNode;
     emptyState: { title: string; description: string };
     onDeleteRequest: (entry: TranscriptEntry) => void;
+    onDownloadEntry: (entry: TranscriptEntry) => void;
+    downloadingEntryId: string | null;
 }
 
 function SavedEntriesSection({
     entries,
     entriesNewestFirst,
     entryPath,
+    formVariant,
     sectionHeading,
     headerAction,
     emptyState,
-    onDeleteRequest
+    onDeleteRequest,
+    onDownloadEntry,
+    downloadingEntryId
 }: SavedEntriesSectionProps) {
     return (
         <section className="flex min-h-0 flex-col">
@@ -141,71 +188,119 @@ function SavedEntriesSection({
                                     <TableHead className="hidden w-[9rem] font-semibold text-foreground sm:table-cell">
                                         Completed
                                     </TableHead>
-                                    <TableHead className="hidden w-[4.5rem] font-semibold text-foreground md:table-cell">
-                                        Readiness
+                                    <TableHead className="hidden font-semibold text-foreground md:table-cell">
+                                        Questions answered
                                     </TableHead>
                                     <TableHead className="hidden w-[7.5rem] font-semibold text-foreground lg:table-cell">
-                                        Logged
-                                    </TableHead>
-                                    <TableHead className="w-[4.5rem] pr-6 text-right font-semibold text-foreground">
-                                        <span className="sr-only">Edit</span>
+                                        Added on
                                     </TableHead>
                                     <TableHead className="w-[5.5rem] pr-6 text-right font-semibold text-foreground">
-                                        <span className="sr-only">Delete</span>
+                                        <span className="sr-only">Actions</span>
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {entriesNewestFirst.map((entry) => (
-                                    <TableRow
-                                        key={entry.id}
-                                        data-slot="transcript-saved-entry-row"
-                                    >
-                                        <TableCell className="max-w-[14rem] pl-6 align-top font-medium text-foreground">
-                                            <div className="font-medium">
-                                                {entry.programName.trim() || '—'}
-                                            </div>
-                                            <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
-                                                Completed {formatProgramCompletedDate(entry)}
-                                            </p>
-                                            <div className="mt-3 md:hidden">
-                                                <ReadinessCell entry={entry} />
-                                            </div>
-                                            <p className="mt-2 text-xs text-muted-foreground lg:hidden">
-                                                Logged {formatSavedOn(entry.createdAt)}
-                                            </p>
-                                        </TableCell>
-                                        <TableCell className="hidden align-top text-muted-foreground sm:table-cell">
-                                            {formatProgramCompletedDate(entry)}
-                                        </TableCell>
-                                        <TableCell className="hidden w-[4.5rem] align-top md:table-cell">
-                                            <ReadinessCell entry={entry} />
-                                        </TableCell>
-                                        <TableCell className="hidden align-top text-muted-foreground lg:table-cell">
-                                            {formatSavedOn(entry.createdAt)}
-                                        </TableCell>
-                                        <TableCell className="align-top pr-6 text-right">
-                                            <Button variant="outline" size="sm" className="shrink-0" asChild>
-                                                <Link
-                                                    to={`${entryPath}?edit=${encodeURIComponent(entry.id)}`}
-                                                >
-                                                    Edit
+                                {entriesNewestFirst.map((entry) => {
+                                    const editHref = `${entryPath}?edit=${encodeURIComponent(entry.id)}`;
+                                    const { answered, total } = getEntryQuestionsProgress(
+                                        entry,
+                                        formVariant
+                                    );
+                                    const isDownloading = downloadingEntryId === entry.id;
+
+                                    return (
+                                        <TableRow
+                                            key={entry.id}
+                                            data-slot="transcript-saved-entry-row"
+                                            className="group cursor-pointer hover:bg-muted/30"
+                                        >
+                                            <Button
+                                                asChild
+                                                variant="ghost"
+                                                className="contents h-auto border-0 bg-transparent p-0 font-normal shadow-none hover:bg-transparent"
+                                            >
+                                                <Link to={editHref} className="contents">
+                                                    <TableCell className="max-w-[14rem] align-middle pl-6 font-medium text-foreground">
+                                                        <span className="font-medium group-hover:underline">
+                                                            {entry.programName.trim() || '—'}
+                                                        </span>
+                                                        <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
+                                                            Completed{' '}
+                                                            {formatProgramCompletedDate(entry)}
+                                                        </p>
+                                                        <div className="mt-3 md:hidden">
+                                                            <QuestionsAnsweredBadge
+                                                                answered={answered}
+                                                                total={total}
+                                                            />
+                                                        </div>
+                                                        <p className="mt-2 text-xs text-muted-foreground lg:hidden">
+                                                            Added on{' '}
+                                                            {formatSavedOn(entry.createdAt)}
+                                                        </p>
+                                                    </TableCell>
+                                                    <TableCell className="hidden align-middle text-foreground sm:table-cell">
+                                                        {formatProgramCompletedDate(entry)}
+                                                    </TableCell>
+                                                    <TableCell className="hidden align-middle md:table-cell">
+                                                        <QuestionsAnsweredBadge
+                                                            answered={answered}
+                                                            total={total}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="hidden align-middle text-foreground lg:table-cell">
+                                                        {formatSavedOn(entry.createdAt)}
+                                                    </TableCell>
                                                 </Link>
                                             </Button>
-                                        </TableCell>
-                                        <TableCell className="align-top pr-6 text-right">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                onClick={() => onDeleteRequest(entry)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                            <TableCell className="relative z-10 align-middle pr-6">
+                                                <div
+                                                    className="flex items-center justify-end gap-1"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                    }}
+                                                >
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label="Download achievement as PDF"
+                                                        disabled={isDownloading}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            onDownloadEntry(entry);
+                                                        }}
+                                                    >
+                                                        {isDownloading ? (
+                                                            <Loader2
+                                                                className="size-4 animate-spin"
+                                                                aria-hidden
+                                                            />
+                                                        ) : (
+                                                            <Download size={16} aria-hidden />
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label="Delete achievement"
+                                                        className="hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            onDeleteRequest(entry);
+                                                        }}
+                                                    >
+                                                        <Trash2 size={16} aria-hidden />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -224,12 +319,64 @@ export default function DigitalTranscriptHome() {
     const isFunnel = formVariant === 'funnel';
     const entryPath = `${base}/entry`;
     const { entries, hydrated, hasDraft, deleteCommittedEntry } = useTranscriptDraft();
+    const { user } = useAuth();
+    const residentName = learningRecordResidentDisplayName(user);
     const [deleteTarget, setDeleteTarget] = useState<TranscriptEntry | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [exportRows, setExportRows] = useState<TranscriptEntry[]>([]);
+    const [exportActive, setExportActive] = useState(false);
+    const [downloadingEntryId, setDownloadingEntryId] = useState<string | null>(null);
+    const exportRootRef = useRef<HTMLDivElement>(null);
 
     const entriesNewestFirst = useMemo(
         () => [...entries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
         [entries]
     );
+
+    const handleDownloadEntry = useCallback(
+        async (entry: TranscriptEntry) => {
+            if (downloadingEntryId !== null) return;
+
+            setDownloadingEntryId(entry.id);
+            flushSync(() => {
+                setExportActive(true);
+                setExportRows([entry]);
+            });
+
+            try {
+                await new Promise<void>((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+                });
+
+                const root = exportRootRef.current;
+                if (!root) {
+                    throw new Error('Export content not ready');
+                }
+
+                await downloadLearningRecordPdf(
+                    root,
+                    learningRecordPdfFilename(residentName)
+                );
+                toast.success('Learning record downloaded');
+            } catch (err) {
+                console.error('Learning record PDF export failed:', err);
+                toast.error('Could not download PDF. Please try again.');
+            } finally {
+                setExportActive(false);
+                setDownloadingEntryId(null);
+            }
+        },
+        [downloadingEntryId, residentName]
+    );
+
+    const handleConfirmDelete = useCallback(() => {
+        if (!deleteTarget || isDeleting) return;
+
+        setIsDeleting(true);
+        deleteCommittedEntry(deleteTarget.id);
+        setIsDeleting(false);
+        setDeleteTarget(null);
+    }, [deleteCommittedEntry, deleteTarget, isDeleting]);
 
     if (!hydrated) {
         return (
@@ -251,8 +398,28 @@ export default function DigitalTranscriptHome() {
     const cardTitle =
         entries.length === 0 && !hasDraft ? 'Start logging' : 'Build your Achievements Record';
 
+    const deleteProgramName = deleteTarget?.programName.trim() || 'Untitled';
+
     return (
         <DigitalTranscriptShell variant="wide">
+            {exportActive &&
+                createPortal(
+                    <div
+                        data-slot="learning-record-pdf-capture"
+                        aria-hidden
+                        className="pointer-events-none fixed top-0 left-0 w-[8.5in] max-w-[816px] overflow-visible bg-background"
+                        style={{ zIndex: -1, clipPath: 'inset(50%)' }}
+                    >
+                        <LearningRecordExportContent
+                            ref={exportRootRef}
+                            rows={exportRows}
+                            residentName={residentName}
+                            filledSectionsOnly
+                            documentVariant={isFunnel ? 'funnel' : 'default'}
+                        />
+                    </div>,
+                    document.body
+                )}
             {isFunnel ? (
                 <>
                     <PageHeader
@@ -265,6 +432,7 @@ export default function DigitalTranscriptHome() {
                         entries={entries}
                         entriesNewestFirst={entriesNewestFirst}
                         entryPath={entryPath}
+                        formVariant={formVariant}
                         sectionHeading={
                             <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
                                 {savedOnDeviceLabel(entries.length)}
@@ -287,6 +455,8 @@ export default function DigitalTranscriptHome() {
                                 "Click 'Add achievement' to document your first program, skill, or learning. Your record builds from here."
                         }}
                         onDeleteRequest={setDeleteTarget}
+                        onDownloadEntry={(entry) => void handleDownloadEntry(entry)}
+                        downloadingEntryId={downloadingEntryId}
                     />
                 </>
             ) : (
@@ -413,6 +583,7 @@ export default function DigitalTranscriptHome() {
                         entries={entries}
                         entriesNewestFirst={entriesNewestFirst}
                         entryPath={entryPath}
+                        formVariant={formVariant}
                         sectionHeading={
                             <>
                                 <DigitalTranscriptEyebrow>Saved entries</DigitalTranscriptEyebrow>
@@ -435,30 +606,52 @@ export default function DigitalTranscriptHome() {
                                 'When you finish editing and tap Done, your achievement appears here.'
                         }}
                         onDeleteRequest={setDeleteTarget}
+                        onDownloadEntry={(entry) => void handleDownloadEntry(entry)}
+                        downloadingEntryId={downloadingEntryId}
                     />
                 </>
             )}
-            <ConfirmDialog
+            <Dialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => {
-                    if (!open) setDeleteTarget(null);
+                    if (!open && !isDeleting) setDeleteTarget(null);
                 }}
-                title="Remove this achievement?"
-                description={
-                    deleteTarget
-                        ? `“${deleteTarget.programName.trim() || 'Untitled'}” will be removed from this device. This cannot be undone.`
-                        : ''
-                }
-                confirmLabel="Delete"
-                cancelLabel="Cancel"
-                variant="destructive"
-                onConfirm={() => {
-                    if (deleteTarget) {
-                        deleteCommittedEntry(deleteTarget.id);
-                    }
-                    setDeleteTarget(null);
-                }}
-            />
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete this achievement?</DialogTitle>
+                        <DialogDescription>
+                            This will permanently remove <strong>{deleteProgramName}</strong> from your
+                            learning record on this device. This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isDeleting}
+                            onClick={() => setDeleteTarget(null)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={isDeleting}
+                            onClick={handleConfirmDelete}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                                    Deleting…
+                                </>
+                            ) : (
+                                'Delete'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DigitalTranscriptShell>
     );
 }
