@@ -137,7 +137,7 @@ export function CannotArchiveDialog({
                 <Button
                     variant="outline"
                     onClick={() => onOpenChange(false)}
-                    className="border-gray-300 bg-accent text-accent-foreground"
+                    className="border-gray-300"
                 >
                     Close
                 </Button>
