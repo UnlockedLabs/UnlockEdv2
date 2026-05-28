@@ -179,19 +179,19 @@ function SavedEntriesSection({
                     className="overflow-hidden p-0 shadow-sm"
                 >
                     <CardContent className="p-0">
-                        <Table>
+                        <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="w-[min(28%,14rem)] pl-6 font-semibold text-foreground">
                                         Program
                                     </TableHead>
-                                    <TableHead className="hidden w-[9rem] font-semibold text-foreground sm:table-cell">
+                                    <TableHead className="hidden w-[200px] font-semibold text-foreground sm:table-cell">
                                         Completed
                                     </TableHead>
-                                    <TableHead className="hidden font-semibold text-foreground md:table-cell">
+                                    <TableHead className="hidden w-[200px] font-semibold text-foreground md:table-cell">
                                         Questions answered
                                     </TableHead>
-                                    <TableHead className="hidden w-[7.5rem] font-semibold text-foreground lg:table-cell">
+                                    <TableHead className="hidden w-[200px] font-semibold text-foreground lg:table-cell">
                                         Added on
                                     </TableHead>
                                     <TableHead className="w-[5.5rem] pr-6 text-right font-semibold text-foreground">
@@ -239,16 +239,16 @@ function SavedEntriesSection({
                                                             {formatSavedOn(entry.createdAt)}
                                                         </p>
                                                     </TableCell>
-                                                    <TableCell className="hidden align-middle text-foreground sm:table-cell">
+                                                    <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
                                                         {formatProgramCompletedDate(entry)}
                                                     </TableCell>
-                                                    <TableCell className="hidden align-middle md:table-cell">
+                                                    <TableCell className="hidden w-[200px] align-middle md:table-cell">
                                                         <QuestionsAnsweredBadge
                                                             answered={answered}
                                                             total={total}
                                                         />
                                                     </TableCell>
-                                                    <TableCell className="hidden align-middle text-foreground lg:table-cell">
+                                                    <TableCell className="hidden w-[200px] align-middle text-foreground lg:table-cell">
                                                         {formatSavedOn(entry.createdAt)}
                                                     </TableCell>
                                                 </Link>
