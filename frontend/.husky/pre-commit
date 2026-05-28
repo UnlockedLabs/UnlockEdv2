@@ -1,6 +1,6 @@
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
 cd frontend
-FRONTEND_FILES=$(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
+FRONTEND_FILES=$(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\|mjs\|cjs\)$' | sed 's/^frontend\///')
 if [ -z "$FRONTEND_FILES" ]; then
   echo "No frontend files to check"
 else
