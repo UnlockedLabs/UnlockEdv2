@@ -301,7 +301,8 @@ export function BulkDeactivateDialog({
                 failedCount > 0
                     ? `${success_count} resident${success_count !== 1 ? 's' : ''} deactivated, ${failedCount} failed: ${failedNames}`
                     : `${success_count} resident${success_count !== 1 ? 's' : ''} deactivated`;
-            failedCount > 0 ? toast.error(msg) : toast.success(msg);
+            if (failedCount > 0) toast.error(msg);
+            else toast.success(msg);
             onOpenChange(false);
             onSuccess();
         } else {
@@ -435,7 +436,8 @@ export function BulkDeleteDialog({
                     failedCount > 0
                         ? `${success_count} ${label} deleted, ${failedCount} failed: ${failedNames}`
                         : `${success_count} ${label} deleted`;
-                failedCount > 0 ? toast.error(msg) : toast.success(msg);
+                if (failedCount > 0) toast.error(msg);
+                else toast.success(msg);
                 onOpenChange(false);
                 onSuccess();
             } else {
