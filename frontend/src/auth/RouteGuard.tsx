@@ -5,6 +5,7 @@ import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW, UserRole } from '@/types';
 import { PageTitleProvider } from '@/contexts/PageTitleContext';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import { ToastProvider } from '@/contexts/ToastContext';
+import { Toaster } from '@/components/ui/sonner';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 
 export default function RouteGuard({
@@ -32,12 +33,15 @@ export default function RouteGuard({
         return <Navigate to={AUTHCALLBACK} />;
     }
     return (
-        <ToastProvider>
-            <PageTitleProvider>
-                <BreadcrumbProvider>
-                    <AuthenticatedLayout />
-                </BreadcrumbProvider>
-            </PageTitleProvider>
-        </ToastProvider>
+        <>
+            <ToastProvider>
+                <PageTitleProvider>
+                    <BreadcrumbProvider>
+                        <AuthenticatedLayout />
+                    </BreadcrumbProvider>
+                </PageTitleProvider>
+            </ToastProvider>
+            <Toaster position="bottom-right" />
+        </>
     );
 }
