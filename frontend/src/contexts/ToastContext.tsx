@@ -1,5 +1,4 @@
 import { toast } from 'sonner';
-import { Toaster } from '@/components/ui/sonner';
 import { ToastState } from '@/types';
 import { ToastContext } from '@/contexts/useToast';
 
@@ -23,7 +22,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     return (
         <ToastContext.Provider value={{ toaster }}>
             {children}
-            <Toaster position="bottom-right" />
         </ToastContext.Provider>
     );
 };
