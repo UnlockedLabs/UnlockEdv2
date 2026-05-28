@@ -2,12 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/shared';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
     cloneTranscriptEntry,
     createEmptyTranscriptEntry,
     dispatchEntrySessionUpdated,
     entryHasExportableContent,
+    entryPayloadEqual,
     filterEntriesForExport,
     readTranscriptEntriesFromStorage,
     resolveInitialEntrySession,
@@ -16,10 +19,19 @@ import {
     writeEntrySessionToStorage
 } from '@/pages/student/digital-transcript/transcriptEntrySessionStorage';
 import type { TranscriptEntrySession } from '@/types/digital-transcript';
-import { AchievementsRecordPreview } from './AchievementsRecordPreview';
+import {
+    AchievementsRecordPreview,
+    type FunnelDownloadProps
+} from './AchievementsRecordPreview';
 import { AchievementRow } from './AchievementRow';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
-import { TOP_SKILLS_MAX } from './transcriptReflectionConfig';
+import {
+    countFunnelFieldsAnswered,
+    countFunnelStepFieldsAnswered,
+    FUNNEL_FORM_FIELD_TOTAL,
+    FUNNEL_FORM_STEPS,
+    TOP_SKILLS_MAX
+} from './transcriptReflectionConfig';
 
 /** Newest uncommitted row with no answers yet — safe to reopen instead of duplicating. */
 function findReusableBlankDraftRow(
@@ -120,8 +132,13 @@ function toFunnelSingleRowSession(
     };
 }
 
+export interface FunnelToolbarHandlers {
+    save: () => boolean;
+    cancel: () => void;
+    hasUnsavedChanges: () => boolean;
+}
+
 interface DigitalTranscriptWysiwygEntryProps {
-    base: string;
     formVariant: LearningRecordFormVariant;
     hydrated: boolean;
     entries: TranscriptEntry[];
@@ -129,24 +146,29 @@ interface DigitalTranscriptWysiwygEntryProps {
     deleteCommittedEntry: (id: string) => TranscriptEntrySession | null;
     /** Live session rows for PDF export (includes in-progress autosaved work). */
     onExportRowsChange?: (rows: TranscriptEntry[]) => void;
-    /** Funnel: register Back handler that commits session rows before navigate. */
-    onRegisterBackCommit?: (commit: () => void) => void;
+    /** Funnel: register Save / Cancel / unsaved-check for the entry toolbar. */
+    onRegisterFunnelToolbar?: (handlers: FunnelToolbarHandlers) => void;
+    /** Funnel: PDF download wired from the entry page (rendered in the preview pane). */
+    funnelDownload?: FunnelDownloadProps;
 }
 
+export type { FunnelDownloadProps };
+
 export function DigitalTranscriptWysiwygEntry({
-    base: _base,
     formVariant,
     hydrated,
     entries,
     upsertCommittedEntry,
     deleteCommittedEntry,
     onExportRowsChange,
-    onRegisterBackCommit
+    onRegisterFunnelToolbar,
+    funnelDownload
 }: DigitalTranscriptWysiwygEntryProps) {
     const isFunnel = formVariant === 'funnel';
     const [searchParams, setSearchParams] = useSearchParams();
     const [session, setSession] = useState<TranscriptEntrySession | null>(null);
-    const [doneErrorRowId, setDoneErrorRowId] = useState<string | null>(null);
+    const [saveErrorRowId, setSaveErrorRowId] = useState<string | null>(null);
+    const [activeStep, setActiveStep] = useState(0);
     const [deleteConfirmFor, setDeleteConfirmFor] = useState<TranscriptEntry | null>(null);
     const baselinesRef = useRef<Record<string, TranscriptEntry>>({});
     const prevExpandedIdRef = useRef<string | null>(null);
@@ -208,27 +230,89 @@ export function DigitalTranscriptWysiwygEntry({
         }
     }, [hydrated, searchParams, setSearchParams, captureBaseline, isFunnel]);
 
-    const commitSessionRowsForBack = useCallback(() => {
+    const hasUnsavedChanges = useCallback((): boolean => {
         const current = sessionRef.current;
-        if (!current) return;
-        let nextSession = current;
-        for (const row of current.rows) {
-            const saved: TranscriptEntry = {
-                ...row,
-                topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
-            };
-            upsertCommittedEntry(saved);
-            nextSession = syncSessionRowsAfterUpsert(nextSession, saved);
+        if (!current?.expandedId) return false;
+        const row = current.rows.find((r) => r.id === current.expandedId);
+        if (!row) return false;
+        const baseline = baselinesRef.current[row.id];
+        if (!baseline) return entryHasExportableContent(row);
+        return !entryPayloadEqual(row, baseline);
+    }, []);
+
+    const discardActiveRow = useCallback(() => {
+        const current = sessionRef.current;
+        if (!current?.expandedId) return;
+        const id = current.expandedId;
+        const baseline = baselinesRef.current[id];
+        const committed = readTranscriptEntriesFromStorage().some((e) => e.id === id);
+        const row = current.rows.find((r) => r.id === id);
+        const restored = baseline
+            ? cloneTranscriptEntry(baseline)
+            : row
+              ? cloneTranscriptEntry(row)
+              : null;
+        if (!restored) return;
+
+        let rows = current.rows.map((r) => (r.id === id ? restored : r));
+        if (!committed && !entryHasExportableContent(restored)) {
+            rows = rows.filter((r) => r.id !== id);
         }
-        writeEntrySessionToStorage(nextSession);
+        const expandedId = rows.some((r) => r.id === id) ? id : (rows[0]?.id ?? null);
+        const next: TranscriptEntrySession = {
+            ...current,
+            rows,
+            expandedId,
+            lastPreviewId: expandedId
+        };
+        writeEntrySessionToStorage(next);
         dispatchEntrySessionUpdated();
-        setSession(nextSession);
+        setSession(next);
+    }, []);
+
+    const handleSave = useCallback((): boolean => {
+        const current = sessionRef.current;
+        const id = current?.expandedId;
+        if (!id) return false;
+        const row = current.rows.find((r) => r.id === id);
+        if (!row) return false;
+
+        const programOk = Boolean(row.programName.trim());
+        const dateOk = Boolean(row.completionDate.trim());
+        if (!programOk || !dateOk) {
+            setSaveErrorRowId(id);
+            setActiveStep(0);
+            return false;
+        }
+
+        setSaveErrorRowId(null);
+        const saved: TranscriptEntry = {
+            ...row,
+            topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
+        };
+        upsertCommittedEntry(saved);
+        setSession((prev) => {
+            if (!prev) return prev;
+            const next = syncSessionRowsAfterUpsert(prev, saved);
+            return { ...next, expandedId: saved.id, lastPreviewId: saved.id };
+        });
+        baselinesRef.current[id] = cloneTranscriptEntry(saved);
+        return true;
     }, [upsertCommittedEntry]);
 
+    const handleFunnelCancel = useCallback(() => {
+        setSaveErrorRowId(null);
+        discardActiveRow();
+    }, [discardActiveRow]);
+
     useEffect(() => {
-        if (!isFunnel || !onRegisterBackCommit) return;
-        onRegisterBackCommit(commitSessionRowsForBack);
-    }, [isFunnel, onRegisterBackCommit, commitSessionRowsForBack]);
+        if (!isFunnel || !onRegisterFunnelToolbar) return;
+        onRegisterFunnelToolbar({
+            save: handleSave,
+            cancel: handleFunnelCancel,
+            hasUnsavedChanges
+        });
+    }, [isFunnel, onRegisterFunnelToolbar, handleSave, handleFunnelCancel, hasUnsavedChanges]);
 
     useEffect(() => {
         if (!session) return;
@@ -276,7 +360,7 @@ export function DigitalTranscriptWysiwygEntry({
             }
             return { ...prev, expandedId: id, lastPreviewId: id };
         });
-        setDoneErrorRowId(null);
+        setSaveErrorRowId(null);
     }, []);
 
     const handleAdd = useCallback(() => {
@@ -290,7 +374,7 @@ export function DigitalTranscriptWysiwygEntry({
                 lastPreviewId: row.id
             };
         });
-        setDoneErrorRowId(null);
+        setSaveErrorRowId(null);
     }, []);
 
     const isCommittedEntryId = useCallback((id: string) => {
@@ -300,7 +384,7 @@ export function DigitalTranscriptWysiwygEntry({
     const handleCancel = useCallback(
         (id: string) => {
             const baseline = baselinesRef.current[id];
-            setDoneErrorRowId(null);
+            setSaveErrorRowId(null);
             setSession((prev) => {
                 if (!prev) return prev;
                 const committed = isCommittedEntryId(id);
@@ -333,10 +417,10 @@ export function DigitalTranscriptWysiwygEntry({
             const programOk = Boolean(row.programName.trim());
             const dateOk = Boolean(row.completionDate.trim());
             if (!programOk || !dateOk) {
-                setDoneErrorRowId(id);
+                setSaveErrorRowId(id);
                 return;
             }
-            setDoneErrorRowId(null);
+            setSaveErrorRowId(null);
             const saved: TranscriptEntry = {
                 ...row,
                 topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
@@ -356,6 +440,8 @@ export function DigitalTranscriptWysiwygEntry({
         () => (session ? sortEntriesNewestFirst(session.rows) : []),
         [session]
     );
+
+    const funnelEntry = isFunnel ? (displayRows[0] ?? null) : null;
 
     const expandedId = session?.expandedId ?? null;
 
@@ -387,6 +473,53 @@ export function DigitalTranscriptWysiwygEntry({
             data-slot="transcript-wysiwyg-outer"
             className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden"
         >
+            {isFunnel && funnelEntry ? (
+                <Card
+                    data-slot="funnel-form-progress"
+                    className="mx-4 mt-4 shrink-0 p-4"
+                >
+                    <div className="flex items-start gap-4">
+                        <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
+                            {FUNNEL_FORM_STEPS.map((step, index) => {
+                                const answered = countFunnelStepFieldsAnswered(
+                                    index,
+                                    funnelEntry
+                                );
+                                const total = step.fields.length;
+                                const fillPct =
+                                    total > 0 ? (answered / total) * 100 : 0;
+                                const isActive = index === activeStep;
+                                return (
+                                    <div key={step.id} className="min-w-0 space-y-1.5">
+                                        <span
+                                            className={cn(
+                                                'block text-xs font-medium leading-snug',
+                                                isActive
+                                                    ? 'text-[#556830]'
+                                                    : 'text-muted-foreground'
+                                            )}
+                                        >
+                                            {step.title} ({answered}/{total})
+                                        </span>
+                                        <span className="block h-0.5 overflow-hidden rounded-full bg-muted">
+                                            <span
+                                                className="block h-full rounded-full bg-[#556830] transition-[width] duration-200"
+                                                style={{ width: `${fillPct}%` }}
+                                                role="img"
+                                                aria-label={`${step.title}: ${answered} of ${total} answered`}
+                                            />
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                            {countFunnelFieldsAnswered(funnelEntry)} / {FUNNEL_FORM_FIELD_TOTAL}{' '}
+                            questions answered
+                        </p>
+                    </div>
+                </Card>
+            ) : null}
             {/*
               Scroll contract:
               - Editor pane: header fixed; `transcript-achievement-list` scrolls vertically.
@@ -395,17 +528,54 @@ export function DigitalTranscriptWysiwygEntry({
             */}
             <div
                 data-slot="transcript-wysiwyg-layout"
-                className="grid h-full min-h-0 w-full min-w-0 flex-1 grid-cols-1 overflow-hidden bg-muted max-[899px]:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] min-[900px]:grid-cols-[5fr_7fr] min-[900px]:grid-rows-[minmax(0,1fr)] [&>*]:min-h-0"
+                className={cn(
+                    'grid h-full min-h-0 w-full min-w-0 flex-1 grid-cols-1 overflow-hidden max-[899px]:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] min-[900px]:grid-rows-[minmax(0,1fr)] [&>*]:min-h-0',
+                    isFunnel
+                        ? 'gap-4 bg-muted p-4 min-[900px]:grid-cols-2'
+                        : 'bg-muted max-[899px]:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] min-[900px]:grid-cols-[5fr_7fr]'
+                )}
             >
-                <aside
-                    data-slot="transcript-wysiwyg-editor-pane"
-                    className="m-2 grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border/80 bg-background shadow-sm print:hidden"
-                >
-                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-4">
-                        <h1 className="text-base font-semibold tracking-tight text-foreground">
-                            Your achievements
-                        </h1>
-                        {!isFunnel && (
+                {isFunnel ? (
+                    <Card
+                        data-slot="transcript-wysiwyg-editor-pane"
+                        className="grid h-full min-h-0 min-w-0 grid-rows-[minmax(0,1fr)] overflow-hidden p-0 print:hidden"
+                    >
+                        <div
+                            ref={achievementListRef}
+                            data-slot="transcript-achievement-list"
+                            className="min-h-0 overflow-y-auto overscroll-contain p-2"
+                        >
+                            <div className="flex flex-col gap-2.5">
+                                {displayRows.map((entry) => (
+                                    <AchievementRow
+                                        key={entry.id}
+                                        formVariant={formVariant}
+                                        entry={entry}
+                                        isExpanded={session.expandedId === entry.id}
+                                        onToggleExpand={() => handleToggleExpand(entry.id)}
+                                        onPatch={(patch) => patchRow(entry.id, patch)}
+                                        onCancel={undefined}
+                                        onDone={undefined}
+                                        showDoneErrors={false}
+                                        showSaveErrors={saveErrorRowId === entry.id}
+                                        activeStep={activeStep}
+                                        onActiveStepChange={setActiveStep}
+                                        showDelete={committedIds.has(entry.id)}
+                                        onDeleteRequest={() => setDeleteConfirmFor(entry)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </Card>
+                ) : (
+                    <aside
+                        data-slot="transcript-wysiwyg-editor-pane"
+                        className="m-2 grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border/80 bg-background shadow-sm print:hidden"
+                    >
+                        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-4">
+                            <h1 className="text-base font-semibold tracking-tight text-foreground">
+                                Your achievements
+                            </h1>
                             <button
                                 type="button"
                                 data-slot="transcript-add-achievement"
@@ -415,41 +585,57 @@ export function DigitalTranscriptWysiwygEntry({
                                 <Plus className="size-4" aria-hidden />
                                 Add achievement
                             </button>
-                        )}
-                    </div>
-
-                    <div
-                        ref={achievementListRef}
-                        data-slot="transcript-achievement-list"
-                        className="min-h-0 overflow-y-auto overscroll-contain bg-background p-2"
-                    >
-                        <div className="flex flex-col gap-2.5">
-                            {displayRows.map((entry) => (
-                                <AchievementRow
-                                    key={entry.id}
-                                    formVariant={formVariant}
-                                    entry={entry}
-                                    isExpanded={session.expandedId === entry.id}
-                                    onToggleExpand={() => handleToggleExpand(entry.id)}
-                                    onPatch={(patch) => patchRow(entry.id, patch)}
-                                    onCancel={() => handleCancel(entry.id)}
-                                    onDone={() => handleDone(entry.id)}
-                                    showDoneErrors={doneErrorRowId === entry.id}
-                                    showDelete={committedIds.has(entry.id)}
-                                    onDeleteRequest={() => setDeleteConfirmFor(entry)}
-                                />
-                            ))}
                         </div>
-                    </div>
-                </aside>
 
-                <div
-                    data-slot="transcript-wysiwyg-preview-pane"
-                    className="m-2 flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/80 bg-background shadow-sm max-[899px]:min-h-0"
-                    aria-label="Live preview"
-                >
-                    <AchievementsRecordPreview rows={session.rows} anchorId={session.expandedId} />
-                </div>
+                        <div
+                            ref={achievementListRef}
+                            data-slot="transcript-achievement-list"
+                            className="min-h-0 overflow-y-auto overscroll-contain bg-background p-2"
+                        >
+                            <div className="flex flex-col gap-2.5">
+                                {displayRows.map((entry) => (
+                                    <AchievementRow
+                                        key={entry.id}
+                                        formVariant={formVariant}
+                                        entry={entry}
+                                        isExpanded={session.expandedId === entry.id}
+                                        onToggleExpand={() => handleToggleExpand(entry.id)}
+                                        onPatch={(patch) => patchRow(entry.id, patch)}
+                                        onCancel={() => handleCancel(entry.id)}
+                                        onDone={() => handleDone(entry.id)}
+                                        showDoneErrors={saveErrorRowId === entry.id}
+                                        showSaveErrors={false}
+                                        activeStep={activeStep}
+                                        onActiveStepChange={setActiveStep}
+                                        showDelete={committedIds.has(entry.id)}
+                                        onDeleteRequest={() => setDeleteConfirmFor(entry)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </aside>
+                )}
+
+                {isFunnel ? (
+                    <AchievementsRecordPreview
+                        rows={session.rows}
+                        anchorId={session.expandedId}
+                        variant="funnel"
+                        funnelDownload={funnelDownload}
+                    />
+                ) : (
+                    <div
+                        data-slot="transcript-wysiwyg-preview-pane"
+                        className="m-2 flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/80 bg-background shadow-sm max-[899px]:min-h-0"
+                        aria-label="Live preview"
+                    >
+                        <AchievementsRecordPreview
+                            rows={session.rows}
+                            anchorId={session.expandedId}
+                            variant="default"
+                        />
+                    </div>
+                )}
             </div>
             <ConfirmDialog
                 open={deleteConfirmFor !== null}

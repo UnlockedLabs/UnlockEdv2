@@ -4,6 +4,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
+import { ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,10 @@ import {
 } from '@/utils/downloadLearningRecordPdf';
 import { getDigitalTranscriptBasePath, setDigitalTranscriptStorageContext } from './digitalTranscriptRoutes';
 import { getLearningRecordFormVariant } from './learningRecordPrototypes';
-import { DigitalTranscriptWysiwygEntry } from './DigitalTranscriptWysiwygEntry';
+import {
+    DigitalTranscriptWysiwygEntry,
+    type FunnelToolbarHandlers
+} from './DigitalTranscriptWysiwygEntry';
 import { DigitalTranscriptBackLink, DigitalTranscriptShell, dtPageSurface } from './DigitalTranscriptShell';
 import { LearningRecordExportContent } from './LearningRecordExportContent';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
@@ -30,7 +34,7 @@ export default function DigitalTranscriptEntryPage() {
     setDigitalTranscriptStorageContext(base);
     const formVariant = getLearningRecordFormVariant(pathname);
     const isFunnel = formVariant === 'funnel';
-    const backCommitRef = useRef<(() => void) | null>(null);
+    const funnelToolbarRef = useRef<FunnelToolbarHandlers | null>(null);
     const { hydrated, upsertCommittedEntry, deleteCommittedEntry, entries } = useTranscriptDraft();
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
@@ -39,6 +43,7 @@ export default function DigitalTranscriptEntryPage() {
     );
     const [isExporting, setIsExporting] = useState(false);
     const [exportActive, setExportActive] = useState(false);
+    const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
     const exportRootRef = useRef<HTMLDivElement>(null);
     const liveExportRowsRef = useRef(exportRows);
     liveExportRowsRef.current = exportRows;
@@ -49,14 +54,36 @@ export default function DigitalTranscriptEntryPage() {
         setExportRows(rows);
     }, []);
 
-    const handleRegisterBackCommit = useCallback((commit: () => void) => {
-        backCommitRef.current = commit;
+    const handleRegisterFunnelToolbar = useCallback((handlers: FunnelToolbarHandlers) => {
+        funnelToolbarRef.current = handlers;
     }, []);
 
-    const handleBack = useCallback(() => {
-        backCommitRef.current?.();
+    const navigateHome = useCallback(() => {
         navigate(base);
     }, [navigate, base]);
+
+    const requestLeave = useCallback(() => {
+        if (!isFunnel) {
+            navigateHome();
+            return;
+        }
+        if (funnelToolbarRef.current?.hasUnsavedChanges()) {
+            setLeaveConfirmOpen(true);
+            return;
+        }
+        navigateHome();
+    }, [isFunnel, navigateHome]);
+
+    const handleConfirmLeave = useCallback(() => {
+        setLeaveConfirmOpen(false);
+        funnelToolbarRef.current?.cancel();
+        navigateHome();
+    }, [navigateHome]);
+
+    const handleSave = useCallback(() => {
+        const saved = funnelToolbarRef.current?.save() ?? false;
+        if (saved) navigateHome();
+    }, [navigateHome]);
 
     const handleDownload = useCallback(async () => {
         const rows =
@@ -87,9 +114,6 @@ export default function DigitalTranscriptEntryPage() {
             );
             toast.success('Learning record downloaded');
         } catch (err) {
-            // #region agent log
-            fetch('http://127.0.0.1:7605/ingest/222c6233-433f-42b0-8e1b-e79b53b2d8b4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55a621'},body:JSON.stringify({sessionId:'55a621',location:'DigitalTranscriptEntryPage.tsx:catch',message:'PDF export error',data:{name:err instanceof Error?err.name:'unknown',msg:err instanceof Error?err.message:String(err)},timestamp:Date.now(),hypothesisId:'H-C'})}).catch(()=>{});
-            // #endregion
             console.error('Learning record PDF export failed:', err);
             toast.error('Could not download PDF. Please try again.');
         } finally {
@@ -143,7 +167,7 @@ export default function DigitalTranscriptEntryPage() {
                             type="button"
                             data-slot="digital-transcript-back"
                             className={digitalTranscriptBackLinkClassName}
-                            onClick={handleBack}
+                            onClick={requestLeave}
                         >
                             <span
                                 className="inline-block transition-transform group-hover:-translate-x-0.5"
@@ -156,37 +180,86 @@ export default function DigitalTranscriptEntryPage() {
                     ) : (
                         <DigitalTranscriptBackLink to={base}>Back</DigitalTranscriptBackLink>
                     )}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        data-slot="digital-transcript-download"
-                        className="gap-1.5 bg-background"
-                        disabled={!canDownload}
-                        aria-busy={isExporting}
-                        onClick={() => void handleDownload()}
-                    >
-                        {isExporting ? (
-                            <Loader2 className="size-4 animate-spin" aria-hidden />
-                        ) : (
-                            <Download className="size-4" aria-hidden />
-                        )}
-                        {isExporting ? 'Downloading…' : 'Download'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {isFunnel ? (
+                            <>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    data-slot="digital-transcript-cancel"
+                                    className="bg-background"
+                                    onClick={requestLeave}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    data-slot="digital-transcript-save"
+                                    className="bg-[#556830] text-white hover:bg-[#203622]"
+                                    onClick={handleSave}
+                                >
+                                    Save changes
+                                </Button>
+                            </>
+                        ) : null}
+                        {!isFunnel ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                data-slot="digital-transcript-download"
+                                className="gap-1.5 bg-background"
+                                disabled={!canDownload}
+                                aria-busy={isExporting}
+                                onClick={() => void handleDownload()}
+                            >
+                                {isExporting ? (
+                                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                                ) : (
+                                    <Download className="size-4" aria-hidden />
+                                )}
+                                {isExporting ? 'Downloading…' : 'Download'}
+                            </Button>
+                        ) : null}
+                    </div>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <DigitalTranscriptWysiwygEntry
-                        base={base}
                         formVariant={formVariant}
                         hydrated={hydrated}
                         entries={entries}
                         upsertCommittedEntry={upsertCommittedEntry}
                         deleteCommittedEntry={deleteCommittedEntry}
                         onExportRowsChange={handleExportRowsChange}
-                        onRegisterBackCommit={isFunnel ? handleRegisterBackCommit : undefined}
+                        onRegisterFunnelToolbar={
+                            isFunnel ? handleRegisterFunnelToolbar : undefined
+                        }
+                        funnelDownload={
+                            isFunnel
+                                ? {
+                                      onDownload: () => void handleDownload(),
+                                      canDownload,
+                                      isExporting
+                                  }
+                                : undefined
+                        }
                     />
                 </div>
             </div>
+            {isFunnel ? (
+                <ConfirmDialog
+                    open={leaveConfirmOpen}
+                    onOpenChange={setLeaveConfirmOpen}
+                    title="Leave without saving?"
+                    description="Your changes haven't been saved yet. If you leave now, they won't be added to your record."
+                    confirmLabel="Leave"
+                    cancelLabel="Keep editing"
+                    variant="destructive"
+                    onConfirm={handleConfirmLeave}
+                />
+            ) : null}
         </div>
     );
 }

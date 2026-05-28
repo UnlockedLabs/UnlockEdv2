@@ -282,7 +282,7 @@ export default function DigitalTranscriptHome() {
                             </Button>
                         }
                         emptyState={{
-                            title: 'No achievements logged yet',
+                            title: 'No achievements added yet',
                             description:
                                 "Click 'Add achievement' to document your first program, skill, or learning. Your record builds from here."
                         }}

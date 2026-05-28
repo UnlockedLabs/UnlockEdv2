@@ -108,6 +108,34 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
         path: 'temp-home',
         element: <StudentLayer0 />,
         handle: { title: 'UnlockEd' }
+    },
+    {
+        path: 'learning-record-funnel',
+        element: <DigitalTranscriptHome />,
+        handle: { title: 'Learning Record' }
+    },
+    {
+        path: 'learning-record-funnel/entry',
+        element: <DigitalTranscriptEntryPage />,
+        handle: { title: 'Add your achievement' }
+    },
+    {
+        path: 'learning-record-categories',
+        element: <DigitalTranscriptHome />,
+        handle: { title: 'Learning Record' }
+    },
+    {
+        path: 'learning-record-categories/entry',
+        element: <DigitalTranscriptEntryPage />,
+        handle: { title: 'Add your achievement' }
+    },
+    {
+        path: 'my-transcript-a',
+        loader: () => redirect('/learning-record-funnel')
+    },
+    {
+        path: 'my-transcript-a/entry',
+        loader: () => redirect('/learning-record-funnel/entry')
     }
 ]);
 
