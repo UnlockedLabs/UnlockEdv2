@@ -61,7 +61,7 @@ export function ChangeEnrollmentStatusModal({
         newStatus !== currentStatus && (!needsReason || reason.trim().length > 0);
 
     const handleSubmit = () => {
-        onStatusChange(newStatus, reason);
+        onStatusChange(newStatus, needsReason ? reason : '');
         onClose();
     };
 
