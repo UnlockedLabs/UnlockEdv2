@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -181,7 +182,7 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	}
 
 	url := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID +
-		"/courses?include[]=total_students&per_page=100"
+		"/courses?per_page=100"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to build canvas request")
@@ -231,11 +232,6 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 			}
 		}
 
-		enrolled := int64(0)
-		if ts, ok := course["total_students"].(float64); ok {
-			enrolled = int64(ts)
-		}
-
 		classes = append(classes, models.ProgramClassDetail{
 			ProgramClass: models.ProgramClass{
 				DatabaseFields: models.DatabaseFields{ID: courseID},
@@ -246,11 +242,32 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 				StartDt:        startDt,
 				EndDt:          endDt,
 				Status:         status,
-				Enrolled:       enrolled,
 			},
 			FacilityName: provider.Name,
-			Enrolled:     int(enrolled),
 		})
+	}
+
+	// Concurrently count mapped enrollees for each course.
+	counts := make(map[uint]int64, len(classes))
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for i := range classes {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			rawID := classes[idx].ProgramClass.ID - models.CanvasClassIDOffset - connectionID*1_000_000
+			n := srv.countMappedCanvasEnrollees(provider, rawID)
+			mu.Lock()
+			counts[classes[idx].ProgramClass.ID] = n
+			mu.Unlock()
+		}(i)
+	}
+	wg.Wait()
+
+	for i := range classes {
+		n := counts[classes[i].ProgramClass.ID]
+		classes[i].ProgramClass.Enrolled = n
+		classes[i].Enrolled = int(n)
 	}
 
 	args := srv.getQueryContext(r)
@@ -264,6 +281,57 @@ func decodeCanvasClassID(classID uint) (providerID uint, rawCourseID uint) {
 	return remainder / 1_000_000, remainder % 1_000_000
 }
 
+// countMappedCanvasEnrollees fetches active student enrollments for a Canvas
+// course and returns how many of those students have a ProviderUserMapping.
+func (srv *Server) countMappedCanvasEnrollees(provider *models.ProviderPlatform, rawCourseID uint) int64 {
+	url := fmt.Sprintf(
+		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
+		provider.BaseUrl, rawCourseID,
+	)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.WithError(err).Warn("countMappedCanvasEnrollees: failed to build request")
+		return 0
+	}
+	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := srv.Client.Do(req)
+	if err != nil {
+		log.WithError(err).Warn("countMappedCanvasEnrollees: failed to reach canvas")
+		return 0
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Warnf("countMappedCanvasEnrollees: canvas returned %d for course %d", resp.StatusCode, rawCourseID)
+		return 0
+	}
+
+	var enrollments []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&enrollments); err != nil {
+		log.WithError(err).Warn("countMappedCanvasEnrollees: failed to decode enrollments")
+		return 0
+	}
+
+	canvasUserIDs := make([]string, 0, len(enrollments))
+	for _, e := range enrollments {
+		if u, ok := e["user"].(map[string]interface{}); ok {
+			if id, ok := u["id"].(float64); ok {
+				canvasUserIDs = append(canvasUserIDs, fmt.Sprintf("%d", int(id)))
+			}
+		}
+	}
+	if len(canvasUserIDs) == 0 {
+		return 0
+	}
+
+	var count int64
+	srv.Db.Model(&models.ProviderUserMapping{}).
+		Where("provider_platform_id = ? AND external_user_id IN ?", provider.ID, canvasUserIDs).
+		Count(&count)
+	return count
+}
+
 func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Request, log sLog, classID uint) error {
 	providerID, rawCourseID := decodeCanvasClassID(classID)
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
@@ -274,7 +342,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
 	}
 
-	url := fmt.Sprintf("%s/api/v1/courses/%d?include[]=total_students", provider.BaseUrl, rawCourseID)
+	url := fmt.Sprintf("%s/api/v1/courses/%d", provider.BaseUrl, rawCourseID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to build canvas request")
@@ -319,10 +387,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	enrolled := int64(0)
-	if ts, ok := course["total_students"].(float64); ok {
-		enrolled = int64(ts)
-	}
+	enrolled := srv.countMappedCanvasEnrollees(provider, rawCourseID)
 
 	cls := models.ProgramClass{
 		DatabaseFields: models.DatabaseFields{ID: classID},
