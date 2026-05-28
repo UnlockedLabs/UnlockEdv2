@@ -427,33 +427,26 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 	rows := make([]canvasEnrollmentRow, 0, len(canvasEnrollments))
 	for i, e := range canvasEnrollments {
 		canvasUserIDStr := ""
-		canvasName := ""
 		if u, ok := e["user"].(map[string]interface{}); ok {
 			if id, ok := u["id"].(float64); ok {
 				canvasUserIDStr = fmt.Sprintf("%d", int(id))
 			}
-			canvasName, _ = u["name"].(string)
 		}
 
 		info, matched := userMap[canvasUserIDStr]
-		nameFull := canvasName
-		docID := ""
-		userID := uint(0)
-		if matched {
-			nameFull = info.NameFull
-			docID = info.DocID
-			userID = info.UserID
+		if !matched {
+			continue
 		}
 
 		rows = append(rows, canvasEnrollmentRow{
 			ProgramClassEnrollment: models.ProgramClassEnrollment{
 				DatabaseFields:   models.DatabaseFields{ID: uint(i + 1)},
 				ClassID:          classID,
-				UserID:           userID,
+				UserID:           info.UserID,
 				EnrollmentStatus: models.Enrolled,
 			},
-			NameFull:  nameFull,
-			DocID:     docID,
+			NameFull:  info.NameFull,
+			DocID:     info.DocID,
 			ClassName: "",
 		})
 	}
