@@ -73,6 +73,10 @@ func (db *DB) CreateFacility(facility *models.Facility) error {
 
 func (db *DB) UpdateFacility(facility *models.Facility, id uint) error {
 	facility.ID = id
+	if err := Validate().Struct(facility); err != nil {
+		log.Error("Validation Error")
+		return NewDBError(err, "facilities")
+	}
 	if err := db.Save(&facility).Error; err != nil {
 		log.WithField("facility_id", facility.ID).Error("error updating facility name database/UpdateFacility")
 		return newUpdateDBError(err, "facilities")
