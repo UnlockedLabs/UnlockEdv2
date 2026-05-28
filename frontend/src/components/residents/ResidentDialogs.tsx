@@ -7,10 +7,9 @@ import {
     Facility,
     ValidResident,
     ServerResponseOne,
-    ResetPasswordResponse,
-    ToastState
+    ResetPasswordResponse
 } from '@/types';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,7 +48,6 @@ export function EditResidentDialog({
     resident,
     onSuccess
 }: EditResidentDialogProps) {
-    const { toaster } = useToast();
     const form = useForm<EditFormData>();
 
     useEffect(() => {
@@ -68,17 +66,11 @@ export function EditResidentDialog({
             data
         );
         if (response.success) {
-            toaster(
-                `${resident.name_first} ${resident.name_last}'s profile updated`,
-                ToastState.success
-            );
+            toast.success(`${resident.name_first} ${resident.name_last}'s profile updated`);
             onOpenChange(false);
             onSuccess();
         } else {
-            toaster(
-                response.message ?? 'Failed to update resident',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to update resident');
         }
     };
 
@@ -161,7 +153,6 @@ export function ResetPasswordConfirmDialog({
     resident,
     onSuccess
 }: ResetPasswordConfirmDialogProps) {
-    const { toaster } = useToast();
     const [loading, setLoading] = useState(false);
 
     const handleConfirm = async () => {
@@ -173,14 +164,11 @@ export function ResetPasswordConfirmDialog({
         setLoading(false);
 
         if (response.success) {
-            toaster(
-                `Password reset for ${resident.name_first} ${resident.name_last}`,
-                ToastState.success
-            );
+            toast.success(`Password reset for ${resident.name_first} ${resident.name_last}`);
             onOpenChange(false);
             onSuccess(response.data.temp_password);
         } else {
-            toaster('Failed to reset password', ToastState.error);
+            toast.error('Failed to reset password');
         }
     };
 
@@ -306,7 +294,6 @@ export function DeactivateDialog({
     resident,
     onSuccess
 }: DeactivateDialogProps) {
-    const { toaster } = useToast();
     const [loading, setLoading] = useState(false);
     const displayId = resident.doc_id ?? '';
     const confirm = useTypeToConfirm({ open, expected: displayId });
@@ -320,17 +307,11 @@ export function DeactivateDialog({
         setLoading(false);
 
         if (response.success) {
-            toaster(
-                `${resident.name_first} ${resident.name_last} has been deactivated`,
-                ToastState.success
-            );
+            toast.success(`${resident.name_first} ${resident.name_last} has been deactivated`);
             onOpenChange(false);
             onSuccess();
         } else {
-            toaster(
-                response.message ?? 'Failed to deactivate resident',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to deactivate resident');
         }
     };
 
@@ -435,7 +416,6 @@ export function DeleteDialog({
     resident,
     onSuccess
 }: DeleteDialogProps) {
-    const { toaster } = useToast();
     const [loading, setLoading] = useState(false);
     const displayId = resident.doc_id ?? '';
     const confirm = useTypeToConfirm({ open, expected: displayId });
@@ -446,17 +426,11 @@ export function DeleteDialog({
         setLoading(false);
 
         if (response.success) {
-            toaster(
-                `${resident.name_first} ${resident.name_last} has been deleted`,
-                ToastState.success
-            );
+            toast.success(`${resident.name_first} ${resident.name_last} has been deleted`);
             onOpenChange(false);
             onSuccess();
         } else {
-            toaster(
-                response.message ?? 'Failed to delete resident',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to delete resident');
         }
     };
 
@@ -523,7 +497,6 @@ export function TransferDialog({
     facilities,
     onSuccess
 }: TransferDialogProps) {
-    const { toaster } = useToast();
     const [transferFacilityId, setTransferFacilityId] = useState('');
     const [loading, setLoading] = useState(false);
     const displayId = resident.doc_id ?? '';
@@ -563,17 +536,11 @@ export function TransferDialog({
         setLoading(false);
 
         if (response.success) {
-            toaster(
-                `${resident.name_first} ${resident.name_last} transferred to ${targetFacilityName}`,
-                ToastState.success
-            );
+            toast.success(`${resident.name_first} ${resident.name_last} transferred to ${targetFacilityName}`);
             onOpenChange(false);
             onSuccess();
         } else {
-            toaster(
-                response.message ?? 'Failed to transfer resident',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to transfer resident');
         }
     };
 

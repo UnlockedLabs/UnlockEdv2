@@ -4,7 +4,6 @@ import { AUTHCALLBACK, hasFeature, useAuth } from '@/auth/useAuth';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW, UserRole } from '@/types';
 import { PageTitleProvider } from '@/contexts/PageTitleContext';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
-import { ToastProvider } from '@/contexts/ToastContext';
 import { Toaster } from '@/components/ui/sonner';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 
@@ -34,13 +33,11 @@ export default function RouteGuard({
     }
     return (
         <>
-            <ToastProvider>
-                <PageTitleProvider>
-                    <BreadcrumbProvider>
-                        <AuthenticatedLayout />
-                    </BreadcrumbProvider>
-                </PageTitleProvider>
-            </ToastProvider>
+            <PageTitleProvider>
+                <BreadcrumbProvider>
+                    <AuthenticatedLayout />
+                </BreadcrumbProvider>
+            </PageTitleProvider>
             <Toaster position="bottom-right" />
         </>
     );

@@ -4,10 +4,9 @@ import API from '@/api/api';
 import {
     Facility,
     NewUserResponse,
-    ServerResponseOne,
-    ToastState
+    ServerResponseOne
 } from '@/types';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,7 +45,6 @@ export function AddResidentDialog({
     defaultFacilityId,
     onSuccess
 }: AddResidentDialogProps) {
-    const { toaster } = useToast();
     const form = useForm<AddResidentFormData>();
     const [submitting, setSubmitting] = useState(false);
 
@@ -79,17 +77,11 @@ export function AddResidentDialog({
 
             if (response.success) {
                 onOpenChange(false);
-                toaster(
-                    `Resident ${formData.name_first} ${formData.name_last} added successfully`,
-                    ToastState.success
-                );
+                toast.success(`Resident ${formData.name_first} ${formData.name_last} added successfully`);
                 form.reset();
                 onSuccess();
             } else {
-                toaster(
-                    response.message || 'Failed to create resident',
-                    ToastState.error
-                );
+                toast.error(response.message || 'Failed to create resident');
             }
         } finally {
             setSubmitting(false);

@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Pagination } from '@/components/Pagination';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useDebounceValue } from 'usehooks-ts';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import {
     Library,
     Video,
@@ -35,7 +35,6 @@ import {
     HelpfulLinkAndSort,
     ServerResponseMany,
     ServerResponseOne,
-    ToastState,
     Option,
     MAX_DOWNLOAD_ATTEMPTS
 } from '@/types';
@@ -349,7 +348,6 @@ function LinkCard({
 
 export default function KnowledgeCenterManagement() {
     const navigate = useNavigate();
-    const { toaster } = useToast();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
@@ -543,12 +541,12 @@ export default function KnowledgeCenterManagement() {
         const actionString = isFeatured ? 'unfeatured' : 'featured';
         const resp = await API.put<null, object>(endpoints[type], {});
         if (resp.success) {
-            toaster(`${typeLabel[type]} ${actionString}`, ToastState.success);
+            toast.success(`${typeLabel[type]} ${actionString}`);
             if (type === 'library') void mutateLibs();
             else if (type === 'video') void mutateVids();
             else void mutateLinks();
         } else {
-            toaster(`${typeLabel[type]} ${actionString}`, ToastState.error);
+            toast.error(`${typeLabel[type]} ${actionString}`);
         }
     };
 
@@ -571,12 +569,12 @@ export default function KnowledgeCenterManagement() {
         const actionString = isVisible ? 'is now hidden' : 'is now visible';
         const resp = await API.put<null, object>(endpoints[type], {});
         if (resp.success) {
-            toaster(`${typeLabel[type]} ${actionString}`, ToastState.success);
+            toast.success(`${typeLabel[type]} ${actionString}`);
             if (type === 'library') void mutateLibs();
             else if (type === 'video') void mutateVids();
             else void mutateLinks();
         } else {
-            toaster(`${typeLabel[type]} ${actionString}`, ToastState.error);
+            toast.error(`${typeLabel[type]} ${actionString}`);
         }
     };
 
@@ -585,7 +583,7 @@ export default function KnowledgeCenterManagement() {
             video_urls: [videoFormData.url]
         });
         if (resp.success) {
-            toaster('Video added successfully', ToastState.success);
+            toast.success('Video added successfully');
             setShowAddVideo(false);
             setVideoFormData({ url: '' });
             pollingRef.current = true;
@@ -593,25 +591,25 @@ export default function KnowledgeCenterManagement() {
             setTimeout(() => pollVideos(1000), 1000);
             void mutateVids();
         } else {
-            toaster(resp.message ?? 'Failed to add video', ToastState.error);
+            toast.error(resp.message ?? 'Failed to add video');
         }
     };
 
     const handleAddLink = async () => {
         const resp = await API.put<null, object>('helpful-links', linkFormData);
         if (resp.success) {
-            toaster('Link added successfully', ToastState.success);
+            toast.success('Link added successfully');
             setShowAddLink(false);
             setLinkFormData({ title: '', url: '', description: '' });
             void mutateLinks();
         } else {
-            toaster(resp.message ?? 'Failed to add link', ToastState.error);
+            toast.error(resp.message ?? 'Failed to add link');
         }
     };
 
     const handleRetryVideo = async (video: Video) => {
         if (polling) {
-            toaster('Please wait before retrying again', ToastState.error);
+            toast.error('Please wait before retrying again');
             return;
         }
         const resp = await API.put<null, object>(
@@ -619,12 +617,12 @@ export default function KnowledgeCenterManagement() {
             {}
         );
         if (resp.success) {
-            toaster('Video retry started', ToastState.success);
+            toast.success('Video retry started');
             pollingRef.current = true;
             setPolling(true);
             setTimeout(() => pollVideos(1000), 1000);
         } else {
-            toaster('Error retrying video', ToastState.error);
+            toast.error('Error retrying video');
         }
     };
 

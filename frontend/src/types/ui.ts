@@ -17,12 +17,6 @@ export interface ModalProps {
     form: ReactNode | undefined;
 }
 
-export enum ToastState {
-    success = 'success',
-    error = 'error',
-    null = ''
-}
-
 export enum ViewType {
     Grid = 'Grid',
     List = 'List'

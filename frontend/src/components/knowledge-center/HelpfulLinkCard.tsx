@@ -4,13 +4,12 @@ import { Star, StarOff, Pencil, Trash2 } from 'lucide-react';
 import {
     HelpfulLink,
     ModalType,
-    ToastState,
     UserRole,
     ViewType,
     ServerResponseOne
 } from '@/types';
 import { useAuth, isAdministrator, AdminRoles } from '@/auth/useAuth';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import API from '@/api/api';
@@ -36,7 +35,6 @@ export default function HelpfulLinkCard({
 }: HelpfulLinkCardProps) {
     const [visible, setVisible] = useState(link.visibility_status);
     const [favorite, setFavorite] = useState(link.is_favorited);
-    const { toaster } = useToast();
     const { user } = useAuth();
     const route = useLocation();
     const isAdmin = AdminRoles.includes(role);
@@ -51,10 +49,7 @@ export default function HelpfulLinkCard({
     ) => {
         if (e) e.stopPropagation();
         if (adminWithStudentView()) {
-            toaster(
-                "You're in preview mode. Changes cannot be made.",
-                ToastState.null
-            );
+            toast("You're in preview mode. Changes cannot be made.");
             return;
         }
         const response = await API.put<null, object>(
@@ -70,12 +65,12 @@ export default function HelpfulLinkCard({
                   ? 'is now hidden'
                   : 'is now visible';
         if (response.success) {
-            toaster(`Helpful link ${actionString}`, ToastState.success);
+            toast.success(`Helpful link ${actionString}`);
             mutate?.();
             if (action === 'favorite') setFavorite(!favorite);
             else setVisible(!visible);
         } else {
-            toaster(`Helpful link ${actionString}`, ToastState.error);
+            toast.error(`Helpful link ${actionString}`);
         }
     };
 
