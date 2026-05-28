@@ -11,7 +11,7 @@ import {
     KeyRound
 } from 'lucide-react';
 import { useAuth, isSysAdmin, canSwitchFacility } from '@/auth/useAuth';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import API from '@/api/api';
 import { UserRole } from '@/types/user';
 import {
@@ -20,8 +20,7 @@ import {
     ServerResponseMany,
     ServerResponseOne,
     NewUserResponse,
-    ResetPasswordResponse,
-    ToastState
+    ResetPasswordResponse
 } from '@/types';
 import {
     BulkResetPasswordDialog,
@@ -152,7 +151,6 @@ function getRoleLabel(role: UserRole) {
 
 export default function AdminManagement() {
     const { user } = useAuth();
-    const { toaster } = useToast();
     const canManageDeptAdmins = !!user && isSysAdmin(user);
     const canSwitchFac = !!user && canSwitchFacility(user);
 
@@ -332,10 +330,7 @@ export default function AdminManagement() {
             !formData.name_last.trim() ||
             !formData.username.trim()
         ) {
-            toaster(
-                'First name, last name, and username are required',
-                ToastState.error
-            );
+            toast.error('First name, last name, and username are required');
             return;
         }
         const payload = {
@@ -354,10 +349,7 @@ export default function AdminManagement() {
             payload
         )) as ServerResponseOne<NewUserResponse>;
         if (response.success) {
-            toaster(
-                `Admin ${formData.name_first} ${formData.name_last} added successfully`,
-                ToastState.success
-            );
+            toast.success(`Admin ${formData.name_first} ${formData.name_last} added successfully`);
             setShowAddAdmin(false);
             setTempPassword(response.data.temp_password);
             setPasswordCopied(false);
@@ -367,10 +359,7 @@ export default function AdminManagement() {
             void mutate();
             void mutateStats();
         } else {
-            toaster(
-                response.message || 'Failed to create administrator',
-                ToastState.error
-            );
+            toast.error(response.message || 'Failed to create administrator');
         }
     };
 
@@ -392,19 +381,13 @@ export default function AdminManagement() {
             payload
         );
         if (response.success) {
-            toaster(
-                `${selectedAdmin.name_first} ${selectedAdmin.name_last}'s profile updated`,
-                ToastState.success
-            );
+            toast.success(`${selectedAdmin.name_first} ${selectedAdmin.name_last}'s profile updated`);
             setShowEditAdmin(false);
             setSelectedAdmin(null);
             void mutate();
             void mutateStats();
         } else {
-            toaster(
-                response.message || 'Failed to update administrator',
-                ToastState.error
-            );
+            toast.error(response.message || 'Failed to update administrator');
         }
     };
 
@@ -419,39 +402,27 @@ export default function AdminManagement() {
             setPasswordCopied(false);
             setPasswordModalContext('reset');
             setShowResetPassword(true);
-            toaster(
-                `Password reset for ${admin.name_first} ${admin.name_last}`,
-                ToastState.success
-            );
+            toast.success(`Password reset for ${admin.name_first} ${admin.name_last}`);
         } else {
-            toaster('Failed to reset password', ToastState.error);
+            toast.error('Failed to reset password');
         }
     };
 
     const handleDelete = async () => {
         if (!selectedAdmin) return;
         if (selectedAdmin.role === UserRole.SystemAdmin) {
-            toaster(
-                'System administrators cannot be deleted',
-                ToastState.error
-            );
+            toast.error('System administrators cannot be deleted');
             return;
         }
         const response = await API.delete(`users/${selectedAdmin.id}`);
         if (response.success) {
-            toaster(
-                `${selectedAdmin.name_first} ${selectedAdmin.name_last} deleted`,
-                ToastState.success
-            );
+            toast.success(`${selectedAdmin.name_first} ${selectedAdmin.name_last} deleted`);
             setShowDeleteDialog(false);
             setSelectedAdmin(null);
             void mutate();
             void mutateStats();
         } else {
-            toaster(
-                response.message || 'Failed to delete administrator',
-                ToastState.error
-            );
+            toast.error(response.message || 'Failed to delete administrator');
         }
     };
 
@@ -464,7 +435,7 @@ export default function AdminManagement() {
                     setTimeout(() => setPasswordCopied(false), 2000);
                 })
                 .catch(() => {
-                    toaster('Failed to copy password', ToastState.error);
+                    toast.error('Failed to copy password');
                 });
         }
     };

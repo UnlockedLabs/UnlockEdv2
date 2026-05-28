@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { Library, ServerResponseOne, ToastState } from '@/types';
+import { Library, ServerResponseOne } from '@/types';
 import { useAuth, isAdministrator } from '@/auth/useAuth';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { FormModal } from '@/components/shared/FormModal';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +30,6 @@ export default function LibraryViewer() {
     const navigate = useNavigate();
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
-    const { toaster } = useToast();
     const { tourState, setTourState } = useTourContext();
 
     const [src, setSrc] = useState('');
@@ -142,9 +141,9 @@ export default function LibraryViewer() {
             open_content_provider_id: providerID
         });
         if (response.success) {
-            toaster('Library added to favorites', ToastState.success);
+            toast.success('Library added to favorites');
         } else {
-            toaster(response.message, ToastState.error);
+            toast.error(response.message);
         }
         setBookmarkModalOpen(false);
         bookmarkForm.reset();

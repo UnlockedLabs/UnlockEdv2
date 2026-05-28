@@ -6,10 +6,9 @@ import {
     BulkPasswordResponse,
     BulkActionFailure,
     BulkActionResponse,
-    ServerResponseOne,
-    ToastState
+    ServerResponseOne
 } from '@/types';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,7 +76,6 @@ export function BulkResetPasswordDialog({
     onSuccess,
     kind = 'resident'
 }: BulkResetPasswordDialogProps) {
-    const { toaster } = useToast();
     const cfg = kind === 'admin' ? ADMIN_CONFIG : RESIDENT_CONFIG;
     const [loading, setLoading] = useState(false);
     const [completed, setCompleted] = useState(false);
@@ -108,13 +106,10 @@ export function BulkResetPasswordDialog({
                 setFailures(response.data.failures ?? []);
                 setCompleted(true);
             } else {
-                toaster(
-                    response.message ?? 'Failed to reset passwords',
-                    ToastState.error
-                );
+                toast.error(response.message ?? 'Failed to reset passwords');
             }
         } catch {
-            toaster('Failed to reset passwords', ToastState.error);
+            toast.error('Failed to reset passwords');
         } finally {
             setLoading(false);
         }
@@ -130,7 +125,7 @@ export function BulkResetPasswordDialog({
         a.download = `${cfg.csvFilenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-        toaster('Password file downloaded', ToastState.success);
+        toast.success('Password file downloaded');
         onSuccess();
         onOpenChange(false);
     };
@@ -282,7 +277,6 @@ export function BulkDeactivateDialog({
     residents,
     onSuccess
 }: BulkDialogProps) {
-    const { toaster } = useToast();
     const [loading, setLoading] = useState(false);
     const confirm = useTypeToConfirm({
         open,
@@ -307,17 +301,11 @@ export function BulkDeactivateDialog({
                 failedCount > 0
                     ? `${success_count} resident${success_count !== 1 ? 's' : ''} deactivated, ${failedCount} failed: ${failedNames}`
                     : `${success_count} resident${success_count !== 1 ? 's' : ''} deactivated`;
-            toaster(
-                msg,
-                failedCount > 0 ? ToastState.error : ToastState.success
-            );
+            failedCount > 0 ? toast.error(msg) : toast.success(msg);
             onOpenChange(false);
             onSuccess();
         } else {
-            toaster(
-                response.message ?? 'Failed to deactivate residents',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to deactivate residents');
         }
     };
 
@@ -423,7 +411,6 @@ export function BulkDeleteDialog({
     onSuccess,
     kind = 'resident'
 }: BulkDeleteDialogProps) {
-    const { toaster } = useToast();
     const cfg = kind === 'admin' ? ADMIN_DELETE_CONFIG : RESIDENT_DELETE_CONFIG;
     const [loading, setLoading] = useState(false);
     const confirm = useTypeToConfirm({
@@ -448,20 +435,14 @@ export function BulkDeleteDialog({
                     failedCount > 0
                         ? `${success_count} ${label} deleted, ${failedCount} failed: ${failedNames}`
                         : `${success_count} ${label} deleted`;
-                toaster(
-                    msg,
-                    failedCount > 0 ? ToastState.error : ToastState.success
-                );
+                failedCount > 0 ? toast.error(msg) : toast.success(msg);
                 onOpenChange(false);
                 onSuccess();
             } else {
-                toaster(
-                    response.message ?? `Failed to delete ${cfg.plural}`,
-                    ToastState.error
-                );
+                toast.error(response.message ?? `Failed to delete ${cfg.plural}`);
             }
         } catch {
-            toaster(`Failed to delete ${cfg.plural}`, ToastState.error);
+            toast.error(`Failed to delete ${cfg.plural}`);
         } finally {
             setLoading(false);
         }

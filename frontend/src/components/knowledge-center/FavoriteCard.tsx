@@ -2,13 +2,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { KeyedMutator } from 'swr';
 import {
-    ToastState,
     ServerResponseMany,
     OpenContentItem,
     ViewType
 } from '@/types';
 import { isAdministrator, useAuth } from '@/auth/useAuth';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import API from '@/api/api';
 
 interface FavoriteCardProps {
@@ -25,7 +24,6 @@ export default function FavoriteCard({
     view
 }: FavoriteCardProps) {
     const navigate = useNavigate();
-    const { toaster } = useToast();
     const route = useLocation();
     const { user } = useAuth();
 
@@ -59,10 +57,7 @@ export default function FavoriteCard({
 
     const handleUnfavorite = async () => {
         if (adminWithStudentView()) {
-            toaster(
-                "You're in preview mode. Changes cannot be made.",
-                ToastState.null
-            );
+            toast("You're in preview mode. Changes cannot be made.");
             return;
         }
         let endpoint = '';
@@ -84,10 +79,10 @@ export default function FavoriteCard({
         }
         const response = await API.put(endpoint, payload);
         if (response.success) {
-            toaster('Removed from favorites', ToastState.success);
+            toast.success('Removed from favorites');
             await mutate();
         } else {
-            toaster('Failed to unfavorite', ToastState.error);
+            toast.error('Failed to unfavorite');
         }
     };
 

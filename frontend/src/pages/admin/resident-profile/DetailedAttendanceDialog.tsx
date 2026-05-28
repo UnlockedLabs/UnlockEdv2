@@ -18,8 +18,8 @@ import {
     TooltipContent,
     TooltipTrigger
 } from '@/components/ui/tooltip';
-import { useToast } from '@/contexts/useToast';
-import { ToastState, ServerResponseMany } from '@/types';
+import { toast } from 'sonner';
+import { ServerResponseMany } from '@/types';
 import API from '@/api/api';
 import { ResidentProgramOverview } from '@/types';
 import { formatDate } from '@/lib/formatters';
@@ -68,7 +68,6 @@ export function DetailedAttendanceDialog({
     enrollment,
     residentId
 }: DetailedAttendanceDialogProps) {
-    const { toaster } = useToast();
     const PAGE_SIZE = 10;
     const [page, setPage] = useState(1);
 
@@ -109,9 +108,9 @@ export function DetailedAttendanceDialog({
             a.click();
             window.URL.revokeObjectURL(url);
             a.remove();
-            toaster('Attendance data exported to CSV', ToastState.success);
+            toast.success('Attendance data exported to CSV');
         } catch {
-            toaster('Failed to export attendance data', ToastState.error);
+            toast.error('Failed to export attendance data');
         }
     };
 

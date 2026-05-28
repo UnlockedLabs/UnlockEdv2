@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, StarOff } from 'lucide-react';
-import {
-    Video,
-    ToastState,
-    UserRole,
-    ViewType,
-    ServerResponseMany
-} from '@/types';
+import { Video, UserRole, ViewType, ServerResponseMany } from '@/types';
 import { useAuth, isAdministrator, AdminRoles } from '@/auth/useAuth';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { videoIsAvailable, getVideoErrorMessage } from '@/lib/formatters';
@@ -40,7 +34,6 @@ export default function VideoCard({
     const [visible, setVisible] = useState(video.visibility_status);
     const [favorite, setFavorite] = useState(video.is_favorited);
     const navigate = useNavigate();
-    const { toaster } = useToast();
     const route = useLocation();
     const { user } = useAuth();
     const isAdmin = AdminRoles.includes(role);
@@ -52,10 +45,7 @@ export default function VideoCard({
 
     const handleToggleAction = async (action: 'favorite' | 'visibility') => {
         if (adminWithStudentView() && action === 'favorite') {
-            toaster(
-                "You're in preview mode. Changes cannot be made.",
-                ToastState.null
-            );
+            toast("You're in preview mode. Changes cannot be made.");
             return;
         }
         const response = await API.put<null, object>(
@@ -71,12 +61,12 @@ export default function VideoCard({
                   ? 'is now hidden'
                   : 'is now visible';
         if (response.success) {
-            toaster(`Video ${actionString}`, ToastState.success);
+            toast.success(`Video ${actionString}`);
             await mutate();
             if (action === 'favorite') setFavorite(!favorite);
             else setVisible(!visible);
         } else {
-            toaster(`Video ${actionString}`, ToastState.error);
+            toast.error(`Video ${actionString}`);
         }
     };
 

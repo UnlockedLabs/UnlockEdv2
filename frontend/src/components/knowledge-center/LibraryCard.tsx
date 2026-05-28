@@ -1,9 +1,9 @@
 import { useState, MouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, StarOff, Flag, FlagOff, Search } from 'lucide-react';
-import { Library, ToastState, UserRole, ViewType } from '@/types';
+import { Library, UserRole, ViewType } from '@/types';
 import { useAuth, isAdministrator, AdminRoles } from '@/auth/useAuth';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import API from '@/api/api';
@@ -23,7 +23,6 @@ export default function LibraryCard({
     onSearchClick,
     view = ViewType.Grid
 }: LibraryCardProps) {
-    const { toaster } = useToast();
     const [visible, setVisible] = useState(library.visibility_status);
     const [favorite, setFavorite] = useState(library.is_favorited);
     const navigate = useNavigate();
@@ -42,10 +41,7 @@ export default function LibraryCard({
         if (!mutate) return;
         if (e) e.stopPropagation();
         if (adminWithStudentView()) {
-            toaster(
-                "You're in preview mode. Changes cannot be made.",
-                ToastState.null
-            );
+            toast("You're in preview mode. Changes cannot be made.");
             return;
         }
         const actionString =
@@ -66,11 +62,11 @@ export default function LibraryCard({
         );
         if (resp.success) {
             mutate();
-            toaster(`Library ${actionString}`, ToastState.success);
+            toast.success(`Library ${actionString}`);
             if (action === 'favorite') setFavorite(!favorite);
             else setVisible(!visible);
         } else {
-            toaster(`Library ${actionString}`, ToastState.error);
+            toast.error(`Library ${actionString}`);
         }
     }
 

@@ -4,10 +4,9 @@ import {
     BulkUploadResponse,
     InvalidUserRow,
     ValidatedUserRow,
-    ServerResponseOne,
-    ToastState
+    ServerResponseOne
 } from '@/types';
-import { useToast } from '@/contexts/useToast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +25,6 @@ export function BulkImportDialog({
     onOpenChange,
     onSuccess
 }: BulkImportDialogProps) {
-    const { toaster } = useToast();
     const [step, setStep] = useState<'upload' | 'validation'>('upload');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [validRows, setValidRows] = useState<ValidatedUserRow[]>([]);
@@ -82,10 +80,7 @@ export function BulkImportDialog({
             setErrorCsvData(response.data.error_csv_data);
             setStep('validation');
         } else {
-            toaster(
-                response.message ?? 'Failed to validate CSV',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to validate CSV');
         }
     };
 
@@ -111,17 +106,11 @@ export function BulkImportDialog({
         setCreating(false);
 
         if (response.success) {
-            toaster(
-                `${validRows.length} resident accounts created successfully`,
-                ToastState.success
-            );
+            toast.success(`${validRows.length} resident accounts created successfully`);
             handleOpenChange(false);
             onSuccess();
         } else {
-            toaster(
-                response.message ?? 'Failed to create accounts',
-                ToastState.error
-            );
+            toast.error(response.message ?? 'Failed to create accounts');
         }
     };
 
