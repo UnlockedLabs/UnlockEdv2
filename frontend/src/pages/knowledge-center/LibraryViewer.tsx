@@ -143,7 +143,7 @@ export default function LibraryViewer() {
         if (response.success) {
             toast.success('Library added to favorites');
         } else {
-            toast.error(response.message);
+            toast.error(response.message ?? 'Failed to add library to favorites');
         }
         setBookmarkModalOpen(false);
         bookmarkForm.reset();
