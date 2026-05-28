@@ -108,7 +108,7 @@ export default function VideoCard({
                     </h3>
                 </div>
                 <div className="p-4 space-y-2">
-                    <p className="text-sm font-bold line-clamp-2 min-h-[2.5rem]">
+                    <p className="text-sm font-bold line-clamp-2 min-h-10">
                         {video.channel_title} - {toMinutes(video.duration)}
                     </p>
                     <p className="text-xs text-muted-foreground h-10 leading-5 line-clamp-2">
@@ -173,7 +173,7 @@ export default function VideoCard({
             <img
                 src={thumbnailSrc}
                 alt={video.title}
-                className="w-16 h-16 flex-shrink-0 object-cover"
+                className="w-16 h-16 shrink-0 object-cover"
             />
             <div className="flex flex-col flex-1 min-w-0">
                 <h3 className="text-sm font-medium text-foreground">
