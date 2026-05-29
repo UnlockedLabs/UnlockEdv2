@@ -5,14 +5,6 @@ import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle
-} from '@/components/ui/alert-dialog';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
 import {
@@ -23,13 +15,70 @@ import { getDigitalTranscriptBasePath, setDigitalTranscriptStorageContext } from
 import { getLearningRecordFormVariant } from './learningRecordPrototypes';
 import {
     DigitalTranscriptWysiwygEntry,
-    type FunnelToolbarHandlers
+    type AutoSaveStatus,
+    type FunnelAutoSaveState,
+    type FunnelFinishHandlers
 } from './DigitalTranscriptWysiwygEntry';
 import { DigitalTranscriptBackLink, DigitalTranscriptShell, dtPageSurface } from './DigitalTranscriptShell';
 import { LearningRecordExportContent } from './LearningRecordExportContent';
+import { learningRecordOutlineButtonClassName, LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 import { readLearningRecordExportRows } from './transcriptEntrySessionStorage';
 import type { TranscriptEntry } from '@/types/digital-transcript';
+
+function formatSavedTime(date: Date): string {
+    return date.toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+function AutoSaveLabel({
+    status,
+    lastSavedAt
+}: {
+    status: AutoSaveStatus;
+    lastSavedAt: Date | null;
+}) {
+    if (status === 'pending' || status === 'saving') {
+        return (
+            <span
+                data-slot="digital-transcript-autosave-status"
+                className="text-sm text-muted-foreground"
+                aria-live="polite"
+            >
+                Saving…
+            </span>
+        );
+    }
+
+    if (status === 'error') {
+        return (
+            <span
+                data-slot="digital-transcript-autosave-status"
+                className="text-sm text-destructive"
+                aria-live="polite"
+            >
+                Failed to save
+            </span>
+        );
+    }
+
+    if (status === 'saved' && lastSavedAt) {
+        return (
+            <span
+                data-slot="digital-transcript-autosave-status"
+                className="text-sm text-muted-foreground"
+                aria-live="polite"
+            >
+                Saved {formatSavedTime(lastSavedAt)}
+            </span>
+        );
+    }
+
+    return null;
+}
 
 export default function DigitalTranscriptEntryPage() {
     const navigate = useNavigate();
@@ -38,7 +87,7 @@ export default function DigitalTranscriptEntryPage() {
     setDigitalTranscriptStorageContext(base);
     const formVariant = getLearningRecordFormVariant(pathname);
     const isFunnel = formVariant === 'funnel';
-    const funnelToolbarRef = useRef<FunnelToolbarHandlers | null>(null);
+    const funnelFinishRef = useRef<FunnelFinishHandlers | null>(null);
     const { hydrated, upsertCommittedEntry, deleteCommittedEntry, entries } = useTranscriptDraft();
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
@@ -47,7 +96,8 @@ export default function DigitalTranscriptEntryPage() {
     );
     const [isExporting, setIsExporting] = useState(false);
     const [exportActive, setExportActive] = useState(false);
-    const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+    const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
+    const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
     const exportRootRef = useRef<HTMLDivElement>(null);
     const liveExportRowsRef = useRef(exportRows);
     liveExportRowsRef.current = exportRows;
@@ -58,35 +108,22 @@ export default function DigitalTranscriptEntryPage() {
         setExportRows(rows);
     }, []);
 
-    const handleRegisterFunnelToolbar = useCallback((handlers: FunnelToolbarHandlers) => {
-        funnelToolbarRef.current = handlers;
+    const handleRegisterFunnelFinish = useCallback((handlers: FunnelFinishHandlers) => {
+        funnelFinishRef.current = handlers;
+    }, []);
+
+    const handleFunnelAutoSaveStatusChange = useCallback((state: FunnelAutoSaveState) => {
+        setAutoSaveStatus(state.status);
+        setLastSavedAt(state.lastSavedAt);
     }, []);
 
     const navigateHome = useCallback(() => {
         navigate(base);
     }, [navigate, base]);
 
-    const requestLeave = useCallback(() => {
-        if (!isFunnel) {
-            navigateHome();
-            return;
-        }
-        if (funnelToolbarRef.current?.hasUnsavedChanges()) {
-            setLeaveConfirmOpen(true);
-            return;
-        }
-        navigateHome();
-    }, [isFunnel, navigateHome]);
-
-    const handleConfirmLeave = useCallback(() => {
-        setLeaveConfirmOpen(false);
-        funnelToolbarRef.current?.cancel();
-        navigateHome();
-    }, [navigateHome]);
-
-    const handleSave = useCallback(() => {
-        const saved = funnelToolbarRef.current?.save() ?? false;
-        if (saved) navigateHome();
+    const handleFinish = useCallback(() => {
+        const ok = funnelFinishRef.current?.validateFinishRequirements() ?? false;
+        if (ok) navigateHome();
     }, [navigateHome]);
 
     const handleDownload = useCallback(async () => {
@@ -171,10 +208,10 @@ export default function DigitalTranscriptEntryPage() {
                         <Button
                             type="button"
                             variant="ghost"
-                            size="sm"
+                            size={LEARNING_RECORD_BUTTON_SIZE}
                             data-slot="digital-transcript-back"
-                            className="group gap-1.5 text-primary hover:bg-muted hover:text-primary"
-                            onClick={requestLeave}
+                            className="group h-10 gap-1.5 text-primary hover:bg-muted hover:text-primary"
+                            onClick={navigateHome}
                         >
                             <span
                                 className="inline-block transition-transform group-hover:-translate-x-0.5"
@@ -189,35 +226,15 @@ export default function DigitalTranscriptEntryPage() {
                     )}
                     <div className="flex items-center gap-2">
                         {isFunnel ? (
-                            <>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    data-slot="digital-transcript-cancel"
-                                    className="bg-background"
-                                    onClick={requestLeave}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    data-slot="digital-transcript-save"
-                                    className="bg-[#556830] text-white hover:bg-[#203622]"
-                                    onClick={handleSave}
-                                >
-                                    Save changes
-                                </Button>
-                            </>
+                            <AutoSaveLabel status={autoSaveStatus} lastSavedAt={lastSavedAt} />
                         ) : null}
                         {!isFunnel ? (
                             <Button
                                 type="button"
                                 variant="outline"
-                                size="sm"
+                                size={LEARNING_RECORD_BUTTON_SIZE}
                                 data-slot="digital-transcript-download"
-                                className="gap-1.5 bg-background"
+                                className={learningRecordOutlineButtonClassName}
                                 disabled={!canDownload}
                                 aria-busy={isExporting}
                                 onClick={() => void handleDownload()}
@@ -240,9 +257,10 @@ export default function DigitalTranscriptEntryPage() {
                         upsertCommittedEntry={upsertCommittedEntry}
                         deleteCommittedEntry={deleteCommittedEntry}
                         onExportRowsChange={handleExportRowsChange}
-                        funnelOnSave={isFunnel ? handleSave : undefined}
-                        onRegisterFunnelToolbar={
-                            isFunnel ? handleRegisterFunnelToolbar : undefined
+                        funnelOnFinish={isFunnel ? handleFinish : undefined}
+                        onRegisterFunnelFinish={isFunnel ? handleRegisterFunnelFinish : undefined}
+                        onFunnelAutoSaveStatusChange={
+                            isFunnel ? handleFunnelAutoSaveStatusChange : undefined
                         }
                         funnelDownload={
                             isFunnel
@@ -256,35 +274,6 @@ export default function DigitalTranscriptEntryPage() {
                     />
                 </div>
             </div>
-            {isFunnel ? (
-                <AlertDialog open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Save your changes?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                You have unsaved changes. Would you like to save them before leaving?
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                onClick={handleConfirmLeave}
-                            >
-                                Leave without saving
-                            </Button>
-                            <Button
-                                type="button"
-                                className="bg-[#556830] text-white hover:bg-[#203622]"
-                                onClick={handleSave}
-                            >
-                                Save Changes
-                            </Button>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            ) : null}
         </div>
     );
 }

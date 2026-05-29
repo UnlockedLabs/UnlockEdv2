@@ -9,13 +9,14 @@ import {
     type ReflectionTextNudge,
     REFLECTION_TEXT_NUDGES
 } from './transcriptReflectionConfig';
+import { learningRecordQuestionHeaderClassName } from './learningRecordButtons';
 
 interface ReflectionTextFieldProps {
     id: string;
     label: string;
     value: string;
     onChange: (v: string) => void;
-    fieldKey: ReflectionTextFieldKey;
+    fieldKey?: ReflectionTextFieldKey;
     nudge?: ReflectionTextNudge;
     /** Funnel: show nudge hint between label and input instead of below. */
     descriptionAboveInput?: boolean;
@@ -30,7 +31,12 @@ export function ReflectionTextField({
     nudge: nudgeOverride,
     descriptionAboveInput = false
 }: ReflectionTextFieldProps) {
-    const nudge = nudgeOverride ?? REFLECTION_TEXT_NUDGES[fieldKey];
+    const nudge =
+        nudgeOverride ??
+        (fieldKey ? REFLECTION_TEXT_NUDGES[fieldKey] : undefined);
+    if (!nudge) {
+        throw new Error('ReflectionTextField requires fieldKey or nudge');
+    }
     const len = value.length;
     const tone = getReflectionNudgeTone(len, nudge);
     const toneCls = NUDGE_TONE_CLASSES[tone];
@@ -46,11 +52,15 @@ export function ReflectionTextField({
     const showDescriptionBelow = !descriptionAboveInput && Boolean(nudge.hint);
 
     return (
-        <div className="space-y-2">
-            <Label htmlFor={id}>{label}</Label>
-            {showDescriptionAbove ? (
-                <p className="text-xs leading-relaxed text-muted-foreground">{nudge.hint}</p>
-            ) : null}
+        <div>
+            <div className={learningRecordQuestionHeaderClassName}>
+                <Label htmlFor={id} className="text-base font-medium leading-snug text-foreground">
+                    {label}
+                </Label>
+                {showDescriptionAbove ? (
+                    <p className="text-xs leading-relaxed text-muted-foreground">{nudge.hint}</p>
+                ) : null}
+            </div>
             <div
                 className={cn(
                     'overflow-hidden rounded-lg border border-border/80 bg-muted/30 shadow-none',
@@ -77,7 +87,7 @@ export function ReflectionTextField({
                     />
                 </div>
             </div>
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                 {showDescriptionBelow ? (
                     <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
                         {nudge.hint}

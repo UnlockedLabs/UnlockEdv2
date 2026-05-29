@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Download, Loader2, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronsUpDown, ChevronUp, Download, Eye, Loader2, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,14 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetTitle
+} from '@/components/ui/sheet';
 import {
     Table,
     TableBody,
@@ -27,6 +34,7 @@ import { EmptyState, PageHeader } from '@/components/shared';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
 import {
+    downloadAllLearningRecordAchievementsPdf,
     downloadLearningRecordPdf,
     learningRecordPdfFilename
 } from '@/utils/downloadLearningRecordPdf';
@@ -50,6 +58,21 @@ import {
     funnelCompletionTier,
     FUNNEL_FORM_FIELD_TOTAL
 } from './transcriptReflectionConfig';
+import { createEmptyTranscriptEntry } from './transcriptEntrySessionStorage';
+import {
+    readTableSortFromSession,
+    sortTranscriptEntries,
+    toggleTableSort,
+    writeTableSortToSession,
+    type SortColumn,
+    type TableSort
+} from './learningRecordTableSort';
+import {
+    LEARNING_RECORD_BUTTON_SIZE,
+    learningRecordIconButtonClassName,
+    learningRecordOutlineButtonClassName,
+    learningRecordPrimaryButtonClassName
+} from './learningRecordButtons';
 
 /** Decorative sample for the home CTA thumbnail (not persisted). */
 const ACHIEVEMENT_LOG_THUMBNAIL_SAMPLE: TranscriptEntry = {
@@ -64,14 +87,21 @@ const ACHIEVEMENT_LOG_THUMBNAIL_SAMPLE: TranscriptEntry = {
     goalConnection: 'A clear step toward licensing and steadier work.',
     standoutMoment: 'Instructors who explained things with patience and respect.',
     adviceToPeer: 'Use the tutor hours—you are not alone in the room.',
-    oneSentence: 'A program that helped me believe I could finish what I started.'
+    oneSentence: 'A program that helped me believe I could finish what I started.',
+    q4Toggle: null,
+    q4Text: '',
+    q5BeforeTags: [],
+    q5AfterTags: [],
+    q5FreeText: '',
+    q7Text: '',
+    q8Selections: [],
+    q9Selections: []
 };
 
 const FUNNEL_SUBTITLE =
     "This is your personal record of the programs you've completed and the skills you've built. Each achievement you add is saved on this device — and when you're ready, you can export your record as a PDF to keep, share, or take with you.";
 
-const primaryCtaClassName =
-    'bg-[#556830] text-white shadow-sm hover:bg-[#203622] sm:min-w-[11rem]';
+const primaryCtaClassName = cn(learningRecordPrimaryButtonClassName, 'sm:min-w-[11rem]');
 
 function formatProgramCompletedDate(entry: TranscriptEntry): string {
     if (!entry.completionDate.trim()) return '—';
@@ -133,30 +163,80 @@ function QuestionsAnsweredBadge({
     );
 }
 
+function SortableColumnHeader({
+    label,
+    column,
+    tableSort,
+    onSortColumn,
+    className
+}: {
+    label: string;
+    column: SortColumn;
+    tableSort: TableSort;
+    onSortColumn: (column: SortColumn) => void;
+    className?: string;
+}) {
+    const isActive = tableSort.column === column;
+    const SortIcon = !isActive
+        ? ChevronsUpDown
+        : tableSort.direction === 'asc'
+          ? ChevronUp
+          : ChevronDown;
+
+    return (
+        <TableHead className={className}>
+            <button
+                type="button"
+                onClick={() => onSortColumn(column)}
+                className={cn(
+                    'inline-flex items-center gap-1 text-left text-sm transition-colors hover:text-foreground',
+                    isActive ? 'font-medium text-foreground' : 'font-semibold text-muted-foreground'
+                )}
+            >
+                {label}
+                <SortIcon
+                    size={14}
+                    className={cn(
+                        'shrink-0',
+                        isActive ? 'text-foreground' : 'text-muted-foreground'
+                    )}
+                    aria-hidden
+                />
+            </button>
+        </TableHead>
+    );
+}
+
 interface SavedEntriesSectionProps {
     entries: TranscriptEntry[];
-    entriesNewestFirst: TranscriptEntry[];
+    sortedEntries: TranscriptEntry[];
     entryPath: string;
     formVariant: LearningRecordFormVariant;
     sectionHeading: ReactNode;
     headerAction?: ReactNode;
     emptyState: { title: string; description: string };
+    tableSort: TableSort;
+    onSortColumn: (column: SortColumn) => void;
     onDeleteRequest: (entry: TranscriptEntry) => void;
     onDownloadEntry: (entry: TranscriptEntry) => void;
     downloadingEntryId: string | null;
+    isDownloadBusy: boolean;
 }
 
 function SavedEntriesSection({
     entries,
-    entriesNewestFirst,
+    sortedEntries,
     entryPath,
     formVariant,
     sectionHeading,
     headerAction,
     emptyState,
+    tableSort,
+    onSortColumn,
     onDeleteRequest,
     onDownloadEntry,
-    downloadingEntryId
+    downloadingEntryId,
+    isDownloadBusy
 }: SavedEntriesSectionProps) {
     return (
         <section className="flex min-h-0 flex-col">
@@ -182,25 +262,41 @@ function SavedEntriesSection({
                         <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
-                                    <TableHead className="w-[min(28%,14rem)] pl-6 font-semibold text-foreground">
-                                        Program
-                                    </TableHead>
-                                    <TableHead className="hidden w-[200px] font-semibold text-foreground sm:table-cell">
-                                        Completed
-                                    </TableHead>
-                                    <TableHead className="hidden w-[200px] font-semibold text-foreground md:table-cell">
-                                        Questions answered
-                                    </TableHead>
-                                    <TableHead className="hidden w-[200px] font-semibold text-foreground lg:table-cell">
-                                        Added on
-                                    </TableHead>
+                                    <SortableColumnHeader
+                                        label="Program"
+                                        column="program"
+                                        tableSort={tableSort}
+                                        onSortColumn={onSortColumn}
+                                        className="w-[min(28%,14rem)] pl-6"
+                                    />
+                                    <SortableColumnHeader
+                                        label="Completed"
+                                        column="completed"
+                                        tableSort={tableSort}
+                                        onSortColumn={onSortColumn}
+                                        className="hidden w-[200px] sm:table-cell"
+                                    />
+                                    <SortableColumnHeader
+                                        label="Questions answered"
+                                        column="questions"
+                                        tableSort={tableSort}
+                                        onSortColumn={onSortColumn}
+                                        className="hidden w-[200px] md:table-cell"
+                                    />
+                                    <SortableColumnHeader
+                                        label="Added on"
+                                        column="addedOn"
+                                        tableSort={tableSort}
+                                        onSortColumn={onSortColumn}
+                                        className="hidden w-[200px] lg:table-cell"
+                                    />
                                     <TableHead className="w-[5.5rem] pr-6 text-right font-semibold text-foreground">
                                         <span className="sr-only">Actions</span>
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {entriesNewestFirst.map((entry) => {
+                                {sortedEntries.map((entry) => {
                                     const editHref = `${entryPath}?edit=${encodeURIComponent(entry.id)}`;
                                     const { answered, total } = getEntryQuestionsProgress(
                                         entry,
@@ -264,9 +360,9 @@ function SavedEntriesSection({
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        size="icon"
+                                                        className={learningRecordIconButtonClassName}
                                                         aria-label="Download achievement as PDF"
-                                                        disabled={isDownloading}
+                                                        disabled={isDownloading || isDownloadBusy}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             e.preventDefault();
@@ -285,9 +381,11 @@ function SavedEntriesSection({
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        size="icon"
+                                                        className={cn(
+                                                            learningRecordIconButtonClassName,
+                                                            'hover:bg-destructive/10 hover:text-destructive'
+                                                        )}
                                                         aria-label="Delete achievement"
-                                                        className="hover:bg-destructive/10 hover:text-destructive"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             e.preventDefault();
@@ -318,7 +416,8 @@ export default function DigitalTranscriptHome() {
     const formVariant = getLearningRecordFormVariant(pathname);
     const isFunnel = formVariant === 'funnel';
     const entryPath = `${base}/entry`;
-    const { entries, hydrated, hasDraft, deleteCommittedEntry } = useTranscriptDraft();
+    const { entries, hydrated, hasDraft, deleteCommittedEntry, upsertCommittedEntry } =
+        useTranscriptDraft();
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
     const [deleteTarget, setDeleteTarget] = useState<TranscriptEntry | null>(null);
@@ -326,16 +425,37 @@ export default function DigitalTranscriptHome() {
     const [exportRows, setExportRows] = useState<TranscriptEntry[]>([]);
     const [exportActive, setExportActive] = useState(false);
     const [downloadingEntryId, setDownloadingEntryId] = useState<string | null>(null);
+    const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+    const [viewAllOpen, setViewAllOpen] = useState(false);
+    const [tableSort, setTableSort] = useState<TableSort>(readTableSortFromSession);
     const exportRootRef = useRef<HTMLDivElement>(null);
+    const sortedEntriesRef = useRef<TranscriptEntry[]>([]);
 
-    const entriesNewestFirst = useMemo(
-        () => [...entries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        [entries]
+    useEffect(() => {
+        writeTableSortToSession(tableSort);
+    }, [tableSort]);
+
+    const sortedEntries = useMemo(
+        () => sortTranscriptEntries(entries, tableSort, formVariant),
+        [entries, tableSort, formVariant]
     );
+    sortedEntriesRef.current = sortedEntries;
+
+    const isDownloadBusy = downloadingEntryId !== null || isDownloadingAll;
+
+    const handleSortColumn = useCallback((column: SortColumn) => {
+        setTableSort((current) => toggleTableSort(current, column));
+    }, []);
+
+    const waitForExportPaint = useCallback(async () => {
+        await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+    }, []);
 
     const handleDownloadEntry = useCallback(
         async (entry: TranscriptEntry) => {
-            if (downloadingEntryId !== null) return;
+            if (isDownloadBusy) return;
 
             setDownloadingEntryId(entry.id);
             flushSync(() => {
@@ -344,9 +464,7 @@ export default function DigitalTranscriptHome() {
             });
 
             try {
-                await new Promise<void>((resolve) => {
-                    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-                });
+                await waitForExportPaint();
 
                 const root = exportRootRef.current;
                 if (!root) {
@@ -366,8 +484,51 @@ export default function DigitalTranscriptHome() {
                 setDownloadingEntryId(null);
             }
         },
-        [downloadingEntryId, residentName]
+        [isDownloadBusy, residentName, waitForExportPaint]
     );
+
+    const handleDownloadAll = useCallback(async () => {
+        const entriesToExport = sortedEntriesRef.current;
+        if (entriesToExport.length === 0 || isDownloadBusy) return;
+
+        setIsDownloadingAll(true);
+        let exportIndex = 0;
+
+        flushSync(() => {
+            setExportActive(true);
+        });
+
+        try {
+            await downloadAllLearningRecordAchievementsPdf(
+                async () => {
+                    const entry = entriesToExport[exportIndex];
+                    if (!entry) {
+                        throw new Error('Export entry not found');
+                    }
+                    exportIndex += 1;
+                    flushSync(() => {
+                        setExportRows([entry]);
+                    });
+                    await waitForExportPaint();
+                    const root = exportRootRef.current;
+                    if (!root) {
+                        throw new Error('Export content not ready');
+                    }
+                    return root;
+                },
+                entriesToExport.length,
+                learningRecordPdfFilename(residentName)
+            );
+            toast.success('Learning record downloaded');
+        } catch (err) {
+            console.error('Learning record PDF export failed:', err);
+            toast.error('Could not download PDF. Please try again.');
+        } finally {
+            setExportActive(false);
+            setExportRows([]);
+            setIsDownloadingAll(false);
+        }
+    }, [isDownloadBusy, residentName, waitForExportPaint]);
 
     const handleConfirmDelete = useCallback(() => {
         if (!deleteTarget || isDeleting) return;
@@ -377,6 +538,13 @@ export default function DigitalTranscriptHome() {
         setIsDeleting(false);
         setDeleteTarget(null);
     }, [deleteCommittedEntry, deleteTarget, isDeleting]);
+
+    const handleStartNewClick = useCallback(() => {
+        setViewAllOpen(false);
+        const blank = createEmptyTranscriptEntry();
+        upsertCommittedEntry(blank);
+        navigate(`${entryPath}?edit=${encodeURIComponent(blank.id)}`);
+    }, [entryPath, navigate, upsertCommittedEntry]);
 
     if (!hydrated) {
         return (
@@ -389,9 +557,19 @@ export default function DigitalTranscriptHome() {
         );
     }
 
-    function handleStartNewClick() {
-        navigate(`${entryPath}?intent=new`);
-    }
+    const viewAllAchievementsButton =
+        entries.length > 0 ? (
+            <Button
+                type="button"
+                variant="outline"
+                size={LEARNING_RECORD_BUTTON_SIZE}
+                className={cn(learningRecordOutlineButtonClassName, 'sm:min-w-[11rem]')}
+                onClick={() => setViewAllOpen(true)}
+            >
+                <Eye className="size-4" aria-hidden />
+                View all achievements
+            </Button>
+        ) : null;
 
     const primaryCtaLabel = entries.length === 0 ? 'Start logging' : 'Add achievement';
 
@@ -430,7 +608,7 @@ export default function DigitalTranscriptHome() {
 
                     <SavedEntriesSection
                         entries={entries}
-                        entriesNewestFirst={entriesNewestFirst}
+                        sortedEntries={sortedEntries}
                         entryPath={entryPath}
                         formVariant={formVariant}
                         sectionHeading={
@@ -439,16 +617,22 @@ export default function DigitalTranscriptHome() {
                             </h2>
                         }
                         headerAction={
-                            <Button
-                                type="button"
-                                variant="default"
-                                size="lg"
-                                onClick={handleStartNewClick}
-                                className={primaryCtaClassName}
-                            >
-                                Add achievement
-                            </Button>
+                            <div className="flex items-center gap-2 sm:ml-auto">
+                                {viewAllAchievementsButton}
+                                <Button
+                                    type="button"
+                                    variant="default"
+                                    size={LEARNING_RECORD_BUTTON_SIZE}
+                                    onClick={handleStartNewClick}
+                                    className={cn('gap-1.5', primaryCtaClassName)}
+                                >
+                                    <Plus className="size-4" aria-hidden />
+                                    Add achievement
+                                </Button>
+                            </div>
                         }
+                        tableSort={tableSort}
+                        onSortColumn={handleSortColumn}
                         emptyState={{
                             title: 'No achievements added yet',
                             description:
@@ -457,6 +641,7 @@ export default function DigitalTranscriptHome() {
                         onDeleteRequest={setDeleteTarget}
                         onDownloadEntry={(entry) => void handleDownloadEntry(entry)}
                         downloadingEntryId={downloadingEntryId}
+                        isDownloadBusy={isDownloadBusy}
                     />
                 </>
             ) : (
@@ -500,7 +685,7 @@ export default function DigitalTranscriptHome() {
                                             <Button
                                                 type="button"
                                                 variant="default"
-                                                size="lg"
+                                                size={LEARNING_RECORD_BUTTON_SIZE}
                                                 onClick={handleStartNewClick}
                                                 className={primaryCtaClassName}
                                             >
@@ -509,7 +694,7 @@ export default function DigitalTranscriptHome() {
                                             <Button
                                                 asChild
                                                 variant="secondary"
-                                                size="lg"
+                                                size={LEARNING_RECORD_BUTTON_SIZE}
                                                 className="sm:min-w-[11rem]"
                                             >
                                                 <Link to={entryPath}>Edit</Link>
@@ -522,7 +707,7 @@ export default function DigitalTranscriptHome() {
                                                     <Button
                                                         type="button"
                                                         variant="default"
-                                                        size="lg"
+                                                        size={LEARNING_RECORD_BUTTON_SIZE}
                                                         onClick={handleStartNewClick}
                                                         className={primaryCtaClassName}
                                                     >
@@ -531,7 +716,7 @@ export default function DigitalTranscriptHome() {
                                                     <Button
                                                         asChild
                                                         variant="secondary"
-                                                        size="lg"
+                                                        size={LEARNING_RECORD_BUTTON_SIZE}
                                                         className="sm:min-w-[8rem]"
                                                     >
                                                         <Link to={entryPath}>Edit</Link>
@@ -542,7 +727,7 @@ export default function DigitalTranscriptHome() {
                                                 <Button
                                                     type="button"
                                                     variant="default"
-                                                    size="lg"
+                                                    size={LEARNING_RECORD_BUTTON_SIZE}
                                                     onClick={handleStartNewClick}
                                                     className={primaryCtaClassName}
                                                 >
@@ -581,7 +766,7 @@ export default function DigitalTranscriptHome() {
 
                     <SavedEntriesSection
                         entries={entries}
-                        entriesNewestFirst={entriesNewestFirst}
+                        sortedEntries={sortedEntries}
                         entryPath={entryPath}
                         formVariant={formVariant}
                         sectionHeading={
@@ -594,12 +779,17 @@ export default function DigitalTranscriptHome() {
                         }
                         headerAction={
                             entries.length > 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    {entries.length}{' '}
-                                    {entries.length === 1 ? 'achievement' : 'achievements'}
-                                </p>
+                                <div className="flex flex-col items-start gap-2 sm:ml-auto sm:items-end">
+                                    {viewAllAchievementsButton}
+                                    <p className="text-sm text-muted-foreground">
+                                        {entries.length}{' '}
+                                        {entries.length === 1 ? 'achievement' : 'achievements'}
+                                    </p>
+                                </div>
                             ) : undefined
                         }
+                        tableSort={tableSort}
+                        onSortColumn={handleSortColumn}
                         emptyState={{
                             title: 'Nothing saved yet',
                             description:
@@ -608,9 +798,65 @@ export default function DigitalTranscriptHome() {
                         onDeleteRequest={setDeleteTarget}
                         onDownloadEntry={(entry) => void handleDownloadEntry(entry)}
                         downloadingEntryId={downloadingEntryId}
+                        isDownloadBusy={isDownloadBusy}
                     />
                 </>
             )}
+            <Sheet open={viewAllOpen} onOpenChange={setViewAllOpen}>
+                <SheetContent
+                    side="right"
+                    className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-none lg:w-[600px] lg:max-w-[600px] [&>button.absolute]:hidden"
+                >
+                    <div className="shrink-0 border-b border-border/60 bg-background px-6 pt-6 pb-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <SheetTitle className="text-lg font-semibold tracking-tight">
+                                View all achievements
+                            </SheetTitle>
+                            <SheetClose
+                                className="rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+                                aria-label="Close panel"
+                            >
+                                <X className="size-4" aria-hidden />
+                            </SheetClose>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size={LEARNING_RECORD_BUTTON_SIZE}
+                            className={cn(learningRecordOutlineButtonClassName, 'mt-3')}
+                            disabled={entries.length === 0 || isDownloadBusy}
+                            aria-busy={isDownloadingAll}
+                            onClick={() => void handleDownloadAll()}
+                        >
+                            {isDownloadingAll ? (
+                                <Loader2 className="size-4 animate-spin" aria-hidden />
+                            ) : (
+                                <Download className="size-4" aria-hidden />
+                            )}
+                            {isDownloadingAll ? 'Generating…' : 'Download all achievements as a PDF'}
+                        </Button>
+                    </div>
+                    <ScrollArea className="min-h-0 flex-1">
+                        <div className="px-6 py-4">
+                            {sortedEntries.map((entry, index) => (
+                                <div
+                                    key={entry.id}
+                                    className={cn(index > 0 && 'mt-3')}
+                                >
+                                    <LearningRecordExportContent
+                                        rows={[entry]}
+                                        residentName={residentName}
+                                        filledSectionsOnly={false}
+                                        hidePreviewHeader
+                                        embeddedLivePreview={isFunnel}
+                                        documentVariant={isFunnel ? 'funnel' : 'default'}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </SheetContent>
+            </Sheet>
             <Dialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => {
@@ -629,6 +875,8 @@ export default function DigitalTranscriptHome() {
                         <Button
                             type="button"
                             variant="outline"
+                            size={LEARNING_RECORD_BUTTON_SIZE}
+                            className={learningRecordOutlineButtonClassName}
                             disabled={isDeleting}
                             onClick={() => setDeleteTarget(null)}
                         >
@@ -637,6 +885,7 @@ export default function DigitalTranscriptHome() {
                         <Button
                             type="button"
                             variant="destructive"
+                            size={LEARNING_RECORD_BUTTON_SIZE}
                             disabled={isDeleting}
                             onClick={handleConfirmDelete}
                         >

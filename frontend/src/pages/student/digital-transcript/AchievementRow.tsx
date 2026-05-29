@@ -38,8 +38,8 @@ interface AchievementRowProps {
     onDeleteRequest?: () => void;
     activeStep?: number;
     onActiveStepChange?: (step: number) => void;
-    /** Funnel: same handler as toolbar Save changes. */
-    onSave?: () => void;
+    /** Funnel: validate metadata then navigate home (Finish button). */
+    onFinish?: () => void;
 }
 
 export function AchievementRow({
@@ -56,7 +56,7 @@ export function AchievementRow({
     onDeleteRequest,
     activeStep = 0,
     onActiveStepChange,
-    onSave
+    onFinish
 }: AchievementRowProps) {
     if (formVariant === 'funnel') {
         return (
@@ -71,7 +71,7 @@ export function AchievementRow({
                     showSaveErrors={showSaveErrors}
                     activeStep={activeStep}
                     onActiveStepChange={onActiveStepChange ?? (() => {})}
-                    onSave={onSave}
+                    onFinish={onFinish}
                 />
             </div>
         );

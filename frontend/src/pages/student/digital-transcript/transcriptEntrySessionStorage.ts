@@ -4,7 +4,8 @@ import {
     TRANSCRIPT_ENTRY_SESSION_VERSION,
     type TranscriptDraft,
     type TranscriptEntry,
-    type TranscriptEntrySession
+    type TranscriptEntrySession,
+    type TranscriptQ4Toggle
 } from '@/types/digital-transcript';
 
 function newId() {
@@ -35,8 +36,80 @@ function normalizeTopSkills(parsed: Record<string, unknown>): string[] {
     return [];
 }
 
+const Q5_TAGS_MAX = 2;
+
+function normalizeStringArray(raw: unknown, max: number): string[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .filter((x): x is string => typeof x === 'string')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, max);
+}
+
+function normalizeQ4Toggle(raw: unknown): TranscriptQ4Toggle | null {
+    if (raw === 'yes' || raw === 'notReally') return raw;
+    return null;
+}
+
+function emptyFunnelReflectionFields(): Pick<
+    TranscriptEntry,
+    | 'q4Toggle'
+    | 'q4Text'
+    | 'q5BeforeTags'
+    | 'q5AfterTags'
+    | 'q5FreeText'
+    | 'q7Text'
+    | 'q8Selections'
+    | 'q9Selections'
+> {
+    return {
+        q4Toggle: null,
+        q4Text: '',
+        q5BeforeTags: [],
+        q5AfterTags: [],
+        q5FreeText: '',
+        q7Text: '',
+        q8Selections: [],
+        q9Selections: []
+    };
+}
+
+function migrateLegacyFunnelFields(
+    parsed: Record<string, unknown>,
+    base: ReturnType<typeof emptyFunnelReflectionFields>
+): ReturnType<typeof emptyFunnelReflectionFields> {
+    const standoutMoment = strField(parsed.standoutMoment);
+    const pride = strField(parsed.pride);
+
+    let q4Toggle = base.q4Toggle;
+    let q4Text = base.q4Text;
+    if (!q4Toggle && !q4Text.trim() && standoutMoment.trim()) {
+        q4Toggle = 'yes';
+        q4Text = standoutMoment.trim();
+    }
+
+    let q5FreeText = base.q5FreeText;
+    if (!q5FreeText.trim() && pride.trim()) {
+        q5FreeText = pride.trim();
+    }
+
+    return { ...base, q4Toggle, q4Text, q5FreeText };
+}
+
 export function normalizeTranscriptEntry(parsed: Record<string, unknown>): TranscriptEntry {
     const e = parsed as Partial<TranscriptEntry>;
+    const funnelBase = migrateLegacyFunnelFields(parsed, {
+        q4Toggle: normalizeQ4Toggle(e.q4Toggle),
+        q4Text: strField(e.q4Text),
+        q5BeforeTags: normalizeStringArray(e.q5BeforeTags, Q5_TAGS_MAX),
+        q5AfterTags: normalizeStringArray(e.q5AfterTags, Q5_TAGS_MAX),
+        q5FreeText: strField(e.q5FreeText),
+        q7Text: strField(e.q7Text),
+        q8Selections: normalizeStringArray(e.q8Selections, 20),
+        q9Selections: normalizeStringArray(e.q9Selections, 20)
+    });
+
     return {
         id: strField(e.id) || newId(),
         createdAt: strField(e.createdAt) || new Date().toISOString(),
@@ -49,7 +122,8 @@ export function normalizeTranscriptEntry(parsed: Record<string, unknown>): Trans
         goalConnection: strField(e.goalConnection),
         pride: strField(e.pride),
         standoutMoment: strField(e.standoutMoment),
-        adviceToPeer: strField(e.adviceToPeer)
+        adviceToPeer: strField(e.adviceToPeer),
+        ...funnelBase
     };
 }
 
@@ -67,14 +141,19 @@ export function createEmptyTranscriptEntry(): TranscriptEntry {
         goalConnection: '',
         pride: '',
         standoutMoment: '',
-        adviceToPeer: ''
+        adviceToPeer: '',
+        ...emptyFunnelReflectionFields()
     };
 }
 
 export function cloneTranscriptEntry(e: TranscriptEntry): TranscriptEntry {
     return {
         ...e,
-        topSkills: [...e.topSkills]
+        topSkills: [...e.topSkills],
+        q5BeforeTags: [...e.q5BeforeTags],
+        q5AfterTags: [...e.q5AfterTags],
+        q8Selections: [...e.q8Selections],
+        q9Selections: [...e.q9Selections]
     };
 }
 
@@ -102,7 +181,15 @@ export function entryHasExportableContent(entry: TranscriptEntry): boolean {
         Boolean(entry.pride.trim()) ||
         Boolean(entry.standoutMoment.trim()) ||
         Boolean(entry.adviceToPeer.trim()) ||
-        Boolean(entry.oneSentence.trim())
+        Boolean(entry.oneSentence.trim()) ||
+        entry.q4Toggle !== null ||
+        Boolean(entry.q4Text.trim()) ||
+        entry.q5BeforeTags.length > 0 ||
+        entry.q5AfterTags.length > 0 ||
+        Boolean(entry.q5FreeText.trim()) ||
+        Boolean(entry.q7Text.trim()) ||
+        entry.q8Selections.length > 0 ||
+        entry.q9Selections.length > 0
     );
 }
 
@@ -139,6 +226,16 @@ function normalizeTranscriptDraft(parsed: Record<string, unknown>): TranscriptDr
         pride: strField(d.pride),
         standoutMoment: strField(d.standoutMoment),
         adviceToPeer: strField(d.adviceToPeer),
+        ...migrateLegacyFunnelFields(parsed, {
+            q4Toggle: normalizeQ4Toggle(d.q4Toggle),
+            q4Text: strField(d.q4Text),
+            q5BeforeTags: normalizeStringArray(d.q5BeforeTags, Q5_TAGS_MAX),
+            q5AfterTags: normalizeStringArray(d.q5AfterTags, Q5_TAGS_MAX),
+            q5FreeText: strField(d.q5FreeText),
+            q7Text: strField(d.q7Text),
+            q8Selections: normalizeStringArray(d.q8Selections, 20),
+            q9Selections: normalizeStringArray(d.q9Selections, 20)
+        }),
         editingEntryId:
             typeof d.editingEntryId === 'string' && d.editingEntryId.trim()
                 ? d.editingEntryId.trim()
@@ -177,6 +274,10 @@ export function writeTranscriptEntriesToStorage(list: TranscriptEntry[]) {
     localStorage.setItem(getDigitalTranscriptStorageKeys().entries, JSON.stringify(list));
 }
 
+function stringArraysEqual(a: string[], b: string[]): boolean {
+    return a.length === b.length && a.every((s, i) => s === b[i]);
+}
+
 export function entryPayloadEqual(a: TranscriptEntry, b: TranscriptEntry): boolean {
     return (
         a.programName === b.programName &&
@@ -188,8 +289,15 @@ export function entryPayloadEqual(a: TranscriptEntry, b: TranscriptEntry): boole
         a.pride === b.pride &&
         a.standoutMoment === b.standoutMoment &&
         a.adviceToPeer === b.adviceToPeer &&
-        a.topSkills.length === b.topSkills.length &&
-        a.topSkills.every((s, i) => s === b.topSkills[i])
+        a.q4Toggle === b.q4Toggle &&
+        a.q4Text === b.q4Text &&
+        a.q5FreeText === b.q5FreeText &&
+        a.q7Text === b.q7Text &&
+        stringArraysEqual(a.topSkills, b.topSkills) &&
+        stringArraysEqual(a.q5BeforeTags, b.q5BeforeTags) &&
+        stringArraysEqual(a.q5AfterTags, b.q5AfterTags) &&
+        stringArraysEqual(a.q8Selections, b.q8Selections) &&
+        stringArraysEqual(a.q9Selections, b.q9Selections)
     );
 }
 
@@ -269,7 +377,15 @@ function draftHasContent(d: TranscriptDraft): boolean {
         Boolean(d.pride.trim()) ||
         Boolean(d.standoutMoment.trim()) ||
         Boolean(d.adviceToPeer.trim()) ||
-        Boolean(d.oneSentence.trim())
+        Boolean(d.oneSentence.trim()) ||
+        d.q4Toggle !== null ||
+        Boolean(d.q4Text.trim()) ||
+        d.q5BeforeTags.length > 0 ||
+        d.q5AfterTags.length > 0 ||
+        Boolean(d.q5FreeText.trim()) ||
+        Boolean(d.q7Text.trim()) ||
+        d.q8Selections.length > 0 ||
+        d.q9Selections.length > 0
     );
 }
 
@@ -284,7 +400,15 @@ function entryFromDraft(d: TranscriptDraft, committed: TranscriptEntry[]): Trans
         goalConnection: d.goalConnection,
         pride: d.pride,
         standoutMoment: d.standoutMoment,
-        adviceToPeer: d.adviceToPeer
+        adviceToPeer: d.adviceToPeer,
+        q4Toggle: d.q4Toggle,
+        q4Text: d.q4Text,
+        q5BeforeTags: [...d.q5BeforeTags],
+        q5AfterTags: [...d.q5AfterTags],
+        q5FreeText: d.q5FreeText,
+        q7Text: d.q7Text,
+        q8Selections: [...d.q8Selections],
+        q9Selections: [...d.q9Selections]
     };
     if (d.editingEntryId) {
         const prev = committed.find((e) => e.id === d.editingEntryId);

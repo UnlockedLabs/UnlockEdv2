@@ -140,7 +140,9 @@ export function LearningRecordDocument({
         (state !== 'empty' || Boolean(emptyPh) || skeletonEmpty);
 
     const showProgram = !filledSectionsOnly || isProgramSectionFilled(source);
-    const showCompleted = !filledSectionsOnly || isCompletedSectionFilled(source);
+    const showCompleted = isFunnel
+        ? isCompletedSectionFilled(source)
+        : !filledSectionsOnly || isCompletedSectionFilled(source);
     const showConfidence =
         !isFunnel && (!filledSectionsOnly || isConfidenceSectionFilled(source));
     const showSkills = !isFunnel && (!filledSectionsOnly || isSkillsSectionFilled(source));
@@ -227,7 +229,7 @@ export function LearningRecordDocument({
                     {showFunnelHeader ? (
                         <header
                             data-slot="funnel-achievement-header"
-                            className="shrink-0 space-y-3 border-b border-border/60 px-4 py-4"
+                            className="shrink-0 space-y-3 border-b border-border bg-muted/30 px-4 py-4"
                         >
                             {residentDisplayName || !filledSectionsOnly ? (
                                 <p className="text-base font-medium text-foreground">
@@ -241,7 +243,7 @@ export function LearningRecordDocument({
                                     {showProgram ? (
                                         <div className="min-w-0 flex-1 space-y-1">
                                             <SectionLabel id="lr-funnel-program">
-                                                {labels.program}
+                                                Achievement
                                             </SectionLabel>
                                             <p className="text-sm text-foreground">
                                                 {source.programName.trim() ? (
@@ -269,18 +271,7 @@ export function LearningRecordDocument({
                                             <SectionLabel id="lr-funnel-completed">
                                                 {labels.completed}
                                             </SectionLabel>
-                                            <p className="text-sm text-foreground">
-                                                {dateShown != null && dateShown !== '' ? (
-                                                    dateShown
-                                                ) : (
-                                                    <EmptySlot
-                                                        fallback={<PlaceholderText>Date</PlaceholderText>}
-                                                        skeleton={
-                                                            <SkeletonBar className="inline-block h-3.5 w-36" />
-                                                        }
-                                                    />
-                                                )}
-                                            </p>
+                                            <p className="text-sm text-foreground">{dateShown}</p>
                                         </div>
                                     ) : null}
                                 </div>

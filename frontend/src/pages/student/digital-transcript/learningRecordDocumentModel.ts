@@ -13,6 +13,14 @@ export type LearningRecordDocumentSource = Pick<
     | 'standoutMoment'
     | 'adviceToPeer'
     | 'oneSentence'
+    | 'q4Toggle'
+    | 'q4Text'
+    | 'q5BeforeTags'
+    | 'q5AfterTags'
+    | 'q5FreeText'
+    | 'q7Text'
+    | 'q8Selections'
+    | 'q9Selections'
 >;
 
 export type LearningRecordPreviewState = 'empty' | 'partial' | 'complete';
@@ -82,14 +90,22 @@ export function hasFilledNarrativeSections(source: LearningRecordDocumentSource)
     );
 }
 
-/** Funnel preview — all reflection fields live in the right column. */
+/** Funnel preview — narrative column has any answered reflection field. */
 export function hasFilledFunnelReflectionSections(
     source: LearningRecordDocumentSource
 ): boolean {
     return (
-        hasFilledNarrativeSections(source) ||
-        isConfidenceSectionFilled(source) ||
-        isSkillsSectionFilled(source)
+        slotText(source.whatMadeYouFinish) ||
+        source.q4Toggle === 'yes' ||
+        source.q5BeforeTags.length > 0 ||
+        source.q5AfterTags.length > 0 ||
+        slotText(source.q5FreeText) ||
+        slotText(source.adviceToPeer) ||
+        slotConfidence(source) ||
+        slotText(source.q7Text) ||
+        source.q8Selections.length > 0 ||
+        source.q9Selections.length > 0 ||
+        slotText(source.oneSentence)
     );
 }
 

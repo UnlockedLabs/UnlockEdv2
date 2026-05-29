@@ -98,7 +98,7 @@ export const LearningRecordExportContent = forwardRef<
                     programCount={rows.length}
                 />
             ) : null}
-            <div className={cn('flex flex-col pb-4', isFunnel ? 'gap-3' : 'gap-5')}>
+            <div className={cn('flex flex-col', embeddedLivePreview ? 'pb-0' : 'pb-4', isFunnel ? 'gap-3' : 'gap-5')}>
                 {rows.map((entry) => (
                     <article
                         key={entry.id}

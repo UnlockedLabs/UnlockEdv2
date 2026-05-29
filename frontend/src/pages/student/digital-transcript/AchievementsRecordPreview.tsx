@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import { sortEntriesNewestFirst } from './transcriptEntrySessionStorage';
 import { LearningRecordExportContent } from './LearningRecordExportContent';
+import { learningRecordOutlineButtonClassName, LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 
 export interface FunnelDownloadProps {
@@ -65,9 +66,9 @@ export function AchievementsRecordPreview({
                         <Button
                             type="button"
                             variant="outline"
-                            size="sm"
+                            size={LEARNING_RECORD_BUTTON_SIZE}
                             data-slot="digital-transcript-download"
-                            className="gap-1.5 bg-background"
+                            className={learningRecordOutlineButtonClassName}
                             disabled={!funnelDownload.canDownload}
                             aria-busy={funnelDownload.isExporting}
                             onClick={funnelDownload.onDownload}
@@ -79,7 +80,7 @@ export function AchievementsRecordPreview({
                             )}
                             {funnelDownload.isExporting
                                 ? 'Downloading…'
-                                : 'Download Achievement PDF'}
+                                : 'Download achievement as PDF'}
                         </Button>
                     </div>
                 ) : null}

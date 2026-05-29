@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { ConfidenceSegmentedControl } from './ConfidenceSegmentedControl';
 import {
+    CONFIDENCE_RADIO_OPTIONS,
     DOCUMENT_PREVIEW_LABELS,
     FUNNEL_PREVIEW_LABELS,
     FUNNEL_PREVIEW_SECTIONS,
-    funnelReflectionFieldAnswered,
+    funnelPreviewFieldAnswered,
     LEARNING_RECORD_PREVIEW_LABELS,
-    type ReflectionAnswerKey
+    type FunnelPreviewFieldKey
 } from './transcriptReflectionConfig';
 import {
     isAdviceSectionFilled,
@@ -22,11 +22,27 @@ import {
 const narrativeBodyClass =
     'whitespace-pre-wrap text-[14px] font-normal leading-[1.6] text-foreground';
 
-function SectionLabel({ id, children }: { id: string; children: ReactNode }) {
+const funnelAnswerClass =
+    'mb-1 whitespace-pre-wrap text-[14px] font-normal leading-[1.6] text-foreground';
+
+const funnelAnswerGroupClass = '[&>*:last-child]:mb-0';
+
+function SectionLabel({
+    id,
+    children,
+    className
+}: {
+    id: string;
+    children: ReactNode;
+    className?: string;
+}) {
     return (
         <h3
             id={id}
-            className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground"
+            className={cn(
+                'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground',
+                className
+            )}
         >
             {children}
         </h3>
@@ -57,69 +73,135 @@ interface LearningRecordDocumentNarrativeProps {
     SkeletonLines: (props: { count?: number }) => ReactNode;
 }
 
-function funnelSkillsText(source: LearningRecordDocumentSource): string {
-    return source.topSkills.filter(Boolean).join(' ').trim();
-}
-
-function funnelFieldText(source: LearningRecordDocumentSource, key: ReflectionAnswerKey): string {
-    if (key === 'topSkills') return funnelSkillsText(source);
-    if (key === 'confidence') return source.confidence.trim();
-    return source[key].trim();
+function FunnelPreviewFieldContent({
+    source,
+    field
+}: {
+    source: LearningRecordDocumentSource;
+    field: FunnelPreviewFieldKey;
+}) {
+    switch (field) {
+        case 'whatMadeYouFinish':
+            return <p className={funnelAnswerClass}>{source.whatMadeYouFinish.trim()}</p>;
+        case 'q4': {
+            const text = source.q4Text.trim();
+            return (
+                <p className={funnelAnswerClass}>{text || 'Yes'}</p>
+            );
+        }
+        case 'q5':
+            return (
+                <div className={funnelAnswerGroupClass}>
+                    {source.q5BeforeTags.length > 0 ? (
+                        <p className={funnelAnswerClass}>
+                            <span className="font-bold">Before:</span>{' '}
+                            {source.q5BeforeTags.join(', ')}
+                        </p>
+                    ) : null}
+                    {source.q5AfterTags.length > 0 ? (
+                        <p className={funnelAnswerClass}>
+                            <span className="font-bold">After:</span>{' '}
+                            {source.q5AfterTags.join(', ')}
+                        </p>
+                    ) : null}
+                    {source.q5FreeText.trim() ? (
+                        <p className={funnelAnswerClass}>{source.q5FreeText.trim()}</p>
+                    ) : null}
+                </div>
+            );
+        case 'adviceToPeer':
+            return <p className={funnelAnswerClass}>{source.adviceToPeer.trim()}</p>;
+        case 'confidence': {
+            const conf = source.confidence.trim();
+            const confidenceRow = CONFIDENCE_RADIO_OPTIONS.find(([v]) => v === conf);
+            return (
+                <div className={funnelAnswerGroupClass}>
+                    <p className={funnelAnswerClass}>
+                        {confidenceRow ? (
+                            <>
+                                <span className="font-bold">{conf}</span>
+                                {' — '}
+                                {confidenceRow[1]}
+                            </>
+                        ) : (
+                            conf
+                        )}
+                    </p>
+                    {source.q7Text.trim() ? (
+                        <p className={funnelAnswerClass}>{source.q7Text.trim()}</p>
+                    ) : null}
+                </div>
+            );
+        }
+        case 'q8Selections':
+        case 'q9Selections': {
+            const items = source[field];
+            return (
+                <ul
+                    className={cn(
+                        'list-disc pl-5 text-[14px] leading-[1.6] text-foreground',
+                        funnelAnswerGroupClass
+                    )}
+                >
+                    {items.map((item) => (
+                        <li key={item} className={funnelAnswerClass}>
+                            {item}
+                        </li>
+                    ))}
+                </ul>
+            );
+        }
+        default:
+            return null;
+    }
 }
 
 function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSource }) {
+    const showSummary = Boolean(source.oneSentence.trim());
+
     return (
         <div className="flex min-w-0 flex-col gap-3">
+            {showSummary ? (
+                <div className="break-inside-avoid">
+                    <p className="font-serif text-[20px] font-normal leading-[1.4] text-center text-foreground">
+                        &ldquo;{source.oneSentence.trim()}&rdquo;
+                    </p>
+                </div>
+            ) : null}
+
             {FUNNEL_PREVIEW_SECTIONS.map((section) => {
                 const sectionHasAnswers = section.fields.some((field) =>
-                    funnelReflectionFieldAnswered(source, field)
+                    funnelPreviewFieldAnswered(source, field)
                 );
                 if (!sectionHasAnswers) return null;
 
                 return (
                     <div key={section.id} className="space-y-3">
-                        <div className="my-3 flex items-center gap-3 break-inside-avoid">
+                        <div className="flex break-inside-avoid items-center justify-center rounded-[24px] border border-border bg-muted/30 py-0.5">
                             <span
                                 id={`lr-funnel-section-${section.id}`}
-                                className="whitespace-nowrap text-xs font-medium uppercase tracking-widest text-black"
+                                className="text-xs font-semibold uppercase tracking-widest text-black"
                             >
                                 {section.title}
                             </span>
-                            <div className="flex-1 border-t border-border/60" />
                         </div>
 
                         {section.fields.map((field) => {
-                            if (!funnelReflectionFieldAnswered(source, field)) return null;
+                            if (!funnelPreviewFieldAnswered(source, field)) return null;
 
                             const labelId = `lr-funnel-field-${field}`;
                             const caption = FUNNEL_PREVIEW_LABELS[field];
 
-                            if (field === 'confidence') {
-                                return (
-                                    <section
-                                        key={field}
-                                        aria-labelledby={labelId}
-                                        className="break-inside-avoid space-y-2"
-                                    >
-                                        <SectionLabel id={labelId}>{caption}</SectionLabel>
-                                        <ConfidenceSegmentedControl
-                                            value={source.confidence}
-                                            labelledBy={labelId}
-                                            readOnly
-                                        />
-                                    </section>
-                                );
-                            }
-
-                            const text = funnelFieldText(source, field);
                             return (
                                 <section
                                     key={field}
                                     aria-labelledby={labelId}
-                                    className="break-inside-avoid space-y-2"
+                                    className="break-inside-avoid"
                                 >
-                                    <SectionLabel id={labelId}>{caption}</SectionLabel>
-                                    <p className={narrativeBodyClass}>{text}</p>
+                                    <SectionLabel id={labelId} className="pb-1 text-[10px]">
+                                        {caption}
+                                    </SectionLabel>
+                                    <FunnelPreviewFieldContent source={source} field={field} />
                                 </section>
                             );
                         })}

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 
 /** Page canvas — shadcn `muted` surface */
 export const dtPageSurface = 'bg-muted';
@@ -54,8 +55,8 @@ export function DigitalTranscriptBackLink({
         <Button
             asChild
             variant="ghost"
-            size="sm"
-            className="group gap-1.5 text-primary hover:bg-muted hover:text-primary"
+            size={LEARNING_RECORD_BUTTON_SIZE}
+            className="group h-10 gap-1.5 text-primary hover:bg-muted hover:text-primary"
         >
             <Link to={to} data-slot="digital-transcript-back">
                 <span

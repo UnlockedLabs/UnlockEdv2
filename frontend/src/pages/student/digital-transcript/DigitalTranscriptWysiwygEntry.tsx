@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/shared';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { TranscriptEntry } from '@/types/digital-transcript';
@@ -27,9 +28,11 @@ import {
 import { AchievementRow } from './AchievementRow';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
+import { LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import {
     countFunnelFieldsAnswered,
     countFunnelStepFieldsAnswered,
+    countFunnelStepFieldsTotal,
     funnelCompletionTier,
     FUNNEL_FORM_FIELD_TOTAL,
     FUNNEL_FORM_STEPS,
@@ -135,11 +138,18 @@ function toFunnelSingleRowSession(
     };
 }
 
-export interface FunnelToolbarHandlers {
-    save: () => boolean;
-    cancel: () => void;
-    hasUnsavedChanges: () => boolean;
+export type AutoSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
+export interface FunnelAutoSaveState {
+    status: AutoSaveStatus;
+    lastSavedAt: Date | null;
 }
+
+export interface FunnelFinishHandlers {
+    validateFinishRequirements: () => boolean;
+}
+
+const COMMITTED_AUTOSAVE_MS = 500;
 
 interface DigitalTranscriptWysiwygEntryProps {
     formVariant: LearningRecordFormVariant;
@@ -149,10 +159,12 @@ interface DigitalTranscriptWysiwygEntryProps {
     deleteCommittedEntry: (id: string) => TranscriptEntrySession | null;
     /** Live session rows for PDF export (includes in-progress autosaved work). */
     onExportRowsChange?: (rows: TranscriptEntry[]) => void;
-    /** Funnel: same handler as toolbar Save changes (validate, commit, navigate). */
-    funnelOnSave?: () => void;
-    /** Funnel: register Save / Cancel / unsaved-check for the entry toolbar. */
-    onRegisterFunnelToolbar?: (handlers: FunnelToolbarHandlers) => void;
+    /** Funnel: validate metadata then navigate home (Finish button). */
+    funnelOnFinish?: () => void;
+    /** Funnel: register Finish validation for the entry page. */
+    onRegisterFunnelFinish?: (handlers: FunnelFinishHandlers) => void;
+    /** Funnel: report debounced auto-save status for the toolbar label. */
+    onFunnelAutoSaveStatusChange?: (state: FunnelAutoSaveState) => void;
     /** Funnel: PDF download wired from the entry page (rendered in the preview pane). */
     funnelDownload?: FunnelDownloadProps;
 }
@@ -166,8 +178,9 @@ export function DigitalTranscriptWysiwygEntry({
     upsertCommittedEntry,
     deleteCommittedEntry,
     onExportRowsChange,
-    funnelOnSave,
-    onRegisterFunnelToolbar,
+    funnelOnFinish,
+    onRegisterFunnelFinish,
+    onFunnelAutoSaveStatusChange,
     funnelDownload
 }: DigitalTranscriptWysiwygEntryProps) {
     const isFunnel = formVariant === 'funnel';
@@ -233,50 +246,61 @@ export function DigitalTranscriptWysiwygEntry({
         if (s.expandedId) {
             captureBaseline(s.expandedId, s.rows);
             prevExpandedIdRef.current = s.expandedId;
+
+            if (isFunnel && onFunnelAutoSaveStatusChange) {
+                const row = s.rows.find((r) => r.id === s.expandedId);
+                const committedEntry = committed.find((e) => e.id === s.expandedId);
+                if (row && committedEntry && entryPayloadEqual(row, committedEntry)) {
+                    onFunnelAutoSaveStatusChange({ status: 'saved', lastSavedAt: null });
+                }
+            }
         }
-    }, [hydrated, searchParams, setSearchParams, captureBaseline, isFunnel]);
+    }, [hydrated, searchParams, setSearchParams, captureBaseline, isFunnel, onFunnelAutoSaveStatusChange]);
 
-    const hasUnsavedChanges = useCallback((): boolean => {
-        const current = sessionRef.current;
-        if (!current?.expandedId) return false;
-        const row = current.rows.find((r) => r.id === current.expandedId);
-        if (!row) return false;
-        const baseline = baselinesRef.current[row.id];
-        if (!baseline) return entryHasExportableContent(row);
-        return !entryPayloadEqual(row, baseline);
-    }, []);
+    const reportAutoSaveStatus = useCallback(
+        (status: AutoSaveStatus, lastSavedAt: Date | null = null) => {
+            onFunnelAutoSaveStatusChange?.({ status, lastSavedAt });
+        },
+        [onFunnelAutoSaveStatusChange]
+    );
 
-    const discardActiveRow = useCallback(() => {
-        const current = sessionRef.current;
-        if (!current?.expandedId) return;
-        const id = current.expandedId;
-        const baseline = baselinesRef.current[id];
-        const committed = readTranscriptEntriesFromStorage().some((e) => e.id === id);
-        const row = current.rows.find((r) => r.id === id);
-        const restored = baseline
-            ? cloneTranscriptEntry(baseline)
-            : row
-              ? cloneTranscriptEntry(row)
-              : null;
-        if (!restored) return;
-
-        let rows = current.rows.map((r) => (r.id === id ? restored : r));
-        if (!committed && !entryHasExportableContent(restored)) {
-            rows = rows.filter((r) => r.id !== id);
-        }
-        const expandedId = rows.some((r) => r.id === id) ? id : (rows[0]?.id ?? null);
-        const next: TranscriptEntrySession = {
-            ...current,
-            rows,
-            expandedId,
-            lastPreviewId: expandedId
+    const buildSavedEntry = useCallback((row: TranscriptEntry): TranscriptEntry => {
+        const existing = readTranscriptEntriesFromStorage().find((e) => e.id === row.id);
+        return {
+            ...row,
+            createdAt: existing?.createdAt ?? row.createdAt,
+            topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
         };
-        writeEntrySessionToStorage(next);
-        dispatchEntrySessionUpdated();
-        setSession(next);
     }, []);
 
-    const handleSave = useCallback((): boolean => {
+    const persistActiveRow = useCallback((): boolean => {
+        const current = sessionRef.current;
+        const id = current?.expandedId;
+        if (!id) return false;
+        const row = current.rows.find((r) => r.id === id);
+        if (!row) return false;
+
+        const saved = buildSavedEntry(row);
+        const existing = readTranscriptEntriesFromStorage().find((e) => e.id === id);
+        if (existing && entryPayloadEqual(saved, existing)) {
+            return true;
+        }
+
+        try {
+            upsertCommittedEntry(saved);
+            setSession((prev) => {
+                if (!prev) return prev;
+                const next = syncSessionRowsAfterUpsert(prev, saved);
+                return { ...next, expandedId: saved.id, lastPreviewId: saved.id };
+            });
+            baselinesRef.current[id] = cloneTranscriptEntry(saved);
+            return true;
+        } catch {
+            return false;
+        }
+    }, [buildSavedEntry, upsertCommittedEntry]);
+
+    const validateFinishRequirements = useCallback((): boolean => {
         const current = sessionRef.current;
         const id = current?.expandedId;
         if (!id) return false;
@@ -284,41 +308,54 @@ export function DigitalTranscriptWysiwygEntry({
         if (!row) return false;
 
         const programOk = Boolean(row.programName.trim());
-        const dateOk = Boolean(row.completionDate.trim());
-        if (!programOk || !dateOk) {
+        if (!programOk) {
             setSaveErrorRowId(id);
             setActiveStep(0);
             return false;
         }
 
         setSaveErrorRowId(null);
-        const saved: TranscriptEntry = {
-            ...row,
-            topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
-        };
-        upsertCommittedEntry(saved);
-        setSession((prev) => {
-            if (!prev) return prev;
-            const next = syncSessionRowsAfterUpsert(prev, saved);
-            return { ...next, expandedId: saved.id, lastPreviewId: saved.id };
-        });
-        baselinesRef.current[id] = cloneTranscriptEntry(saved);
         return true;
-    }, [upsertCommittedEntry]);
-
-    const handleFunnelCancel = useCallback(() => {
-        setSaveErrorRowId(null);
-        discardActiveRow();
-    }, [discardActiveRow]);
+    }, []);
 
     useEffect(() => {
-        if (!isFunnel || !onRegisterFunnelToolbar) return;
-        onRegisterFunnelToolbar({
-            save: handleSave,
-            cancel: handleFunnelCancel,
-            hasUnsavedChanges
-        });
-    }, [isFunnel, onRegisterFunnelToolbar, handleSave, handleFunnelCancel, hasUnsavedChanges]);
+        if (!isFunnel || !onRegisterFunnelFinish) return;
+        onRegisterFunnelFinish({ validateFinishRequirements });
+    }, [isFunnel, onRegisterFunnelFinish, validateFinishRequirements]);
+
+    useEffect(() => {
+        if (!isFunnel || !session?.expandedId || !onFunnelAutoSaveStatusChange) return;
+
+        const row = session.rows.find((r) => r.id === session.expandedId);
+        if (!row) return;
+
+        const saved = buildSavedEntry(row);
+        const committed = readTranscriptEntriesFromStorage().find((e) => e.id === row.id);
+        if (committed && entryPayloadEqual(saved, committed)) {
+            return;
+        }
+
+        reportAutoSaveStatus('pending');
+
+        const t = window.setTimeout(() => {
+            reportAutoSaveStatus('saving');
+            const ok = persistActiveRow();
+            if (ok) {
+                reportAutoSaveStatus('saved', new Date());
+            } else {
+                reportAutoSaveStatus('error');
+            }
+        }, COMMITTED_AUTOSAVE_MS);
+
+        return () => window.clearTimeout(t);
+    }, [
+        isFunnel,
+        session,
+        buildSavedEntry,
+        persistActiveRow,
+        reportAutoSaveStatus,
+        onFunnelAutoSaveStatusChange
+    ]);
 
     useEffect(() => {
         if (!session) return;
@@ -493,24 +530,45 @@ export function DigitalTranscriptWysiwygEntry({
                     className="mx-4 mt-4 shrink-0 p-4"
                 >
                     <div className="flex items-start gap-4">
-                        <div className="grid min-w-0 flex-1 grid-cols-3 gap-4">
+                        <div
+                            role="tablist"
+                            aria-label="Form sections"
+                            className="grid min-w-0 flex-1 grid-cols-3 gap-4 overflow-x-auto"
+                        >
                             {FUNNEL_FORM_STEPS.map((step, index) => {
                                 const answered = countFunnelStepFieldsAnswered(
                                     index,
                                     funnelEntry
                                 );
-                                const total = step.fields.length;
+                                const total = countFunnelStepFieldsTotal(index);
                                 const fillPct =
                                     total > 0 ? (answered / total) * 100 : 0;
                                 const isActive = index === activeStep;
                                 return (
-                                    <div key={step.id} className="min-w-0 space-y-1.5">
+                                    <button
+                                        key={step.id}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={isActive}
+                                        tabIndex={isActive ? 0 : -1}
+                                        className={cn(
+                                            'min-w-0 space-y-1.5 px-2 py-2 text-left transition-all duration-150',
+                                            isActive
+                                                ? 'rounded-md border border-[#556830] bg-background'
+                                                : 'cursor-pointer rounded-md border border-transparent hover:bg-muted'
+                                        )}
+                                        onClick={() => {
+                                            if (index !== activeStep) {
+                                                setActiveStep(index);
+                                            }
+                                        }}
+                                    >
                                         <span
                                             className={cn(
-                                                'block text-xs leading-snug',
+                                                'block whitespace-nowrap text-xs leading-snug',
                                                 isActive
-                                                    ? 'font-bold text-foreground'
-                                                    : 'font-medium text-muted-foreground'
+                                                    ? 'font-semibold text-foreground'
+                                                    : 'font-normal text-muted-foreground hover:text-foreground'
                                             )}
                                         >
                                             {step.title} ({answered}/{total})
@@ -523,7 +581,7 @@ export function DigitalTranscriptWysiwygEntry({
                                                 aria-label={`${step.title}: ${answered} of ${total} answered`}
                                             />
                                         </span>
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>
@@ -580,7 +638,7 @@ export function DigitalTranscriptWysiwygEntry({
                                         showSaveErrors={saveErrorRowId === entry.id}
                                         activeStep={activeStep}
                                         onActiveStepChange={setActiveStep}
-                                        onSave={funnelOnSave}
+                                        onFinish={funnelOnFinish}
                                         showDelete={committedIds.has(entry.id)}
                                         onDeleteRequest={() => setDeleteConfirmFor(entry)}
                                     />
@@ -597,15 +655,17 @@ export function DigitalTranscriptWysiwygEntry({
                             <h1 className="text-base font-semibold tracking-tight text-foreground">
                                 Your achievements
                             </h1>
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size={LEARNING_RECORD_BUTTON_SIZE}
                                 data-slot="transcript-add-achievement"
                                 onClick={handleAdd}
-                                className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#556830] transition-colors duration-150 hover:text-[#203622] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                className="h-10 shrink-0 gap-1.5 px-3 text-[#556830] hover:bg-muted hover:text-[#203622]"
                             >
                                 <Plus className="size-4" aria-hidden />
                                 Add achievement
-                            </button>
+                            </Button>
                         </div>
 
                         <div
@@ -672,6 +732,7 @@ export function DigitalTranscriptWysiwygEntry({
                 confirmLabel="Delete"
                 cancelLabel="Cancel"
                 variant="destructive"
+                buttonClassName="h-10"
                 onConfirm={() => {
                     const target = deleteConfirmFor;
                     setDeleteConfirmFor(null);
