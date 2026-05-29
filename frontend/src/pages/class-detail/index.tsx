@@ -219,6 +219,7 @@ export default function ClassDetailPage() {
                     cls={cls}
                     attendanceRate={attendanceRate}
                     atRiskCount={atRiskCount}
+                    isCanvasClass={isCanvasClass}
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">

@@ -24,6 +24,7 @@ interface StatCardsProps {
     cls: Class;
     attendanceRate: number;
     atRiskCount: number;
+    isCanvasClass?: boolean;
 }
 
 function getNextClassDate(cls: Class): { date: string; time: string } | null {
@@ -184,7 +185,8 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
 export function StatCards({
     cls,
     attendanceRate,
-    atRiskCount
+    atRiskCount,
+    isCanvasClass = false
 }: StatCardsProps) {
     const avgRate = Math.round(attendanceRate);
     const capacityPct =
@@ -198,18 +200,26 @@ export function StatCards({
                     <Users className="size-5 text-brand shrink-0" />
                     <h3 className="text-brand-dark truncate">Enrollment</h3>
                 </div>
-                <div className="text-3xl text-brand-dark mb-2">
-                    {cls.enrolled} / {cls.capacity}
-                </div>
-                <Progress
-                    value={capacityPct}
-                    className="h-2 mb-3"
-                    indicatorClassName="bg-brand"
-                />
-                <div className="text-sm text-gray-600">
-                    {spotsAvailable} {spotsAvailable === 1 ? 'spot' : 'spots'}{' '}
-                    available
-                </div>
+                {isCanvasClass ? (
+                    <div className="text-3xl text-brand-dark">
+                        {cls.enrolled}
+                    </div>
+                ) : (
+                    <>
+                        <div className="text-3xl text-brand-dark mb-2">
+                            {cls.enrolled} / {cls.capacity}
+                        </div>
+                        <Progress
+                            value={capacityPct}
+                            className="h-2 mb-3"
+                            indicatorClassName="bg-brand"
+                        />
+                        <div className="text-sm text-gray-600">
+                            {spotsAvailable}{' '}
+                            {spotsAvailable === 1 ? 'spot' : 'spots'} available
+                        </div>
+                    </>
+                )}
             </div>
 
             <div className="card-block p-6">
