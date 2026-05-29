@@ -75,7 +75,7 @@ func (srv *Server) getCanvasProviderPrograms() ([]models.ProgramsOverviewTable, 
 // per-course enrollment-state calls and can be added as a follow-up.
 func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform) (models.ProgramsOverviewTable, error) {
 	url := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID +
-		"/courses?include[]=total_students&per_page=100"
+		"/courses?per_page=100"
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -98,7 +98,7 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 		return models.ProgramsOverviewTable{}, err
 	}
 
-	var totalClasses, activeClasses, totalEnrollments int64
+	var totalClasses, activeClasses int64
 	now := time.Now()
 	totalClasses = int64(len(courses))
 
@@ -112,10 +112,12 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 		if isActive {
 			activeClasses++
 		}
-		if ts, ok := course["total_students"].(float64); ok {
-			totalEnrollments += int64(ts)
-		}
 	}
+
+	var totalEnrollments int64
+	srv.Db.Model(&models.ProviderUserMapping{}).
+		Where("provider_platform_id = ?", provider.ID).
+		Count(&totalEnrollments)
 
 	programID := models.CanvasProgramIDOffset + provider.ID
 	return models.ProgramsOverviewTable{
