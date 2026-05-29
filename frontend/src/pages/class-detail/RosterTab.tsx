@@ -6,7 +6,8 @@ import {
     Plus,
     Edit,
     MoreVertical,
-    UserMinus
+    UserMinus,
+    SquarePen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,11 +40,13 @@ import { ChangeEnrollmentStatusModal } from './ChangeEnrollmentStatusModal';
 import { UnenrollResidentModal } from './UnenrollResidentModal';
 import { BulkGraduateModal } from './BulkGraduateModal';
 import { EnrollResidentsModal } from './EnrollResidentsModal';
+import { EditEnrollmentDateModal } from './EditEnrollmentDateModal';
 
 interface RosterTabProps {
     classId: number;
     classFacilityId: number;
     classStatus: string;
+    classStartDt: string;
     className: string;
     capacity: number;
     enrolled: number;
@@ -69,6 +72,7 @@ export function RosterTab({
     classId,
     classFacilityId,
     classStatus,
+    classStartDt,
     className,
     capacity,
     enrolled,
@@ -81,6 +85,8 @@ export function RosterTab({
     const [statusModalEnrollment, setStatusModalEnrollment] =
         useState<ClassEnrollment | null>(null);
     const [unenrollTarget, setUnenrollTarget] =
+        useState<ClassEnrollment | null>(null);
+    const [editDateTarget, setEditDateTarget] =
         useState<ClassEnrollment | null>(null);
     const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -95,10 +101,7 @@ export function RosterTab({
         `/api/program-classes/${classId}/events?all=true`
     );
 
-    const enrolledRows = useMemo(
-        () => enrollmentResp?.data ?? [],
-        [enrollmentResp]
-    );
+    const enrolledRows = enrollmentResp?.data ?? [];
 
     const attendanceMap = useMemo(() => {
         return computeAttendanceByUser(eventsResp?.data ?? []);
@@ -153,6 +156,21 @@ export function RosterTab({
             onClassMutate();
         } else {
             toast.error(resp.message || 'Failed to graduate residents');
+        }
+    };
+
+    const handleEditDateSubmit = async (newDateIso: string) => {
+        if (!editDateTarget) return;
+        const resp = await API.patch<unknown, { enrolled_date: string }>(
+            `program-classes/${classId}/enrollments/${editDateTarget.id}/date`,
+            { enrolled_date: newDateIso }
+        );
+        if (resp.success) {
+            toast.success('Enrollment date updated');
+            void mutate();
+            onClassMutate();
+        } else {
+            toast.error(resp.message || 'Failed to update enrollment date');
         }
     };
 
@@ -305,12 +323,33 @@ export function RosterTab({
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm text-gray-600">
+                                            <span className="text-sm text-gray-600 inline-flex items-center gap-1">
                                                 Enrolled:{' '}
-                                                {new Date(
-                                                    enrollment.enrolled_at ??
+                                                {
+                                                    (
+                                                        enrollment.enrolled_at ??
                                                         enrollment.created_at
-                                                ).toLocaleDateString('en-CA')}
+                                                    ).split('T')[0]
+                                                }
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            className="text-gray-500 hover:text-brand-dark transition-colors p-0.5 rounded"
+                                                            onClick={() =>
+                                                                setEditDateTarget(
+                                                                    enrollment
+                                                                )
+                                                            }
+                                                            aria-label={`Edit enrollment date for ${enrollment.doc_id ?? enrollment.name_full ?? 'resident'}`}
+                                                        >
+                                                            <SquarePen className="size-4" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top">
+                                                        Edit enrollment date
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             </span>
                                             {needsSupport && (
                                                 <Badge
@@ -489,6 +528,22 @@ export function RosterTab({
                             newStatus,
                             reason
                         )
+                    }
+                />
+            )}
+
+            {editDateTarget && (
+                <EditEnrollmentDateModal
+                    open={!!editDateTarget}
+                    onClose={() => setEditDateTarget(null)}
+                    residentDisplayId={editDateTarget.doc_id ?? ''}
+                    residentName={editDateTarget.name_full ?? ''}
+                    currentEnrolledAt={
+                        editDateTarget.enrolled_at ?? editDateTarget.created_at
+                    }
+                    classStartDt={classStartDt}
+                    onSubmit={(newDateIso) =>
+                        void handleEditDateSubmit(newDateIso)
                     }
                 />
             )}
