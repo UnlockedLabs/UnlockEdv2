@@ -73,7 +73,7 @@ export default function FeatureControl() {
 
     const isDisabling = pending ? !pending.newValue : false;
     const affectsResidents =
-        pending?.target.key !== FeatureAccess.ProviderAccess;
+        pending?.target.key !== FeatureAccess.ProgramAccess;
 
     return (
         <div className="p-6 space-y-6">
@@ -106,8 +106,8 @@ export default function FeatureControl() {
                         />
                     </div>
 
-                    <div className="mt-4 bg-[#E2E7EA] rounded-md p-4">
-                        <div className="flex items-start gap-2 mb-4 text-sm text-gray-700">
+                    <div className="mt-4 bg-surface-hover rounded-md p-4">
+                        <div className="flex items-start gap-2 mb-4 text-sm text-muted-foreground">
                             <AlertCircle className="size-4 shrink-0" />
                             <span>Sub-features (only available when Knowledge Center is enabled)</span>
                         </div>
