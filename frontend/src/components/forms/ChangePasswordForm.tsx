@@ -68,7 +68,7 @@ export default function ChangePasswordForm() {
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);
     const passwordsMatch = password === confirm;
-    const validTimezone = !isFirstLogin || !!timezone;
+    const validTimezone = !isFirstLogin || timezone;
     const isValid =
         isLengthValid && hasNumber && passwordsMatch && validTimezone;
     const validFacility =
