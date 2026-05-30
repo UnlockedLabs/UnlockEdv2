@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -708,7 +709,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 			(SELECT ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ')
 			 FROM program_credit_types pct WHERE pct.program_id = p.id) AS credit_types,
 
-            COALESCE(SUM(
+            ROUND(COALESCE(SUM(
               CASE
                 WHEN pcea.attendance_status = 'present' THEN 1
                 WHEN pcea.attendance_status = 'partial' THEN LEAST(
@@ -718,7 +719,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 				)
                 ELSE 0
               END
-            ), 0) AS present_attendance,
+            ), 0))::int AS present_attendance,
 
             COALESCE(SUM(
               CASE WHEN pcea.attendance_status NOT IN ('present','partial') THEN 1 ELSE 0 END
@@ -753,6 +754,9 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 			return nil, NewDBError(err, "program_class_enrollments")
 		}
 
+	}
+	for _, v := range userEnrollments {
+		fmt.Println(v.EnrollmentStatus)
 	}
 	return userEnrollments, nil
 }

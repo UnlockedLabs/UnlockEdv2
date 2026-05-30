@@ -472,7 +472,8 @@ function MissingAttendanceWidget({
                                         if (isDepartment) {
                                             navigate(
                                                 '/program-classes/' +
-                                                    item.class_id
+                                                    item.class_id +
+                                                    '/detail'
                                             );
                                         }
                                     }}
@@ -621,8 +622,8 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                                 Attendance Concerns
                                 <InfoTooltip iconClassName="size-3.5">
                                     <p>
-                                        Classes with patterns of high
-                                        resident absences (engagement issue)
+                                        Classes with patterns of high resident
+                                        absences (engagement issue)
                                     </p>
                                 </InfoTooltip>
                             </div>
