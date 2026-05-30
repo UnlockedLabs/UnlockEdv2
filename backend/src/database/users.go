@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -754,9 +753,6 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 			return nil, NewDBError(err, "program_class_enrollments")
 		}
 
-	}
-	for _, v := range userEnrollments {
-		fmt.Println(v.EnrollmentStatus)
 	}
 	return userEnrollments, nil
 }

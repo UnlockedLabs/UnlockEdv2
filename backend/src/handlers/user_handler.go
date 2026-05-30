@@ -525,6 +525,11 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}
 	queryCtx := srv.getQueryContext(r)
+	// The resident profile builds its active / completed / incomplete cards from
+	// the full enrollment set, so return all of them rather than a single page
+	// (otherwise residents with >per_page enrollments lose rows, e.g. completed
+	// programs falling off page 1).
+	queryCtx.All = true
 	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userId)
 	if err != nil {
 		return newDatabaseServiceError(err)
