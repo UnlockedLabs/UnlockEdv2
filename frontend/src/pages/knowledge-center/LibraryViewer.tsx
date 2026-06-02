@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import API from '@/api/api';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
 
@@ -83,7 +84,7 @@ export default function LibraryViewer() {
                     `libraries/${libraryId}`
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
-                    setLibraryTitle(resp.data.title);
+                    setLibraryTitle(decodeHtmlEntities(resp.data.title));
                     setProviderID(resp.data.open_content_provider_id);
                     setLibraryData(resp.data);
                 }
@@ -211,7 +212,7 @@ export default function LibraryViewer() {
                             )}
                         </div>
                         <p className="text-sm text-gray-600 line-clamp-1">
-                            {libraryData?.description}
+                            {decodeHtmlEntities(libraryData?.description ?? '')}
                         </p>
                     </div>
                 </div>
@@ -220,7 +221,7 @@ export default function LibraryViewer() {
             <div className="flex-1 bg-surface-hover">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
-                        <Skeleton className="w-full h-[600px]" />
+                        <Skeleton className="w-full h-150" />
                     </div>
                 ) : src !== '' ? (
                     <div className="relative w-full h-full">

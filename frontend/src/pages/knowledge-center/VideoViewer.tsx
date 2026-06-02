@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatVideoDuration } from '@/lib/formatters';
 import API from '@/api/api';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 export default function VideoViewer() {
     const navigate = useNavigate();
@@ -44,7 +45,7 @@ export default function VideoViewer() {
     if (isLoading) {
         return (
             <div className="space-y-4">
-                <Skeleton className="w-2/3 h-[400px] rounded-lg" />
+                <Skeleton className="w-2/3 h-100 rounded-lg" />
                 <Skeleton className="w-1/3 h-8" />
                 <Skeleton className="w-2/3 h-20" />
             </div>
@@ -67,6 +68,10 @@ export default function VideoViewer() {
         );
     }
 
+    const videoTitle = decodeHtmlEntities(video?.title ?? '');
+    const videoDescription = decodeHtmlEntities(video?.description ?? '');
+    const videoChannel = decodeHtmlEntities(video?.channel_title ?? '');
+
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)]">
             <div className="px-6 py-3 border-b border-gray-200 bg-white">
@@ -74,7 +79,7 @@ export default function VideoViewer() {
                     <Breadcrumbs
                         items={[
                             { label: 'Knowledge Center', href: backPath },
-                            { label: video?.title ?? 'Video' }
+                            { label: videoTitle || 'Video' }
                         ]}
                     />
                     <Button
@@ -90,7 +95,7 @@ export default function VideoViewer() {
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                             <h2 className="text-xl font-semibold text-brand-dark">
-                                {video?.title}
+                                {videoTitle}
                             </h2>
                             {isAdmin && video && (
                                 <>
@@ -118,11 +123,11 @@ export default function VideoViewer() {
                             )}
                         </div>
                         <p className="text-sm text-gray-600 line-clamp-1">
-                            {video?.description}
+                            {videoDescription}
                         </p>
-                        {video?.channel_title && (
+                        {videoChannel && (
                             <p className="text-xs text-gray-500 mt-0.5">
-                                By {video.channel_title}
+                                By {videoChannel}
                                 {video.duration
                                     ? ` - ${formatVideoDuration(video.duration)}`
                                     : ''}
