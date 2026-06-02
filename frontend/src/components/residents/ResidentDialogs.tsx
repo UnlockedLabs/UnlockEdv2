@@ -84,56 +84,66 @@ export function EditResidentDialog({
             description="Update resident information"
             titleClassName="text-foreground"
         >
-            <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void form.handleSubmit((d) => void handleSave(d))(e);
+                }}
+            >
+                <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="edit-first">First Name</Label>
+                            <Input
+                                id="edit-first"
+                                {...form.register('name_first', {
+                                    required: true
+                                })}
+                                className="mt-2"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-last">Last Name</Label>
+                            <Input
+                                id="edit-last"
+                                {...form.register('name_last', {
+                                    required: true
+                                })}
+                                className="mt-2"
+                            />
+                        </div>
+                    </div>
                     <div>
-                        <Label htmlFor="edit-first">First Name</Label>
+                        <Label htmlFor="edit-username">Username</Label>
                         <Input
-                            id="edit-first"
-                            {...form.register('name_first', { required: true })}
-                            className="mt-2"
+                            id="edit-username"
+                            value={resident.username}
+                            disabled
+                            className="mt-2 bg-muted"
                         />
                     </div>
                     <div>
-                        <Label htmlFor="edit-last">Last Name</Label>
+                        <Label htmlFor="edit-doc-id">Resident ID</Label>
                         <Input
-                            id="edit-last"
-                            {...form.register('name_last', { required: true })}
+                            id="edit-doc-id"
+                            {...form.register('doc_id')}
                             className="mt-2"
                         />
                     </div>
                 </div>
-                <div>
-                    <Label htmlFor="edit-username">Username</Label>
-                    <Input
-                        id="edit-username"
-                        value={resident.username}
-                        disabled
-                        className="mt-2 bg-muted"
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="edit-doc-id">Resident ID</Label>
-                    <Input
-                        id="edit-doc-id"
-                        {...form.register('doc_id')}
-                        className="mt-2"
-                    />
-                </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() =>
-                        void form.handleSubmit((d) => void handleSave(d))()
-                    }
-                    variant="brand"
-                >
-                    Save Changes
-                </Button>
-            </DialogFooter>
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button type="submit" variant="brand">
+                        Save Changes
+                    </Button>
+                </DialogFooter>
+            </form>
         </FormModal>
     );
 }
@@ -299,8 +309,10 @@ export function DeactivateDialog({
     onSuccess
 }: DeactivateDialogProps) {
     const [loading, setLoading] = useState(false);
-    const displayId = resident.doc_id ?? '';
-    const confirm = useTypeToConfirm({ open, expected: displayId });
+    const hasDocId = Boolean(resident.doc_id);
+    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
+    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
+    const confirm = useTypeToConfirm({ open, expected: confirmToken });
 
     const handleDeactivate = async () => {
         setLoading(true);
@@ -378,8 +390,8 @@ export function DeactivateDialog({
 
                 <TonedPanel tone="orange">
                     <Label htmlFor="deactivate-confirm">
-                        To confirm, type the Resident ID:{' '}
-                        <strong>{displayId}</strong>
+                        To confirm, type the {confirmLabel}:{' '}
+                        <strong>{confirmToken}</strong>
                     </Label>
                     <Input
                         id="deactivate-confirm"
@@ -423,8 +435,10 @@ export function DeleteDialog({
     onSuccess
 }: DeleteDialogProps) {
     const [loading, setLoading] = useState(false);
-    const displayId = resident.doc_id ?? '';
-    const confirm = useTypeToConfirm({ open, expected: displayId });
+    const hasDocId = Boolean(resident.doc_id);
+    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
+    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
+    const confirm = useTypeToConfirm({ open, expected: confirmToken });
 
     const handleDelete = async () => {
         setLoading(true);
@@ -459,8 +473,8 @@ export function DeleteDialog({
 
                 <TonedPanel tone="red">
                     <Label htmlFor="delete-confirm">
-                        To confirm, type the Resident ID:{' '}
-                        <strong>{displayId}</strong>
+                        To confirm, type the {confirmLabel}:{' '}
+                        <strong>{confirmToken}</strong>
                     </Label>
                     <Input
                         id="delete-confirm"
@@ -507,8 +521,10 @@ export function TransferDialog({
 }: TransferDialogProps) {
     const [transferFacilityId, setTransferFacilityId] = useState('');
     const [loading, setLoading] = useState(false);
-    const displayId = resident.doc_id ?? '';
-    const confirm = useTypeToConfirm({ open, expected: displayId });
+    const hasDocId = Boolean(resident.doc_id);
+    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
+    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
+    const confirm = useTypeToConfirm({ open, expected: confirmToken });
 
     useEffect(() => {
         if (!open) setTransferFacilityId('');
@@ -664,9 +680,9 @@ export function TransferDialog({
                                 htmlFor="transfer-confirm"
                                 className="text-sm font-medium"
                             >
-                                Type{' '}
+                                Type the {confirmLabel}{' '}
                                 <span className="font-mono font-semibold text-brand-dark">
-                                    {displayId}
+                                    {confirmToken}
                                 </span>{' '}
                                 to confirm
                             </Label>
