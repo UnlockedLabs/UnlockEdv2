@@ -128,7 +128,7 @@ export default function VideoViewer() {
                         {videoChannel && (
                             <p className="text-xs text-gray-500 mt-0.5">
                                 By {videoChannel}
-                                {video.duration
+                                {video?.duration
                                     ? ` - ${formatVideoDuration(video.duration)}`
                                     : ''}
                             </p>
