@@ -355,7 +355,7 @@ export default function Schedule() {
     const past = isPastEvent(selectedEvent);
     const cancellationActionLabel = selectedEvent?.is_override
         ? 'Undo Cancellation'
-        : 'Restore Future Sessions';
+        : 'Restore This & All Future Sessions';
     const disableModifyActions = past || !canUpdateEvent();
     const showActiveBadge =
         !!selectedEvent &&

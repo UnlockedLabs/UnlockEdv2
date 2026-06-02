@@ -137,6 +137,11 @@ func (srv *Server) handleGetRooms(w http.ResponseWriter, r *http.Request, log sL
 
 func (srv *Server) handleCreateRoom(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facilityID := srv.getFacilityID(r)
+	if queryParam := r.URL.Query().Get("facility_id"); queryParam != "" {
+		if parsed, err := strconv.Atoi(queryParam); err == nil {
+			facilityID = uint(parsed)
+		}
+	}
 	var room models.Room
 	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
 		return newJSONReqBodyServiceError(err)

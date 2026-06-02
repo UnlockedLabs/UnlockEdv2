@@ -248,8 +248,9 @@ export function EditClassModal({
     >(user ? `/api/users?role=${user.role}&per_page=100` : null);
     const instructors = instructorsResp?.data ?? [];
 
-    const { data: roomsResp, mutate: mutateRooms } =
-        useSWR<ServerResponseMany<Room>>('/api/rooms');
+    const { data: roomsResp, mutate: mutateRooms } = useSWR<
+        ServerResponseMany<Room>
+    >(`/api/rooms?facility_id=${cls.facility_id}`);
     const rooms = roomsResp?.data ?? [];
 
     const {
@@ -313,9 +314,12 @@ export function EditClassModal({
 
     async function handleAddRoom() {
         if (!newRoomName.trim()) return;
-        const resp = await API.post<Room, object>('rooms', {
-            name: newRoomName.trim()
-        });
+        const resp = await API.post<Room, object>(
+            `rooms?facility_id=${cls.facility_id}`,
+            {
+                name: newRoomName.trim()
+            }
+        );
         if (resp.success) {
             const created = resp.data as unknown as Room;
             await mutateRooms();

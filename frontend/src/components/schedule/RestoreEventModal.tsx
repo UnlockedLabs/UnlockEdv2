@@ -62,7 +62,11 @@ export function RestoreEventModal({
         <ConfirmDialog
             open={open}
             onOpenChange={onOpenChange}
-            title={isSeries ? 'Restore Future Sessions' : 'Restore Event'}
+            title={
+                isSeries
+                    ? 'Restore This & All Future Sessions'
+                    : 'Restore Event'
+            }
             description={
                 isSeries
                     ? `This will restore all cancelled sessions from ${dateStr} onwards.`

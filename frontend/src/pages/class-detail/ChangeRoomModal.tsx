@@ -11,6 +11,7 @@ interface ChangeRoomModalProps {
     open: boolean;
     onClose: () => void;
     classId: number;
+    facilityId: string;
     sessions: ChangeRoomSession[];
     onChanged: () => void;
     applyToFuture?: boolean;
@@ -29,7 +30,7 @@ const ROOM_REASON_OPTIONS = [
 
 export function ChangeRoomModal(props: ChangeRoomModalProps) {
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        props.open ? '/api/rooms' : null
+        props.open ? `/api/rooms?facility_id=${props.facilityId}` : null
     );
     const options = (roomsResp?.data ?? []).map((room) => ({
         id: room.id,

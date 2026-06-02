@@ -179,7 +179,9 @@ export function ClassManagementFormInner({
     }, [resolvedFacilityId]);
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        rooms.length === 0 ? '/api/rooms' : null
+        rooms.length === 0 && resolvedFacilityId
+            ? `/api/rooms?facility_id=${resolvedFacilityId}`
+            : null
     );
 
     const {
@@ -377,9 +379,12 @@ export function ClassManagementFormInner({
 
     async function handleAddRoom() {
         if (!newRoomName.trim()) return;
-        const resp = await API.post<Room, object>('rooms', {
-            name: newRoomName.trim()
-        });
+        const resp = await API.post<Room, object>(
+            `rooms?facility_id=${resolvedFacilityId}`,
+            {
+                name: newRoomName.trim()
+            }
+        );
         if (resp.success) {
             const created = resp.data as unknown as Room;
             setRooms((prev) => [...prev, created]);
