@@ -88,9 +88,9 @@ export function SessionsTabModals({
         : {};
     const baseRoom =
         (selectedSession
-            ? roomOverrides.get(
+            ? (roomOverrides.get(
                   `${selectedSession.instance.date}|${selectedSession.instance.class_time?.split('-')[0]}`
-              ) ?? roomOverrides.get(selectedSession.instance.date)
+              ) ?? roomOverrides.get(selectedSession.instance.date))
             : undefined) ??
         cls.events?.[0]?.room_ref?.name ??
         'TBD';
@@ -126,7 +126,11 @@ export function SessionsTabModals({
                 <CancelEventModal
                     open={showQuickCancel}
                     onOpenChange={onQuickCancelOpenChange}
-                    event={buildFacilityEvent(quickCancelSession, cls.id, cls.events ?? [])}
+                    event={buildFacilityEvent(
+                        quickCancelSession,
+                        cls.id,
+                        cls.events ?? []
+                    )}
                     onSuccess={onQuickCancelSuccess}
                     showApplyToFuture={false}
                 />

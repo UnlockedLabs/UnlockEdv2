@@ -51,9 +51,8 @@ export function RescheduleSessionModal({
     setApplyToFuture,
     futureSessions = []
 }: RescheduleSessionModalProps) {
-    const [startTime, endTime] = classTime
-        ?.split('-')
-        .map((s) => s.trim()) ?? [];
+    const [startTime, endTime] =
+        classTime?.split('-').map((s) => s.trim()) ?? [];
     const [newDate, setNewDate] = useState('');
     const [newStartTime, setNewStartTime] = useState('');
     const [newEndTime, setNewEndTime] = useState('');
@@ -106,7 +105,8 @@ export function RescheduleSessionModal({
                             new_date: s.date,
                             reason: 'applied_future'
                         };
-                        if (newStartTime) futureBody.new_start_time = newStartTime;
+                        if (newStartTime)
+                            futureBody.new_start_time = newStartTime;
                         if (newEndTime) futureBody.new_end_time = newEndTime;
                         if (newRoom) futureBody.room_id = Number(newRoom);
                         return futureBody;
@@ -142,117 +142,118 @@ export function RescheduleSessionModal({
             description={`Reschedule the class from ${dateLabel}. You can change the date, time, and room.`}
         >
             <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="rescheduleDate">New Date</Label>
-                        <Input
-                            id="rescheduleDate"
-                            type="date"
-                            value={newDate}
-                            onChange={(e) => setNewDate(e.target.value)}
-                            min={today}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="rescheduleStartTime">
-                            New Start Time (optional)
-                        </Label>
-                        <Input
-                            id="rescheduleStartTime"
-                            type="time"
-                            value={newStartTime}
-                            onChange={(e) => setNewStartTime(e.target.value)}
-                            placeholder={startTime ? formatTime12h(startTime) : undefined}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="rescheduleEndTime">
-                            New End Time (optional)
-                        </Label>
-                        <Input
-                            id="rescheduleEndTime"
-                            type="time"
-                            value={newEndTime}
-                            onChange={(e) => setNewEndTime(e.target.value)}
-                            placeholder={endTime ? formatTime12h(endTime) : undefined}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="rescheduleRoom">
-                            New Room (optional)
-                        </Label>
-                        <Select value={newRoom} onValueChange={setNewRoom}>
-                            <SelectTrigger id="rescheduleRoom">
-                                <SelectValue
-                                    placeholder={
-                                        currentRoom
-                                            ? `Keep current room (${currentRoom})`
-                                            : 'Select room'
-                                    }
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {rooms.map((room) => (
-                                    <SelectItem
-                                        key={room.id}
-                                        value={String(room.id)}
-                                    >
-                                        {room.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-sm text-gray-500">
-                            Leave time and room blank to keep current values.
-                        </p>
-                    </div>
-                    {setApplyToFuture && (
-                        <div className="flex items-center space-x-2">
-                            <input
-                                type="checkbox"
-                                id="apply-to-future"
-                                checked={applyToFuture}
-                                onChange={(e) =>
-                                    setApplyToFuture(e.target.checked)
-                                }
-                                className="size-4 rounded border-gray-300"
-                            />
-                            <Label
-                                htmlFor="apply-to-future"
-                                className="text-sm font-normal cursor-pointer"
-                            >
-                                Apply this change to all future sessions
-                            </Label>
-                        </div>
-                    )}
+                <div className="space-y-2">
+                    <Label htmlFor="rescheduleDate">New Date</Label>
+                    <Input
+                        id="rescheduleDate"
+                        type="date"
+                        value={newDate}
+                        onChange={(e) => setNewDate(e.target.value)}
+                        min={today}
+                    />
                 </div>
-                <div className="flex gap-2 justify-end">
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            onClose();
-                            setNewDate('');
-                            setNewStartTime('');
-                            setNewEndTime('');
-                            setNewRoom('');
-                            if (setApplyToFuture) setApplyToFuture(false);
-                        }}
-                        disabled={isSubmitting}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleReschedule()}
-                        disabled={
-                            (!newDate && !newStartTime && !newEndTime && !newRoom) ||
-                            isSubmitting
+                <div className="space-y-2">
+                    <Label htmlFor="rescheduleStartTime">
+                        New Start Time (optional)
+                    </Label>
+                    <Input
+                        id="rescheduleStartTime"
+                        type="time"
+                        value={newStartTime}
+                        onChange={(e) => setNewStartTime(e.target.value)}
+                        placeholder={
+                            startTime ? formatTime12h(startTime) : undefined
                         }
-                        variant="brand"
-                    >
-                        {isSubmitting
-                            ? 'Rescheduling...'
-                            : 'Reschedule Class'}
-                    </Button>
+                    />
                 </div>
+                <div className="space-y-2">
+                    <Label htmlFor="rescheduleEndTime">
+                        New End Time (optional)
+                    </Label>
+                    <Input
+                        id="rescheduleEndTime"
+                        type="time"
+                        value={newEndTime}
+                        onChange={(e) => setNewEndTime(e.target.value)}
+                        placeholder={
+                            endTime ? formatTime12h(endTime) : undefined
+                        }
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="rescheduleRoom">New Room (optional)</Label>
+                    <Select value={newRoom} onValueChange={setNewRoom}>
+                        <SelectTrigger id="rescheduleRoom">
+                            <SelectValue
+                                placeholder={
+                                    currentRoom
+                                        ? `Keep current room (${currentRoom})`
+                                        : 'Select room'
+                                }
+                            />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {rooms.map((room) => (
+                                <SelectItem
+                                    key={room.id}
+                                    value={String(room.id)}
+                                >
+                                    {room.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-sm text-gray-500">
+                        Leave time and room blank to keep current values.
+                    </p>
+                </div>
+                {setApplyToFuture && (
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="apply-to-future"
+                            checked={applyToFuture}
+                            onChange={(e) => setApplyToFuture(e.target.checked)}
+                            className="size-4 rounded border-gray-300"
+                        />
+                        <Label
+                            htmlFor="apply-to-future"
+                            className="text-sm font-normal cursor-pointer"
+                        >
+                            Apply this change to all future sessions
+                        </Label>
+                    </div>
+                )}
+            </div>
+            <div className="flex gap-2 justify-end">
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        onClose();
+                        setNewDate('');
+                        setNewStartTime('');
+                        setNewEndTime('');
+                        setNewRoom('');
+                        if (setApplyToFuture) setApplyToFuture(false);
+                    }}
+                    disabled={isSubmitting}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    onClick={() => void handleReschedule()}
+                    disabled={
+                        (!newDate &&
+                            !newStartTime &&
+                            !newEndTime &&
+                            !newRoom) ||
+                        isSubmitting
+                    }
+                    variant="brand"
+                >
+                    {isSubmitting ? 'Rescheduling...' : 'Reschedule Class'}
+                </Button>
+            </div>
         </FormModal>
     );
 }

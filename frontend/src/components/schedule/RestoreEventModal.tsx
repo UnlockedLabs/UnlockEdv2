@@ -39,11 +39,18 @@ export function RestoreEventModal({
         const d = event.start;
         const restoreDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const resp = isSeries
-            ? await API.post(`program-classes/${event.class_id}/events/${event.id}/uncancel-series`, { restore_date: restoreDate })
-            : await API.delete(`program-classes/${event.class_id}/events/${event.override_id}`);
+            ? await API.post(
+                  `program-classes/${event.class_id}/events/${event.id}/uncancel-series`,
+                  { restore_date: restoreDate }
+              )
+            : await API.delete(
+                  `program-classes/${event.class_id}/events/${event.override_id}`
+              );
         setSubmitting(false);
         if (resp.success) {
-            toast.success(isSeries ? 'Future sessions restored' : 'Cancellation undone');
+            toast.success(
+                isSeries ? 'Future sessions restored' : 'Cancellation undone'
+            );
             onOpenChange(false);
             onSuccess();
         } else {
