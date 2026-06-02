@@ -62,6 +62,9 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         ChangeRoomSession[]
     >([]);
     const [showAllPast, setShowAllPast] = useState(false);
+    const [upcomingDisplayCount, setUpcomingDisplayCount] = useState(
+        UPCOMING_DISPLAY_LIMIT
+    );
     const [selectedSession, setSelectedSession] =
         useState<SessionDisplay | null>(null);
 
@@ -126,6 +129,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     const handleStatusChange = (newStatus: StatusFilter) => {
         setStatusFilter(newStatus);
         setSelectedDates(new Set());
+        setUpcomingDisplayCount(UPCOMING_DISPLAY_LIMIT);
         if (newStatus === 'upcoming') {
             setTimeFilter('all');
         }
@@ -134,6 +138,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     const handleTimeChange = (newTime: TimeFilter) => {
         setTimeFilter(newTime);
         setSelectedDates(new Set());
+        setUpcomingDisplayCount(UPCOMING_DISPLAY_LIMIT);
     };
 
     const toggleSession = (date: string) => {
@@ -177,7 +182,8 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         allSessions,
         statusFilter,
         timeFilter,
-        showAllPast
+        showAllPast,
+        upcomingDisplayCount
     });
 
     const refreshData = async () => {
@@ -228,7 +234,8 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
     };
 
     const handleUndoCancel = async (session: SessionDisplay) => {
-        const overrideId = session.rescheduleOverrideId ?? session.instance.override_id;
+        const overrideId =
+            session.rescheduleOverrideId ?? session.instance.override_id;
         if (!overrideId) return;
         const resp = await API.post(
             `program-classes/${cls.id}/events/${overrideId}/uncancel`,
@@ -242,7 +249,11 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
 
     const renderSessionRow = (session: SessionDisplay) => (
         <SessionRow
-            key={session.instance.date + '-' + (session.instance.event_id ?? session.instance.id)}
+            key={
+                session.instance.date +
+                '-' +
+                (session.instance.event_id ?? session.instance.id)
+            }
             session={session}
             selected={selectedDates.has(session.instance.date)}
             onToggle={() => toggleSession(session.instance.date)}
@@ -359,13 +370,9 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                                             Upcoming Sessions
                                         </h4>
                                         <p className="text-sm text-gray-600 mt-0.5">
-                                            Next{' '}
-                                            {Math.min(
-                                                upcomingSessions.length,
-                                                UPCOMING_DISPLAY_LIMIT
-                                            )}{' '}
+                                            Next {displayedUpcoming.length}{' '}
                                             scheduled{' '}
-                                            {upcomingSessions.length === 1
+                                            {displayedUpcoming.length === 1
                                                 ? 'session'
                                                 : 'sessions'}
                                         </p>
@@ -373,14 +380,32 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                                     {upcomingSessions.length >
                                         UPCOMING_DISPLAY_LIMIT && (
                                         <span className="text-xs text-gray-500">
-                                            Showing next {UPCOMING_DISPLAY_LIMIT}{' '}
-                                            of {upcomingSessions.length} total
+                                            Showing next{' '}
+                                            {displayedUpcoming.length} of{' '}
+                                            {upcomingSessions.length} total
                                         </span>
                                     )}
                                 </div>
                                 <div className="space-y-2">
                                     {displayedUpcoming.map(renderSessionRow)}
                                 </div>
+                                {upcomingSessions.length >
+                                    displayedUpcoming.length && (
+                                    <div className="text-sm text-gray-500 text-center mt-2">
+                                        <button
+                                            onClick={() =>
+                                                setUpcomingDisplayCount(
+                                                    (count) =>
+                                                        count +
+                                                        UPCOMING_DISPLAY_LIMIT
+                                                )
+                                            }
+                                            className="text-brand hover:text-brand-dark underline"
+                                        >
+                                            Show {UPCOMING_DISPLAY_LIMIT} more
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -449,8 +474,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                             date: s.instance.date,
                             dateObj: s.dateObj,
                             dayName: s.dayName,
-                            eventId:
-                                s.instance.event_id ?? s.instance.id,
+                            eventId: s.instance.event_id ?? s.instance.id,
                             classTime: s.instance.class_time
                         }))
                     );
@@ -466,5 +490,3 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
         </div>
     );
 }
-
-

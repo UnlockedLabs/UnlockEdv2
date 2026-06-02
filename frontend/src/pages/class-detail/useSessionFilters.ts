@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import type { SessionDisplay } from './session-utils';
 
-export type StatusFilter = 'all' | 'completed' | 'missing' | 'upcoming' | 'cancelled';
+export type StatusFilter =
+    | 'all'
+    | 'completed'
+    | 'missing'
+    | 'upcoming'
+    | 'cancelled';
 export type TimeFilter = 'week' | '2weeks' | 'month' | 'all';
 
 export const PAST_DISPLAY_LIMIT = 15;
@@ -26,6 +31,7 @@ interface UseSessionFiltersArgs {
     statusFilter: StatusFilter;
     timeFilter: TimeFilter;
     showAllPast: boolean;
+    upcomingDisplayCount: number;
 }
 
 interface UseSessionFiltersResult {
@@ -40,7 +46,8 @@ export function useSessionFilters({
     allSessions,
     statusFilter,
     timeFilter,
-    showAllPast
+    showAllPast,
+    upcomingDisplayCount
 }: UseSessionFiltersArgs): UseSessionFiltersResult {
     const filtered = useMemo(() => {
         let result = allSessions;
@@ -111,7 +118,7 @@ export function useSessionFilters({
         ? pastAndTodaySessions
         : pastAndTodaySessions.slice(0, PAST_DISPLAY_LIMIT);
 
-    const displayedUpcoming = upcomingSessions.slice(0, UPCOMING_DISPLAY_LIMIT);
+    const displayedUpcoming = upcomingSessions.slice(0, upcomingDisplayCount);
 
     return {
         filtered,
