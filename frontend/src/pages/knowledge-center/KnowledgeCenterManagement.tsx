@@ -44,6 +44,7 @@ import {
     formatVideoDuration
 } from '@/lib/formatters';
 import API from '@/api/api';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 interface CardHandlers {
     onToggleFeatured: (
@@ -66,9 +67,11 @@ function LibraryCard({
     library: Library;
     handlers: CardHandlers;
 }) {
+    const title = decodeHtmlEntities(library.title);
+    const description = decodeHtmlEntities(library.description ?? '');
     return (
         <div
-            className="media-card group"
+            className="media-card group flex flex-col h-full"
             onClick={() =>
                 handlers.onNavigate(`/viewer/libraries/${library.id}`)
             }
@@ -102,18 +105,18 @@ function LibraryCard({
             <div className="flex items-start gap-3 mb-3">
                 <img
                     src={library.thumbnail_url ?? ''}
-                    alt={library.title}
+                    alt={title}
                     className="size-12 rounded shrink-0 border border-gray-200"
                 />
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="card-title-link">{library.title}</h3>
+                    <h3 className="card-title-link">{title}</h3>
                 </div>
             </div>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                {library.description}
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3 flex-1">
+                {description}
             </p>
             <div
-                className="row-with-border"
+                className="row-with-border mt-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <label className="clickable-row">
@@ -155,9 +158,12 @@ interface VideoCardProps {
 
 function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
     const available = videoIsAvailable(video);
+    const title = decodeHtmlEntities(video.title);
+    const channelTitle = decodeHtmlEntities(video.channel_title ?? '');
+    const description = decodeHtmlEntities(video.description ?? '');
     return (
         <div
-            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative`}
+            className={`bg-white rounded-lg border ${!available ? 'border-red-300' : 'border-gray-200'} p-4 hover:shadow-lg hover:border-brand transition-all cursor-pointer group relative flex flex-col h-full`}
             onClick={() => {
                 if (available)
                     handlers.onNavigate(`/viewer/videos/${video.id}`);
@@ -193,7 +199,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 <div className="relative shrink-0">
                     <img
                         src={`/api/photos/${video.external_id}.jpg`}
-                        alt={video.title}
+                        alt={title}
                         className="size-12 rounded object-cover border border-gray-200"
                     />
                     <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[10px] px-1 py-0.5 rounded">
@@ -201,18 +207,19 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="card-title-link">{video.title}</h3>
-                    <p className="text-sm text-gray-500">
-                        {video.channel_title}
-                    </p>
+                    <h3 className="card-title-link">{title}</h3>
+                    <p className="text-sm text-gray-500">{channelTitle}</p>
                 </div>
             </div>
             {available ? (
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                    {video.description}
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3 flex-1">
+                    {description}
                 </p>
             ) : (
-                <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+                <div
+                    className="mb-3 flex-1"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <p className="text-sm text-red-600 mb-2">
                         {getVideoErrorMessage(video) ??
                             'Video is processing...'}
@@ -239,7 +246,7 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                 </div>
             )}
             <div
-                className="row-with-border"
+                className="row-with-border mt-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <label className="clickable-row">
@@ -279,8 +286,13 @@ function LinkCard({
     handlers: CardHandlers;
     onLinkClick: (link: HelpfulLink) => void;
 }) {
+    const title = decodeHtmlEntities(link.title);
+    const description = decodeHtmlEntities(link.description ?? '');
     return (
-        <div className="media-card group" onClick={() => onLinkClick(link)}>
+        <div
+            className="media-card group flex flex-col h-full"
+            onClick={() => onLinkClick(link)}
+        >
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -308,14 +320,14 @@ function LinkCard({
                 </Tooltip>
             </TooltipProvider>
             <div className="pr-8 mb-2">
-                <h3 className="card-title-link">{link.title}</h3>
+                <h3 className="card-title-link">{title}</h3>
             </div>
             <p className="text-sm text-brand mb-2 truncate">{link.url}</p>
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                {link.description}
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3 flex-1">
+                {description}
             </p>
             <div
-                className="row-with-border"
+                className="row-with-border mt-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <label className="clickable-row">
@@ -687,7 +699,7 @@ export default function KnowledgeCenterManagement() {
                             setCurrentPage(1);
                         }}
                     >
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-45">
                             <SelectValue placeholder="Filter by" />
                         </SelectTrigger>
                         <SelectContent>
@@ -742,7 +754,7 @@ export default function KnowledgeCenterManagement() {
                                 setCurrentPage(1);
                             }}
                         >
-                            <SelectTrigger className="w-[280px]">
+                            <SelectTrigger className="w-70">
                                 <SelectValue placeholder="Filter by category" />
                             </SelectTrigger>
                             <SelectContent>

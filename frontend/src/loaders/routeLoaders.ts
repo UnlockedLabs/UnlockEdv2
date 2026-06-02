@@ -20,6 +20,7 @@ import {
 } from '@/types';
 import API from '@/api/api';
 import { fetchUser } from '@/auth/useAuth';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 function buildClassBreadcrumbs(
     cls: Class,
@@ -135,7 +136,7 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
               (library) =>
                   ({
                       key: library.id,
-                      value: library.title
+                      value: decodeHtmlEntities(library.title)
                   }) as Option
           )
         : [];
