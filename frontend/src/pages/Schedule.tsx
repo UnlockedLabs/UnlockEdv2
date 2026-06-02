@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { toZonedTime } from 'date-fns-tz';
-import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
+import {
+    Calendar as BigCalendar,
+    momentLocalizer,
+    View
+} from 'react-big-calendar';
 // react-big-calendar types are incompatible with @types/react@18 (missing `refs`)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Calendar = BigCalendar as unknown as React.ComponentType<any>;
@@ -76,7 +80,9 @@ function facilityEventToSessionDisplay(
     let rescheduledDate: string | undefined;
     if (linked?.start) {
         const linkedStart =
-            linked.start instanceof Date ? linked.start : new Date(linked.start);
+            linked.start instanceof Date
+                ? linked.start
+                : new Date(linked.start);
         if (!Number.isNaN(linkedStart.getTime())) {
             rescheduledDate = toDateString(linkedStart);
         }
@@ -129,7 +135,8 @@ export default function Schedule() {
     const [selectedProgram, setSelectedProgram] = useState<string>('all');
     const [selectedInstructor, setSelectedInstructor] = useState<string>('all');
     const [showAllClasses, setShowAllClasses] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState<FacilityProgramClassEvent | null>(null);
+    const [selectedEvent, setSelectedEvent] =
+        useState<FacilityProgramClassEvent | null>(null);
     const [showSheet, setShowSheet] = useState(false);
     const [showReschedule, setShowReschedule] = useState(false);
     const [showRescheduleSingle, setShowRescheduleSingle] = useState(false);
@@ -137,13 +144,17 @@ export default function Schedule() {
     const [showRestore, setShowRestore] = useState(false);
 
     const isDepAdmin = user ? isDeptAdmin(user) : false;
-    const activeFacilityId = selectedFacilityId || (user ? String(user.facility.id) : '');
+    const activeFacilityId =
+        selectedFacilityId || (user ? String(user.facility.id) : '');
     const timezone = user?.timezone ?? 'UTC';
 
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
         isDepAdmin ? '/api/facilities' : null
     );
-    const facilities = useMemo(() => facilitiesResp?.data ?? [], [facilitiesResp]);
+    const facilities = useMemo(
+        () => facilitiesResp?.data ?? [],
+        [facilitiesResp]
+    );
 
     const { startDate, endDate } = useMemo(() => {
         const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
@@ -155,13 +166,28 @@ export default function Schedule() {
         if (!user) return null;
         let url = `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`;
         if (class_id && !showAllClasses) url += `&class_id=${class_id}`;
-        if (isDepAdmin && activeFacilityId) url += `&facility_id=${activeFacilityId}`;
+        if (isDepAdmin && activeFacilityId)
+            url += `&facility_id=${activeFacilityId}`;
         return url;
-    }, [user, startDate, endDate, class_id, showAllClasses, isDepAdmin, activeFacilityId]);
+    }, [
+        user,
+        startDate,
+        endDate,
+        class_id,
+        showAllClasses,
+        isDepAdmin,
+        activeFacilityId
+    ]);
 
-    const { data: eventsResp, isLoading, mutate } = useSWR<ServerResponseMany<FacilityProgramClassEvent>>(apiUrl);
+    const {
+        data: eventsResp,
+        isLoading,
+        mutate
+    } = useSWR<ServerResponseMany<FacilityProgramClassEvent>>(apiUrl);
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        activeFacilityId ? `/api/rooms?facility_id=${activeFacilityId}` : '/api/rooms'
+        activeFacilityId
+            ? `/api/rooms?facility_id=${activeFacilityId}`
+            : '/api/rooms'
     );
 
     const rooms = useMemo(() => roomsResp?.data ?? [], [roomsResp]);
@@ -178,7 +204,8 @@ export default function Schedule() {
     const availablePrograms = useMemo(() => {
         const map = new Map<number, string>();
         formattedEvents.forEach((e) => {
-            if (e.program_id && e.program_name) map.set(e.program_id, e.program_name);
+            if (e.program_id && e.program_name)
+                map.set(e.program_id, e.program_name);
         });
         return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
     }, [formattedEvents]);
@@ -193,8 +220,16 @@ export default function Schedule() {
 
     const filteredEvents = useMemo(() => {
         return formattedEvents.filter((e) => {
-            if (selectedProgram !== 'all' && String(e.program_id) !== selectedProgram) return false;
-            if (selectedInstructor !== 'all' && e.instructor_name !== selectedInstructor) return false;
+            if (
+                selectedProgram !== 'all' &&
+                String(e.program_id) !== selectedProgram
+            )
+                return false;
+            if (
+                selectedInstructor !== 'all' &&
+                e.instructor_name !== selectedInstructor
+            )
+                return false;
             return true;
         });
     }, [formattedEvents, selectedProgram, selectedInstructor]);
@@ -212,7 +247,10 @@ export default function Schedule() {
     const selectedFacilityName = useMemo(() => {
         if (!user) return '';
         if (!isDepAdmin) return user.facility.name;
-        return facilities.find((f) => String(f.id) === activeFacilityId)?.name ?? user.facility.name;
+        return (
+            facilities.find((f) => String(f.id) === activeFacilityId)?.name ??
+            user.facility.name
+        );
     }, [isDepAdmin, facilities, activeFacilityId, user]);
 
     const sessionView = useMemo(
@@ -233,7 +271,8 @@ export default function Schedule() {
             selectedEvent.class_status === SelectedClassStatus.Cancelled
         )
             return false;
-        if (class_id && selectedEvent.class_id.toString() !== class_id) return false;
+        if (class_id && selectedEvent.class_id.toString() !== class_id)
+            return false;
         return true;
     };
 
@@ -300,7 +339,9 @@ export default function Schedule() {
         setShowRestore(true);
     };
 
-    const subtitle = isDepAdmin ? `Viewing: ${selectedFacilityName}` : 'Manage class schedules';
+    const subtitle = isDepAdmin
+        ? `Viewing: ${selectedFacilityName}`
+        : 'Manage class schedules';
 
     if (isLoading) {
         return (
@@ -337,7 +378,9 @@ export default function Schedule() {
                             <input
                                 type="checkbox"
                                 checked={showAllClasses}
-                                onChange={(e) => setShowAllClasses(e.target.checked)}
+                                onChange={(e) =>
+                                    setShowAllClasses(e.target.checked)
+                                }
                                 className="rounded border-gray-300"
                             />
                             Show all classes
@@ -367,7 +410,10 @@ export default function Schedule() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             {facilities.map((f) => (
-                                                <SelectItem key={f.id} value={String(f.id)}>
+                                                <SelectItem
+                                                    key={f.id}
+                                                    value={String(f.id)}
+                                                >
                                                     {f.name}
                                                 </SelectItem>
                                             ))}
@@ -377,17 +423,23 @@ export default function Schedule() {
                             )}
 
                             <div>
-                                <label className="form-label">
-                                    Program
-                                </label>
-                                <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                                <label className="form-label">Program</label>
+                                <Select
+                                    value={selectedProgram}
+                                    onValueChange={setSelectedProgram}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="All Programs" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Programs</SelectItem>
+                                        <SelectItem value="all">
+                                            All Programs
+                                        </SelectItem>
                                         {availablePrograms.map((p) => (
-                                            <SelectItem key={p.id} value={String(p.id)}>
+                                            <SelectItem
+                                                key={p.id}
+                                                value={String(p.id)}
+                                            >
                                                 {p.name}
                                             </SelectItem>
                                         ))}
@@ -396,15 +448,18 @@ export default function Schedule() {
                             </div>
 
                             <div>
-                                <label className="form-label">
-                                    Instructor
-                                </label>
-                                <Select value={selectedInstructor} onValueChange={setSelectedInstructor}>
+                                <label className="form-label">Instructor</label>
+                                <Select
+                                    value={selectedInstructor}
+                                    onValueChange={setSelectedInstructor}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="All Instructors" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Instructors</SelectItem>
+                                        <SelectItem value="all">
+                                            All Instructors
+                                        </SelectItem>
                                         {availableInstructors.map((i) => (
                                             <SelectItem key={i} value={i}>
                                                 {i}
@@ -446,11 +501,16 @@ export default function Schedule() {
                         session={sessionView}
                         onClose={() => setShowSheet(false)}
                         className={selectedEvent.title}
-                        classTime={toClassTimeRange(selectedEvent.start, selectedEvent.end)}
+                        classTime={toClassTimeRange(
+                            selectedEvent.start,
+                            selectedEvent.end
+                        )}
                         room={selectedEvent.room}
                         originalRoom={selectedEvent.original_room}
                         instructorName={selectedEvent.instructor_name}
-                        originalInstructorName={selectedEvent.original_instructor_name}
+                        originalInstructorName={
+                            selectedEvent.original_instructor_name
+                        }
                         classId={selectedEvent.class_id}
                         facilityId={activeFacilityId}
                         classEvents={[]}
@@ -466,7 +526,8 @@ export default function Schedule() {
                         onTakeAttendance={
                             past &&
                             !selectedEvent.is_cancelled &&
-                            selectedEvent.class_status !== SelectedClassStatus.Completed
+                            selectedEvent.class_status !==
+                                SelectedClassStatus.Completed
                                 ? handleTakeAttendance
                                 : undefined
                         }

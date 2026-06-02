@@ -157,8 +157,7 @@ export function ClassManagementFormInner({
     const [roomSelectValue, setRoomSelectValue] = useState('');
     const [pendingRoomId, setPendingRoomId] = useState<number | null>(null);
     const [showCustomRecurrence, setShowCustomRecurrence] = useState(false);
-    const [customRecurrenceInterval, setCustomRecurrenceInterval] =
-        useState(1);
+    const [customRecurrenceInterval, setCustomRecurrenceInterval] = useState(1);
 
     const [instructors, setInstructors] = useState<Instructor[]>([]);
 
@@ -410,8 +409,12 @@ export function ClassManagementFormInner({
             provider_platforms: []
         });
         if (resp.success) {
-            const newUser = (resp.data as { user: User; temp_password: string }).user;
-            setInstructors((prev) => [...prev, newUser as unknown as Instructor]);
+            const newUser = (resp.data as { user: User; temp_password: string })
+                .user;
+            setInstructors((prev) => [
+                ...prev,
+                newUser as unknown as Instructor
+            ]);
             toast.success('Instructor created');
         } else {
             toast.error(resp.message || 'Failed to create instructor');
@@ -524,7 +527,9 @@ export function ClassManagementFormInner({
             }
             toast.error(
                 resp.message ||
-                    (isNewClass ? 'Failed to create class' : 'Failed to update class')
+                    (isNewClass
+                        ? 'Failed to create class'
+                        : 'Failed to update class')
             );
             return;
         }
@@ -860,8 +865,8 @@ export function ClassManagementFormInner({
                                                             Custom Room Name
                                                         </Label>
                                                         <p className="text-xs text-gray-500 mt-1">
-                                                            Room names should
-                                                            be specific (e.g.,
+                                                            Room names should be
+                                                            specific (e.g.,
                                                             "Library - Room 3A")
                                                         </p>
                                                     </div>
@@ -896,7 +901,9 @@ export function ClassManagementFormInner({
                                                     rooms.some(
                                                         (room) =>
                                                             room.name.toLowerCase() ===
-                                                            newRoomName.trim().toLowerCase()
+                                                            newRoomName
+                                                                .trim()
+                                                                .toLowerCase()
                                                     ) && (
                                                         <div className="flex items-center gap-2 text-sm text-orange-600">
                                                             <AlertCircle className="size-4" />
@@ -1059,10 +1066,8 @@ export function ClassManagementFormInner({
                                                             'cadence',
                                                             'weekly',
                                                             {
-                                                                shouldDirty:
-                                                                    true,
-                                                                shouldValidate:
-                                                                    true
+                                                                shouldDirty: true,
+                                                                shouldValidate: true
                                                             }
                                                         );
                                                     }}
@@ -1150,10 +1155,8 @@ export function ClassManagementFormInner({
                                                             'cadence',
                                                             'weekly',
                                                             {
-                                                                shouldDirty:
-                                                                    true,
-                                                                shouldValidate:
-                                                                    true
+                                                                shouldDirty: true,
+                                                                shouldValidate: true
                                                             }
                                                         );
                                                     }}
@@ -1172,10 +1175,8 @@ export function ClassManagementFormInner({
                                                                 'cadence',
                                                                 'custom',
                                                                 {
-                                                                    shouldDirty:
-                                                                        true,
-                                                                    shouldValidate:
-                                                                        true
+                                                                    shouldDirty: true,
+                                                                    shouldValidate: true
                                                                 }
                                                             );
                                                             setShowCustomRecurrence(
@@ -1663,7 +1664,11 @@ export function ClassManagementFormInner({
                                 {c.class_name}
                             </p>
                             <p className="text-red-600">
-                                {formatRoomConflictRange(c.start_time, c.end_time, timezone)}
+                                {formatRoomConflictRange(
+                                    c.start_time,
+                                    c.end_time,
+                                    timezone
+                                )}
                             </p>
                         </div>
                     ))}

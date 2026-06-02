@@ -167,7 +167,8 @@ export function SessionDetailSheet({
     });
 
     const facilityEvent =
-        facilityEventOverride ?? buildFacilityEvent(session, classId, classEvents);
+        facilityEventOverride ??
+        buildFacilityEvent(session, classId, classEvents);
 
     const handleUndo = () => {
         onUndo();
@@ -175,10 +176,7 @@ export function SessionDetailSheet({
     };
 
     const showTakeAttendance =
-        !!onTakeAttendance &&
-        session.isPast &&
-        !isCancelled &&
-        !hasAttendance;
+        !!onTakeAttendance && session.isPast && !isCancelled && !hasAttendance;
 
     return (
         <>
@@ -203,7 +201,6 @@ export function SessionDetailSheet({
                         hideRescheduledBadge={hideRescheduledBadge}
                         showActiveBadge={showActiveBadge}
                     />
-
 
                     <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto min-h-0">
                         <SessionDetailClassDetails

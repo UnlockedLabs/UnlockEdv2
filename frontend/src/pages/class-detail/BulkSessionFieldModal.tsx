@@ -42,7 +42,7 @@ interface BulkSessionFieldModalProps {
     idPrefix: string;
     options: FieldOption[];
     payloadKey: string;
-    reasonOptions: Array<{ value: string; label: string }>;
+    reasonOptions: { value: string; label: string }[];
 }
 
 export function BulkSessionFieldModal({
@@ -87,12 +87,16 @@ export function BulkSessionFieldModal({
                 ? [...sessions, ...futureSessions]
                 : sessions;
 
-        const { ok, fail } = await bulkPatchEvents(classId, allSessions, (s) => ({
-            date: s.date,
-            start_time: s.classTime?.split('-')[0],
-            is_cancelled: false,
-            [payloadKey]: Number(selectedId)
-        }));
+        const { ok, fail } = await bulkPatchEvents(
+            classId,
+            allSessions,
+            (s) => ({
+                date: s.date,
+                start_time: s.classTime?.split('-')[0],
+                is_cancelled: false,
+                [payloadKey]: Number(selectedId)
+            })
+        );
 
         const selectedLabel =
             options.find((o) => String(o.id) === selectedId)?.label ?? '';
@@ -133,7 +137,9 @@ export function BulkSessionFieldModal({
                     <Label htmlFor={fieldId}>New {subject}</Label>
                     <Select value={selectedId} onValueChange={setSelectedId}>
                         <SelectTrigger id={fieldId}>
-                            <SelectValue placeholder={`Select ${subjectLower}`} />
+                            <SelectValue
+                                placeholder={`Select ${subjectLower}`}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {options.map((opt) => (
@@ -180,10 +186,7 @@ export function BulkSessionFieldModal({
                 )}
 
                 {applyToFuture && futureSessions.length > 0 && (
-                    <SessionList
-                        sessions={futureSessions}
-                        showDayName
-                    />
+                    <SessionList sessions={futureSessions} showDayName />
                 )}
 
                 {useBulkLayout && sessions.length > 0 && (
