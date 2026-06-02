@@ -205,7 +205,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		if class.InstructorID == nil || *class.InstructorID == 0 {
 			class.InstructorID = nil
 		} else {
-			instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
+			instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, existing.FacilityID)
 			if err != nil || instructorName == "" {
 				return newBadRequestServiceError(err, "invalid instructor selected")
 			}
@@ -219,16 +219,11 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if enrolled > class.Capacity {
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
-	claims = r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = models.UintPtr(claims.UserID)
 
 	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
-		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
-		}
-		existing, err := srv.Db.GetClassByID(id)
-		if err != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, existing.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
 		existingRoomID := uint(0)
@@ -237,7 +232,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		}
 		if *class.Events[0].RoomID != existingRoomID {
 			conflictReq = &models.ConflictCheckRequest{
-				FacilityID:     claims.FacilityID,
+				FacilityID:     existing.FacilityID,
 				RoomID:         *class.Events[0].RoomID,
 				RecurrenceRule: existing.Events[0].RecurrenceRule,
 				Duration:       existing.Events[0].Duration,

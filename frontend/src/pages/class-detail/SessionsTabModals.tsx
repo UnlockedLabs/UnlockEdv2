@@ -103,6 +103,7 @@ export function SessionsTabModals({
                     open={!!rescheduleTarget}
                     onClose={onCloseReschedule}
                     classId={cls.id}
+                    facilityId={String(cls.facility_id)}
                     eventId={
                         rescheduleTarget.instance.event_id ??
                         rescheduleTarget.instance.id
@@ -161,6 +162,7 @@ export function SessionsTabModals({
                     open={showChangeRoom}
                     onClose={onCloseChangeRoom}
                     classId={cls.id}
+                    facilityId={String(cls.facility_id)}
                     sessions={changeRoomSessions}
                     onChanged={onRoomChanged}
                     showSessionsList

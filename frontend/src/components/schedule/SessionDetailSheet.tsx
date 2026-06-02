@@ -270,6 +270,7 @@ export function SessionDetailSheet({
                     open={showRescheduleModal}
                     onClose={() => setShowRescheduleModal(false)}
                     classId={classId}
+                    facilityId={facilityId}
                     eventId={eventId}
                     originalDate={instance.date}
                     dateLabel={shortDateLabel}

@@ -26,6 +26,7 @@ interface RescheduleSessionModalProps {
     open: boolean;
     onClose: () => void;
     classId: number;
+    facilityId: string;
     eventId: number;
     originalDate: string;
     dateLabel: string;
@@ -41,6 +42,7 @@ export function RescheduleSessionModal({
     open,
     onClose,
     classId,
+    facilityId,
     eventId,
     originalDate,
     dateLabel,
@@ -60,7 +62,7 @@ export function RescheduleSessionModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        open ? '/api/rooms' : null
+        open ? `/api/rooms?facility_id=${facilityId}` : null
     );
     const rooms = roomsResp?.data ?? [];
 
