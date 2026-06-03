@@ -16,17 +16,19 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 	resolver := FacilityAdminResolver("program_classes", "class_id")
 	validateFacility := func(check string) RouteResolver {
 		return func(tx *database.DB, r *http.Request) bool {
-			claims := r.Context().Value(ClaimsKey).(*Claims)
-			if claims.canSwitchFacility() {
-				if check == "" {
-					return true
-				}
+			// Facility comes from getQueryContext: the ?facility_id= param for
+			// switch-capable admins, else their home facility. A statewide admin
+			// (facilityID == 0) is allowed for facility-agnostic reads but must
+			// target a specific facility for facility-scoped operations.
+			facilityID := srv.getQueryContext(r).FacilityID
+			if facilityID == 0 {
+				return check == ""
 			}
 			var count int64
 			return tx.WithContext(r.Context()).
 				Table("programs").
 				Where(fmt.Sprintf("id = ? AND %s id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)", check),
-					r.PathValue("program_id"), claims.FacilityID).
+					r.PathValue("program_id"), facilityID).
 				Count(&count).Error == nil && count > 0
 		}
 	}
@@ -125,15 +127,18 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	class.FacilityID = claims.FacilityID
+	facilityID, err := srv.requireFacilityID(r)
+	if err != nil {
+		return err
+	}
+	class.FacilityID = facilityID
 	class.ProgramID = uint(id)
 
 	if class.InstructorID == nil || *class.InstructorID == 0 {
 		return newBadRequestServiceError(nil, "instructor selection is required")
 	}
 
-	instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, claims.FacilityID)
+	instructorName, err := srv.Db.GetInstructorNameByID(*class.InstructorID, class.FacilityID)
 	if err != nil || instructorName == "" {
 		return newBadRequestServiceError(err, "invalid instructor selected")
 	}
@@ -143,11 +148,11 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 
 	var conflictReq *models.ConflictCheckRequest
 	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
-		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, claims.FacilityID); err != nil {
+		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, class.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
 		conflictReq = &models.ConflictCheckRequest{
-			FacilityID:     claims.FacilityID,
+			FacilityID:     class.FacilityID,
 			RoomID:         *class.Events[0].RoomID,
 			RecurrenceRule: class.Events[0].RecurrenceRule,
 			Duration:       class.Events[0].Duration,

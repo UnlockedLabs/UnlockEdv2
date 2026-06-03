@@ -25,7 +25,7 @@ func (srv *Server) handleGetTopFacilityOpenContent(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) handleGetTopUserOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")

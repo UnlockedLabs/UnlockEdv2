@@ -379,12 +379,12 @@ export function ClassManagementFormInner({
 
     async function handleAddRoom() {
         if (!newRoomName.trim()) return;
-        const resp = await API.post<Room, object>(
-            `rooms?facility_id=${resolvedFacilityId}`,
-            {
-                name: newRoomName.trim()
-            }
-        );
+        const roomUrl = resolvedFacilityId
+            ? `rooms?facility_id=${resolvedFacilityId}`
+            : 'rooms';
+        const resp = await API.post<Room, object>(roomUrl, {
+            name: newRoomName.trim()
+        });
         if (resp.success) {
             const created = resp.data as unknown as Room;
             setRooms((prev) => [...prev, created]);
@@ -517,8 +517,11 @@ export function ClassManagementFormInner({
                   ]
         };
 
+        const createUrl = resolvedFacilityId
+            ? `programs/${programId}/classes?facility_id=${resolvedFacilityId}`
+            : `programs/${programId}/classes`;
         const resp = isNewClass
-            ? await API.post(`programs/${programId}/classes`, payload)
+            ? await API.post(createUrl, payload)
             : await API.patch(
                   `programs/${programId}/classes/${classId}`,
                   payload

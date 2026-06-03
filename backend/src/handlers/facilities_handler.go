@@ -15,7 +15,6 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 		newDeptAdminRoute("POST /api/facilities", srv.handleCreateFacility),
 		newSystemAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
 		newDeptAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
-		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 		adminFeatureRoute("GET /api/rooms", srv.handleGetRooms, axx),
 		adminFeatureRoute("POST /api/rooms", srv.handleCreateRoom, axx),
 		adminValidatedFeatureRoute("GET /api/facilities/{facilityId}/instructors",
@@ -50,23 +49,6 @@ func (srv *Server) handleShowFacility(w http.ResponseWriter, r *http.Request, lo
 	}
 
 	return writeJsonResponse(w, http.StatusOK, facility)
-}
-
-func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "facility ID")
-	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	if !claims.canSwitchFacility() {
-		return newUnauthorizedServiceError()
-	}
-	claims.FacilityID = uint(id)
-	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		log.add("facility_id", id)
-		return newInternalServerServiceError(err, "error updating user traits in kratos")
-	}
-	return writeJsonResponse(w, http.StatusOK, "facility updated successfully")
 }
 
 func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -121,12 +103,7 @@ func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, 
 }
 
 func (srv *Server) handleGetRooms(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facilityID := srv.getFacilityID(r)
-	if queryParam := r.URL.Query().Get("facility_id"); queryParam != "" {
-		if parsed, err := strconv.Atoi(queryParam); err == nil {
-			facilityID = uint(parsed)
-		}
-	}
+	facilityID := srv.facilityScopedQueryContext(r).FacilityID
 	log.add("facility_id", facilityID)
 	rooms, err := srv.Db.GetRoomsForFacility(facilityID)
 	if err != nil {
@@ -136,11 +113,9 @@ func (srv *Server) handleGetRooms(w http.ResponseWriter, r *http.Request, log sL
 }
 
 func (srv *Server) handleCreateRoom(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facilityID := srv.getFacilityID(r)
-	if queryParam := r.URL.Query().Get("facility_id"); queryParam != "" {
-		if parsed, err := strconv.Atoi(queryParam); err == nil {
-			facilityID = uint(parsed)
-		}
+	facilityID, err := srv.requireFacilityID(r)
+	if err != nil {
+		return err
 	}
 	var room models.Room
 	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {

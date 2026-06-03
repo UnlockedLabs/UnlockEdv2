@@ -55,7 +55,7 @@ func (srv *Server) handleGetVideos(w http.ResponseWriter, r *http.Request, log s
 	if !user.isAdmin() {
 		visibility = "visible"
 	}
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	videos, err := srv.Db.GetAllVideos(&args, visibility)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching videos")
