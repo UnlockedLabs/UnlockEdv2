@@ -58,6 +58,7 @@ import {
     statusColors,
     type SortOption
 } from '@/pages/program-detail/constants';
+import { clickableProps } from '@/lib/a11y';
 
 function getEffectiveStatus(
     program: ProgramsOverviewTable
@@ -1224,6 +1225,29 @@ function ProgramsTable({
     onRowClick: (programId: number) => void;
 }) {
     const navigate = useNavigate();
+    const nameRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const [truncatedIds, setTruncatedIds] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        const recompute = () =>
+            setTruncatedIds((prev) => {
+                const next = new Set<number>();
+                nameRefs.current.forEach((el, id) => {
+                    if (el.scrollWidth > el.clientWidth) next.add(id);
+                });
+                if (
+                    next.size === prev.size &&
+                    [...next].every((id) => prev.has(id))
+                ) {
+                    return prev;
+                }
+                return next;
+            });
+        recompute();
+        const observer = new ResizeObserver(recompute);
+        nameRefs.current.forEach((el) => observer.observe(el));
+        return () => observer.disconnect();
+    }, [programs]);
 
     return (
         <TooltipProvider>
@@ -1279,11 +1303,11 @@ function ProgramsTable({
                                               ? 'opacity-60'
                                               : ''
                                     }`}
-                                    onClick={() =>
+                                    {...clickableProps(() =>
                                         onRowClick(program.program_id)
-                                    }
+                                    )}
                                 >
-                                    <TableCell className="px-6 py-4">
+                                    <TableCell className="px-6 py-4 max-w-0">
                                         <div>
                                             {(status ===
                                                 ProgramEffectiveStatus.Inactive ||
@@ -1296,9 +1320,34 @@ function ProgramsTable({
                                                     {status}
                                                 </Badge>
                                             )}
-                                            <div className="text-base text-brand-dark hover:text-brand transition-colors font-medium mb-1.5">
-                                                {program.program_name}
-                                            </div>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div
+                                                        ref={(el) => {
+                                                            if (el) {
+                                                                nameRefs.current.set(
+                                                                    program.program_id,
+                                                                    el
+                                                                );
+                                                            } else {
+                                                                nameRefs.current.delete(
+                                                                    program.program_id
+                                                                );
+                                                            }
+                                                        }}
+                                                        className="text-base text-brand-dark hover:text-brand transition-colors font-medium mb-1.5 truncate"
+                                                    >
+                                                        {program.program_name}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                {truncatedIds.has(
+                                                    program.program_id
+                                                ) && (
+                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                                        {program.program_name}
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 items-center">
                                             {types.slice(0, 3).map((type) => (

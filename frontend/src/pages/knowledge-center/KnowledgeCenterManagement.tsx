@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toExternalUrl } from '@/lib/utils';
 import useSWR from 'swr';
 import { Search, Plus, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -645,11 +646,11 @@ export default function KnowledgeCenterManagement() {
         );
         if (resp.success && resp.data) {
             window.open(
-                (resp.data as { url: string }).url ?? link.url,
+                toExternalUrl((resp.data as { url: string }).url ?? link.url),
                 '_blank'
             );
         } else {
-            window.open(link.url, '_blank');
+            window.open(toExternalUrl(link.url), '_blank');
         }
     };
 

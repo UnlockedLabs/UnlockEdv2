@@ -2,6 +2,8 @@ import { OpenContentItem } from '@/types';
 import { ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
+import { clickableProps } from '@/lib/a11y';
+import { toExternalUrl } from '@/lib/utils';
 
 interface TopContentListProps {
     heading: string;
@@ -20,13 +22,17 @@ function ContentRow({ item }: { item: OpenContentItem }) {
         } else if (item.content_type === 'library') {
             navigate(`/viewer/libraries/${item.content_id}`);
         } else {
-            window.open(item.url, '_blank', 'noopener,noreferrer');
+            window.open(
+                toExternalUrl(item.url),
+                '_blank',
+                'noopener,noreferrer'
+            );
         }
     };
 
     return (
         <div
-            onClick={handleClick}
+            {...clickableProps(handleClick)}
             className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
