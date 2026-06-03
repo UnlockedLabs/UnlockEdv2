@@ -37,11 +37,8 @@ export function CancelEventModal({
     const isOther = reason === CancelEventReason['Other (add note)'];
     const finalReason = isOther ? customReason.trim() : reason;
 
-    const { submitSingleSessionChange, submitCancelSeriesChange } = useChangeEventField(
-        event,
-        { is_cancelled: true },
-        finalReason
-    );
+    const { submitSingleSessionChange, submitCancelSeriesChange } =
+        useChangeEventField(event, { is_cancelled: true }, finalReason);
 
     useEffect(() => {
         if (open) {
@@ -87,7 +84,10 @@ export function CancelEventModal({
             <div className="space-y-4 pt-4">
                 <div className="space-y-2">
                     <Label>Reason for Cancellation *</Label>
-                    <Select value={reason} onValueChange={(v) => setReason(v as CancelEventReason)}>
+                    <Select
+                        value={reason}
+                        onValueChange={(v) => setReason(v as CancelEventReason)}
+                    >
                         <SelectTrigger>
                             <SelectValue placeholder="Select a reason" />
                         </SelectTrigger>
@@ -124,7 +124,10 @@ export function CancelEventModal({
                             onChange={(e) => setApplyToFuture(e.target.checked)}
                             className="size-4 rounded border-gray-300"
                         />
-                        <label htmlFor="apply-to-future" className="text-sm font-normal cursor-pointer">
+                        <label
+                            htmlFor="apply-to-future"
+                            className="text-sm font-normal cursor-pointer"
+                        >
                             Apply this change to all future sessions
                         </label>
                     </div>

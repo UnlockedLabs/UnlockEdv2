@@ -43,10 +43,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             </p>
             <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={chartData}>
-                    <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="#E5E7EB"
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis
                         dataKey="week"
                         tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -56,7 +53,9 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                         tick={{ fontSize: 12, fill: '#6B7280' }}
                         tickLine={{ stroke: '#E5E7EB' }}
                         domain={[0, 100]}
-                        tickFormatter={(value: number) => `${Math.round(value)}%`}
+                        tickFormatter={(value: number) =>
+                            `${Math.round(value)}%`
+                        }
                     />
                     <Tooltip
                         contentStyle={{

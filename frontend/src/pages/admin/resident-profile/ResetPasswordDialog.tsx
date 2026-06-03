@@ -39,16 +39,18 @@ export function ResetPasswordDialog({
 
     const handleReset = async () => {
         setSubmitting(true);
-        const resp = await API.post<ResetPasswordResponse, Record<string, never>>(
-            `users/${user.id}/student-password`,
-            {}
-        );
+        const resp = await API.post<
+            ResetPasswordResponse,
+            Record<string, never>
+        >(`users/${user.id}/student-password`, {});
         setSubmitting(false);
         if (resp.success) {
             const data = (resp as ServerResponseOne<ResetPasswordResponse>)
                 .data;
             setTempPassword(data.temp_password);
-            toast.success(`Password reset for ${user.name_first} ${user.name_last}`);
+            toast.success(
+                `Password reset for ${user.name_first} ${user.name_last}`
+            );
             setPhase('result');
         } else {
             toast.error(resp.message);
@@ -144,9 +146,8 @@ export function ResetPasswordDialog({
                             </div>
                         </div>
                         <p className="text-sm text-gray-600 mt-4">
-                            Share this password securely with the resident.
-                            They will be prompted to change it on their next
-                            login.
+                            Share this password securely with the resident. They
+                            will be prompted to change it on their next login.
                         </p>
                     </div>
                     <DialogFooter>

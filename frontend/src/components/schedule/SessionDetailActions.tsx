@@ -1,4 +1,10 @@
-import { CalendarClock, CalendarOff, CheckCircle, MapPin, Users } from 'lucide-react';
+import {
+    CalendarClock,
+    CalendarOff,
+    CheckCircle,
+    MapPin,
+    Users
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SessionDetailActionsProps {
@@ -28,9 +34,7 @@ export function SessionDetailActions({
         <>
             {(canModify || showTakeAttendance) && (
                 <div className="pt-6 border-t border-gray-200">
-                    <h4 className="text-sm text-gray-700 mb-3">
-                        Actions
-                    </h4>
+                    <h4 className="text-sm text-gray-700 mb-3">Actions</h4>
                     <div className="space-y-2">
                         {showTakeAttendance && onTakeAttendance && (
                             <Button

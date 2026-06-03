@@ -7,13 +7,7 @@ import {
 } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import {
-    Save,
-    CheckCircle,
-    Clock,
-    AlertCircle,
-    XCircle
-} from 'lucide-react';
+import { Save, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import API from '@/api/api';
 import {
     EnrollmentAttendance,
@@ -104,8 +98,7 @@ export default function EventAttendance() {
     const scheduledTimes = useMemo(() => {
         const match = Array.isArray(dates?.data)
             ? dates.data.find(
-                  (d) =>
-                      d.event_id === Number(event_id) && d.date === date
+                  (d) => d.event_id === Number(event_id) && d.date === date
               )
             : undefined;
         if (match?.class_time?.includes?.('-')) {
@@ -130,9 +123,10 @@ export default function EventAttendance() {
                 status: item.attendance_status ?? '',
                 note: item.note ?? '',
                 reason: toAttendanceReason(item.reason_category),
-                check_in_at: item.check_in_at ?? (hasExisting ? '' : defaultCheckIn),
+                check_in_at:
+                    item.check_in_at ?? (hasExisting ? '' : defaultCheckIn),
                 check_out_at: item.check_out_at ?? '',
-                showNoteField: !!(item.note?.trim()),
+                showNoteField: !!item.note?.trim(),
                 dirty: false
             };
         });
@@ -160,7 +154,9 @@ export default function EventAttendance() {
     if (error) {
         return (
             <div className="full-page-center">
-                <div className="text-red-600">Error loading attendance data</div>
+                <div className="text-red-600">
+                    Error loading attendance data
+                </div>
             </div>
         );
     }
@@ -184,8 +180,8 @@ export default function EventAttendance() {
         return (
             <div className="full-page-center">
                 <div className="text-red-600">
-                    This session is scheduled for a future date. Attendance
-                    will be available after it occurs.
+                    This session is scheduled for a future date. Attendance will
+                    be available after it occurs.
                 </div>
             </div>
         );
@@ -232,8 +228,7 @@ export default function EventAttendance() {
             status === Attendance.Present
                 ? {
                       check_in_at:
-                          rows.find((r) => r.user_id === userId)
-                              ?.check_in_at ??
+                          rows.find((r) => r.user_id === userId)?.check_in_at ??
                           scheduledTimes.check_in_at ??
                           formatTimeHM(new Date()),
                       check_out_at:
@@ -246,17 +241,13 @@ export default function EventAttendance() {
         updateRow(userId, {
             status,
             ...(status !== Attendance.Partial && {
-                check_in_at: isPresentLike
-                    ? defaults.check_in_at ?? ''
-                    : '',
-                check_out_at: isPresentLike
-                    ? defaults.check_out_at ?? ''
-                    : ''
+                check_in_at: isPresentLike ? (defaults.check_in_at ?? '') : '',
+                check_out_at: isPresentLike ? (defaults.check_out_at ?? '') : ''
             }),
             reason: isPresentLike
                 ? ''
-                : current?.reason ?? AttendanceReason.Lockdown,
-            showNoteField: current?.showNoteField && !!(current?.note?.trim())
+                : (current?.reason ?? AttendanceReason.Lockdown),
+            showNoteField: current?.showNoteField && !!current?.note?.trim()
         });
     }
 
@@ -348,7 +339,9 @@ export default function EventAttendance() {
                                     Mark All Present
                                 </Button>
                                 <Button
-                                    onClick={() => { void handleSave(); }}
+                                    onClick={() => {
+                                        void handleSave();
+                                    }}
                                     disabled={isSaving}
                                     className="bg-brand hover:bg-brand-dark text-white gap-2"
                                 >
@@ -423,16 +416,16 @@ export default function EventAttendance() {
                     <Button
                         variant="outline"
                         onClick={() =>
-                            navigate(
-                                `/program-classes/${class_id}/detail`
-                            )
+                            navigate(`/program-classes/${class_id}/detail`)
                         }
                         className="border-gray-300"
                     >
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => { void handleSave(); }}
+                        onClick={() => {
+                            void handleSave();
+                        }}
                         disabled={isSaving}
                         className="bg-brand hover:bg-brand-dark text-white gap-2"
                     >
@@ -620,9 +613,7 @@ function AttendanceRowCard({
                         onCollapse={() =>
                             onUpdate(row.user_id, { showNoteField: false })
                         }
-                        onChange={(note) =>
-                            onUpdate(row.user_id, { note })
-                        }
+                        onChange={(note) => onUpdate(row.user_id, { note })}
                     />
                 </div>
             )}
@@ -679,9 +670,7 @@ function CollapsibleNoteField({
             </div>
             <Textarea
                 placeholder={
-                    required
-                        ? 'Please specify...'
-                        : 'Add additional details...'
+                    required ? 'Please specify...' : 'Add additional details...'
                 }
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -736,9 +725,7 @@ function ReasonAndNote({
                 value={row.note}
                 expanded={row.showNoteField}
                 required={noteRequired}
-                onExpand={() =>
-                    onUpdate(row.user_id, { showNoteField: true })
-                }
+                onExpand={() => onUpdate(row.user_id, { showNoteField: true })}
                 onCollapse={() =>
                     onUpdate(row.user_id, { showNoteField: false })
                 }

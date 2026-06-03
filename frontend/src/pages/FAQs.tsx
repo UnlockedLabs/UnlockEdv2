@@ -21,55 +21,51 @@ export function FAQContent({ compact = false }: { compact?: boolean }) {
                     Frequently Asked Questions
                 </h2>
             )}
-            {Object.entries(FAQ_CATEGORIES).map(
-                ([category, questions]) => (
-                    <div key={category}>
-                        <h3 className={compact ? "text-base font-semibold text-foreground mb-2" : "text-lg font-semibold text-foreground mb-2"}>
-                            {category}
-                        </h3>
-                        <div className="bg-card rounded-lg border border-border">
-                            <Accordion type="single" collapsible>
-                                {questions.map((faq, index) => (
-                                    <AccordionItem
-                                        key={`${category}-${index}`}
-                                        value={`${category}-${index}`}
+            {Object.entries(FAQ_CATEGORIES).map(([category, questions]) => (
+                <div key={category}>
+                    <h3
+                        className={
+                            compact
+                                ? 'text-base font-semibold text-foreground mb-2'
+                                : 'text-lg font-semibold text-foreground mb-2'
+                        }
+                    >
+                        {category}
+                    </h3>
+                    <div className="bg-card rounded-lg border border-border">
+                        <Accordion type="single" collapsible>
+                            {questions.map((faq, index) => (
+                                <AccordionItem
+                                    key={`${category}-${index}`}
+                                    value={`${category}-${index}`}
+                                >
+                                    <AccordionTrigger
+                                        onClick={() =>
+                                            logQuestionClick(faq.question)
+                                        }
+                                        className="px-4 text-foreground hover:no-underline hover:text-brand"
                                     >
-                                        <AccordionTrigger
-                                            onClick={() =>
-                                                logQuestionClick(
-                                                    faq.question
-                                                )
-                                            }
-                                            className="px-4 text-foreground hover:no-underline hover:text-brand"
-                                        >
-                                            {faq.question}
-                                        </AccordionTrigger>
-                                        <AccordionContent className="px-4 text-muted-foreground">
-                                            <p>{faq.answer}</p>
-                                            {faq.list && (
-                                                <ul className="list-disc list-outside pl-6 mt-2 space-y-1">
-                                                    {faq.list.map(
-                                                        (item, i) => (
-                                                            <li key={i}>
-                                                                {item}
-                                                            </li>
-                                                        )
-                                                    )}
-                                                </ul>
-                                            )}
-                                            {faq.extra && (
-                                                <p className="mt-2">
-                                                    {faq.extra}
-                                                </p>
-                                            )}
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                        </div>
+                                        {faq.question}
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 text-muted-foreground">
+                                        <p>{faq.answer}</p>
+                                        {faq.list && (
+                                            <ul className="list-disc list-outside pl-6 mt-2 space-y-1">
+                                                {faq.list.map((item, i) => (
+                                                    <li key={i}>{item}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        {faq.extra && (
+                                            <p className="mt-2">{faq.extra}</p>
+                                        )}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
                     </div>
-                )
-            )}
+                </div>
+            ))}
         </div>
     );
 }

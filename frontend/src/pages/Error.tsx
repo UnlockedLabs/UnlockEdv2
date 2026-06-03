@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
 import { ErrorType } from '@/types';
 
-export default function Error({ type, back }: { type?: ErrorType; back?: boolean }) {
+export default function Error({
+    type,
+    back
+}: {
+    type?: ErrorType;
+    back?: boolean;
+}) {
     const getMessage = () => {
         switch (type) {
             case 'not-found':

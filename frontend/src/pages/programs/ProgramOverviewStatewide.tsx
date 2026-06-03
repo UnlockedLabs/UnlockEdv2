@@ -135,11 +135,14 @@ export default function ProgramOverviewStatewide() {
     >('facility');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-    const [showCannotArchiveDialog, setShowCannotArchiveDialog] = useState(false);
+    const [showCannotArchiveDialog, setShowCannotArchiveDialog] =
+        useState(false);
     const [showReactivateDialog, setShowReactivateDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
-    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<string[]>([]);
+    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<
+        string[]
+    >([]);
 
     const { data: programResp, mutate: mutateProgram } = useSWR<
         ServerResponseOne<ProgramOverview>
@@ -190,7 +193,8 @@ export default function ProgramOverviewStatewide() {
             return;
         }
 
-        const blocking = (resp.data as { facilities: string[] }).facilities ?? [];
+        const blocking =
+            (resp.data as { facilities: string[] }).facilities ?? [];
         if (blocking.length > 0) {
             setArchiveBlockingFacilities(blocking);
             setShowCannotArchiveDialog(true);
@@ -562,7 +566,9 @@ export default function ProgramOverviewStatewide() {
                                 {programStatus === 'Archived' ? (
                                     <>
                                         <DropdownMenuItem
-                                            onClick={() => setShowReactivateDialog(true)}
+                                            onClick={() =>
+                                                setShowReactivateDialog(true)
+                                            }
                                         >
                                             Reactivate Program
                                         </DropdownMenuItem>
@@ -571,7 +577,9 @@ export default function ProgramOverviewStatewide() {
                                 ) : (
                                     <>
                                         <DropdownMenuItem
-                                            onClick={() => void handleArchiveCheck()}
+                                            onClick={() =>
+                                                void handleArchiveCheck()
+                                            }
                                             disabled={archiveCheckLoading}
                                             className="text-orange-600"
                                         >
@@ -1001,7 +1009,10 @@ export default function ProgramOverviewStatewide() {
                                                                                     }
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">
-                                                                                    {getInstructorName(cls.events) || '—'}
+                                                                                    {getInstructorName(
+                                                                                        cls.events
+                                                                                    ) ||
+                                                                                        '—'}
                                                                                 </TableCell>
                                                                                 <TableCell>
                                                                                     <span className="text-sm">

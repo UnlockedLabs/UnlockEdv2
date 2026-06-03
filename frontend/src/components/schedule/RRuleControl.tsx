@@ -55,7 +55,15 @@ function formatDuration(startTime: string, endTime: string): string {
 
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
     function RRuleControl(
-        { defaultStartDate, defaultStartTime, defaultEndTime, defaultDays, defaultEndDate, startDateLabel, startDateHelper },
+        {
+            defaultStartDate,
+            defaultStartTime,
+            defaultEndTime,
+            defaultDays,
+            defaultEndDate,
+            startDateLabel,
+            startDateHelper
+        },
         ref
     ) {
         const [startDate, setStartDate] = useState(defaultStartDate ?? '');
@@ -67,7 +75,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
 
         function toggleDay(day: string) {
             setDays((prev) =>
-                prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+                prev.includes(day)
+                    ? prev.filter((d) => d !== day)
+                    : [...prev, day]
             );
         }
 
@@ -105,7 +115,11 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                     />
-                    {startDateHelper && <p className="text-sm text-gray-500">{startDateHelper}</p>}
+                    {startDateHelper && (
+                        <p className="text-sm text-gray-500">
+                            {startDateHelper}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-2 pt-1">
@@ -123,7 +137,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProps>(
                             <SelectItem value="MONTHLY">Monthly</SelectItem>
                         </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500">{FREQUENCY_HELPER[frequency]}</p>
+                    <p className="text-xs text-gray-500">
+                        {FREQUENCY_HELPER[frequency]}
+                    </p>
                 </div>
 
                 {frequency === 'WEEKLY' && (

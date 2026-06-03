@@ -33,7 +33,8 @@ export function useChangeEventField(
 
         const overrideEvent = {
             ...(event.linked_override_event && {
-                linked_override_event_id: event.linked_override_event.override_id
+                linked_override_event_id:
+                    event.linked_override_event.override_id
             }),
             ...(event.is_override && { id: event.override_id }),
             event_id: event.id,
@@ -52,7 +53,12 @@ export function useChangeEventField(
             [overrideEvent]
         );
 
-        return { success: resp.success, status: resp.status, data: (resp as { data?: unknown }).data, message: resp.message };
+        return {
+            success: resp.success,
+            status: resp.status,
+            data: (resp as { data?: unknown }).data,
+            message: resp.message
+        };
     }
 
     async function submitSeriesChange(): Promise<ChangeResult> {
@@ -97,7 +103,12 @@ export function useChangeEventField(
             closed_event_series: closedEventSeries
         });
 
-        return { success: resp.success, status: resp.status, data: (resp as { data?: unknown }).data, message: resp.message };
+        return {
+            success: resp.success,
+            status: resp.status,
+            data: (resp as { data?: unknown }).data,
+            message: resp.message
+        };
     }
 
     async function submitCancelSeriesChange(): Promise<ChangeResult> {
@@ -142,8 +153,17 @@ export function useChangeEventField(
             closed_event_series: closedEventSeries
         });
 
-        return { success: resp.success, status: resp.status, data: (resp as { data?: unknown }).data, message: resp.message };
+        return {
+            success: resp.success,
+            status: resp.status,
+            data: (resp as { data?: unknown }).data,
+            message: resp.message
+        };
     }
 
-    return { submitSingleSessionChange, submitSeriesChange, submitCancelSeriesChange };
+    return {
+        submitSingleSessionChange,
+        submitSeriesChange,
+        submitCancelSeriesChange
+    };
 }

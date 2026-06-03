@@ -46,8 +46,8 @@ export function DeleteClassModal({
             title="Delete Class"
             description={
                 <>
-                    Are you sure you want to delete <strong>{className}</strong>?
-                    This action cannot be undone.
+                    Are you sure you want to delete <strong>{className}</strong>
+                    ? This action cannot be undone.
                 </>
             }
             preventOutsideClose

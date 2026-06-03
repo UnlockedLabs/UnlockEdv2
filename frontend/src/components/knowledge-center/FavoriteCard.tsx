@@ -1,11 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { KeyedMutator } from 'swr';
-import {
-    ServerResponseMany,
-    OpenContentItem,
-    ViewType
-} from '@/types';
+import { ServerResponseMany, OpenContentItem, ViewType } from '@/types';
 import { isAdministrator, useAuth } from '@/auth/useAuth';
 import { toast } from 'sonner';
 import API from '@/api/api';

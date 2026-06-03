@@ -363,7 +363,7 @@ export default function ProgramsPage() {
                             <h1 className="text-2xl font-medium text-brand-dark">
                                 Programs
                             </h1>
-                        <p className="text-gray-600 mt-1.5 leading-[1.5]">
+                            <p className="text-gray-600 mt-1.5 leading-[1.5]">
                                 {subtitle}
                             </p>
                         </div>

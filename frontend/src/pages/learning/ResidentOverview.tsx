@@ -60,7 +60,9 @@ export default function ResidentOverview() {
                 />
 
                 {isLoading && (
-                    <p className="text-muted-foreground text-center py-8">Loading...</p>
+                    <p className="text-muted-foreground text-center py-8">
+                        Loading...
+                    </p>
                 )}
 
                 {!isLoading && programs.length === 0 && (
@@ -83,12 +85,8 @@ export default function ResidentOverview() {
                                             <th className="th-muted">
                                                 Program
                                             </th>
-                                            <th className="th-muted">
-                                                Class
-                                            </th>
-                                            <th className="th-muted">
-                                                Status
-                                            </th>
+                                            <th className="th-muted">Class</th>
+                                            <th className="th-muted">Status</th>
                                             <th className="th-muted">
                                                 Enrollment
                                             </th>

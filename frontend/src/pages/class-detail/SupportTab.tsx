@@ -23,7 +23,8 @@ export function SupportTab({ classId }: SupportTabProps) {
                     At-Risk Residents ({flagsResp?.meta?.total ?? 0})
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                    Residents with attendance below 75% or multiple consecutive absences
+                    Residents with attendance below 75% or multiple consecutive
+                    absences
                 </p>
             </div>
             {flags.length === 0 ? (

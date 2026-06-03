@@ -441,7 +441,9 @@ export function BulkDeleteDialog({
                 onOpenChange(false);
                 onSuccess();
             } else {
-                toast.error(response.message ?? `Failed to delete ${cfg.plural}`);
+                toast.error(
+                    response.message ?? `Failed to delete ${cfg.plural}`
+                );
             }
         } catch {
             toast.error(`Failed to delete ${cfg.plural}`);

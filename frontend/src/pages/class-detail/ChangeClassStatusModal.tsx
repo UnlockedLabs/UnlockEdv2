@@ -56,7 +56,8 @@ export function ChangeClassStatusModal({
     capacity,
     onStatusChanged
 }: ChangeClassStatusModalProps) {
-    const [newStatus, setNewStatus] = useState<SelectedClassStatus>(currentStatus);
+    const [newStatus, setNewStatus] =
+        useState<SelectedClassStatus>(currentStatus);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -94,46 +95,46 @@ export function ChangeClassStatusModal({
             titleClassName="text-foreground"
         >
             <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="classStatus">New Status</Label>
-                        <Select
-                            value={newStatus}
-                            onValueChange={(v) =>
-                                setNewStatus(v as SelectedClassStatus)
-                            }
-                        >
-                            <SelectTrigger id="classStatus">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {ALL_STATUSES.map((s) => (
-                                    <SelectItem key={s} value={s}>
-                                        {s}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-xs text-gray-500 mt-2">
-                            {getStatusDescription(newStatus)}
-                        </p>
-                    </div>
-                    <div className="flex gap-2 justify-end pt-4">
-                        <Button
-                            variant="outline"
-                            onClick={onClose}
-                            disabled={isSubmitting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleSubmit()}
-                            disabled={isSubmitting}
-                            variant="brand"
-                        >
-                            {isSubmitting ? 'Updating...' : 'Update Status'}
-                        </Button>
-                    </div>
+                <div>
+                    <Label htmlFor="classStatus">New Status</Label>
+                    <Select
+                        value={newStatus}
+                        onValueChange={(v) =>
+                            setNewStatus(v as SelectedClassStatus)
+                        }
+                    >
+                        <SelectTrigger id="classStatus">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ALL_STATUSES.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                    {s}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-2">
+                        {getStatusDescription(newStatus)}
+                    </p>
                 </div>
+                <div className="flex gap-2 justify-end pt-4">
+                    <Button
+                        variant="outline"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => void handleSubmit()}
+                        disabled={isSubmitting}
+                        variant="brand"
+                    >
+                        {isSubmitting ? 'Updating...' : 'Update Status'}
+                    </Button>
+                </div>
+            </div>
         </FormModal>
     );
 }

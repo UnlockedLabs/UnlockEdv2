@@ -26,8 +26,7 @@ export function SessionsTabBulkActions({
                         {selectedCount}
                     </span>
                     <span className="text-gray-600 ml-1">
-                        {selectedCount === 1 ? 'session' : 'sessions'}{' '}
-                        selected
+                        {selectedCount === 1 ? 'session' : 'sessions'} selected
                     </span>
                 </div>
                 <div className="flex gap-3">

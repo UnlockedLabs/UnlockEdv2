@@ -32,7 +32,11 @@ export function RoomConflictModal({
                             {c.class_name}
                         </p>
                         <p className="text-red-600">
-                            {formatRoomConflictRange(c.start_time, c.end_time, timezone)}
+                            {formatRoomConflictRange(
+                                c.start_time,
+                                c.end_time,
+                                timezone
+                            )}
                         </p>
                     </div>
                 ))}

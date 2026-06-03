@@ -19,9 +19,7 @@ export default function ResetPassword() {
                 </Link>
             </div>
             <div className="w-full max-w-md px-6 py-4 bg-card shadow-md rounded-lg">
-                <h2 className="section-heading">
-                    Reset Password
-                </h2>
+                <h2 className="section-heading">Reset Password</h2>
                 <ChangePasswordForm />
             </div>
         </div>

@@ -113,10 +113,7 @@ export default function FacilityManagement() {
         }
     });
 
-    const paginated = sorted.slice(
-        (page - 1) * perPage,
-        page * perPage
-    );
+    const paginated = sorted.slice((page - 1) * perPage, page * perPage);
 
     function toggleSort(column: SortColumn) {
         if (sortColumn === column) {
@@ -357,47 +354,47 @@ export default function FacilityManagement() {
                     titleClassName="text-foreground"
                 >
                     <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="add-name">Facility Name</Label>
-                                <Input
-                                    id="add-name"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            name: e.target.value
-                                        })
-                                    }
-                                    placeholder="Northern Regional Facility"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="add-timezone">Timezone</Label>
-                                <Select
-                                    value={formData.timezone}
-                                    onValueChange={(value) =>
-                                        setFormData({
-                                            ...formData,
-                                            timezone: value
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="add-timezone">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {timezones.map((tz) => (
-                                            <SelectItem
-                                                key={tz.value}
-                                                value={tz.value}
-                                            >
-                                                {tz.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="add-name">Facility Name</Label>
+                            <Input
+                                id="add-name"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        name: e.target.value
+                                    })
+                                }
+                                placeholder="Northern Regional Facility"
+                            />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="add-timezone">Timezone</Label>
+                            <Select
+                                value={formData.timezone}
+                                onValueChange={(value) =>
+                                    setFormData({
+                                        ...formData,
+                                        timezone: value
+                                    })
+                                }
+                            >
+                                <SelectTrigger id="add-timezone">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {timezones.map((tz) => (
+                                        <SelectItem
+                                            key={tz.value}
+                                            value={tz.value}
+                                        >
+                                            {tz.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                     <DialogFooter>
                         <Button
                             variant="outline"
@@ -424,46 +421,46 @@ export default function FacilityManagement() {
                     titleClassName="text-foreground"
                 >
                     <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-name">Facility Name</Label>
-                                <Input
-                                    id="edit-name"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            name: e.target.value
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-timezone">Timezone</Label>
-                                <Select
-                                    value={formData.timezone}
-                                    onValueChange={(value) =>
-                                        setFormData({
-                                            ...formData,
-                                            timezone: value
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="edit-timezone">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {timezones.map((tz) => (
-                                            <SelectItem
-                                                key={tz.value}
-                                                value={tz.value}
-                                            >
-                                                {tz.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-name">Facility Name</Label>
+                            <Input
+                                id="edit-name"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        name: e.target.value
+                                    })
+                                }
+                            />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-timezone">Timezone</Label>
+                            <Select
+                                value={formData.timezone}
+                                onValueChange={(value) =>
+                                    setFormData({
+                                        ...formData,
+                                        timezone: value
+                                    })
+                                }
+                            >
+                                <SelectTrigger id="edit-timezone">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {timezones.map((tz) => (
+                                        <SelectItem
+                                            key={tz.value}
+                                            value={tz.value}
+                                        >
+                                            {tz.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                     <DialogFooter>
                         <Button
                             variant="outline"

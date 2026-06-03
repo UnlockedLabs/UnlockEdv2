@@ -112,9 +112,8 @@ export default function ResidentProfile() {
     >(residentId ? `/api/users/${residentId}/notes` : null);
     const notes = useMemo(() => notesResp?.data ?? [], [notesResp]);
 
-    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
-        '/api/facilities'
-    );
+    const { data: facilitiesResp } =
+        useSWR<ServerResponseMany<Facility>>('/api/facilities');
     const facilities = useMemo(
         () => facilitiesResp?.data ?? [],
         [facilitiesResp]
@@ -176,110 +175,107 @@ export default function ResidentProfile() {
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
-                    <button
-                        onClick={() => navigate('/residents')}
-                        className="hover:text-brand transition-colors"
-                    >
-                        Residents
-                    </button>
-                    <ChevronRight className="size-4" />
-                    <span className="text-brand-dark font-medium">
-                        {residentUser.name_first}{' '}
-                        {residentUser.name_last}
-                    </span>
-                </div>
-
-                <ResidentHeader
-                    user={residentUser}
-                    facilityName={residentUser.facility?.name ?? ''}
-                    joinedDate={engagement?.joined ?? ''}
-                    lastActiveDate={engagement?.last_active_date ?? ''}
-                    isDeactivated={isDeactivated}
-                    isDeptAdmin={userIsDeptAdmin}
-                    onEditProfile={() => setEditOpen(true)}
-                    onResetPassword={() => setResetPwOpen(true)}
-                    onDeactivate={() => setDeactivateOpen(true)}
-                    onTransfer={() => setTransferOpen(true)}
-                    onDelete={() => setDeleteOpen(true)}
-                />
-
-                <ResidentMetrics
-                    overallAttendancePercent={attendanceStats.overallPercent}
-                    sessionsAttended={attendanceStats.totalAttended}
-                    totalSessions={attendanceStats.totalSessions}
-                    activeEnrollments={activeEnrollments.length}
-                    completedPrograms={completedPrograms.length}
-                />
-
-                <AttendanceTrendChart data={chartData} />
-
-                <ActiveEnrollmentsTable
-                    enrollments={activeEnrollments}
-                    onViewDetails={handleViewDetails}
-                />
-
-                <DetailedAttendanceDialog
-                    open={attendanceDialogOpen}
-                    onOpenChange={setAttendanceDialogOpen}
-                    enrollment={selectedEnrollment}
-                    residentId={residentId ?? ''}
-                />
-
-                <CompletedPrograms
-                    programs={completedPrograms}
-                    onViewDetails={handleViewDetails}
-                />
-
-                <IncompleteEnrollments
-                    enrollments={incompleteEnrollments}
-                />
-
-                <HistoricalNotes
-                    notes={notes}
-                    isDeactivated={isDeactivated}
-                    onAddNote={() => setAddNoteOpen(true)}
-                />
-
-                <ActivityHistoryCard residentId={residentId} />
-
-                <EditResidentDialog
-                    open={editOpen}
-                    onOpenChange={setEditOpen}
-                    resident={residentUser}
-                    onSuccess={handleActionSuccess}
-                />
-                <ResetPasswordDialog
-                    open={resetPwOpen}
-                    onOpenChange={setResetPwOpen}
-                    user={residentUser}
-                />
-                <DeactivateDialog
-                    open={deactivateOpen}
-                    onOpenChange={setDeactivateOpen}
-                    resident={residentUser}
-                    onSuccess={handleActionSuccess}
-                />
-                <DeleteDialog
-                    open={deleteOpen}
-                    onOpenChange={setDeleteOpen}
-                    resident={residentUser}
-                    onSuccess={() => navigate('/residents')}
-                />
-                <TransferDialog
-                    open={transferOpen}
-                    onOpenChange={setTransferOpen}
-                    resident={residentUser}
-                    facilities={facilities}
-                    onSuccess={handleActionSuccess}
-                />
-                <AddNoteDialog
-                    open={addNoteOpen}
-                    onOpenChange={setAddNoteOpen}
-                    residentId={residentId ?? ''}
-                    residentName={residentUser.name_first}
-                    onSuccess={() => void mutateNotes()}
-                />
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                <button
+                    onClick={() => navigate('/residents')}
+                    className="hover:text-brand transition-colors"
+                >
+                    Residents
+                </button>
+                <ChevronRight className="size-4" />
+                <span className="text-brand-dark font-medium">
+                    {residentUser.name_first} {residentUser.name_last}
+                </span>
             </div>
+
+            <ResidentHeader
+                user={residentUser}
+                facilityName={residentUser.facility?.name ?? ''}
+                joinedDate={engagement?.joined ?? ''}
+                lastActiveDate={engagement?.last_active_date ?? ''}
+                isDeactivated={isDeactivated}
+                isDeptAdmin={userIsDeptAdmin}
+                onEditProfile={() => setEditOpen(true)}
+                onResetPassword={() => setResetPwOpen(true)}
+                onDeactivate={() => setDeactivateOpen(true)}
+                onTransfer={() => setTransferOpen(true)}
+                onDelete={() => setDeleteOpen(true)}
+            />
+
+            <ResidentMetrics
+                overallAttendancePercent={attendanceStats.overallPercent}
+                sessionsAttended={attendanceStats.totalAttended}
+                totalSessions={attendanceStats.totalSessions}
+                activeEnrollments={activeEnrollments.length}
+                completedPrograms={completedPrograms.length}
+            />
+
+            <AttendanceTrendChart data={chartData} />
+
+            <ActiveEnrollmentsTable
+                enrollments={activeEnrollments}
+                onViewDetails={handleViewDetails}
+            />
+
+            <DetailedAttendanceDialog
+                open={attendanceDialogOpen}
+                onOpenChange={setAttendanceDialogOpen}
+                enrollment={selectedEnrollment}
+                residentId={residentId ?? ''}
+            />
+
+            <CompletedPrograms
+                programs={completedPrograms}
+                onViewDetails={handleViewDetails}
+            />
+
+            <IncompleteEnrollments enrollments={incompleteEnrollments} />
+
+            <HistoricalNotes
+                notes={notes}
+                isDeactivated={isDeactivated}
+                onAddNote={() => setAddNoteOpen(true)}
+            />
+
+            <ActivityHistoryCard residentId={residentId} />
+
+            <EditResidentDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                resident={residentUser}
+                onSuccess={handleActionSuccess}
+            />
+            <ResetPasswordDialog
+                open={resetPwOpen}
+                onOpenChange={setResetPwOpen}
+                user={residentUser}
+            />
+            <DeactivateDialog
+                open={deactivateOpen}
+                onOpenChange={setDeactivateOpen}
+                resident={residentUser}
+                onSuccess={handleActionSuccess}
+            />
+            <DeleteDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                resident={residentUser}
+                onSuccess={() => navigate('/residents')}
+            />
+            <TransferDialog
+                open={transferOpen}
+                onOpenChange={setTransferOpen}
+                resident={residentUser}
+                facilities={facilities}
+                onSuccess={handleActionSuccess}
+            />
+            <AddNoteDialog
+                open={addNoteOpen}
+                onOpenChange={setAddNoteOpen}
+                residentId={residentId ?? ''}
+                residentName={residentUser.name_first}
+                onSuccess={() => void mutateNotes()}
+            />
+        </div>
     );
 }

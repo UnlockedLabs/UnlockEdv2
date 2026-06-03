@@ -105,9 +105,7 @@ export function SessionsTabFilterBar({
                         active={statusFilter === 'missing'}
                         onClick={() =>
                             onStatusChange(
-                                statusFilter === 'missing'
-                                    ? 'all'
-                                    : 'missing'
+                                statusFilter === 'missing' ? 'all' : 'missing'
                             )
                         }
                         colorClass="bg-amber-100 text-amber-700"
@@ -118,9 +116,7 @@ export function SessionsTabFilterBar({
                         active={statusFilter === 'upcoming'}
                         onClick={() =>
                             onStatusChange(
-                                statusFilter === 'upcoming'
-                                    ? 'all'
-                                    : 'upcoming'
+                                statusFilter === 'upcoming' ? 'all' : 'upcoming'
                             )
                         }
                         colorClass="bg-blue-100 text-blue-700"

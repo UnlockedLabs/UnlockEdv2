@@ -173,10 +173,7 @@ export default function ChangePasswordForm() {
             </div>
 
             <div className="mt-2 text-sm">
-                <ValidationItem
-                    valid={passwordsMatch}
-                    text="Passwords match"
-                />
+                <ValidationItem valid={passwordsMatch} text="Passwords match" />
             </div>
 
             {errorMessage && (

@@ -69,13 +69,13 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
-    const { mutate: mutateEvents } = useSWR<
-        ServerResponseMany<{ id: number }>
-    >(class_id ? `/api/program-classes/${class_id}/events?all=true` : null);
-
-    const { data: rateResp } = useSWR<ServerResponseOne<{ attendance_rate: number }>>(
-        class_id ? `/api/program-classes/${class_id}/attendance-rate` : null
+    const { mutate: mutateEvents } = useSWR<ServerResponseMany<{ id: number }>>(
+        class_id ? `/api/program-classes/${class_id}/events?all=true` : null
     );
+
+    const { data: rateResp } = useSWR<
+        ServerResponseOne<{ attendance_rate: number }>
+    >(class_id ? `/api/program-classes/${class_id}/attendance-rate` : null);
 
     const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
         class_id ? `/api/program-classes/${class_id}/attendance-flags` : null
@@ -135,23 +135,27 @@ export default function ClassDetailPage() {
                         <div className="flex-1 min-w-0">
                             <ClassHeader
                                 cls={cls}
-                                onMutate={() => { void mutate(); void mutateDeleteCheck(); }}
+                                onMutate={() => {
+                                    void mutate();
+                                    void mutateDeleteCheck();
+                                }}
                             />
                         </div>
                         <div className="flex gap-2 ml-6">
                             <Button
                                 variant="outline"
                                 className="border-gray-300"
-                                onClick={() => { editModalVersion.current++; setShowEditModal(true); }}
+                                onClick={() => {
+                                    editModalVersion.current++;
+                                    setShowEditModal(true);
+                                }}
                             >
                                 <Edit className="size-4 mr-2" />
                                 Edit Class
                             </Button>
                             {cls.status === SelectedClassStatus.Active && (
                                 <Button
-                                    onClick={() =>
-                                        setShowAttendanceModal(true)
-                                    }
+                                    onClick={() => setShowAttendanceModal(true)}
                                     className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark"
                                 >
                                     Take Attendance
@@ -173,7 +177,9 @@ export default function ClassDetailPage() {
                                             <div>
                                                 <DropdownMenuItem
                                                     variant="destructive"
-                                                    onClick={() => setShowDeleteModal(true)}
+                                                    onClick={() =>
+                                                        setShowDeleteModal(true)
+                                                    }
                                                     disabled={!canDelete}
                                                 >
                                                     <Trash2 className="size-4 mr-2" />
@@ -242,7 +248,20 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} classFacilityId={cls.facility_id} classStatus={cls.status} classStartDt={cls.start_dt} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} flaggedUserIds={flaggedUserIds} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        <RosterTab
+                            classId={cls.id}
+                            classFacilityId={cls.facility_id}
+                            classStatus={cls.status}
+                            classStartDt={cls.start_dt}
+                            className={cls.name}
+                            capacity={cls.capacity}
+                            enrolled={cls.enrolled}
+                            flaggedUserIds={flaggedUserIds}
+                            onClassMutate={() => {
+                                void mutate();
+                                void mutateDeleteCheck();
+                            }}
+                        />
                     </TabsContent>
 
                     <TabsContent
@@ -253,11 +272,23 @@ export default function ClassDetailPage() {
                     </TabsContent>
 
                     <TabsContent value="sessions" className="space-y-4">
-                        <SessionsTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        <SessionsTab
+                            cls={cls}
+                            onClassMutate={() => {
+                                void mutate();
+                                void mutateDeleteCheck();
+                            }}
+                        />
                     </TabsContent>
 
                     <TabsContent value="schedule" className="space-y-4">
-                        <ScheduleTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        <ScheduleTab
+                            cls={cls}
+                            onClassMutate={() => {
+                                void mutate();
+                                void mutateDeleteCheck();
+                            }}
+                        />
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
@@ -282,9 +313,7 @@ export default function ClassDetailPage() {
                 onClose={() => setShowDeleteModal(false)}
                 classId={cls.id}
                 className={cls.name}
-                onDeleted={() =>
-                    navigate(`/programs/${cls.program_id}`)
-                }
+                onDeleted={() => navigate(`/programs/${cls.program_id}`)}
             />
 
             <EditClassModal
@@ -297,7 +326,11 @@ export default function ClassDetailPage() {
                     void mutateEvents();
                     void mutateDeleteCheck();
                     void globalMutate(
-                        (key: string) => typeof key === 'string' && key.startsWith(`/api/program-classes/${class_id}/history`),
+                        (key: string) =>
+                            typeof key === 'string' &&
+                            key.startsWith(
+                                `/api/program-classes/${class_id}/history`
+                            ),
                         undefined,
                         { revalidate: true }
                     );

@@ -45,10 +45,8 @@ export function IncompleteEnrollments({
                                 </h2>
                                 <p className="text-sm text-gray-600 mt-1">
                                     {enrollments.length} class
-                                    {enrollments.length !== 1
-                                        ? 'es'
-                                        : ''}{' '}
-                                    not completed
+                                    {enrollments.length !== 1 ? 'es' : ''} not
+                                    completed
                                 </p>
                             </div>
                         </div>
@@ -85,10 +83,9 @@ export function IncompleteEnrollments({
                                                   (present / total) * 100
                                               )
                                             : 0;
-                                    const statusLabel =
-                                        stripIncompletePrefix(
-                                            enrollment.enrollment_status ?? ''
-                                        );
+                                    const statusLabel = stripIncompletePrefix(
+                                        enrollment.enrollment_status ?? ''
+                                    );
 
                                     return (
                                         <TableRow

@@ -41,7 +41,8 @@ export function RescheduleSessionModal({
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
 
-    const currentRoomName = rooms.find((r) => r.id === event.room_id)?.name ?? '';
+    const currentRoomName =
+        rooms.find((r) => r.id === event.room_id)?.name ?? '';
 
     useEffect(() => {
         if (open && event) {
@@ -135,7 +136,9 @@ export function RescheduleSessionModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="reschedule-start">New Start Time (optional)</Label>
+                        <Label htmlFor="reschedule-start">
+                            New Start Time (optional)
+                        </Label>
                         <Input
                             id="reschedule-start"
                             type="time"
@@ -146,7 +149,9 @@ export function RescheduleSessionModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="reschedule-end">New End Time (optional)</Label>
+                        <Label htmlFor="reschedule-end">
+                            New End Time (optional)
+                        </Label>
                         <Input
                             id="reschedule-end"
                             type="time"
@@ -157,24 +162,40 @@ export function RescheduleSessionModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="reschedule-room">New Room (optional)</Label>
+                        <Label htmlFor="reschedule-room">
+                            New Room (optional)
+                        </Label>
                         <Select value={roomId} onValueChange={setRoomId}>
                             <SelectTrigger id="reschedule-room">
-                                <SelectValue placeholder={currentRoomName ? `Keep current room (${currentRoomName})` : 'Select room'} />
+                                <SelectValue
+                                    placeholder={
+                                        currentRoomName
+                                            ? `Keep current room (${currentRoomName})`
+                                            : 'Select room'
+                                    }
+                                />
                             </SelectTrigger>
                             <SelectContent>
                                 {rooms.map((room) => (
-                                    <SelectItem key={room.id} value={String(room.id)}>
+                                    <SelectItem
+                                        key={room.id}
+                                        value={String(room.id)}
+                                    >
                                         {room.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        <p className="text-sm text-gray-500">Leave time and room blank to keep current values.</p>
+                        <p className="text-sm text-gray-500">
+                            Leave time and room blank to keep current values.
+                        </p>
                     </div>
 
                     <div className="flex gap-2 justify-end">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancel
                         </Button>
                         <Button

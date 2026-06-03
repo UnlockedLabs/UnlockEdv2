@@ -53,7 +53,12 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
     if (isLoading) {
         return (
-            <div className={cn('bg-card rounded-lg border border-border', className)}>
+            <div
+                className={cn(
+                    'bg-card rounded-lg border border-border',
+                    className
+                )}
+            >
                 <div className="p-4 space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
                         <Skeleton key={i} className="h-10 w-full" />
@@ -64,7 +69,9 @@ export function DataTable<T>({
     }
 
     return (
-        <div className={cn('bg-card rounded-lg border border-border', className)}>
+        <div
+            className={cn('bg-card rounded-lg border border-border', className)}
+        >
             <Table>
                 <TableHeader>
                     <TableRow className="border-b border-border hover:bg-transparent">
@@ -119,67 +126,70 @@ export function DataTable<T>({
                 </TableBody>
             </Table>
 
-            {totalPages != null && totalPages > 1 && page != null && onPageChange != null && (
-                <div className="border-t border-border px-4 py-3">
-                    <Pagination>
-                        <PaginationContent>
-                            <PaginationItem>
-                                <PaginationPrevious
-                                    onClick={() =>
-                                        page > 1 && onPageChange(page - 1)
+            {totalPages != null &&
+                totalPages > 1 &&
+                page != null &&
+                onPageChange != null && (
+                    <div className="border-t border-border px-4 py-3">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={() =>
+                                            page > 1 && onPageChange(page - 1)
+                                        }
+                                        className={
+                                            page <= 1
+                                                ? 'pointer-events-none opacity-50'
+                                                : 'cursor-pointer'
+                                        }
+                                    />
+                                </PaginationItem>
+                                {Array.from(
+                                    { length: Math.min(totalPages, 5) },
+                                    (_, i) => {
+                                        let pageNum: number;
+                                        if (totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (page <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (page >= totalPages - 2) {
+                                            pageNum = totalPages - 4 + i;
+                                        } else {
+                                            pageNum = page - 2 + i;
+                                        }
+                                        return (
+                                            <PaginationItem key={pageNum}>
+                                                <PaginationLink
+                                                    onClick={() =>
+                                                        onPageChange(pageNum)
+                                                    }
+                                                    isActive={pageNum === page}
+                                                    className="cursor-pointer"
+                                                >
+                                                    {pageNum}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        );
                                     }
-                                    className={
-                                        page <= 1
-                                            ? 'pointer-events-none opacity-50'
-                                            : 'cursor-pointer'
-                                    }
-                                />
-                            </PaginationItem>
-                            {Array.from(
-                                { length: Math.min(totalPages, 5) },
-                                (_, i) => {
-                                    let pageNum: number;
-                                    if (totalPages <= 5) {
-                                        pageNum = i + 1;
-                                    } else if (page <= 3) {
-                                        pageNum = i + 1;
-                                    } else if (page >= totalPages - 2) {
-                                        pageNum = totalPages - 4 + i;
-                                    } else {
-                                        pageNum = page - 2 + i;
-                                    }
-                                    return (
-                                        <PaginationItem key={pageNum}>
-                                            <PaginationLink
-                                                onClick={() =>
-                                                    onPageChange(pageNum)
-                                                }
-                                                isActive={pageNum === page}
-                                                className="cursor-pointer"
-                                            >
-                                                {pageNum}
-                                            </PaginationLink>
-                                        </PaginationItem>
-                                    );
-                                }
-                            )}
-                            <PaginationItem>
-                                <PaginationNext
-                                    onClick={() =>
-                                        page < totalPages &&
-                                        onPageChange(page + 1)
-                                    }
-                                    className={
-                                        page >= totalPages
-                                            ? 'pointer-events-none opacity-50'
-                                            : 'cursor-pointer'
-                                    }
-                                />
-                            </PaginationItem>
-                        </PaginationContent>
-                    </Pagination>
-                </div>
-            )}
+                                )}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={() =>
+                                            page < totalPages &&
+                                            onPageChange(page + 1)
+                                        }
+                                        className={
+                                            page >= totalPages
+                                                ? 'pointer-events-none opacity-50'
+                                                : 'cursor-pointer'
+                                        }
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
         </div>
     );
 }

@@ -17,9 +17,7 @@ export function PageHeader({
     className
 }: PageHeaderProps) {
     return (
-        <div
-            className={cn('flex items-start justify-between', className)}
-        >
+        <div className={cn('flex items-start justify-between', className)}>
             <div>
                 <h1 className="text-brand-dark dark:text-white mb-2">
                     {title}

@@ -23,7 +23,11 @@ interface AttendanceRowProps {
     onStatusChange: (userId: number, status: Attendance) => void;
     onReasonChange: (userId: number, reason: string) => void;
     onNoteChange: (userId: number, note: string) => void;
-    onTimeChange: (userId: number, field: 'check_in_at' | 'check_out_at', value: string) => void;
+    onTimeChange: (
+        userId: number,
+        field: 'check_in_at' | 'check_out_at',
+        value: string
+    ) => void;
     onCheckoutFocus: (userId: number) => void;
     getAttendedMinutes: (row: LocalRowData) => number | null;
 }
@@ -59,13 +63,20 @@ export function AttendanceRow({
                             key={opt.status}
                             type="button"
                             size="sm"
-                            variant={row.attendance_status === opt.status ? 'default' : 'outline'}
+                            variant={
+                                row.attendance_status === opt.status
+                                    ? 'default'
+                                    : 'outline'
+                            }
                             disabled={blockEdits}
                             className={cn(
                                 'text-xs px-2 py-1 h-7',
-                                row.attendance_status === opt.status && opt.tableActiveClass
+                                row.attendance_status === opt.status &&
+                                    opt.tableActiveClass
                             )}
-                            onClick={() => onStatusChange(row.user_id, opt.status)}
+                            onClick={() =>
+                                onStatusChange(row.user_id, opt.status)
+                            }
                         >
                             {opt.shortLabel}
                         </Button>
@@ -78,7 +89,12 @@ export function AttendanceRow({
                     onValueChange={(v) => onReasonChange(row.user_id, v)}
                     disabled={reasonDisabled}
                 >
-                    <SelectTrigger className={cn('h-8 text-xs', reasonDisabled && 'opacity-40')}>
+                    <SelectTrigger
+                        className={cn(
+                            'h-8 text-xs',
+                            reasonDisabled && 'opacity-40'
+                        )}
+                    >
                         <SelectValue placeholder="Select reason" />
                     </SelectTrigger>
                     <SelectContent>
@@ -95,7 +111,9 @@ export function AttendanceRow({
                     type="time"
                     className="h-8 text-xs w-28"
                     value={row.check_in_at ?? ''}
-                    onChange={(e) => onTimeChange(row.user_id, 'check_in_at', e.target.value)}
+                    onChange={(e) =>
+                        onTimeChange(row.user_id, 'check_in_at', e.target.value)
+                    }
                     disabled={blockEdits || !isPresent}
                 />
             </TableCell>
@@ -104,7 +122,13 @@ export function AttendanceRow({
                     type="time"
                     className="h-8 text-xs w-28"
                     value={row.check_out_at ?? ''}
-                    onChange={(e) => onTimeChange(row.user_id, 'check_out_at', e.target.value)}
+                    onChange={(e) =>
+                        onTimeChange(
+                            row.user_id,
+                            'check_out_at',
+                            e.target.value
+                        )
+                    }
                     onFocus={() => onCheckoutFocus(row.user_id)}
                     disabled={blockEdits || !isPresent}
                 />
@@ -114,7 +138,10 @@ export function AttendanceRow({
             </TableCell>
             <TableCell>
                 <Input
-                    className={cn('h-8 text-xs', (blockEdits || !noteEnabled) && 'opacity-40')}
+                    className={cn(
+                        'h-8 text-xs',
+                        (blockEdits || !noteEnabled) && 'opacity-40'
+                    )}
                     value={row.note ?? ''}
                     onChange={(e) => onNoteChange(row.user_id, e.target.value)}
                     disabled={blockEdits || !noteEnabled}

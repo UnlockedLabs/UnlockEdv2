@@ -66,7 +66,8 @@ export function UnenrollResidentModal({
                         <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
                         <div className="text-sm text-amber-900">
                             <p className="font-medium mb-1">
-                                This action will completely remove the enrollment
+                                This action will completely remove the
+                                enrollment
                             </p>
                             <p>
                                 This should only be used to correct accidental

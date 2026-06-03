@@ -3,12 +3,7 @@ import useSWR from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
-import {
-    User,
-    Facility,
-    ServerResponseMany,
-    ServerResponseOne
-} from '@/types';
+import { User, Facility, ServerResponseMany, ServerResponseOne } from '@/types';
 import { formatLastActive } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -72,7 +67,12 @@ import {
     Trash2
 } from 'lucide-react';
 
-type SortField = 'name_last' | 'username' | 'doc_id' | 'facility_id' | 'last_login';
+type SortField =
+    | 'name_last'
+    | 'username'
+    | 'doc_id'
+    | 'facility_id'
+    | 'last_login';
 type SortDir = 'asc' | 'desc';
 
 interface UserStatsData {
@@ -102,7 +102,9 @@ export default function StudentManagement() {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
 
-    const [selectedResidents, setSelectedResidents] = useState<Map<number, User>>(new Map());
+    const [selectedResidents, setSelectedResidents] = useState<
+        Map<number, User>
+    >(new Map());
     const [bulkResetOpen, setBulkResetOpen] = useState(false);
     const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -126,9 +128,9 @@ export default function StudentManagement() {
         showFacilityColumn && facilityFilter !== 'all'
             ? `?facility_id=${facilityFilter}`
             : '';
-    const { data: statsResp, mutate: mutateStats } = useSWR<ServerResponseOne<UserStatsData>>(
-        `/api/users/stats${statsParam}`
-    );
+    const { data: statsResp, mutate: mutateStats } = useSWR<
+        ServerResponseOne<UserStatsData>
+    >(`/api/users/stats${statsParam}`);
     const stats = statsResp?.data;
 
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
@@ -201,10 +203,7 @@ export default function StudentManagement() {
         void mutateStats();
     };
 
-    const openAction = (
-        targetUser: User,
-        setter: (open: boolean) => void
-    ) => {
+    const openAction = (targetUser: User, setter: (open: boolean) => void) => {
         setSelectedUser(targetUser);
         setter(true);
     };
@@ -241,444 +240,436 @@ export default function StudentManagement() {
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
-                {/* Header */}
-                <div className="mb-8">
-                    {user && !showFacilityColumn && (
-                        <div className="text-sm text-gray-600 mb-2">
-                            {user.facility.name}
-                        </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-brand-dark">
-                                Residents
-                            </h1>
-                            <p className="text-gray-600 mt-1">
-                                Manage resident profiles and account information
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                onClick={() => setBulkImportOpen(true)}
-                                variant="outline"
-                                className="gap-2"
-                            >
-                                <Upload className="size-4" />
-                                Bulk Import
-                            </Button>
-                            <Button
-                                onClick={() => setAddDialogOpen(true)}
-                                variant="brand"
-                                className="gap-2"
-                            >
-                                <Plus className="size-4" />
-                                Add Resident
-                            </Button>
-                        </div>
+            {/* Header */}
+            <div className="mb-8">
+                {user && !showFacilityColumn && (
+                    <div className="text-sm text-gray-600 mb-2">
+                        {user.facility.name}
                     </div>
-                </div>
-
-                {/* Search + Filter */}
-                <div className="mb-6 flex gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="input-icon-left size-5" />
-                        <Input
-                            placeholder="Search by name, username, or ID..."
-                            value={searchTerm}
-                            onChange={(e) => handleSearchChange(e.target.value)}
-                            className="pl-10"
-                        />
+                )}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-brand-dark">Residents</h1>
+                        <p className="text-gray-600 mt-1">
+                            Manage resident profiles and account information
+                        </p>
                     </div>
-                    {showFacilityColumn && (
-                        <Select
-                            value={facilityFilter}
-                            onValueChange={(v) => {
-                                setFacilityFilter(v);
-                                setPage(1);
-                            }}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => setBulkImportOpen(true)}
+                            variant="outline"
+                            className="gap-2"
                         >
-                            <SelectTrigger className="w-64">
-                                <SelectValue placeholder="Filter by facility" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    All Facilities
+                            <Upload className="size-4" />
+                            Bulk Import
+                        </Button>
+                        <Button
+                            onClick={() => setAddDialogOpen(true)}
+                            variant="brand"
+                            className="gap-2"
+                        >
+                            <Plus className="size-4" />
+                            Add Resident
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search + Filter */}
+            <div className="mb-6 flex gap-4">
+                <div className="flex-1 relative">
+                    <Search className="input-icon-left size-5" />
+                    <Input
+                        placeholder="Search by name, username, or ID..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                {showFacilityColumn && (
+                    <Select
+                        value={facilityFilter}
+                        onValueChange={(v) => {
+                            setFacilityFilter(v);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-64">
+                            <SelectValue placeholder="Filter by facility" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Facilities</SelectItem>
+                            {facilities.map((f) => (
+                                <SelectItem key={f.id} value={String(f.id)}>
+                                    {f.name}
                                 </SelectItem>
-                                {facilities.map((f) => (
-                                    <SelectItem
-                                        key={f.id}
-                                        value={String(f.id)}
-                                    >
-                                        {f.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                </div>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+            </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="card-block p-4">
-                        <div className="text-sm text-gray-600 mb-1">
-                            Total Residents
-                        </div>
-                        <div className="text-2xl font-medium text-brand-dark">
-                            {stats?.total ?? '\u2014'}
-                        </div>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="card-block p-4">
+                    <div className="text-sm text-gray-600 mb-1">
+                        Total Residents
                     </div>
-                    <div className="card-block p-4">
-                        <div className="text-sm text-gray-600 mb-1">
-                            Active Accounts
-                        </div>
-                        <div className="text-2xl font-medium text-green-700">
-                            {stats?.active ?? '\u2014'}
-                        </div>
-                    </div>
-                    <div className="card-block p-4">
-                        <div className="text-sm text-gray-600 mb-1">
-                            Inactive Accounts
-                        </div>
-                        <div className="text-2xl font-medium text-gray-500">
-                            {stats?.inactive ?? '\u2014'}
-                        </div>
+                    <div className="text-2xl font-medium text-brand-dark">
+                        {stats?.total ?? '\u2014'}
                     </div>
                 </div>
+                <div className="card-block p-4">
+                    <div className="text-sm text-gray-600 mb-1">
+                        Active Accounts
+                    </div>
+                    <div className="text-2xl font-medium text-green-700">
+                        {stats?.active ?? '\u2014'}
+                    </div>
+                </div>
+                <div className="card-block p-4">
+                    <div className="text-sm text-gray-600 mb-1">
+                        Inactive Accounts
+                    </div>
+                    <div className="text-2xl font-medium text-gray-500">
+                        {stats?.inactive ?? '\u2014'}
+                    </div>
+                </div>
+            </div>
 
-                {/* Table */}
-                {error ? (
-                    <div className="text-center py-8 text-destructive">
-                        Failed to load residents.
-                    </div>
-                ) : isLoading ? (
-                    <div className="bg-white rounded-lg p-4 space-y-3">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-10 w-full" />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="card-block">
-                        <Table>
-                            <TableHeader>
+            {/* Table */}
+            {error ? (
+                <div className="text-center py-8 text-destructive">
+                    Failed to load residents.
+                </div>
+            ) : isLoading ? (
+                <div className="bg-white rounded-lg p-4 space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                </div>
+            ) : (
+                <div className="card-block">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-12">
+                                    <Checkbox
+                                        checked={allPageSelected}
+                                        onCheckedChange={toggleSelectAll}
+                                    />
+                                </TableHead>
+                                <SortableHeader field="name_last">
+                                    Name
+                                </SortableHeader>
+                                <SortableHeader field="username">
+                                    Username
+                                </SortableHeader>
+                                <SortableHeader field="doc_id">
+                                    Resident ID
+                                </SortableHeader>
+                                {showFacilityColumn && (
+                                    <SortableHeader field="facility_id">
+                                        Facility
+                                    </SortableHeader>
+                                )}
+                                <SortableHeader field="last_login">
+                                    Last Active
+                                </SortableHeader>
+                                <TableHead className="text-right">
+                                    Actions
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {userData.length === 0 ? (
                                 <TableRow>
-                                    <TableHead className="w-12">
-                                        <Checkbox
-                                            checked={allPageSelected}
-                                            onCheckedChange={toggleSelectAll}
-                                        />
-                                    </TableHead>
-                                    <SortableHeader field="name_last">
-                                        Name
-                                    </SortableHeader>
-                                    <SortableHeader field="username">
-                                        Username
-                                    </SortableHeader>
-                                    <SortableHeader field="doc_id">
-                                        Resident ID
-                                    </SortableHeader>
-                                    {showFacilityColumn && (
-                                        <SortableHeader field="facility_id">
-                                            Facility
-                                        </SortableHeader>
-                                    )}
-                                    <SortableHeader field="last_login">
-                                        Last Active
-                                    </SortableHeader>
-                                    <TableHead className="text-right">
-                                        Actions
-                                    </TableHead>
+                                    <TableCell
+                                        colSpan={showFacilityColumn ? 7 : 6}
+                                        className="text-center py-12"
+                                    >
+                                        <div className="flex flex-col items-center gap-2">
+                                            <UsersIcon className="size-12 text-gray-300" />
+                                            <p className="text-gray-500">
+                                                No residents found
+                                            </p>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {userData.length === 0 ? (
-                                    <TableRow>
+                            ) : (
+                                userData.map((resident) => (
+                                    <TableRow
+                                        key={resident.id}
+                                        className="hover:bg-gray-50 cursor-pointer"
+                                        onClick={() =>
+                                            navigate(
+                                                `/residents/${resident.id}`
+                                            )
+                                        }
+                                    >
                                         <TableCell
-                                            colSpan={
-                                                showFacilityColumn ? 7 : 6
-                                            }
-                                            className="text-center py-12"
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            <div className="flex flex-col items-center gap-2">
-                                                <UsersIcon className="size-12 text-gray-300" />
-                                                <p className="text-gray-500">
-                                                    No residents found
-                                                </p>
+                                            {!resident.deactivated_at && (
+                                                <Checkbox
+                                                    checked={selectedResidents.has(
+                                                        resident.id
+                                                    )}
+                                                    onCheckedChange={() =>
+                                                        toggleSelectResident(
+                                                            resident
+                                                        )
+                                                    }
+                                                />
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-2">
+                                                {resident.name_last},{' '}
+                                                {resident.name_first}
+                                                {resident.deactivated_at && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="bg-gray-100 text-gray-600 border-gray-300"
+                                                    >
+                                                        Deactivated
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    userData.map((resident) => (
-                                        <TableRow
-                                            key={resident.id}
-                                            className="hover:bg-gray-50 cursor-pointer"
-                                            onClick={() =>
-                                                navigate(
-                                                    `/residents/${resident.id}`
-                                                )
-                                            }
-                                        >
-                                            <TableCell
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                            >
-                                                {!resident.deactivated_at && (
-                                                    <Checkbox
-                                                        checked={selectedResidents.has(
-                                                            resident.id
-                                                        )}
-                                                        onCheckedChange={() =>
-                                                            toggleSelectResident(
-                                                                resident
-                                                            )
-                                                        }
-                                                    />
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    {resident.name_last},{' '}
-                                                    {resident.name_first}
-                                                    {resident.deactivated_at && (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="bg-gray-100 text-gray-600 border-gray-300"
-                                                        >
-                                                            Deactivated
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </TableCell>
+                                        <TableCell className="text-sm text-gray-600">
+                                            {resident.username}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-gray-600">
+                                            {resident.doc_id ?? '\u2014'}
+                                        </TableCell>
+                                        {showFacilityColumn && (
                                             <TableCell className="text-sm text-gray-600">
-                                                {resident.username}
+                                                {resident.facility?.name ??
+                                                    '\u2014'}
                                             </TableCell>
-                                            <TableCell className="text-sm text-gray-600">
-                                                {resident.doc_id ?? '\u2014'}
-                                            </TableCell>
-                                            {showFacilityColumn && (
-                                                <TableCell className="text-sm text-gray-600">
-                                                    {resident.facility?.name ??
-                                                        '\u2014'}
-                                                </TableCell>
+                                        )}
+                                        <TableCell className="text-sm text-gray-600">
+                                            {formatLastActive(
+                                                resident.login_metrics
+                                                    ?.last_login
                                             )}
-                                            <TableCell className="text-sm text-gray-600">
-                                                {formatLastActive(
-                                                    resident.login_metrics
-                                                        ?.last_login
-                                                )}
-                                            </TableCell>
-                                            <TableCell
-                                                className="text-right"
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                            >
-                                                {resident.deactivated_at ? (
-                                                    <span className="text-sm text-gray-500 italic">
-                                                        No actions available
-                                                    </span>
-                                                ) : (
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-8 w-8 p-0"
-                                                                    onClick={() =>
-                                                                        openAction(
-                                                                            resident,
-                                                                            setEditOpen
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Edit className="size-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Edit resident</TooltipContent>
-                                                        </Tooltip>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-8 w-8 p-0"
-                                                                    onClick={() =>
-                                                                        openAction(
-                                                                            resident,
-                                                                            setResetConfirmOpen
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <KeyRound className="size-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Reset password</TooltipContent>
-                                                        </Tooltip>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
+                                        </TableCell>
+                                        <TableCell
+                                            className="text-right"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {resident.deactivated_at ? (
+                                                <span className="text-sm text-gray-500 italic">
+                                                    No actions available
+                                                </span>
+                                            ) : (
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0"
+                                                                onClick={() =>
+                                                                    openAction(
+                                                                        resident,
+                                                                        setEditOpen
+                                                                    )
+                                                                }
                                                             >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-8 w-8 p-0"
-                                                                >
-                                                                    <MoreVertical className="size-4" />
-                                                                    <span className="sr-only">More actions</span>
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem
-                                                                    onClick={() =>
-                                                                        openAction(
-                                                                            resident,
-                                                                            setDeactivateOpen
-                                                                        )
-                                                                    }
-                                                                    className="text-orange-600"
-                                                                >
-                                                                    <UserX className="size-4 mr-2" />
-                                                                    Deactivate
-                                                                    Account
-                                                                </DropdownMenuItem>
-                                                                {showFacilityColumn && (
-                                                                    <>
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            onClick={() =>
-                                                                                openAction(
-                                                                                    resident,
-                                                                                    setTransferOpen
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <UsersIcon className="size-4 mr-2" />
-                                                                            Transfer
-                                                                            Resident
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    onClick={() =>
-                                                                        openAction(
-                                                                            resident,
-                                                                            setDeleteOpen
-                                                                        )
-                                                                    }
-                                                                    className="text-red-600"
-                                                                >
-                                                                    <Trash2 className="size-4 mr-2" />
-                                                                    Delete
-                                                                    Resident
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                                                <Edit className="size-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Edit resident
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0"
+                                                                onClick={() =>
+                                                                    openAction(
+                                                                        resident,
+                                                                        setResetConfirmOpen
+                                                                    )
+                                                                }
+                                                            >
+                                                                <KeyRound className="size-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Reset password
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0"
+                                                            >
+                                                                <MoreVertical className="size-4" />
+                                                                <span className="sr-only">
+                                                                    More actions
+                                                                </span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    openAction(
+                                                                        resident,
+                                                                        setDeactivateOpen
+                                                                    )
+                                                                }
+                                                                className="text-orange-600"
+                                                            >
+                                                                <UserX className="size-4 mr-2" />
+                                                                Deactivate
+                                                                Account
+                                                            </DropdownMenuItem>
+                                                            {showFacilityColumn && (
+                                                                <>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        onClick={() =>
+                                                                            openAction(
+                                                                                resident,
+                                                                                setTransferOpen
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <UsersIcon className="size-4 mr-2" />
+                                                                        Transfer
+                                                                        Resident
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    openAction(
+                                                                        resident,
+                                                                        setDeleteOpen
+                                                                    )
+                                                                }
+                                                                className="text-red-600"
+                                                            >
+                                                                <Trash2 className="size-4 mr-2" />
+                                                                Delete Resident
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
 
-                        <Pagination
-                            currentPage={page}
-                            totalItems={totalItems}
-                            itemsPerPage={perPage}
-                            onPageChange={setPage}
-                            onItemsPerPageChange={setPerPage}
-                            itemLabel="residents"
-                        />
-                    </div>
-                )}
+                    <Pagination
+                        currentPage={page}
+                        totalItems={totalItems}
+                        itemsPerPage={perPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={setPerPage}
+                        itemLabel="residents"
+                    />
+                </div>
+            )}
 
-                <AddResidentDialog
-                    open={addDialogOpen}
-                    onOpenChange={setAddDialogOpen}
-                    facilities={facilities}
-                    showFacilityColumn={showFacilityColumn}
-                    defaultFacilityId={
-                        showFacilityColumn && user ? user.facility_id : undefined
-                    }
-                    onSuccess={handleMutate}
-                />
+            <AddResidentDialog
+                open={addDialogOpen}
+                onOpenChange={setAddDialogOpen}
+                facilities={facilities}
+                showFacilityColumn={showFacilityColumn}
+                defaultFacilityId={
+                    showFacilityColumn && user ? user.facility_id : undefined
+                }
+                onSuccess={handleMutate}
+            />
 
-                {/* Action Dialogs */}
-                {selectedUser && (
-                    <>
-                        <EditResidentDialog
-                            open={editOpen}
-                            onOpenChange={setEditOpen}
+            {/* Action Dialogs */}
+            {selectedUser && (
+                <>
+                    <EditResidentDialog
+                        open={editOpen}
+                        onOpenChange={setEditOpen}
+                        resident={selectedUser}
+                        onSuccess={handleMutate}
+                    />
+                    <ResetPasswordConfirmDialog
+                        open={resetConfirmOpen}
+                        onOpenChange={setResetConfirmOpen}
+                        resident={selectedUser}
+                        onSuccess={handleResetSuccess}
+                    />
+                    <ResetPasswordResultDialog
+                        open={resetResultOpen}
+                        onOpenChange={setResetResultOpen}
+                        residentName={`${selectedUser.name_first} ${selectedUser.name_last}`}
+                        tempPassword={tempPassword}
+                    />
+                    <DeactivateDialog
+                        open={deactivateOpen}
+                        onOpenChange={setDeactivateOpen}
+                        resident={selectedUser}
+                        onSuccess={handleMutate}
+                    />
+                    <DeleteDialog
+                        open={deleteOpen}
+                        onOpenChange={setDeleteOpen}
+                        resident={selectedUser}
+                        onSuccess={handleMutate}
+                    />
+                    {showFacilityColumn && (
+                        <TransferDialog
+                            open={transferOpen}
+                            onOpenChange={setTransferOpen}
                             resident={selectedUser}
+                            facilities={facilities}
                             onSuccess={handleMutate}
                         />
-                        <ResetPasswordConfirmDialog
-                            open={resetConfirmOpen}
-                            onOpenChange={setResetConfirmOpen}
-                            resident={selectedUser}
-                            onSuccess={handleResetSuccess}
-                        />
-                        <ResetPasswordResultDialog
-                            open={resetResultOpen}
-                            onOpenChange={setResetResultOpen}
-                            residentName={`${selectedUser.name_first} ${selectedUser.name_last}`}
-                            tempPassword={tempPassword}
-                        />
-                        <DeactivateDialog
-                            open={deactivateOpen}
-                            onOpenChange={setDeactivateOpen}
-                            resident={selectedUser}
-                            onSuccess={handleMutate}
-                        />
-                        <DeleteDialog
-                            open={deleteOpen}
-                            onOpenChange={setDeleteOpen}
-                            resident={selectedUser}
-                            onSuccess={handleMutate}
-                        />
-                        {showFacilityColumn && (
-                            <TransferDialog
-                                open={transferOpen}
-                                onOpenChange={setTransferOpen}
-                                resident={selectedUser}
-                                facilities={facilities}
-                                onSuccess={handleMutate}
-                            />
-                        )}
-                    </>
-                )}
+                    )}
+                </>
+            )}
 
-                {/* Bulk Action Dialogs */}
-                <BulkResetPasswordDialog
-                    open={bulkResetOpen}
-                    onOpenChange={setBulkResetOpen}
-                    users={getSelectedUsers()}
-                    onSuccess={handleBulkSuccess}
-                />
-                <BulkDeactivateDialog
-                    open={bulkDeactivateOpen}
-                    onOpenChange={setBulkDeactivateOpen}
-                    residents={getSelectedUsers()}
-                    onSuccess={handleBulkSuccess}
-                />
-                <BulkDeleteDialog
-                    open={bulkDeleteOpen}
-                    onOpenChange={setBulkDeleteOpen}
-                    users={getSelectedUsers()}
-                    onSuccess={handleBulkSuccess}
-                />
-                <BulkImportDialog
-                    open={bulkImportOpen}
-                    onOpenChange={setBulkImportOpen}
-                    onSuccess={() => void mutate()}
-                />
+            {/* Bulk Action Dialogs */}
+            <BulkResetPasswordDialog
+                open={bulkResetOpen}
+                onOpenChange={setBulkResetOpen}
+                users={getSelectedUsers()}
+                onSuccess={handleBulkSuccess}
+            />
+            <BulkDeactivateDialog
+                open={bulkDeactivateOpen}
+                onOpenChange={setBulkDeactivateOpen}
+                residents={getSelectedUsers()}
+                onSuccess={handleBulkSuccess}
+            />
+            <BulkDeleteDialog
+                open={bulkDeleteOpen}
+                onOpenChange={setBulkDeleteOpen}
+                users={getSelectedUsers()}
+                onSuccess={handleBulkSuccess}
+            />
+            <BulkImportDialog
+                open={bulkImportOpen}
+                onOpenChange={setBulkImportOpen}
+                onSuccess={() => void mutate()}
+            />
 
-                {/* Bulk Action Bar */}
-                {selectedResidents.size > 0 && (
-                    <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+            {/* Bulk Action Bar */}
+            {selectedResidents.size > 0 && (
+                <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
                     <div className="bg-surface-hover border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
                         <div className="flex items-center gap-6">
                             <div className="text-sm">
@@ -713,9 +704,7 @@ export default function StudentManagement() {
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() =>
-                                        setBulkDeactivateOpen(true)
-                                    }
+                                    onClick={() => setBulkDeactivateOpen(true)}
                                     className="text-orange-600 border-orange-300 hover:bg-orange-50"
                                 >
                                     <UserX className="size-4 mr-2" />
@@ -733,8 +722,8 @@ export default function StudentManagement() {
                             </div>
                         </div>
                     </div>
-                    </div>
-                )}
+                </div>
+            )}
         </div>
     );
 }

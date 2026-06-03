@@ -1,7 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Plus, BookOpen } from 'lucide-react';
 import { Class, SelectedClassStatus } from '@/types';
-import { getClassSchedule, getInstructorName, getStatusColor } from '@/lib/formatters';
+import {
+    getClassSchedule,
+    getInstructorName,
+    getStatusColor
+} from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -92,7 +96,9 @@ export default function ClassesTab({
     navigate: ReturnType<typeof useNavigate>;
 }) {
     const activeScheduledClasses = programClasses.filter(
-        (cls) => cls.status === SelectedClassStatus.Active || cls.status === SelectedClassStatus.Scheduled
+        (cls) =>
+            cls.status === SelectedClassStatus.Active ||
+            cls.status === SelectedClassStatus.Scheduled
     );
     const completedClasses = programClasses.filter(
         (cls) => cls.status === SelectedClassStatus.Completed
@@ -132,8 +138,7 @@ export default function ClassesTab({
                                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Active &amp; Scheduled Classes (
-                                        {activeScheduledClasses.length}
-                                        )
+                                        {activeScheduledClasses.length})
                                     </h3>
                                 </div>
                                 {activeScheduledClasses.map((cls) => (
@@ -157,8 +162,7 @@ export default function ClassesTab({
                                 <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Completed Classes (
-                                        {completedClasses.length}
-                                        )
+                                        {completedClasses.length})
                                     </h3>
                                 </div>
                                 {completedClasses.map((cls) => (
@@ -183,8 +187,7 @@ export default function ClassesTab({
                                 <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
                                         Cancelled Classes (
-                                        {cancelledClasses.length}
-                                        )
+                                        {cancelledClasses.length})
                                     </h3>
                                 </div>
                                 {cancelledClasses.map((cls) => (
@@ -208,9 +211,7 @@ export default function ClassesTab({
                             <div className="divide-y divide-gray-200">
                                 <div className="section-footer">
                                     <h3 className="text-sm font-medium text-gray-700">
-                                        Paused Classes (
-                                        {pausedClasses.length}
-                                        )
+                                        Paused Classes ({pausedClasses.length})
                                     </h3>
                                 </div>
                                 {pausedClasses.map((cls) => (

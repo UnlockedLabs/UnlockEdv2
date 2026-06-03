@@ -11,7 +11,9 @@ const TAB_OPTIONS = [
 function getTabFromPath(pathname: string): string {
     const parts = pathname.split('/');
     const tabSegment = parts[3];
-    return TAB_OPTIONS.find((t) => t.value === tabSegment)?.value ?? 'enrollments';
+    return (
+        TAB_OPTIONS.find((t) => t.value === tabSegment)?.value ?? 'enrollments'
+    );
 }
 
 export default function ProgramClassManagement() {

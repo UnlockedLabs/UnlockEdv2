@@ -47,11 +47,17 @@ export function FormModal({
             <DialogContent
                 className={className}
                 closeButtonClassName={closeButtonClassName}
-                onOpenAutoFocus={preventAutoFocus ? (e) => e.preventDefault() : undefined}
-                onPointerDownOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
+                onOpenAutoFocus={
+                    preventAutoFocus ? (e) => e.preventDefault() : undefined
+                }
+                onPointerDownOutside={
+                    preventOutsideClose ? (e) => e.preventDefault() : undefined
+                }
             >
                 <DialogHeader className={headerClassName}>
-                    <DialogTitle className={cn('text-brand-dark', titleClassName)}>
+                    <DialogTitle
+                        className={cn('text-brand-dark', titleClassName)}
+                    >
                         {title}
                     </DialogTitle>
                     {description && (

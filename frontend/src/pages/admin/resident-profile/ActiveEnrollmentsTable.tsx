@@ -54,7 +54,10 @@ export function ActiveEnrollmentsTable({
                 <h2 className="text-lg font-semibold text-brand-dark">
                     Active Enrollments
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">{enrollments.length} active class{enrollments.length !== 1 ? 'es' : ''} • All time</p>
+                <p className="text-sm text-gray-600 mt-1">
+                    {enrollments.length} active class
+                    {enrollments.length !== 1 ? 'es' : ''} • All time
+                </p>
             </div>
             <Table>
                 <TableHeader>
@@ -106,7 +109,10 @@ export function ActiveEnrollmentsTable({
                         const total = present + absent;
                         const rate =
                             total > 0 ? Math.round((present / total) * 100) : 0;
-                        const indicator = getEngagementIndicator(present, total);
+                        const indicator = getEngagementIndicator(
+                            present,
+                            total
+                        );
 
                         return (
                             <TableRow

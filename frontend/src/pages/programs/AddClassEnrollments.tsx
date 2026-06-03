@@ -37,7 +37,15 @@ import {
     TableRow
 } from '@/components/ui/table';
 
-function StatItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function StatItem({
+    icon,
+    label,
+    value
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: number;
+}) {
     return (
         <div className="flex items-center gap-3">
             <div className="rounded-lg bg-muted p-2">{icon}</div>
@@ -60,7 +68,9 @@ export default function AddClassEnrollments() {
     const { page, perPage, setPage, setPerPage } = useUrlPagination();
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
-    const [sortQuery, setSortQuery] = useState(FilterResidentNames['Resident Name (A-Z)']);
+    const [sortQuery, setSortQuery] = useState(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
 
     const [conflicts, setConflicts] = useState<ConflictDetail[]>([]);
     const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -78,12 +88,15 @@ export default function AddClassEnrollments() {
             (e) => e.enrollment_status === EnrollmentStatus.Enrolled
         ).length ?? 0;
 
-    const remainingCapacity = (classInfo?.capacity ?? 0) - enrolledCount - selectedUsers.length;
+    const remainingCapacity =
+        (classInfo?.capacity ?? 0) - enrolledCount - selectedUsers.length;
 
     useEffect(() => {
         if (remainingCapacity < 0) {
             setErrorMessage('Class is full');
-            setSelectedUsers((prev) => prev.slice(0, prev.length + remainingCapacity));
+            setSelectedUsers((prev) =>
+                prev.slice(0, prev.length + remainingCapacity)
+            );
         } else if (remainingCapacity > 0 && errorMessage === 'Class is full') {
             setErrorMessage('');
         }
@@ -91,7 +104,9 @@ export default function AddClassEnrollments() {
 
     function handleToggleRow(userId: number) {
         setSelectedUsers((prev) =>
-            prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+            prev.includes(userId)
+                ? prev.filter((id) => id !== userId)
+                : [...prev, userId]
         );
     }
 
@@ -101,17 +116,21 @@ export default function AddClassEnrollments() {
         );
     }
 
-    const allSelected = users.length > 0 && users.every((u) => selectedUsers.includes(u.id));
+    const allSelected =
+        users.length > 0 && users.every((u) => selectedUsers.includes(u.id));
 
     async function submitEnrollment(confirm = false) {
         setErrorMessage('');
         interface EnrollmentResponse {
             conflicts?: ConflictDetail[];
         }
-        const resp = await API.post<EnrollmentResponse, { user_ids: number[]; confirm: boolean }>(
-            `program-classes/${class_id}/enrollments`,
-            { user_ids: selectedUsers, confirm }
-        );
+        const resp = await API.post<
+            EnrollmentResponse,
+            { user_ids: number[]; confirm: boolean }
+        >(`program-classes/${class_id}/enrollments`, {
+            user_ids: selectedUsers,
+            confirm
+        });
 
         if (!resp.success) {
             const responseData = resp.data as EnrollmentResponse;
@@ -119,7 +138,9 @@ export default function AddClassEnrollments() {
                 setConflicts(responseData.conflicts);
                 setShowConflictDialog(true);
             } else {
-                setErrorMessage(resp.message || 'Failed to enroll users. Please try again.');
+                setErrorMessage(
+                    resp.message || 'Failed to enroll users. Please try again.'
+                );
             }
             return;
         }
@@ -134,7 +155,9 @@ export default function AddClassEnrollments() {
             classInfo?.status === SelectedClassStatus.Completed ||
             classInfo?.status === SelectedClassStatus.Cancelled
         ) {
-            setErrorMessage('Cannot add users to a class that is completed or cancelled.');
+            setErrorMessage(
+                'Cannot add users to a class that is completed or cancelled.'
+            );
             return;
         }
         if (selectedUsers.length === 0) {
@@ -187,13 +210,22 @@ export default function AddClassEnrollments() {
                     placeholder="Search residents..."
                     className="w-64"
                 />
-                <Select value={sortQuery} onValueChange={(v) => setSortQuery(v as FilterResidentNames)}>
+                <Select
+                    value={sortQuery}
+                    onValueChange={(v) =>
+                        setSortQuery(v as FilterResidentNames)
+                    }
+                >
                     <SelectTrigger className="w-44">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="name_last asc">Name (A-Z)</SelectItem>
-                        <SelectItem value="name_last desc">Name (Z-A)</SelectItem>
+                        <SelectItem value="name_last asc">
+                            Name (A-Z)
+                        </SelectItem>
+                        <SelectItem value="name_last desc">
+                            Name (Z-A)
+                        </SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -222,36 +254,56 @@ export default function AddClassEnrollments() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center py-8">
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-center py-8"
+                                    >
                                         Loading...
                                     </TableCell>
                                 </TableRow>
                             ) : users.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                        No eligible residents available at this facility.
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-center py-8 text-muted-foreground"
+                                    >
+                                        No eligible residents available at this
+                                        facility.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 users.map((user) => {
-                                    const isSelected = selectedUsers.includes(user.id);
+                                    const isSelected = selectedUsers.includes(
+                                        user.id
+                                    );
                                     return (
                                         <TableRow
                                             key={user.id}
                                             className={`cursor-pointer ${isSelected ? 'bg-muted/30' : ''}`}
-                                            onClick={() => handleToggleRow(user.id)}
+                                            onClick={() =>
+                                                handleToggleRow(user.id)
+                                            }
                                         >
-                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                            <TableCell
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
                                                 <Checkbox
                                                     checked={isSelected}
-                                                    onCheckedChange={() => handleToggleRow(user.id)}
+                                                    onCheckedChange={() =>
+                                                        handleToggleRow(user.id)
+                                                    }
                                                 />
                                             </TableCell>
                                             <TableCell className="font-medium text-foreground">
-                                                {user.name_last}, {user.name_first}
+                                                {user.name_last},{' '}
+                                                {user.name_first}
                                             </TableCell>
                                             <TableCell>{user.doc_id}</TableCell>
-                                            <TableCell>{user.username}</TableCell>
+                                            <TableCell>
+                                                {user.username}
+                                            </TableCell>
                                         </TableRow>
                                     );
                                 })
@@ -272,31 +324,36 @@ export default function AddClassEnrollments() {
                 </div>
 
                 {errorMessage && (
-                    <div className="text-sm text-red-600 mt-2">{errorMessage}</div>
+                    <div className="text-sm text-red-600 mt-2">
+                        {errorMessage}
+                    </div>
                 )}
 
                 <div className="flex items-center justify-between py-4 border-t mt-4 sticky bottom-0 bg-card">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>
-                            {selectedUsers.length} resident{selectedUsers.length === 1 ? '' : 's'} selected
+                            {selectedUsers.length} resident
+                            {selectedUsers.length === 1 ? '' : 's'} selected
                         </span>
                         <span>
-                            {remainingCapacity} spot{remainingCapacity === 1 ? '' : 's'} remaining
+                            {remainingCapacity} spot
+                            {remainingCapacity === 1 ? '' : 's'} remaining
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => navigate(`/program-classes/${class_id}/enrollments`)}
+                            onClick={() =>
+                                navigate(
+                                    `/program-classes/${class_id}/enrollments`
+                                )
+                            }
                             className="border-gray-300"
                         >
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            className="btn-gold-thin"
-                        >
+                        <Button type="submit" className="btn-gold-thin">
                             Enroll Residents
                         </Button>
                     </div>
@@ -326,7 +383,10 @@ export default function AddClassEnrollments() {
                                 {c.user_name}
                             </div>
                             <div className="text-xs text-gray-600 mt-1">
-                                Conflicts with <span className="font-medium">{c.conflicting_class}</span>
+                                Conflicts with{' '}
+                                <span className="font-medium">
+                                    {c.conflicting_class}
+                                </span>
                             </div>
                             {(c.conflict_start || c.conflict_end) && (
                                 <div className="text-xs text-gray-500 mt-0.5">
