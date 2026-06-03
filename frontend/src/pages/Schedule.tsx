@@ -347,7 +347,7 @@ export default function Schedule() {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-[600px]" />
+                <Skeleton className="h-150" />
             </div>
         );
     }
@@ -364,7 +364,7 @@ export default function Schedule() {
 
     return (
         <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-screen overflow-x-hidden">
-            <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-6">
+            <div className="max-w-350 mx-auto px-8 py-8 space-y-6">
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -489,6 +489,7 @@ export default function Schedule() {
                         onSelectEvent={handleSelectEvent}
                         eventPropGetter={eventStyleGetter}
                         views={['month', 'week', 'day', 'agenda']}
+                        length={6}
                         style={{ height: '100%' }}
                         min={new Date(0, 0, 0, 0, 0, 0, 0)}
                         max={new Date(0, 0, 0, 23, 59, 59, 999)}
