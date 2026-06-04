@@ -197,3 +197,18 @@ export enum FilterPastTime {
     'Past 90 days' = '90',
     'All time' = 'all'
 }
+
+export interface DailyLoginCount {
+    date: string;
+    total_logins: number;
+}
+
+export interface FacilityEngagement {
+    facility_id: number;
+    facility_name: string;
+    registered: number;
+    active: number;
+    logins: number;
+}
+
+export type InsightsRangeKey = '7D' | '30D' | '90D' | 'YTD' | 'Custom';

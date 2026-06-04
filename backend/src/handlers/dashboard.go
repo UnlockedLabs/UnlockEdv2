@@ -19,6 +19,8 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
 		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
+		newAdminRoute("GET /api/department-metrics/login-trend", srv.handleDepartmentLoginTrend),
+		newAdminRoute("GET /api/department-metrics/facility-comparison", srv.handleFacilityEngagementComparison),
 		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
 		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
@@ -269,6 +271,52 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 	}
 
 	return writeJsonResponse(w, http.StatusOK, cachedData)
+}
+
+func (srv *Server) handleDepartmentLoginTrend(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facility := r.URL.Query().Get("facility")
+	var facilityID *uint
+	switch {
+	case facility == "all" && claims.canSwitchFacility():
+		facilityID = nil
+	case facility != "" && facility != "all" && claims.canSwitchFacility():
+		facilityIdInt, err := strconv.Atoi(facility)
+		if err != nil {
+			return newInvalidIdServiceError(err, "facility")
+		}
+		ref := uint(facilityIdInt)
+		facilityID = &ref
+	default:
+		facilityID = &args.FacilityID
+	}
+	start, end, _, err := parseDateRangeRequest(r)
+	if err != nil {
+		return err
+	}
+	trend, err := srv.Db.GetDailyLoginActivity(&args, start, end, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, trend)
+}
+
+func (srv *Server) handleFacilityEngagementComparison(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.canSwitchFacility() {
+		return newUnauthorizedServiceError()
+	}
+	args := srv.getQueryContext(r)
+	start, end, _, err := parseDateRangeRequest(r)
+	if err != nil {
+		return err
+	}
+	comparison, err := srv.Db.GetFacilityEngagementComparison(&args, start, end)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, comparison)
 }
 
 func (srv *Server) handleClassDashboardMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
