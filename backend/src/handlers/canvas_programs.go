@@ -1133,6 +1133,14 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 
 	enrolled := srv.countMappedCanvasEnrollees(provider, rawCourseID)
 
+	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, []uint{rawCourseID})
+	var events []models.ProgramClassEvent
+	if ev, ok := scheduleEvents[rawCourseID]; ok {
+		events = []models.ProgramClassEvent{ev}
+	} else {
+		events = []models.ProgramClassEvent{}
+	}
+
 	cls := models.ProgramClass{
 		DatabaseFields: models.DatabaseFields{ID: classID},
 		ProgramID:      programID,
@@ -1146,7 +1154,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 			DatabaseFields: models.DatabaseFields{ID: programID},
 			Name:           "College - " + provider.Name,
 		},
-		Events:      []models.ProgramClassEvent{},
+		Events:      events,
 		Enrollments: []models.ProgramClassEnrollment{},
 	}
 	return writeJsonResponse(w, http.StatusOK, cls)
@@ -1175,16 +1183,29 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 	}
 
 	now := time.Now()
-	month := int(now.Month())
-	year := now.Year()
-	if m, err := strconv.Atoi(r.URL.Query().Get("month")); err == nil && m >= 1 && m <= 12 {
-		month = m
+	var start, end time.Time
+	if sdStr := r.URL.Query().Get("start_date"); sdStr != "" {
+		if t, err := time.Parse("2006-01-02", sdStr); err == nil {
+			start = t
+		}
 	}
-	if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 2000 {
-		year = y
+	if edStr := r.URL.Query().Get("end_date"); edStr != "" {
+		if t, err := time.Parse("2006-01-02", edStr); err == nil {
+			end = t
+		}
 	}
-	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	end := start.AddDate(0, 1, -1)
+	if start.IsZero() || end.IsZero() {
+		month := int(now.Month())
+		year := now.Year()
+		if m, err := strconv.Atoi(r.URL.Query().Get("month")); err == nil && m >= 1 && m <= 12 {
+			month = m
+		}
+		if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 2000 {
+			year = y
+		}
+		start = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+		end = start.AddDate(0, 1, -1)
+	}
 
 	fetchURL := fmt.Sprintf(
 		"%s/api/v1/calendar_events?context_codes[]=course_%d&start_date=%s&end_date=%s&per_page=100",
