@@ -632,7 +632,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                 </p>
                             )}
 
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className={`grid gap-4 ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'}`}>
                                 <MetricBox
                                     label="Classes"
                                     value={nonArchivedClasses.length}
@@ -641,13 +641,15 @@ export default function ProgramOverviewFacilityAdmin() {
                                 <MetricBox
                                     label="Enrollment"
                                     value={totalEnrolled}
-                                    subtitle={`${totalCapacity} capacity`}
+                                    subtitle={isCanvasProgram || totalCapacity === 0 ? undefined : `${totalCapacity} capacity`}
                                 />
-                                <MetricBox
-                                    label="Utilization"
-                                    value={`${utilization}%`}
-                                    subtitle="Capacity filled"
-                                />
+                                {!isCanvasProgram && (
+                                    <MetricBox
+                                        label="Utilization"
+                                        value={`${utilization}%`}
+                                        subtitle="Capacity filled"
+                                    />
+                                )}
                                 <MetricBox
                                     label="Funding"
                                     value={fundingDisplay || '-'}

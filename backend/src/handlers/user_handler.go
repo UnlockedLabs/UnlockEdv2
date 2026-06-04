@@ -538,7 +538,81 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		userPrograms[i].CalculateAttendancePercentage()
 		userPrograms[i].Schedule = models.FormatScheduleFromRRule(userPrograms[i].RecurrenceRule)
 	}
+	canvasPrograms := srv.fetchCanvasUserPrograms(userId)
+	userPrograms = append(userPrograms, canvasPrograms...)
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
+}
+
+func (srv *Server) fetchCanvasUserPrograms(userID int) []models.ResidentProgramClassInfo {
+	mappings, err := srv.Db.GetAllProviderMappingsForUser(userID)
+	if err != nil || len(mappings) == 0 {
+		return nil
+	}
+	providers, err := srv.Db.GetAllActiveProviderPlatforms()
+	if err != nil {
+		return nil
+	}
+	providerMap := make(map[uint]models.ProviderPlatform, len(providers))
+	for _, p := range providers {
+		providerMap[p.ID] = p
+	}
+	var result []models.ResidentProgramClassInfo
+	for _, mapping := range mappings {
+		provider, ok := providerMap[mapping.ProviderPlatformID]
+		if !ok || (provider.Type != models.CanvasOSS && provider.Type != models.CanvasCloud) {
+			continue
+		}
+		courses := srv.fetchCanvasCoursesForUser(&provider, mapping.ExternalUserID)
+		result = append(result, courses...)
+	}
+	return result
+}
+
+func (srv *Server) fetchCanvasCoursesForUser(provider *models.ProviderPlatform, canvasUserID string) []models.ResidentProgramClassInfo {
+	apiURL := fmt.Sprintf("%s/api/v1/users/%s/courses?enrollment_state=active&per_page=100", provider.BaseUrl, canvasUserID)
+	var result []models.ResidentProgramClassInfo
+	for apiURL != "" {
+		req, err := http.NewRequest("GET", apiURL, nil)
+		if err != nil {
+			return result
+		}
+		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+		req.Header.Add("Accept", "application/json")
+		resp, err := srv.Client.Do(req)
+		if err != nil {
+			return result
+		}
+		var courses []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
+			resp.Body.Close()
+			return result
+		}
+		resp.Body.Close()
+		programID := models.CanvasProgramIDOffset + provider.ID
+		for _, course := range courses {
+			name, _ := course["name"].(string)
+			startAt, _ := course["start_at"].(string)
+			endAt, _ := course["end_at"].(string)
+			enrollment := models.EnrollmentCompleted
+			if endAt == "" {
+				enrollment = models.Enrolled
+			} else if t, err := time.Parse(time.RFC3339, endAt); err == nil && t.After(time.Now()) {
+				enrollment = models.Enrolled
+			}
+			result = append(result, models.ResidentProgramClassInfo{
+				ProgramName:          provider.Name,
+				ClassName:            name,
+				ProgramID:            programID,
+				EnrollmentStatus:     enrollment,
+				StartDate:            startAt,
+				EndDate:              endAt,
+				AttendancePercentage: "--",
+				IsCanvas:             true,
+			})
+		}
+		apiURL = nextPageURL(resp.Header.Get("Link"))
+	}
+	return result
 }
 
 func (srv *Server) handleGetUserAttendanceTrend(w http.ResponseWriter, r *http.Request, log sLog) error {

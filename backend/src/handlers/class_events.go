@@ -19,6 +19,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	return []routeDef{
 		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
 		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/canvas-schedule", srv.handleGetCanvasClassSchedule, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
 		adminFeatureRoute("GET /api/program-classes/todays-schedule", srv.handleGetTodaysSchedule, axx),

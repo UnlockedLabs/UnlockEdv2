@@ -92,8 +92,15 @@ export function IncompleteEnrollments({
                                             key={`${enrollment.program_id}-${enrollment.class_id}`}
                                         >
                                             <TableCell>
-                                                <div className="font-medium text-brand-dark">
-                                                    {enrollment.program_name}
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-brand-dark">
+                                                        {enrollment.program_name}
+                                                    </span>
+                                                    {enrollment.is_canvas && (
+                                                        <Badge className="bg-[#E66000] text-white text-xs">
+                                                            Canvas
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                                 <div className="text-sm text-gray-600">
                                                     {enrollment.class_name}

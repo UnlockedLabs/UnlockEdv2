@@ -25,6 +25,7 @@ import { RosterTab } from './RosterTab';
 import { EnrollmentHistoryTab } from './EnrollmentHistoryTab';
 import { SessionsTab } from './SessionsTab';
 import { ScheduleTab } from './ScheduleTab';
+import { CanvasScheduleTab } from './CanvasScheduleTab';
 import { SupportTab } from './SupportTab';
 import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
@@ -304,9 +305,7 @@ export default function ClassDetailPage() {
 
                     <TabsContent value="schedule" className="space-y-4">
                         {isCanvasClass ? (
-                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
-                                Schedule is managed in Canvas.
-                            </div>
+                            <CanvasScheduleTab classId={cls.id} />
                         ) : (
                             <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
                         )}

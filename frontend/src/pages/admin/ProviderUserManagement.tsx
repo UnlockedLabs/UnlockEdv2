@@ -137,6 +137,7 @@ export default function ProviderUserManagement() {
             setAmbiguousSelections({});
             setUnmatchedToCreate(new Set());
             void mutateMatch();
+            void mutateMapped();
         } else {
             toast.error('Failed to apply matches.');
         }
@@ -151,7 +152,8 @@ export default function ProviderUserManagement() {
             toast.success(
                 'Users imported successfully. Please check for accounts not created.'
             );
-            window.location.reload();
+            void mutateMatch();
+            void mutateMapped();
         } else {
             toast.error('Error importing users.');
         }
@@ -174,6 +176,7 @@ export default function ProviderUserManagement() {
             setMapSearch('');
             void mutateMatch();
             void mutateUnmapped();
+            void mutateMapped();
         } else {
             toast.error('Failed to map user.');
         }

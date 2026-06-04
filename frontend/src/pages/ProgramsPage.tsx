@@ -1438,6 +1438,9 @@ function ProgramsTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
+                                        {program.source === 'canvas' ? (
+                                            <div className="text-sm text-gray-400">—</div>
+                                        ) : (
                                         <div className="text-sm">
                                             <div className="font-medium text-brand-dark">
                                                 {program.total_capacity ?? 0}
@@ -1455,6 +1458,7 @@ function ProgramsTable({
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
+                                        )}
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
                                         <Tooltip>

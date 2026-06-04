@@ -41,8 +41,15 @@ export function CompletedPrograms({
                             >
                                 <CheckCircle2 className="size-6 text-green-700 shrink-0" />
                                 <div className="flex-1">
-                                    <div className="font-medium text-brand-dark">
-                                        {program.program_name}
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium text-brand-dark">
+                                            {program.program_name}
+                                        </span>
+                                        {program.is_canvas && (
+                                            <Badge className="bg-[#E66000] text-white text-xs">
+                                                Canvas
+                                            </Badge>
+                                        )}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
                                         Completed {formatDate(program.end_date)}{' '}

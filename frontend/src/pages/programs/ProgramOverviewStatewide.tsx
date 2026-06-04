@@ -179,6 +179,7 @@ export default function ProgramOverviewStatewide() {
         `/api/programs/${program_id}/classes?all=true&order_by=ps.start_dt asc`
     );
     const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
+    const isCanvasProgram = (program?.id ?? 0) >= 100_000_000;
 
     async function handleArchiveCheck() {
         if (!program || archiveCheckLoading) return;
@@ -518,7 +519,7 @@ export default function ProgramOverviewStatewide() {
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        {programStatus === 'Available' && (
+                        {!isCanvasProgram && programStatus === 'Available' && (
                             <Button
                                 variant="outline"
                                 onClick={() => {
@@ -529,7 +530,7 @@ export default function ProgramOverviewStatewide() {
                                 Mark as Inactive
                             </Button>
                         )}
-                        {programStatus === 'Inactive' && (
+                        {!isCanvasProgram && programStatus === 'Inactive' && (
                             <Button
                                 variant="outline"
                                 onClick={() => {
@@ -540,7 +541,7 @@ export default function ProgramOverviewStatewide() {
                                 Mark as Available
                             </Button>
                         )}
-                        {programStatus === 'Archived' && (
+                        {!isCanvasProgram && programStatus === 'Archived' && (
                             <Badge
                                 variant="outline"
                                 className="bg-gray-200 text-gray-700 border-gray-400 px-4 py-2"
@@ -548,7 +549,7 @@ export default function ProgramOverviewStatewide() {
                                 Archived
                             </Badge>
                         )}
-                        <DropdownMenu>
+                        {!isCanvasProgram && <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
@@ -610,11 +611,11 @@ export default function ProgramOverviewStatewide() {
                                     )}
                                 </Tooltip>
                             </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu>}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-6 mb-8">
+                <div className={`grid ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'} gap-6 mb-8`}>
                     <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Total Enrollment
@@ -622,9 +623,11 @@ export default function ProgramOverviewStatewide() {
                         <div className="text-3xl text-brand-dark mb-1">
                             {totalEnrolled}
                         </div>
-                        <div className="text-xs text-gray-500">
-                            of {totalCapacity} capacity
-                        </div>
+                        {!isCanvasProgram && totalCapacity > 0 && (
+                            <div className="text-xs text-gray-500">
+                                of {totalCapacity} capacity
+                            </div>
+                        )}
                     </div>
                     <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
@@ -648,6 +651,7 @@ export default function ProgramOverviewStatewide() {
                             of historical residents
                         </div>
                     </div>
+                    {!isCanvasProgram && (
                     <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Avg Attendance Rate
@@ -659,6 +663,7 @@ export default function ProgramOverviewStatewide() {
                             across all classes
                         </div>
                     </div>
+                    )}
                 </div>
 
                 <div className="card-block">
@@ -718,7 +723,7 @@ export default function ProgramOverviewStatewide() {
                                             ))}
                                     </div>
                                 </TableHead>
-                                <TableHead>Utilization</TableHead>
+                                {!isCanvasProgram && <TableHead>Utilization</TableHead>}
                                 <TableHead
                                     className="cursor-pointer hover:bg-gray-50"
                                     onClick={() => toggleSort('completion')}
@@ -733,7 +738,7 @@ export default function ProgramOverviewStatewide() {
                                             ))}
                                     </div>
                                 </TableHead>
-                                <TableHead>Attendance</TableHead>
+                                {!isCanvasProgram && <TableHead>Attendance</TableHead>}
                                 <TableHead className="w-32" />
                             </TableRow>
                         </TableHeader>
@@ -747,9 +752,7 @@ export default function ProgramOverviewStatewide() {
                                         <TableRow
                                             className="hover:bg-gray-50 cursor-pointer"
                                             onClick={() =>
-                                                toggleFacilityExpanded(
-                                                    stat.facilityId
-                                                )
+                                                toggleFacilityExpanded(stat.facilityId)
                                             }
                                         >
                                             <TableCell>
@@ -829,25 +832,9 @@ export default function ProgramOverviewStatewide() {
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </div>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <div className="text-sm text-gray-500 cursor-help w-fit">
-                                                                {
-                                                                    stat.historicalEnrollments
-                                                                }{' '}
-                                                                historical
-                                                            </div>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                            Past enrollments
-                                                            including completed,
-                                                            withdrawn, dropped,
-                                                            failed to complete,
-                                                            and transfered
-                                                        </TooltipContent>
-                                                    </Tooltip>
                                                 </div>
                                             </TableCell>
+                                            {!isCanvasProgram && (
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -878,6 +865,7 @@ export default function ProgramOverviewStatewide() {
                                                     </Tooltip>
                                                 </div>
                                             </TableCell>
+                                            )}
                                             <TableCell>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -908,6 +896,7 @@ export default function ProgramOverviewStatewide() {
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TableCell>
+                                            {!isCanvasProgram && (
                                             <TableCell>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -935,6 +924,7 @@ export default function ProgramOverviewStatewide() {
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TableCell>
+                                            )}
                                             <TableCell>
                                                 {(program?.id ?? 0) < 100_000_000 && (
                                                 <Button
@@ -968,9 +958,7 @@ export default function ProgramOverviewStatewide() {
                                                         <div className="px-12 py-4">
                                                             <div className="text-sm font-medium text-gray-700 mb-3">
                                                                 Classes at{' '}
-                                                                {
-                                                                    stat.facilityName
-                                                                }
+                                                                {stat.facilityName}
                                                             </div>
                                                             <Table>
                                                                 <TableHeader>
@@ -996,19 +984,13 @@ export default function ProgramOverviewStatewide() {
                                                                 </TableHeader>
                                                                 <TableBody>
                                                                     {stat.classes.map(
-                                                                        (
-                                                                            cls
-                                                                        ) => (
+                                                                        (cls) => (
                                                                             <TableRow
-                                                                                key={
-                                                                                    cls.id
-                                                                                }
+                                                                                key={cls.id}
                                                                                 className="hover:bg-white"
                                                                             >
                                                                                 <TableCell className="font-medium">
-                                                                                    {
-                                                                                        cls.name
-                                                                                    }
+                                                                                    {cls.name}
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">
                                                                                     {getInstructorName(
@@ -1018,13 +1000,9 @@ export default function ProgramOverviewStatewide() {
                                                                                 </TableCell>
                                                                                 <TableCell>
                                                                                     <span className="text-sm">
-                                                                                        {
-                                                                                            cls.enrolled
-                                                                                        }{' '}
-                                                                                        /{' '}
-                                                                                        {
-                                                                                            cls.capacity
-                                                                                        }
+                                                                                        {isCanvasProgram
+                                                                                            ? cls.enrolled
+                                                                                            : `${cls.enrolled} / ${cls.capacity}`}
                                                                                     </span>
                                                                                 </TableCell>
                                                                                 <TableCell>
@@ -1032,39 +1010,35 @@ export default function ProgramOverviewStatewide() {
                                                                                         variant="outline"
                                                                                         className={`${classStatusColors[cls.status]} text-xs`}
                                                                                     >
-                                                                                        {
-                                                                                            cls.status
-                                                                                        }
+                                                                                        {cls.status}
                                                                                     </Badge>
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">
                                                                                     <div>
                                                                                         <div>
                                                                                             {cls.schedule
-                                                                                                ? abbreviateScheduleDays(
-                                                                                                      cls.schedule
-                                                                                                  )
+                                                                                                ? isCanvasProgram
+                                                                                                    ? cls.schedule
+                                                                                                    : abbreviateScheduleDays(cls.schedule)
                                                                                                 : '—'}
                                                                                         </div>
+                                                                                        {!isCanvasProgram && (
                                                                                         <div className="text-xs text-gray-500">
                                                                                             {formatDateRange(
                                                                                                 cls.start_dt,
                                                                                                 cls.end_dt
                                                                                             )}
                                                                                         </div>
+                                                                                        )}
                                                                                     </div>
                                                                                 </TableCell>
                                                                                 <TableCell>
                                                                                     <Button
                                                                                         variant="ghost"
                                                                                         size="sm"
-                                                                                        onClick={(
-                                                                                            event
-                                                                                        ) => {
+                                                                                        onClick={(event) => {
                                                                                             event.stopPropagation();
-                                                                                            navigate(
-                                                                                                `/program-classes/${cls.id}/detail`
-                                                                                            );
+                                                                                            navigate(`/program-classes/${cls.id}/detail`);
                                                                                         }}
                                                                                         className="gap-2 text-brand hover:text-brand-dark focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                                                                                     >

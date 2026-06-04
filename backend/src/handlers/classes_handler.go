@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+
+	logrus "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerClassesRoutes() []routeDef {
@@ -110,6 +112,12 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	classes, err := srv.Db.GetClasses(&args, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	canvasClasses, err := srv.fetchCanvasClassesAllProviders()
+	if err != nil {
+		logrus.WithError(err).Warn("failed to fetch canvas classes, returning DB classes only")
+	} else {
+		classes = append(classes, canvasClasses...)
 	}
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }

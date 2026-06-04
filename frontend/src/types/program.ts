@@ -216,6 +216,7 @@ export interface ResidentProgramOverview {
     attendance_percentage?: number;
     change_reason?: string;
     schedule?: string;
+    is_canvas?: boolean;
 }
 
 export interface ProgramCompletion {
