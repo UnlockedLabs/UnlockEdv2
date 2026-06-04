@@ -522,7 +522,7 @@ export default function Schedule() {
                     />
                 </div>
 
-                {selectedEvent && (
+                {selectedEvent && !selectedEvent.is_canvas_event && (
                     <SessionDetailSheet
                         session={sessionView}
                         onClose={() => setShowSheet(false)}

@@ -142,7 +142,7 @@ func nextPageURL(header string) string {
 	for _, part := range strings.Split(header, ",") {
 		part = strings.TrimSpace(part)
 		segments := strings.Split(part, ";")
-		if len(segments) == 2 && strings.TrimSpace(segments[1]) == `rel="next"` {
+		if len(segments) >= 2 && strings.Contains(segments[1], `rel="next"`) {
 			u := strings.TrimSpace(segments[0])
 			return strings.Trim(u, "<>")
 		}
