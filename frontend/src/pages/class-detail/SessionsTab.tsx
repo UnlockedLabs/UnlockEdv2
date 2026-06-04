@@ -378,7 +378,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
                                         </p>
                                     </div>
                                     {upcomingSessions.length >
-                                        UPCOMING_DISPLAY_LIMIT && (
+                                        displayedUpcoming.length && (
                                         <span className="text-xs text-gray-500">
                                             Showing next{' '}
                                             {displayedUpcoming.length} of{' '}
