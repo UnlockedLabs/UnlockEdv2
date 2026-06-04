@@ -52,6 +52,15 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	// Merge Canvas calendar events when not filtered to a single class
+	if classID == 0 {
+		canvasEvents, canvasErr := srv.appendCanvasEventsForFacility(dtRng)
+		if canvasErr != nil {
+			log.warnf("failed to fetch canvas calendar events: %v", canvasErr)
+		} else {
+			events = append(events, canvasEvents...)
+		}
+	}
 	return writeJsonResponse(w, http.StatusOK, events)
 }
 

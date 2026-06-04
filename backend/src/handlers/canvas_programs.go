@@ -134,6 +134,136 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 	}, nil
 }
 
+// fetchCanvasCalendarEvents fetches individual Canvas calendar events for all
+// courses in the given provider for the specified date range.
+func (srv *Server) fetchCanvasCalendarEvents(
+	provider *models.ProviderPlatform,
+	start, end time.Time,
+) ([]models.FacilityProgramClassEvent, error) {
+	// Step 1: fetch all courses for this provider
+	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
+	req, err := http.NewRequest("GET", coursesURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := srv.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("canvas API returned %d fetching courses for provider %d", resp.StatusCode, provider.ID)
+	}
+
+	var courses []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
+		return nil, err
+	}
+	if len(courses) == 0 {
+		return []models.FacilityProgramClassEvent{}, nil
+	}
+
+	// Step 2: build context_codes[] query params
+	contextParams := ""
+	for _, course := range courses {
+		if idFloat, ok := course["id"].(float64); ok {
+			contextParams += fmt.Sprintf("&context_codes[]=course_%d", int(idFloat))
+		}
+	}
+
+	// Step 3: fetch calendar events
+	eventsURL := provider.BaseUrl + "/api/v1/calendar_events?" +
+		"start_date=" + start.Format("2006-01-02") +
+		"&end_date=" + end.Format("2006-01-02") +
+		"&per_page=100" +
+		contextParams
+
+	evReq, err := http.NewRequest("GET", eventsURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	evReq.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+	evReq.Header.Add("Accept", "application/json")
+
+	evResp, err := srv.Client.Do(evReq)
+	if err != nil {
+		return nil, err
+	}
+	defer evResp.Body.Close()
+	if evResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("canvas API returned %d fetching calendar events for provider %d", evResp.StatusCode, provider.ID)
+	}
+
+	var rawEvents []map[string]interface{}
+	if err := json.NewDecoder(evResp.Body).Decode(&rawEvents); err != nil {
+		return nil, err
+	}
+
+	var events []models.FacilityProgramClassEvent
+	for _, event := range rawEvents {
+		startAtStr, _ := event["start_at"].(string)
+		endAtStr, _ := event["end_at"].(string)
+		if startAtStr == "" || endAtStr == "" {
+			continue
+		}
+		startAt, err := time.Parse(time.RFC3339, startAtStr)
+		if err != nil {
+			continue
+		}
+		endAt, err := time.Parse(time.RFC3339, endAtStr)
+		if err != nil {
+			continue
+		}
+
+		title, _ := event["title"].(string)
+		isCancelled := event["workflow_state"] == "deleted"
+
+		var id uint
+		if idFloat, ok := event["id"].(float64); ok {
+			id = models.CanvasClassIDOffset + provider.ID*1_000_000 + uint(idFloat)
+		}
+
+		ev := models.FacilityProgramClassEvent{
+			IsCanvasEvent: true,
+			IsCancelled:   isCancelled,
+			ProgramID:     models.CanvasProgramIDOffset + provider.ID,
+			ProgramName:   "College - " + provider.Name,
+			ClassName:     title,
+			StartTime:     &startAt,
+			EndTime:       &endAt,
+			ClassStatus:   models.Active,
+		}
+		ev.ID = id
+		events = append(events, ev)
+	}
+	return events, nil
+}
+
+// appendCanvasEventsForFacility iterates all active Canvas provider platforms
+// and collects calendar events for the given date range.
+func (srv *Server) appendCanvasEventsForFacility(dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
+	providers, err := srv.Db.GetAllActiveProviderPlatforms()
+	if err != nil {
+		return nil, err
+	}
+	var result []models.FacilityProgramClassEvent
+	for _, provider := range providers {
+		if provider.Type != models.CanvasOSS && provider.Type != models.CanvasCloud {
+			continue
+		}
+		evs, err := srv.fetchCanvasCalendarEvents(&provider, dtRng.Start, dtRng.End)
+		if err != nil {
+			log.WithError(err).Warnf("failed to fetch canvas calendar events for provider %d, skipping", provider.ID)
+			continue
+		}
+		result = append(result, evs...)
+	}
+	return result, nil
+}
+
 func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Request, log sLog, programID uint) error {
 	connectionID := programID - models.CanvasProgramIDOffset
 	provider, err := srv.Db.GetProviderPlatformByID(int(connectionID))
