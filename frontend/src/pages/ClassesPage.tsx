@@ -59,8 +59,9 @@ const STATUS_OPTIONS: { label: string; value: string }[] = [
 ];
 
 function formatDateRangeFull(startDt: string, endDt: string): string {
-    const fmt = (dt: string) => {
+    const fmt = (dt: string): string => {
         const d = new Date(dt);
+        if (Number.isNaN(d.getTime()) || d.getFullYear() < 1900) return '';
         return d.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -69,6 +70,7 @@ function formatDateRangeFull(startDt: string, endDt: string): string {
     };
     if (!startDt) return '';
     const start = fmt(startDt);
+    if (!start) return '';
     const end = endDt ? fmt(endDt) : '';
     return end ? `${start} - ${end}` : start;
 }

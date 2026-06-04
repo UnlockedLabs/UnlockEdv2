@@ -150,7 +150,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 <InfoCard
                     label="Duration"
                     value={
-                        cls.start_dt
+                        cls.start_dt && new Date(cls.start_dt).getFullYear() >= 1900
                             ? `${formatDate(cls.start_dt)} to ${cls.end_dt ? formatDate(cls.end_dt) : 'Ongoing'}`
                             : 'Not set'
                     }

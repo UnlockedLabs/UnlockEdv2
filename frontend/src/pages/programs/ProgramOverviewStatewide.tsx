@@ -66,7 +66,7 @@ const formatDateRange = (
     }
     const formatUTCDate = (dateStr: string) => {
         const d = new Date(dateStr);
-        if (Number.isNaN(d.getTime())) return '—';
+        if (Number.isNaN(d.getTime()) || d.getFullYear() < 1900) return '—';
         return d.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',

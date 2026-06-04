@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -525,6 +526,22 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		classes[i].Enrolled = int(n)
 	}
 
+	// Batch-fetch upcoming calendar events to populate schedule info.
+	rawIDs := make([]uint, len(classes))
+	for i, cls := range classes {
+		rawIDs[i] = cls.ProgramClass.ID - models.CanvasClassIDOffset - connectionID*1_000_000
+	}
+	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, rawIDs)
+	timezone := srv.getQueryContext(r).Timezone
+	for i, cls := range classes {
+		rawID := cls.ProgramClass.ID - models.CanvasClassIDOffset - connectionID*1_000_000
+		if ev, ok := scheduleEvents[rawID]; ok {
+			classes[i].ProgramClass.Events = []models.ProgramClassEvent{ev}
+			sched, _ := services.FormatClassScheduleAndRoom([]models.ProgramClassEvent{ev}, timezone)
+			classes[i].Schedule = sched
+		}
+	}
+
 	args := srv.getQueryContext(r)
 	args.Total = int64(len(classes))
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
@@ -595,9 +612,8 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 		return newDatabaseServiceError(err)
 	}
 
-	// Concurrently fetch per-facility enrollment counts and next calendar event for each course.
+	// Concurrently fetch per-facility enrollment counts for each course.
 	facilityCounts := make([]map[uint]int64, len(entries))
-	nextEventLabels := make([]string, len(entries))
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	for i := range entries {
@@ -606,14 +622,20 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			defer wg.Done()
 			rawID := entries[idx].id - models.CanvasClassIDOffset - connectionID*1_000_000
 			counts := srv.countMappedCanvasEnrolleesPerFacility(provider, rawID)
-			label := srv.fetchNextCanvasEventLabel(provider, rawID)
 			mu.Lock()
 			facilityCounts[idx] = counts
-			nextEventLabels[idx] = label
 			mu.Unlock()
 		}(i)
 	}
 	wg.Wait()
+
+	// Batch-fetch upcoming calendar events for all courses to derive schedule strings.
+	rawIDs := make([]uint, len(entries))
+	for i, e := range entries {
+		rawIDs[i] = e.id - models.CanvasClassIDOffset - connectionID*1_000_000
+	}
+	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, rawIDs)
+	timezone := srv.getQueryContext(r).Timezone
 
 	// Build one row per (facility × course).
 	classes := make([]models.ProgramClassDetail, 0, len(facilities)*len(entries))
@@ -622,6 +644,13 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			enrolled := int64(0)
 			if facilityCounts[i] != nil {
 				enrolled = facilityCounts[i][facility.ID]
+			}
+			rawID := rawIDs[i]
+			var sched string
+			var evSlice []models.ProgramClassEvent
+			if ev, ok := scheduleEvents[rawID]; ok {
+				evSlice = []models.ProgramClassEvent{ev}
+				sched, _ = services.FormatClassScheduleAndRoom(evSlice, timezone)
 			}
 			classes = append(classes, models.ProgramClassDetail{
 				ProgramClass: models.ProgramClass{
@@ -634,10 +663,11 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 					EndDt:          entry.endDt,
 					Status:         entry.status,
 					Enrolled:       enrolled,
+					Events:         evSlice,
 				},
 				FacilityName: facility.Name,
 				Enrolled:     int(enrolled),
-				Schedule:     nextEventLabels[i],
+				Schedule:     sched,
 			})
 		}
 	}
@@ -647,42 +677,125 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }
 
-// fetchNextCanvasEventLabel returns a human-readable label for the next upcoming
-// calendar event for the given Canvas course, e.g. "Tue Jun 10, 2:00 PM".
-// Returns an empty string if there are no upcoming events or on any error.
-func (srv *Server) fetchNextCanvasEventLabel(provider *models.ProviderPlatform, rawCourseID uint) string {
-	today := time.Now().Format("2006-01-02")
-	url := fmt.Sprintf(
-		"%s/api/v1/calendar_events?context_codes[]=course_%d&start_date=%s&per_page=1&type=event",
-		provider.BaseUrl, rawCourseID, today,
-	)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return ""
+
+// weekdayToRRuleDay converts a time.Weekday to the two-letter iCalendar abbreviation.
+func weekdayToRRuleDay(day time.Weekday) string {
+	switch day {
+	case time.Monday:
+		return "MO"
+	case time.Tuesday:
+		return "TU"
+	case time.Wednesday:
+		return "WE"
+	case time.Thursday:
+		return "TH"
+	case time.Friday:
+		return "FR"
+	case time.Saturday:
+		return "SA"
+	default:
+		return "SU"
 	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return ""
+}
+
+// buildCanvasEventRRule builds an iCalendar RRULE string and a Go duration string
+// from a Canvas calendar event's start/end times and optional rrule fragment.
+// When canvasRRule is present (e.g. "FREQ=WEEKLY;BYDAY=MO") it is combined with a
+// DTSTART derived from startAt. When absent the event is treated as a single occurrence.
+func buildCanvasEventRRule(startAt, endAt time.Time, canvasRRule string) (recurrenceRule, duration string) {
+	duration = endAt.Sub(startAt).String()
+	dtstart := "DTSTART:" + startAt.UTC().Format("20060102T150405Z")
+	if canvasRRule != "" {
+		rrulePart := canvasRRule
+		if !strings.HasPrefix(rrulePart, "RRULE:") {
+			rrulePart = "RRULE:" + rrulePart
+		}
+		recurrenceRule = dtstart + "\n" + rrulePart
+	} else {
+		recurrenceRule = fmt.Sprintf("%s\nRRULE:FREQ=WEEKLY;BYDAY=%s;COUNT=1", dtstart, weekdayToRRuleDay(startAt.UTC().Weekday()))
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return ""
+	return
+}
+
+// fetchCanvasCoursesScheduleEvents batch-fetches upcoming calendar events for the given
+// raw Canvas course IDs and returns a map of rawCourseID → synthetic ProgramClassEvent.
+// The synthetic event carries a RecurrenceRule and Duration suitable for passing to
+// services.FormatClassScheduleAndRoom, mirroring how regular class events work.
+func (srv *Server) fetchCanvasCoursesScheduleEvents(
+	provider *models.ProviderPlatform,
+	rawCourseIDs []uint,
+) map[uint]models.ProgramClassEvent {
+	result := make(map[uint]models.ProgramClassEvent, len(rawCourseIDs))
+	if len(rawCourseIDs) == 0 {
+		return result
 	}
-	var events []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&events); err != nil || len(events) == 0 {
-		return ""
+
+	today := time.Now()
+	params := url.Values{}
+	params.Set("start_date", today.Format("2006-01-02"))
+	params.Set("end_date", today.AddDate(0, 0, 28).Format("2006-01-02"))
+	params.Set("per_page", "100")
+	params.Set("type", "event")
+	for _, id := range rawCourseIDs {
+		params.Add("context_codes[]", fmt.Sprintf("course_%d", id))
 	}
-	startAt, _ := events[0]["start_at"].(string)
-	if startAt == "" {
-		return ""
+
+	var rawEvents []map[string]interface{}
+	for eventsURL := provider.BaseUrl + "/api/v1/calendar_events?" + params.Encode(); eventsURL != ""; {
+		req, err := http.NewRequest("GET", eventsURL, nil)
+		if err != nil {
+			break
+		}
+		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+		req.Header.Add("Accept", "application/json")
+		resp, err := srv.Client.Do(req)
+		if err != nil {
+			break
+		}
+		var page []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			resp.Body.Close()
+			break
+		}
+		eventsURL = nextPageURL(resp.Header.Get("Link"))
+		resp.Body.Close()
+		rawEvents = append(rawEvents, page...)
 	}
-	t, err := time.Parse("2006-01-02T15:04:05Z", startAt)
-	if err != nil {
-		return ""
+
+	for _, event := range rawEvents {
+		contextCode, _ := event["context_code"].(string)
+		if !strings.HasPrefix(contextCode, "course_") {
+			continue
+		}
+		courseIDInt, err := strconv.ParseUint(strings.TrimPrefix(contextCode, "course_"), 10, 64)
+		if err != nil {
+			continue
+		}
+		rawID := uint(courseIDInt)
+		if _, seen := result[rawID]; seen {
+			continue // keep only the first (earliest) event per course
+		}
+		startAtStr, _ := event["start_at"].(string)
+		endAtStr, _ := event["end_at"].(string)
+		if startAtStr == "" || endAtStr == "" {
+			continue
+		}
+		startAt, err := time.Parse(time.RFC3339, startAtStr)
+		if err != nil {
+			continue
+		}
+		endAt, err := time.Parse(time.RFC3339, endAtStr)
+		if err != nil {
+			continue
+		}
+		canvasRRule, _ := event["rrule"].(string)
+		rruleStr, durStr := buildCanvasEventRRule(startAt, endAt, canvasRRule)
+		result[rawID] = models.ProgramClassEvent{
+			RecurrenceRule: rruleStr,
+			Duration:       durStr,
+		}
 	}
-	return t.UTC().Format("Mon Jan 2, 3:04 PM")
+	return result
 }
 
 // countMappedCanvasEnrolleesPerFacility fetches active enrollments for a Canvas course

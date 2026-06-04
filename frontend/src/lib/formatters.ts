@@ -31,9 +31,10 @@ export function formatDate(dateStr?: string): string {
     if (!dateStr) return '-';
     const datePart = dateStr.split('T')[0];
     const parts = datePart.split('-');
+    const year = Number(parts[0]);
+    if (year < 1900) return '-';
     const month = Number(parts[1]) - 1;
     const day = Number(parts[2]);
-    const year = parts[0];
     return `${MONTH_NAMES[month]} ${day}, ${year}`;
 }
 
