@@ -32,9 +32,7 @@ export function CompletedPrograms({
                         const absent = program.absent_attendance ?? 0;
                         const total = present + absent;
                         const rate =
-                            total > 0
-                                ? Math.round((present / total) * 100)
-                                : 0;
+                            total > 0 ? Math.round((present / total) * 100) : 0;
 
                         return (
                             <div
@@ -47,9 +45,8 @@ export function CompletedPrograms({
                                         {program.program_name}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
-                                        Completed{' '}
-                                        {formatDate(program.end_date)} •{' '}
-                                        {present}/{total} sessions attended (
+                                        Completed {formatDate(program.end_date)}{' '}
+                                        • {present}/{total} sessions attended (
                                         {rate}%)
                                     </div>
                                 </div>

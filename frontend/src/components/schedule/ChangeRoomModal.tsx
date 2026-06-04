@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FacilityProgramClassEvent, Room, RoomConflict, ChangeReason } from '@/types';
+import {
+    FacilityProgramClassEvent,
+    Room,
+    RoomConflict,
+    ChangeReason
+} from '@/types';
 import { FormModal } from '@/components/shared/FormModal';
 import { RoomConflictModal } from './RoomConflictModal';
 import { Button } from '@/components/ui/button';
@@ -36,11 +41,12 @@ export function ChangeRoomModal({
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
 
-    const { submitSingleSessionChange, submitSeriesChange } = useChangeEventField(
-        event,
-        { room_id: roomId ? Number(roomId) : null },
-        reason
-    );
+    const { submitSingleSessionChange, submitSeriesChange } =
+        useChangeEventField(
+            event,
+            { room_id: roomId ? Number(roomId) : null },
+            reason
+        );
 
     useEffect(() => {
         if (open && event) {
@@ -50,7 +56,8 @@ export function ChangeRoomModal({
         }
     }, [open, event]);
 
-    const selectedRoomName = rooms.find((r) => String(r.id) === roomId)?.name ?? roomId;
+    const selectedRoomName =
+        rooms.find((r) => String(r.id) === roomId)?.name ?? roomId;
 
     async function handleSubmit() {
         if (!roomId) {
@@ -86,7 +93,11 @@ export function ChangeRoomModal({
 
     return (
         <>
-            <FormModal open={open} onOpenChange={onOpenChange} title="Change Room">
+            <FormModal
+                open={open}
+                onOpenChange={onOpenChange}
+                title="Change Room"
+            >
                 <div className="space-y-4 pt-6">
                     <div className="space-y-2">
                         <Label>New Room</Label>
@@ -96,7 +107,10 @@ export function ChangeRoomModal({
                             </SelectTrigger>
                             <SelectContent>
                                 {rooms.map((room) => (
-                                    <SelectItem key={room.id} value={String(room.id)}>
+                                    <SelectItem
+                                        key={room.id}
+                                        value={String(room.id)}
+                                    >
                                         {room.name}
                                     </SelectItem>
                                 ))}
@@ -137,7 +151,10 @@ export function ChangeRoomModal({
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancel
                         </Button>
                         <Button

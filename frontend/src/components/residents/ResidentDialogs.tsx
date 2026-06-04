@@ -66,7 +66,9 @@ export function EditResidentDialog({
             data
         );
         if (response.success) {
-            toast.success(`${resident.name_first} ${resident.name_last}'s profile updated`);
+            toast.success(
+                `${resident.name_first} ${resident.name_last}'s profile updated`
+            );
             onOpenChange(false);
             onSuccess();
         } else {
@@ -164,7 +166,9 @@ export function ResetPasswordConfirmDialog({
         setLoading(false);
 
         if (response.success) {
-            toast.success(`Password reset for ${resident.name_first} ${resident.name_last}`);
+            toast.success(
+                `Password reset for ${resident.name_first} ${resident.name_last}`
+            );
             onOpenChange(false);
             onSuccess(response.data.temp_password);
         } else {
@@ -307,7 +311,9 @@ export function DeactivateDialog({
         setLoading(false);
 
         if (response.success) {
-            toast.success(`${resident.name_first} ${resident.name_last} has been deactivated`);
+            toast.success(
+                `${resident.name_first} ${resident.name_last} has been deactivated`
+            );
             onOpenChange(false);
             onSuccess();
         } else {
@@ -426,7 +432,9 @@ export function DeleteDialog({
         setLoading(false);
 
         if (response.success) {
-            toast.success(`${resident.name_first} ${resident.name_last} has been deleted`);
+            toast.success(
+                `${resident.name_first} ${resident.name_last} has been deleted`
+            );
             onOpenChange(false);
             onSuccess();
         } else {
@@ -536,7 +544,9 @@ export function TransferDialog({
         setLoading(false);
 
         if (response.success) {
-            toast.success(`${resident.name_first} ${resident.name_last} transferred to ${targetFacilityName}`);
+            toast.success(
+                `${resident.name_first} ${resident.name_last} transferred to ${targetFacilityName}`
+            );
             onOpenChange(false);
             onSuccess();
         } else {

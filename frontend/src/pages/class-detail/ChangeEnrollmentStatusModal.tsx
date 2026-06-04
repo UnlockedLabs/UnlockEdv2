@@ -58,7 +58,8 @@ export function ChangeEnrollmentStatusModal({
         newStatus !== EnrollmentStatus.Enrolled &&
         newStatus !== EnrollmentStatus.Completed;
     const canSubmit =
-        newStatus !== currentStatus && (!needsReason || reason.trim().length > 0);
+        newStatus !== currentStatus &&
+        (!needsReason || reason.trim().length > 0);
 
     const handleSubmit = () => {
         onStatusChange(newStatus, needsReason ? reason : '');

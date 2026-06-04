@@ -96,7 +96,7 @@ class API {
                 };
                 const errorData = Array.isArray(data?.data)
                     ? (data.data as unknown as T)
-                    : data?.data ?? ({} as T);
+                    : (data?.data ?? ({} as T));
                 error.response = {
                     type: 'one',
                     success: false,
@@ -159,10 +159,7 @@ class API {
         return API.fetchWithHandling<T>('GET', url);
     }
 
-    public static post<T, D>(
-        url: string,
-        data: D
-    ): Promise<ServerResponse<T>> {
+    public static post<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
         return API.fetchWithHandling<T>('POST', url, data);
     }
 

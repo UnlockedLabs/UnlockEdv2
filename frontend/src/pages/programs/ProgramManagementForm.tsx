@@ -109,7 +109,11 @@ export default function ProgramManagementForm() {
         value: T,
         checked: boolean
     ) {
-        const current = (field === 'program_types' ? selectedProgramTypes : selectedCreditTypes) as T[];
+        const current = (
+            field === 'program_types'
+                ? selectedProgramTypes
+                : selectedCreditTypes
+        ) as T[];
         const updated = checked
             ? [...current, value]
             : current.filter((item) => item !== value);
@@ -173,13 +177,17 @@ export default function ProgramManagementForm() {
 
         if (!resp.success) {
             toast.error(
-                isEditing ? 'Failed to update program' : 'Failed to create program'
+                isEditing
+                    ? 'Failed to update program'
+                    : 'Failed to create program'
             );
             return;
         }
 
         toast.success(
-            isEditing ? 'Program updated successfully' : 'Program created successfully'
+            isEditing
+                ? 'Program updated successfully'
+                : 'Program created successfully'
         );
         navigate(`/programs/${resp.data.id}`);
     }
@@ -212,11 +220,17 @@ export default function ProgramManagementForm() {
                             id="name"
                             {...register('name', {
                                 required: 'Program name is required',
-                                maxLength: { value: 255, message: 'Name must be 255 characters or fewer' }
+                                maxLength: {
+                                    value: 255,
+                                    message:
+                                        'Name must be 255 characters or fewer'
+                                }
                             })}
                         />
                         {errors.name && (
-                            <p className="text-sm text-red-600">{errors.name.message}</p>
+                            <p className="text-sm text-red-600">
+                                {errors.name.message}
+                            </p>
                         )}
                     </div>
 
@@ -227,11 +241,17 @@ export default function ProgramManagementForm() {
                             rows={3}
                             {...register('description', {
                                 required: 'Description is required',
-                                maxLength: { value: 255, message: 'Description must be 255 characters or fewer' }
+                                maxLength: {
+                                    value: 255,
+                                    message:
+                                        'Description must be 255 characters or fewer'
+                                }
                             })}
                         />
                         {errors.description && (
-                            <p className="text-sm text-red-600">{errors.description.message}</p>
+                            <p className="text-sm text-red-600">
+                                {errors.description.message}
+                            </p>
                         )}
                     </div>
 
@@ -240,11 +260,20 @@ export default function ProgramManagementForm() {
                             <Label>Program Types</Label>
                             <div className="space-y-2 mt-1">
                                 {ALL_PROGRAM_TYPES.map((type) => (
-                                    <label key={type} className="flex items-center gap-2 cursor-pointer">
+                                    <label
+                                        key={type}
+                                        className="flex items-center gap-2 cursor-pointer"
+                                    >
                                         <Checkbox
-                                            checked={selectedProgramTypes?.includes(type)}
+                                            checked={selectedProgramTypes?.includes(
+                                                type
+                                            )}
                                             onCheckedChange={(checked) =>
-                                                handleCheckboxToggle('program_types', type, checked === true)
+                                                handleCheckboxToggle(
+                                                    'program_types',
+                                                    type,
+                                                    checked === true
+                                                )
                                             }
                                         />
                                         <span className="text-sm text-foreground">
@@ -259,14 +288,25 @@ export default function ProgramManagementForm() {
                             <Label>Credit Types</Label>
                             <div className="space-y-2 mt-1">
                                 {ALL_CREDIT_TYPES.map((type) => (
-                                    <label key={type} className="flex items-center gap-2 cursor-pointer">
+                                    <label
+                                        key={type}
+                                        className="flex items-center gap-2 cursor-pointer"
+                                    >
                                         <Checkbox
-                                            checked={selectedCreditTypes?.includes(type)}
+                                            checked={selectedCreditTypes?.includes(
+                                                type
+                                            )}
                                             onCheckedChange={(checked) =>
-                                                handleCheckboxToggle('credit_types', type, checked === true)
+                                                handleCheckboxToggle(
+                                                    'credit_types',
+                                                    type,
+                                                    checked === true
+                                                )
                                             }
                                         />
-                                        <span className="text-sm text-foreground">{type}</span>
+                                        <span className="text-sm text-foreground">
+                                            {type}
+                                        </span>
                                     </label>
                                 ))}
                             </div>
@@ -280,7 +320,10 @@ export default function ProgramManagementForm() {
                             control={control}
                             rules={{ required: 'Funding type is required' }}
                             render={({ field }) => (
-                                <Select value={field.value} onValueChange={field.onChange}>
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select funding type" />
                                     </SelectTrigger>
@@ -298,26 +341,40 @@ export default function ProgramManagementForm() {
                 </div>
 
                 <div className="section-card">
-                    <h2 className="text-lg font-semibold text-foreground">Availability</h2>
+                    <h2 className="text-lg font-semibold text-foreground">
+                        Availability
+                    </h2>
 
-                    {user && canSwitchFacility(user) && facilities.length > 0 && (
-                        <div className="space-y-2">
-                            <Label>Facilities</Label>
-                            <div className="space-y-2 mt-1">
-                                {facilities.map((fac) => (
-                                    <label key={fac.id} className="flex items-center gap-2 cursor-pointer">
-                                        <Checkbox
-                                            checked={selectedFacilities?.includes(fac.id)}
-                                            onCheckedChange={(checked) =>
-                                                handleFacilityToggle(fac.id, checked === true)
-                                            }
-                                        />
-                                        <span className="text-sm text-foreground">{fac.name}</span>
-                                    </label>
-                                ))}
+                    {user &&
+                        canSwitchFacility(user) &&
+                        facilities.length > 0 && (
+                            <div className="space-y-2">
+                                <Label>Facilities</Label>
+                                <div className="space-y-2 mt-1">
+                                    {facilities.map((fac) => (
+                                        <label
+                                            key={fac.id}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Checkbox
+                                                checked={selectedFacilities?.includes(
+                                                    fac.id
+                                                )}
+                                                onCheckedChange={(checked) =>
+                                                    handleFacilityToggle(
+                                                        fac.id,
+                                                        checked === true
+                                                    )
+                                                }
+                                            />
+                                            <span className="text-sm text-foreground">
+                                                {fac.name}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
                     <div className="space-y-2">
                         <Label>Program Status</Label>
@@ -327,21 +384,28 @@ export default function ProgramManagementForm() {
                             render={({ field }) => (
                                 <Select
                                     value={field.value ? 'active' : 'inactive'}
-                                    onValueChange={(v) => field.onChange(v === 'active')}
+                                    onValueChange={(v) =>
+                                        field.onChange(v === 'active')
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">Available</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="active">
+                                            Available
+                                        </SelectItem>
+                                        <SelectItem value="inactive">
+                                            Inactive
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Set to &apos;Available&apos; to let facility admins schedule classes.
-                            &apos;Inactive&apos; programs stay hidden.
+                            Set to &apos;Available&apos; to let facility admins
+                            schedule classes. &apos;Inactive&apos; programs stay
+                            hidden.
                         </p>
                     </div>
                 </div>

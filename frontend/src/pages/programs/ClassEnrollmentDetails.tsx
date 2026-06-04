@@ -72,7 +72,9 @@ export default function ClassEnrollmentDetails() {
     const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState<string>(FilterResidentNames['Resident Name (A-Z)']);
+    const [sortQuery, setSortQuery] = useState<string>(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
     const [viewMode, setViewMode] = useState<'enrolled' | 'other'>('enrolled');
     const [filterStatus, setFilterStatus] = useState('all');
     const { page, perPage, setPage, setPerPage } = useUrlPagination();
@@ -84,24 +86,35 @@ export default function ClassEnrollmentDetails() {
 
     function getStatusParam(): string {
         if (viewMode === 'enrolled') return 'enrolled';
-        if (filterStatus === 'all' || filterStatus === '') return 'not_enrolled';
+        if (filterStatus === 'all' || filterStatus === '')
+            return 'not_enrolled';
         return filterStatus;
     }
 
     const status = getStatusParam();
-    const { data, isLoading, mutate } = useSWR<ServerResponseMany<ClassEnrollment>>(
+    const { data, isLoading, mutate } = useSWR<
+        ServerResponseMany<ClassEnrollment>
+    >(
         `/api/program-classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${status}`
     );
 
     const otherStatus = viewMode === 'enrolled' ? 'not_enrolled' : 'enrolled';
-    const { data: otherData, mutate: mutateOther } = useSWR<ServerResponseMany<ClassEnrollment>>(
+    const { data: otherData, mutate: mutateOther } = useSWR<
+        ServerResponseMany<ClassEnrollment>
+    >(
         `/api/program-classes/${class_id}/enrollments?per_page=1&status=${otherStatus}`
     );
 
     const enrollments = data?.data ?? [];
     const meta = data?.meta;
-    const enrolledCount = viewMode === 'enrolled' ? meta?.total ?? 0 : otherData?.meta?.total ?? 0;
-    const otherCount = viewMode === 'enrolled' ? otherData?.meta?.total ?? 0 : meta?.total ?? 0;
+    const enrolledCount =
+        viewMode === 'enrolled'
+            ? (meta?.total ?? 0)
+            : (otherData?.meta?.total ?? 0);
+    const otherCount =
+        viewMode === 'enrolled'
+            ? (otherData?.meta?.total ?? 0)
+            : (meta?.total ?? 0);
     async function refreshEnrollments() {
         await Promise.all([mutate(), mutateOther()]);
     }
@@ -137,13 +150,17 @@ export default function ClassEnrollmentDetails() {
 
     function handleToggleSelection(userId: number) {
         setSelectedResidents((prev) =>
-            prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+            prev.includes(userId)
+                ? prev.filter((id) => id !== userId)
+                : [...prev, userId]
         );
     }
 
     function handleSelectAll() {
         const selectable = enrollments.filter(
-            (e) => !e.completion_dt && e.enrollment_status === EnrollmentStatus.Enrolled
+            (e) =>
+                !e.completion_dt &&
+                e.enrollment_status === EnrollmentStatus.Enrolled
         );
         if (selectedResidents.length === selectable.length) {
             setSelectedResidents([]);
@@ -160,20 +177,28 @@ export default function ClassEnrollmentDetails() {
             name_full:
                 selectedResidents.length > 1
                     ? `${selectedResidents.length} Residents`
-                    : enrollments.find((e) => e.user_id === selectedResidents[0])?.name_full ?? ''
+                    : (enrollments.find(
+                          (e) => e.user_id === selectedResidents[0]
+                      )?.name_full ?? '')
         });
         setShowConfirmDialog(true);
     }
 
     async function submitEnrollmentChange(reasonText?: string) {
         if (!changeStatusValue) return;
-        const resp = await API.patch(`program-classes/${class_id}/enrollments`, {
-            enrollment_status: changeStatusValue.status,
-            user_ids: selectedResidents.length > 0 ? selectedResidents : [changeStatusValue.user_id],
-            ...(requiresReason(changeStatusValue.status) && {
-                change_reason: reasonText?.trim()
-            })
-        });
+        const resp = await API.patch(
+            `program-classes/${class_id}/enrollments`,
+            {
+                enrollment_status: changeStatusValue.status,
+                user_ids:
+                    selectedResidents.length > 0
+                        ? selectedResidents
+                        : [changeStatusValue.user_id],
+                ...(requiresReason(changeStatusValue.status) && {
+                    change_reason: reasonText?.trim()
+                })
+            }
+        );
 
         if (resp.success) {
             setSelectedResidents([]);
@@ -189,8 +214,11 @@ export default function ClassEnrollmentDetails() {
 
     const allSelected =
         enrollments.length > 0 &&
-        enrollments.filter((e) => !e.completion_dt && e.enrollment_status === EnrollmentStatus.Enrolled)
-            .length === selectedResidents.length &&
+        enrollments.filter(
+            (e) =>
+                !e.completion_dt &&
+                e.enrollment_status === EnrollmentStatus.Enrolled
+        ).length === selectedResidents.length &&
         selectedResidents.length > 0;
 
     function getFilteredStatusOptions(): Record<string, string> {
@@ -213,7 +241,9 @@ export default function ClassEnrollmentDetails() {
                 <div className="flex items-center gap-3">
                     <div className="inline-flex rounded-md border border-border">
                         <Button
-                            variant={viewMode === 'enrolled' ? 'default' : 'ghost'}
+                            variant={
+                                viewMode === 'enrolled' ? 'default' : 'ghost'
+                            }
                             size="sm"
                             className={
                                 viewMode === 'enrolled'
@@ -248,49 +278,86 @@ export default function ClassEnrollmentDetails() {
                         />
                     </div>
 
-                    <Select value={sortQuery} onValueChange={(v) => { setSortQuery(v); setPage(1); }}>
+                    <Select
+                        value={sortQuery}
+                        onValueChange={(v) => {
+                            setSortQuery(v);
+                            setPage(1);
+                        }}
+                    >
                         <SelectTrigger className="w-44">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="name_last asc">Name (A-Z)</SelectItem>
-                            <SelectItem value="name_last desc">Name (Z-A)</SelectItem>
-                            <SelectItem value="doc_id asc">Resident ID (Asc)</SelectItem>
-                            <SelectItem value="doc_id desc">Resident ID (Desc)</SelectItem>
-                            <SelectItem value="start_dt asc">Enrollment (Asc)</SelectItem>
-                            <SelectItem value="start_dt desc">Enrollment (Desc)</SelectItem>
+                            <SelectItem value="name_last asc">
+                                Name (A-Z)
+                            </SelectItem>
+                            <SelectItem value="name_last desc">
+                                Name (Z-A)
+                            </SelectItem>
+                            <SelectItem value="doc_id asc">
+                                Resident ID (Asc)
+                            </SelectItem>
+                            <SelectItem value="doc_id desc">
+                                Resident ID (Desc)
+                            </SelectItem>
+                            <SelectItem value="start_dt asc">
+                                Enrollment (Asc)
+                            </SelectItem>
+                            <SelectItem value="start_dt desc">
+                                Enrollment (Desc)
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 
                     {viewMode === 'other' && (
-                        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
+                        <Select
+                            value={filterStatus}
+                            onValueChange={(v) => {
+                                setFilterStatus(v);
+                                setPage(1);
+                            }}
+                        >
                             <SelectTrigger className="w-40">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="incomplete: withdrawn">Withdrawn</SelectItem>
-                                <SelectItem value="incomplete: dropped">Dropped</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                <SelectItem value="completed">
+                                    Completed
+                                </SelectItem>
+                                <SelectItem value="incomplete: withdrawn">
+                                    Withdrawn
+                                </SelectItem>
+                                <SelectItem value="incomplete: dropped">
+                                    Dropped
+                                </SelectItem>
+                                <SelectItem value="cancelled">
+                                    Cancelled
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {selectedResidents.length > 0 && clsInfo?.status === SelectedClassStatus.Active && (
-                        <Button
-                            onClick={handleGraduateSelected}
-                            className="bg-brand hover:bg-brand-dark text-white"
-                        >
-                            <GraduationCap className="size-4 mr-1" />
-                            Graduate Selected
-                        </Button>
-                    )}
+                    {selectedResidents.length > 0 &&
+                        clsInfo?.status === SelectedClassStatus.Active && (
+                            <Button
+                                onClick={handleGraduateSelected}
+                                className="bg-brand hover:bg-brand-dark text-white"
+                            >
+                                <GraduationCap className="size-4 mr-1" />
+                                Graduate Selected
+                            </Button>
+                        )}
                     <Button
                         disabled={blockEdits}
-                        onClick={() => navigate(`/program-classes/${class_id}/enrollments/add`)}
+                        onClick={() =>
+                            navigate(
+                                `/program-classes/${class_id}/enrollments/add`
+                            )
+                        }
                         className="btn-gold-thin"
                     >
                         <Plus className="size-4" />
@@ -323,22 +390,31 @@ export default function ClassEnrollmentDetails() {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8">
+                                <TableCell
+                                    colSpan={6}
+                                    className="text-center py-8"
+                                >
                                     Loading...
                                 </TableCell>
                             </TableRow>
                         ) : enrollments.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                <TableCell
+                                    colSpan={6}
+                                    className="text-center py-8 text-muted-foreground"
+                                >
                                     No enrollments found.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             enrollments.map((enrollment) => {
-                                const isSelected = selectedResidents.includes(enrollment.user_id);
+                                const isSelected = selectedResidents.includes(
+                                    enrollment.user_id
+                                );
                                 const canToggle =
                                     !enrollment.completion_dt &&
-                                    enrollment.enrollment_status === EnrollmentStatus.Enrolled;
+                                    enrollment.enrollment_status ===
+                                        EnrollmentStatus.Enrolled;
 
                                 return (
                                     <TableRow key={enrollment.id}>
@@ -348,7 +424,9 @@ export default function ClassEnrollmentDetails() {
                                                     <Checkbox
                                                         checked={isSelected}
                                                         onCheckedChange={() =>
-                                                            handleToggleSelection(enrollment.user_id)
+                                                            handleToggleSelection(
+                                                                enrollment.user_id
+                                                            )
                                                         }
                                                     />
                                                 )}
@@ -357,10 +435,14 @@ export default function ClassEnrollmentDetails() {
                                         <TableCell className="font-medium text-foreground">
                                             {enrollment.name_full}
                                         </TableCell>
-                                        <TableCell>{enrollment.doc_id}</TableCell>
+                                        <TableCell>
+                                            {enrollment.doc_id}
+                                        </TableCell>
                                         <TableCell>
                                             {enrollment.enrolled_at
-                                                ? new Date(enrollment.enrolled_at).toLocaleDateString()
+                                                ? new Date(
+                                                      enrollment.enrolled_at
+                                                  ).toLocaleDateString()
                                                 : '-'}
                                         </TableCell>
                                         <TableCell>
@@ -373,31 +455,60 @@ export default function ClassEnrollmentDetails() {
                                                 {enrollment.enrollment_status}
                                             </Badge>
                                         </TableCell>
-                                        {viewMode === 'enrolled' && !blockEdits && (
-                                            <TableCell>
-                                                {enrollment.enrollment_status === EnrollmentStatus.Enrolled &&
-                                                    !enrollment.completion_dt && (
-                                                        <Select
-                                                            onValueChange={(v) =>
-                                                                handleStatusChange(v, enrollment)
-                                                            }
-                                                        >
-                                                            <SelectTrigger className="w-36 h-8">
-                                                                <SelectValue placeholder="Change status" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {Object.entries(getFilteredStatusOptions())
-                                                                    .filter(([key]) => key !== 'Enrolled')
-                                                                    .map(([label, value]) => (
-                                                                        <SelectItem key={label} value={value}>
-                                                                            {label}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                            </TableCell>
-                                        )}
+                                        {viewMode === 'enrolled' &&
+                                            !blockEdits && (
+                                                <TableCell>
+                                                    {enrollment.enrollment_status ===
+                                                        EnrollmentStatus.Enrolled &&
+                                                        !enrollment.completion_dt && (
+                                                            <Select
+                                                                onValueChange={(
+                                                                    v
+                                                                ) =>
+                                                                    handleStatusChange(
+                                                                        v,
+                                                                        enrollment
+                                                                    )
+                                                                }
+                                                            >
+                                                                <SelectTrigger className="w-36 h-8">
+                                                                    <SelectValue placeholder="Change status" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {Object.entries(
+                                                                        getFilteredStatusOptions()
+                                                                    )
+                                                                        .filter(
+                                                                            ([
+                                                                                key
+                                                                            ]) =>
+                                                                                key !==
+                                                                                'Enrolled'
+                                                                        )
+                                                                        .map(
+                                                                            ([
+                                                                                label,
+                                                                                value
+                                                                            ]) => (
+                                                                                <SelectItem
+                                                                                    key={
+                                                                                        label
+                                                                                    }
+                                                                                    value={
+                                                                                        value
+                                                                                    }
+                                                                                >
+                                                                                    {
+                                                                                        label
+                                                                                    }
+                                                                                </SelectItem>
+                                                                            )
+                                                                        )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+                                                </TableCell>
+                                            )}
                                     </TableRow>
                                 );
                             })

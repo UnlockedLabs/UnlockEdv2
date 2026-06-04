@@ -1,4 +1,9 @@
-import { ClassEventInstance, FacilityProgramClassEvent, ProgramClassEvent, ProgramClassEventOverride } from '@/types/events';
+import {
+    ClassEventInstance,
+    FacilityProgramClassEvent,
+    ProgramClassEvent,
+    ProgramClassEventOverride
+} from '@/types/events';
 import { Attendance, SelectedClassStatus } from '@/types/attendance';
 
 export interface SessionDisplay {
@@ -114,7 +119,8 @@ export function buildCancellationReasonMap(
                 override.reason !== 'applied_future'
             ) {
                 const date = parseOverrideDate(override.override_rrule);
-                if (date) map.set(date, formatCancellationReason(override.reason));
+                if (date)
+                    map.set(date, formatCancellationReason(override.reason));
             }
         }
     }
@@ -128,7 +134,8 @@ export function findActiveOverride(
     for (const event of events) {
         for (const override of event.overrides ?? []) {
             if (override.is_cancelled) continue;
-            if (parseOverrideDate(override.override_rrule) === date) return override;
+            if (parseOverrideDate(override.override_rrule) === date)
+                return override;
         }
     }
     return null;
@@ -168,14 +175,21 @@ export function getSessionChangeInfo(
                 override.instructor_id !== event.instructor_id
             ) {
                 if (override.instructor_ref) {
-                    result.newInstructor = `${override.instructor_ref.name_first} ${override.instructor_ref.name_last}`.trim();
+                    result.newInstructor =
+                        `${override.instructor_ref.name_first} ${override.instructor_ref.name_last}`.trim();
                 }
                 if (event.instructor_ref) {
-                    result.originalInstructor = `${event.instructor_ref.name_first} ${event.instructor_ref.name_last}`.trim();
+                    result.originalInstructor =
+                        `${event.instructor_ref.name_first} ${event.instructor_ref.name_last}`.trim();
                 }
             }
         }
-        if (result.newRoom || result.originalRoom || result.newInstructor || result.originalInstructor) {
+        if (
+            result.newRoom ||
+            result.originalRoom ||
+            result.newInstructor ||
+            result.originalInstructor
+        ) {
             return result;
         }
     }
@@ -188,7 +202,11 @@ export function buildRoomOverrideMap(
     const map = new Map<string, string>();
     for (const event of events) {
         for (const override of event.overrides ?? []) {
-            if (!override.is_cancelled && override.room_id && override.room_ref) {
+            if (
+                !override.is_cancelled &&
+                override.room_id &&
+                override.room_ref
+            ) {
                 const date = parseOverrideDate(override.override_rrule);
                 const time = parseOverrideStartTime(override.override_rrule);
                 if (date) {
@@ -227,10 +245,7 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
             const date = parseOverrideDate(override.override_rrule);
             if (!date) continue;
 
-            if (
-                override.is_cancelled &&
-                override.reason === 'applied_future'
-            ) {
+            if (override.is_cancelled && override.reason === 'applied_future') {
                 appliedFutureDates.add(date);
                 continue;
             }
@@ -242,10 +257,10 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
             // source AND a target — e.g., B in A→B→C is cancelled+rescheduled
             // and linked to A's cancel)
             if (override.linked_override_event_id) {
-                targetOverrides.set(
-                    override.linked_override_event_id,
-                    { date, override }
-                );
+                targetOverrides.set(override.linked_override_event_id, {
+                    date,
+                    override
+                });
             }
         }
 
@@ -368,10 +383,7 @@ export function buildSessionDisplays(
 
     const sessions = instances
         .filter((inst) => {
-            if (
-                inst.is_cancelled &&
-                appliedFutureDates.has(inst.date)
-            ) {
+            if (inst.is_cancelled && appliedFutureDates.has(inst.date)) {
                 return false;
             }
             if (
@@ -392,10 +404,16 @@ export function buildSessionDisplays(
             // Include start time from class_time (e.g., "10:00-11:00") for
             // correct sort order when multiple sessions fall on the same date
             const startTimeParts = inst.class_time?.split('-')[0]?.split(':');
-            const dateObj = startTimeParts?.length === 2
-                ? new Date(dateOnly.getFullYear(), dateOnly.getMonth(), dateOnly.getDate(),
-                    Number(startTimeParts[0]), Number(startTimeParts[1]))
-                : dateOnly;
+            const dateObj =
+                startTimeParts?.length === 2
+                    ? new Date(
+                          dateOnly.getFullYear(),
+                          dateOnly.getMonth(),
+                          dateOnly.getDate(),
+                          Number(startTimeParts[0]),
+                          Number(startTimeParts[1])
+                      )
+                    : dateOnly;
 
             const attendedCount =
                 inst.attendance_records?.filter(
@@ -408,11 +426,14 @@ export function buildSessionDisplays(
 
             const rescheduleFrom = fromTo.get(inst.date);
             const rescheduleTo = toFrom.get(inst.date);
-            let isRescheduledFrom =
-                rescheduleFrom != null && inst.is_cancelled;
+            let isRescheduledFrom = rescheduleFrom != null && inst.is_cancelled;
             // Fallback: backend sets is_rescheduled=true when reason='rescheduled',
             // regardless of linked_override_event_id chain availability.
-            if (!isRescheduledFrom && inst.is_rescheduled && inst.is_cancelled) {
+            if (
+                !isRescheduledFrom &&
+                inst.is_rescheduled &&
+                inst.is_cancelled
+            ) {
                 isRescheduledFrom = true;
             }
             const isRescheduledTo =
@@ -441,24 +462,31 @@ export function buildSessionDisplays(
                 isPast,
                 isUpcoming,
                 hasAttendance,
-                isCancelled: inst.is_cancelled && !isRescheduledFrom && !isCancelledReschedule,
+                isCancelled:
+                    inst.is_cancelled &&
+                    !isRescheduledFrom &&
+                    !isCancelledReschedule,
                 isRescheduledFrom,
                 isRescheduledTo: isRescheduledTo && !isCancelledReschedule,
                 isCancelledReschedule,
-                rescheduledDate: isRescheduledFrom && rescheduleFrom
-                    ? rescheduleFrom.date
-                    : isRescheduledFrom && inst.rescheduled_to_date
-                    ? inst.rescheduled_to_date
-                    : (isRescheduledTo || isCancelledReschedule) && rescheduleTo
-                      ? rescheduleTo.date
-                      : undefined,
-                rescheduleOverrideId: isRescheduledFrom && rescheduleFrom
-                    ? rescheduleFrom.overrideId
-                    : isRescheduledFrom && inst.override_id
-                    ? inst.override_id
-                    : (isRescheduledTo || isCancelledReschedule) && rescheduleTo
-                      ? rescheduleTo.overrideId
-                      : undefined,
+                rescheduledDate:
+                    isRescheduledFrom && rescheduleFrom
+                        ? rescheduleFrom.date
+                        : isRescheduledFrom && inst.rescheduled_to_date
+                          ? inst.rescheduled_to_date
+                          : (isRescheduledTo || isCancelledReschedule) &&
+                              rescheduleTo
+                            ? rescheduleTo.date
+                            : undefined,
+                rescheduleOverrideId:
+                    isRescheduledFrom && rescheduleFrom
+                        ? rescheduleFrom.overrideId
+                        : isRescheduledFrom && inst.override_id
+                          ? inst.override_id
+                          : (isRescheduledTo || isCancelledReschedule) &&
+                              rescheduleTo
+                            ? rescheduleTo.overrideId
+                            : undefined,
                 rescheduledClassTime: undefined as string | undefined,
                 cancellationReason:
                     inst.is_cancelled && !isRescheduledFrom
@@ -513,8 +541,12 @@ export function buildFacilityEvent(
     classEvents: ProgramClassEvent[]
 ): FacilityProgramClassEvent {
     const eventId = session.instance.event_id ?? session.instance.id;
-    const backingEvent = classEvents.find((e) => e.id === eventId) ?? classEvents[0];
-    const activeOverride = findActiveOverride(classEvents, session.instance.date);
+    const backingEvent =
+        classEvents.find((e) => e.id === eventId) ?? classEvents[0];
+    const activeOverride = findActiveOverride(
+        classEvents,
+        session.instance.date
+    );
     const parts = session.instance.class_time.split('-');
     const [sh = 0, sm = 0] = (parts[0] ?? '').split(':').map(Number);
     const [eh = 0, em = 0] = (parts[1] ?? '').split(':').map(Number);
@@ -529,7 +561,10 @@ export function buildFacilityEvent(
         room_id: activeOverride?.room_id ?? backingEvent?.room_id ?? 0,
         recurrence_rule: backingEvent?.recurrence_rule ?? '',
         is_cancelled: session.instance.is_cancelled,
-        instructor_id: activeOverride?.instructor_id ?? backingEvent?.instructor_id ?? null,
+        instructor_id:
+            activeOverride?.instructor_id ??
+            backingEvent?.instructor_id ??
+            null,
         overrides: backingEvent?.overrides ?? [],
         reason: null,
         start,

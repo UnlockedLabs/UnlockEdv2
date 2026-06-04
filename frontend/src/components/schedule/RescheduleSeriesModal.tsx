@@ -64,7 +64,9 @@ function parseRRuleDefaults(event: FacilityProgramClassEvent) {
 
 function closedSeriesRRule(originalRule: string, closeDateStr: string): string {
     const untilStr = closeDateStr.replace(/-/g, '') + 'T235959Z';
-    const ruleClean = originalRule.replace(/;UNTIL=\d{8}T\d{6}Z/, '').replace(/\n/, '\n');
+    const ruleClean = originalRule
+        .replace(/;UNTIL=\d{8}T\d{6}Z/, '')
+        .replace(/\n/, '\n');
     const parts = ruleClean.split('\n');
     return parts[0] + '\n' + parts[1] + `;UNTIL=${untilStr}`;
 }
@@ -83,22 +85,33 @@ export function RescheduleSeriesModal({
     onSuccess
 }: RescheduleSeriesModalProps) {
     const rruleRef = useRef<RRuleFormHandle>(null);
-    const [roomId, setRoomId] = useState(event.room_id ? String(event.room_id) : '');
+    const [roomId, setRoomId] = useState(
+        event.room_id ? String(event.room_id) : ''
+    );
     const [submitting, setSubmitting] = useState(false);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
 
     const defaults = parseRRuleDefaults(event);
-    const currentRoomName = rooms.find((r) => r.id === event.room_id)?.name ?? '';
+    const currentRoomName =
+        rooms.find((r) => r.id === event.room_id)?.name ?? '';
 
     const DAY_CODE_MAP: Record<string, string> = {
-        MO: 'Monday', TU: 'Tuesday', WE: 'Wednesday', TH: 'Thursday',
-        FR: 'Friday', SA: 'Saturday', SU: 'Sunday'
+        MO: 'Monday',
+        TU: 'Tuesday',
+        WE: 'Wednesday',
+        TH: 'Thursday',
+        FR: 'Friday',
+        SA: 'Saturday',
+        SU: 'Sunday'
     };
-    const currentDays = defaults.days.map((d) => DAY_CODE_MAP[d] ?? d).join(', ');
-    const currentTimeRange = defaults.startTime && defaults.endTime
-        ? `${defaults.startTime} - ${defaults.endTime}`
-        : '';
+    const currentDays = defaults.days
+        .map((d) => DAY_CODE_MAP[d] ?? d)
+        .join(', ');
+    const currentTimeRange =
+        defaults.startTime && defaults.endTime
+            ? `${defaults.startTime} - ${defaults.endTime}`
+            : '';
 
     const sessionDateLong = event.start.toLocaleDateString('en-US', {
         weekday: 'long',
@@ -115,7 +128,9 @@ export function RescheduleSeriesModal({
         const result = rruleRef.current.createRule();
         if (!result) return;
 
-        const newStartDate = /DTSTART;TZID=Local:(\d{4})(\d{2})(\d{2})/.exec(result.rule);
+        const newStartDate = /DTSTART;TZID=Local:(\d{4})(\d{2})(\d{2})/.exec(
+            result.rule
+        );
         if (!newStartDate) {
             toast.error('Invalid start date');
             return;
@@ -135,7 +150,10 @@ export function RescheduleSeriesModal({
             closed_event_series: {
                 id: event.id,
                 class_id: event.class_id,
-                recurrence_rule: closedSeriesRRule(event.recurrence_rule, closeDate),
+                recurrence_rule: closedSeriesRRule(
+                    event.recurrence_rule,
+                    closeDate
+                ),
                 duration: event.duration,
                 room_id: event.room_id
             }
@@ -168,58 +186,92 @@ export function RescheduleSeriesModal({
                 preventAutoFocus
             >
                 <div className="pt-4 pb-0">
-                <div className="space-y-5">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Current Schedule</h4>
-                        <div className="space-y-1 text-sm text-gray-600">
-                            {currentDays && <div><span className="font-medium">Days:</span> {currentDays}</div>}
-                            {currentTimeRange && <div><span className="font-medium">Time:</span> {currentTimeRange}</div>}
-                            {currentRoomName && <div><span className="font-medium">Room:</span> {currentRoomName}</div>}
+                    <div className="space-y-5">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                Current Schedule
+                            </h4>
+                            <div className="space-y-1 text-sm text-gray-600">
+                                {currentDays && (
+                                    <div>
+                                        <span className="font-medium">
+                                            Days:
+                                        </span>{' '}
+                                        {currentDays}
+                                    </div>
+                                )}
+                                {currentTimeRange && (
+                                    <div>
+                                        <span className="font-medium">
+                                            Time:
+                                        </span>{' '}
+                                        {currentTimeRange}
+                                    </div>
+                                )}
+                                {currentRoomName && (
+                                    <div>
+                                        <span className="font-medium">
+                                            Room:
+                                        </span>{' '}
+                                        {currentRoomName}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <RRuleControl
-                        ref={rruleRef}
-                        defaultStartDate={`${event.start.getFullYear()}-${String(event.start.getMonth() + 1).padStart(2, '0')}-${String(event.start.getDate()).padStart(2, '0')}`}
-                        defaultStartTime={defaults.startTime}
-                        defaultEndTime={defaults.endTime}
-                        defaultDays={defaults.days}
-                        defaultEndDate={defaults.endDate}
-                        startDateLabel="Effective Starting From *"
-                        startDateHelper="Changes will apply to all sessions on or after this date"
-                    />
+                        <RRuleControl
+                            ref={rruleRef}
+                            defaultStartDate={`${event.start.getFullYear()}-${String(event.start.getMonth() + 1).padStart(2, '0')}-${String(event.start.getDate()).padStart(2, '0')}`}
+                            defaultStartTime={defaults.startTime}
+                            defaultEndTime={defaults.endTime}
+                            defaultDays={defaults.days}
+                            defaultEndDate={defaults.endDate}
+                            startDateLabel="Effective Starting From *"
+                            startDateHelper="Changes will apply to all sessions on or after this date"
+                        />
 
-                    <div className="space-y-2">
-                        <Label>New Room *</Label>
-                        <Select value={roomId} onValueChange={setRoomId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a room" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {rooms.map((room) => (
-                                    <SelectItem key={room.id} value={String(room.id)}>
-                                        {room.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                        <div className="space-y-2">
+                            <Label>New Room *</Label>
+                            <Select value={roomId} onValueChange={setRoomId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a room" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {rooms.map((room) => (
+                                        <SelectItem
+                                            key={room.id}
+                                            value={String(room.id)}
+                                        >
+                                            {room.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                        <div className="flex gap-3">
-                            <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm text-amber-900 font-medium mb-1">Important</p>
-                                <p className="text-sm text-amber-700">
-                                    This will update the recurring schedule for all future sessions. Sessions before the effective date will remain on the original schedule.
-                                </p>
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <div className="flex gap-3">
+                                <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm text-amber-900 font-medium mb-1">
+                                        Important
+                                    </p>
+                                    <p className="text-sm text-amber-700">
+                                        This will update the recurring schedule
+                                        for all future sessions. Sessions before
+                                        the effective date will remain on the
+                                        original schedule.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
                     <div className="flex justify-end gap-2 mt-8">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancel
                         </Button>
                         <Button

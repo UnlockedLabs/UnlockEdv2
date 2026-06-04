@@ -71,9 +71,7 @@ export function ResidentHeader({
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span>
                             <span className="text-gray-500">Username:</span>{' '}
-                            <span className="font-medium">
-                                {user.username}
-                            </span>
+                            <span className="font-medium">{user.username}</span>
                         </span>
                         <span>•</span>
                         <span>{user.doc_id ?? 'N/A'}</span>

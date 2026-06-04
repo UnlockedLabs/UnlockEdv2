@@ -12,8 +12,8 @@ export function ClassNotFoundCard({ onBack }: ClassNotFoundCardProps) {
                     Class Not Found
                 </h2>
                 <p className="text-gray-500 mb-4">
-                    The class you are looking for does not exist or you do
-                    not have access to it.
+                    The class you are looking for does not exist or you do not
+                    have access to it.
                 </p>
                 <Button
                     onClick={onBack}

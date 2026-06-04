@@ -85,10 +85,7 @@ function getStatusBadge(flags: StatusFlags): ReactNode {
         );
     }
     return (
-        <Badge
-            variant="outline"
-            className="badge-amber"
-        >
+        <Badge variant="outline" className="badge-amber">
             Missing Attendance
         </Badge>
     );

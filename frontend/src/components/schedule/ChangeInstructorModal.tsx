@@ -35,11 +35,12 @@ export function ChangeInstructorModal({
     const [submitting, setSubmitting] = useState(false);
     const [instructors, setInstructors] = useState<Instructor[]>([]);
 
-    const { submitSingleSessionChange, submitSeriesChange } = useChangeEventField(
-        event,
-        { instructor_id: instructorId ? Number(instructorId) : null },
-        reason
-    );
+    const { submitSingleSessionChange, submitSeriesChange } =
+        useChangeEventField(
+            event,
+            { instructor_id: instructorId ? Number(instructorId) : null },
+            reason
+        );
 
     useEffect(() => {
         async function fetchInstructors() {
@@ -47,9 +48,7 @@ export function ChangeInstructorModal({
                 `facilities/${facilityId}/instructors`
             );
             if (resp.success && resp.type === 'many') {
-                setInstructors(
-                    resp.data.filter((i) => i.id !== 0)
-                );
+                setInstructors(resp.data.filter((i) => i.id !== 0));
             }
         }
         void fetchInstructors();
@@ -63,7 +62,9 @@ export function ChangeInstructorModal({
         }
     }, [open]);
 
-    const selectedInstructor = instructors.find((i) => String(i.id) === instructorId);
+    const selectedInstructor = instructors.find(
+        (i) => String(i.id) === instructorId
+    );
     const selectedInstructorName = selectedInstructor
         ? `${selectedInstructor.name_first} ${selectedInstructor.name_last}`
         : instructorId;
@@ -95,17 +96,27 @@ export function ChangeInstructorModal({
     }
 
     return (
-        <FormModal open={open} onOpenChange={onOpenChange} title="Change Instructor">
+        <FormModal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Change Instructor"
+        >
             <div className="space-y-4 pt-6">
                 <div className="space-y-2">
                     <Label>New Instructor</Label>
-                    <Select value={instructorId} onValueChange={setInstructorId}>
+                    <Select
+                        value={instructorId}
+                        onValueChange={setInstructorId}
+                    >
                         <SelectTrigger>
                             <SelectValue placeholder="Select instructor" />
                         </SelectTrigger>
                         <SelectContent>
                             {instructors.map((inst) => (
-                                <SelectItem key={inst.id} value={String(inst.id)}>
+                                <SelectItem
+                                    key={inst.id}
+                                    value={String(inst.id)}
+                                >
                                     {inst.name_first} {inst.name_last}
                                 </SelectItem>
                             ))}
@@ -146,7 +157,10 @@ export function ChangeInstructorModal({
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         Cancel
                     </Button>
                     <Button

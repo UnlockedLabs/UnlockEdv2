@@ -64,9 +64,7 @@ export default function OpenContentItemAccordion({
 
     const libraries = items.filter((item) => item.content_type === 'library');
     const videos = items.filter((item) => item.content_type === 'video');
-    const links = items.filter(
-        (item) => item.content_type === 'helpful_link'
-    );
+    const links = items.filter((item) => item.content_type === 'helpful_link');
     const others = items.filter(
         (item) =>
             !['library', 'video', 'helpful_link'].includes(item.content_type)

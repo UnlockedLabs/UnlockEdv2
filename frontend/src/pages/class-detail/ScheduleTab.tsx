@@ -64,9 +64,13 @@ function generateCalendarGrid(
             if (override.is_cancelled) {
                 try {
                     const rrule = override.override_rrule;
-                    const dtMatch = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(rrule);
+                    const dtMatch = /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/.exec(
+                        rrule
+                    );
                     if (dtMatch) {
-                        cancelledDates.add(`${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}`);
+                        cancelledDates.add(
+                            `${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}`
+                        );
                     }
                 } catch {
                     /* skip invalid override */
@@ -199,7 +203,9 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
     const classTime = schedule.startTime
         ? `${schedule.startTime}-${schedule.endTime}`
         : '';
-    const classTimeDisplay = classTime ? formatClassTimeRange(classTime) : 'Not set';
+    const classTimeDisplay = classTime
+        ? formatClassTimeRange(classTime)
+        : 'Not set';
 
     const refreshData = async () => {
         await mutate();
@@ -303,8 +309,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                 Regular Sessions
                             </div>
                             <div className="text-sm text-gray-600">
-                                {schedule.days.join(', ')} at{' '}
-                                {classTimeDisplay}
+                                {schedule.days.join(', ')} at {classTimeDisplay}
                             </div>
                             {schedule.room && (
                                 <div className="text-sm text-gray-600 mt-1">
@@ -316,9 +321,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                     <div className="flex items-start gap-4 p-4 bg-surface-hover rounded-lg">
                         <Clock className="size-5 text-brand mt-0.5" />
                         <div>
-                            <div className="text-brand-dark mb-1">
-                                Duration
-                            </div>
+                            <div className="text-brand-dark mb-1">Duration</div>
                             <div className="text-sm text-gray-600">
                                 {formatDate(cls.start_dt)} to{' '}
                                 {cls.end_dt
@@ -336,9 +339,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-brand-dark">
-                            {monthLabel}
-                        </h4>
+                        <h4 className="text-brand-dark">{monthLabel}</h4>
                         <p className="text-sm text-gray-600">
                             Click any date to view or modify that session
                         </p>
@@ -359,14 +360,23 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                             {calendarWeeks.map((week, wi) => (
                                 <div key={wi} className="grid grid-cols-7">
                                     {week.map((day) => {
-                                        const showAsClass = day.isClassDay && !day.isCancelled;
-                                        const isClickable = day.isClassDay && day.isCurrentMonth;
-                                        const calSession = day.isCancelled && day.isCurrentMonth
-                                            ? sessionsByDate.get(day.dateStr)
-                                            : undefined;
-                                        const movedToLabel = calSession?.isRescheduledFrom && calSession.rescheduledDate
-                                            ? `Moved to ${new Date(calSession.rescheduledDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                                            : null;
+                                        const showAsClass =
+                                            day.isClassDay && !day.isCancelled;
+                                        const isClickable =
+                                            day.isClassDay &&
+                                            day.isCurrentMonth;
+                                        const calSession =
+                                            day.isCancelled &&
+                                            day.isCurrentMonth
+                                                ? sessionsByDate.get(
+                                                      day.dateStr
+                                                  )
+                                                : undefined;
+                                        const movedToLabel =
+                                            calSession?.isRescheduledFrom &&
+                                            calSession.rescheduledDate
+                                                ? `Moved to ${new Date(calSession.rescheduledDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                                                : null;
 
                                         return (
                                             <div
@@ -377,44 +387,61 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                                 }}
                                                 className={cn(
                                                     'min-h-[80px] p-2 border-t border-r border-gray-200 last:border-r-0 transition-all',
-                                                    !day.isCurrentMonth && 'bg-gray-50',
+                                                    !day.isCurrentMonth &&
+                                                        'bg-gray-50',
                                                     day.isToday && 'bg-blue-50',
-                                                    showAsClass && day.isCurrentMonth && 'bg-green-50',
-                                                    isClickable && 'cursor-pointer hover:ring-2 hover:ring-brand hover:ring-inset',
-                                                    selectedSession?.instance.date === day.dateStr && 'ring-2 ring-inset ring-brand'
+                                                    showAsClass &&
+                                                        day.isCurrentMonth &&
+                                                        'bg-green-50',
+                                                    isClickable &&
+                                                        'cursor-pointer hover:ring-2 hover:ring-brand hover:ring-inset',
+                                                    selectedSession?.instance
+                                                        .date === day.dateStr &&
+                                                        'ring-2 ring-inset ring-brand'
                                                 )}
                                             >
                                                 <div className="flex flex-col h-full">
-                                                    <span className={cn(
-                                                        'text-sm',
-                                                        !day.isCurrentMonth && 'text-gray-400',
-                                                        day.isCurrentMonth && !day.isClassDay && 'text-gray-700',
-                                                        day.isToday && 'font-bold text-blue-700'
-                                                    )}>
+                                                    <span
+                                                        className={cn(
+                                                            'text-sm',
+                                                            !day.isCurrentMonth &&
+                                                                'text-gray-400',
+                                                            day.isCurrentMonth &&
+                                                                !day.isClassDay &&
+                                                                'text-gray-700',
+                                                            day.isToday &&
+                                                                'font-bold text-blue-700'
+                                                        )}
+                                                    >
                                                         {day.dayNum}
                                                     </span>
 
-                                                    {day.isCancelled && day.isCurrentMonth && (
-                                                        <div className="mt-1">
-                                                            <div className="text-xs bg-gray-200 text-gray-500 rounded px-1.5 py-0.5 inline-block line-through">
-                                                                Class
+                                                    {day.isCancelled &&
+                                                        day.isCurrentMonth && (
+                                                            <div className="mt-1">
+                                                                <div className="text-xs bg-gray-200 text-gray-500 rounded px-1.5 py-0.5 inline-block line-through">
+                                                                    Class
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 mt-1">
+                                                                    {movedToLabel ??
+                                                                        'Cancelled'}
+                                                                </div>
                                                             </div>
-                                                            <div className="text-xs text-gray-500 mt-1">
-                                                                {movedToLabel ?? 'Cancelled'}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                        )}
 
-                                                    {showAsClass && day.isCurrentMonth && (
-                                                        <div className="mt-1">
-                                                            <div className="text-xs bg-brand text-white rounded px-1.5 py-0.5 inline-block">
-                                                                Class
+                                                    {showAsClass &&
+                                                        day.isCurrentMonth && (
+                                                            <div className="mt-1">
+                                                                <div className="text-xs bg-brand text-white rounded px-1.5 py-0.5 inline-block">
+                                                                    Class
+                                                                </div>
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    {
+                                                                        classTimeDisplay
+                                                                    }
+                                                                </div>
                                                             </div>
-                                                            <div className="text-xs text-gray-600 mt-1">
-                                                                {classTimeDisplay}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                        )}
                                                 </div>
                                             </div>
                                         );
@@ -451,7 +478,10 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
             {(() => {
                 const changeInfo = selectedSession
-                    ? getSessionChangeInfo(cls.events ?? [], selectedSession.instance.date)
+                    ? getSessionChangeInfo(
+                          cls.events ?? [],
+                          selectedSession.instance.date
+                      )
                     : {};
                 const baseRoom =
                     (selectedSession
@@ -472,12 +502,15 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                         }
                         room={changeInfo.newRoom ?? baseRoom}
                         originalRoom={changeInfo.originalRoom}
-                        instructorName={changeInfo.newInstructor ?? baseInstructor}
+                        instructorName={
+                            changeInfo.newInstructor ?? baseInstructor
+                        }
                         originalInstructorName={changeInfo.originalInstructor}
                         classId={cls.id}
                         onMutate={() => void refreshData()}
                         onUndo={() => {
-                            if (selectedSession) void handleUndo(selectedSession);
+                            if (selectedSession)
+                                void handleUndo(selectedSession);
                         }}
                         allSessions={allSessions}
                     />

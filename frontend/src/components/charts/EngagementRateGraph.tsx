@@ -130,7 +130,10 @@ export default function EngagementRateGraph({
                     }}
                 />
                 <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', border: `1px solid ${SURFACE_HOVER}` }}
+                    contentStyle={{
+                        backgroundColor: '#fff',
+                        border: `1px solid ${SURFACE_HOVER}`
+                    }}
                 />
                 <Line
                     type="monotone"

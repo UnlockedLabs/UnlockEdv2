@@ -28,9 +28,7 @@ export function SessionDetailClassDetails({
 }: SessionDetailClassDetailsProps) {
     return (
         <div>
-            <h4 className="text-sm text-gray-700 mb-3">
-                Class Details
-            </h4>
+            <h4 className="text-sm text-gray-700 mb-3">Class Details</h4>
             <div className="space-y-3">
                 <div className="flex items-start gap-3">
                     <Calendar className="lead-icon" />
@@ -38,9 +36,7 @@ export function SessionDetailClassDetails({
                         <div className="text-sm text-gray-600 mb-0.5">
                             Class
                         </div>
-                        <div className="text-brand-dark">
-                            {className}
-                        </div>
+                        <div className="text-brand-dark">{className}</div>
                         {programName && (
                             <div className="text-sm text-gray-500">
                                 {programName}
@@ -51,9 +47,7 @@ export function SessionDetailClassDetails({
                 <div className="flex items-start gap-3">
                     <Clock className="lead-icon" />
                     <div className="flex-1 min-w-0">
-                        <div className="text-sm text-gray-600 mb-0.5">
-                            Time
-                        </div>
+                        <div className="text-sm text-gray-600 mb-0.5">Time</div>
                         <div
                             className={`text-brand-dark ${isCancelled || isRescheduledFrom || isCancelledReschedule ? 'line-through' : ''}`}
                         >
@@ -64,12 +58,13 @@ export function SessionDetailClassDetails({
                 <div className="flex items-start gap-3">
                     <MapPin className="lead-icon" />
                     <div className="flex-1 min-w-0">
-                        <div className="text-sm text-gray-600 mb-0.5">
-                            Room
-                        </div>
+                        <div className="text-sm text-gray-600 mb-0.5">Room</div>
                         <div
                             className={`text-brand-dark ${
-                                !!originalRoom || isCancelled || isRescheduledFrom || isCancelledReschedule
+                                !!originalRoom ||
+                                isCancelled ||
+                                isRescheduledFrom ||
+                                isCancelledReschedule
                                     ? 'line-through'
                                     : ''
                             }`}
@@ -87,7 +82,10 @@ export function SessionDetailClassDetails({
                             </div>
                             <div
                                 className={`text-brand-dark ${
-                                    !!originalInstructorName || isCancelled || isRescheduledFrom || isCancelledReschedule
+                                    !!originalInstructorName ||
+                                    isCancelled ||
+                                    isRescheduledFrom ||
+                                    isCancelledReschedule
                                         ? 'line-through'
                                         : ''
                                 }`}

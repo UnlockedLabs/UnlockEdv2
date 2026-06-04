@@ -192,10 +192,7 @@ export function formatHistoryEntry(
             introText = ['New password set by ', emphasize(userName)];
             break;
         case 'reset_password':
-            introText = [
-                'Password reset initiated by ',
-                emphasize(adminName)
-            ];
+            introText = ['Password reset initiated by ', emphasize(adminName)];
             break;
         case 'progclass_history':
             introText = getProgramClassesHistoryEventText();

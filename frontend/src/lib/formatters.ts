@@ -408,8 +408,7 @@ export function formatEnrollmentStatus(status: string): string {
 }
 
 export function getEnrollmentStatusColor(status: string): string {
-    if (status === 'Enrolled')
-        return 'bg-green-50 text-brand border-green-200';
+    if (status === 'Enrolled') return 'bg-green-50 text-brand border-green-200';
     if (status === 'Completed')
         return 'bg-blue-50 text-blue-700 border-blue-200';
     if (status.includes('Withdrawn'))

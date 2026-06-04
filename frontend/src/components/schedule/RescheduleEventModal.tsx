@@ -38,28 +38,27 @@ export function RescheduleEventModal({
             description={`Select what you would like to reschedule for the class on ${sessionDateLong}`}
         >
             <div className="space-y-3 py-4">
-                <button
-                    onClick={onSingleSession}
-                    className="option-card"
-                >
+                <button onClick={onSingleSession} className="option-card">
                     <Calendar className="size-5 text-brand mt-0.5 shrink-0" />
                     <div className="flex-1">
-                        <div className="font-medium text-brand-dark mb-1">This session only</div>
+                        <div className="font-medium text-brand-dark mb-1">
+                            This session only
+                        </div>
                         <p className="text-sm text-gray-600">
                             Reschedule only the session on {sessionDateShort}
                         </p>
                     </div>
                 </button>
 
-                <button
-                    onClick={onSeriesReschedule}
-                    className="option-card"
-                >
+                <button onClick={onSeriesReschedule} className="option-card">
                     <Repeat className="size-5 text-brand mt-0.5 shrink-0" />
                     <div className="flex-1">
-                        <div className="font-medium text-brand-dark mb-1">This and all future sessions</div>
+                        <div className="font-medium text-brand-dark mb-1">
+                            This and all future sessions
+                        </div>
                         <p className="text-sm text-gray-600">
-                            Change the recurring schedule pattern starting from {sessionDateShort} onwards
+                            Change the recurring schedule pattern starting from{' '}
+                            {sessionDateShort} onwards
                         </p>
                     </div>
                 </button>

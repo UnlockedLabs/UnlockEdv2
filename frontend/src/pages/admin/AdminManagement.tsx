@@ -349,7 +349,9 @@ export default function AdminManagement() {
             payload
         )) as ServerResponseOne<NewUserResponse>;
         if (response.success) {
-            toast.success(`Admin ${formData.name_first} ${formData.name_last} added successfully`);
+            toast.success(
+                `Admin ${formData.name_first} ${formData.name_last} added successfully`
+            );
             setShowAddAdmin(false);
             setTempPassword(response.data.temp_password);
             setPasswordCopied(false);
@@ -381,7 +383,9 @@ export default function AdminManagement() {
             payload
         );
         if (response.success) {
-            toast.success(`${selectedAdmin.name_first} ${selectedAdmin.name_last}'s profile updated`);
+            toast.success(
+                `${selectedAdmin.name_first} ${selectedAdmin.name_last}'s profile updated`
+            );
             setShowEditAdmin(false);
             setSelectedAdmin(null);
             void mutate();
@@ -402,7 +406,9 @@ export default function AdminManagement() {
             setPasswordCopied(false);
             setPasswordModalContext('reset');
             setShowResetPassword(true);
-            toast.success(`Password reset for ${admin.name_first} ${admin.name_last}`);
+            toast.success(
+                `Password reset for ${admin.name_first} ${admin.name_last}`
+            );
         } else {
             toast.error('Failed to reset password');
         }
@@ -416,7 +422,9 @@ export default function AdminManagement() {
         }
         const response = await API.delete(`users/${selectedAdmin.id}`);
         if (response.success) {
-            toast.success(`${selectedAdmin.name_first} ${selectedAdmin.name_last} deleted`);
+            toast.success(
+                `${selectedAdmin.name_first} ${selectedAdmin.name_last} deleted`
+            );
             setShowDeleteDialog(false);
             setSelectedAdmin(null);
             void mutate();

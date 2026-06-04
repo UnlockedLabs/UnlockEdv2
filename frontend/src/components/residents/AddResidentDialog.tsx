@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import API from '@/api/api';
-import {
-    Facility,
-    NewUserResponse,
-    ServerResponseOne
-} from '@/types';
+import { Facility, NewUserResponse, ServerResponseOne } from '@/types';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,7 +73,9 @@ export function AddResidentDialog({
 
             if (response.success) {
                 onOpenChange(false);
-                toast.success(`Resident ${formData.name_first} ${formData.name_last} added successfully`);
+                toast.success(
+                    `Resident ${formData.name_first} ${formData.name_last} added successfully`
+                );
                 form.reset();
                 onSuccess();
             } else {

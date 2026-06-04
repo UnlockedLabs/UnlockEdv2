@@ -56,7 +56,10 @@ export function SessionRow({
     } = session;
 
     // Time-only reschedule (same date) renders as a "to" row, not a "from" row.
-    const isSameDateReschedule = isRescheduledFrom && isRescheduledTo && rescheduledDate === session.instance.date;
+    const isSameDateReschedule =
+        isRescheduledFrom &&
+        isRescheduledTo &&
+        rescheduledDate === session.instance.date;
     const treatAsFrom = isRescheduledFrom && !isSameDateReschedule;
     const treatAsTo = isRescheduledTo || isSameDateReschedule;
 
@@ -65,14 +68,11 @@ export function SessionRow({
             return 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100';
         if (isCancelledReschedule)
             return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
-        if (treatAsTo)
-            return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
-        if (isCancelled)
-            return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
+        if (treatAsTo) return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
+        if (isCancelled) return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
         if (isToday) return 'border-blue-200 bg-blue-50 hover:bg-blue-100';
         if (hasAttendance) return 'border-gray-200 hover:bg-surface-hover/30';
-        if (isPast)
-            return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50';
+        if (isPast) return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50';
         return 'border-gray-200 bg-gray-50 hover:bg-surface-hover/30';
     };
 
@@ -90,9 +90,7 @@ export function SessionRow({
                 <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
             );
         if (hasAttendance)
-            return (
-                <CheckCircle className="size-5 text-brand flex-shrink-0" />
-            );
+            return <CheckCircle className="size-5 text-brand flex-shrink-0" />;
         if (isPast)
             return (
                 <AlertCircle className="size-5 text-brand-gold flex-shrink-0" />
@@ -120,9 +118,7 @@ export function SessionRow({
                 {getIcon()}
                 <div className="min-w-0">
                     <div className="text-sm font-medium text-brand-dark">
-                        <span
-                            className={showLineThrough ? 'line-through' : ''}
-                        >
+                        <span className={showLineThrough ? 'line-through' : ''}>
                             {session.dayName}, {dateLabel}
                         </span>
                         {isToday && (
@@ -177,7 +173,7 @@ export function SessionRow({
                             {rescheduledClassTime &&
                                 ` at ${formatClassTimeRange(rescheduledClassTime)}`}
                         </div>
-                    ) : (treatAsTo || isCancelledReschedule) ? (
+                    ) : treatAsTo || isCancelledReschedule ? (
                         <div className="text-xs text-blue-700 mt-0.5">
                             {formatClassTimeRange(session.instance.class_time)}
                         </div>
@@ -208,29 +204,21 @@ export function SessionRow({
                         %)
                     </div>
                 )}
-                {isPast &&
-                    !hasAttendance &&
-                    !isCancelled &&
-                    !treatAsFrom && (
-                        <Badge
-                            variant="outline"
-                            className="badge-amber"
-                        >
-                            Missing
-                        </Badge>
-                    )}
-                {!isCancelled &&
-                    !isUpcoming &&
-                    !treatAsFrom && (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onNavigateToAttendance()}
-                            className="border-gray-300"
-                        >
-                            {hasAttendance ? 'Edit' : 'Take'} Attendance
-                        </Button>
-                    )}
+                {isPast && !hasAttendance && !isCancelled && !treatAsFrom && (
+                    <Badge variant="outline" className="badge-amber">
+                        Missing
+                    </Badge>
+                )}
+                {!isCancelled && !isUpcoming && !treatAsFrom && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onNavigateToAttendance()}
+                        className="border-gray-300"
+                    >
+                        {hasAttendance ? 'Edit' : 'Take'} Attendance
+                    </Button>
+                )}
                 {isCancelled && isUpcoming && (
                     <Button
                         variant="outline"

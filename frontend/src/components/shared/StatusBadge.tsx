@@ -8,12 +8,9 @@ import {
 
 const classStatusStyles: Record<SelectedClassStatus, string> = {
     [SelectedClassStatus.Active]: 'bg-green-50 text-green-700 border-green-200',
-    [SelectedClassStatus.Scheduled]:
-        'bg-blue-50 text-blue-700 border-blue-200',
-    [SelectedClassStatus.Completed]:
-        'bg-muted text-foreground border-border',
-    [SelectedClassStatus.Paused]:
-        'bg-amber-50 text-amber-700 border-amber-200',
+    [SelectedClassStatus.Scheduled]: 'bg-blue-50 text-blue-700 border-blue-200',
+    [SelectedClassStatus.Completed]: 'bg-muted text-foreground border-border',
+    [SelectedClassStatus.Paused]: 'bg-amber-50 text-amber-700 border-amber-200',
     [SelectedClassStatus.Cancelled]: 'bg-red-50 text-red-700 border-red-200'
 };
 
@@ -55,7 +52,13 @@ type StatusType =
 
 interface StatusBadgeProps {
     status: StatusType;
-    variant?: 'class' | 'progClass' | 'program' | 'enrollment' | 'resident' | 'auto';
+    variant?:
+        | 'class'
+        | 'progClass'
+        | 'program'
+        | 'enrollment'
+        | 'resident'
+        | 'auto';
     className?: string;
 }
 
@@ -64,8 +67,14 @@ const STYLE_REGISTRY: {
     styles: Record<string, string>;
 }[] = [
     { variant: 'class', styles: classStatusStyles as Record<string, string> },
-    { variant: 'progClass', styles: progClassStatusStyles as Record<string, string> },
-    { variant: 'program', styles: programStatusStyles as Record<string, string> },
+    {
+        variant: 'progClass',
+        styles: progClassStatusStyles as Record<string, string>
+    },
+    {
+        variant: 'program',
+        styles: programStatusStyles as Record<string, string>
+    },
     { variant: 'enrollment', styles: enrollmentStatusStyles },
     { variant: 'resident', styles: residentStatusStyles }
 ];
@@ -76,7 +85,10 @@ function getStyleForStatus(
 ): string {
     const key = String(status);
     for (const entry of STYLE_REGISTRY) {
-        if ((entry.variant === variant || variant === 'auto') && key in entry.styles) {
+        if (
+            (entry.variant === variant || variant === 'auto') &&
+            key in entry.styles
+        ) {
             return entry.styles[key];
         }
     }

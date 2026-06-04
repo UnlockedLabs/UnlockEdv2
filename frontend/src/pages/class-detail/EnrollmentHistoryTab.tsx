@@ -11,7 +11,10 @@ import {
 } from '@/components/ui/select';
 import { ClassEnrollment, EnrollmentStatus } from '@/types/attendance';
 import { ServerResponseMany } from '@/types/server';
-import { getEnrollmentStatusColor, formatEnrollmentStatus } from '@/lib/formatters';
+import {
+    getEnrollmentStatusColor,
+    formatEnrollmentStatus
+} from '@/lib/formatters';
 
 type StatusFilter = 'all' | EnrollmentStatus;
 type TimeFilter = 'week' | 'month' | '3months' | 'all';
@@ -24,7 +27,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
-    const { data: enrollmentResp } = useSWR<ServerResponseMany<ClassEnrollment>>(
+    const { data: enrollmentResp } = useSWR<
+        ServerResponseMany<ClassEnrollment>
+    >(
         `/api/program-classes/${classId}/enrollments?status=not_enrolled&per_page=1000`
     );
 
@@ -44,9 +49,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
         let result = historicalEnrollments;
 
         if (statusFilter !== 'all') {
-            result = result.filter(
-                (e) => e.enrollment_status === statusFilter
-            );
+            result = result.filter((e) => e.enrollment_status === statusFilter);
         }
 
         if (timeFilter !== 'all') {
@@ -96,7 +99,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="all">
+                                    All Statuses
+                                </SelectItem>
                                 <SelectItem value={EnrollmentStatus.Completed}>
                                     Completed
                                 </SelectItem>
@@ -110,7 +115,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                     Segregated
                                 </SelectItem>
                                 <SelectItem
-                                    value={EnrollmentStatus['Failed To Complete']}
+                                    value={
+                                        EnrollmentStatus['Failed To Complete']
+                                    }
                                 >
                                     Failed to Complete
                                 </SelectItem>
@@ -133,7 +140,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                             <SelectContent>
                                 <SelectItem value="all">All Time</SelectItem>
                                 <SelectItem value="week">Last Week</SelectItem>
-                                <SelectItem value="month">Last Month</SelectItem>
+                                <SelectItem value="month">
+                                    Last Month
+                                </SelectItem>
                                 <SelectItem value="3months">
                                     Last 3 Months
                                 </SelectItem>
@@ -176,7 +185,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     enrollment.enrollment_status
                                                 )}`}
                                             >
-                                                {formatEnrollmentStatus(enrollment.enrollment_status)}
+                                                {formatEnrollmentStatus(
+                                                    enrollment.enrollment_status
+                                                )}
                                             </Badge>
                                         </div>
                                         <div className="text-sm text-gray-500 space-y-1">
@@ -188,7 +199,9 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                                     {enrollment.enrolled_at
                                                         ? new Date(
                                                               enrollment.enrolled_at
-                                                          ).toLocaleDateString('en-CA')
+                                                          ).toLocaleDateString(
+                                                              'en-CA'
+                                                          )
                                                         : '-'}
                                                 </span>
                                             </div>

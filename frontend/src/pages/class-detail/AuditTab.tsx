@@ -38,7 +38,11 @@ function formatEntry(entry: HistoryEntry): React.ReactNode {
     const field = entry.field_name ?? '';
 
     if (field === 'class' || field === 'program') {
-        return <>Class created by <B>{actor}</B></>;
+        return (
+            <>
+                Class created by <B>{actor}</B>
+            </>
+        );
     }
 
     if (field === 'event_rescheduled') {
@@ -47,56 +51,111 @@ function formatEntry(entry: HistoryEntry): React.ReactNode {
             : null;
         const newVal = entry.new_value ?? '';
         if (origDate) {
-            return <>Event on <B>{origDate}</B> moved to <B>{newVal}</B> by <B>{actor}</B></>;
+            return (
+                <>
+                    Event on <B>{origDate}</B> moved to <B>{newVal}</B> by{' '}
+                    <B>{actor}</B>
+                </>
+            );
         }
-        return <>Event rescheduled to <B>{newVal}</B> by <B>{actor}</B></>;
+        return (
+            <>
+                Event rescheduled to <B>{newVal}</B> by <B>{actor}</B>
+            </>
+        );
     }
 
     if (field === 'event_cancelled') {
         const date = entry.new_value
             ? parseDateFromRRule(entry.new_value)
             : null;
-        return date
-            ? <>Event on <B>{date}</B> cancelled by <B>{actor}</B></>
-            : <>Event cancelled by <B>{actor}</B></>;
+        return date ? (
+            <>
+                Event on <B>{date}</B> cancelled by <B>{actor}</B>
+            </>
+        ) : (
+            <>
+                Event cancelled by <B>{actor}</B>
+            </>
+        );
     }
 
     if (field === 'event_restored') {
         const date = entry.old_value
             ? parseDateFromRRule(entry.old_value)
             : null;
-        return date
-            ? <><B>{actor}</B> restored event on <B>{date}</B></>
-            : <>Event restored by <B>{actor}</B></>;
+        return date ? (
+            <>
+                <B>{actor}</B> restored event on <B>{date}</B>
+            </>
+        ) : (
+            <>
+                Event restored by <B>{actor}</B>
+            </>
+        );
     }
 
     if (field === 'event_rescheduled_series') {
-        return <>Schedule series updated by <B>{actor}</B></>;
+        return (
+            <>
+                Schedule series updated by <B>{actor}</B>
+            </>
+        );
     }
 
     if (field === 'event_substitute_instructor') {
-        return <>Substitute instructor set to <B>{entry.new_value ?? ''}</B> by <B>{actor}</B></>;
+        return (
+            <>
+                Substitute instructor set to <B>{entry.new_value ?? ''}</B> by{' '}
+                <B>{actor}</B>
+            </>
+        );
     }
 
     if (field === 'event_room_changed') {
-        return <>Room changed to <B>{entry.new_value ?? ''}</B> by <B>{actor}</B></>;
+        return (
+            <>
+                Room changed to <B>{entry.new_value ?? ''}</B> by <B>{actor}</B>
+            </>
+        );
     }
 
     const label = formatFieldLabel(field);
     if (entry.old_value && entry.new_value) {
-        return <>{label} changed from <B>{entry.old_value}</B> to <B>{entry.new_value}</B> by <B>{actor}</B></>;
+        return (
+            <>
+                {label} changed from <B>{entry.old_value}</B> to{' '}
+                <B>{entry.new_value}</B> by <B>{actor}</B>
+            </>
+        );
     }
     if (entry.new_value) {
-        return <>{label} set to <B>{entry.new_value}</B> by <B>{actor}</B></>;
+        return (
+            <>
+                {label} set to <B>{entry.new_value}</B> by <B>{actor}</B>
+            </>
+        );
     }
     if (entry.old_value) {
-        return <>{label} removed (was <B>{entry.old_value}</B>) by <B>{actor}</B></>;
+        return (
+            <>
+                {label} removed (was <B>{entry.old_value}</B>) by <B>{actor}</B>
+            </>
+        );
     }
-    return <>{label} updated by <B>{actor}</B></>;
+    return (
+        <>
+            {label} updated by <B>{actor}</B>
+        </>
+    );
 }
 
 export function AuditTab({ classId }: AuditTabProps) {
-    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20, 'audit');
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(
+        1,
+        20,
+        'audit'
+    );
 
     const { data: auditResp } = useSWR<ServerResponseMany<HistoryEntry>>(
         `/api/program-classes/${classId}/history?page=${page}&per_page=${perPage}`

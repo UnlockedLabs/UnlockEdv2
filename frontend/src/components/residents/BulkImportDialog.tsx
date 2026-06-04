@@ -86,7 +86,9 @@ export function BulkImportDialog({
 
     const handleDownloadErrors = () => {
         if (!errorCsvData) return;
-        const bytes = Uint8Array.from(atob(errorCsvData), (c) => c.charCodeAt(0));
+        const bytes = Uint8Array.from(atob(errorCsvData), (c) =>
+            c.charCodeAt(0)
+        );
         const blob = new Blob([bytes], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -106,7 +108,9 @@ export function BulkImportDialog({
         setCreating(false);
 
         if (response.success) {
-            toast.success(`${validRows.length} resident accounts created successfully`);
+            toast.success(
+                `${validRows.length} resident accounts created successfully`
+            );
             handleOpenChange(false);
             onSuccess();
         } else {
