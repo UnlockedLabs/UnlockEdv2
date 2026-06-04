@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -134,72 +136,99 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 	}, nil
 }
 
+// nextPageURL parses a Canvas Link header and returns the URL for rel="next",
+// or an empty string if there is no next page.
+func nextPageURL(header string) string {
+	for _, part := range strings.Split(header, ",") {
+		part = strings.TrimSpace(part)
+		segments := strings.Split(part, ";")
+		if len(segments) == 2 && strings.TrimSpace(segments[1]) == `rel="next"` {
+			u := strings.TrimSpace(segments[0])
+			return strings.Trim(u, "<>")
+		}
+	}
+	return ""
+}
+
 // fetchCanvasCalendarEvents fetches individual Canvas calendar events for all
 // courses in the given provider for the specified date range.
 func (srv *Server) fetchCanvasCalendarEvents(
 	provider *models.ProviderPlatform,
 	start, end time.Time,
 ) ([]models.FacilityProgramClassEvent, error) {
-	// Step 1: fetch all courses for this provider
-	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	req, err := http.NewRequest("GET", coursesURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("canvas API returned %d fetching courses for provider %d", resp.StatusCode, provider.ID)
-	}
-
+	// Step 1: fetch all courses for this provider (paginated)
 	var courses []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
-		return nil, err
+	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
+	for coursesURL != "" {
+		req, err := http.NewRequest("GET", coursesURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+		req.Header.Add("Accept", "application/json")
+
+		resp, err := srv.Client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return nil, fmt.Errorf("canvas API returned %d fetching courses for provider %d", resp.StatusCode, provider.ID)
+		}
+
+		var page []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		resp.Body.Close()
+		courses = append(courses, page...)
+		coursesURL = nextPageURL(resp.Header.Get("Link"))
 	}
+
 	if len(courses) == 0 {
 		return []models.FacilityProgramClassEvent{}, nil
 	}
 
-	// Step 2: build context_codes[] query params
-	contextParams := ""
+	// Step 2: build context_codes[] query params using url.Values so brackets are encoded
+	params := url.Values{}
+	params.Set("start_date", start.Format("2006-01-02"))
+	params.Set("end_date", end.Format("2006-01-02"))
+	params.Set("per_page", "100")
 	for _, course := range courses {
 		if idFloat, ok := course["id"].(float64); ok {
-			contextParams += fmt.Sprintf("&context_codes[]=course_%d", int(idFloat))
+			params.Add("context_codes[]", fmt.Sprintf("course_%d", int(idFloat)))
 		}
 	}
+	firstEventsURL := provider.BaseUrl + "/api/v1/calendar_events?" + params.Encode()
 
-	// Step 3: fetch calendar events
-	eventsURL := provider.BaseUrl + "/api/v1/calendar_events?" +
-		"start_date=" + start.Format("2006-01-02") +
-		"&end_date=" + end.Format("2006-01-02") +
-		"&per_page=100" +
-		contextParams
-
-	evReq, err := http.NewRequest("GET", eventsURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	evReq.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	evReq.Header.Add("Accept", "application/json")
-
-	evResp, err := srv.Client.Do(evReq)
-	if err != nil {
-		return nil, err
-	}
-	defer evResp.Body.Close()
-	if evResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("canvas API returned %d fetching calendar events for provider %d", evResp.StatusCode, provider.ID)
-	}
-
+	// Step 3: fetch calendar events (paginated)
 	var rawEvents []map[string]interface{}
-	if err := json.NewDecoder(evResp.Body).Decode(&rawEvents); err != nil {
-		return nil, err
+	for eventsURL := firstEventsURL; eventsURL != ""; {
+		evReq, err := http.NewRequest("GET", eventsURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		evReq.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+		evReq.Header.Add("Accept", "application/json")
+
+		evResp, err := srv.Client.Do(evReq)
+		if err != nil {
+			return nil, err
+		}
+		if evResp.StatusCode != http.StatusOK {
+			evResp.Body.Close()
+			return nil, fmt.Errorf("canvas API returned %d fetching calendar events for provider %d", evResp.StatusCode, provider.ID)
+		}
+
+		var page []map[string]interface{}
+		if err := json.NewDecoder(evResp.Body).Decode(&page); err != nil {
+			evResp.Body.Close()
+			return nil, err
+		}
+		eventsURL = nextPageURL(evResp.Header.Get("Link"))
+		evResp.Body.Close()
+		rawEvents = append(rawEvents, page...)
 	}
 
 	var events []models.FacilityProgramClassEvent
@@ -223,6 +252,7 @@ func (srv *Server) fetchCanvasCalendarEvents(
 
 		var id uint
 		if idFloat, ok := event["id"].(float64); ok {
+			// Assumes Canvas calendar event IDs fit within 1_000_000 per provider.
 			id = models.CanvasClassIDOffset + provider.ID*1_000_000 + uint(idFloat)
 		}
 
