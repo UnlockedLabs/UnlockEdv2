@@ -325,8 +325,10 @@ export default function Schedule() {
     const handleSelectEvent = (event: CalendarEvent) => {
         setSelectedEvent(event.resource);
         if (event.resource.is_canvas_event) {
+            setShowSheet(false);
             setShowCanvasSheet(true);
         } else {
+            setShowCanvasSheet(false);
             setShowSheet(true);
         }
     };

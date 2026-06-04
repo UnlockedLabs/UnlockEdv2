@@ -8,7 +8,7 @@ interface CanvasEventSheetProps {
 
 export function CanvasEventSheet({ event, onClose }: CanvasEventSheetProps) {
     const start = event.start instanceof Date ? event.start : new Date(event.start);
-    const end = event.end instanceof Date ? event.end : new Date(event.end);
+    const end = event.end ? (event.end instanceof Date ? event.end : new Date(event.end)) : start;
 
     const dateStr = start.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const timeStr = `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
