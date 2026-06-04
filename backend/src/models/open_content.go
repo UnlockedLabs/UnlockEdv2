@@ -56,6 +56,32 @@ type OpenContentParams struct {
 
 func (OpenContentActivity) TableName() string { return "open_content_activities" }
 
+type KnowledgeCenterMetrics struct {
+	TotalInteractions      int64            `json:"total_interactions"`
+	UniqueResidents        int64            `json:"unique_residents"`
+	AvgSessionMinutes      float64          `json:"avg_session_minutes"`
+	RepeatEngagement       RepeatEngagement `json:"repeat_engagement"`
+	LibraryViewsByCategory []CategoryViews  `json:"library_views_by_category"`
+	TopLibraries           []KCContentRow   `json:"top_libraries"`
+	TopVideos              []KCContentRow   `json:"top_videos"`
+}
+
+type RepeatEngagement struct {
+	Once      int64 `json:"once"`
+	TwoToFour int64 `json:"two_to_four"`
+	FivePlus  int64 `json:"five_plus"`
+}
+
+type CategoryViews struct {
+	Category string `json:"category"`
+	Views    int64  `json:"views"`
+}
+
+type KCContentRow struct {
+	Title  string `json:"title"`
+	Visits int64  `json:"visits"`
+}
+
 type OpenContentUrl struct {
 	ID         uint   `gorm:"primaryKey" json:"-"`
 	ContentURL string `gorm:"size:255" json:"content_url"`
