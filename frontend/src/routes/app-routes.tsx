@@ -68,7 +68,7 @@ const adminRoutes = declareAuthenticatedRoutes(
             path: 'operational-insights',
             element: <OperationalInsights />,
             errorElement: <Error />,
-            handle: { title: 'Operational Insights' }
+            handle: { title: 'Insights' }
         },
         {
             path: 'residents',

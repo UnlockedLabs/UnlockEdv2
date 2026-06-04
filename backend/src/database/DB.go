@@ -104,6 +104,7 @@ func MigrateTesting(db *gorm.DB) {
 		&models.Role{},
 		&models.User{},
 		&models.LoginMetrics{},
+		&models.LoginActivity{},
 		&models.Facility{},
 		&models.ProviderPlatform{},
 		&models.ProviderUserMapping{},

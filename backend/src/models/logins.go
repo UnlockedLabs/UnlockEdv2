@@ -22,6 +22,19 @@ type LoginActivity struct {
 
 func (LoginActivity) TableName() string { return "login_activity" }
 
+type DailyLoginCount struct {
+	Date        string `json:"date"`
+	TotalLogins int64  `json:"total_logins"`
+}
+
+type FacilityEngagement struct {
+	FacilityID   uint   `json:"facility_id"`
+	FacilityName string `json:"facility_name"`
+	Registered   int64  `json:"registered"`
+	Active       int64  `json:"active"`
+	Logins       int64  `json:"logins"`
+}
+
 type UserSessionTracking struct {
 	ID              int64     `gorm:"primaryKey;autoIncrement" json:"id"`
 	UserID          uint      `gorm:"not null" json:"user_id"`

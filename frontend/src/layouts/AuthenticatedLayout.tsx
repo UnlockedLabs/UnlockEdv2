@@ -48,6 +48,7 @@ export default function AuthenticatedLayout() {
     const isProgramsList = location.pathname === '/programs';
     const isFacilities = location.pathname === '/facilities';
     const isSchedule = location.pathname === '/schedule';
+    const isOperationalInsights = location.pathname === '/operational-insights';
     const isAdmins = location.pathname === '/admins';
     const isKnowledgeCenter =
         location.pathname === '/knowledge-center-management' ||
@@ -70,7 +71,8 @@ export default function AuthenticatedLayout() {
         isKnowledgeCenter ||
         isContentViewer ||
         isResidentPage ||
-        isSchedule;
+        isSchedule ||
+        isOperationalInsights;
     const fullBleedWrapperClass =
         isDashboard ||
         isProgramsList ||
@@ -84,7 +86,8 @@ export default function AuthenticatedLayout() {
         isKnowledgeCenter ||
         isContentViewer ||
         isResidentPage ||
-        isSchedule
+        isSchedule ||
+        isOperationalInsights
             ? 'py-0'
             : 'py-4';
     const showBreadcrumbs =
@@ -153,6 +156,7 @@ export default function AuthenticatedLayout() {
         isFacilities ||
         isAdmins ||
         isKnowledgeCenter ||
+        isOperationalInsights ||
         (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
     const contentClass = `flex-1 min-h-full overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-surface-hover' : ''}`;
