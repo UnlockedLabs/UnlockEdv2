@@ -423,3 +423,71 @@ func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClas
 			ExpectStatus(http.StatusBadRequest)
 	})
 }
+
+// TestEligibleResidentsFilteredByClassFacility verifies that GetEligibleResidentsForClass
+// returns only residents at the class's own facility, regardless of the caller's facility context.
+func TestEligibleResidentsFilteredByClassFacility(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facilityA, err := env.CreateTestFacility("Facility A")
+	require.NoError(t, err)
+	facilityB, err := env.CreateTestFacility("Facility B")
+	require.NoError(t, err)
+
+	deptAdmin, err := env.CreateTestUser("deptadmin", models.DepartmentAdmin, facilityB.ID, "")
+	require.NoError(t, err)
+
+	program, err := env.CreateTestProgram("Eligible Residents Test Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facilityA.ID, facilityB.ID})
+	require.NoError(t, err)
+
+	instructor, err := env.CreateTestInstructor(facilityA.ID, "eligibletest")
+	require.NoError(t, err)
+
+	// Class is at facility A
+	class, err := env.CreateTestClass(program, facilityA, models.Active, &instructor.ID)
+	require.NoError(t, err)
+
+	// Students at facility A
+	enrolledA, err := env.CreateTestUser("enra", models.Student, facilityA.ID, "ea001")
+	require.NoError(t, err)
+	unenrolledA, err := env.CreateTestUser("unenra", models.Student, facilityA.ID, "ua001")
+	require.NoError(t, err)
+
+	// Student at facility B — must never appear
+	_, err = env.CreateTestUser("unenrb", models.Student, facilityB.ID, "ub001")
+	require.NoError(t, err)
+
+	// Deactivated student at facility A — must be excluded
+	deactivatedA, err := env.CreateTestUser("deacta", models.Student, facilityA.ID, "da001")
+	require.NoError(t, err)
+	require.NoError(t, env.DB.Model(deactivatedA).Update("deactivated_at", "2024-01-01").Error)
+
+	// Enroll enrolledA so they no longer appear as eligible
+	_, err = env.CreateTestEnrollment(class.ID, enrolledA.ID, models.Enrolled)
+	require.NoError(t, err)
+
+	t.Run("dept admin with facilityB context sees only unenrolled facilityA residents", func(t *testing.T) {
+		// Dept admin passes facility_id=B in the query — backend must ignore it and use class's facility
+		resp := NewRequest[[]models.User](env.Client, t, http.MethodGet,
+			fmt.Sprintf("/api/users?include=only_unenrolled&class_id=%d&facility_id=%d&per_page=50", class.ID, facilityB.ID), nil).
+			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: deptAdmin.ID, FacilityID: facilityB.ID}).
+			Do().
+			ExpectStatus(http.StatusOK)
+
+		users := resp.GetData()
+		ids := make([]uint, len(users))
+		for i, u := range users {
+			ids[i] = u.ID
+		}
+
+		require.Contains(t, ids, unenrolledA.ID, "unenrolled facility-A student should be returned")
+		require.NotContains(t, ids, enrolledA.ID, "already-enrolled student should be excluded")
+		require.NotContains(t, ids, deactivatedA.ID, "deactivated student should be excluded")
+		for _, u := range users {
+			require.Equal(t, facilityA.ID, u.FacilityID, "only facility-A residents should be returned")
+		}
+	})
+}
