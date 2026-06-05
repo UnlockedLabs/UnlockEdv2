@@ -6,7 +6,7 @@ interface ClassNotFoundCardProps {
 
 export function ClassNotFoundCard({ onBack }: ClassNotFoundCardProps) {
     return (
-        <div className="bg-surface-hover flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-surface-hover">
             <div className="card-block p-8 text-center max-w-md">
                 <h2 className="text-xl font-semibold text-brand-dark mb-2">
                     Class Not Found
