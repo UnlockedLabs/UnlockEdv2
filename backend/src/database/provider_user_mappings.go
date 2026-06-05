@@ -116,6 +116,21 @@ func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMa
 	return providerUserMappings, nil
 }
 
+func (db *DB) GetMappedUsers(args *models.QueryContext, providerID int) ([]models.User, error) {
+	var users []models.User
+	tx := db.Model(&models.User{}).
+		Where("id IN (?)",
+			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
+		)
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, NewDBError(err, "error counting mapped users")
+	}
+	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&users).Error; err != nil {
+		return nil, NewDBError(err, "error getting mapped users")
+	}
+	return users, nil
+}
+
 func (db *DB) DeleteProviderUserMappingByUserID(userID, providerID int) error {
 	result := db.Model(&models.ProviderUserMapping{}).Where("user_id = ? AND provider_platform_id = ?", userID, providerID).Delete(&models.ProviderUserMapping{})
 	if result.Error != nil {

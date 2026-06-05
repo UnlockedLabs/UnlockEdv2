@@ -25,6 +25,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger
+} from '@/components/ui/accordion';
+import { EnrollmentTypeSelector } from '@/Components/shared/EnrollmentTypeSelector';
+import {
     EllipsisVerticalIcon,
     PencilSquareIcon,
     ArrowPathIcon,
@@ -62,6 +69,7 @@ export default function ProviderPlatformDetail() {
     const [showOidcModal, setShowOidcModal] = useState(false);
     const [showOidcInfoModal, setShowOidcInfoModal] = useState(false);
     const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+    const [showRecreateConfirm, setShowRecreateConfirm] = useState(false);
     const [oidcClient, setOidcClient] = useState<OidcClient | null>(null);
 
     const {
@@ -113,6 +121,22 @@ export default function ProviderPlatformDetail() {
         } else {
             toast.error(`Unable to refresh token for ${provider.name}.`);
         }
+    };
+
+    const handleRecreateOidc = async () => {
+        if (!provider) return;
+        const resp = await API.post<OidcClient, object>(
+            `oidc/clients/${provider.oidc_id}/recreate`,
+            {}
+        );
+        if (resp.success) {
+            setOidcClient(resp.data as OidcClient);
+            setShowOidcInfoModal(true);
+            void mutate();
+        } else {
+            toast.error('Failed to recreate OIDC configuration.');
+        }
+        setShowRecreateConfirm(false);
     };
 
     const handleShowAuthInfo = async () => {
@@ -168,8 +192,7 @@ export default function ProviderPlatformDetail() {
             label: 'Type',
             value: providerTypeLabels[provider.type] ?? provider.type
         },
-        { label: 'Base URL', value: provider.base_url },
-        { label: 'Account ID', value: provider.account_id }
+        { label: 'Base URL', value: provider.base_url }
     ];
 
     return (
@@ -226,14 +249,24 @@ export default function ProviderPlatformDetail() {
                                         </DropdownMenuItem>
                                     )}
                                     {provider.oidc_id > 0 && (
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                void handleShowAuthInfo()
-                                            }
-                                        >
-                                            <InformationCircleIcon className="size-4 mr-2" />
-                                            Authorization Info
-                                        </DropdownMenuItem>
+                                        <>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    void handleShowAuthInfo()
+                                                }
+                                            >
+                                                <InformationCircleIcon className="size-4 mr-2" />
+                                                Authorization Info
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    setShowRecreateConfirm(true)
+                                                }
+                                            >
+                                                <ArrowPathIcon className="size-4 mr-2" />
+                                                Recreate OIDC Client
+                                            </DropdownMenuItem>
+                                        </>
                                     )}
                                     <DropdownMenuItem
                                         onClick={() =>
@@ -341,6 +374,16 @@ export default function ProviderPlatformDetail() {
             />
 
             <ConfirmDialog
+                open={showRecreateConfirm}
+                onOpenChange={setShowRecreateConfirm}
+                title="Recreate OIDC Client"
+                description={`This will delete the current OIDC configuration for "${provider.name}" and generate a new one. Any existing SSO integrations will stop working until reconfigured. Are you sure?`}
+                confirmLabel="Recreate"
+                onConfirm={() => void handleRecreateOidc()}
+                variant="destructive"
+            />
+
+            <ConfirmDialog
                 open={showArchiveConfirm}
                 onOpenChange={setShowArchiveConfirm}
                 title={isArchived ? 'Enable Provider' : 'Archive Provider'}
@@ -376,6 +419,7 @@ function OidcInfoSection({ oidcId }: { oidcId: number }) {
         );
     }
 
+
     const fields = [
         { label: 'Client ID', value: client.client_id },
         { label: 'Client Secret', value: client.client_secret },
@@ -385,25 +429,31 @@ function OidcInfoSection({ oidcId }: { oidcId: number }) {
     ];
 
     return (
-        <div className="bg-card rounded-lg border border-border p-6">
-            <h2 className="text-sm font-semibold text-foreground mb-4">
-                OIDC Configuration
-            </h2>
-            <div className="space-y-3">
-                {fields.map((f) => (
-                    <div
-                        key={f.label}
-                        className="flex flex-col gap-1 rounded-md bg-[#E2E7EA] p-3"
-                    >
-                        <span className="text-xs font-medium text-muted-foreground">
-                            {f.label}
-                        </span>
-                        <span className="text-sm font-mono text-foreground break-all">
-                            {f.value}
-                        </span>
-                    </div>
-                ))}
-            </div>
+        <div className="bg-card rounded-lg border border-border">
+            <Accordion type="single" collapsible>
+                <AccordionItem value="oidc" className="border-none">
+                    <AccordionTrigger className="px-6 py-4 text-sm font-semibold text-foreground hover:no-underline">
+                        OIDC Configuration
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6">
+                        <div className="space-y-3">
+                            {fields.map((f) => (
+                                <div
+                                    key={f.label}
+                                    className="flex flex-col gap-1 rounded-md bg-[#E2E7EA] p-3"
+                                >
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                        {f.label}
+                                    </span>
+                                    <span className="text-sm font-mono text-foreground break-all">
+                                        {f.value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
         </div>
     );
 }
@@ -421,16 +471,20 @@ function EditProviderModal({
 }) {
     const [name, setName] = useState('');
     const [baseUrl, setBaseUrl] = useState('');
-    const [accountId, setAccountId] = useState('');
     const [accessKey, setAccessKey] = useState('');
+    const [enrollmentTypes, setEnrollmentTypes] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
+
+    const isCanvas =
+        provider?.type === ProviderPlatformType.CANVAS_CLOUD ||
+        provider?.type === ProviderPlatformType.CANVAS_OSS;
 
     useEffect(() => {
         if (open && provider) {
             setName(provider.name);
             setBaseUrl(provider.base_url);
-            setAccountId(provider.account_id);
             setAccessKey('');
+            setEnrollmentTypes(provider.enrollment_types ?? []);
         }
     }, [open, provider]);
 
@@ -443,8 +497,8 @@ function EditProviderModal({
             {
                 name,
                 base_url: baseUrl,
-                account_id: accountId,
-                access_key: accessKey
+                access_key: accessKey,
+                enrollment_types: isCanvas ? enrollmentTypes : []
             }
         );
         setSubmitting(false);
@@ -495,19 +549,7 @@ function EditProviderModal({
                 </div>
                 <div>
                     <label className="text-sm font-medium text-foreground">
-                        Account ID
-                    </label>
-                    <input
-                        type="text"
-                        value={accountId}
-                        onChange={(e) => setAccountId(e.target.value)}
-                        required
-                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
-                    />
-                </div>
-                <div>
-                    <label className="text-sm font-medium text-foreground">
-                        Access Key
+                        Access Token
                     </label>
                     <input
                         type="password"
@@ -517,6 +559,12 @@ function EditProviderModal({
                         className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
+                {isCanvas && (
+                    <EnrollmentTypeSelector
+                        selected={enrollmentTypes}
+                        onChange={setEnrollmentTypes}
+                    />
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                     <Button
                         type="button"
