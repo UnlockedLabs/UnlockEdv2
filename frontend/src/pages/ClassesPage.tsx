@@ -434,11 +434,7 @@ export default function ClassesPage() {
                                         key={cls.id}
                                         cls={cls}
                                         showFacility={crossFacility}
-                                        onClick={
-                                            cls.id >= CANVAS_CLASS_ID_OFFSET
-                                                ? undefined
-                                                : () => navigate(`/program-classes/${cls.id}/detail`)
-                                        }
+                                        onClick={() => navigate(`/program-classes/${cls.id}/detail`)}
                                         onAttendance={() =>
                                             setAttendanceClass(cls)
                                         }

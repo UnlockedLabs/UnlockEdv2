@@ -568,6 +568,9 @@ export default function Schedule() {
                             setShowCanvasSheet(false);
                             setSelectedEvent(null);
                         }}
+                        onViewClassDetails={() => {
+                            navigate(`/program-classes/${selectedEvent.class_id}/detail`);
+                        }}
                     />
                 )}
 
