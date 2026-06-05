@@ -547,6 +547,12 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
+	if uint(classID) >= models.CanvasClassIDOffset {
+		args := srv.getQueryContext(r)
+		return writePaginatedResponse(w, http.StatusOK,
+			[]models.ProgramClassEvent{},
+			models.NewPaginationInfo(1, args.PerPage, 0))
+	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var userId *int
 	if !claims.isAdmin() {

@@ -44,6 +44,9 @@ func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http
 	if err != nil {
 		return newInvalidIdServiceError(err, "Class ID")
 	}
+	if uint(classId) >= models.CanvasClassIDOffset {
+		return srv.handleGetCanvasClassEnrollments(w, r, log, uint(classId))
+	}
 	status := r.URL.Query().Get("status")
 	if status == "all" {
 		status = ""

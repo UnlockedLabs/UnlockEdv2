@@ -1074,6 +1074,14 @@ function ProgramCard({
                         <h3 className="text-brand-dark mb-1 group-hover:text-brand transition-colors">
                             {program.program_name}
                         </h3>
+                        {program.source === 'canvas' && (
+                            <Badge
+                                variant="outline"
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1 inline-flex"
+                            >
+                                Synced from Canvas
+                            </Badge>
+                        )}
                         {program.description && (
                             <p className="text-sm text-gray-600 line-clamp-2">
                                 {program.description}
@@ -1299,6 +1307,14 @@ function ProgramsTable({
                                             <div className="text-base text-brand-dark hover:text-brand transition-colors font-medium mb-1.5">
                                                 {program.program_name}
                                             </div>
+                                            {program.source === 'canvas' && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1"
+                                                >
+                                                    Synced from Canvas
+                                                </Badge>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 items-center">
                                             {types.slice(0, 3).map((type) => (

@@ -52,10 +52,15 @@ export default function AuthenticatedLayout() {
     const isKnowledgeCenter =
         location.pathname === '/knowledge-center-management' ||
         location.pathname === '/knowledge-center';
+    const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
     const isContentViewer = location.pathname.startsWith('/viewer/');
-    const isResidentPage = ['/resident-programs', '/home'].includes(
-        location.pathname
-    );
+    const isResidentPage = [
+        '/learning-path',
+        '/my-courses',
+        '/my-progress',
+        '/resident-programs',
+        '/home'
+    ].includes(location.pathname);
     const isFullBleed =
         isProgramDetail ||
         isResidentProfile ||
@@ -66,7 +71,6 @@ export default function AuthenticatedLayout() {
         isDashboard ||
         isProgramsList ||
         isFacilities ||
-        isAdmins ||
         isKnowledgeCenter ||
         isContentViewer ||
         isResidentPage ||
@@ -75,7 +79,6 @@ export default function AuthenticatedLayout() {
         isDashboard ||
         isProgramsList ||
         isFacilities ||
-        isAdmins ||
         isProgramDetail ||
         isResidentProfile ||
         isResidentsPage ||
@@ -155,7 +158,7 @@ export default function AuthenticatedLayout() {
         isKnowledgeCenter ||
         (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 min-h-full overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-surface-hover' : ''}`;
+    const contentClass = `flex-1 min-h-full ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : 'bg-[#E2E7EA]'}`;
 
     return (
         <div className={rootClass}>
@@ -209,7 +212,7 @@ export default function AuthenticatedLayout() {
                                     </div>
                                 )
                             ) : (
-                                <div className="max-w-7xl mx-auto px-6 py-4">
+                                <div className="max-w-7xl mx-auto">
                                     {showBreadcrumbs && (
                                         <div className="mb-4">
                                             <Breadcrumbs

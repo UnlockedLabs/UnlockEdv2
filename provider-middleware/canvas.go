@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,14 +28,16 @@ type CanvasService struct {
 }
 
 func newCanvasService(provider *models.ProviderPlatform, params map[string]any) *CanvasService {
+	token := strings.TrimSpace(provider.AccessKey)
+	log.Infof("Canvas access key length: %d, contains newline: %v, hex: %x", len(token), strings.ContainsAny(provider.AccessKey, "\r\n"), []byte(token))
 	headers := make(map[string]string)
-	headers["Authorization"] = "Bearer " + provider.AccessKey
+	headers["Authorization"] = "Bearer " + token
 	headers["Accept"] = "application/json"
 	return &CanvasService{
 		ProviderPlatformID: provider.ID,
 		Client:             &http.Client{},
 		BaseURL:            provider.BaseUrl,
-		Token:              provider.AccessKey,
+		Token:              token,
 		AccountID:          provider.AccountID,
 		BaseHeaders:        headers,
 		JobParams:          params,
@@ -74,8 +77,12 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 			logger().Error("Failed to close response body")
 		}
 	}()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Errorf("Canvas users endpoint returned %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("canvas API returned status %d", resp.StatusCode)
+	}
 	users := make([]map[string]interface{}, 0)
-	log.Printf("Request sent to canvas Users: %v", resp.Body)
 	err = json.NewDecoder(resp.Body).Decode(&users)
 	if err != nil {
 		log.Errorf("Failed to decode response: %v", err)

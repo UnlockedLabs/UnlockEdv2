@@ -88,7 +88,7 @@ func (provider *ProviderPlatform) BeforeUpdate(tx *gorm.DB) (err error) {
 
 func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
 	if key, keyErr := DecryptAccessKey(provider.AccessKey); keyErr == nil {
-		provider.AccessKey = key
+		provider.AccessKey = strings.TrimSpace(key)
 	}
 	return nil
 }

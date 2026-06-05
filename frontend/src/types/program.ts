@@ -125,6 +125,7 @@ export interface ProgramsOverviewTable {
     credit_types: string;
     funding_type: string;
     status: boolean;
+    source?: string;
 }
 
 export interface ProgramsOverview {

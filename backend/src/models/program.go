@@ -14,6 +14,11 @@ type ProgType string
 type CreditType string
 
 const (
+	CanvasProgramIDOffset = uint(100_000_000)
+	CanvasClassIDOffset   = uint(100_000_000)
+)
+
+const (
 	//funding types
 	FederalGrants FundingType = "Federal_Grants"
 	StateGrants   FundingType = "State_Grants"
@@ -174,6 +179,7 @@ type ProgramsOverviewTable struct {
 	CreditTypes            string   `json:"credit_types"`
 	FundingType            string   `json:"funding_type"`
 	Status                 bool     `json:"status"`
+	Source                 string   `json:"source"`
 }
 
 type ProgramOverviewResponse struct {

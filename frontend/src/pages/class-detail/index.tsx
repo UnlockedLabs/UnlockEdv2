@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
-import { Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { BookOpen, Edit, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -98,6 +98,7 @@ export default function ClassDetailPage() {
     const deleteBlockerReason = getDeleteBlockerReason(deleteBlockers);
 
     const cls = classResp?.data;
+    const isCanvasClass = parseInt(class_id ?? '0') >= 100_000_000;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
     const flaggedUserIds = useMemo(() => {
@@ -126,7 +127,18 @@ export default function ClassDetailPage() {
     }
 
     return (
-        <div className="bg-surface-hover min-h-screen">
+        <div className="bg-[#E2E7EA]">
+            {isCanvasClass && (
+                <div className="bg-blue-50 border-b border-blue-200">
+                    <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
+                        <BookOpen className="size-4 shrink-0" />
+                        <span>
+                            This class is managed externally in Canvas. Data is
+                            read-only.
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
@@ -141,6 +153,7 @@ export default function ClassDetailPage() {
                                 }}
                             />
                         </div>
+                        {!isCanvasClass && (
                         <div className="flex gap-2 ml-6">
                             <Button
                                 variant="outline"
@@ -196,6 +209,7 @@ export default function ClassDetailPage() {
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -268,35 +282,53 @@ export default function ClassDetailPage() {
                         value="enrollment-history"
                         className="space-y-4"
                     >
-                        <EnrollmentHistoryTab classId={cls.id} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Enrollment history is managed in Canvas.
+                            </div>
+                        ) : (
+                            <EnrollmentHistoryTab classId={cls.id} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="sessions" className="space-y-4">
-                        <SessionsTab
-                            cls={cls}
-                            onClassMutate={() => {
-                                void mutate();
-                                void mutateDeleteCheck();
-                            }}
-                        />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Sessions are managed in Canvas.
+                            </div>
+                        ) : (
+                            <SessionsTab cls={cls} onClassMutate={() => void mutate()} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="schedule" className="space-y-4">
-                        <ScheduleTab
-                            cls={cls}
-                            onClassMutate={() => {
-                                void mutate();
-                                void mutateDeleteCheck();
-                            }}
-                        />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Schedule is managed in Canvas.
+                            </div>
+                        ) : (
+                            <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
-                        <SupportTab classId={cls.id} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                At-risk tracking is managed in Canvas.
+                            </div>
+                        ) : (
+                            <SupportTab classId={cls.id} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">
-                        <AuditTab classId={cls.id} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Audit history is not available for Canvas classes.
+                            </div>
+                        ) : (
+                            <AuditTab classId={cls.id} />
+                        )}
                     </TabsContent>
                 </Tabs>
             </div>
