@@ -51,6 +51,10 @@ func TestKnowledgeCenterMetrics(t *testing.T) {
 	day := func(hour, min int) time.Time {
 		return time.Date(2026, 1, 15, hour, min, 0, 0, time.UTC)
 	}
+	// prior window for [01-15, 01-17) is [01-13, 01-15); seed on 01-14
+	priorDay := func(hour, min int) time.Time {
+		return time.Date(2026, 1, 14, hour, min, 0, 0, time.UTC)
+	}
 	activities := []models.OpenContentActivity{
 		// U1: career library twice + one video (3 interactions)
 		{FacilityID: facility.ID, UserID: u1.ID, OpenContentProviderID: kiwix.ID, ContentID: careerLib.ID, OpenContentUrlID: 1, RequestTS: day(9, 0), StopTS: day(9, 10)},
@@ -60,6 +64,11 @@ func TestKnowledgeCenterMetrics(t *testing.T) {
 		{FacilityID: facility.ID, UserID: u2.ID, OpenContentProviderID: kiwix.ID, ContentID: recoveryLib.ID, OpenContentUrlID: 1, RequestTS: day(10, 0), StopTS: day(10, 20)},
 		// U3: video once
 		{FacilityID: facility.ID, UserID: u3.ID, OpenContentProviderID: youtube.ID, ContentID: weldingVideo.ID, OpenContentUrlID: 1, RequestTS: day(11, 0), StopTS: day(11, 30)},
+		// PRIOR window (01-14): career x1, video x3 -> prior total 4 (recovery has none)
+		{FacilityID: facility.ID, UserID: u1.ID, OpenContentProviderID: kiwix.ID, ContentID: careerLib.ID, OpenContentUrlID: 1, RequestTS: priorDay(9, 0), StopTS: priorDay(9, 5)},
+		{FacilityID: facility.ID, UserID: u1.ID, OpenContentProviderID: youtube.ID, ContentID: weldingVideo.ID, OpenContentUrlID: 1, RequestTS: priorDay(9, 0), StopTS: priorDay(9, 5)},
+		{FacilityID: facility.ID, UserID: u2.ID, OpenContentProviderID: youtube.ID, ContentID: weldingVideo.ID, OpenContentUrlID: 1, RequestTS: priorDay(10, 0), StopTS: priorDay(10, 5)},
+		{FacilityID: facility.ID, UserID: u3.ID, OpenContentProviderID: youtube.ID, ContentID: weldingVideo.ID, OpenContentUrlID: 1, RequestTS: priorDay(11, 0), StopTS: priorDay(11, 5)},
 	}
 	for i := range activities {
 		require.NoError(t, env.DB.Create(&activities[i]).Error)
@@ -74,6 +83,8 @@ func TestKnowledgeCenterMetrics(t *testing.T) {
 		GetData()
 
 	require.Equal(t, int64(5), metrics.TotalInteractions)
+	// prior window total = 4 -> change = (5-4)/4 = 25%
+	require.Equal(t, 25, metrics.TotalInteractionsChange)
 	require.Equal(t, int64(3), metrics.UniqueResidents)
 	// durations (min): 10, 5, 10, 20, 30 -> avg 15
 	require.InDelta(t, 15.0, metrics.AvgSessionMinutes, 0.01)
@@ -83,11 +94,13 @@ func TestKnowledgeCenterMetrics(t *testing.T) {
 		{Category: "Vocational", Views: 2},
 		{Category: "Life Skills", Views: 1},
 	}, metrics.LibraryViewsByCategory)
+	// career prior 1 -> +100%; recovery prior 0 -> 0%
 	require.Equal(t, []models.KCContentRow{
-		{Title: "Career Library", Visits: 2},
-		{Title: "Recovery Library", Visits: 1},
+		{Title: "Career Library", Visits: 2, Change: 100},
+		{Title: "Recovery Library", Visits: 1, Change: 0},
 	}, metrics.TopLibraries)
+	// welding prior 3 -> (2-3)/3 = -33%
 	require.Equal(t, []models.KCContentRow{
-		{Title: "Welding Basics", Visits: 2},
+		{Title: "Welding Basics", Visits: 2, Change: -33},
 	}, metrics.TopVideos)
 }

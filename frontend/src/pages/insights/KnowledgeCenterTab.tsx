@@ -22,6 +22,10 @@ function pct(part: number, whole: number): number {
     return whole > 0 ? Math.round((part / whole) * 100) : 0;
 }
 
+function deltaLabel(change: number): string {
+    return `${change >= 0 ? '+' : ''}${change}% vs prior period`;
+}
+
 function formatSessionLength(minutes: number): string {
     const totalSeconds = Math.round(minutes * 60);
     const mins = Math.floor(totalSeconds / 60);
@@ -72,7 +76,7 @@ export default function KnowledgeCenterTab({
     const segments = [
         { label: 'Once', count: once, className: 'bg-brand-dark' },
         { label: '2-4 visits', count: two_to_four, className: 'bg-brand' },
-        { label: '5+ visits', count: five_plus, className: 'bg-brand/60' }
+        { label: '5+ visits', count: five_plus, className: 'bg-brand-light' }
     ];
 
     return (
@@ -89,7 +93,7 @@ export default function KnowledgeCenterTab({
                         icon={BookOpenIcon}
                         value={metrics.total_interactions.toLocaleString()}
                         label="Total KC Interactions"
-                        sub="opens, plays & link clicks"
+                        sub={deltaLabel(metrics.total_interactions_change)}
                         tooltip="Total opens, video plays, and link clicks in the Knowledge Center in the selected range."
                     />
                     <MetricCard

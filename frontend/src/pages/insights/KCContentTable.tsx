@@ -38,13 +38,14 @@ export function KCContentTable({
                         <TableHead className="text-right">
                             {valueLabel}
                         </TableHead>
+                        <TableHead className="text-right">Δ</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {rows.length === 0 ? (
                         <TableRow>
                             <TableCell
-                                colSpan={2}
+                                colSpan={3}
                                 className="h-20 text-center text-muted-foreground"
                             >
                                 No activity in this range
@@ -58,6 +59,12 @@ export function KCContentTable({
                                 </TableCell>
                                 <TableCell className="text-right text-muted-foreground">
                                     {row.visits.toLocaleString()}
+                                </TableCell>
+                                <TableCell
+                                    className={`text-right ${row.change >= 0 ? 'text-brand' : 'text-red-500'}`}
+                                >
+                                    {row.change >= 0 ? '+' : ''}
+                                    {row.change}%
                                 </TableCell>
                             </TableRow>
                         ))

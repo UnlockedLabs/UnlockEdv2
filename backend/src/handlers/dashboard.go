@@ -319,7 +319,7 @@ func (srv *Server) handleKnowledgeCenterMetrics(w http.ResponseWriter, r *http.R
 	if err != nil {
 		return err
 	}
-	total, unique, err := srv.Db.GetKCInteractionStats(&args, start, end, facilityID)
+	total, unique, totalChange, err := srv.Db.GetKCInteractionStats(&args, start, end, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -344,13 +344,14 @@ func (srv *Server) handleKnowledgeCenterMetrics(w http.ResponseWriter, r *http.R
 		return newDatabaseServiceError(err)
 	}
 	metrics := models.KnowledgeCenterMetrics{
-		TotalInteractions:      total,
-		UniqueResidents:        unique,
-		AvgSessionMinutes:      avgSession,
-		RepeatEngagement:       repeat,
-		LibraryViewsByCategory: categories,
-		TopLibraries:           topLibraries,
-		TopVideos:              topVideos,
+		TotalInteractions:       total,
+		TotalInteractionsChange: totalChange,
+		UniqueResidents:         unique,
+		AvgSessionMinutes:       avgSession,
+		RepeatEngagement:        repeat,
+		LibraryViewsByCategory:  categories,
+		TopLibraries:            topLibraries,
+		TopVideos:               topVideos,
 	}
 	return writeJsonResponse(w, http.StatusOK, metrics)
 }

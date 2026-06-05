@@ -227,10 +227,12 @@ export interface CategoryViews {
 export interface KCContentRow {
     title: string;
     visits: number;
+    change: number;
 }
 
 export interface KnowledgeCenterMetrics {
     total_interactions: number;
+    total_interactions_change: number;
     unique_residents: number;
     avg_session_minutes: number;
     repeat_engagement: RepeatEngagement;

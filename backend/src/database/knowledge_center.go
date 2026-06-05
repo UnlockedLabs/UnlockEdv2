@@ -2,10 +2,28 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"math"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+func kcPriorWindow(start, end *time.Time) (*time.Time, *time.Time) {
+	if start == nil || end == nil {
+		return nil, nil
+	}
+	duration := end.Sub(*start)
+	priorStart := start.Add(-duration)
+	priorEnd := *start
+	return &priorStart, &priorEnd
+}
+
+func kcPctChange(current, prior int64) int {
+	if prior <= 0 {
+		return 0
+	}
+	return int(math.Round(float64(current-prior) / float64(prior) * 100))
+}
 
 func (db *DB) kcActivityScope(args *models.QueryContext, start, end *time.Time, facilityID *uint) *gorm.DB {
 	tx := db.WithContext(args.Ctx).Model(&models.OpenContentActivity{})
@@ -18,17 +36,25 @@ func (db *DB) kcActivityScope(args *models.QueryContext, start, end *time.Time, 
 	return tx
 }
 
-func (db *DB) GetKCInteractionStats(args *models.QueryContext, start, end *time.Time, facilityID *uint) (int64, int64, error) {
+func (db *DB) GetKCInteractionStats(args *models.QueryContext, start, end *time.Time, facilityID *uint) (int64, int64, int, error) {
 	var total int64
 	if err := db.kcActivityScope(args, start, end, facilityID).Count(&total).Error; err != nil {
-		return 0, 0, newGetRecordsDBError(err, "open_content_activities")
+		return 0, 0, 0, newGetRecordsDBError(err, "open_content_activities")
 	}
 	var unique int64
 	if err := db.kcActivityScope(args, start, end, facilityID).
 		Distinct("user_id").Count(&unique).Error; err != nil {
-		return 0, 0, newGetRecordsDBError(err, "open_content_activities")
+		return 0, 0, 0, newGetRecordsDBError(err, "open_content_activities")
 	}
-	return total, unique, nil
+	change := 0
+	if priorStart, priorEnd := kcPriorWindow(start, end); priorStart != nil {
+		var priorTotal int64
+		if err := db.kcActivityScope(args, priorStart, priorEnd, facilityID).Count(&priorTotal).Error; err != nil {
+			return 0, 0, 0, newGetRecordsDBError(err, "open_content_activities")
+		}
+		change = kcPctChange(total, priorTotal)
+	}
+	return total, unique, change, nil
 }
 
 func (db *DB) GetKCAvgSessionMinutes(args *models.QueryContext, start, end *time.Time, facilityID *uint) (float64, error) {
@@ -102,9 +128,14 @@ func (db *DB) GetKCLibraryViewsByCategory(args *models.QueryContext, start, end 
 }
 
 func (db *DB) getKCTopContent(args *models.QueryContext, table, alias string, start, end *time.Time, facilityID *uint, limit int) ([]models.KCContentRow, error) {
-	rows := make([]models.KCContentRow, 0, limit)
+	type contentRow struct {
+		ContentID uint
+		Title     string
+		Visits    int64
+	}
+	current := make([]contentRow, 0, limit)
 	tx := db.WithContext(args.Ctx).Table("open_content_activities oca").
-		Select(alias + ".title as title, count(oca.id) as visits").
+		Select(alias + ".id as content_id, " + alias + ".title as title, count(oca.id) as visits").
 		Joins("JOIN " + table + " " + alias + " ON " + alias + ".id = oca.content_id AND " + alias + ".open_content_provider_id = oca.open_content_provider_id AND " + alias + ".deleted_at IS NULL")
 	if facilityID != nil {
 		tx = tx.Where("oca.facility_id = ?", *facilityID)
@@ -115,8 +146,43 @@ func (db *DB) getKCTopContent(args *models.QueryContext, table, alias string, st
 	if err := tx.Group(alias + ".id, " + alias + ".title").
 		Order("visits DESC, " + alias + ".title ASC").
 		Limit(limit).
-		Scan(&rows).Error; err != nil {
+		Scan(&current).Error; err != nil {
 		return nil, newGetRecordsDBError(err, table)
+	}
+	rows := make([]models.KCContentRow, 0, len(current))
+	if len(current) == 0 {
+		return rows, nil
+	}
+
+	priorVisits := make(map[uint]int64)
+	if priorStart, priorEnd := kcPriorWindow(start, end); priorStart != nil {
+		ids := make([]uint, 0, len(current))
+		for _, c := range current {
+			ids = append(ids, c.ContentID)
+		}
+		priors := make([]contentRow, 0, len(ids))
+		ptx := db.WithContext(args.Ctx).Table("open_content_activities oca").
+			Select(alias+".id as content_id, count(oca.id) as visits").
+			Joins("JOIN "+table+" "+alias+" ON "+alias+".id = oca.content_id AND "+alias+".open_content_provider_id = oca.open_content_provider_id AND "+alias+".deleted_at IS NULL").
+			Where(alias+".id IN ?", ids).
+			Where("oca.request_ts >= ? AND oca.request_ts < ?", *priorStart, *priorEnd)
+		if facilityID != nil {
+			ptx = ptx.Where("oca.facility_id = ?", *facilityID)
+		}
+		if err := ptx.Group(alias + ".id").Scan(&priors).Error; err != nil {
+			return nil, newGetRecordsDBError(err, table)
+		}
+		for _, p := range priors {
+			priorVisits[p.ContentID] = p.Visits
+		}
+	}
+
+	for _, c := range current {
+		rows = append(rows, models.KCContentRow{
+			Title:  c.Title,
+			Visits: c.Visits,
+			Change: kcPctChange(c.Visits, priorVisits[c.ContentID]),
+		})
 	}
 	return rows, nil
 }

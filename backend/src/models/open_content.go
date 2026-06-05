@@ -57,13 +57,14 @@ type OpenContentParams struct {
 func (OpenContentActivity) TableName() string { return "open_content_activities" }
 
 type KnowledgeCenterMetrics struct {
-	TotalInteractions      int64            `json:"total_interactions"`
-	UniqueResidents        int64            `json:"unique_residents"`
-	AvgSessionMinutes      float64          `json:"avg_session_minutes"`
-	RepeatEngagement       RepeatEngagement `json:"repeat_engagement"`
-	LibraryViewsByCategory []CategoryViews  `json:"library_views_by_category"`
-	TopLibraries           []KCContentRow   `json:"top_libraries"`
-	TopVideos              []KCContentRow   `json:"top_videos"`
+	TotalInteractions       int64            `json:"total_interactions"`
+	TotalInteractionsChange int              `json:"total_interactions_change"`
+	UniqueResidents         int64            `json:"unique_residents"`
+	AvgSessionMinutes       float64          `json:"avg_session_minutes"`
+	RepeatEngagement        RepeatEngagement `json:"repeat_engagement"`
+	LibraryViewsByCategory  []CategoryViews  `json:"library_views_by_category"`
+	TopLibraries            []KCContentRow   `json:"top_libraries"`
+	TopVideos               []KCContentRow   `json:"top_videos"`
 }
 
 type RepeatEngagement struct {
@@ -80,6 +81,7 @@ type CategoryViews struct {
 type KCContentRow struct {
 	Title  string `json:"title"`
 	Visits int64  `json:"visits"`
+	Change int    `json:"change"`
 }
 
 type OpenContentUrl struct {
