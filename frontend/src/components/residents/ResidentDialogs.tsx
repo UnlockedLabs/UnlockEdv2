@@ -26,6 +26,14 @@ import { FormModal, TonedPanel } from '@/components/shared';
 import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
 import { Copy, Check } from 'lucide-react';
 
+function useConfirmToken(resident: User, open: boolean) {
+    const hasDocId = Boolean(resident.doc_id);
+    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
+    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
+    const confirm = useTypeToConfirm({ open, expected: confirmToken });
+    return { confirmToken, confirmLabel, confirm };
+}
+
 // ---------------------------------------------------------------------------
 // EditResidentDialog
 // ---------------------------------------------------------------------------
@@ -92,7 +100,6 @@ export function EditResidentDialog({
         >
             <form
                 onSubmit={(e) => {
-                    e.preventDefault();
                     void form.handleSubmit((d) => void handleSave(d))(e);
                 }}
             >
@@ -318,10 +325,10 @@ export function DeactivateDialog({
 }: DeactivateDialogProps) {
     const { toaster } = useToast();
     const [loading, setLoading] = useState(false);
-    const hasDocId = Boolean(resident.doc_id);
-    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
-    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
-    const confirm = useTypeToConfirm({ open, expected: confirmToken });
+    const { confirmToken, confirmLabel, confirm } = useConfirmToken(
+        resident,
+        open
+    );
 
     const handleDeactivate = async () => {
         setLoading(true);
@@ -449,10 +456,10 @@ export function DeleteDialog({
 }: DeleteDialogProps) {
     const { toaster } = useToast();
     const [loading, setLoading] = useState(false);
-    const hasDocId = Boolean(resident.doc_id);
-    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
-    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
-    const confirm = useTypeToConfirm({ open, expected: confirmToken });
+    const { confirmToken, confirmLabel, confirm } = useConfirmToken(
+        resident,
+        open
+    );
 
     const handleDelete = async () => {
         setLoading(true);
@@ -540,10 +547,10 @@ export function TransferDialog({
     const { toaster } = useToast();
     const [transferFacilityId, setTransferFacilityId] = useState('');
     const [loading, setLoading] = useState(false);
-    const hasDocId = Boolean(resident.doc_id);
-    const confirmToken = hasDocId ? resident.doc_id! : resident.username;
-    const confirmLabel = hasDocId ? 'Resident ID' : 'username';
-    const confirm = useTypeToConfirm({ open, expected: confirmToken });
+    const { confirmToken, confirmLabel, confirm } = useConfirmToken(
+        resident,
+        open
+    );
 
     useEffect(() => {
         if (!open) setTransferFacilityId('');
