@@ -45,7 +45,52 @@ func (s *Scheduler) generateTasks() ([]models.RunnableTask, error) {
 	} else {
 		log.Println("Failed to generate provider tasks")
 	}
+	if systemTasks, err := s.generateSystemTasks(); err == nil {
+		allTasks = append(allTasks, systemTasks...)
+	} else {
+		log.Println("Failed to generate system tasks")
+	}
 	return allTasks, nil
+}
+
+// generateSystemTasks builds the platform-wide batch tasks that are not tied to
+// any provider (e.g. activating classes whose scheduled start date has arrived).
+func (s *Scheduler) generateSystemTasks() ([]models.RunnableTask, error) {
+	systemTasks := make([]models.RunnableTask, 0, len(models.AllSystemJobs))
+	for _, jobType := range models.AllSystemJobs {
+		created, err := s.createIfNotExists(jobType)
+		if err != nil {
+			log.Errorf("failed to create system job %s: %v", jobType, err)
+			return nil, err
+		}
+		task := models.RunnableTask{JobID: created.ID, Status: models.StatusPending}
+		if err := s.intoSystemTask(created, &task); err != nil {
+			log.Errorf("failed to create task for system job %s: %v", jobType, err)
+			return nil, err
+		}
+		systemTasks = append(systemTasks, task)
+	}
+	return systemTasks, nil
+}
+
+// intoSystemTask finds or creates the single provider-less RunnableTask for a
+// system job and prepares its parameters for publishing.
+func (s *Scheduler) intoSystemTask(cj *models.CronJob, task *models.RunnableTask) error {
+	if task.ID == 0 {
+		if err := s.db.Model(&models.RunnableTask{}).
+			Where("job_id = ? AND provider_platform_id IS NULL AND open_content_provider_id IS NULL", cj.ID).
+			FirstOrCreate(&task).Error; err != nil {
+			log.Errorf("failed to create task for job: %v. error: %v", cj.Name, err)
+			return err
+		}
+		if err := s.db.Model(&models.RunnableTask{}).Preload("Job").First(&task, task.ID).Error; err != nil {
+			log.Errorf("failed to reload task for job: %v. error: %v", cj.Name, err)
+			return err
+		}
+	}
+	task.Job = cj
+	task.Prepare(nil)
+	return nil
 }
 
 func (s *Scheduler) generateOpenContentProviderTasks() ([]models.RunnableTask, error) {

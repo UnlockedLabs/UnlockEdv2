@@ -33,6 +33,8 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 		cj.Category = OpenContentJob
 	} else if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
 		cj.Category = ProviderPlatformJob
+	} else if slices.Contains(AllSystemJobs, JobType(cj.Name)) {
+		cj.Category = SystemJob
 	}
 	switch cj.Name {
 	case string(RetryVideoDownloadsJob):
@@ -41,6 +43,8 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 			schedule = EveryDaytimeHour
 		}
 		cj.Schedule = schedule
+	case string(ActivateScheduledClassesJob):
+		cj.Schedule = EveryMorningAt5AM
 	default:
 		cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
 	}
@@ -83,24 +87,28 @@ func (RunnableTask) TableName() string { return "runnable_tasks" }
 const (
 	ProviderPlatformJob = 1
 	OpenContentJob      = 2
+	SystemJob           = 3
 
 	GetMilestonesJob JobType = "get_milestones"
 	GetCoursesJob    JobType = "get_courses"
 	GetActivityJob   JobType = "get_activity"
 
-	ScrapeKiwixJob         JobType   = "scrape_kiwix"
-	RetryVideoDownloadsJob JobType   = "retry_video_downloads"
-	RetryManualDownloadJob JobType   = "retry_manual_download"
-	SyncVideoMetadataJob   JobType   = "sync_video_metadata"
-	AddVideosJob           JobType   = "add_videos"
-	EveryDaytimeHour       string    = "0 6-20 * * *"
-	EverySundayAt8PM       string    = "0 20 * * 6"
-	StatusPending          JobStatus = "pending"
-	StatusRunning          JobStatus = "running"
+	ScrapeKiwixJob              JobType   = "scrape_kiwix"
+	RetryVideoDownloadsJob      JobType   = "retry_video_downloads"
+	RetryManualDownloadJob      JobType   = "retry_manual_download"
+	SyncVideoMetadataJob        JobType   = "sync_video_metadata"
+	AddVideosJob                JobType   = "add_videos"
+	ActivateScheduledClassesJob JobType   = "activate_scheduled_classes"
+	EveryDaytimeHour            string    = "0 6-20 * * *"
+	EverySundayAt8PM            string    = "0 20 * * 6"
+	EveryMorningAt5AM           string    = "0 5 * * *"
+	StatusPending               JobStatus = "pending"
+	StatusRunning               JobStatus = "running"
 )
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
+var AllSystemJobs = []JobType{ActivateScheduledClassesJob}
 
 func (jt JobType) IsVideoJob() bool {
 	switch jt {
