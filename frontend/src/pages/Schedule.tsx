@@ -347,7 +347,7 @@ export default function Schedule() {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-[600px]" />
+                <Skeleton className="h-150" />
             </div>
         );
     }
@@ -363,10 +363,10 @@ export default function Schedule() {
         selectedEvent.class_status === SelectedClassStatus.Active;
 
     return (
-        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-screen overflow-x-hidden">
-            <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-6">
+        <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-screen">
+            <div className="max-w-350 mx-auto px-8 py-8 space-y-6">
                 {/* Page Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between sticky top-0 z-30 bg-[#E7EAED] dark:bg-[#0a0a0a] py-4 -mx-8 px-8">
                     <div>
                         <h1 className="text-2xl text-brand-dark mb-2">
                             {class_id ? 'Class Schedule' : 'Schedule'}

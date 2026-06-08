@@ -127,7 +127,7 @@ export default function ClassDetailPage() {
 
     return (
         <div className="bg-surface-hover min-h-screen">
-            <div className="bg-white border-b border-gray-200">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -170,7 +170,7 @@ export default function ClassDetailPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
-                                    className="z-[100]"
+                                    className="z-100"
                                 >
                                     <Tooltip>
                                         <TooltipTrigger asChild>

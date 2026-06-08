@@ -155,7 +155,7 @@ export default function AuthenticatedLayout() {
         isKnowledgeCenter ||
         (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 min-h-full overflow-y-auto overflow-x-hidden ${needsGrayBg ? 'bg-surface-hover' : ''}`;
+    const contentClass = `flex-1 min-h-full ${needsGrayBg ? 'bg-surface-hover' : ''}`;
 
     return (
         <div className={rootClass}>

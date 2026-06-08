@@ -78,24 +78,16 @@ export function SessionRow({
 
     const getIcon = () => {
         if (treatAsFrom)
-            return (
-                <CalendarClock className="size-5 text-gray-400 flex-shrink-0" />
-            );
+            return <CalendarClock className="size-5 text-gray-400 shrink-0" />;
         if (treatAsTo)
-            return (
-                <CalendarClock className="size-5 text-blue-700 flex-shrink-0" />
-            );
+            return <CalendarClock className="size-5 text-blue-700 shrink-0" />;
         if (isCancelled)
-            return (
-                <CalendarOff className="size-5 text-gray-500 flex-shrink-0" />
-            );
+            return <CalendarOff className="size-5 text-gray-500 shrink-0" />;
         if (hasAttendance)
-            return <CheckCircle className="size-5 text-brand flex-shrink-0" />;
+            return <CheckCircle className="size-5 text-brand shrink-0" />;
         if (isPast)
-            return (
-                <AlertCircle className="size-5 text-brand-gold flex-shrink-0" />
-            );
-        return <Calendar className="size-5 text-gray-400 flex-shrink-0" />;
+            return <AlertCircle className="size-5 text-brand-gold shrink-0" />;
+        return <Calendar className="size-5 text-gray-400 shrink-0" />;
     };
 
     const showCheckbox =
