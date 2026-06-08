@@ -21,7 +21,6 @@ import { CompletedPrograms } from './resident-profile/CompletedPrograms';
 import { IncompleteEnrollments } from './resident-profile/IncompleteEnrollments';
 import { HistoricalNotes } from './resident-profile/HistoricalNotes';
 import ActivityHistoryCard from '@/components/student/ActivityHistoryCard';
-import { ResetPasswordDialog } from './resident-profile/ResetPasswordDialog';
 import { AddNoteDialog } from './resident-profile/AddNoteDialog';
 import {
     EditResidentDialog,
@@ -29,6 +28,7 @@ import {
     DeleteDialog,
     TransferDialog
 } from '@/components/residents/ResidentDialogs';
+import { ResetPasswordModal } from '@/components/shared';
 
 export default function ResidentProfile() {
     const { user } = useAuth();
@@ -245,10 +245,11 @@ export default function ResidentProfile() {
                 resident={residentUser}
                 onSuccess={handleActionSuccess}
             />
-            <ResetPasswordDialog
+            <ResetPasswordModal
                 open={resetPwOpen}
                 onOpenChange={setResetPwOpen}
-                user={residentUser}
+                name={`${residentUser.name_first} ${residentUser.name_last}`}
+                userId={residentUser.id}
             />
             <DeactivateDialog
                 open={deactivateOpen}

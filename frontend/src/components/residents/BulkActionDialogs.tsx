@@ -252,10 +252,21 @@ export function BulkResetPasswordDialog({
 
                     <DialogFooter>
                         {results.length > 0 ? (
-                            <Button onClick={handleDownload} variant="brand">
-                                <Download className="size-4 mr-2" />
-                                Download Password File
-                            </Button>
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleClose(false)}
+                                >
+                                    Close
+                                </Button>
+                                <Button
+                                    onClick={handleDownload}
+                                    variant="brand"
+                                >
+                                    <Download className="size-4 mr-2" />
+                                    Download Password File
+                                </Button>
+                            </>
                         ) : (
                             <Button
                                 onClick={() => handleClose(false)}
