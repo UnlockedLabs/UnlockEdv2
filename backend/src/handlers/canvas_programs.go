@@ -996,7 +996,13 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	enrolled := srv.countMappedCanvasEnrollees(provider, rawCourseID)
+	facilityID := srv.getQueryContext(r).FacilityID
+	var enrolled int64
+	if facilityID != 0 {
+		enrolled = srv.countMappedCanvasEnrolleesForFacility(provider, rawCourseID, facilityID)
+	} else {
+		enrolled = srv.countMappedCanvasEnrollees(provider, rawCourseID)
+	}
 
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, []uint{rawCourseID})
 	var events []models.ProgramClassEvent
