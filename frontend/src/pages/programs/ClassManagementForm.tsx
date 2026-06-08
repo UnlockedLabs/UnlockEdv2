@@ -179,8 +179,10 @@ export function ClassManagementFormInner({
     }, [resolvedFacilityId]);
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        rooms.length === 0 && resolvedFacilityId
-            ? `/api/rooms?facility_id=${resolvedFacilityId}`
+        rooms.length === 0
+            ? resolvedFacilityId
+                ? `/api/rooms?facility_id=${resolvedFacilityId}`
+                : '/api/rooms'
             : null
     );
 
