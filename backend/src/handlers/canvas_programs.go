@@ -76,28 +76,10 @@ func (srv *Server) getCanvasProviderPrograms() ([]models.ProgramsOverviewTable, 
 //
 // and builds the synthetic program entry.
 func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform) (models.ProgramsOverviewTable, error) {
-	url := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID +
-		"/courses?per_page=100"
-
-	req, err := http.NewRequest("GET", url, nil)
+	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
+	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
 	if err != nil {
-		return models.ProgramsOverviewTable{}, err
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return models.ProgramsOverviewTable{}, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return models.ProgramsOverviewTable{}, fmt.Errorf("canvas API returned %d for provider %d", resp.StatusCode, provider.ID)
-	}
-
-	var courses []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
-		return models.ProgramsOverviewTable{}, err
+		return models.ProgramsOverviewTable{}, fmt.Errorf("canvas API error for provider %d: %w", provider.ID, err)
 	}
 
 	var totalClasses, activeClasses int64
@@ -136,6 +118,40 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 	}, nil
 }
 
+// fetchAllCanvasPages fetches pages from a Canvas API endpoint and returns the combined results.
+// max limits the total number of items returned; 0 means no limit (fetch all pages).
+func (srv *Server) fetchAllCanvasPages(provider *models.ProviderPlatform, startURL string, max int) ([]map[string]interface{}, error) {
+	var all []map[string]interface{}
+	for pageURL := startURL; pageURL != ""; {
+		req, err := http.NewRequest("GET", pageURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+		req.Header.Add("Accept", "application/json")
+		resp, err := srv.Client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return nil, fmt.Errorf("canvas API returned %d", resp.StatusCode)
+		}
+		var page []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		pageURL = nextPageURL(resp.Header.Get("Link"))
+		resp.Body.Close()
+		all = append(all, page...)
+		if max > 0 && len(all) >= max {
+			break
+		}
+	}
+	return all, nil
+}
+
 // nextPageURL parses a Canvas Link header and returns the URL for rel="next",
 // or an empty string if there is no next page.
 func nextPageURL(header string) string {
@@ -157,33 +173,10 @@ func (srv *Server) fetchCanvasCalendarEvents(
 	start, end time.Time,
 ) ([]models.FacilityProgramClassEvent, error) {
 	// Step 1: fetch all courses for this provider (paginated)
-	var courses []map[string]interface{}
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	for coursesURL != "" {
-		req, err := http.NewRequest("GET", coursesURL, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-		req.Header.Add("Accept", "application/json")
-
-		resp, err := srv.Client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			return nil, fmt.Errorf("canvas API returned %d fetching courses for provider %d", resp.StatusCode, provider.ID)
-		}
-
-		var page []map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
-			resp.Body.Close()
-			return nil, err
-		}
-		resp.Body.Close()
-		courses = append(courses, page...)
-		coursesURL = nextPageURL(resp.Header.Get("Link"))
+	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
+	if err != nil {
+		return nil, fmt.Errorf("fetching courses for provider %d: %w", provider.ID, err)
 	}
 
 	if len(courses) == 0 {
@@ -289,25 +282,11 @@ func (srv *Server) fetchCanvasClassesAllProviders() ([]models.ProgramClass, erro
 		connectionID := provider.ID
 		programID := models.CanvasProgramIDOffset + connectionID
 		apiURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-		req, err := http.NewRequest("GET", apiURL, nil)
+		courses, err := srv.fetchAllCanvasPages(&provider, apiURL, 0)
 		if err != nil {
-			log.WithError(err).Warnf("failed to build canvas request for provider %d, skipping", connectionID)
+			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", connectionID)
 			continue
 		}
-		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-		req.Header.Add("Accept", "application/json")
-		resp, err := srv.Client.Do(req)
-		if err != nil {
-			log.WithError(err).Warnf("failed to reach canvas for provider %d, skipping", connectionID)
-			continue
-		}
-		var courses []map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
-			resp.Body.Close()
-			log.WithError(err).Warnf("failed to decode canvas courses for provider %d, skipping", connectionID)
-			continue
-		}
-		resp.Body.Close()
 		for _, course := range courses {
 			courseIDFloat, _ := course["id"].(float64)
 			rawCourseID := uint(courseIDFloat)
@@ -420,30 +399,10 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		return srv.handleGetCanvasClassesByFacility(w, r, provider, programID, connectionID)
 	}
 
-	url := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID +
-		"/courses?per_page=100"
-	req, err := http.NewRequest("GET", url, nil)
+	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
+	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
 	if err != nil {
-		return newInternalServerServiceError(err, "failed to build canvas request")
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return newInternalServerServiceError(err, "failed to reach canvas")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return newInternalServerServiceError(
-			fmt.Errorf("canvas returned %d", resp.StatusCode),
-			"canvas API error",
-		)
-	}
-
-	var courses []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
-		return newInternalServerServiceError(err, "failed to decode canvas courses")
+		return newInternalServerServiceError(err, "failed to fetch canvas courses")
 	}
 
 	now := time.Now()
@@ -553,23 +512,9 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *http.Request, provider *models.ProviderPlatform, programID, connectionID uint) error {
 	// Fetch all Canvas courses.
 	canvasURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	req, err := http.NewRequest("GET", canvasURL, nil)
+	courses, err := srv.fetchAllCanvasPages(provider, canvasURL, 0)
 	if err != nil {
-		return newInternalServerServiceError(err, "failed to build canvas request")
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return newInternalServerServiceError(err, "failed to reach canvas")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return newInternalServerServiceError(fmt.Errorf("canvas returned %d", resp.StatusCode), "canvas API error")
-	}
-	var courses []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
-		return newInternalServerServiceError(err, "failed to decode canvas courses")
+		return newInternalServerServiceError(err, "failed to fetch canvas courses")
 	}
 
 	// Build course metadata list.
@@ -801,30 +746,13 @@ func (srv *Server) fetchCanvasCoursesScheduleEvents(
 // countMappedCanvasEnrolleesPerFacility fetches active enrollments for a Canvas course
 // and returns a map of facility_id → count of mapped users from that facility.
 func (srv *Server) countMappedCanvasEnrolleesPerFacility(provider *models.ProviderPlatform, rawCourseID uint) map[uint]int64 {
-	url := fmt.Sprintf(
+	enrollURL := fmt.Sprintf(
 		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
 		provider.BaseUrl, rawCourseID,
 	)
-	req, err := http.NewRequest("GET", url, nil)
+	enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
 	if err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrolleesPerFacility: failed to build request")
-		return nil
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrolleesPerFacility: failed to reach canvas")
-		return nil
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Warnf("countMappedCanvasEnrolleesPerFacility: canvas returned %d for course %d", resp.StatusCode, rawCourseID)
-		return nil
-	}
-	var enrollments []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&enrollments); err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrolleesPerFacility: failed to decode")
+		log.WithError(err).Warnf("countMappedCanvasEnrolleesPerFacility: failed to fetch enrollments for course %d", rawCourseID)
 		return nil
 	}
 	canvasUserIDs := make([]string, 0, len(enrollments))
@@ -866,32 +794,13 @@ func decodeCanvasClassID(classID uint) (providerID uint, rawCourseID uint) {
 // countMappedCanvasEnrolleesForFacility is like countMappedCanvasEnrollees but
 // only counts users belonging to the given facility.
 func (srv *Server) countMappedCanvasEnrolleesForFacility(provider *models.ProviderPlatform, rawCourseID uint, facilityID uint) int64 {
-	url := fmt.Sprintf(
+	enrollURL := fmt.Sprintf(
 		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
 		provider.BaseUrl, rawCourseID,
 	)
-	req, err := http.NewRequest("GET", url, nil)
+	enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
 	if err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrolleesForFacility: failed to build request")
-		return 0
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrolleesForFacility: failed to reach canvas")
-		return 0
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Warnf("countMappedCanvasEnrolleesForFacility: canvas returned %d for course %d", resp.StatusCode, rawCourseID)
-		return 0
-	}
-
-	var enrollments []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&enrollments); err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrolleesForFacility: failed to decode enrollments")
+		log.WithError(err).Warnf("countMappedCanvasEnrolleesForFacility: failed to fetch enrollments for course %d", rawCourseID)
 		return 0
 	}
 
@@ -919,32 +828,13 @@ func (srv *Server) countMappedCanvasEnrolleesForFacility(provider *models.Provid
 // countMappedCanvasEnrollees fetches active student enrollments for a Canvas
 // course and returns how many of those students have a ProviderUserMapping.
 func (srv *Server) countMappedCanvasEnrollees(provider *models.ProviderPlatform, rawCourseID uint) int64 {
-	url := fmt.Sprintf(
+	enrollURL := fmt.Sprintf(
 		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
 		provider.BaseUrl, rawCourseID,
 	)
-	req, err := http.NewRequest("GET", url, nil)
+	enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
 	if err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrollees: failed to build request")
-		return 0
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrollees: failed to reach canvas")
-		return 0
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Warnf("countMappedCanvasEnrollees: canvas returned %d for course %d", resp.StatusCode, rawCourseID)
-		return 0
-	}
-
-	var enrollments []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&enrollments); err != nil {
-		log.WithError(err).Warn("countMappedCanvasEnrollees: failed to decode enrollments")
+		log.WithError(err).Warnf("countMappedCanvasEnrollees: failed to fetch enrollments for course %d", rawCourseID)
 		return 0
 	}
 
@@ -972,22 +862,8 @@ func (srv *Server) countMappedCanvasEnrollees(provider *models.ProviderPlatform,
 // enrollments that have enrollment_state == "completed".
 func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform) float64 {
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	req, err := http.NewRequest("GET", coursesURL, nil)
-	if err != nil {
-		return 0
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return 0
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return 0
-	}
-	var courses []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil || len(courses) == 0 {
+	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
+	if err != nil || len(courses) == 0 {
 		return 0
 	}
 
@@ -1011,22 +887,8 @@ func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform
 				"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&state[]=completed&per_page=100",
 				provider.BaseUrl, courseID,
 			)
-			req, err := http.NewRequest("GET", enrollURL, nil)
+			enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
 			if err != nil {
-				return
-			}
-			req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-			req.Header.Add("Accept", "application/json")
-			resp, err := srv.Client.Do(req)
-			if err != nil || resp.StatusCode != http.StatusOK {
-				if resp != nil {
-					resp.Body.Close()
-				}
-				return
-			}
-			defer resp.Body.Close()
-			var enrollments []map[string]interface{}
-			if err := json.NewDecoder(resp.Body).Decode(&enrollments); err != nil {
 				return
 			}
 			var all, completed []string
@@ -1213,30 +1075,9 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 		start.Format("2006-01-02"), end.Format("2006-01-02"),
 	)
 
-	var raw []map[string]interface{}
-	for fetchURL != "" {
-		req, err := http.NewRequest("GET", fetchURL, nil)
-		if err != nil {
-			return newInternalServerServiceError(err, "failed to build canvas request")
-		}
-		req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-		req.Header.Add("Accept", "application/json")
-		resp, err := srv.Client.Do(req)
-		if err != nil {
-			return newInternalServerServiceError(err, "failed to reach canvas")
-		}
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			return newInternalServerServiceError(fmt.Errorf("canvas returned %d", resp.StatusCode), "canvas API error")
-		}
-		var page []map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
-			resp.Body.Close()
-			return newInternalServerServiceError(err, "failed to decode canvas events")
-		}
-		fetchURL = nextPageURL(resp.Header.Get("Link"))
-		resp.Body.Close()
-		raw = append(raw, page...)
+	raw, err := srv.fetchAllCanvasPages(provider, fetchURL, 0)
+	if err != nil {
+		return newInternalServerServiceError(err, "failed to fetch canvas events")
 	}
 
 	events := make([]canvasScheduleEvent, 0, len(raw))
@@ -1295,32 +1136,13 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
 	}
 
-	url := fmt.Sprintf(
+	enrollURL := fmt.Sprintf(
 		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
 		provider.BaseUrl, rawCourseID,
 	)
-	req, err := http.NewRequest("GET", url, nil)
+	canvasEnrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
 	if err != nil {
-		return newInternalServerServiceError(err, "failed to build canvas request")
-	}
-	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := srv.Client.Do(req)
-	if err != nil {
-		return newInternalServerServiceError(err, "failed to reach canvas")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return newInternalServerServiceError(
-			fmt.Errorf("canvas returned %d", resp.StatusCode),
-			"canvas API error",
-		)
-	}
-
-	var canvasEnrollments []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&canvasEnrollments); err != nil {
-		return newInternalServerServiceError(err, "failed to decode canvas enrollments")
+		return newInternalServerServiceError(err, "failed to fetch canvas enrollments")
 	}
 
 	canvasUserIDs := make([]string, 0, len(canvasEnrollments))
