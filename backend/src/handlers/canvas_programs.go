@@ -874,6 +874,7 @@ func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform
 	results := make([]courseResult, len(courses))
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	sem := make(chan struct{}, 10)
 	for i, course := range courses {
 		courseIDFloat, ok := course["id"].(float64)
 		if !ok {
@@ -881,8 +882,10 @@ func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform
 		}
 		rawCourseID := uint(courseIDFloat)
 		wg.Add(1)
+		sem <- struct{}{}
 		go func(idx int, courseID uint) {
 			defer wg.Done()
+			defer func() { <-sem }()
 			enrollURL := fmt.Sprintf(
 				"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&state[]=completed&per_page=100",
 				provider.BaseUrl, courseID,
