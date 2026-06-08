@@ -19,8 +19,7 @@ import {
     Facility,
     ServerResponseMany,
     ServerResponseOne,
-    NewUserResponse,
-    ResetPasswordResponse
+    NewUserResponse
 } from '@/types';
 import {
     BulkResetPasswordDialog,
@@ -38,7 +37,7 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { DialogFooter } from '@/components/ui/dialog';
-import { FormModal, TonedPanel } from '@/components/shared';
+import { FormModal, TonedPanel, ResetPasswordModal } from '@/components/shared';
 import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
 import {
     DropdownMenu,
@@ -175,7 +174,6 @@ export default function AdminManagement() {
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [tempPassword, setTempPassword] = useState('');
-    const [passwordCopied, setPasswordCopied] = useState(false);
     const [passwordModalContext, setPasswordModalContext] = useState<
         'create' | 'reset'
     >('reset');
@@ -354,7 +352,6 @@ export default function AdminManagement() {
             );
             setShowAddAdmin(false);
             setTempPassword(response.data.temp_password);
-            setPasswordCopied(false);
             setPasswordModalContext('create');
             setShowResetPassword(true);
             setSelectedAdmin(response.data.user);
@@ -395,23 +392,11 @@ export default function AdminManagement() {
         }
     };
 
-    const handleResetPassword = async (admin: User) => {
+    const handleResetPassword = (admin: User) => {
         setSelectedAdmin(admin);
-        const response = (await API.post<ResetPasswordResponse, object>(
-            `users/${admin.id}/student-password`,
-            {}
-        )) as ServerResponseOne<ResetPasswordResponse>;
-        if (response.success) {
-            setTempPassword(response.data.temp_password);
-            setPasswordCopied(false);
-            setPasswordModalContext('reset');
-            setShowResetPassword(true);
-            toast.success(
-                `Password reset for ${admin.name_first} ${admin.name_last}`
-            );
-        } else {
-            toast.error('Failed to reset password');
-        }
+        setTempPassword('');
+        setPasswordModalContext('reset');
+        setShowResetPassword(true);
     };
 
     const handleDelete = async () => {
@@ -431,20 +416,6 @@ export default function AdminManagement() {
             void mutateStats();
         } else {
             toast.error(response.message || 'Failed to delete administrator');
-        }
-    };
-
-    const copyToClipboard = (text: string) => {
-        if (navigator.clipboard?.writeText) {
-            navigator.clipboard
-                .writeText(text)
-                .then(() => {
-                    setPasswordCopied(true);
-                    setTimeout(() => setPasswordCopied(false), 2000);
-                })
-                .catch(() => {
-                    toast.error('Failed to copy password');
-                });
         }
     };
 
@@ -728,9 +699,7 @@ export default function AdminManagement() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() =>
-                                                    void handleResetPassword(
-                                                        admin
-                                                    )
+                                                    handleResetPassword(admin)
                                                 }
                                                 className="h-8 w-8 p-0"
                                                 title="Reset password"
@@ -1039,7 +1008,7 @@ export default function AdminManagement() {
             </FormModal>
 
             {/* Reset Password / New Password Dialog */}
-            <FormModal
+            <ResetPasswordModal
                 open={showResetPassword}
                 onOpenChange={(open) => {
                     setShowResetPassword(open);
@@ -1048,46 +1017,22 @@ export default function AdminManagement() {
                         setSelectedAdmin(null);
                     }
                 }}
-                title={
+                name={`${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
+                subject="administrator"
+                userId={
+                    passwordModalContext === 'reset'
+                        ? selectedAdmin?.id
+                        : undefined
+                }
+                presetPassword={
+                    passwordModalContext === 'create' ? tempPassword : undefined
+                }
+                resultTitle={
                     passwordModalContext === 'create'
                         ? 'New Password'
                         : 'Password Reset'
                 }
-                description={`New temporary password for ${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
-                titleClassName="text-foreground"
-            >
-                <div className="py-4">
-                    <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
-                        <div className="text-sm text-gray-600 mb-2">
-                            Temporary Password
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <code className="flex-1 text-lg font-mono font-semibold text-brand-dark select-all">
-                                {tempPassword}
-                            </code>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyToClipboard(tempPassword)}
-                            >
-                                {passwordCopied ? 'Copied!' : 'Copy'}
-                            </Button>
-                        </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-4">
-                        Share this password securely with the administrator.
-                        They will be prompted to change it on their next login.
-                    </p>
-                </div>
-                <DialogFooter>
-                    <Button
-                        onClick={() => setShowResetPassword(false)}
-                        variant="brand"
-                    >
-                        Done
-                    </Button>
-                </DialogFooter>
-            </FormModal>
+            />
 
             {/* Delete Dialog */}
             <FormModal

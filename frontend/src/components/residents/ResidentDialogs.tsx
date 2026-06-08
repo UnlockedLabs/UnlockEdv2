@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 import API from '@/api/api';
-import {
-    User,
-    Facility,
-    ValidResident,
-    ServerResponseOne,
-    ResetPasswordResponse
-} from '@/types';
+import { User, Facility, ValidResident, ServerResponseOne } from '@/types';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { FormModal, TonedPanel } from '@/components/shared';
 import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
-import { Copy, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 function useConfirmToken(resident: User, open: boolean) {
     const hasDocId = Boolean(resident.doc_id);
@@ -151,149 +145,6 @@ export function EditResidentDialog({
                     </Button>
                 </DialogFooter>
             </form>
-        </FormModal>
-    );
-}
-
-// ---------------------------------------------------------------------------
-// ResetPasswordConfirmDialog
-// ---------------------------------------------------------------------------
-
-interface ResetPasswordConfirmDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    resident: User;
-    onSuccess: (tempPassword: string) => void;
-}
-
-export function ResetPasswordConfirmDialog({
-    open,
-    onOpenChange,
-    resident,
-    onSuccess
-}: ResetPasswordConfirmDialogProps) {
-    const [loading, setLoading] = useState(false);
-
-    const handleConfirm = async () => {
-        setLoading(true);
-        const response = (await API.post<ResetPasswordResponse, object>(
-            `users/${resident.id}/student-password`,
-            {}
-        )) as ServerResponseOne<ResetPasswordResponse>;
-        setLoading(false);
-
-        if (response.success) {
-            toast.success(
-                `Password reset for ${resident.name_first} ${resident.name_last}`
-            );
-            onOpenChange(false);
-            onSuccess(response.data.temp_password);
-        } else {
-            toast.error('Failed to reset password');
-        }
-    };
-
-    return (
-        <FormModal
-            open={open}
-            onOpenChange={onOpenChange}
-            title="Reset Password"
-            description={`Are you sure you want to reset ${resident.name_first} ${resident.name_last}'s password?`}
-            titleClassName="text-foreground"
-        >
-            <div className="py-4">
-                <p className="text-sm text-gray-600">
-                    This will generate a temporary password for the resident.
-                    They will be required to change it on their next login.
-                </p>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() => void handleConfirm()}
-                    disabled={loading}
-                    variant="brand"
-                >
-                    Reset Password
-                </Button>
-            </DialogFooter>
-        </FormModal>
-    );
-}
-
-// ---------------------------------------------------------------------------
-// ResetPasswordResultDialog
-// ---------------------------------------------------------------------------
-
-interface ResetPasswordResultDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    residentName: string;
-    tempPassword: string;
-}
-
-export function ResetPasswordResultDialog({
-    open,
-    onOpenChange,
-    residentName,
-    tempPassword
-}: ResetPasswordResultDialogProps) {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = () => {
-        void navigator.clipboard.writeText(tempPassword);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    return (
-        <FormModal
-            open={open}
-            onOpenChange={onOpenChange}
-            title="Password Reset"
-            description={`New temporary password for ${residentName}`}
-            titleClassName="text-foreground"
-        >
-            <div className="py-4">
-                <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
-                    <div className="text-sm text-gray-600 mb-2">
-                        Temporary Password
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <code className="flex-1 text-lg font-mono font-semibold text-brand-dark">
-                            {tempPassword}
-                        </code>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCopy}
-                        >
-                            {copied ? (
-                                <>
-                                    <Check className="size-4 mr-2" />
-                                    Copied!
-                                </>
-                            ) : (
-                                <>
-                                    <Copy className="size-4 mr-2" />
-                                    Copy
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </div>
-                <p className="text-sm text-gray-600 mt-4">
-                    Share this password securely with the resident. They will be
-                    prompted to change it on their next login.
-                </p>
-            </div>
-            <DialogFooter>
-                <Button onClick={() => onOpenChange(false)} variant="brand">
-                    Done
-                </Button>
-            </DialogFooter>
         </FormModal>
     );
 }
