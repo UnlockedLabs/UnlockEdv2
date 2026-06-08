@@ -1157,25 +1157,36 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 		}
 	}
 
+	facilityID := srv.getQueryContext(r).FacilityID
+
 	type mappingInfo struct {
 		NameFull string
 		DocID    string
 		UserID   uint
 	}
+	type mappingRow struct {
+		ExternalUserID string
+		UserID         uint
+		NameFirst      string
+		NameLast       string
+		DocID          string
+	}
 	userMap := make(map[string]mappingInfo)
 	if len(canvasUserIDs) > 0 {
-		var mappings []models.ProviderUserMapping
-		srv.Db.Model(&models.ProviderUserMapping{}).
-			Preload("User").
-			Where("provider_platform_id = ? AND external_user_id IN ?", providerID, canvasUserIDs).
-			Find(&mappings)
-		for _, m := range mappings {
-			if m.User != nil {
-				userMap[m.ExternalUserID] = mappingInfo{
-					NameFull: m.User.NameFirst + " " + m.User.NameLast,
-					DocID:    m.User.DocID,
-					UserID:   m.UserID,
-				}
+		var mappingRows []mappingRow
+		q := srv.Db.Model(&models.ProviderUserMapping{}).
+			Select("provider_user_mappings.external_user_id, provider_user_mappings.user_id, users.name_first, users.name_last, users.doc_id").
+			Joins("JOIN users ON users.id = provider_user_mappings.user_id").
+			Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ?", providerID, canvasUserIDs)
+		if facilityID != 0 {
+			q = q.Where("users.facility_id = ?", facilityID)
+		}
+		q.Scan(&mappingRows)
+		for _, m := range mappingRows {
+			userMap[m.ExternalUserID] = mappingInfo{
+				NameFull: m.NameFirst + " " + m.NameLast,
+				DocID:    m.DocID,
+				UserID:   m.UserID,
 			}
 		}
 	}
