@@ -1,4 +1,4 @@
-import { ElementType } from 'react';
+import { ElementType, ReactNode } from 'react';
 import { InfoTooltip } from '@/components/shared';
 
 interface MetricCardProps {
@@ -6,7 +6,7 @@ interface MetricCardProps {
     value: string;
     label: string;
     sub?: string;
-    tooltip?: string;
+    tooltip?: ReactNode;
 }
 
 export function MetricCard({

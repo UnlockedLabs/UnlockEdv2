@@ -469,6 +469,19 @@ func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64,
 	return totalResidents, nil
 }
 
+func (db *DB) GetTotalAdmins(args *models.QueryContext, facilityId *uint) (int64, error) {
+	var totalAdmins int64
+	staffRoles := []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role IN ?", staffRoles)
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&totalAdmins).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "users")
+	}
+	return totalAdmins, nil
+}
+
 func (db *DB) GetLoginActivity(args *models.QueryContext, start, end *time.Time, facilityID *uint) ([]models.LoginActivity, error) {
 	acitvity := make([]models.LoginActivity, 0, 3)
 	sql := `SELECT time_interval, total_logins
