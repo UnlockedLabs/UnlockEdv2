@@ -199,7 +199,7 @@ function DeptAdminView({
                     <FacilityHealthTable rows={facilityRows} />
                 </div>
                 <div className="flex gap-6 flex-wrap lg:flex-nowrap">
-                    <div className="flex-1 lg:flex-[2] min-w-[300px]">
+                    <div className="flex-1 lg:flex-[2] min-w-75">
                         <MissingAttendanceWidget
                             items={missingAttendance}
                             isLoading={missingAttendanceLoading}
@@ -357,7 +357,7 @@ function TodaysSchedule({
                                         }
                                         className="flex items-center gap-4 flex-1 cursor-pointer min-w-0"
                                     >
-                                        <div className="flex items-center gap-2 min-w-[80px] shrink-0">
+                                        <div className="flex items-center gap-2 min-w-20 shrink-0">
                                             <Clock className="size-4 text-gray-500 dark:text-gray-400" />
                                             <span className="text-sm text-brand-dark dark:text-white">
                                                 {formatTime12h(item.start_time)}
@@ -371,7 +371,7 @@ function TodaysSchedule({
                                                 {item.instructor_name}
                                             </div>
                                         </div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[160px] hidden md:block">
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 min-w-40 hidden md:block">
                                             {item.room || '-'}
                                         </div>
                                     </div>

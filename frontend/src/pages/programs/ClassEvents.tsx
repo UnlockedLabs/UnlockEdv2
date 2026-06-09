@@ -132,7 +132,7 @@ export default function ClassEvents() {
                     >
                         <ChevronLeft className="size-4" />
                     </Button>
-                    <span className="text-lg font-semibold text-foreground min-w-[180px] text-center">
+                    <span className="text-lg font-semibold text-foreground min-w-45 text-center">
                         {formatMonthYear(currentMonth)}
                     </span>
                     <Button

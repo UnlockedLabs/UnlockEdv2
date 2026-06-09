@@ -138,13 +138,9 @@ export function DetailedAttendanceDialog({
                     <Table className="table-fixed">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[120px]">
-                                    Date
-                                </TableHead>
-                                <TableHead className="w-[100px]">
-                                    Status
-                                </TableHead>
-                                <TableHead className="w-[120px]">
+                                <TableHead className="w-30">Date</TableHead>
+                                <TableHead className="w-25">Status</TableHead>
+                                <TableHead className="w-30">
                                     Marked By
                                 </TableHead>
                                 <TableHead>Notes</TableHead>

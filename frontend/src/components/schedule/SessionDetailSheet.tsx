@@ -181,7 +181,7 @@ export function SessionDetailSheet({
     return (
         <>
             <Sheet open={!!session} onOpenChange={onClose}>
-                <SheetContent className="w-[400px] sm:w-[500px] p-0">
+                <SheetContent className="w-100 sm:w-125 p-0">
                     <SheetHeader className="sr-only">
                         <SheetTitle>Class Instance Details</SheetTitle>
                         <SheetDescription>

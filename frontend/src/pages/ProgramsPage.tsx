@@ -441,7 +441,7 @@ export default function ProgramsPage() {
                             value={sort}
                             onValueChange={(v) => setSort(v as SortOption)}
                         >
-                            <SelectTrigger className="w-[220px] focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)] cursor-default">
+                            <SelectTrigger className="w-55 focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)] cursor-default">
                                 <SelectValue placeholder="Sort By" />
                             </SelectTrigger>
                             <SelectContent>
@@ -480,7 +480,7 @@ export default function ProgramsPage() {
                                     <ChevronDown className="size-4" />
                                 </button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[240px] p-4">
+                            <PopoverContent className="w-60 p-4">
                                 <div className="mb-3 font-medium text-sm">
                                     Filter by Program Type
                                 </div>
@@ -521,7 +521,7 @@ export default function ProgramsPage() {
                                     <ChevronDown className="size-4" />
                                 </button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[240px] p-4">
+                            <PopoverContent className="w-60 p-4">
                                 <div className="mb-3 font-medium text-sm">
                                     Filter by Status
                                 </div>

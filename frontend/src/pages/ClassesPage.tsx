@@ -275,7 +275,7 @@ export default function ClassesPage() {
 
                 <div className="card-block p-4 mb-6">
                     <div className="flex gap-4 items-center flex-wrap">
-                        <div className="flex-1 relative min-w-[300px]">
+                        <div className="flex-1 relative min-w-75">
                             <Search className="input-icon-left size-5" />
                             <Input
                                 placeholder="Search classes, programs, or instructors..."
@@ -313,7 +313,7 @@ export default function ClassesPage() {
                                 value={facilityFilter}
                                 onValueChange={setFacilityFilter}
                             >
-                                <SelectTrigger className="w-[200px] overflow-hidden">
+                                <SelectTrigger className="w-50 overflow-hidden">
                                     <Filter className="size-4 mr-2 shrink-0" />
                                     <SelectValue placeholder="All Facilities" />
                                 </SelectTrigger>
@@ -336,7 +336,7 @@ export default function ClassesPage() {
                             value={programFilter}
                             onValueChange={setProgramFilter}
                         >
-                            <SelectTrigger className="w-[220px]">
+                            <SelectTrigger className="w-55">
                                 <Filter className="size-4 mr-2" />
                                 <SelectValue placeholder="All Programs" />
                             </SelectTrigger>
@@ -355,7 +355,7 @@ export default function ClassesPage() {
                             value={statusFilter}
                             onValueChange={setStatusFilter}
                         >
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-45">
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -468,7 +468,7 @@ export default function ClassesPage() {
                             className="pl-10"
                         />
                     </div>
-                    <div className="max-h-[400px] overflow-y-auto space-y-2">
+                    <div className="max-h-100 overflow-y-auto space-y-2">
                         {facilities
                             .filter(
                                 (f) =>
@@ -556,7 +556,7 @@ export default function ClassesPage() {
                             className="pl-10"
                         />
                     </div>
-                    <div className="max-h-[400px] overflow-y-auto space-y-2">
+                    <div className="max-h-100 overflow-y-auto space-y-2">
                         {!programsResp ? (
                             <p className="text-center text-gray-500 py-8">
                                 Loading programs...
@@ -689,7 +689,7 @@ function ClassRow({
                 </div>
             </td>
             <td className="px-6 py-4">
-                <div className="w-[140px]">
+                <div className="w-35">
                     <div className="mb-1">
                         <span className="text-sm text-gray-700">
                             {cls.enrolled} / {cls.capacity}

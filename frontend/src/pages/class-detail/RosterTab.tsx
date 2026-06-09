@@ -101,7 +101,10 @@ export function RosterTab({
         `/api/program-classes/${classId}/events?all=true`
     );
 
-    const enrolledRows = enrollmentResp?.data ?? [];
+    const enrolledRows = useMemo(
+        () => enrollmentResp?.data ?? [],
+        [enrollmentResp]
+    );
 
     const attendanceMap = useMemo(() => {
         return computeAttendanceByUser(eventsResp?.data ?? []);
@@ -290,7 +293,7 @@ export function RosterTab({
                                                 aria-label={`Select ${enrollment.doc_id}`}
                                                 className="shrink-0"
                                             />
-                                            <div className="w-[140px] shrink-0">
+                                            <div className="w-35 shrink-0">
                                                 <div className="text-brand-dark font-medium">
                                                     {enrollment.doc_id}
                                                 </div>
@@ -421,7 +424,7 @@ export function RosterTab({
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent
                                                     align="end"
-                                                    className="z-[100]"
+                                                    className="z-100"
                                                 >
                                                     <DropdownMenuItem
                                                         onClick={() =>

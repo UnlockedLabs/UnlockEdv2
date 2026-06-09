@@ -430,7 +430,7 @@ export function EditClassModal({
                 onOpenChange={onOpenChange}
                 title="Edit Class"
                 description="Make changes to the class details."
-                className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
+                className="sm:max-w-150 max-h-[90vh] overflow-y-auto"
             >
                 <div className="space-y-6">
                     <div className="space-y-4">

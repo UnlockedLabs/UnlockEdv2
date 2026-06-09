@@ -178,7 +178,7 @@ export function TakeAttendanceModal({
                         )}
                     </div>
 
-                    <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+                    <div className="max-h-75 overflow-y-auto space-y-2 pr-2">
                         {pastSessions.length === 0 ? (
                             <p className="text-center text-gray-500 py-6 text-sm">
                                 No past sessions in the last 30 days.
