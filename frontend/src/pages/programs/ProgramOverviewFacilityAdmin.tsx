@@ -551,78 +551,57 @@ export default function ProgramOverviewFacilityAdmin() {
                                             )}
                                         </Tooltip>
                                     </div>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span>
+                                    {!isCanvasProgram && (
+                                        <Button
+                                            variant="outline"
+                                            className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                            onClick={() => setShowEditDialog(true)}
+                                        >
+                                            <Edit className="size-4 mr-2" />
+                                            Edit Program
+                                        </Button>
+                                    )}
+                                    {!isCanvasProgram && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
                                                 <Button
-                                                    variant="outline"
-                                                    className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                                                    onClick={
-                                                        isCanvasProgram
-                                                            ? undefined
-                                                            : () =>
-                                                                  setShowEditDialog(
-                                                                      true
-                                                                  )
-                                                    }
-                                                    disabled={isCanvasProgram}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 text-gray-500 mt-5"
                                                 >
-                                                    <Edit className="size-4 mr-2" />
-                                                    Edit Program
+                                                    <MoreVertical className="size-4" />
+                                                    <span className="sr-only">
+                                                        More options
+                                                    </span>
                                                 </Button>
-                                            </span>
-                                        </TooltipTrigger>
-                                        {isCanvasProgram && (
-                                            <TooltipContent>
-                                                Managed in Canvas
-                                            </TooltipContent>
-                                        )}
-                                    </Tooltip>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-9 w-9 text-gray-500 mt-5"
-                                            >
-                                                <MoreVertical className="size-4" />
-                                                <span className="sr-only">
-                                                    More options
-                                                </span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div>
-                                                        <DropdownMenuItem
-                                                            variant="destructive"
-                                                            onClick={() =>
-                                                                setDeleteModalOpen(
-                                                                    true
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                !canDelete ||
-                                                                isCanvasProgram
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                            Delete Program
-                                                        </DropdownMenuItem>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                {(!canDelete ||
-                                                    isCanvasProgram) && (
-                                                    <TooltipContent side="left">
-                                                        {isCanvasProgram
-                                                            ? 'Managed in Canvas'
-                                                            : deleteBlockerReason ?? 'Cannot delete program'}
-                                                    </TooltipContent>
-                                                )}
-                                            </Tooltip>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div>
+                                                            <DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    setDeleteModalOpen(
+                                                                        true
+                                                                    )
+                                                                }
+                                                                disabled={!canDelete}
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                                Delete Program
+                                                            </DropdownMenuItem>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    {!canDelete && (
+                                                        <TooltipContent side="left">
+                                                            {deleteBlockerReason ?? 'Cannot delete program'}
+                                                        </TooltipContent>
+                                                    )}
+                                                </Tooltip>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
                                 </div>
                             </div>
 
@@ -890,17 +869,19 @@ function ClassesTab({
                         All classes offered under this program
                     </p>
                 </div>
-                <Button
-                    disabled={!canAddClass}
-                    onClick={() => {
-                        if (!canAddClass) return;
-                        setShowCreateForm((prev) => !prev);
-                    }}
-                    className="bg-brand-gold text-brand-dark hover:bg-brand-gold/90"
-                >
-                    <Plus className="size-5" />
-                    {showCreateForm ? 'Cancel' : 'Create New Class'}
-                </Button>
+                {!isCanvasProgram && (
+                    <Button
+                        disabled={!canAddClass}
+                        onClick={() => {
+                            if (!canAddClass) return;
+                            setShowCreateForm((prev) => !prev);
+                        }}
+                        className="bg-brand-gold text-brand-dark hover:bg-brand-gold/90"
+                    >
+                        <Plus className="size-5" />
+                        {showCreateForm ? 'Cancel' : 'Create New Class'}
+                    </Button>
+                )}
             </div>
 
             {showCreateForm && (
@@ -957,6 +938,7 @@ function ClassesTab({
                                     className="hover:bg-[#E2E7EA]/50"
                                     editableStatus={!isCanvasProgram}
                                     showEnrollment
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -981,6 +963,7 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -1005,6 +988,7 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -1029,6 +1013,7 @@ function ClassesTab({
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
                                     editableStatus={!isCanvasProgram}
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -1045,7 +1030,8 @@ function ClassRow({
     onClick,
     className,
     editableStatus,
-    showEnrollment
+    showEnrollment,
+    isCanvas
 }: {
     cls: Class;
     onOpenStatusModal: (cls: Class) => void;
@@ -1053,6 +1039,7 @@ function ClassRow({
     className?: string;
     editableStatus?: boolean;
     showEnrollment?: boolean;
+    isCanvas?: boolean;
 }) {
     const enrollPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
@@ -1142,14 +1129,16 @@ function ClassRow({
                         </div>
                     )}
                     <div className="flex items-center gap-6 text-sm">
-                        <div className="flex items-center gap-2">
-                            <span className="text-gray-600">Attendance:</span>
-                            <span className={`font-medium ${attendanceClass}`}>
-                                {attendanceRate !== null
-                                    ? `${attendanceRate}%`
-                                    : '—'}
-                            </span>
-                        </div>
+                        {!isCanvas && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-600">Attendance:</span>
+                                <span className={`font-medium ${attendanceClass}`}>
+                                    {attendanceRate !== null
+                                        ? `${attendanceRate}%`
+                                        : '—'}
+                                </span>
+                            </div>
+                        )}
                         {showCompletion && (
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-600">
@@ -1173,14 +1162,18 @@ function ClassRow({
                                 Enrollment
                             </span>
                             <span className="text-sm text-brand-dark">
-                                {cls.enrolled} / {cls.capacity}
+                                {isCanvas
+                                    ? cls.enrolled
+                                    : `${cls.enrolled} / ${cls.capacity}`}
                             </span>
                         </div>
-                        <Progress
-                            value={enrollPct}
-                            className="h-2"
-                            indicatorClassName="bg-brand"
-                        />
+                        {!isCanvas && (
+                            <Progress
+                                value={enrollPct}
+                                className="h-2"
+                                indicatorClassName="bg-brand"
+                            />
+                        )}
                     </div>
                 )}
             </div>

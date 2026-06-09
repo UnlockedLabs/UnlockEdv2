@@ -15,7 +15,26 @@ import (
 
 func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolver := FacilityAdminResolver("program_classes", "class_id")
+	resolver := func(tx *database.DB, r *http.Request) bool {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			return true
+		}
+		id, err := strconv.ParseUint(r.PathValue("class_id"), 10, 64)
+		if err != nil {
+			return false
+		}
+		// Canvas classes are virtual (no DB row) — authenticated facility admins are allowed through;
+		// the handlers themselves scope data to the user's facility via claims.
+		if uint(id) >= models.CanvasClassIDOffset {
+			return true
+		}
+		var facID uint
+		return tx.Table("program_classes").
+			Select("facility_id").
+			Where("id = ?", id).
+			Limit(1).Scan(&facID).Error == nil && claims.FacilityID == facID
+	}
 	validateFacility := func(check string) RouteResolver {
 		return func(tx *database.DB, r *http.Request) bool {
 			claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -113,7 +132,7 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	canvasClasses, err := srv.fetchCanvasClassesAllProviders()
+	canvasClasses, err := srv.fetchCanvasClassesAllProviders(facilityID)
 	if err != nil {
 		logrus.WithError(err).Warn("failed to fetch canvas classes, returning DB classes only")
 	} else {
@@ -329,10 +348,7 @@ func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *ht
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	if uint(id) >= models.CanvasClassIDOffset {
-		args := srv.getQueryContext(r)
-		return writePaginatedResponse(w, http.StatusOK,
-			[]models.AttendanceFlag{},
-			models.NewPaginationInfo(1, args.PerPage, 0))
+		return srv.handleGetCanvasAtRiskStudents(w, r, uint(id))
 	}
 	args := srv.getQueryContext(r)
 	flags, err := srv.Db.GetAttendanceFlagsForClass(id, &args)

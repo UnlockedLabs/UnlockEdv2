@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
@@ -14,7 +15,24 @@ import (
 
 func (srv *Server) registerAttendanceRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolver := FacilityAdminResolver("program_classes", "class_id")
+	resolver := func(tx *database.DB, r *http.Request) bool {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			return true
+		}
+		id, err := strconv.ParseUint(r.PathValue("class_id"), 10, 64)
+		if err != nil {
+			return false
+		}
+		if uint(id) >= models.CanvasClassIDOffset {
+			return true
+		}
+		var facID uint
+		return tx.Table("program_classes").
+			Select("facility_id").
+			Where("id = ?", id).
+			Limit(1).Scan(&facID).Error == nil && claims.FacilityID == facID
+	}
 	return []routeDef{
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
