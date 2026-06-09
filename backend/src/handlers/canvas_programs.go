@@ -249,6 +249,14 @@ func (srv *Server) fetchCanvasCalendarEvents(
 			id = models.CanvasClassIDOffset + provider.ID*1_000_000 + uint(idFloat)
 		}
 
+		// Derive the encoded class ID from context_code (e.g. "course_12345").
+		var classID uint
+		if contextCode, ok := event["context_code"].(string); ok && strings.HasPrefix(contextCode, "course_") {
+			if rawCourseID, err := strconv.ParseUint(strings.TrimPrefix(contextCode, "course_"), 10, 64); err == nil {
+				classID = models.CanvasClassIDOffset + provider.ID*1_000_000 + uint(rawCourseID)
+			}
+		}
+
 		ev := models.FacilityProgramClassEvent{
 			IsCanvasEvent: true,
 			IsCancelled:   isCancelled,
@@ -260,6 +268,7 @@ func (srv *Server) fetchCanvasCalendarEvents(
 			ClassStatus:   models.Active,
 		}
 		ev.ID = id
+		ev.ClassID = classID
 		events = append(events, ev)
 	}
 	return events, nil
@@ -268,7 +277,8 @@ func (srv *Server) fetchCanvasCalendarEvents(
 // fetchCanvasClassesAllProviders returns a ProgramClass for every Canvas course
 // across all active Canvas provider platforms. Failures per-provider are logged
 // and skipped so a single unreachable provider doesn't break the response.
-func (srv *Server) fetchCanvasClassesAllProviders() ([]models.ProgramClass, error) {
+// If facilityID is non-nil, Enrolled is scoped to that facility.
+func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.ProgramClass, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		return nil, err
@@ -307,6 +317,12 @@ func (srv *Server) fetchCanvasClassesAllProviders() ([]models.ProgramClass, erro
 					}
 				}
 			}
+			var enrolled int64
+			if facilityID != nil && *facilityID != 0 {
+				enrolled = srv.countMappedCanvasEnrolleesForFacility(&provider, rawCourseID, *facilityID)
+			} else {
+				enrolled = srv.countMappedCanvasEnrollees(&provider, rawCourseID)
+			}
 			result = append(result, models.ProgramClass{
 				DatabaseFields: models.DatabaseFields{ID: courseID},
 				ProgramID:      programID,
@@ -316,6 +332,8 @@ func (srv *Server) fetchCanvasClassesAllProviders() ([]models.ProgramClass, erro
 				StartDt:        startDt,
 				EndDt:          endDt,
 				Status:         status,
+				Enrolled:       enrolled,
+				IsCanvas:       true,
 			})
 		}
 	}
@@ -1004,6 +1022,13 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		enrolled = srv.countMappedCanvasEnrollees(provider, rawCourseID)
 	}
 
+	var facility *models.Facility
+	if facilityID != 0 {
+		if f, err := srv.Db.GetFacilityByID(int(facilityID)); err == nil {
+			facility = f
+		}
+	}
+
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, []uint{rawCourseID})
 	var events []models.ProgramClassEvent
 	if ev, ok := scheduleEvents[rawCourseID]; ok {
@@ -1015,6 +1040,8 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	cls := models.ProgramClass{
 		DatabaseFields: models.DatabaseFields{ID: classID},
 		ProgramID:      programID,
+		FacilityID:     facilityID,
+		Facility:       facility,
 		Name:           name,
 		Description:    description,
 		StartDt:        startDt,
@@ -1228,4 +1255,139 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 	args := srv.getQueryContext(r)
 	args.Total = int64(len(rows))
 	return writePaginatedResponse(w, http.StatusOK, rows, args.IntoMeta())
+}
+
+// handleGetCanvasAtRiskStudents calls the Canvas student_summaries analytics
+// endpoint and returns AttendanceFlag entries for students showing low engagement.
+// A student is flagged if they trigger at least two of:
+//   - page_views == 0 (never logged in)
+//   - participations == 0 with assignments present (no submissions)
+//   - missing / total > 0.30 (>30 % of assignments not submitted)
+func (srv *Server) handleGetCanvasAtRiskStudents(w http.ResponseWriter, r *http.Request, classID uint) error {
+	providerID, rawCourseID := decodeCanvasClassID(classID)
+	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if provider.Type != models.CanvasOSS && provider.Type != models.CanvasCloud {
+		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
+	}
+
+	summaryURL := fmt.Sprintf("%s/api/v1/courses/%d/analytics/student_summaries", provider.BaseUrl, rawCourseID)
+	summaries, err := srv.fetchAllCanvasPages(provider, summaryURL, 0)
+	if err != nil {
+		// Analytics may not be enabled on this Canvas instance — return empty rather than error.
+		log.WithError(err).Warnf("canvas student_summaries unavailable for course %d, returning empty at-risk list", rawCourseID)
+		args := srv.getQueryContext(r)
+		args.Total = 0
+		return writePaginatedResponse(w, http.StatusOK, []models.AttendanceFlag{}, args.IntoMeta())
+	}
+
+	canvasUserIDs := make([]string, 0, len(summaries))
+	for _, s := range summaries {
+		if id, ok := s["id"].(float64); ok {
+			canvasUserIDs = append(canvasUserIDs, fmt.Sprintf("%d", int(id)))
+		}
+	}
+
+	type mappingRow struct {
+		ExternalUserID string
+		UserID         uint
+		NameFirst      string
+		NameLast       string
+		DocID          string
+	}
+	userMap := make(map[string]mappingRow, len(canvasUserIDs))
+	if len(canvasUserIDs) > 0 {
+		var rows []mappingRow
+		facilityID := srv.getQueryContext(r).FacilityID
+		q := srv.Db.Model(&models.ProviderUserMapping{}).
+			Select("provider_user_mappings.external_user_id, provider_user_mappings.user_id, users.name_first, users.name_last, users.doc_id").
+			Joins("JOIN users ON users.id = provider_user_mappings.user_id").
+			Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ?", providerID, canvasUserIDs)
+		if facilityID != 0 {
+			q = q.Where("users.facility_id = ?", facilityID)
+		}
+		q.Scan(&rows)
+		for _, m := range rows {
+			userMap[m.ExternalUserID] = m
+		}
+	}
+
+	flags := make([]models.AttendanceFlag, 0)
+	for _, s := range summaries {
+		canvasIDStr := ""
+		if id, ok := s["id"].(float64); ok {
+			canvasIDStr = fmt.Sprintf("%d", int(id))
+		}
+		info, matched := userMap[canvasIDStr]
+		if !matched {
+			continue
+		}
+
+		pageViews, participations := 0, 0
+		if v, ok := s["page_views"].(float64); ok {
+			pageViews = int(v)
+		}
+		if v, ok := s["participations"].(float64); ok {
+			participations = int(v)
+		}
+
+		total, missing, onTime, late := 0, 0, 0, 0
+		if td, ok := s["tardiness_breakdown"].(map[string]interface{}); ok {
+			if v, ok := td["total"].(float64); ok {
+				total = int(v)
+			}
+			if v, ok := td["missing"].(float64); ok {
+				missing = int(v)
+			}
+			if v, ok := td["on_time"].(float64); ok {
+				onTime = int(v)
+			}
+			if v, ok := td["late"].(float64); ok {
+				late = int(v)
+			}
+		}
+
+		riskScore := 0
+		if pageViews == 0 {
+			riskScore++
+		}
+		if total > 0 && participations == 0 {
+			riskScore++
+		}
+		if total > 0 && float64(missing)/float64(total) > 0.30 {
+			riskScore++
+		}
+		if riskScore < 2 {
+			continue
+		}
+
+		submitted := onTime + late
+		attendanceRate := 0
+		if total > 0 {
+			attendanceRate = submitted * 100 / total
+		}
+		flagType := models.MultipleAbsences
+		if pageViews == 0 || participations == 0 {
+			flagType = models.NoAttendance
+		}
+
+		flags = append(flags, models.AttendanceFlag{
+			NameFirst:           info.NameFirst,
+			NameLast:            info.NameLast,
+			DocID:               info.DocID,
+			FlagType:            flagType,
+			UserID:              info.UserID,
+			TotalSessions:       total,
+			AttendedSessions:    submitted,
+			MissedSessions:      missing,
+			AttendanceRate:      attendanceRate,
+			ConsecutiveAbsences: 0,
+		})
+	}
+
+	args := srv.getQueryContext(r)
+	args.Total = int64(len(flags))
+	return writePaginatedResponse(w, http.StatusOK, flags, args.IntoMeta())
 }
