@@ -702,20 +702,24 @@ function ClassRow({
                 <div className="w-[140px]">
                     <div className="mb-1">
                         <span className="text-sm text-gray-700">
-                            {cls.enrolled} / {cls.capacity}
+                            {isCanvas
+                                ? cls.enrolled
+                                : `${cls.enrolled} / ${cls.capacity}`}
                         </span>
                     </div>
-                    <Progress
-                        value={enrollPct}
-                        className="h-1.5"
-                        indicatorClassName={cn(
-                            enrollPct >= 80
-                                ? 'bg-brand'
-                                : enrollPct >= 50
-                                  ? 'bg-brand-gold'
-                                  : 'bg-gray-400'
-                        )}
-                    />
+                    {!isCanvas && (
+                        <Progress
+                            value={enrollPct}
+                            className="h-1.5"
+                            indicatorClassName={cn(
+                                enrollPct >= 80
+                                    ? 'bg-brand'
+                                    : enrollPct >= 50
+                                      ? 'bg-brand-gold'
+                                      : 'bg-gray-400'
+                            )}
+                        />
+                    )}
                 </div>
             </td>
             <td className="px-6 py-4">
