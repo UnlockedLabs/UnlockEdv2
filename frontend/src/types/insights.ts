@@ -213,3 +213,31 @@ export interface FacilityEngagement {
 }
 
 export type InsightsRangeKey = '7D' | '30D' | '90D' | 'YTD' | 'Custom';
+
+export interface RepeatEngagement {
+    once: number;
+    two_to_four: number;
+    five_plus: number;
+}
+
+export interface CategoryViews {
+    category: string;
+    views: number;
+}
+
+export interface KCContentRow {
+    title: string;
+    visits: number;
+    change: number;
+}
+
+export interface KnowledgeCenterMetrics {
+    total_interactions: number;
+    total_interactions_change: number;
+    unique_residents: number;
+    avg_session_minutes: number;
+    repeat_engagement: RepeatEngagement;
+    library_views_by_category: CategoryViews[];
+    top_libraries: KCContentRow[];
+    top_videos: KCContentRow[];
+}

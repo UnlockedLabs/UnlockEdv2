@@ -21,6 +21,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		newAdminRoute("GET /api/department-metrics", srv.handleDepartmentMetrics),
 		newAdminRoute("GET /api/department-metrics/login-trend", srv.handleDepartmentLoginTrend),
 		newAdminRoute("GET /api/department-metrics/facility-comparison", srv.handleFacilityEngagementComparison),
+		newAdminRoute("GET /api/department-metrics/knowledge-center", srv.handleKnowledgeCenterMetrics),
 		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
 		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
@@ -278,23 +279,28 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 	return writeJsonResponse(w, http.StatusOK, cachedData)
 }
 
-func (srv *Server) handleDepartmentLoginTrend(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	facility := r.URL.Query().Get("facility")
-	var facilityID *uint
+func resolveFacilityFilter(claims *Claims, facility string, ownFacilityID uint) (*uint, error) {
 	switch {
 	case facility == "all" && claims.canSwitchFacility():
-		facilityID = nil
+		return nil, nil
 	case facility != "" && facility != "all" && claims.canSwitchFacility():
 		facilityIdInt, err := strconv.Atoi(facility)
 		if err != nil {
-			return newInvalidIdServiceError(err, "facility")
+			return nil, newInvalidIdServiceError(err, "facility")
 		}
 		ref := uint(facilityIdInt)
-		facilityID = &ref
+		return &ref, nil
 	default:
-		facilityID = &args.FacilityID
+		return &ownFacilityID, nil
+	}
+}
+
+func (srv *Server) handleDepartmentLoginTrend(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityID, err := resolveFacilityFilter(claims, r.URL.Query().Get("facility"), args.FacilityID)
+	if err != nil {
+		return err
 	}
 	start, end, _, err := parseDateRangeRequest(r)
 	if err != nil {
@@ -305,6 +311,54 @@ func (srv *Server) handleDepartmentLoginTrend(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, trend)
+}
+
+func (srv *Server) handleKnowledgeCenterMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityID, err := resolveFacilityFilter(claims, r.URL.Query().Get("facility"), args.FacilityID)
+	if err != nil {
+		return err
+	}
+	start, end, _, err := parseDateRangeRequest(r)
+	if err != nil {
+		return err
+	}
+	total, unique, totalChange, err := srv.Db.GetKCInteractionStats(&args, start, end, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	avgSession, err := srv.Db.GetKCAvgSessionMinutes(&args, start, end, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	repeat, err := srv.Db.GetKCRepeatEngagement(&args, start, end, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	categories, err := srv.Db.GetKCLibraryViewsByCategory(&args, start, end, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	topLibraries, err := srv.Db.GetKCTopLibraries(&args, start, end, facilityID, 8)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	topVideos, err := srv.Db.GetKCTopVideos(&args, start, end, facilityID, 8)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	metrics := models.KnowledgeCenterMetrics{
+		TotalInteractions:       total,
+		TotalInteractionsChange: totalChange,
+		UniqueResidents:         unique,
+		AvgSessionMinutes:       avgSession,
+		RepeatEngagement:        repeat,
+		LibraryViewsByCategory:  categories,
+		TopLibraries:            topLibraries,
+		TopVideos:               topVideos,
+	}
+	return writeJsonResponse(w, http.StatusOK, metrics)
 }
 
 func (srv *Server) handleFacilityEngagementComparison(w http.ResponseWriter, r *http.Request, log sLog) error {

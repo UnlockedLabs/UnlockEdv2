@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import LoginTrendChart from '@/components/charts/LoginTrendChart';
 import { MetricCard } from './MetricCard';
-import { InsightsDateParams } from './insightsRange';
+import { InsightsDateParams, priorParams } from './insightsRange';
 
 interface OverviewTabProps {
     dateParams: InsightsDateParams;
@@ -57,6 +57,14 @@ function ratio(part: number, whole: number): number {
     return whole > 0 ? Math.round((part / whole) * 10) / 10 : 0;
 }
 
+function changePct(current: number, prior: number): number {
+    return prior > 0 ? Math.round(((current - prior) / prior) * 100) : 0;
+}
+
+function deltaLabel(change: number): string {
+    return `${change >= 0 ? '+' : ''}${change}% vs prior period`;
+}
+
 export default function OverviewTab({
     dateParams,
     selectedFacility,
@@ -80,6 +88,13 @@ export default function OverviewTab({
     const { data: trendResp, mutate: mutateTrend } = useSWR<
         ServerResponseOne<DailyLoginCount[]>
     >(`/api/department-metrics/login-trend?${query}`);
+
+    const prior = priorParams(dateParams);
+    const { data: priorMetricsResp, mutate: mutatePriorMetrics } = useSWR<
+        ServerResponseOne<DepartmentMetrics>
+    >(
+        `/api/department-metrics?facility=${selectedFacility}&start_date=${prior.start_date}&end_date=${prior.end_date}`
+    );
 
     const { data: comparisonResp, mutate: mutateComparison } = useSWR<
         ServerResponseOne<FacilityEngagement[]>
@@ -121,7 +136,8 @@ export default function OverviewTab({
             await Promise.all([
                 mutateMetrics(),
                 mutateTrend(),
-                mutateComparison()
+                mutateComparison(),
+                mutatePriorMetrics()
             ]);
         } finally {
             setIsRefreshing(false);
@@ -155,6 +171,10 @@ export default function OverviewTab({
         ? new Date(metricsResp.data.last_cache).toLocaleString()
         : '';
 
+    const newUsersChange = changePct(
+        metrics.new_residents_added,
+        priorMetricsResp?.data.data.new_residents_added ?? 0
+    );
     return (
         <div className="space-y-6">
             <div>
@@ -221,7 +241,7 @@ export default function OverviewTab({
                         icon={UserPlusIcon}
                         value={metrics.new_residents_added.toLocaleString()}
                         label="New Residents Added"
-                        sub="in selected range"
+                        sub={deltaLabel(newUsersChange)}
                         tooltip={
                             <>
                                 Residents whose account was <b>first created</b>{' '}
