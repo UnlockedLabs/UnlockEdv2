@@ -271,7 +271,7 @@ export function StatCards({
     const spotsAvailable = cls.capacity - cls.enrolled;
 
     return (
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className={`grid ${isCanvasClass ? 'grid-cols-2' : 'grid-cols-3'} gap-6 mb-6`}>
             <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Users className="size-5 text-brand shrink-0" />
@@ -299,23 +299,25 @@ export function StatCards({
                 )}
             </div>
 
-            <div className="card-block p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Calendar className="size-5 text-brand shrink-0" />
-                    <h3 className="text-brand-dark truncate">Attendance</h3>
+            {!isCanvasClass && (
+                <div className="card-block p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Calendar className="size-5 text-brand shrink-0" />
+                        <h3 className="text-brand-dark truncate">Attendance</h3>
+                    </div>
+                    <div className="text-3xl text-brand-dark mb-2">{avgRate}%</div>
+                    <Progress
+                        value={avgRate}
+                        className="h-2 mb-3"
+                        indicatorClassName={
+                            avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
+                        }
+                    />
+                    <div className="text-sm text-gray-600">
+                        Average attendance rate
+                    </div>
                 </div>
-                <div className="text-3xl text-brand-dark mb-2">{avgRate}%</div>
-                <Progress
-                    value={avgRate}
-                    className="h-2 mb-3"
-                    indicatorClassName={
-                        avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
-                    }
-                />
-                <div className="text-sm text-gray-600">
-                    Average attendance rate
-                </div>
-            </div>
+            )}
 
             <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">

@@ -306,29 +306,31 @@ export function RosterTab({
                                                     {enrollment.name_full}
                                                 </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <span className="text-sm text-gray-600">
-                                                        Attendance:
-                                                    </span>
-                                                    <span className="text-sm text-brand-dark font-medium">
-                                                        {stats.rate}%
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        ({stats.attended}/
-                                                        {stats.total} sessions)
-                                                    </span>
+                                            {!isCanvasClass && (
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className="text-sm text-gray-600">
+                                                            Attendance:
+                                                        </span>
+                                                        <span className="text-sm text-brand-dark font-medium">
+                                                            {stats.rate}%
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            ({stats.attended}/
+                                                            {stats.total} sessions)
+                                                        </span>
+                                                    </div>
+                                                    <Progress
+                                                        value={stats.rate}
+                                                        className="h-2 w-64"
+                                                        indicatorClassName={
+                                                            needsSupport
+                                                                ? 'bg-brand-gold'
+                                                                : 'bg-brand'
+                                                        }
+                                                    />
                                                 </div>
-                                                <Progress
-                                                    value={stats.rate}
-                                                    className="h-2 w-64"
-                                                    indicatorClassName={
-                                                        needsSupport
-                                                            ? 'bg-brand-gold'
-                                                            : 'bg-brand'
-                                                    }
-                                                />
-                                            </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="text-sm text-gray-600 inline-flex items-center gap-1">

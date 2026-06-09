@@ -71,13 +71,20 @@ export default function ClassDetailPage() {
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
+    const cls = classResp?.data;
+    const isCanvasClass = !!cls?.is_canvas;
+
     const { mutate: mutateEvents } = useSWR<ServerResponseMany<{ id: number }>>(
         class_id ? `/api/program-classes/${class_id}/events?all=true` : null
     );
 
     const { data: rateResp } = useSWR<
         ServerResponseOne<{ attendance_rate: number }>
-    >(class_id ? `/api/program-classes/${class_id}/attendance-rate` : null);
+    >(
+        !isCanvasClass && class_id
+            ? `/api/program-classes/${class_id}/attendance-rate`
+            : null
+    );
 
     const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
         class_id ? `/api/program-classes/${class_id}/attendance-flags` : null
@@ -98,9 +105,6 @@ export default function ClassDetailPage() {
     const canDelete = deleteCheckResp?.data?.can_delete ?? false;
     const deleteBlockers = deleteCheckResp?.data?.blockers;
     const deleteBlockerReason = getDeleteBlockerReason(deleteBlockers);
-
-    const cls = classResp?.data;
-    const isCanvasClass = !!cls?.is_canvas;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
     const flaggedUserIds = useMemo(() => {
@@ -312,13 +316,7 @@ export default function ClassDetailPage() {
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
-                        {isCanvasClass ? (
-                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
-                                At-risk tracking is managed in Canvas.
-                            </div>
-                        ) : (
-                            <SupportTab classId={cls.id} />
-                        )}
+                        <SupportTab classId={cls.id} isCanvasClass={isCanvasClass} />
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">
