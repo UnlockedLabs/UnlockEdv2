@@ -100,7 +100,7 @@ export default function ClassDetailPage() {
     const deleteBlockerReason = getDeleteBlockerReason(deleteBlockers);
 
     const cls = classResp?.data;
-    const isCanvasClass = parseInt(class_id ?? '0') >= 100_000_000;
+    const isCanvasClass = !!cls?.is_canvas;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
     const flaggedUserIds = useMemo(() => {
@@ -274,6 +274,7 @@ export default function ClassDetailPage() {
                             capacity={cls.capacity}
                             enrolled={cls.enrolled}
                             flaggedUserIds={flaggedUserIds}
+                            isCanvasClass={isCanvasClass}
                             onClassMutate={() => {
                                 void mutate();
                                 void mutateDeleteCheck();

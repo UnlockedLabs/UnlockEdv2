@@ -1021,6 +1021,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		EndDt:          endDt,
 		Status:         status,
 		Enrolled:       enrolled,
+		IsCanvas:       true,
 		Program: &models.Program{
 			DatabaseFields: models.DatabaseFields{ID: programID},
 			Name:           "College - " + provider.Name,
