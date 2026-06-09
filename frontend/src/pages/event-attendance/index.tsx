@@ -534,7 +534,7 @@ function AttendanceRowCard({
     return (
         <div className="px-4 sm:px-6 py-5 hover:bg-surface-hover/30 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                <div className="min-w-[70px] sm:min-w-[100px] shrink-0">
+                <div className="min-w-[70px] sm:min-w-25 shrink-0">
                     <div className="text-brand-dark font-medium">
                         {row.doc_id}
                     </div>
@@ -720,7 +720,7 @@ function CollapsibleNoteField({
                 }
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="min-h-[80px] text-sm"
+                className="min-h-20 text-sm"
             />
         </div>
     );

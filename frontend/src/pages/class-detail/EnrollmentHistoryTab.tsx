@@ -169,7 +169,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                         >
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex items-start gap-3 sm:gap-6 flex-1">
-                                    <div className="w-[160px] shrink-0">
+                                    <div className="w-40 shrink-0">
                                         <div className="text-brand-dark font-medium truncate">
                                             {enrollment.doc_id}
                                         </div>

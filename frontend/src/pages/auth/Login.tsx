@@ -12,11 +12,11 @@ export default function Login() {
         <div className="min-h-screen flex">
             <div className="hidden lg:flex lg:w-[55%] flex-col justify-between bg-[#2C3622] text-white p-14 relative overflow-hidden">
                 <div
-                    className="absolute top-0 left-0 w-[520px] h-[520px] rounded-full opacity-[0.07] -translate-x-1/3 -translate-y-1/3 pointer-events-none"
+                    className="absolute top-0 left-0 w-130 h-130 rounded-full opacity-[0.07] -translate-x-1/3 -translate-y-1/3 pointer-events-none"
                     style={{ backgroundColor: BRAND_GOLD }}
                 />
                 <div
-                    className="absolute bottom-0 right-0 w-[420px] h-[420px] rounded-full opacity-[0.07] translate-x-1/3 translate-y-1/3 pointer-events-none"
+                    className="absolute bottom-0 right-0 w-105 h-105 rounded-full opacity-[0.07] translate-x-1/3 translate-y-1/3 pointer-events-none"
                     style={{ backgroundColor: BRAND_GOLD }}
                 />
 

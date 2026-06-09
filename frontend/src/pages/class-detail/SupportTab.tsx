@@ -49,7 +49,7 @@ export function SupportTab({ classId, isCanvasClass = false }: SupportTabProps) 
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-6 flex-1">
-                                    <div className="w-[160px] shrink-0">
+                                    <div className="w-40 shrink-0">
                                         <div className="text-brand-dark font-medium">
                                             {flag.doc_id}
                                         </div>

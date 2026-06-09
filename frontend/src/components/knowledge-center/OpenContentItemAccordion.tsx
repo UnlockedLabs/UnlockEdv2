@@ -102,7 +102,7 @@ export default function OpenContentItemAccordion({
                     <div
                         className={`transition-[max-height] duration-300 ${
                             activeKey === title
-                                ? 'overflow-visible max-h-[800px]'
+                                ? 'overflow-visible max-h-200'
                                 : 'max-h-0 overflow-hidden'
                         }`}
                     >

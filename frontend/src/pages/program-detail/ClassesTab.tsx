@@ -66,7 +66,7 @@ function ClassRow({
                         <span className="font-medium text-brand">--</span>
                     </div>
                 </div>
-                <div className="ml-6 min-w-[200px]">
+                <div className="ml-6 min-w-50">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-600">
                             Enrollment
