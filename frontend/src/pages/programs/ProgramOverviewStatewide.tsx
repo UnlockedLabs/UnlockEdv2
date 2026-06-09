@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
     ArrowRight,
+    BookOpen,
     ChevronDown,
     ChevronUp,
     MoreVertical,
@@ -488,6 +489,17 @@ export default function ProgramOverviewStatewide() {
 
     return (
         <div className="flex-1 bg-surface-hover">
+            {isCanvasProgram && (
+                <div className="bg-blue-50 border-b border-blue-200">
+                    <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
+                        <BookOpen className="size-4 shrink-0" />
+                        <span>
+                            This program is managed externally in Canvas. Data
+                            is read-only.
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <Breadcrumbs items={breadcrumbs} className="mb-6" />
 
