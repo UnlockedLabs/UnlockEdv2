@@ -346,7 +346,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <div className="min-w-[500px] border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="min-w-125 border border-gray-200 rounded-lg overflow-hidden">
                             <div className="grid grid-cols-7 bg-gray-50">
                                 {DAY_HEADERS.map((d) => (
                                     <div
@@ -386,7 +386,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                                                         handleDayClick(day);
                                                 }}
                                                 className={cn(
-                                                    'min-h-[80px] p-2 border-t border-r border-gray-200 last:border-r-0 transition-all',
+                                                    'min-h-20 p-2 border-t border-r border-gray-200 last:border-r-0 transition-all',
                                                     !day.isCurrentMonth &&
                                                         'bg-gray-50',
                                                     day.isToday && 'bg-blue-50',

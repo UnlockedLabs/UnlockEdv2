@@ -175,7 +175,7 @@ export default function EditProgramDialog({
             onOpenChange={onOpenChange}
             title="Edit Program"
             description="Make changes to the program details and categorization."
-            className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto"
+            className="sm:max-w-175 max-h-[90vh] overflow-y-auto"
             titleClassName="text-foreground"
         >
             <Form {...form}>
