@@ -34,6 +34,21 @@ function daysAgo(end: Date, count: number): Date {
     return start;
 }
 
+export function priorParams(params: InsightsDateParams): InsightsDateParams {
+    const start = new Date(`${params.start_date}T00:00:00`);
+    const end = new Date(`${params.end_date}T00:00:00`);
+    const durationDays =
+        Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+    const priorEnd = new Date(start);
+    priorEnd.setDate(start.getDate() - 1);
+    const priorStart = new Date(start);
+    priorStart.setDate(start.getDate() - durationDays);
+    return {
+        start_date: formatDate(priorStart),
+        end_date: formatDate(priorEnd)
+    };
+}
+
 export function rangeToParams(
     range: InsightsRangeKey,
     customFrom: string,
