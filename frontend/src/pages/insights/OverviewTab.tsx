@@ -4,7 +4,8 @@ import {
     UsersIcon,
     UserPlusIcon,
     ArrowTrendingUpIcon,
-    ChartBarIcon
+    ChartBarIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { ArrowsUpDownIcon } from '@heroicons/react/24/solid';
 import {
@@ -13,6 +14,8 @@ import {
     FacilityEngagement,
     ServerResponseOne
 } from '@/types';
+import API from '@/api/api';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
     Table,
@@ -62,18 +65,23 @@ export default function OverviewTab({
 }: OverviewTabProps) {
     const [sortKey, setSortKey] = useState<SortKey>('activation');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const query = `facility=${selectedFacility}&start_date=${dateParams.start_date}&end_date=${dateParams.end_date}`;
 
-    const { data: metricsResp, isLoading: metricsLoading } = useSWR<
-        ServerResponseOne<DepartmentMetrics>
-    >(`/api/department-metrics?${query}`);
-
-    const { data: trendResp } = useSWR<ServerResponseOne<DailyLoginCount[]>>(
-        `/api/department-metrics/login-trend?${query}`
+    const {
+        data: metricsResp,
+        isLoading: metricsLoading,
+        mutate: mutateMetrics
+    } = useSWR<ServerResponseOne<DepartmentMetrics>>(
+        `/api/department-metrics?${query}`
     );
 
-    const { data: comparisonResp } = useSWR<
+    const { data: trendResp, mutate: mutateTrend } = useSWR<
+        ServerResponseOne<DailyLoginCount[]>
+    >(`/api/department-metrics/login-trend?${query}`);
+
+    const { data: comparisonResp, mutate: mutateComparison } = useSWR<
         ServerResponseOne<FacilityEngagement[]>
     >(
         canSwitch
@@ -106,6 +114,20 @@ export default function OverviewTab({
         }
     };
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            await API.get(`department-metrics?${query}&reset=true`);
+            await Promise.all([
+                mutateMetrics(),
+                mutateTrend(),
+                mutateComparison()
+            ]);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     if (metricsLoading) {
         return (
             <div className="space-y-6">
@@ -129,51 +151,111 @@ export default function OverviewTab({
     }
 
     const avgPerActive = ratio(metrics.total_logins, metrics.active_users);
+    const lastUpdated = metricsResp?.data.last_cache
+        ? new Date(metricsResp.data.last_cache).toLocaleString()
+        : '';
 
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-brand-dark dark:text-white mb-4">
-                    At a glance
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
-                    {rangeLabel}
-                </p>
+                <div className="flex items-start justify-between mb-4">
+                    <div>
+                        <h2 className="text-brand-dark dark:text-white">
+                            At a glance
+                        </h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {rangeLabel}
+                        </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void handleRefresh()}
+                            disabled={isRefreshing}
+                            className="gap-1.5"
+                        >
+                            <ArrowPathIcon
+                                className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                            />
+                            Refresh
+                        </Button>
+                        {lastUpdated && (
+                            <span className="text-xs text-muted-foreground">
+                                Updated {lastUpdated}
+                            </span>
+                        )}
+                    </div>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <MetricCard
                         icon={UsersIcon}
                         value={metrics.total_residents.toLocaleString()}
-                        label="Registered Users"
-                        sub={`${metrics.percent_active}% activation rate`}
-                        tooltip="Total resident accounts created in the system."
+                        label="Registered Residents"
+                        sub={`${metrics.total_admins.toLocaleString()} staff ${
+                            metrics.total_admins === 1 ? 'account' : 'accounts'
+                        } · not counted`}
+                        tooltip={
+                            <>
+                                <b>Total residents</b> who have a platform
+                                account. Staff accounts are not included in this
+                                total, but are shown below.
+                            </>
+                        }
                     />
                     <MetricCard
                         icon={UsersIcon}
                         value={metrics.active_users.toLocaleString()}
-                        label="Active Users"
+                        label="Active Residents"
                         sub={`${metrics.percent_active}% of registered`}
-                        tooltip="Residents who logged in at least once in the selected range."
+                        tooltip={
+                            <>
+                                Registered residents who{' '}
+                                <b>logged in at least once</b>
+                                in the range. <b>% of Registered</b> is active
+                                residents &divide; registered residents
+                            </>
+                        }
                     />
                     <MetricCard
                         icon={UserPlusIcon}
                         value={metrics.new_residents_added.toLocaleString()}
-                        label="New Users Added"
+                        label="New Residents Added"
                         sub="in selected range"
-                        tooltip="New resident accounts created in the selected date range."
+                        tooltip={
+                            <>
+                                Residents whose account was <b>first created</b>{' '}
+                                within the range. The <b>+12%</b> compares
+                                against the prior window.
+                            </>
+                        }
                     />
                     <MetricCard
                         icon={ArrowTrendingUpIcon}
                         value={metrics.total_logins.toLocaleString()}
-                        label="Total Logins"
+                        label="Total Resident Logins"
                         sub={`mean ${metrics.logins_per_day.toLocaleString()} / day`}
-                        tooltip="Total login events across all residents in the selected range."
+                        tooltip={
+                            <>
+                                Every resident <b>login event</b> in the range
+                                (5 logins by one person count as 5).{' '}
+                                <b>Staff logins</b> excluded.
+                            </>
+                        }
                     />
                     <MetricCard
                         icon={ChartBarIcon}
                         value={String(avgPerActive)}
                         label="Avg Logins / Active User"
                         sub="over selected range"
-                        tooltip="Average login count per active resident. Excludes residents with zero logins."
+                        tooltip={
+                            <>
+                                Total resident logins &divide; active residents
+                                (<b>18,210 &divide; 1,552</b>). Divided by{' '}
+                                <b>active</b>, not registered, so inactive
+                                accounts don't dilute it.
+                            </>
+                        }
                     />
                 </div>
             </div>

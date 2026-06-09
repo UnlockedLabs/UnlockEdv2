@@ -222,6 +222,10 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
+		totalAdmins, err := srv.Db.GetTotalAdmins(&args, facilityId)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
 		newResidentsAdded, err := srv.Db.NewUsersInTimePeriod(&args, start, end, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
@@ -244,6 +248,7 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 			PercentActive:     percentActive,
 			PercentInactive:   percentInactive,
 			TotalResidents:    totalResidents,
+			TotalAdmins:       totalAdmins,
 			Facility:          facilityName,
 			NewResidentsAdded: newResidentsAdded,
 			PeakLoginTimes:    loginTimes,
