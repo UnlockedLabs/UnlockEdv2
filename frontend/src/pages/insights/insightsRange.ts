@@ -3,6 +3,16 @@ import { InsightsRangeKey } from '@/types';
 export interface InsightsDateParams {
     start_date: string;
     end_date: string;
+    // Preset key (e.g. "30d") sent for non-custom ranges so the backend resolves
+    // the window against the server clock. Omitted for custom ranges.
+    range?: string;
+}
+
+// Builds the date portion of a metrics query string. Presets include the range
+// key (backend resolves the window); custom ranges send explicit dates.
+export function dateQuery(params: InsightsDateParams): string {
+    const base = `start_date=${params.start_date}&end_date=${params.end_date}`;
+    return params.range ? `${base}&range=${params.range}` : base;
 }
 
 export const RANGE_OPTIONS: InsightsRangeKey[] = [
@@ -74,5 +84,9 @@ export function rangeToParams(
             start = daysAgo(end, 29);
             break;
     }
-    return { start_date: formatDate(start), end_date: formatDate(end) };
+    return {
+        start_date: formatDate(start),
+        end_date: formatDate(end),
+        range: range.toLowerCase()
+    };
 }

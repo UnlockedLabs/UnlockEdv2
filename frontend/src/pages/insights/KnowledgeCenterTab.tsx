@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { InfoTooltip } from '@/components/shared';
 import { MetricCard } from './MetricCard';
 import { KCContentTable } from './KCContentTable';
-import { InsightsDateParams } from './insightsRange';
+import { InsightsDateParams, dateQuery } from './insightsRange';
 
 interface KnowledgeCenterTabProps {
     dateParams: InsightsDateParams;
@@ -38,7 +38,7 @@ export default function KnowledgeCenterTab({
     selectedFacility,
     rangeLabel
 }: KnowledgeCenterTabProps) {
-    const query = `facility=${selectedFacility}&start_date=${dateParams.start_date}&end_date=${dateParams.end_date}`;
+    const query = `facility=${selectedFacility}&${dateQuery(dateParams)}`;
     const { data, isLoading } = useSWR<
         ServerResponseOne<KnowledgeCenterMetrics>
     >(`/api/department-metrics/knowledge-center?${query}`);
