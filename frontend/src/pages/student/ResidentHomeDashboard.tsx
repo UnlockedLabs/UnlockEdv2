@@ -25,12 +25,11 @@ import DiscoverContentSection, {
 } from '@/components/dashboard/DiscoverContentSection';
 import { IncompleteEntryReminder } from '@/components/dashboard/IncompleteEntryReminder';
 import UpcomingClassSessionCard from '@/components/dashboard/UpcomingClassSessionCard';
-import { getDemoCalendarEvents } from '@/pages/learning/residentProgramsDemoData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useTourContext } from '@/contexts/TourContext';
-import { targetToStepIndexMap } from '@/components/UnlockEdTour';
+import { useTourContext } from '@/contexts/useTourContext';
+import { targetToStepIndexMap } from '@/contexts/tourState';
 import {
     DIGITAL_TRANSCRIPT_BASE,
     DIGITAL_TRANSCRIPT_ENTRY_PATH,
@@ -333,10 +332,9 @@ export function ResidentHomeDashboard({
     );
 
     const calendarEvents = calendarResp?.data ?? [];
-    const usingCalendarPreview = !calendarLoading && calendarEvents.length === 0;
     const calendarEventsForDisplay = useMemo(
-        () => (usingCalendarPreview ? getDemoCalendarEvents() : calendarEvents),
-        [usingCalendarPreview, calendarEvents]
+        () => calendarEvents,
+        [calendarEvents]
     );
 
     const incompleteEntry = useMemo(() => {

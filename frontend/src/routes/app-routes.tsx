@@ -24,6 +24,8 @@ import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
 import FeatureControl from '@/pages/admin/FeatureControl';
+import DigitalTranscriptHome from '@/pages/student/digital-transcript/DigitalTranscriptHome';
+import DigitalTranscriptEntryPage from '@/pages/student/digital-transcript/DigitalTranscriptEntryPage';
 
 const systemAdminRoutes = declareAuthenticatedRoutes(
     [
