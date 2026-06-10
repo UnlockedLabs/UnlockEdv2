@@ -1,255 +1,111 @@
-import { useLoaderData, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useLoaderData, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { useEffect } from 'react';
+import { useAuth } from '@/auth/useAuth';
 import {
     OpenContentItem,
     HelpfulLink,
     HelpfulLinkAndSort,
-    Library,
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
-import TopContentList from '@/components/dashboard/TopContentList';
-import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink, Star } from 'lucide-react';
-import { EmptyState } from '@/components/shared';
-import { useTourContext } from '@/contexts/useTourContext';
-import { targetToStepIndexMap } from '@/contexts/tourState';
-import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
+import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
+import {
+    ResidentHomeDashboard,
+    type ResidentHomeLearningState,
+    type ResidentHomeScenario
+} from '@/pages/student/ResidentHomeDashboard';
+
+const LAST_HOME_VISIT_KEY = 'unlocked.resident-home.last-visit';
 
 interface ResidentHomeData {
     helpfulLinks: HelpfulLink[];
     topUserContent: OpenContentItem[];
     topFacilityContent: OpenContentItem[];
+    featuredLibraries: OpenContentItem[];
     favorites: OpenContentItem[];
 }
 
-function FeaturedLibraryCard({
-    library,
-    onClick
-}: {
-    library: Library;
-    onClick: () => void;
-}) {
-    const title = decodeHtmlEntities(library.title);
-    const description = decodeHtmlEntities(library.description ?? '');
-    return (
-        <div onClick={onClick} className="block cursor-pointer">
-            <Card className="hover:shadow-md transition-shadow h-full">
-                <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                        {library.thumbnail_url ? (
-                            <img
-                                src={library.thumbnail_url}
-                                alt={title}
-                                className="size-12 rounded object-cover shrink-0"
-                            />
-                        ) : (
-                            <div className="size-12 rounded bg-muted shrink-0" />
-                        )}
-                        <h4 className="text-sm font-medium text-foreground line-clamp-1">
-                            {title}
-                        </h4>
-                    </div>
-                    <p className="caption-clamp">{description}</p>
-                </CardContent>
-            </Card>
-        </div>
-    );
+function parsePreviewScenario(raw: string | null): ResidentHomeScenario | undefined {
+    if (raw === 'a' || raw === 'both') return 'knowledgeCenterAndLearningRecords';
+    if (raw === 'b' || raw === 'records') return 'learningRecordsOnly';
+    return undefined;
 }
 
-function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
-    const title = decodeHtmlEntities(link.title);
-    const description = decodeHtmlEntities(link.description ?? '');
-    return (
-        <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-        >
-            <Card className="hover:shadow-md transition-shadow h-full">
-                <CardContent className="p-4 flex items-start gap-3">
-                    <ExternalLink className="size-5 text-brand shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                        <h4 className="text-sm font-medium text-foreground line-clamp-1">
-                            {title}
-                        </h4>
-                        {description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                {description}
-                            </p>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-        </a>
-    );
-}
-
-function FavoriteItem({ item }: { item: OpenContentItem }) {
-    const navigate = useNavigate();
-    const title = decodeHtmlEntities(item.title);
-
-    const handleClick = () => {
-        if (item.content_type === 'video') {
-            navigate(`/viewer/videos/${item.content_id}`);
-        } else if (item.content_type === 'library') {
-            navigate(`/viewer/libraries/${item.content_id}`);
-        } else {
-            window.open(item.url, '_blank', 'noopener,noreferrer');
-        }
-    };
-
-    return (
-        <div
-            onClick={handleClick}
-            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
-        >
-            {item.thumbnail_url ? (
-                <img
-                    src={item.thumbnail_url}
-                    alt={title}
-                    className="w-10 h-10 rounded object-cover shrink-0"
-                />
-            ) : (
-                <div className="w-10 h-10 rounded bg-muted shrink-0" />
-            )}
-            <p className="text-sm text-foreground truncate">{title}</p>
-        </div>
-    );
+function parsePreviewLearningState(
+    raw: string | null
+): ResidentHomeLearningState | undefined {
+    if (raw === 'new') return 'new';
+    if (raw === 'incomplete' || raw === 'resume') return 'returningWithIncomplete';
+    if (raw === 'complete' || raw === 'returning') return 'returningComplete';
+    return undefined;
 }
 
 export default function ResidentHome() {
-    const navigate = useNavigate();
-    const { topUserContent, topFacilityContent } =
+    const { user } = useAuth();
+    const [searchParams] = useSearchParams();
+    const { topUserContent, topFacilityContent, featuredLibraries } =
         useLoaderData() as ResidentHomeData;
-    const { tourState, setTourState } = useTourContext();
 
-    const { data: featured } = useSWR<ServerResponseMany<Library>>(
-        '/api/libraries?visibility=featured&order_by=created_at'
-    );
+    const { entries, hasDraft, hydrated } = useTranscriptDraft();
+
     const { data: favorites } = useSWR<ServerResponseMany<OpenContentItem>>(
         '/api/open-content/favorite-groupings'
     );
     const { data: helpfulLinks } =
         useSWR<ServerResponseOne<HelpfulLinkAndSort>>('/api/helpful-links');
 
-    useEffect(() => {
-        if (tourState.tourActive && tourState.target === '#navigate-homepage') {
-            setTourState({
-                stepIndex: targetToStepIndexMap['#popular-content'],
-                target: '#popular-content'
-            });
-        } else if (tourState.tourActive && tourState.stepIndex !== 1) {
-            setTourState({
-                run: true,
-                stepIndex: 0,
-                target: '#resident-home'
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tourState.tourActive]);
+    const scenario = parsePreviewScenario(searchParams.get('homeScenario'));
+    const previewLearningState = parsePreviewLearningState(
+        searchParams.get('homeState')
+    );
+    const showReflectNudge =
+        searchParams.get('reflectNudge') === '1' ||
+        searchParams.get('reflectNudge') === 'true';
 
-    const featuredItems = featured?.data ?? [];
+    const daysSinceLastVisitOverride = searchParams.get('daysSinceLastVisit');
+    const daysSinceLastVisit = useMemo(() => {
+        if (daysSinceLastVisitOverride !== null) {
+            const parsed = Number(daysSinceLastVisitOverride);
+            return Number.isFinite(parsed) ? parsed : undefined;
+        }
+        try {
+            const raw = localStorage.getItem(LAST_HOME_VISIT_KEY);
+            if (!raw) return 0;
+            const last = Date.parse(raw);
+            if (Number.isNaN(last)) return 0;
+            return Math.floor((Date.now() - last) / (1000 * 60 * 60 * 24));
+        } catch {
+            return undefined;
+        }
+    }, [daysSinceLastVisitOverride]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(LAST_HOME_VISIT_KEY, new Date().toISOString());
+        } catch {
+            /* ignore — last-visit used for reflect nudge on the next home load */
+        }
+    }, []);
+
+    if (!user || !hydrated) return null;
+
     const favoriteItems = favorites?.data ?? [];
     const links = helpfulLinks?.data?.helpful_links ?? [];
 
     return (
-        <div className="bg-muted min-h-screen p-6" id="resident-home">
-            <div className="max-w-7xl mx-auto flex gap-6">
-                <div className="flex-1 space-y-8">
-                    {featuredItems.length > 0 && (
-                        <section>
-                            <h2 className="section-heading">
-                                Featured Content
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {featuredItems.map((lib) => (
-                                    <FeaturedLibraryCard
-                                        key={`${lib.id}-${lib.open_content_provider_id}`}
-                                        library={lib}
-                                        onClick={() =>
-                                            navigate(
-                                                `/viewer/libraries/${lib.id}`
-                                            )
-                                        }
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    <section>
-                        <h2 className="section-heading">
-                            Pick Up Where You Left Off
-                        </h2>
-                        <div
-                            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-                            id="end-tour"
-                        >
-                            <div id="top-content">
-                                <TopContentList
-                                    heading="Your Top Content"
-                                    items={topUserContent}
-                                    onViewAll={() =>
-                                        navigate('/knowledge-center')
-                                    }
-                                />
-                            </div>
-                            <div id="popular-content">
-                                <TopContentList
-                                    heading="Popular Content"
-                                    items={topFacilityContent}
-                                    onViewAll={() =>
-                                        navigate('/knowledge-center')
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    {links.length > 0 && (
-                        <section>
-                            <h2 className="section-heading">Helpful Links</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {links.map((link) => (
-                                    <HelpfulLinkCard
-                                        key={`${link.id}-${link.url}`}
-                                        link={link}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </div>
-
-                <aside className="hidden xl:block w-80 shrink-0 space-y-6 sticky top-6 self-start">
-                    <div className="bg-card rounded-lg border border-border p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Star className="size-5 text-brand-gold" />
-                            <h2 className="text-lg font-semibold text-foreground">
-                                Favorites
-                            </h2>
-                        </div>
-                        {favoriteItems.length > 0 ? (
-                            <div className="space-y-2">
-                                {favoriteItems.map((item) => (
-                                    <FavoriteItem
-                                        key={`${item.content_id}-${item.url}`}
-                                        item={item}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <EmptyState
-                                title="No Favorites Yet"
-                                description="Content you favorite will appear here for quick access."
-                            />
-                        )}
-                    </div>
-                </aside>
-            </div>
-        </div>
+        <ResidentHomeDashboard
+            scenario={scenario}
+            previewLearningState={previewLearningState}
+            showReflectNudge={showReflectNudge}
+            daysSinceLastVisit={daysSinceLastVisit}
+            learningRecordEntries={entries}
+            hasIncompleteEntry={hasDraft}
+            topUserContent={topUserContent}
+            topFacilityContent={topFacilityContent}
+            featuredLibraries={featuredLibraries ?? []}
+            favoriteItems={favoriteItems}
+            helpfulLinks={links}
+        />
     );
 }

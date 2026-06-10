@@ -77,7 +77,7 @@ export default function UnlockEdTour() {
                         });
                         navigate('/knowledge-center');
                         return;
-                    case '#top-content':
+                    case '#popular-content':
                         setTourState({
                             stepIndex:
                                 targetToStepIndexMap['#navigate-homepage'],

@@ -1,3 +1,8 @@
+import {
+    LEARNING_RECORD_PRINT_SHARE_FAQ,
+    LEARNING_RECORD_SAVED_HERE_FAQ
+} from '@/data/learningRecordResidentCopy';
+
 interface FAQEntry {
     question: string;
     answer: string;
@@ -77,6 +82,14 @@ export const FAQ_CATEGORIES: Record<string, FAQEntry[]> = {
         }
     ],
     'Managing My Account': [
+        {
+            question: LEARNING_RECORD_PRINT_SHARE_FAQ.question,
+            answer: LEARNING_RECORD_PRINT_SHARE_FAQ.answer
+        },
+        {
+            question: LEARNING_RECORD_SAVED_HERE_FAQ.question,
+            answer: LEARNING_RECORD_SAVED_HERE_FAQ.answer
+        },
         {
             question: 'Can I change my name or username?',
             answer: 'Talk to the staff and they can help you.'

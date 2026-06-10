@@ -1,4 +1,11 @@
 import type { TranscriptDraft } from '@/types/digital-transcript';
+import {
+    countFunnelFieldsAnswered,
+    FUNNEL_FORM_FIELD_TOTAL,
+    FUNNEL_FORM_STEP_COUNT,
+    isFunnelStepComplete
+} from './transcriptReflectionConfig';
+import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 
 /** Fields rendered in the live document / print view. */
 export type LearningRecordDocumentSource = Pick<
@@ -168,11 +175,26 @@ function hasAnyMetadata(source: LearningRecordDocumentSource): boolean {
 }
 
 function isDocumentComplete(source: LearningRecordDocumentSource): boolean {
-    return (
-        Boolean(source.programName.trim()) &&
-        Boolean(source.completionDate.trim()) &&
-        countAnsweredReflections(source) === REFLECTION_SLOT_COUNT
-    );
+    return entryIsComplete(source, 'categories');
+}
+
+/** True when every required question for the form variant has been answered. */
+export function entryIsComplete(
+    source: LearningRecordDocumentSource,
+    variant: LearningRecordFormVariant = 'categories'
+): boolean {
+    if (variant === 'funnel') {
+        return countFunnelFieldsAnswered(source) === FUNNEL_FORM_FIELD_TOTAL;
+    }
+    return countEditorFormSlots(source) === editorFormSlotsTotal();
+}
+
+/** First funnel step index with unanswered required fields, or 0 if all complete. */
+export function firstIncompleteFunnelStep(source: LearningRecordDocumentSource): number {
+    for (let i = 0; i < FUNNEL_FORM_STEP_COUNT; i++) {
+        if (!isFunnelStepComplete(i, source)) return i;
+    }
+    return 0;
 }
 
 /**

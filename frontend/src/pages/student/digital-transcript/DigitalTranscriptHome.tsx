@@ -14,14 +14,7 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetTitle
-} from '@/components/ui/sheet';
 import {
     Table,
     TableBody,
@@ -34,7 +27,6 @@ import { EmptyState, PageHeader } from '@/components/shared';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
 import {
-    downloadAllLearningRecordAchievementsPdf,
     downloadLearningRecordPdf,
     learningRecordPdfFilename
 } from '@/utils/downloadLearningRecordPdf';
@@ -53,11 +45,14 @@ import { DigitalTranscriptEyebrow, DigitalTranscriptShell } from './DigitalTrans
 import { LearningRecordExportContent } from './LearningRecordExportContent';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 import { TranscriptResumePreview } from './TranscriptResumePreview';
+import { ViewAllAchievementsSheet } from './ViewAllAchievementsSheet';
+import { PrintShareHelpLink } from '@/components/learning-record/PrintShareHelpLink';
 import {
     countFunnelFieldsAnswered,
     funnelCompletionTier,
     FUNNEL_FORM_FIELD_TOTAL
 } from './transcriptReflectionConfig';
+import { getEntryDisplayTitle } from './entryTitleDisplay';
 import { createEmptyTranscriptEntry } from './transcriptEntrySessionStorage';
 import {
     readTableSortFromSession,
@@ -69,7 +64,6 @@ import {
 } from './learningRecordTableSort';
 import {
     LEARNING_RECORD_BUTTON_SIZE,
-    learningRecordIconButtonClassName,
     learningRecordOutlineButtonClassName,
     learningRecordPrimaryButtonClassName
 } from './learningRecordButtons';
@@ -99,12 +93,14 @@ const ACHIEVEMENT_LOG_THUMBNAIL_SAMPLE: TranscriptEntry = {
 };
 
 const FUNNEL_SUBTITLE =
-    "This is your personal record of the programs you've completed and the skills you've built. Each achievement you add is saved on this device — and when you're ready, you can export your record as a PDF to keep, share, or take with you.";
+    "This is your personal record of the programs you've finished and the skills you've built. Everything you add is saved here. When you're ready, you can save your record as a PDF to print, share, or take with you.";
+
+const EMPTY_FIELD_LABEL = 'Not added yet';
 
 const primaryCtaClassName = cn(learningRecordPrimaryButtonClassName, 'sm:min-w-[11rem]');
 
 function formatProgramCompletedDate(entry: TranscriptEntry): string {
-    if (!entry.completionDate.trim()) return '—';
+    if (!entry.completionDate.trim()) return EMPTY_FIELD_LABEL;
     return new Date(entry.completionDate + 'T12:00:00').toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
@@ -121,9 +117,9 @@ function formatSavedOn(iso: string): string {
     });
 }
 
-function savedOnDeviceLabel(count: number): string {
+function savedHereLabel(count: number): string {
     const word = count === 1 ? 'achievement' : 'achievements';
-    return `You have ${count} ${word} saved on this device`;
+    return `You have ${count} ${word} saved here.`;
 }
 
 function getEntryQuestionsProgress(
@@ -277,7 +273,7 @@ function SavedEntriesSection({
                                         className="hidden w-[200px] sm:table-cell"
                                     />
                                     <SortableColumnHeader
-                                        label="Questions answered"
+                                        label="Steps done"
                                         column="questions"
                                         tableSort={tableSort}
                                         onSortColumn={onSortColumn}
@@ -290,7 +286,7 @@ function SavedEntriesSection({
                                         onSortColumn={onSortColumn}
                                         className="hidden w-[200px] lg:table-cell"
                                     />
-                                    <TableHead className="w-[5.5rem] pr-6 text-right font-semibold text-foreground">
+                                    <TableHead className="min-w-[9.5rem] pr-6 text-right font-semibold text-foreground">
                                         <span className="sr-only">Actions</span>
                                     </TableHead>
                                 </TableRow>
@@ -318,7 +314,10 @@ function SavedEntriesSection({
                                                 <Link to={editHref} className="contents">
                                                     <TableCell className="max-w-[14rem] align-middle pl-6 font-medium text-foreground">
                                                         <span className="font-medium group-hover:underline">
-                                                            {entry.programName.trim() || '—'}
+                                                            {getEntryDisplayTitle(
+                                                                entry.programName,
+                                                                EMPTY_FIELD_LABEL
+                                                            )}
                                                         </span>
                                                         <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
                                                             Completed{' '}
@@ -360,8 +359,8 @@ function SavedEntriesSection({
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        className={learningRecordIconButtonClassName}
-                                                        aria-label="Download achievement as PDF"
+                                                        className="h-10 shrink-0 gap-1.5 px-2"
+                                                        aria-label="Save achievement as PDF"
                                                         disabled={isDownloading || isDownloadBusy}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -377,12 +376,15 @@ function SavedEntriesSection({
                                                         ) : (
                                                             <Download size={16} aria-hidden />
                                                         )}
+                                                        <span className="text-xs font-medium">
+                                                            Save as PDF
+                                                        </span>
                                                     </Button>
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
                                                         className={cn(
-                                                            learningRecordIconButtonClassName,
+                                                            'h-10 shrink-0 gap-1.5 px-2',
                                                             'hover:bg-destructive/10 hover:text-destructive'
                                                         )}
                                                         aria-label="Delete achievement"
@@ -393,6 +395,9 @@ function SavedEntriesSection({
                                                         }}
                                                     >
                                                         <Trash2 size={16} aria-hidden />
+                                                        <span className="text-xs font-medium">
+                                                            Delete
+                                                        </span>
                                                     </Button>
                                                 </div>
                                             </TableCell>
@@ -425,11 +430,9 @@ export default function DigitalTranscriptHome() {
     const [exportRows, setExportRows] = useState<TranscriptEntry[]>([]);
     const [exportActive, setExportActive] = useState(false);
     const [downloadingEntryId, setDownloadingEntryId] = useState<string | null>(null);
-    const [isDownloadingAll, setIsDownloadingAll] = useState(false);
     const [viewAllOpen, setViewAllOpen] = useState(false);
     const [tableSort, setTableSort] = useState<TableSort>(readTableSortFromSession);
     const exportRootRef = useRef<HTMLDivElement>(null);
-    const sortedEntriesRef = useRef<TranscriptEntry[]>([]);
 
     useEffect(() => {
         writeTableSortToSession(tableSort);
@@ -439,9 +442,8 @@ export default function DigitalTranscriptHome() {
         () => sortTranscriptEntries(entries, tableSort, formVariant),
         [entries, tableSort, formVariant]
     );
-    sortedEntriesRef.current = sortedEntries;
 
-    const isDownloadBusy = downloadingEntryId !== null || isDownloadingAll;
+    const isDownloadBusy = downloadingEntryId !== null;
 
     const handleSortColumn = useCallback((column: SortColumn) => {
         setTableSort((current) => toggleTableSort(current, column));
@@ -475,10 +477,10 @@ export default function DigitalTranscriptHome() {
                     root,
                     learningRecordPdfFilename(residentName)
                 );
-                toast.success('Learning record downloaded');
+                toast.success('Your record was saved as a PDF');
             } catch (err) {
                 console.error('Learning record PDF export failed:', err);
-                toast.error('Could not download PDF. Please try again.');
+                toast.error('Could not save PDF. Please try again.');
             } finally {
                 setExportActive(false);
                 setDownloadingEntryId(null);
@@ -486,49 +488,6 @@ export default function DigitalTranscriptHome() {
         },
         [isDownloadBusy, residentName, waitForExportPaint]
     );
-
-    const handleDownloadAll = useCallback(async () => {
-        const entriesToExport = sortedEntriesRef.current;
-        if (entriesToExport.length === 0 || isDownloadBusy) return;
-
-        setIsDownloadingAll(true);
-        let exportIndex = 0;
-
-        flushSync(() => {
-            setExportActive(true);
-        });
-
-        try {
-            await downloadAllLearningRecordAchievementsPdf(
-                async () => {
-                    const entry = entriesToExport[exportIndex];
-                    if (!entry) {
-                        throw new Error('Export entry not found');
-                    }
-                    exportIndex += 1;
-                    flushSync(() => {
-                        setExportRows([entry]);
-                    });
-                    await waitForExportPaint();
-                    const root = exportRootRef.current;
-                    if (!root) {
-                        throw new Error('Export content not ready');
-                    }
-                    return root;
-                },
-                entriesToExport.length,
-                learningRecordPdfFilename(residentName)
-            );
-            toast.success('Learning record downloaded');
-        } catch (err) {
-            console.error('Learning record PDF export failed:', err);
-            toast.error('Could not download PDF. Please try again.');
-        } finally {
-            setExportActive(false);
-            setExportRows([]);
-            setIsDownloadingAll(false);
-        }
-    }, [isDownloadBusy, residentName, waitForExportPaint]);
 
     const handleConfirmDelete = useCallback(() => {
         if (!deleteTarget || isDeleting) return;
@@ -576,7 +535,7 @@ export default function DigitalTranscriptHome() {
     const cardTitle =
         entries.length === 0 && !hasDraft ? 'Start logging' : 'Build your Achievements Record';
 
-    const deleteProgramName = deleteTarget?.programName.trim() || 'Untitled';
+    const deleteProgramName = getEntryDisplayTitle(deleteTarget?.programName, 'Untitled');
 
     return (
         <DigitalTranscriptShell variant="wide">
@@ -601,10 +560,11 @@ export default function DigitalTranscriptHome() {
             {isFunnel ? (
                 <>
                     <PageHeader
-                        className="mb-8 flex-col items-start gap-0 sm:flex-row"
+                        className="mb-2 flex-col items-start gap-0 sm:flex-row"
                         title="Build your Learning Record"
                         subtitle={FUNNEL_SUBTITLE}
                     />
+                    <PrintShareHelpLink className="mb-8" />
 
                     <SavedEntriesSection
                         entries={entries}
@@ -613,7 +573,7 @@ export default function DigitalTranscriptHome() {
                         formVariant={formVariant}
                         sectionHeading={
                             <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-                                {savedOnDeviceLabel(entries.length)}
+                                {savedHereLabel(entries.length)}
                             </h2>
                         }
                         headerAction={
@@ -647,10 +607,11 @@ export default function DigitalTranscriptHome() {
             ) : (
                 <>
                     <PageHeader
-                        className="mb-8 flex-col items-start gap-0 sm:flex-row"
+                        className="mb-2 flex-col items-start gap-0 sm:flex-row"
                         title="Learning Record"
-                        subtitle="Build your transcript-style record on the page—it saves as you go. Tap Done when one achievement feels complete. For now, everything stays on this device."
+                        subtitle="Write down what you finished and the skills you built. Your answers are saved here as you go. Tap Done when one achievement feels complete."
                     />
+                    <PrintShareHelpLink className="mb-8" />
 
                     <Card className="mb-6 overflow-hidden p-0">
                         <div className="flex flex-col md:flex-row">
@@ -773,7 +734,7 @@ export default function DigitalTranscriptHome() {
                             <>
                                 <DigitalTranscriptEyebrow>Saved entries</DigitalTranscriptEyebrow>
                                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-                                    On this device
+                                    Saved here
                                 </h2>
                             </>
                         }
@@ -802,61 +763,13 @@ export default function DigitalTranscriptHome() {
                     />
                 </>
             )}
-            <Sheet open={viewAllOpen} onOpenChange={setViewAllOpen}>
-                <SheetContent
-                    side="right"
-                    className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-none lg:w-[600px] lg:max-w-[600px] [&>button.absolute]:hidden"
-                >
-                    <div className="shrink-0 border-b border-border/60 bg-background px-6 pt-6 pb-4">
-                        <div className="flex items-center justify-between gap-3">
-                            <SheetTitle className="text-lg font-semibold tracking-tight">
-                                View all achievements
-                            </SheetTitle>
-                            <SheetClose
-                                className="rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
-                                aria-label="Close panel"
-                            >
-                                <X className="size-4" aria-hidden />
-                            </SheetClose>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size={LEARNING_RECORD_BUTTON_SIZE}
-                            className={cn(learningRecordOutlineButtonClassName, 'mt-3')}
-                            disabled={entries.length === 0 || isDownloadBusy}
-                            aria-busy={isDownloadingAll}
-                            onClick={() => void handleDownloadAll()}
-                        >
-                            {isDownloadingAll ? (
-                                <Loader2 className="size-4 animate-spin" aria-hidden />
-                            ) : (
-                                <Download className="size-4" aria-hidden />
-                            )}
-                            {isDownloadingAll ? 'Generating…' : 'Download all achievements as a PDF'}
-                        </Button>
-                    </div>
-                    <ScrollArea className="min-h-0 flex-1">
-                        <div className="px-6 py-4">
-                            {sortedEntries.map((entry, index) => (
-                                <div
-                                    key={entry.id}
-                                    className={cn(index > 0 && 'mt-3')}
-                                >
-                                    <LearningRecordExportContent
-                                        rows={[entry]}
-                                        residentName={residentName}
-                                        filledSectionsOnly={false}
-                                        hidePreviewHeader
-                                        embeddedLivePreview={isFunnel}
-                                        documentVariant={isFunnel ? 'funnel' : 'default'}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </SheetContent>
-            </Sheet>
+            <ViewAllAchievementsSheet
+                open={viewAllOpen}
+                onOpenChange={setViewAllOpen}
+                entries={sortedEntries}
+                residentName={residentName}
+                documentVariant={isFunnel ? 'funnel' : 'default'}
+            />
             <Dialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => {
@@ -868,7 +781,7 @@ export default function DigitalTranscriptHome() {
                         <DialogTitle>Delete this achievement?</DialogTitle>
                         <DialogDescription>
                             This will permanently remove <strong>{deleteProgramName}</strong> from your
-                            learning record on this device. This action cannot be undone.
+                            learning record. This cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

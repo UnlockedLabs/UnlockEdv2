@@ -1,4 +1,6 @@
 import { TOP_SKILLS_MAX } from '@/pages/student/digital-transcript/transcriptReflectionConfig';
+import { entryIsComplete } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
+import type { LearningRecordFormVariant } from '@/pages/student/digital-transcript/learningRecordPrototypes';
 import {
     getDigitalTranscriptStorageKeys,
     TRANSCRIPT_ENTRY_SESSION_VERSION,
@@ -191,6 +193,37 @@ export function entryHasExportableContent(entry: TranscriptEntry): boolean {
         entry.q8Selections.length > 0 ||
         entry.q9Selections.length > 0
     );
+}
+
+/**
+ * Most recent achievement with answers in progress but not all questions complete.
+ * Checks live session rows first, then committed entries saved via Done before completion.
+ */
+export function findIncompleteAchievementEntry(
+    variant: LearningRecordFormVariant = 'categories'
+): TranscriptEntry | null {
+    const committed = readTranscriptEntriesFromStorage();
+    const session = readEntrySessionFromStorage();
+    const seen = new Set<string>();
+    const incomplete: TranscriptEntry[] = [];
+
+    if (session?.rows.length) {
+        for (const row of session.rows) {
+            if (entryHasExportableContent(row) && !entryIsComplete(row, variant)) {
+                incomplete.push(row);
+                seen.add(row.id);
+            }
+        }
+    }
+
+    for (const entry of committed) {
+        if (seen.has(entry.id)) continue;
+        if (entryHasExportableContent(entry) && !entryIsComplete(entry, variant)) {
+            incomplete.push(entry);
+        }
+    }
+
+    return incomplete.length > 0 ? sortEntriesNewestFirst(incomplete)[0]! : null;
 }
 
 /** Rows to include in PDF export and similar “current work” views. */

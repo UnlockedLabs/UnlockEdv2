@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getEntryDisplayTitleOrNull } from './entryTitleDisplay';
 import {
     confidenceScaleLabel,
     DOCUMENT_PREVIEW_LABELS,
@@ -173,6 +174,7 @@ export function LearningRecordDocument({
     const dateShown = formatCompletedLong(source.completionDate);
     const headlineFilled = Boolean(source.oneSentence.trim());
     const residentDisplayName = residentName.trim();
+    const programDisplayTitle = getEntryDisplayTitleOrNull(source.programName);
 
     const narrative = (
         <LearningRecordDocumentNarrative
@@ -246,8 +248,8 @@ export function LearningRecordDocument({
                                                 Achievement
                                             </SectionLabel>
                                             <p className="text-sm text-foreground">
-                                                {source.programName.trim() ? (
-                                                    source.programName.trim()
+                                                {programDisplayTitle ? (
+                                                    programDisplayTitle
                                                 ) : (
                                                     <EmptySlot
                                                         fallback={
@@ -300,8 +302,8 @@ export function LearningRecordDocument({
                     <section aria-labelledby="lr-doc-program" className="break-inside-avoid space-y-1.5">
                         <SectionLabel id="lr-doc-program">{labels.program}</SectionLabel>
                         <div className="text-[18px] font-medium leading-snug text-foreground">
-                            {source.programName.trim() ? (
-                                source.programName.trim()
+                            {programDisplayTitle ? (
+                                programDisplayTitle
                             ) : (
                                 <EmptySlot
                                     fallback={<PlaceholderText>Your program</PlaceholderText>}

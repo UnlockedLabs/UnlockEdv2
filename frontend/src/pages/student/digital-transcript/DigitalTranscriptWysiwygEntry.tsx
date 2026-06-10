@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import type { TranscriptEntry } from '@/types/digital-transcript';
+import type { TranscriptEntry, TranscriptEntrySession } from '@/types/digital-transcript';
 import {
     cloneTranscriptEntry,
     createEmptyTranscriptEntry,
@@ -20,13 +20,17 @@ import {
     syncSessionRowsAfterUpsert,
     writeEntrySessionToStorage
 } from '@/pages/student/digital-transcript/transcriptEntrySessionStorage';
-import type { TranscriptEntrySession } from '@/types/digital-transcript';
+import { getEntryDisplayTitle } from '@/pages/student/digital-transcript/entryTitleDisplay';
 import {
     AchievementsRecordPreview,
     type FunnelDownloadProps
 } from './AchievementsRecordPreview';
 import { AchievementRow } from './AchievementRow';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
+import {
+    entryIsComplete,
+    firstIncompleteFunnelStep
+} from './learningRecordDocumentModel';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
 import { LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import {
@@ -307,10 +311,9 @@ export function DigitalTranscriptWysiwygEntry({
         const row = current.rows.find((r) => r.id === id);
         if (!row) return false;
 
-        const programOk = Boolean(row.programName.trim());
-        if (!programOk) {
+        if (!entryIsComplete(row, 'funnel')) {
             setSaveErrorRowId(id);
-            setActiveStep(0);
+            setActiveStep(firstIncompleteFunnelStep(row));
             return false;
         }
 
@@ -457,9 +460,7 @@ export function DigitalTranscriptWysiwygEntry({
         (id: string) => {
             const row = sessionRef.current?.rows.find((r) => r.id === id);
             if (!row) return;
-            const programOk = Boolean(row.programName.trim());
-            const dateOk = Boolean(row.completionDate.trim());
-            if (!programOk || !dateOk) {
+            if (!entryIsComplete(row, formVariant)) {
                 setSaveErrorRowId(id);
                 return;
             }
@@ -476,7 +477,7 @@ export function DigitalTranscriptWysiwygEntry({
             });
             baselinesRef.current[id] = cloneTranscriptEntry(saved);
         },
-        [upsertCommittedEntry]
+        [formVariant, upsertCommittedEntry]
     );
 
     const displayRows = useMemo(
@@ -726,7 +727,7 @@ export function DigitalTranscriptWysiwygEntry({
                 title="Remove this achievement?"
                 description={
                     deleteConfirmFor
-                        ? `“${deleteConfirmFor.programName.trim() || 'Untitled'}” will be removed from this device. This cannot be undone.`
+                        ? `“${getEntryDisplayTitle(deleteConfirmFor.programName, 'Untitled')}” will be removed from your learning record. This cannot be undone.`
                         : ''
                 }
                 confirmLabel="Delete"

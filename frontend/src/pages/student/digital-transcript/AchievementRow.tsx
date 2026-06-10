@@ -4,8 +4,10 @@ import { cn } from '@/lib/utils';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
     countEditorFormSlots,
-    editorFormSlotsTotal
+    editorFormSlotsTotal,
+    entryIsComplete
 } from './learningRecordDocumentModel';
+import { getEntryDisplayTitle } from './entryTitleDisplay';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 import { AchievementForm } from './AchievementForm';
 import { AchievementFormCategories } from './AchievementFormCategories';
@@ -77,10 +79,10 @@ export function AchievementRow({
         );
     }
 
-    const title = entry.programName.trim() || 'Untitled achievement';
+    const title = getEntryDisplayTitle(entry.programName);
     const filled = countEditorFormSlots(entry);
     const total = editorFormSlotsTotal();
-    const complete = filled === total;
+    const complete = entryIsComplete(entry, 'categories');
     const progressPct = Math.round((filled / total) * 100);
 
     return (
