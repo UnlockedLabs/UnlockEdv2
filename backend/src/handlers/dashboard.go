@@ -125,19 +125,56 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	return writeJsonResponse(w, http.StatusOK, cachedData)
 }
 
+const metricsDateFormat = "2006-01-02"
+
+func startOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+// resolvePresetRange resolves a preset range key (e.g. "30d") against the
+// server clock, returning the inclusive start day and an exclusive end bound
+// (midnight after today, so all of "today" is included). Resolving presets
+// server-side keeps the window anchored to the same clock that timestamps the
+// data, so a client in a different timezone can't request a window that ends
+// before data recorded "now".
+func resolvePresetRange(key string) (time.Time, time.Time, bool) {
+	now := time.Now()
+	today := startOfDay(now)
+	endExclusive := today.AddDate(0, 0, 1)
+	switch key {
+	case "7d":
+		return today.AddDate(0, 0, -6), endExclusive, true
+	case "30d":
+		return today.AddDate(0, 0, -29), endExclusive, true
+	case "90d":
+		return today.AddDate(0, 0, -89), endExclusive, true
+	case "ytd":
+		return time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()), endExclusive, true
+	default:
+		return time.Time{}, time.Time{}, false
+	}
+}
+
 func parseDateRangeRequest(r *http.Request) (*time.Time, *time.Time, string, error) {
 	q := r.URL.Query()
 	if q.Get("all_time") == "true" {
 		return nil, nil, "all", nil
 	}
-	metricsDateFormat := "2006-01-02"
+	// Preset ranges are resolved against the server clock. Any start_date/end_date
+	// the client also sends are ignored in favor of the preset.
+	if rangeKey := strings.ToLower(q.Get("range")); rangeKey != "" && rangeKey != "custom" {
+		start, end, ok := resolvePresetRange(rangeKey)
+		if !ok {
+			return nil, nil, "", newInvalidQueryParamServiceError(fmt.Errorf("unknown range %q", rangeKey), "range")
+		}
+		return &start, &end, fmt.Sprintf("%s_%s", start.Format(metricsDateFormat), end.Format(metricsDateFormat)), nil
+	}
 	startStr := q.Get("start_date")
 	endStr := q.Get("end_date")
 	if startStr == "" && endStr == "" {
-		end := time.Now()
-		start := end.AddDate(0, 0, -30)
-		startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
-		endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, end.Location()).AddDate(0, 0, 1)
+		now := time.Now()
+		startDay := startOfDay(now.AddDate(0, 0, -30))
+		endDay := startOfDay(now).AddDate(0, 0, 1)
 		return &startDay, &endDay, fmt.Sprintf("%s_%s", startDay.Format(metricsDateFormat), endDay.Format(metricsDateFormat)), nil
 	}
 	if startStr == "" || endStr == "" {
@@ -154,10 +191,12 @@ func parseDateRangeRequest(r *http.Request) (*time.Time, *time.Time, string, err
 	if end.Before(start) {
 		return nil, nil, "", newBadRequestServiceError(fmt.Errorf("end date must be on or after start date"), "date range")
 	}
-	today := time.Now()
-	todayMidnight := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	// Clamp a future end date to the server's current day rather than rejecting
+	// it: a client whose clock or timezone runs ahead of the server should still
+	// get data instead of a 400.
+	todayMidnight := startOfDay(time.Now())
 	if end.After(todayMidnight) {
-		return nil, nil, "", newBadRequestServiceError(fmt.Errorf("end date cannot be in the future"), "date range")
+		end = todayMidnight
 	}
 	endExclusive := end.AddDate(0, 0, 1)
 	return &start, &endExclusive, fmt.Sprintf("%s_%s", start.Format(metricsDateFormat), end.Format(metricsDateFormat)), nil

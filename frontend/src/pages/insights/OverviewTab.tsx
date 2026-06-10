@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import LoginTrendChart from '@/components/charts/LoginTrendChart';
 import { MetricCard } from './MetricCard';
-import { InsightsDateParams, priorParams } from './insightsRange';
+import { InsightsDateParams, priorParams, dateQuery } from './insightsRange';
 
 interface OverviewTabProps {
     dateParams: InsightsDateParams;
@@ -75,7 +75,7 @@ export default function OverviewTab({
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const query = `facility=${selectedFacility}&start_date=${dateParams.start_date}&end_date=${dateParams.end_date}`;
+    const query = `facility=${selectedFacility}&${dateQuery(dateParams)}`;
 
     const {
         data: metricsResp,
@@ -93,14 +93,14 @@ export default function OverviewTab({
     const { data: priorMetricsResp, mutate: mutatePriorMetrics } = useSWR<
         ServerResponseOne<DepartmentMetrics>
     >(
-        `/api/department-metrics?facility=${selectedFacility}&start_date=${prior.start_date}&end_date=${prior.end_date}`
+        `/api/department-metrics?facility=${selectedFacility}&${dateQuery(prior)}`
     );
 
     const { data: comparisonResp, mutate: mutateComparison } = useSWR<
         ServerResponseOne<FacilityEngagement[]>
     >(
         canSwitch
-            ? `/api/department-metrics/facility-comparison?start_date=${dateParams.start_date}&end_date=${dateParams.end_date}`
+            ? `/api/department-metrics/facility-comparison?${dateQuery(dateParams)}`
             : null
     );
 
