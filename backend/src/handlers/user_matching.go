@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/adrg/strutil"
 	"github.com/adrg/strutil/metrics"
@@ -202,12 +203,15 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 			continue
 		}
 		newUser := models.User{
-			Username:  cu.Username,
-			Email:     cu.Email,
-			NameFirst: cu.NameFirst,
-			NameLast:  cu.NameLast,
+			Username:   stripNonAlphaChars(cu.Username, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }),
+			Email:      cu.Email,
+			NameFirst:  stripNonAlphaChars(cu.NameFirst, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsSpace(r) }),
+			NameLast:   stripNonAlphaChars(cu.NameLast, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsSpace(r) }),
+			FacilityID: srv.getFacilityID(r),
+			Role:       models.Student,
 		}
 		if err := srv.WithUserContext(r).CreateUser(&newUser); err != nil {
+			log.errorf("error creating user %s in apply-matches: %v", cu.Username, err)
 			failed = append(failed, cu.Username)
 			continue
 		}
