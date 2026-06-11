@@ -16,7 +16,6 @@ import API from '@/api/api';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FormModal } from '@/components/shared/FormModal';
-import { EnrollmentTypeSelector } from '@/components/shared/EnrollmentTypeSelector';
 import { DataTable, Column } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -26,9 +25,8 @@ import {
     GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
-const providerTypeLabels: Record<ProviderPlatformType, string> = {
-    [ProviderPlatformType.CANVAS_CLOUD]: 'Canvas Cloud',
-    [ProviderPlatformType.CANVAS_OSS]: 'Canvas OSS',
+const providerTypeLabels: Partial<Record<ProviderPlatformType, string>> = {
+    [ProviderPlatformType.CANVAS_CLOUD]: 'Canvas',
     [ProviderPlatformType.KOLIBRI]: 'Kolibri',
     [ProviderPlatformType.BRIGHTSPACE]: 'Brightspace'
 };
@@ -197,7 +195,6 @@ function AddProviderModal({
     );
     const [baseUrl, setBaseUrl] = useState('');
     const [accessKey, setAccessKey] = useState('');
-    const [enrollmentTypes, setEnrollmentTypes] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
     const isCanvas =
@@ -209,7 +206,6 @@ function AddProviderModal({
         setType(ProviderPlatformType.CANVAS_CLOUD);
         setBaseUrl('');
         setAccessKey('');
-        setEnrollmentTypes([]);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -224,7 +220,7 @@ function AddProviderModal({
                 account_id: '1',
                 access_key: accessKey,
                 state: 'enabled',
-                enrollment_types: isCanvas ? enrollmentTypes : []
+                enrollment_types: isCanvas ? ['student'] : []
             }
         );
         setSubmitting(false);
@@ -252,6 +248,7 @@ function AddProviderModal({
             }}
             title="Add Learning Platform"
             description="Connect a new learning management system."
+            preventOutsideClose
         >
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 <div>
@@ -353,12 +350,6 @@ function AddProviderModal({
                         </div>
                     )}
                 </div>
-                {isCanvas && (
-                    <EnrollmentTypeSelector
-                        selected={enrollmentTypes}
-                        onChange={setEnrollmentTypes}
-                    />
-                )}
                 <div className="flex justify-end gap-2 pt-2">
                     <Button
                         type="button"
