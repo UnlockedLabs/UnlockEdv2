@@ -340,12 +340,16 @@ export default function ClassesPage() {
                                 <Filter className="size-4 mr-2" />
                                 <SelectValue placeholder="All Programs" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-w-55">
                                 <SelectItem value="all">
                                     All Programs
                                 </SelectItem>
                                 {programOptions.map(([id, name]) => (
-                                    <SelectItem key={id} value={String(id)}>
+                                    <SelectItem
+                                        key={id}
+                                        value={String(id)}
+                                        className="truncate"
+                                    >
                                         {name}
                                     </SelectItem>
                                 ))}
