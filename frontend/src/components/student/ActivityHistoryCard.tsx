@@ -90,7 +90,7 @@ export default function ActivityHistoryCard({
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-brand-dark">{heading}</h3>
                 <Select value={filterQuery} onValueChange={setFilterQuery}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-40">
                         <SelectValue placeholder="Filter" />
                     </SelectTrigger>
                     <SelectContent>
@@ -139,7 +139,7 @@ export default function ActivityHistoryCard({
                                 key={`${String(item.created_at)}-${idx}`}
                                 className="flex gap-3 text-sm"
                             >
-                                <div className="text-gray-500 min-w-[100px] shrink-0">
+                                <div className="text-gray-500 min-w-25 shrink-0">
                                     {new Date(
                                         item.created_at
                                     ).toLocaleDateString('en-US', {

@@ -182,7 +182,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                             key={`${entry.created_at}-${entry.field_name}-${idx}`}
                             className="flex gap-3 text-sm"
                         >
-                            <div className="text-gray-500 min-w-[100px] shrink-0">
+                            <div className="text-gray-500 min-w-25 shrink-0">
                                 {new Date(entry.created_at).toLocaleDateString(
                                     'en-US',
                                     {

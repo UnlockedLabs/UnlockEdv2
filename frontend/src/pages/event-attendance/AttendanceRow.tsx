@@ -56,7 +56,7 @@ export function AttendanceRow({
             <TableCell className="whitespace-nowrap">
                 {row.doc_id || '-'}
             </TableCell>
-            <TableCell className="min-w-[200px]">
+            <TableCell className="min-w-50">
                 <div className="flex gap-1">
                     {TABLE_ATTENDANCE_STATUSES.map((opt) => (
                         <Button

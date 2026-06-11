@@ -170,7 +170,7 @@ export default function ClassDetailPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
-                                    className="z-[100]"
+                                    className="z-100"
                                 >
                                     <Tooltip>
                                         <TooltipTrigger asChild>

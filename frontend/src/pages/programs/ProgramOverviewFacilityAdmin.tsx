@@ -488,7 +488,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                             }
                                             disabled={archiveCheckLoading}
                                         >
-                                            <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
+                                            <SelectTrigger className="w-35 h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -1109,7 +1109,7 @@ function ClassRow({
                     </div>
                 </div>
                 {showEnrollment && (
-                    <div className="ml-6 min-w-[200px]">
+                    <div className="ml-6 min-w-50">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-sm text-gray-600">
                                 Enrollment
