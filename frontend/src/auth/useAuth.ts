@@ -194,7 +194,10 @@ const getAdminLink = (): string => {
 };
 
 const getResidentLink = (user: User): string => {
-    if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
+    if (
+        user.feature_access.includes(FeatureAccess.OpenContentAccess) ||
+        user.feature_access.includes(FeatureAccess.LearningRecordAccess)
+    ) {
         return '/home';
     }
     if (user.feature_access.includes(FeatureAccess.ProgramAccess)) {

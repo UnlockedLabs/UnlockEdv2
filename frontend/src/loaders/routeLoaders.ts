@@ -44,12 +44,13 @@ function buildClassBreadcrumbs(
 export const getStudentLevel1Data: LoaderFunction = async ({ request }) => {
     const user = await fetchUser();
     if (!user) return;
-    const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
+    const [resourcesResp, userContentResp, facilityContentResp, favoritesResp, featuredResp] =
         await Promise.all([
             API.get(`helpful-links?visibility=true&per_page=5`),
             API.get(`open-content/activity/${user.id}`),
             API.get(`open-content/activity`),
-            API.get(`open-content/favorites`)
+            API.get(`open-content/favorites`),
+            API.get(`libraries?visibility=featured&order_by=created_at&per_page=3`)
         ]);
 
     const links = resourcesResp.data as HelpfulLinkAndSort;
@@ -63,12 +64,27 @@ export const getStudentLevel1Data: LoaderFunction = async ({ request }) => {
     const favoriteOpenContent = favoritesResp.success
         ? (favoritesResp.data as OpenContentItem[])
         : [];
+    const featuredLibrariesRaw = featuredResp.success
+        ? (featuredResp.data as Library[])
+        : [];
+    const featuredLibraries: OpenContentItem[] = featuredLibrariesRaw.map((lib) => ({
+        title: lib.title,
+        url: lib.url,
+        external_id: lib.external_id,
+        thumbnail_url: lib.thumbnail_url,
+        description: lib.description ?? undefined,
+        visibility_status: lib.visibility_status,
+        open_content_provider_id: lib.open_content_provider_id,
+        content_id: lib.id,
+        content_type: 'library'
+    }));
     const libraryOptions = getLibraryOptionsHelper({ request });
     return json({
         helpfulLinks: helpfulLinks,
         topUserContent: topUserOpenContent,
         topFacilityContent: topFacilityOpenContent,
         favorites: favoriteOpenContent,
+        featuredLibraries,
         libraryOptions: libraryOptions
     });
 };

@@ -110,6 +110,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerOpenContentActivityRoutes,
 		srv.registerTagRoutes,
 		srv.registerReportsRoutes,
+		srv.registerLearningRecordRoutes,
 	} {
 		srv.register(route)
 	}

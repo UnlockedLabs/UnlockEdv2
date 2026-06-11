@@ -8,6 +8,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 interface ConfirmDialogProps {
     open: boolean;
@@ -18,6 +19,7 @@ interface ConfirmDialogProps {
     cancelLabel?: string;
     onConfirm: () => void;
     variant?: 'default' | 'destructive';
+    buttonClassName?: string;
 }
 
 export function ConfirmDialog({
@@ -28,7 +30,8 @@ export function ConfirmDialog({
     confirmLabel = 'Confirm',
     cancelLabel = 'Cancel',
     onConfirm,
-    variant = 'default'
+    variant = 'default',
+    buttonClassName
 }: ConfirmDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -40,13 +43,19 @@ export function ConfirmDialog({
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+                    <AlertDialogCancel className={buttonClassName}>{cancelLabel}</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={onConfirm}
                         className={
                             variant === 'destructive'
-                                ? 'bg-destructive text-white hover:bg-destructive/90'
-                                : 'bg-brand-dark text-white hover:bg-brand-dark/90'
+                                ? cn(
+                                      'bg-destructive text-white hover:bg-destructive/90',
+                                      buttonClassName
+                                  )
+                                : cn(
+                                      'bg-[#203622] text-white hover:bg-[#203622]/90',
+                                      buttonClassName
+                                  )
                         }
                     >
                         {confirmLabel}
