@@ -66,15 +66,23 @@ func (slog *sLog) add(key string, value any) {
 	slog.f[key] = value
 }
 
+// getQueryContext resolves the facility scope for a request: a switch-capable
+// admin (sysadmin/dept admin) gets the ?facility_id they're viewing, or 0
+// (statewide) when none is selected; a facility admin is always pinned to their
+// own facility. See facilityScopedQueryContext for reads that must fall back to
+// the home facility instead of going statewide.
 func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	var facilityID, userID uint
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	ctxWithUser := context.WithValue(r.Context(), models.UserIDKey, claims.UserID)
 	f, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
-	if err != nil || !claims.canSwitchFacility() {
-		facilityID = claims.FacilityID
-	} else {
+	switch {
+	case err == nil && claims.canSwitchFacility():
 		facilityID = uint(f)
+	case claims.canSwitchFacility():
+		facilityID = 0
+	default:
+		facilityID = claims.FacilityID
 	}
 	u, err := strconv.Atoi(r.URL.Query().Get("user_id"))
 	if err != nil {
@@ -114,6 +122,30 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 		Timezone:           tz,
 		IncludeDeactivated: includeDeactivated,
 	}
+}
+
+// facilityScopedQueryContext is for reads whose results are inherently
+// per-facility (libraries, videos, favorites, helpful links, resident/user
+// listings tied to a facility). A statewide admin has no single facility
+// (FacilityID == 0), so these fall back to the admin's home facility rather than
+// matching no facility at all.
+func (srv *Server) facilityScopedQueryContext(r *http.Request) models.QueryContext {
+	args := srv.getQueryContext(r)
+	if args.FacilityID == 0 {
+		args.FacilityID = r.Context().Value(ClaimsKey).(*Claims).FacilityID
+	}
+	return args
+}
+
+// requireFacilityID resolves the request's target facility for a facility-scoped
+// write. A statewide admin (FacilityID == 0) has not selected one, which is an
+// error for a write that must land in a concrete facility.
+func (srv *Server) requireFacilityID(r *http.Request) (uint, error) {
+	facilityID := srv.getQueryContext(r).FacilityID
+	if facilityID == 0 {
+		return 0, newBadRequestServiceError(nil, "facility selection is required")
+	}
+	return facilityID, nil
 }
 
 func getDateRange(r *http.Request) (*models.DateRange, error) {

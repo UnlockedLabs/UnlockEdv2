@@ -11,7 +11,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Calendar = BigCalendar as unknown as React.ComponentType<any>;
 import moment from 'moment';
-import { useAuth, isDeptAdmin } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
     FacilityProgramClassEvent,
     ServerResponseMany,
@@ -143,13 +143,13 @@ export default function Schedule() {
     const [showRescheduleSeries, setShowRescheduleSeries] = useState(false);
     const [showRestore, setShowRestore] = useState(false);
 
-    const isDepAdmin = user ? isDeptAdmin(user) : false;
+    const canSwitchFac = user ? canSwitchFacility(user) : false;
     const activeFacilityId =
         selectedFacilityId || (user ? String(user.facility.id) : '');
     const timezone = user?.timezone ?? 'UTC';
 
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
-        isDepAdmin ? '/api/facilities' : null
+        canSwitchFac ? '/api/facilities' : null
     );
     const facilities = useMemo(
         () => facilitiesResp?.data ?? [],
@@ -166,7 +166,7 @@ export default function Schedule() {
         if (!user) return null;
         let url = `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`;
         if (class_id && !showAllClasses) url += `&class_id=${class_id}`;
-        if (isDepAdmin && activeFacilityId)
+        if (canSwitchFac && activeFacilityId)
             url += `&facility_id=${activeFacilityId}`;
         return url;
     }, [
@@ -175,7 +175,7 @@ export default function Schedule() {
         endDate,
         class_id,
         showAllClasses,
-        isDepAdmin,
+        canSwitchFac,
         activeFacilityId
     ]);
 
@@ -246,12 +246,12 @@ export default function Schedule() {
 
     const selectedFacilityName = useMemo(() => {
         if (!user) return '';
-        if (!isDepAdmin) return user.facility.name;
+        if (!canSwitchFac) return user.facility.name;
         return (
             facilities.find((f) => String(f.id) === activeFacilityId)?.name ??
             user.facility.name
         );
-    }, [isDepAdmin, facilities, activeFacilityId, user]);
+    }, [canSwitchFac, facilities, activeFacilityId, user]);
 
     const sessionView = useMemo(
         () =>
@@ -339,7 +339,7 @@ export default function Schedule() {
         setShowRestore(true);
     };
 
-    const subtitle = isDepAdmin
+    const subtitle = canSwitchFac
         ? `Viewing: ${selectedFacilityName}`
         : 'Manage class schedules';
 
@@ -392,7 +392,7 @@ export default function Schedule() {
                 {!class_id && (
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            {isDepAdmin && (
+                            {canSwitchFac && (
                                 <div>
                                     <label className="form-label">
                                         Facility

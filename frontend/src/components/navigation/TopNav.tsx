@@ -1,10 +1,4 @@
-import {
-    useAuth,
-    canSwitchFacility,
-    handleLogout,
-    isFacilityAdmin
-} from '@/auth/useAuth';
-import { Facility } from '@/types';
+import { useAuth, handleLogout, isFacilityAdmin } from '@/auth/useAuth';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,30 +6,14 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Building2, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { usePageTitle } from '@/contexts/usePageTitle';
 
-export default function TopNav({ facilities }: { facilities?: Facility[] }) {
+export default function TopNav() {
     const { user } = useAuth();
     const { pageTitle } = usePageTitle();
 
     if (!user) return null;
-
-    const handleSwitchFacility = async (facility: Facility) => {
-        const API = (await import('@/api/api')).default;
-        const resp = await API.put<null, object>(
-            `admin/facility-context/${facility.id}`,
-            {}
-        );
-        if (resp.success) {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('page') !== null) {
-                params.set('page', '1');
-            }
-            const paramsString = params.size > 0 ? '?' + params.toString() : '';
-            window.location.href = window.location.pathname + paramsString;
-        }
-    };
 
     return (
         <header className="h-16 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
@@ -51,33 +29,6 @@ export default function TopNav({ facilities }: { facilities?: Facility[] }) {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-                {canSwitchFacility(user) &&
-                facilities &&
-                facilities.length > 0 ? (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <Building2 className="h-4 w-4" />
-                                <span className="hidden sm:inline truncate max-w-[8rem]">
-                                    {user.facility.name}
-                                </span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {facilities.map((facility) => (
-                                <DropdownMenuItem
-                                    key={facility.id}
-                                    onClick={() => {
-                                        void handleSwitchFacility(facility);
-                                    }}
-                                >
-                                    {facility.name}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                ) : null}
-
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-2">

@@ -250,7 +250,11 @@ export function EditClassModal({
 
     const { data: roomsResp, mutate: mutateRooms } = useSWR<
         ServerResponseMany<Room>
-    >(`/api/rooms?facility_id=${cls.facility_id}`);
+    >(
+        cls.facility_id
+            ? `/api/rooms?facility_id=${cls.facility_id}`
+            : '/api/rooms'
+    );
     const rooms = roomsResp?.data ?? [];
 
     const {

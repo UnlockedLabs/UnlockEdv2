@@ -53,7 +53,9 @@ func (srv *Server) registerUserRoutes() []routeDef {
 
 func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	role := r.URL.Query().Get("role")
-	args := srv.getQueryContext(r)
+	// Eligible/unmapped resident branches need a concrete facility, so default to
+	// home here; the statewide list branch resets to 0 below.
+	args := srv.facilityScopedQueryContext(r)
 	include := r.URL.Query()["include"]
 	var users []models.User
 	var err error
@@ -121,7 +123,7 @@ func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, lo
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
 	log.add("subhandlerCall", "HandleGetUnmappedUsers")
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	provID, err := strconv.Atoi(providerId)
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider ID")
@@ -196,8 +198,11 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	if reqForm.User.FacilityID == 0 {
+	if !claims.canSwitchFacility() {
+		// A facility admin can only create users in their own facility.
 		reqForm.User.FacilityID = claims.FacilityID
+	} else if reqForm.User.FacilityID == 0 {
+		return newBadRequestServiceError(nil, "facility selection is required")
 	}
 	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
@@ -246,7 +251,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), accountCreation); err != nil {
 			return newCreateRequestServiceError(err)
 		}
-		facilityTransfer := models.NewUserAccountHistory(reqForm.User.ID, models.FacilityTransfer, &claims.UserID, nil, &claims.FacilityID)
+		facilityTransfer := models.NewUserAccountHistory(reqForm.User.ID, models.FacilityTransfer, &claims.UserID, nil, &reqForm.User.FacilityID)
 		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), facilityTransfer); err != nil {
 			return newCreateRequestServiceError(err)
 		}
@@ -716,8 +721,13 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 		return newBadRequestServiceError(errors.New("no valid rows"), "no valid rows provided for user creation")
 	}
 
+	facilityID, err := srv.requireFacilityID(r)
+	if err != nil {
+		return err
+	}
+
 	log.add("admin_id", claims.UserID)
-	log.add("facility_id", claims.FacilityID)
+	log.add("facility_id", facilityID)
 	log.add("users_to_create", len(validRows))
 
 	usersToCreate := make([]models.User, 0, len(validRows))
@@ -730,12 +740,12 @@ func (srv *Server) handleBulkCreate(w http.ResponseWriter, r *http.Request, log 
 			NameLast:   validRow.LastName,
 			DocID:      validRow.ResidentID,
 			Role:       models.Student,
-			FacilityID: claims.FacilityID,
+			FacilityID: facilityID,
 		}
 		usersToCreate = append(usersToCreate, user)
 	}
 
-	err := srv.Db.CreateUsersBulk(usersToCreate, claims.UserID)
+	err = srv.Db.CreateUsersBulk(usersToCreate, claims.UserID)
 	if err != nil {
 		log.add("transaction_error", err.Error())
 		log.error("Bulk user creation transaction failed")

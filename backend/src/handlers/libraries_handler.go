@@ -38,7 +38,7 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 // all - true or false on whether or not to return all libraries without pagination
 // categories - the tag ids to filter the libraries by
 func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	showHidden := "visible"
 	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
@@ -119,7 +119,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 	}
 	// if we are on a library viewer page, we want to search
 	// only the included library, so we omit title search
-	queryCtx := srv.getQueryContext(r)
+	queryCtx := srv.facilityScopedQueryContext(r)
 	if page == 1 && len(libraryIDs) == 0 {
 		titleSearch, err = srv.Db.OpenContentTitleSearch(&queryCtx)
 		if err != nil {
@@ -212,7 +212,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 }
 
 func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "library id")

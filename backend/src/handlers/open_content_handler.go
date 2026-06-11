@@ -35,7 +35,7 @@ func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request
 }
 
 func (srv *Server) handleGetUserFavoriteOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	favorites, err := srv.Db.GetUserFavorites(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -44,7 +44,7 @@ func (srv *Server) handleGetUserFavoriteOpenContent(w http.ResponseWriter, r *ht
 }
 
 func (srv *Server) handleGetUserFavoriteOpenContentGroupings(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	favorites, err := srv.Db.GetUserFavoriteGroupings(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)

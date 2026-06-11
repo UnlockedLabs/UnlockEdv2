@@ -134,6 +134,55 @@ func runCreateClassNotOfferedFacilityTest(t *testing.T, env *TestEnv, facility *
 		ExpectStatus(http.StatusUnauthorized)
 }
 
+// A department admin (statewide) must create a class at the facility named by
+// the ?facility_id= query param, not at their home facility or whatever the body
+// carries. This guards the toggle-removal re-scoping.
+func TestCreateClassFacilityScopingForDeptAdmin(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	homeFacility, err := env.CreateTestFacility("Home Facility")
+	require.NoError(t, err)
+	targetFacility, err := env.CreateTestFacility("Target Facility")
+	require.NoError(t, err)
+
+	deptAdmin, err := env.CreateTestUser("deptadmin", models.DepartmentAdmin, homeFacility.ID, "")
+	require.NoError(t, err)
+
+	program, err := env.CreateTestProgram("Scoped Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, true, nil)
+	require.NoError(t, err)
+	// Offered only at the target facility, not the admin's home facility.
+	err = env.SetFacilitiesToProgram(program.ID, []uint{targetFacility.ID})
+	require.NoError(t, err)
+
+	instructor, err := env.CreateTestInstructor(targetFacility.ID, "target")
+	require.NoError(t, err)
+
+	t.Run("class is created at the query-param facility, not the admin's home", func(t *testing.T) {
+		// Body intentionally carries the home facility to prove it is ignored.
+		class := newClassWithInstructor(program, homeFacility, &instructor.ID)
+
+		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost,
+			fmt.Sprintf("/api/programs/%d/classes?facility_id=%d", program.ID, targetFacility.ID), class).
+			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: deptAdmin.ID, FacilityID: homeFacility.ID}).
+			Do().
+			ExpectStatus(http.StatusCreated)
+
+		got := resp.GetData()
+		require.Equal(t, targetFacility.ID, got.FacilityID)
+	})
+
+	t.Run("missing facility_id is rejected for a statewide admin", func(t *testing.T) {
+		class := newClassWithInstructor(program, targetFacility, &instructor.ID)
+
+		NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost,
+			fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: deptAdmin.ID, FacilityID: homeFacility.ID}).
+			Do().
+			ExpectStatus(http.StatusUnauthorized)
+	})
+}
+
 // creates a boilerplate class with required instructor
 func newClassWithInstructor(program *models.Program, facility *models.Facility, instructorID *uint) models.ProgramClass {
 	endDt := time.Now().Add(time.Hour * 24)
