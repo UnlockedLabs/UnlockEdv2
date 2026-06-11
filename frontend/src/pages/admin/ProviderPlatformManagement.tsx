@@ -51,7 +51,7 @@ export default function ProviderPlatformManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponseMany<ProviderPlatform>>(
+    } = useSWR<ServerResponseMany<ProviderPlatform>, Error>(
         `/api/provider-platforms?page=${page}&per_page=${perPage}`
     );
 

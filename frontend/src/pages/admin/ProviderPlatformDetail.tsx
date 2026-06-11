@@ -77,7 +77,7 @@ export default function ProviderPlatformDetail() {
         mutate,
         isLoading,
         error
-    } = useSWR<ServerResponseOne<ProviderPlatform>>(
+    } = useSWR<ServerResponseOne<ProviderPlatform>, Error>(
         id ? `/api/provider-platforms/${id}` : null
     );
     const provider = providerResp?.data;
