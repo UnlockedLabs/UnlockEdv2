@@ -94,14 +94,34 @@ To:
 ### Step 3 — sanity scan
 
 Grep `Dashboard.tsx` for any other element pairing `cursor-pointer` with no `onClick`/navigation.
-Per investigation, only `FacilityHealthTable` is wrong — confirm.
+The scan revealed that `FacilityHealthTable` was the only element with a *false* pointer affordance.
+It also surfaced the inverse problem in `QuickActions`: two `<button>` elements that *do* navigate
+but were missing `cursor-pointer` due to Tailwind's Preflight resetting `<button>` to
+`cursor: default`.
+
+### Step 4 — QuickActions buttons (lines ~551, 566)
+
+`QuickActions` contains two buttons that navigate via `onClick`:
+
+- **View All Programs** → `navigate('/programs')`
+- **Browse Classes** → `navigate('/classes')`
+
+Both were missing `cursor-pointer`. Add it to each:
+
+```tsx
+// before
+className="... transition-colors"
+
+// after
+className="... transition-colors cursor-pointer"
+```
 
 ## Verification
 
 1. `cd frontend && npm run typecheck` and `npm run lint` — no new errors (className-only changes).
-2. Run the app, open the admin Dashboard, hover Facility Health rows:
-   - Cursor stays the default arrow (no hand/pointer).
-   - Facility name no longer changes color on hover.
+2. Run the app, open the admin Dashboard:
+   - Hover Facility Health rows: cursor stays the default arrow; facility name no longer changes color.
+   - Hover **View All Programs** and **Browse Classes** buttons: cursor changes to pointer.
    - Subtle row background highlight on hover is acceptable to keep.
 3. Confirm against `dashboard_cursor_err.mp4` that the reported behavior no longer occurs.
 
