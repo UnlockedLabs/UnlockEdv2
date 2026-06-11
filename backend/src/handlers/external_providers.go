@@ -71,6 +71,31 @@ func (srv *Server) createAndRegisterCanvasUserAccount(provider *models.ProviderP
 	return nil
 }
 
+func (srv *Server) getExistingCanvasOidcLoginID(provider *models.ProviderPlatform, externalUserID string) string {
+	req, err := http.NewRequest("GET", provider.BaseUrl+"/api/v1/users/"+externalUserID+"/logins", nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+	resp, err := srv.Client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return ""
+	}
+	defer resp.Body.Close()
+	var logins []map[string]interface{}
+	if err = json.NewDecoder(resp.Body).Decode(&logins); err != nil {
+		return ""
+	}
+	for _, login := range logins {
+		if authType, ok := login["authentication_provider_type"].(string); ok && strings.Compare(authType, "openid_connect") == 0 {
+			if id, ok := login["id"].(float64); ok {
+				return strconv.Itoa(int(id))
+			}
+		}
+	}
+	return ""
+}
+
 func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, user *models.User) error {
 	providerMapping, err := srv.Db.GetProviderUserMapping(int(user.ID), int(provider.ID))
 	if err != nil {
@@ -83,6 +108,12 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 	if provider.ExternalAuthProviderId == "" {
 		log.Error("this shouldn't happen, when provider oidc client is enabled we should have the foreign auth key")
 		return errors.New("provider is not registered as an auth client, please register first")
+	}
+	// user may already have an OIDC login in Canvas (e.g. when mapping an existing Canvas user)
+	if existingID := srv.getExistingCanvasOidcLoginID(provider, providerMapping.ExternalUserID); existingID != "" {
+		providerMapping.ExternalLoginID = existingID
+		providerMapping.AuthenticationProviderStatus = models.OpenIDConnect
+		return srv.Db.UpdateProviderUserMapping(providerMapping)
 	}
 	body := url.Values{}
 	body.Add("user[id]", providerMapping.ExternalUserID)
