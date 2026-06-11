@@ -557,7 +557,7 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => navigate('/programs')}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-surface-hover dark:hover:bg-[#262626]/80 text-brand-dark dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-surface-hover dark:hover:bg-[#262626]/80 text-brand-dark dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors cursor-pointer"
                         >
                             <RectangleStackIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                             <span className="text-sm">View All Programs</span>
@@ -572,7 +572,7 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => navigate('/classes')}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-surface-hover dark:hover:bg-[#262626]/80 text-brand-dark dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-surface-hover dark:hover:bg-[#262626]/80 text-brand-dark dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors cursor-pointer"
                         >
                             <ListBulletIcon className="size-5 text-brand dark:text-[#8fb55e]" />
                             <span className="text-sm">Browse Classes</span>
@@ -643,10 +643,10 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                     {rows.map((row) => (
                         <tr
                             key={row.facility_id}
-                            className="hover:bg-surface-hover/50 dark:hover:bg-[#262626]/50 cursor-pointer transition-colors"
+                            className="hover:bg-surface-hover/50 dark:hover:bg-[#262626]/50 transition-colors"
                         >
                             <td className="px-6 py-4">
-                                <div className="text-brand-dark dark:text-white hover:text-brand dark:hover:text-[#8fb55e] transition-colors">
+                                <div className="text-brand-dark dark:text-white">
                                     {row.facility_name}
                                 </div>
                             </td>
