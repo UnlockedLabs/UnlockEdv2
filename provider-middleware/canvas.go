@@ -116,7 +116,7 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 			nameFirst = shortName
 			nameLast = name[0]
 		}
-		userId, _ := user["id"].(int64)
+		userId, _ := user["id"].(float64)
 		var count int64 = 0
 		err := db.Model(&models.ProviderUserMapping{}).Where("external_user_id = ?", fmt.Sprintf("%d", int(userId))).Where("provider_platform_id = ?", srv.ProviderPlatformID).Count(&count).Error
 		if err != nil {
