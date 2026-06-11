@@ -14,7 +14,6 @@ import {
     entryHasExportableContent,
     entryPayloadEqual,
     filterEntriesForExport,
-    readTranscriptEntriesFromStorage,
     resolveInitialEntrySession,
     sortEntriesNewestFirst,
     syncSessionRowsAfterUpsert,
@@ -215,8 +214,8 @@ export function DigitalTranscriptWysiwygEntry({
         const edit = searchParams.get('edit');
         const intent = searchParams.get('intent') === 'new';
 
-        let s = resolveInitialEntrySession();
-        const committed = readTranscriptEntriesFromStorage();
+        let s = resolveInitialEntrySession(entries);
+        const committed = entries;
 
         if (isFunnel) {
             s = toFunnelSingleRowSession(s, committed, {
@@ -269,15 +268,15 @@ export function DigitalTranscriptWysiwygEntry({
     );
 
     const buildSavedEntry = useCallback((row: TranscriptEntry): TranscriptEntry => {
-        const existing = readTranscriptEntriesFromStorage().find((e) => e.id === row.id);
+        const existing = entries.find((e) => e.id === row.id);
         return {
             ...row,
             createdAt: existing?.createdAt ?? row.createdAt,
             topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
         };
-    }, []);
+    }, [entries]);
 
-    const persistActiveRow = useCallback((): boolean => {
+    const persistActiveRow = useCallback(async (): Promise<boolean> => {
         const current = sessionRef.current;
         const id = current?.expandedId;
         if (!id) return false;
@@ -285,13 +284,13 @@ export function DigitalTranscriptWysiwygEntry({
         if (!row) return false;
 
         const saved = buildSavedEntry(row);
-        const existing = readTranscriptEntriesFromStorage().find((e) => e.id === id);
+        const existing = entries.find((e) => e.id === id);
         if (existing && entryPayloadEqual(saved, existing)) {
             return true;
         }
 
         try {
-            upsertCommittedEntry(saved);
+            await upsertCommittedEntry(saved);
             setSession((prev) => {
                 if (!prev) return prev;
                 const next = syncSessionRowsAfterUpsert(prev, saved);
@@ -302,7 +301,7 @@ export function DigitalTranscriptWysiwygEntry({
         } catch {
             return false;
         }
-    }, [buildSavedEntry, upsertCommittedEntry]);
+    }, [buildSavedEntry, upsertCommittedEntry, entries]);
 
     const validateFinishRequirements = useCallback((): boolean => {
         const current = sessionRef.current;
@@ -333,7 +332,7 @@ export function DigitalTranscriptWysiwygEntry({
         if (!row) return;
 
         const saved = buildSavedEntry(row);
-        const committed = readTranscriptEntriesFromStorage().find((e) => e.id === row.id);
+        const committed = entries.find((e) => e.id === row.id);
         if (committed && entryPayloadEqual(saved, committed)) {
             return;
         }
@@ -341,13 +340,15 @@ export function DigitalTranscriptWysiwygEntry({
         reportAutoSaveStatus('pending');
 
         const t = window.setTimeout(() => {
-            reportAutoSaveStatus('saving');
-            const ok = persistActiveRow();
-            if (ok) {
-                reportAutoSaveStatus('saved', new Date());
-            } else {
-                reportAutoSaveStatus('error');
-            }
+            void (async () => {
+                reportAutoSaveStatus('saving');
+                const ok = await persistActiveRow();
+                if (ok) {
+                    reportAutoSaveStatus('saved', new Date());
+                } else {
+                    reportAutoSaveStatus('error');
+                }
+            })();
         }, COMMITTED_AUTOSAVE_MS);
 
         return () => window.clearTimeout(t);
@@ -424,8 +425,8 @@ export function DigitalTranscriptWysiwygEntry({
     }, []);
 
     const isCommittedEntryId = useCallback((id: string) => {
-        return readTranscriptEntriesFromStorage().some((e) => e.id === id);
-    }, []);
+        return committedIds.has(id);
+    }, [committedIds]);
 
     const handleCancel = useCallback(
         (id: string) => {
@@ -469,7 +470,7 @@ export function DigitalTranscriptWysiwygEntry({
                 ...row,
                 topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
             };
-            upsertCommittedEntry(saved);
+            void upsertCommittedEntry(saved);
             setSession((prev) => {
                 if (!prev) return prev;
                 const next = syncSessionRowsAfterUpsert(prev, saved);
@@ -739,8 +740,19 @@ export function DigitalTranscriptWysiwygEntry({
                     setDeleteConfirmFor(null);
                     if (!target) return;
                     delete baselinesRef.current[target.id];
-                    const next = deleteCommittedEntry(target.id);
-                    setSession(next ?? resolveInitialEntrySession());
+                    void deleteCommittedEntry(target.id);
+                    setSession((prev) => {
+                        if (!prev) return null;
+                        const rows = prev.rows.filter((r) => r.id !== target.id);
+                        if (rows.length === 0) return null;
+                        const expandedId =
+                            prev.expandedId === target.id ? null : prev.expandedId;
+                        const lastPreviewId =
+                            prev.lastPreviewId === target.id
+                                ? (rows[rows.length - 1]?.id ?? null)
+                                : prev.lastPreviewId;
+                        return { ...prev, rows, expandedId, lastPreviewId };
+                    });
                 }}
             />
         </div>

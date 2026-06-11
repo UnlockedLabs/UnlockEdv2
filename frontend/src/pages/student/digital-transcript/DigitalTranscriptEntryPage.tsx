@@ -23,7 +23,6 @@ import { DigitalTranscriptBackLink, DigitalTranscriptShell, dtPageSurface } from
 import { LearningRecordExportContent } from './LearningRecordExportContent';
 import { learningRecordOutlineButtonClassName, LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
-import { readLearningRecordExportRows } from './transcriptEntrySessionStorage';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 
 function formatSavedTime(date: Date): string {
@@ -91,9 +90,7 @@ export default function DigitalTranscriptEntryPage() {
     const { hydrated, upsertCommittedEntry, deleteCommittedEntry, entries } = useTranscriptDraft();
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
-    const [exportRows, setExportRows] = useState<TranscriptEntry[]>(() =>
-        readLearningRecordExportRows()
-    );
+    const [exportRows, setExportRows] = useState<TranscriptEntry[]>([]);
     const [isExporting, setIsExporting] = useState(false);
     const [exportActive, setExportActive] = useState(false);
     const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');

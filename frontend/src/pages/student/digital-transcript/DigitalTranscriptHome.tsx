@@ -53,7 +53,6 @@ import {
     FUNNEL_FORM_FIELD_TOTAL
 } from './transcriptReflectionConfig';
 import { getEntryDisplayTitle } from './entryTitleDisplay';
-import { createEmptyTranscriptEntry } from './transcriptEntrySessionStorage';
 import {
     readTableSortFromSession,
     sortTranscriptEntries,
@@ -421,7 +420,7 @@ export default function DigitalTranscriptHome() {
     const formVariant = getLearningRecordFormVariant(pathname);
     const isFunnel = formVariant === 'funnel';
     const entryPath = `${base}/entry`;
-    const { entries, hydrated, hasDraft, deleteCommittedEntry, upsertCommittedEntry } =
+    const { entries, hydrated, hasDraft, deleteCommittedEntry } =
         useTranscriptDraft();
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
@@ -493,17 +492,16 @@ export default function DigitalTranscriptHome() {
         if (!deleteTarget || isDeleting) return;
 
         setIsDeleting(true);
-        deleteCommittedEntry(deleteTarget.id);
-        setIsDeleting(false);
-        setDeleteTarget(null);
+        void deleteCommittedEntry(deleteTarget.id).finally(() => {
+            setIsDeleting(false);
+            setDeleteTarget(null);
+        });
     }, [deleteCommittedEntry, deleteTarget, isDeleting]);
 
     const handleStartNewClick = useCallback(() => {
         setViewAllOpen(false);
-        const blank = createEmptyTranscriptEntry();
-        upsertCommittedEntry(blank);
-        navigate(`${entryPath}?edit=${encodeURIComponent(blank.id)}`);
-    }, [entryPath, navigate, upsertCommittedEntry]);
+        navigate(`${entryPath}?intent=new`);
+    }, [entryPath, navigate]);
 
     if (!hydrated) {
         return (

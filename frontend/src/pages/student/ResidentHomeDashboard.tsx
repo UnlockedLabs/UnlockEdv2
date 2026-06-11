@@ -338,7 +338,7 @@ export function ResidentHomeDashboard({
     );
 
     const incompleteEntry = useMemo(() => {
-        return findIncompleteAchievementEntry(learningRecordFormVariant);
+        return findIncompleteAchievementEntry(learningRecordEntries, learningRecordFormVariant);
     }, [hasIncompleteEntry, learningRecordEntries, entrySessionTick, learningRecordFormVariant]);
 
     /** True only when there is a real session row to resume (never an empty placeholder). */
