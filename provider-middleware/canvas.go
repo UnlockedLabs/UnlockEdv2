@@ -69,7 +69,7 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 	// TODO: handle sis, prefix, or something that accounts for sheer amt of users
 	baseURL := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users?per_page=1000"
 	for _, t := range srv.EnrollmentTypes {
-		baseURL += "&enrollment_type[]=" + t
+		baseURL += "&enrollment_type=" + t
 	}
 	url := baseURL
 	log.Printf("url: %v", url)
