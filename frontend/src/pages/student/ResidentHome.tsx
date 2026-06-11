@@ -16,6 +16,8 @@ import { EmptyState } from '@/components/shared';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
+import { clickableProps } from '@/lib/a11y';
+import { toExternalUrl } from '@/lib/utils';
 
 interface ResidentHomeData {
     helpfulLinks: HelpfulLink[];
@@ -34,7 +36,7 @@ function FeaturedLibraryCard({
     const title = decodeHtmlEntities(library.title);
     const description = decodeHtmlEntities(library.description ?? '');
     return (
-        <div onClick={onClick} className="block cursor-pointer">
+        <div {...clickableProps(onClick)} className="block cursor-pointer">
             <Card className="hover:shadow-md transition-shadow h-full">
                 <CardContent className="p-4">
                     <div className="flex items-center gap-3 mb-2">
@@ -63,7 +65,7 @@ function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
     const description = decodeHtmlEntities(link.description ?? '');
     return (
         <a
-            href={link.url}
+            href={toExternalUrl(link.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="block"
@@ -97,13 +99,17 @@ function FavoriteItem({ item }: { item: OpenContentItem }) {
         } else if (item.content_type === 'library') {
             navigate(`/viewer/libraries/${item.content_id}`);
         } else {
-            window.open(item.url, '_blank', 'noopener,noreferrer');
+            window.open(
+                toExternalUrl(item.url),
+                '_blank',
+                'noopener,noreferrer'
+            );
         }
     };
 
     return (
         <div
-            onClick={handleClick}
+            {...clickableProps(handleClick)}
             className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
