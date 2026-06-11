@@ -37,12 +37,11 @@ import {
 import { AddResidentDialog } from '@/components/residents/AddResidentDialog';
 import {
     EditResidentDialog,
-    ResetPasswordConfirmDialog,
-    ResetPasswordResultDialog,
     DeactivateDialog,
     DeleteDialog,
     TransferDialog
 } from '@/components/residents/ResidentDialogs';
+import { ResetPasswordModal } from '@/components/shared';
 import {
     BulkResetPasswordDialog,
     BulkDeactivateDialog,
@@ -96,8 +95,6 @@ export default function StudentManagement() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-    const [resetResultOpen, setResetResultOpen] = useState(false);
-    const [tempPassword, setTempPassword] = useState('');
     const [deactivateOpen, setDeactivateOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
@@ -206,11 +203,6 @@ export default function StudentManagement() {
     const openAction = (targetUser: User, setter: (open: boolean) => void) => {
         setSelectedUser(targetUser);
         setter(true);
-    };
-
-    const handleResetSuccess = (password: string) => {
-        setTempPassword(password);
-        setResetResultOpen(true);
     };
 
     const SortableHeader = ({
@@ -606,17 +598,11 @@ export default function StudentManagement() {
                         resident={selectedUser}
                         onSuccess={handleMutate}
                     />
-                    <ResetPasswordConfirmDialog
+                    <ResetPasswordModal
                         open={resetConfirmOpen}
                         onOpenChange={setResetConfirmOpen}
-                        resident={selectedUser}
-                        onSuccess={handleResetSuccess}
-                    />
-                    <ResetPasswordResultDialog
-                        open={resetResultOpen}
-                        onOpenChange={setResetResultOpen}
-                        residentName={`${selectedUser.name_first} ${selectedUser.name_last}`}
-                        tempPassword={tempPassword}
+                        name={`${selectedUser.name_first} ${selectedUser.name_last}`}
+                        userId={selectedUser.id}
                     />
                     <DeactivateDialog
                         open={deactivateOpen}
