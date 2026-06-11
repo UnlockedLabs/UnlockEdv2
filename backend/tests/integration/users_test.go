@@ -50,4 +50,29 @@ func TestCreateUserHandler(t *testing.T) {
 		require.Equal(t, form.User.DocID, got.DocID)
 		require.Equal(t, form.User.FacilityID, got.FacilityID)
 	})
+
+	t.Run("switch-capable admin must specify a facility", func(t *testing.T) {
+		var form struct {
+			User      models.User `json:"user"`
+			Providers []int       `json:"provider_platforms"`
+		}
+
+		form.User = models.User{
+			Username:  "nofacuser",
+			NameFirst: "No",
+			NameLast:  "Facility",
+			Role:      models.Student,
+			Email:     "nofacuser@example.com",
+			DocID:     "987654321",
+			// FacilityID intentionally omitted: a statewide admin has no ambient
+			// facility, so creation must be rejected rather than defaulting.
+		}
+
+		NewRequest[struct {
+			User models.User `json:"user"`
+		}](env.Client, t, http.MethodPost, "/api/users", form).
+			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin}).
+			Do().
+			ExpectStatus(http.StatusBadRequest)
+	})
 }

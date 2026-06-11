@@ -20,6 +20,7 @@ import {
 } from '@/types';
 import API from '@/api/api';
 import { fetchUser } from '@/auth/useAuth';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 function buildClassBreadcrumbs(
     cls: Class,
@@ -135,7 +136,7 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
               (library) =>
                   ({
                       key: library.id,
-                      value: library.title
+                      value: decodeHtmlEntities(library.title)
                   }) as Option
           )
         : [];
@@ -190,10 +191,6 @@ export const getProgramTitle: LoaderFunction = async ({
     let rooms: Room[] = [];
     let breadcrumbs: BreadcrumbItem[] | undefined;
 
-    const roomsResp = await API.get('rooms');
-    if (roomsResp.success) {
-        rooms = roomsResp.data as Room[];
-    }
     if (id) {
         const resp = await API.get(`programs/${id}`);
         if (resp.success) {
@@ -211,6 +208,12 @@ export const getProgramTitle: LoaderFunction = async ({
         } else {
             return redirectOnError(classResp);
         }
+    }
+
+    const roomsUrl = cls ? `rooms?facility_id=${cls.facility_id}` : 'rooms';
+    const roomsResp = await API.get(roomsUrl);
+    if (roomsResp.success) {
+        rooms = roomsResp.data as Room[];
     }
 
     const url = new URL(request.url);

@@ -9,6 +9,7 @@ export interface DepartmentMetrics {
         percent_active: number;
         percent_inactive: number;
         total_residents: number;
+        total_admins: number;
         facility: string;
         new_residents_added: number;
         new_admins_added: number;
@@ -196,4 +197,47 @@ export enum FilterPastTime {
     'Past 30 days' = '30',
     'Past 90 days' = '90',
     'All time' = 'all'
+}
+
+export interface DailyLoginCount {
+    date: string;
+    total_logins: number;
+}
+
+export interface FacilityEngagement {
+    facility_id: number;
+    facility_name: string;
+    registered: number;
+    active: number;
+    logins: number;
+}
+
+export type InsightsRangeKey = '7D' | '30D' | '90D' | 'YTD' | 'Custom';
+
+export interface RepeatEngagement {
+    once: number;
+    two_to_four: number;
+    five_plus: number;
+}
+
+export interface CategoryViews {
+    category: string;
+    views: number;
+}
+
+export interface KCContentRow {
+    title: string;
+    visits: number;
+    change: number;
+}
+
+export interface KnowledgeCenterMetrics {
+    total_interactions: number;
+    total_interactions_change: number;
+    unique_residents: number;
+    avg_session_minutes: number;
+    repeat_engagement: RepeatEngagement;
+    library_views_by_category: CategoryViews[];
+    top_libraries: KCContentRow[];
+    top_videos: KCContentRow[];
 }

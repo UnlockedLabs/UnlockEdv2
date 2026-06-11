@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { toExternalUrl } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
@@ -34,6 +35,7 @@ import { formatVideoDuration } from '@/lib/formatters';
 import { isAdministrator, useAuth } from '@/auth/useAuth';
 import { toast } from 'sonner';
 import API from '@/api/api';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -192,11 +194,11 @@ export default function ResidentKnowledgeCenter() {
         );
         if (resp.success && resp.data) {
             window.open(
-                (resp.data as { url: string }).url ?? link.url,
+                toExternalUrl((resp.data as { url: string }).url ?? link.url),
                 '_blank'
             );
         } else {
-            window.open(link.url ?? '', '_blank');
+            window.open(toExternalUrl(link.url ?? ''), '_blank');
         }
     };
 
@@ -248,6 +250,9 @@ export default function ResidentKnowledgeCenter() {
         const favorited = pendingFavorites.has(favKey)
             ? pendingFavorites.get(favKey)!
             : item.favorited;
+        const title = decodeHtmlEntities(item.title);
+        const description = decodeHtmlEntities(item.description);
+        const author = item.author ? decodeHtmlEntities(item.author) : '';
         const handleClick = () => {
             if (item.type === 'library') {
                 navigate(`/viewer/libraries/${item.id}`);
@@ -318,15 +323,15 @@ export default function ResidentKnowledgeCenter() {
                     {item.type === 'library' && item.imageUrl && (
                         <img
                             src={item.imageUrl}
-                            alt={item.title}
-                            className="size-12 rounded flex-shrink-0 border border-gray-200"
+                            alt={title}
+                            className="size-12 rounded shrink-0 border border-gray-200"
                         />
                     )}
                     {item.type === 'video' && item.thumbnailUrl && (
-                        <div className="relative flex-shrink-0">
+                        <div className="relative shrink-0">
                             <img
                                 src={item.thumbnailUrl}
-                                alt={item.title}
+                                alt={title}
                                 className="size-12 rounded object-cover border border-gray-200"
                             />
                             {item.duration != null && (
@@ -337,13 +342,11 @@ export default function ResidentKnowledgeCenter() {
                         </div>
                     )}
                     <div className="flex-1 min-w-0 pr-8">
-                        <h3 className="card-title-link">{item.title}</h3>
-                        {item.author && (
-                            <p className="text-sm text-gray-500">
-                                {item.author}
-                            </p>
+                        <h3 className="card-title-link">{title}</h3>
+                        {author && (
+                            <p className="text-sm text-gray-500">{author}</p>
                         )}
-                        {!item.author && (
+                        {!author && (
                             <p className="text-sm text-gray-500 invisible">
                                 placeholder
                             </p>
@@ -351,14 +354,14 @@ export default function ResidentKnowledgeCenter() {
                     </div>
                 </div>
 
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
-                    {item.description}
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-10">
+                    {description}
                 </p>
 
                 {item.type === 'library' &&
                     item.categories &&
                     item.categories.length > 0 && (
-                        <div className="mt-auto pt-3 border-t border-gray-100 flex items-center gap-2 overflow-hidden min-h-[2.5rem]">
+                        <div className="mt-auto pt-3 border-t border-gray-100 flex items-center gap-2 overflow-hidden min-h-10">
                             <Badge
                                 variant="secondary"
                                 className="bg-surface-hover text-gray-700 hover:bg-surface-hover text-xs shrink-0 max-w-48 truncate"
@@ -404,7 +407,7 @@ export default function ResidentKnowledgeCenter() {
                     )}
 
                 {item.type === 'link' && item.url && (
-                    <div className="mt-auto pt-3 border-t border-gray-100 min-h-[2.5rem] flex items-center">
+                    <div className="mt-auto pt-3 border-t border-gray-100 min-h-10 flex items-center">
                         <p className="text-sm text-brand truncate">
                             {item.url}
                         </p>
@@ -412,7 +415,7 @@ export default function ResidentKnowledgeCenter() {
                 )}
 
                 {item.type === 'video' && (
-                    <div className="mt-auto pt-3 border-t border-gray-100 min-h-[2.5rem]" />
+                    <div className="mt-auto pt-3 border-t border-gray-100 min-h-10" />
                 )}
             </div>
         );
@@ -516,7 +519,7 @@ export default function ResidentKnowledgeCenter() {
                         >
                             <SelectTrigger
                                 id="knowledge-center-filters"
-                                className="w-[280px]"
+                                className="w-70"
                             >
                                 <SelectValue placeholder="Filter by category" />
                             </SelectTrigger>

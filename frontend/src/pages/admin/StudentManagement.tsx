@@ -665,6 +665,11 @@ export default function StudentManagement() {
                 open={bulkImportOpen}
                 onOpenChange={setBulkImportOpen}
                 onSuccess={() => void mutate()}
+                facilities={facilities}
+                showFacilitySelect={showFacilityColumn}
+                defaultFacilityId={
+                    showFacilityColumn && user ? user.facility_id : undefined
+                }
             />
 
             {/* Bulk Action Bar */}

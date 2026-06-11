@@ -103,7 +103,10 @@ export function RosterTab({
         `/api/program-classes/${classId}/events?all=true`
     );
 
-    const enrolledRows = enrollmentResp?.data ?? [];
+    const enrolledRows = useMemo(
+        () => enrollmentResp?.data ?? [],
+        [enrollmentResp]
+    );
 
     const attendanceMap = useMemo(() => {
         return computeAttendanceByUser(eventsResp?.data ?? []);

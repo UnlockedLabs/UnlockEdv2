@@ -11,7 +11,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Calendar = BigCalendar as unknown as React.ComponentType<any>;
 import moment from 'moment';
-import { useAuth, isDeptAdmin } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
     FacilityProgramClassEvent,
     ServerResponseMany,
@@ -158,13 +158,13 @@ export default function Schedule() {
     const [showRescheduleSeries, setShowRescheduleSeries] = useState(false);
     const [showRestore, setShowRestore] = useState(false);
 
-    const isDepAdmin = user ? isDeptAdmin(user) : false;
+    const canSwitchFac = user ? canSwitchFacility(user) : false;
     const activeFacilityId =
         selectedFacilityId || (user ? String(user.facility.id) : '');
     const timezone = user?.timezone ?? 'UTC';
 
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
-        isDepAdmin ? '/api/facilities' : null
+        canSwitchFac ? '/api/facilities' : null
     );
     const facilities = useMemo(
         () => facilitiesResp?.data ?? [],
@@ -181,7 +181,7 @@ export default function Schedule() {
         if (!user) return null;
         let url = `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`;
         if (class_id && !showAllClasses) url += `&class_id=${class_id}`;
-        if (isDepAdmin && activeFacilityId)
+        if (canSwitchFac && activeFacilityId)
             url += `&facility_id=${activeFacilityId}`;
         return url;
     }, [
@@ -190,7 +190,7 @@ export default function Schedule() {
         endDate,
         class_id,
         showAllClasses,
-        isDepAdmin,
+        canSwitchFac,
         activeFacilityId
     ]);
 
@@ -261,12 +261,12 @@ export default function Schedule() {
 
     const selectedFacilityName = useMemo(() => {
         if (!user) return '';
-        if (!isDepAdmin) return user.facility.name;
+        if (!canSwitchFac) return user.facility.name;
         return (
             facilities.find((f) => String(f.id) === activeFacilityId)?.name ??
             user.facility.name
         );
-    }, [isDepAdmin, facilities, activeFacilityId, user]);
+    }, [canSwitchFac, facilities, activeFacilityId, user]);
 
     const sessionView = useMemo(
         () =>
@@ -364,7 +364,7 @@ export default function Schedule() {
         setShowRestore(true);
     };
 
-    const subtitle = isDepAdmin
+    const subtitle = canSwitchFac
         ? `Viewing: ${selectedFacilityName}`
         : 'Manage class schedules';
 
@@ -372,7 +372,7 @@ export default function Schedule() {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-[600px]" />
+                <Skeleton className="h-150" />
             </div>
         );
     }
@@ -380,7 +380,7 @@ export default function Schedule() {
     const past = isPastEvent(selectedEvent);
     const cancellationActionLabel = selectedEvent?.is_override
         ? 'Undo Cancellation'
-        : 'Restore Future Sessions';
+        : 'Restore This & All Future Sessions';
     const disableModifyActions = past || !canUpdateEvent();
     const showActiveBadge =
         !!selectedEvent &&
@@ -389,7 +389,7 @@ export default function Schedule() {
 
     return (
         <div className="bg-[#E7EAED] dark:bg-[#0a0a0a] min-h-screen overflow-x-hidden">
-            <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-6">
+            <div className="max-w-350 mx-auto px-8 py-8 space-y-6">
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -417,7 +417,7 @@ export default function Schedule() {
                 {!class_id && (
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            {isDepAdmin && (
+                            {canSwitchFac && (
                                 <div>
                                     <label className="form-label">
                                         Facility
@@ -514,6 +514,7 @@ export default function Schedule() {
                         onSelectEvent={handleSelectEvent}
                         eventPropGetter={eventStyleGetter}
                         views={['month', 'week', 'day', 'agenda']}
+                        length={6}
                         style={{ height: '100%' }}
                         min={new Date(0, 0, 0, 0, 0, 0, 0)}
                         max={new Date(0, 0, 0, 23, 59, 59, 999)}

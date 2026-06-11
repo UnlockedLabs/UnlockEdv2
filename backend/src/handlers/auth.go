@@ -286,46 +286,23 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				}
 				fields["user"] = user
 				log.WithFields(fields).Trace("found user from ory session")
-				facilityId, ok := traits["facility_id"].(float64)
-				if !ok {
-					facilityId = float64(user.FacilityID)
-				}
-				if uint(facilityId) != user.FacilityID && !slices.Contains([]models.UserRole{models.DepartmentAdmin, models.SystemAdmin}, user.Role) {
-					return nil, hasCookie, errors.New("user is not allowed to switch facilities")
-				}
 
 				passReset, ok := traits["password_reset"].(bool)
 				if !ok {
 					passReset = true
 				}
-				facilityName := user.Facility.Name
-				tz := user.Facility.Timezone
-				if user.FacilityID != uint(facilityId) && slices.Contains([]models.UserRole{models.DepartmentAdmin, models.SystemAdmin}, user.Role) {
-					var nameTz struct {
-						Name     string `json:"name"`
-						Timezone string `json:"timezone"`
-					}
-					if err := srv.Db.Model(&models.Facility{}).
-						Select("name, timezone").
-						Where("id = ?", facilityId).
-						Find(&nameTz).Error; err != nil {
-						return nil, hasCookie, err
-					}
-					facilityName = nameTz.Name
-					tz = nameTz.Timezone
-				}
 				claims := &Claims{
 					Username:      user.Username,
 					Email:         user.Email,
 					UserID:        user.ID,
-					FacilityID:    uint(facilityId),
-					FacilityName:  facilityName,
+					FacilityID:    user.FacilityID,
+					FacilityName:  user.Facility.Name,
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
 					FeatureAccess: srv.features,
 					SessionID:     sessionID,
-					TimeZone:      tz,
+					TimeZone:      user.Facility.Timezone,
 				}
 				traitsRole, ok := traits["role"].(string)
 				if !ok || string(user.Role) != traitsRole {

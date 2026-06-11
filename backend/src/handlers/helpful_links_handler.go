@@ -42,7 +42,7 @@ func (srv *Server) changeSortOrder(w http.ResponseWriter, r *http.Request, log s
 }
 
 func (srv *Server) handleGetHelpfulLinks(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 	onlyVisible := r.URL.Query().Get("visibility") == "true"
 	if !userIsAdmin(r) {
 		onlyVisible = true

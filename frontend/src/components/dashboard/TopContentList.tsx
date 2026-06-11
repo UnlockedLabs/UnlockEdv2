@@ -1,6 +1,9 @@
 import { OpenContentItem } from '@/types';
 import { ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
+import { clickableProps } from '@/lib/a11y';
+import { toExternalUrl } from '@/lib/utils';
 
 interface TopContentListProps {
     heading: string;
@@ -10,6 +13,8 @@ interface TopContentListProps {
 
 function ContentRow({ item }: { item: OpenContentItem }) {
     const navigate = useNavigate();
+    const title = decodeHtmlEntities(item.title);
+    const providerName = decodeHtmlEntities(item.provider_name ?? '');
 
     const handleClick = () => {
         if (item.content_type === 'video') {
@@ -17,19 +22,23 @@ function ContentRow({ item }: { item: OpenContentItem }) {
         } else if (item.content_type === 'library') {
             navigate(`/viewer/libraries/${item.content_id}`);
         } else {
-            window.open(item.url, '_blank', 'noopener,noreferrer');
+            window.open(
+                toExternalUrl(item.url),
+                '_blank',
+                'noopener,noreferrer'
+            );
         }
     };
 
     return (
         <div
-            onClick={handleClick}
+            {...clickableProps(handleClick)}
             className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
                 <img
                     src={item.thumbnail_url}
-                    alt={item.title}
+                    alt={title}
                     className="w-10 h-10 rounded object-cover shrink-0"
                 />
             ) : (
@@ -37,11 +46,11 @@ function ContentRow({ item }: { item: OpenContentItem }) {
             )}
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground truncate">
-                    {item.title}
+                    {title}
                 </p>
-                {item.provider_name && (
+                {providerName && (
                     <p className="text-xs text-muted-foreground truncate">
-                        {item.provider_name}
+                        {providerName}
                     </p>
                 )}
             </div>

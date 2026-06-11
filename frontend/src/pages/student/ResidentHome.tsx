@@ -15,6 +15,9 @@ import { ExternalLink, Star } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
+import { clickableProps } from '@/lib/a11y';
+import { toExternalUrl } from '@/lib/utils';
 
 interface ResidentHomeData {
     helpfulLinks: HelpfulLink[];
@@ -30,25 +33,27 @@ function FeaturedLibraryCard({
     library: Library;
     onClick: () => void;
 }) {
+    const title = decodeHtmlEntities(library.title);
+    const description = decodeHtmlEntities(library.description ?? '');
     return (
-        <div onClick={onClick} className="block cursor-pointer">
+        <div {...clickableProps(onClick)} className="block cursor-pointer">
             <Card className="hover:shadow-md transition-shadow h-full">
                 <CardContent className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                         {library.thumbnail_url ? (
                             <img
                                 src={library.thumbnail_url}
-                                alt={library.title}
-                                className="size-12 rounded object-cover flex-shrink-0"
+                                alt={title}
+                                className="size-12 rounded object-cover shrink-0"
                             />
                         ) : (
-                            <div className="size-12 rounded bg-muted flex-shrink-0" />
+                            <div className="size-12 rounded bg-muted shrink-0" />
                         )}
                         <h4 className="text-sm font-medium text-foreground line-clamp-1">
-                            {library.title}
+                            {title}
                         </h4>
                     </div>
-                    <p className="caption-clamp">{library.description ?? ''}</p>
+                    <p className="caption-clamp">{description}</p>
                 </CardContent>
             </Card>
         </div>
@@ -56,9 +61,11 @@ function FeaturedLibraryCard({
 }
 
 function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
+    const title = decodeHtmlEntities(link.title);
+    const description = decodeHtmlEntities(link.description ?? '');
     return (
         <a
-            href={link.url}
+            href={toExternalUrl(link.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="block"
@@ -68,11 +75,11 @@ function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
                     <ExternalLink className="size-5 text-brand shrink-0 mt-0.5" />
                     <div className="min-w-0">
                         <h4 className="text-sm font-medium text-foreground line-clamp-1">
-                            {link.title}
+                            {title}
                         </h4>
-                        {link.description && (
+                        {description && (
                             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                {link.description}
+                                {description}
                             </p>
                         )}
                     </div>
@@ -84,6 +91,7 @@ function HelpfulLinkCard({ link }: { link: HelpfulLink }) {
 
 function FavoriteItem({ item }: { item: OpenContentItem }) {
     const navigate = useNavigate();
+    const title = decodeHtmlEntities(item.title);
 
     const handleClick = () => {
         if (item.content_type === 'video') {
@@ -91,25 +99,29 @@ function FavoriteItem({ item }: { item: OpenContentItem }) {
         } else if (item.content_type === 'library') {
             navigate(`/viewer/libraries/${item.content_id}`);
         } else {
-            window.open(item.url, '_blank', 'noopener,noreferrer');
+            window.open(
+                toExternalUrl(item.url),
+                '_blank',
+                'noopener,noreferrer'
+            );
         }
     };
 
     return (
         <div
-            onClick={handleClick}
+            {...clickableProps(handleClick)}
             className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
                 <img
                     src={item.thumbnail_url}
-                    alt={item.title}
+                    alt={title}
                     className="w-10 h-10 rounded object-cover shrink-0"
                 />
             ) : (
                 <div className="w-10 h-10 rounded bg-muted shrink-0" />
             )}
-            <p className="text-sm text-foreground truncate">{item.title}</p>
+            <p className="text-sm text-foreground truncate">{title}</p>
         </div>
     );
 }
@@ -218,7 +230,7 @@ export default function ResidentHome() {
                     )}
                 </div>
 
-                <aside className="hidden xl:block w-[320px] shrink-0 space-y-6 sticky top-6 self-start">
+                <aside className="hidden xl:block w-80 shrink-0 space-y-6 sticky top-6 self-start">
                     <div className="bg-card rounded-lg border border-border p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <Star className="size-5 text-brand-gold" />

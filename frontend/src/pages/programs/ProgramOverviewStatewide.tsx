@@ -455,17 +455,9 @@ export default function ProgramOverviewStatewide() {
         }));
     };
 
-    const handleViewAtFacility = async (facilityId: number) => {
+    const handleViewAtFacility = (facilityId: number) => {
         if (!program) return;
-        const resp = await API.put<null, object>(
-            `admin/facility-context/${facilityId}`,
-            {}
-        );
-        if (resp.success) {
-            navigate(`/programs/${program.id}?facility_id=${facilityId}`);
-        } else {
-            toast.error(resp.message || 'Failed to switch facility context');
-        }
+        navigate(`/programs/${program.id}?facility_id=${facilityId}`);
     };
 
     if (!program) {
@@ -944,7 +936,7 @@ export default function ProgramOverviewStatewide() {
                                                     size="sm"
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        void handleViewAtFacility(
+                                                        handleViewAtFacility(
                                                             stat.facilityId
                                                         );
                                                     }}

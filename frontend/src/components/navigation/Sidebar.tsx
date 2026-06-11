@@ -21,7 +21,7 @@ import {
     UsersIcon,
     UserGroupIcon,
     BookOpenIcon,
-    ChartBarIcon,
+    PresentationChartLineIcon,
     BuildingOfficeIcon,
     CalendarIcon,
     ChevronDownIcon,
@@ -201,8 +201,8 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
             )}
             <NavLink
                 to="/operational-insights"
-                icon={ChartBarIcon}
-                label="Operational Insights"
+                icon={PresentationChartLineIcon}
+                label="Insights"
                 active={isActive(['/operational-insights'])}
                 collapsed={collapsed}
                 onClick={onNavigate}

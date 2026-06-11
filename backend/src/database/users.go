@@ -47,7 +47,9 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 			tx = tx.Where("facility_id = ?", args.FacilityID)
 		}
 	default:
-		tx = tx.Where("facility_id = ?", args.FacilityID)
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
 	}
 	if args.Search != "" {
 		tx = fuzzySearchUsers(tx, args)
@@ -185,7 +187,8 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		Joins("JOIN facilities_programs fp ON users.facility_id = fp.facility_id").
 		Joins("JOIN program_classes c ON c.program_id = fp.program_id AND c.id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
-		Where("users.role = 'student' AND users.facility_id = ?", args.FacilityID).
+		Where("users.role = 'student'").
+		Where("users.facility_id = c.facility_id").
 		Where("users.deactivated_at IS NULL")
 
 	if args.SearchQuery() != "" {
@@ -471,6 +474,19 @@ func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64,
 	return totalResidents, nil
 }
 
+func (db *DB) GetTotalAdmins(args *models.QueryContext, facilityId *uint) (int64, error) {
+	var totalAdmins int64
+	staffRoles := []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role IN ?", staffRoles)
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&totalAdmins).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "users")
+	}
+	return totalAdmins, nil
+}
+
 func (db *DB) GetLoginActivity(args *models.QueryContext, start, end *time.Time, facilityID *uint) ([]models.LoginActivity, error) {
 	acitvity := make([]models.LoginActivity, 0, 3)
 	sql := `SELECT time_interval, total_logins
@@ -493,6 +509,106 @@ func (db *DB) GetLoginActivity(args *models.QueryContext, start, end *time.Time,
 		return nil, newGetRecordsDBError(err, "login_activity")
 	}
 	return acitvity, nil
+}
+
+func (db *DB) GetDailyLoginActivity(args *models.QueryContext, start, end *time.Time, facilityID *uint) ([]models.DailyLoginCount, error) {
+	activities := make([]models.LoginActivity, 0)
+	tx := db.WithContext(args.Ctx).Model(&models.LoginActivity{}).Select("time_interval, total_logins")
+	if facilityID != nil {
+		tx = tx.Where("facility_id = ?", *facilityID)
+	}
+	if start != nil && end != nil {
+		tx = tx.Where("time_interval >= ? AND time_interval < ?", *start, *end)
+	}
+	if err := tx.Find(&activities).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "login_activity")
+	}
+	return bucketLoginsByDay(activities), nil
+}
+
+func bucketLoginsByDay(activities []models.LoginActivity) []models.DailyLoginCount {
+	totals := make(map[string]int64)
+	days := make([]string, 0)
+	for _, activity := range activities {
+		day := activity.TimeInterval.UTC().Format(time.DateOnly)
+		if _, seen := totals[day]; !seen {
+			days = append(days, day)
+		}
+		totals[day] += activity.TotalLogins
+	}
+	slices.Sort(days)
+	trend := make([]models.DailyLoginCount, 0, len(days))
+	for _, day := range days {
+		trend = append(trend, models.DailyLoginCount{Date: day, TotalLogins: totals[day]})
+	}
+	return trend
+}
+
+func (db *DB) GetFacilityEngagementComparison(args *models.QueryContext, start, end *time.Time) ([]models.FacilityEngagement, error) {
+	facilities := make([]models.Facility, 0)
+	if err := db.WithContext(args.Ctx).Order("name ASC").Find(&facilities).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facilities")
+	}
+
+	type facilityCount struct {
+		FacilityID uint
+		Count      int64
+	}
+	toMap := func(rows []facilityCount) map[uint]int64 {
+		m := make(map[uint]int64, len(rows))
+		for _, row := range rows {
+			m[row.FacilityID] = row.Count
+		}
+		return m
+	}
+
+	registered := make([]facilityCount, 0, len(facilities))
+	if err := db.WithContext(args.Ctx).Model(&models.User{}).
+		Select("facility_id, count(*) as count").
+		Where("role = ?", models.Student).
+		Group("facility_id").
+		Find(&registered).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+
+	active := make([]facilityCount, 0, len(facilities))
+	activeTx := db.WithContext(args.Ctx).Model(&models.User{}).
+		Select("users.facility_id, count(*) as count").
+		Joins("JOIN login_metrics ON login_metrics.user_id = users.id").
+		Where("users.role = ?", models.Student)
+	if start != nil && end != nil {
+		activeTx = activeTx.Where("login_metrics.last_login >= ? AND login_metrics.last_login < ?", *start, *end)
+	}
+	if err := activeTx.Group("users.facility_id").Find(&active).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+
+	logins := make([]facilityCount, 0, len(facilities))
+	loginsTx := db.WithContext(args.Ctx).Model(&models.LoginActivity{}).
+		Select("facility_id, coalesce(sum(total_logins), 0) as count")
+	if start != nil && end != nil {
+		loginsTx = loginsTx.Where("time_interval >= ? AND time_interval < ?", *start, *end)
+	}
+	if err := loginsTx.Group("facility_id").Find(&logins).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "login_activity")
+	}
+
+	registeredByFacility := toMap(registered)
+	activeByFacility := toMap(active)
+	loginsByFacility := toMap(logins)
+
+	comparison := make([]models.FacilityEngagement, 0, len(facilities))
+	for i := range facilities {
+		facilityID := facilities[i].ID
+		comparison = append(comparison, models.FacilityEngagement{
+			FacilityID:   facilityID,
+			FacilityName: facilities[i].Name,
+			Registered:   registeredByFacility[facilityID],
+			Active:       activeByFacility[facilityID],
+			Logins:       loginsByFacility[facilityID],
+		})
+	}
+	return comparison, nil
 }
 
 func (db *DB) GetUserSessionEngagement(userID int, days int) ([]models.SessionEngagement, error) {
