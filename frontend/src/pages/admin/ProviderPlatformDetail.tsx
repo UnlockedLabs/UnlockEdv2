@@ -30,7 +30,7 @@ import {
     AccordionItem,
     AccordionTrigger
 } from '@/components/ui/accordion';
-import { EnrollmentTypeSelector } from '@/Components/shared/EnrollmentTypeSelector';
+import { EnrollmentTypeSelector } from '@/components/shared/EnrollmentTypeSelector';
 import {
     EllipsisVerticalIcon,
     PencilSquareIcon,

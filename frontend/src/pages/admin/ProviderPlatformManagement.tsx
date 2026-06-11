@@ -16,7 +16,7 @@ import API from '@/api/api';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FormModal } from '@/components/shared/FormModal';
-import { EnrollmentTypeSelector } from '@/Components/shared/EnrollmentTypeSelector';
+import { EnrollmentTypeSelector } from '@/components/shared/EnrollmentTypeSelector';
 import { DataTable, Column } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
