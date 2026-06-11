@@ -36,6 +36,7 @@ export default function FeatureControl() {
         user.feature_access.includes(feature);
 
     const kcEnabled = isEnabled(FeatureAccess.OpenContentAccess);
+    const lrEnabled = isEnabled(FeatureAccess.LearningRecordAccess);
 
     const requestToggle = (
         target: ToggleTarget,
@@ -186,6 +187,36 @@ export default function FeatureControl() {
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* Learning Record */}
+                <div className="bg-background border border-border rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-brand-dark dark:text-white">
+                                Learning Record
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Allows residents to log and track their learning achievements and generate a personal learning record
+                            </p>
+                        </div>
+                        <Switch
+                            checked={lrEnabled}
+                            onCheckedChange={() =>
+                                requestToggle(
+                                    {
+                                        type: 'feature',
+                                        key: FeatureAccess.LearningRecordAccess
+                                    },
+                                    'Learning Record',
+                                    lrEnabled
+                                )
+                            }
+                        />
+                    </div>
+                    <p className="text-sm text-muted-foreground italic">
+                        No additional configuration options
+                    </p>
                 </div>
 
                 {/* Program Hub & Tracking */}

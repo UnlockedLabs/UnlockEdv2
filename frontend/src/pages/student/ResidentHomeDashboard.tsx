@@ -125,6 +125,14 @@ function resolveScenario(
         : 'learningRecordsOnly';
 }
 
+function resolveLearningRecordEnabled(
+    user: User,
+    scenarioProp?: ResidentHomeScenario
+): boolean {
+    if (scenarioProp) return true;
+    return hasFeature(user, FeatureAccess.LearningRecordAccess);
+}
+
 function detectLearningState(
     entries: TranscriptEntry[],
     inProgressEntryExists: boolean,
@@ -306,6 +314,7 @@ export function ResidentHomeDashboard({
     // --- Resolved flags (used for layout + conditional rendering) ---
     const scenarioFlag = user ? resolveScenario(user, scenarioProp) : 'learningRecordsOnly';
     const knowledgeCenterEnabled = scenarioFlag === 'knowledgeCenterAndLearningRecords';
+    const learningRecordEnabled = user ? resolveLearningRecordEnabled(user, scenarioProp) : false;
     const hasProgramsHub =
         !!user &&
         (hasFeature(user, FeatureAccess.ProgramAccess) ||
@@ -460,7 +469,7 @@ export function ResidentHomeDashboard({
                     </header>
 
                     {/* ── Reflect / nudge (dismissible; days-since-last-visit driven) ─ */}
-                    {reflectNudgeVisible ? (
+                    {learningRecordEnabled && reflectNudgeVisible ? (
                         <Alert className="border-[#556830]/30 bg-[#556830]/5">
                             <PenLine className="text-[#556830] dark:text-primary" aria-hidden />
                             <AlertTitle className="text-foreground">
@@ -498,71 +507,75 @@ export function ResidentHomeDashboard({
                     ) : null}
 
                     {/* Tier-1 incomplete-entry banner — sole resume path when an entry is in progress */}
-                    <IncompleteEntryReminder
-                        hasInProgressEntry={hasInProgressEntry}
-                        entry={inProgressEntryReminder}
-                        dismissed={incompleteEntryReminderDismissed}
-                        onDismiss={dismissIncompleteEntryReminder}
-                    />
+                    {learningRecordEnabled ? (
+                        <IncompleteEntryReminder
+                            hasInProgressEntry={hasInProgressEntry}
+                            entry={inProgressEntryReminder}
+                            dismissed={incompleteEntryReminderDismissed}
+                            onDismiss={dismissIncompleteEntryReminder}
+                        />
+                    ) : null}
 
                     {/* ── Tier 1: Learning Records — primary action, front and center ─ */}
-                    <section
-                        aria-labelledby="home-learning-records-heading"
-                        className="space-y-3"
-                    >
-                        <div>
-                            <h2
-                                id="home-learning-records-heading"
-                                className="text-xl font-semibold text-foreground"
-                            >
-                                Learning Record
-                            </h2>
-                            <p className="text-sm text-muted-foreground">
-                                Keep track of what you&apos;ve learned.
-                            </p>
-                        </div>
+                    {learningRecordEnabled ? (
+                        <section
+                            aria-labelledby="home-learning-records-heading"
+                            className="space-y-3"
+                        >
+                            <div>
+                                <h2
+                                    id="home-learning-records-heading"
+                                    className="text-xl font-semibold text-foreground"
+                                >
+                                    Learning Record
+                                </h2>
+                                <p className="text-sm text-muted-foreground">
+                                    Keep track of what you&apos;ve learned.
+                                </p>
+                            </div>
 
-                        <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
-                        {/* Hero: olive-green primary card (white CTA = the single primary) */}
-                        <Card className="border-0 bg-[#556830] p-4 text-white shadow-sm dark:bg-[#556830] lg:col-span-2">
-                            <CardContent className="space-y-4 p-4">
-                                <div className="space-y-3">
-                                    <h3 className="text-2xl font-bold leading-tight">
-                                        {heroIsFirstTime
-                                            ? 'Start your learning record'
-                                            : 'Log a new achievement'}
-                                    </h3>
-                                    <p className="max-w-xl text-sm leading-relaxed text-white/80">
-                                        Write down a class, program, or skill you finished. Your
-                                        answers are saved here as you go. Nothing leaves this app
-                                        unless you choose to print or share it.
-                                    </p>
-                                    <PrintShareHelpLink variant="onDark" />
-                                </div>
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
-                                    <Button
-                                        asChild
-                                        size={LEARNING_RECORD_BUTTON_SIZE}
-                                        className="gap-1.5 bg-white px-4 text-[#556830] hover:bg-white/90"
-                                    >
-                                        <Link to={`${DIGITAL_TRANSCRIPT_ENTRY_PATH}?intent=new`}>
-                                            {!heroIsFirstTime ? (
-                                                <Plus className="size-4" aria-hidden />
-                                            ) : null}
-                                            {heroCtaLabel}
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
+                            {/* Hero: olive-green primary card (white CTA = the single primary) */}
+                            <Card className="border-0 bg-[#556830] p-4 text-white shadow-sm dark:bg-[#556830] lg:col-span-2">
+                                <CardContent className="space-y-4 p-4">
+                                    <div className="space-y-3">
+                                        <h3 className="text-2xl font-bold leading-tight">
+                                            {heroIsFirstTime
+                                                ? 'Start your learning record'
+                                                : 'Log a new achievement'}
+                                        </h3>
+                                        <p className="max-w-xl text-sm leading-relaxed text-white/80">
+                                            Write down a class, program, or skill you finished. Your
+                                            answers are saved here as you go. Nothing leaves this app
+                                            unless you choose to print or share it.
+                                        </p>
+                                        <PrintShareHelpLink variant="onDark" />
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
+                                        <Button
+                                            asChild
+                                            size={LEARNING_RECORD_BUTTON_SIZE}
+                                            className="gap-1.5 bg-white px-4 text-[#556830] hover:bg-white/90"
+                                        >
+                                            <Link to={`${DIGITAL_TRANSCRIPT_ENTRY_PATH}?intent=new`}>
+                                                {!heroIsFirstTime ? (
+                                                    <Plus className="size-4" aria-hidden />
+                                                ) : null}
+                                                {heroCtaLabel}
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                        <RecentAchievementsPanel
-                            totalCount={savedEntries.length}
-                            hasInProgressEntry={hasInProgressEntry}
-                            onExportClick={() => setExportSheetOpen(true)}
-                        />
-                        </div>
-                    </section>
+                            <RecentAchievementsPanel
+                                totalCount={savedEntries.length}
+                                hasInProgressEntry={hasInProgressEntry}
+                                onExportClick={() => setExportSheetOpen(true)}
+                            />
+                            </div>
+                        </section>
+                    ) : null}
 
                     {/* ── Tier 2 (Scenario A only): Knowledge Center ─ */}
                     {knowledgeCenterEnabled ? (
@@ -586,15 +599,17 @@ export function ResidentHomeDashboard({
                 ) : null}
             </div>
 
-            <ViewAllAchievementsSheet
-                open={exportSheetOpen}
-                onOpenChange={setExportSheetOpen}
-                entries={achievementsNewestFirst}
-                residentName={residentName}
-                documentVariant={
-                    learningRecordFormVariant === 'funnel' ? 'funnel' : 'default'
-                }
-            />
+            {learningRecordEnabled ? (
+                <ViewAllAchievementsSheet
+                    open={exportSheetOpen}
+                    onOpenChange={setExportSheetOpen}
+                    entries={achievementsNewestFirst}
+                    residentName={residentName}
+                    documentVariant={
+                        learningRecordFormVariant === 'funnel' ? 'funnel' : 'default'
+                    }
+                />
+            ) : null}
         </div>
     );
 }

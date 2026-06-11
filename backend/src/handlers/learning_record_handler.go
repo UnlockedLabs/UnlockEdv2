@@ -8,14 +8,15 @@ import (
 )
 
 func (srv *Server) registerLearningRecordRoutes() []routeDef {
+	axx := models.LearningRecordAccess
 	return []routeDef{
-		newRoute("GET /api/learning-record/entries", srv.handleIndexLearningRecordEntries),
-		newRoute("POST /api/learning-record/entries", srv.handleCreateLearningRecordEntry),
-		newRoute("PUT /api/learning-record/entries/{id}", srv.handleUpdateLearningRecordEntry),
-		newRoute("DELETE /api/learning-record/entries/{id}", srv.handleDeleteLearningRecordEntry),
-		newRoute("GET /api/learning-record/draft", srv.handleGetLearningRecordDraft),
-		newRoute("PUT /api/learning-record/draft", srv.handleUpsertLearningRecordDraft),
-		newRoute("DELETE /api/learning-record/draft", srv.handleDeleteLearningRecordDraft),
+		featureRoute("GET /api/learning-record/entries", srv.handleIndexLearningRecordEntries, axx),
+		featureRoute("POST /api/learning-record/entries", srv.handleCreateLearningRecordEntry, axx),
+		featureRoute("PUT /api/learning-record/entries/{id}", srv.handleUpdateLearningRecordEntry, axx),
+		featureRoute("DELETE /api/learning-record/entries/{id}", srv.handleDeleteLearningRecordEntry, axx),
+		featureRoute("GET /api/learning-record/draft", srv.handleGetLearningRecordDraft, axx),
+		featureRoute("PUT /api/learning-record/draft", srv.handleUpsertLearningRecordDraft, axx),
+		featureRoute("DELETE /api/learning-record/draft", srv.handleDeleteLearningRecordDraft, axx),
 	}
 }
 

@@ -24,8 +24,8 @@ import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
 import FeatureControl from '@/pages/admin/FeatureControl';
-import DigitalTranscriptHome from '@/pages/student/digital-transcript/DigitalTranscriptHome';
-import DigitalTranscriptEntryPage from '@/pages/student/digital-transcript/DigitalTranscriptEntryPage';
+import ResidentHome from '@/pages/student/ResidentHome';
+import { getStudentLevel1Data } from '@/loaders/routeLoaders';
 
 const systemAdminRoutes = declareAuthenticatedRoutes(
     [
@@ -112,32 +112,10 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
         handle: { title: 'UnlockEd' }
     },
     {
-        path: 'learning-record-funnel',
-        element: <DigitalTranscriptHome />,
-        handle: { title: 'Learning Record' }
-    },
-    {
-        path: 'learning-record-funnel/entry',
-        element: <DigitalTranscriptEntryPage />,
-        handle: { title: 'Add your achievement' }
-    },
-    {
-        path: 'learning-record-categories',
-        element: <DigitalTranscriptHome />,
-        handle: { title: 'Learning Record' }
-    },
-    {
-        path: 'learning-record-categories/entry',
-        element: <DigitalTranscriptEntryPage />,
-        handle: { title: 'Add your achievement' }
-    },
-    {
-        path: 'my-transcript-a',
-        loader: () => redirect('/learning-record-funnel')
-    },
-    {
-        path: 'my-transcript-a/entry',
-        loader: () => redirect('/learning-record-funnel/entry')
+        path: 'home',
+        element: <ResidentHome />,
+        loader: getStudentLevel1Data,
+        handle: { title: 'Home' }
     }
 ]);
 
