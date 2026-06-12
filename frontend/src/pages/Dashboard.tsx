@@ -31,6 +31,7 @@ import {
     Calendar,
     CheckCircle,
     ChevronDown,
+    ChevronUp,
     Clock,
     ExternalLink
 } from 'lucide-react';
@@ -520,6 +521,14 @@ function MissingAttendanceWidget({
                         >
                             Show {remainingCount} more{' '}
                             <ChevronDown className="size-4" />
+                        </button>
+                    )}
+                    {showAll && remainingCount > 0 && (
+                        <button
+                            onClick={() => setShowAll(false)}
+                            className="w-full mt-3 py-2 text-sm text-brand hover:text-brand-dark dark:text-[#8fb55e] dark:hover:text-white hover:bg-surface-hover dark:hover:bg-[#262626] rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                            Show less <ChevronUp className="size-4" />
                         </button>
                     )}
                 </>
