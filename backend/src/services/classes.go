@@ -336,6 +336,25 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 		}
 	}
 
+	if len(items) > 0 {
+		eventIDs := make([]uint, 0, len(items))
+		dates := make([]string, 0, len(items))
+		for _, item := range items {
+			eventIDs = append(eventIDs, item.EventID)
+			dates = append(dates, item.Date)
+		}
+		attendanceCounts, err := svc.db.GetAttendanceCountsForEvents(args, eventIDs, dates)
+		if err == nil {
+			taken := make(map[string]bool)
+			for _, ac := range attendanceCounts {
+				taken[fmt.Sprintf("%d|%s", ac.EventID, ac.Date)] = true
+			}
+			for i, item := range items {
+				items[i].HasAttendance = taken[fmt.Sprintf("%d|%s", item.EventID, item.Date)]
+			}
+		}
+	}
+
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].Date == items[j].Date { //sorting by date, time, then by name
 			if items[i].StartTime == items[j].StartTime {
