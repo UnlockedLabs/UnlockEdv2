@@ -171,14 +171,20 @@ export default function AuthenticatedLayout() {
             </div>
 
             <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-                <div className="flex items-center shrink-0 h-16 border-b border-border">
-                    <div className="md:hidden px-2">
+                {isAdministrator(user) ? (
+                    <div className="flex items-center shrink-0 h-16 border-b border-border">
+                        <div className="md:hidden px-2">
+                            <MobileNav />
+                        </div>
+                        <div className="flex-1">
+                            <TopNav />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="md:hidden flex items-center shrink-0 h-16 border-b border-border px-2">
                         <MobileNav />
                     </div>
-                    <div className="flex-1">
-                        <TopNav />
-                    </div>
-                </div>
+                )}
 
                 <TitleManager />
                 <UnlockEdTour />
