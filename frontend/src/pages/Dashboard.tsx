@@ -378,13 +378,23 @@ function TodaysSchedule({
                                     </div>
                                     <Button
                                         size="sm"
+                                        variant={
+                                            item.has_attendance
+                                                ? 'outline'
+                                                : 'default'
+                                        }
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onNavigate(item);
                                         }}
-                                        className="bg-brand hover:bg-brand-dark text-white w-full sm:w-auto"
+                                        className={
+                                            item.has_attendance
+                                                ? 'border-gray-300 w-full sm:w-auto'
+                                                : 'bg-brand hover:bg-brand-dark text-white w-full sm:w-auto'
+                                        }
                                     >
-                                        Take Attendance
+                                        {item.has_attendance ? 'Edit' : 'Take'}{' '}
+                                        Attendance
                                     </Button>
                                 </div>
                             );

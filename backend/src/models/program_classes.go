@@ -61,6 +61,7 @@ type TodaysScheduleItem struct {
 	Date           string `json:"date"`
 	StartTime      string `json:"start_time"`
 	Room           string `json:"room"`
+	HasAttendance  bool   `json:"has_attendance"`
 }
 
 func (c *ProgramClass) BeforeCreate(tx *gorm.DB) error {

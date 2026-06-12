@@ -183,6 +183,7 @@ export interface TodaysScheduleItem {
     date: string;
     start_time: string;
     room: string;
+    has_attendance?: boolean;
 }
 
 export interface ClassMetrics {
