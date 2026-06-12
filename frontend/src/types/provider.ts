@@ -1,3 +1,5 @@
+import type { User } from './user';
+
 export enum ProviderPlatformType {
     CANVAS_CLOUD = 'canvas_cloud',
     CANVAS_OSS = 'canvas_oss',
@@ -20,11 +22,7 @@ export interface ProviderPlatform {
     state: ProviderPlatformState;
     type: ProviderPlatformType;
     oidc_id: number;
-    [key: string]:
-        | string
-        | number
-        | ProviderPlatformState
-        | ProviderPlatformType;
+    enrollment_types: string[];
 }
 
 export interface ProviderUser {
@@ -53,4 +51,32 @@ export interface OidcClient {
     scope: string;
     auth_url: string;
     token_url: string;
+}
+
+export interface UserMatchResult {
+    canvas_user: ProviderUser;
+    suggested_user?: User;
+    score: number;
+}
+
+export interface MatchUsersResponse {
+    auto_confirmed: UserMatchResult[];
+    ambiguous: UserMatchResult[];
+    unmatched: ProviderUser[];
+}
+
+export interface ConfirmedMatch {
+    canvas_user: ProviderUser;
+    unlocked_user_id: number;
+}
+
+export interface ApplyMatchesRequest {
+    confirmed: ConfirmedMatch[];
+    to_create: ProviderUser[];
+}
+
+export interface ApplyMatchesResponse {
+    applied: number;
+    created: number;
+    failed: string[];
 }

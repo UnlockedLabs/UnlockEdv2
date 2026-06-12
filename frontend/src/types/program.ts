@@ -125,6 +125,7 @@ export interface ProgramsOverviewTable {
     credit_types: string;
     funding_type: string;
     status: boolean;
+    source?: string;
 }
 
 export interface ProgramsOverview {
@@ -157,6 +158,7 @@ export interface Class {
     schedule?: string;
     room?: string;
     attendance_rate?: number;
+    is_canvas?: boolean;
 }
 
 export interface MissingAttendanceItem {
@@ -215,6 +217,7 @@ export interface ResidentProgramOverview {
     attendance_percentage?: number;
     change_reason?: string;
     schedule?: string;
+    is_canvas?: boolean;
 }
 
 export interface ProgramCompletion {

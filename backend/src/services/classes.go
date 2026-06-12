@@ -379,6 +379,10 @@ func (svc *ClassesService) GetProgramClassDetailsForProgram(args *models.QueryCo
 	return classes, nil
 }
 
+func FormatClassScheduleAndRoom(events []models.ProgramClassEvent, timezone string) (string, string) {
+	return formatClassScheduleAndRoom(events, timezone)
+}
+
 func formatClassScheduleAndRoom(events []models.ProgramClassEvent, timezone string) (string, string) {
 	var event *models.ProgramClassEvent
 	if len(events) > 0 {

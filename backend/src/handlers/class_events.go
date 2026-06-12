@@ -19,6 +19,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	return []routeDef{
 		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
 		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/canvas-schedule", srv.handleGetCanvasClassSchedule, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
 		adminFeatureRoute("GET /api/program-classes/todays-schedule", srv.handleGetTodaysSchedule, axx),
@@ -51,6 +52,15 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	events, err := srv.Db.GetFacilityCalendar(&args, dtRng, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	// Merge Canvas calendar events when not filtered to a single class
+	if classID == 0 {
+		canvasEvents, canvasErr := srv.appendCanvasEventsForFacility(dtRng)
+		if canvasErr != nil {
+			log.warnf("failed to fetch canvas calendar events: %v", canvasErr)
+		} else {
+			events = append(events, canvasEvents...)
+		}
 	}
 	return writeJsonResponse(w, http.StatusOK, events)
 }
@@ -546,6 +556,12 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
+	}
+	if uint(classID) >= models.CanvasClassIDOffset {
+		args := srv.getQueryContext(r)
+		return writePaginatedResponse(w, http.StatusOK,
+			[]models.ProgramClassEvent{},
+			models.NewPaginationInfo(1, args.PerPage, 0))
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var userId *int

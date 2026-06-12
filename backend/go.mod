@@ -29,6 +29,7 @@ require (
 require github.com/xuri/excelize/v2 v2.10.0
 
 require (
+	github.com/adrg/strutil v0.3.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.5 // indirect
 	github.com/richardlehane/mscfb v1.0.6 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect

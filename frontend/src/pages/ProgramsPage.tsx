@@ -1075,6 +1075,14 @@ function ProgramCard({
                         <h3 className="text-brand-dark mb-1 group-hover:text-brand transition-colors">
                             {program.program_name}
                         </h3>
+                        {program.source === 'canvas' && (
+                            <Badge
+                                variant="outline"
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1 inline-flex"
+                            >
+                                Synced from Canvas
+                            </Badge>
+                        )}
                         {program.description && (
                             <p className="text-sm text-gray-600 line-clamp-2">
                                 {program.description}
@@ -1348,6 +1356,14 @@ function ProgramsTable({
                                                     </TooltipContent>
                                                 )}
                                             </Tooltip>
+                                            {program.source === 'canvas' && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1"
+                                                >
+                                                    Synced from Canvas
+                                                </Badge>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 items-center">
                                             {types.slice(0, 3).map((type) => (
@@ -1471,6 +1487,9 @@ function ProgramsTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
+                                        {program.source === 'canvas' ? (
+                                            <div className="text-sm text-gray-400">—</div>
+                                        ) : (
                                         <div className="text-sm">
                                             <div className="font-medium text-brand-dark">
                                                 {program.total_capacity ?? 0}
@@ -1488,6 +1507,7 @@ function ProgramsTable({
                                                 </TooltipContent>
                                             </Tooltip>
                                         </div>
+                                        )}
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
                                         <Tooltip>

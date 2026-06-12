@@ -115,6 +115,7 @@ services:
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
       - APP_URL=http://server:8080
+      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
       - BRIGHTSPACE_TEMP_DIR=/csvs
     networks:
       - intranet

@@ -293,6 +293,9 @@ func (db *DB) DeleteUser(id int) error {
 	if result.RowsAffected == 0 {
 		return newDeleteDBError(gorm.ErrRecordNotFound, "users")
 	}
+	if err := db.Where("user_id = ?", id).Delete(&models.ProviderUserMapping{}).Error; err != nil {
+		log.Errorf("error cleaning up provider user mappings for user %d: %v", id, err)
+	}
 	return nil
 }
 

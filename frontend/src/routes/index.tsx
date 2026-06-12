@@ -9,6 +9,7 @@ import {
     AdminProgramRoutes,
     DeptAdminProgramRoutes
 } from './program-routes';
+import { ProviderPlatformRoutes } from './provider-routes';
 
 export const router = createBrowserRouter([
     NonAdminRoutes,
@@ -18,5 +19,6 @@ export const router = createBrowserRouter([
     KnowledgeCenterAdminRoutes,
     ProgramRoutes,
     AdminProgramRoutes,
-    DeptAdminProgramRoutes
+    DeptAdminProgramRoutes,
+    ProviderPlatformRoutes
 ]);

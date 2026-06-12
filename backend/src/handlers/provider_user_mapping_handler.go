@@ -14,7 +14,22 @@ func (srv *Server) registerProviderMappingRoutes() []routeDef {
 		adminFeatureRoute("POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, axx),
 		adminFeatureRoute("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, axx),
 		adminFeatureRoute("DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, axx),
+		adminFeatureRoute("GET /api/provider-platforms/{id}/mapped-users", srv.handleGetMappedUsers, axx),
 	}
+}
+
+func (srv *Server) handleGetMappedUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "provider platform ID")
+	}
+	args := srv.getQueryContext(r)
+	users, err := srv.Db.GetMappedUsers(&args, id)
+	if err != nil {
+		log.add("providerId", id)
+		return newDatabaseServiceError(err)
+	}
+	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
 }
 
 func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request, log sLog) error {

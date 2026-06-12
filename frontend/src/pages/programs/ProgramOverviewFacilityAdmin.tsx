@@ -324,6 +324,8 @@ export default function ProgramOverviewFacilityAdmin() {
         );
     }
 
+    const isCanvasProgram = (program?.id ?? 0) >= 100_000_000;
+
     const programStatus = program.archived_at
         ? 'Archived'
         : program.is_active
@@ -436,6 +438,17 @@ export default function ProgramOverviewFacilityAdmin() {
                     </div>
                 </div>
             )}
+            {isCanvasProgram && (
+                <div className="bg-blue-50 border-b border-blue-200">
+                    <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
+                        <BookOpen className="size-4 shrink-0" />
+                        <span>
+                            This program is managed externally in Canvas. Data
+                            is read-only.
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="bg-white border-b border-gray-200">
                 <div
                     className={`max-w-7xl mx-auto px-6 ${
@@ -479,100 +492,116 @@ export default function ProgramOverviewFacilityAdmin() {
                                         <p className="text-xs text-gray-600 font-medium">
                                             Program Status
                                         </p>
-                                        <Select
-                                            value={programStatus}
-                                            onValueChange={(value) =>
-                                                void handleStatusSelectChange(
-                                                    value
-                                                )
-                                            }
-                                            disabled={archiveCheckLoading}
-                                        >
-                                            <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {programStatus ===
-                                                'Archived' ? (
-                                                    <>
-                                                        <SelectItem
-                                                            value="Archived"
-                                                            disabled
-                                                        >
-                                                            Archived
-                                                        </SelectItem>
-                                                        <SelectItem value="Reactivate">
-                                                            Reactivate
-                                                        </SelectItem>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <SelectItem value="Available">
-                                                            Available
-                                                        </SelectItem>
-                                                        <SelectItem value="Inactive">
-                                                            Inactive
-                                                        </SelectItem>
-                                                        <SelectItem value="Archived">
-                                                            Archived
-                                                        </SelectItem>
-                                                    </>
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                                        onClick={() => setShowEditDialog(true)}
-                                    >
-                                        <Edit className="size-4 mr-2" />
-                                        Edit Program
-                                    </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-9 w-9 text-gray-500 mt-5"
-                                            >
-                                                <MoreVertical className="size-4" />
-                                                <span className="sr-only">
-                                                    More options
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span>
+                                                    <Select
+                                                        value={programStatus}
+                                                        onValueChange={
+                                                            isCanvasProgram
+                                                                ? undefined
+                                                                : (value) =>
+                                                                      void handleStatusSelectChange(
+                                                                          value
+                                                                      )
+                                                        }
+                                                        disabled={
+                                                            archiveCheckLoading ||
+                                                            isCanvasProgram
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {programStatus ===
+                                                            'Archived' ? (
+                                                                <>
+                                                                    <SelectItem
+                                                                        value="Archived"
+                                                                        disabled
+                                                                    >
+                                                                        Archived
+                                                                    </SelectItem>
+                                                                    <SelectItem value="Reactivate">
+                                                                        Reactivate
+                                                                    </SelectItem>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <SelectItem value="Available">
+                                                                        Available
+                                                                    </SelectItem>
+                                                                    <SelectItem value="Inactive">
+                                                                        Inactive
+                                                                    </SelectItem>
+                                                                    <SelectItem value="Archived">
+                                                                        Archived
+                                                                    </SelectItem>
+                                                                </>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div>
-                                                        <DropdownMenuItem
-                                                            variant="destructive"
-                                                            onClick={() =>
-                                                                setDeleteModalOpen(
-                                                                    true
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                !canDelete
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                            Delete Program
-                                                        </DropdownMenuItem>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                {!canDelete &&
-                                                    deleteBlockerReason && (
+                                            </TooltipTrigger>
+                                            {isCanvasProgram && (
+                                                <TooltipContent>
+                                                    Managed in Canvas
+                                                </TooltipContent>
+                                            )}
+                                        </Tooltip>
+                                    </div>
+                                    {!isCanvasProgram && (
+                                        <Button
+                                            variant="outline"
+                                            className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                            onClick={() => setShowEditDialog(true)}
+                                        >
+                                            <Edit className="size-4 mr-2" />
+                                            Edit Program
+                                        </Button>
+                                    )}
+                                    {!isCanvasProgram && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 text-gray-500 mt-5"
+                                                >
+                                                    <MoreVertical className="size-4" />
+                                                    <span className="sr-only">
+                                                        More options
+                                                    </span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div>
+                                                            <DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    setDeleteModalOpen(
+                                                                        true
+                                                                    )
+                                                                }
+                                                                disabled={!canDelete}
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                                Delete Program
+                                                            </DropdownMenuItem>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    {!canDelete && (
                                                         <TooltipContent side="left">
-                                                            {
-                                                                deleteBlockerReason
-                                                            }
+                                                            {deleteBlockerReason ?? 'Cannot delete program'}
                                                         </TooltipContent>
                                                     )}
-                                            </Tooltip>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                                </Tooltip>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
                                 </div>
                             </div>
 
@@ -582,7 +611,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                 </p>
                             )}
 
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className={`grid gap-4 ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'}`}>
                                 <MetricBox
                                     label="Classes"
                                     value={nonArchivedClasses.length}
@@ -591,13 +620,15 @@ export default function ProgramOverviewFacilityAdmin() {
                                 <MetricBox
                                     label="Enrollment"
                                     value={totalEnrolled}
-                                    subtitle={`${totalCapacity} capacity`}
+                                    subtitle={isCanvasProgram || totalCapacity === 0 ? undefined : `${totalCapacity} capacity`}
                                 />
-                                <MetricBox
-                                    label="Utilization"
-                                    value={`${utilization}%`}
-                                    subtitle="Capacity filled"
-                                />
+                                {!isCanvasProgram && (
+                                    <MetricBox
+                                        label="Utilization"
+                                        value={`${utilization}%`}
+                                        subtitle="Capacity filled"
+                                    />
+                                )}
                                 <MetricBox
                                     label="Funding"
                                     value={fundingDisplay || '-'}
@@ -646,8 +677,11 @@ export default function ProgramOverviewFacilityAdmin() {
                                 programId={program_id!}
                                 facilityId={facilityId ?? undefined}
                                 canAddClass={
-                                    !!program.is_active && !program.archived_at
+                                    !!program.is_active &&
+                                    !program.archived_at &&
+                                    !isCanvasProgram
                                 }
+                                isCanvasProgram={isCanvasProgram}
                                 onOpenStatusModal={handleOpenStatusModal}
                                 onCreated={() => void mutateClasses()}
                             />
@@ -796,6 +830,7 @@ function ClassesTab({
     programId,
     facilityId,
     canAddClass,
+    isCanvasProgram,
     onOpenStatusModal,
     onCreated
 }: {
@@ -804,6 +839,7 @@ function ClassesTab({
     programId: string;
     facilityId?: number;
     canAddClass: boolean;
+    isCanvasProgram?: boolean;
     onOpenStatusModal: (cls: Class) => void;
     onCreated?: () => void;
 }) {
@@ -833,17 +869,19 @@ function ClassesTab({
                         All classes offered under this program
                     </p>
                 </div>
-                <Button
-                    disabled={!canAddClass}
-                    onClick={() => {
-                        if (!canAddClass) return;
-                        setShowCreateForm((prev) => !prev);
-                    }}
-                    className="bg-brand-gold text-brand-dark hover:bg-brand-gold/90"
-                >
-                    <Plus className="size-5" />
-                    {showCreateForm ? 'Cancel' : 'Create New Class'}
-                </Button>
+                {!isCanvasProgram && (
+                    <Button
+                        disabled={!canAddClass}
+                        onClick={() => {
+                            if (!canAddClass) return;
+                            setShowCreateForm((prev) => !prev);
+                        }}
+                        className="bg-brand-gold text-brand-dark hover:bg-brand-gold/90"
+                    >
+                        <Plus className="size-5" />
+                        {showCreateForm ? 'Cancel' : 'Create New Class'}
+                    </Button>
+                )}
             </div>
 
             {showCreateForm && (
@@ -897,9 +935,10 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/detail`
                                         )
                                     }
-                                    className="hover:bg-surface-hover/50"
-                                    editableStatus
+                                    className="hover:bg-[#E2E7EA]/50"
+                                    editableStatus={!isCanvasProgram}
                                     showEnrollment
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -924,6 +963,7 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -948,6 +988,7 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -971,7 +1012,8 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
-                                    editableStatus
+                                    editableStatus={!isCanvasProgram}
+                                    isCanvas={isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -988,14 +1030,16 @@ function ClassRow({
     onClick,
     className,
     editableStatus,
-    showEnrollment
+    showEnrollment,
+    isCanvas
 }: {
     cls: Class;
     onOpenStatusModal: (cls: Class) => void;
-    onClick: () => void;
+    onClick?: () => void;
     className?: string;
     editableStatus?: boolean;
     showEnrollment?: boolean;
+    isCanvas?: boolean;
 }) {
     const enrollPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
@@ -1036,7 +1080,8 @@ function ClassRow({
     return (
         <div
             className={cn(
-                'p-6 cursor-pointer transition-colors',
+                'p-6 transition-colors',
+                onClick ? 'cursor-pointer' : 'cursor-default',
                 className ?? ''
             )}
             onClick={onClick}
@@ -1084,14 +1129,16 @@ function ClassRow({
                         </div>
                     )}
                     <div className="flex items-center gap-6 text-sm">
-                        <div className="flex items-center gap-2">
-                            <span className="text-gray-600">Attendance:</span>
-                            <span className={`font-medium ${attendanceClass}`}>
-                                {attendanceRate !== null
-                                    ? `${attendanceRate}%`
-                                    : '—'}
-                            </span>
-                        </div>
+                        {!isCanvas && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-600">Attendance:</span>
+                                <span className={`font-medium ${attendanceClass}`}>
+                                    {attendanceRate !== null
+                                        ? `${attendanceRate}%`
+                                        : '—'}
+                                </span>
+                            </div>
+                        )}
                         {showCompletion && (
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-600">
@@ -1115,14 +1162,18 @@ function ClassRow({
                                 Enrollment
                             </span>
                             <span className="text-sm text-brand-dark">
-                                {cls.enrolled} / {cls.capacity}
+                                {isCanvas
+                                    ? cls.enrolled
+                                    : `${cls.enrolled} / ${cls.capacity}`}
                             </span>
                         </div>
-                        <Progress
-                            value={enrollPct}
-                            className="h-2"
-                            indicatorClassName="bg-brand"
-                        />
+                        {!isCanvas && (
+                            <Progress
+                                value={enrollPct}
+                                className="h-2"
+                                indicatorClassName="bg-brand"
+                            />
+                        )}
                     </div>
                 )}
             </div>

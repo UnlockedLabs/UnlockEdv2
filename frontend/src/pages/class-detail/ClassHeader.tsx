@@ -1,19 +1,93 @@
 import { useMemo, useState } from 'react';
 import { Users, Calendar, AlertCircle, Edit, MapPin } from 'lucide-react';
-import { RRule } from 'rrule';
+import { RRule, Weekday } from 'rrule';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Class } from '@/types/program';
 import { SelectedClassStatus } from '@/types/attendance';
 import {
     getClassSchedule,
+    ClassScheduleInfo,
     getInstructorName,
     getStatusColor,
     formatDate,
     formatTime12h,
-    formatClassTimeRange
+    formatClassTimeRange,
+    timeToMinutes
 } from '@/lib/formatters';
 import { ChangeClassStatusModal } from './ChangeClassStatusModal';
+
+const CANVAS_WEEKDAY_NAMES: Record<number, string> = {
+    0: 'Monday',
+    1: 'Tuesday',
+    2: 'Wednesday',
+    3: 'Thursday',
+    4: 'Friday',
+    5: 'Saturday',
+    6: 'Sunday'
+};
+
+function parseGoDuration(duration: string): number {
+    const h = /(\d+)h/.exec(duration);
+    const m = /(\d+)m/.exec(duration);
+    const s = /(\d+)s/.exec(duration);
+    return (
+        parseInt(h?.[1] ?? '0', 10) * 3600000 +
+        parseInt(m?.[1] ?? '0', 10) * 60000 +
+        parseInt(s?.[1] ?? '0', 10) * 1000
+    );
+}
+
+function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
+    const event = cls.events?.find((e) => !e.is_cancelled);
+    if (!event) return { days: [], startTime: '', endTime: '', room: '' };
+
+    let days: string[] = [];
+    let startTime = '';
+    let endTime = '';
+
+    try {
+        const cleaned = event.recurrence_rule.replace(
+            /DTSTART;TZID=[^:]+:/,
+            'DTSTART:'
+        );
+        const rule = RRule.fromString(cleaned);
+        days =
+            rule.options.byweekday?.map(
+                (d: number | Weekday) =>
+                    CANVAS_WEEKDAY_NAMES[
+                        typeof d === 'number' ? d : d.weekday
+                    ] ?? ''
+            ) ?? [];
+
+        if (rule.options.dtstart) {
+            const dt = rule.options.dtstart;
+            const h = String(dt.getUTCHours()).padStart(2, '0');
+            const m = String(dt.getUTCMinutes()).padStart(2, '0');
+            startTime = `${h}:${m}`;
+        }
+    } catch {
+        /* rrule parse failure */
+    }
+
+    if (startTime && event.duration) {
+        const durationMs = parseGoDuration(event.duration);
+        if (durationMs > 0) {
+            const totalMinutes = timeToMinutes(startTime) + durationMs / 60000;
+            const endH = String(Math.floor(totalMinutes / 60) % 24).padStart(
+                2,
+                '0'
+            );
+            const endM = String(Math.floor(totalMinutes % 60)).padStart(
+                2,
+                '0'
+            );
+            endTime = `${endH}:${endM}`;
+        }
+    }
+
+    return { days, startTime, endTime, room: '' };
+}
 
 interface ClassHeaderProps {
     cls: Class;
@@ -24,6 +98,7 @@ interface StatCardsProps {
     cls: Class;
     attendanceRate: number;
     atRiskCount: number;
+    isCanvasClass?: boolean;
 }
 
 function getNextClassDate(cls: Class): { date: string; time: string } | null {
@@ -78,7 +153,10 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
 
 export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     const [showStatusModal, setShowStatusModal] = useState(false);
-    const schedule = useMemo(() => getClassSchedule(cls), [cls]);
+    const schedule = useMemo(
+        () => cls.is_canvas ? getCanvasClassSchedule(cls) : getClassSchedule(cls),
+        [cls]
+    );
     const nextClass = useMemo(() => getNextClassDate(cls), [cls]);
 
     const isTerminal =
@@ -149,7 +227,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 <InfoCard
                     label="Duration"
                     value={
-                        cls.start_dt
+                        cls.start_dt && new Date(cls.start_dt).getFullYear() >= 1900
                             ? `${formatDate(cls.start_dt)} to ${cls.end_dt ? formatDate(cls.end_dt) : 'Ongoing'}`
                             : 'Not set'
                     }
@@ -184,7 +262,8 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
 export function StatCards({
     cls,
     attendanceRate,
-    atRiskCount
+    atRiskCount,
+    isCanvasClass = false
 }: StatCardsProps) {
     const avgRate = Math.round(attendanceRate);
     const capacityPct =
@@ -192,43 +271,53 @@ export function StatCards({
     const spotsAvailable = cls.capacity - cls.enrolled;
 
     return (
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className={`grid ${isCanvasClass ? 'grid-cols-2' : 'grid-cols-3'} gap-6 mb-6`}>
             <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Users className="size-5 text-brand shrink-0" />
                     <h3 className="text-brand-dark truncate">Enrollment</h3>
                 </div>
-                <div className="text-3xl text-brand-dark mb-2">
-                    {cls.enrolled} / {cls.capacity}
-                </div>
-                <Progress
-                    value={capacityPct}
-                    className="h-2 mb-3"
-                    indicatorClassName="bg-brand"
-                />
-                <div className="text-sm text-gray-600">
-                    {spotsAvailable} {spotsAvailable === 1 ? 'spot' : 'spots'}{' '}
-                    available
-                </div>
+                {isCanvasClass ? (
+                    <div className="text-3xl text-brand-dark">
+                        {cls.enrolled}
+                    </div>
+                ) : (
+                    <>
+                        <div className="text-3xl text-brand-dark mb-2">
+                            {cls.enrolled} / {cls.capacity}
+                        </div>
+                        <Progress
+                            value={capacityPct}
+                            className="h-2 mb-3"
+                            indicatorClassName="bg-brand"
+                        />
+                        <div className="text-sm text-gray-600">
+                            {spotsAvailable}{' '}
+                            {spotsAvailable === 1 ? 'spot' : 'spots'} available
+                        </div>
+                    </>
+                )}
             </div>
 
-            <div className="card-block p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Calendar className="size-5 text-brand shrink-0" />
-                    <h3 className="text-brand-dark truncate">Attendance</h3>
+            {!isCanvasClass && (
+                <div className="card-block p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Calendar className="size-5 text-brand shrink-0" />
+                        <h3 className="text-brand-dark truncate">Attendance</h3>
+                    </div>
+                    <div className="text-3xl text-brand-dark mb-2">{avgRate}%</div>
+                    <Progress
+                        value={avgRate}
+                        className="h-2 mb-3"
+                        indicatorClassName={
+                            avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
+                        }
+                    />
+                    <div className="text-sm text-gray-600">
+                        Average attendance rate
+                    </div>
                 </div>
-                <div className="text-3xl text-brand-dark mb-2">{avgRate}%</div>
-                <Progress
-                    value={avgRate}
-                    className="h-2 mb-3"
-                    indicatorClassName={
-                        avgRate >= 85 ? 'bg-brand' : 'bg-brand-gold'
-                    }
-                />
-                <div className="text-sm text-gray-600">
-                    Average attendance rate
-                </div>
-            </div>
+            )}
 
             <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
