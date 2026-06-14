@@ -139,6 +139,7 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 		logrus.WithError(err).Warn("failed to fetch canvas classes, returning DB classes only")
 	} else {
 		classes = append(classes, canvasClasses...)
+		args.Total += int64(len(canvasClasses))
 	}
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }
