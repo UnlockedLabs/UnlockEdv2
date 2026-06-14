@@ -30,7 +30,7 @@ type CanvasService struct {
 
 func newCanvasService(provider *models.ProviderPlatform, params map[string]any) *CanvasService {
 	token := strings.TrimSpace(provider.AccessKey)
-	log.Infof("Canvas access key length: %d, contains newline: %v, hex: %x", len(token), strings.ContainsAny(provider.AccessKey, "\r\n"), []byte(token))
+	log.Infof("Canvas access key length: %d, contains newline: %v", len(token), strings.ContainsAny(provider.AccessKey, "\r\n"))
 	headers := make(map[string]string)
 	headers["Authorization"] = "Bearer " + token
 	headers["Accept"] = "application/json"
