@@ -62,8 +62,8 @@ function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
 
         if (rule.options.dtstart) {
             const dt = rule.options.dtstart;
-            const h = String(dt.getUTCHours()).padStart(2, '0');
-            const m = String(dt.getUTCMinutes()).padStart(2, '0');
+            const h = String(dt.getHours()).padStart(2, '0');
+            const m = String(dt.getMinutes()).padStart(2, '0');
             startTime = `${h}:${m}`;
         }
     } catch {
@@ -140,11 +140,10 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
         const date = next.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
-            day: 'numeric',
-            timeZone: 'UTC'
+            day: 'numeric'
         });
-        const h = String(next.getUTCHours()).padStart(2, '0');
-        const m = String(next.getUTCMinutes()).padStart(2, '0');
+        const h = String(next.getHours()).padStart(2, '0');
+        const m = String(next.getMinutes()).padStart(2, '0');
         return { date, time: formatTime12h(`${h}:${m}`) };
     } catch {
         return null;
@@ -163,11 +162,13 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
         cls.status === SelectedClassStatus.Completed ||
         cls.status === SelectedClassStatus.Cancelled;
 
+    const isReadOnly = isTerminal || cls.is_canvas;
+
     return (
         <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-brand-dark">{cls.name}</h1>
-                {isTerminal ? (
+                {isReadOnly ? (
                     <Badge
                         variant="outline"
                         className={getStatusColor(cls.status)}
