@@ -545,6 +545,7 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 	}
 	canvasPrograms := srv.fetchCanvasUserPrograms(userId)
 	userPrograms = append(userPrograms, canvasPrograms...)
+	queryCtx.Total += int64(len(canvasPrograms))
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }
 
