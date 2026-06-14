@@ -55,10 +55,10 @@ var (
 	}()
 )
 
-// nameSimilarity returns a composite score (0–1) combining Jaro-Winkler (60%)
+// NameSimilarity returns a composite score (0–1) combining Jaro-Winkler (60%)
 // and Smith-Waterman-Gotoh (40%). JW is weighted higher because it is designed
 // for person names; SWG adds sensitivity to partial/substring matches.
-func nameSimilarity(a, b string) float64 {
+func NameSimilarity(a, b string) float64 {
 	a = strings.ToLower(strings.TrimSpace(a))
 	b = strings.ToLower(strings.TrimSpace(b))
 	jw := strutil.Similarity(a, b, jwMetric)
@@ -74,21 +74,27 @@ type matchCandidate struct {
 	score     float64
 }
 
-// matchUsers performs greedy 1:1 matching. All pairs are scored, sorted by
+// MatchUsers performs greedy 1:1 matching. All pairs are scored, sorted by
 // score descending, then assigned greedily — each Canvas user and each
 // UnlockEd user can only appear in one match.
-func matchUsers(canvasUsers []models.ImportUser, unlockEdUsers []models.User) MatchUsersResponse {
+func MatchUsers(canvasUsers []models.ImportUser, unlockEdUsers []models.User) MatchUsersResponse {
 	// Score every canvas×unlocked pair
 	candidates := make([]matchCandidate, 0, len(canvasUsers)*len(unlockEdUsers))
 	for ci, cu := range canvasUsers {
 		canvasName := cu.NameFirst + " " + cu.NameLast
 		for ui, u := range unlockEdUsers {
-			score := nameSimilarity(canvasName, u.NameFirst+" "+u.NameLast)
+			score := NameSimilarity(canvasName, u.NameFirst+" "+u.NameLast)
 			candidates = append(candidates, matchCandidate{ci, ui, score})
 		}
 	}
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].score > candidates[j].score
+	sort.SliceStable(candidates, func(i, j int) bool {
+		if candidates[i].score != candidates[j].score {
+			return candidates[i].score > candidates[j].score
+		}
+		if candidates[i].canvasIdx != candidates[j].canvasIdx {
+			return candidates[i].canvasIdx < candidates[j].canvasIdx
+		}
+		return candidates[i].unlockIdx < candidates[j].unlockIdx
 	})
 
 	assignedCanvas := make([]bool, len(canvasUsers))
@@ -135,7 +141,7 @@ func (srv *Server) handleMatchUsers(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newBadRequestServiceError(err, err.Error())
 	}
-	facilityID := srv.getFacilityID(r)
+	facilityID := srv.getQueryContext(r).FacilityID
 
 	canvasUsers, err := service.GetUsers()
 	if err != nil {
@@ -147,7 +153,7 @@ func (srv *Server) handleMatchUsers(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 
-	result := matchUsers(canvasUsers, unlockEdUsers)
+	result := MatchUsers(canvasUsers, unlockEdUsers)
 	return writeJsonResponse(w, http.StatusOK, result)
 }
 
@@ -167,10 +173,16 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 		return newDatabaseServiceError(err)
 	}
 
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var failed []string
 	applied := 0
 
 	for _, c := range req.Confirmed {
+		user, err := srv.Db.GetUserByID(c.UnlockEdUserID)
+		if err != nil || (!claims.canSwitchFacility() && user.FacilityID != srv.getQueryContext(r).FacilityID) {
+			failed = append(failed, c.CanvasUser.Username)
+			continue
+		}
 		existing, _ := srv.Db.GetProviderUserMapping(int(c.UnlockEdUserID), int(service.ProviderPlatformID))
 		if existing != nil {
 			applied++
@@ -187,10 +199,7 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 			continue
 		}
 		if provider.OidcID != 0 {
-			user, err := srv.Db.GetUserByID(c.UnlockEdUserID)
-			if err != nil {
-				log.errorf("could not fetch user %d for provider login registration: %v", c.UnlockEdUserID, err)
-			} else if err := srv.registerProviderLogin(provider, user); err != nil {
+			if err := srv.registerProviderLogin(provider, user); err != nil {
 				log.errorf("error registering provider login for user %d: %v", c.UnlockEdUserID, err)
 			}
 		}
@@ -198,6 +207,10 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 	}
 
 	created := 0
+	if len(req.ToCreate) > 0 && srv.getQueryContext(r).FacilityID == 0 {
+		return newBadRequestServiceError(nil, "facility_id is required to create users")
+	}
+	facilityID := srv.getQueryContext(r).FacilityID
 	for _, cu := range req.ToCreate {
 		if strings.TrimSpace(cu.Username) == "" && strings.TrimSpace(cu.Email) == "" && strings.TrimSpace(cu.NameLast) == "" {
 			continue
@@ -207,7 +220,7 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 			Email:      cu.Email,
 			NameFirst:  stripNonAlphaChars(cu.NameFirst, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsSpace(r) }),
 			NameLast:   stripNonAlphaChars(cu.NameLast, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsSpace(r) }),
-			FacilityID: srv.getFacilityID(r),
+			FacilityID: facilityID,
 			Role:       models.Student,
 		}
 		if err := srv.WithUserContext(r).CreateUser(&newUser); err != nil {

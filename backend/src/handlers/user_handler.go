@@ -123,7 +123,7 @@ func (srv *Server) handleGetUserStats(w http.ResponseWriter, r *http.Request, lo
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
 	log.add("subhandlerCall", "HandleGetUnmappedUsers")
-	args := srv.facilityScopedQueryContext(r)
+	args := srv.getQueryContext(r)
 	provID, err := strconv.Atoi(providerId)
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider ID")
