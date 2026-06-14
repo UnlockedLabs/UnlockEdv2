@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import {
@@ -27,6 +27,9 @@ import { IncompleteEntryReminder } from '@/components/dashboard/IncompleteEntryR
 import UpcomingClassSessionCard from '@/components/dashboard/UpcomingClassSessionCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
+import { clickableProps } from '@/lib/a11y';
+import { toExternalUrl } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
@@ -145,24 +148,35 @@ function detectLearningState(
 }
 
 function FavoriteItem({ item }: { item: OpenContentItem }) {
+    const navigate = useNavigate();
+    const title = decodeHtmlEntities(item.title);
+
+    const handleClick = () => {
+        if (item.content_type === 'video') {
+            navigate(`/viewer/videos/${item.content_id}`);
+        } else if (item.content_type === 'library') {
+            navigate(`/viewer/libraries/${item.content_id}`);
+        } else {
+            window.open(toExternalUrl(item.url), '_blank', 'noopener,noreferrer');
+        }
+    };
+
     return (
-        <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow"
+        <div
+            {...clickableProps(handleClick)}
+            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
         >
             {item.thumbnail_url ? (
                 <img
                     src={item.thumbnail_url}
-                    alt={item.title}
+                    alt={title}
                     className="w-10 h-10 rounded object-cover shrink-0"
                 />
             ) : (
                 <div className="w-10 h-10 rounded bg-muted shrink-0" />
             )}
-            <p className="text-sm text-foreground truncate">{item.title}</p>
-        </a>
+            <p className="text-sm text-foreground truncate">{title}</p>
+        </div>
     );
 }
 
