@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"time"
 )
 
 // StringSlice persists a Go string slice as a JSON text column.
@@ -31,7 +30,7 @@ func (s *StringSlice) Scan(value any) error {
 }
 
 type LearningRecordEntry struct {
-	ID                  uint        `gorm:"primaryKey"        json:"id"`
+	DatabaseFields
 	UserID              uint        `gorm:"not null"          json:"user_id"`
 	ClientID            string      `gorm:"not null"          json:"client_id"`
 	IsDraft             bool        `gorm:"not null;default:false" json:"is_draft"`
@@ -56,8 +55,6 @@ type LearningRecordEntry struct {
 	GrowthReflection    string      `                         json:"growth_reflection"`
 	SupportSelections   StringSlice `gorm:"type:text"         json:"support_selections"`
 	NextStepSelections  StringSlice `gorm:"type:text"         json:"next_step_selections"`
-	CreatedAt           time.Time   `                         json:"created_at"`
-	UpdatedAt           time.Time   `                         json:"updated_at"`
 }
 
 func (LearningRecordEntry) TableName() string { return "learning_record_entries" }
