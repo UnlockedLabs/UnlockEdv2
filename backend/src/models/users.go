@@ -161,7 +161,8 @@ const (
 	ResetPassword      ActivityHistoryAction = "reset_password"
 	ProgClassHistory   ActivityHistoryAction = "progclass_history"
 	UserDeactivated    ActivityHistoryAction = "user_deactivated"
-	AttendanceRecorded ActivityHistoryAction = "attendance_recorded"
+	AttendanceRecorded     ActivityHistoryAction = "attendance_recorded"
+	LearningRecordDeleted  ActivityHistoryAction = "learning_record_deleted"
 )
 
 type ActivityHistoryResponse struct {
