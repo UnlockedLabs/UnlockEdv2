@@ -615,7 +615,7 @@ func (srv *Server) fetchCanvasCoursesForUser(provider *models.ProviderPlatform, 
 				IsCanvas:             true,
 			})
 		}
-		apiURL = nextPageURL(resp.Header.Get("Link"))
+		apiURL = NextPageURL(resp.Header.Get("Link"))
 	}
 	return result
 }

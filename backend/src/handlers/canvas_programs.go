@@ -254,7 +254,7 @@ func (srv *Server) fetchAllCanvasPages(provider *models.ProviderPlatform, startU
 			resp.Body.Close()
 			return nil, err
 		}
-		pageURL = nextPageURL(resp.Header.Get("Link"))
+		pageURL = NextPageURL(resp.Header.Get("Link"))
 		resp.Body.Close()
 		all = append(all, page...)
 		if max > 0 && len(all) >= max {
@@ -264,18 +264,100 @@ func (srv *Server) fetchAllCanvasPages(provider *models.ProviderPlatform, startU
 	return all, nil
 }
 
-// nextPageURL parses a Canvas Link header and returns the URL for rel="next",
+// NextPageURL parses an RFC 5988 Link header and returns the URL for rel="next",
 // or an empty string if there is no next page.
-func nextPageURL(header string) string {
-	for _, part := range strings.Split(header, ",") {
-		part = strings.TrimSpace(part)
-		segments := strings.Split(part, ";")
-		if len(segments) >= 2 && strings.Contains(segments[1], `rel="next"`) {
-			u := strings.TrimSpace(segments[0])
-			return strings.Trim(u, "<>")
+// It handles quoted strings, varied whitespace, arbitrary attribute order,
+// case-insensitive rel tokens, and URIs that contain commas or semicolons.
+func NextPageURL(header string) string {
+	for _, entry := range splitLinkEntries(header) {
+		entry = strings.TrimSpace(entry)
+		if !strings.HasPrefix(entry, "<") {
+			continue
+		}
+		uriEnd := strings.IndexByte(entry, '>')
+		if uriEnd < 0 {
+			continue
+		}
+		uri := entry[1:uriEnd]
+		if linkEntryHasRelNext(entry[uriEnd+1:]) {
+			return uri
 		}
 	}
 	return ""
+}
+
+// splitLinkEntries splits a Link header value by top-level commas (i.e. commas
+// not inside angle brackets or double-quoted strings).
+func splitLinkEntries(header string) []string {
+	var entries []string
+	depth, start := 0, 0
+	inQuote := false
+	for i := 0; i < len(header); i++ {
+		switch header[i] {
+		case '<':
+			if !inQuote {
+				depth++
+			}
+		case '>':
+			if !inQuote && depth > 0 {
+				depth--
+			}
+		case '"':
+			inQuote = !inQuote
+		case '\\':
+			if inQuote && i+1 < len(header) {
+				i++ // skip escaped character inside quoted string
+			}
+		case ',':
+			if depth == 0 && !inQuote {
+				entries = append(entries, header[start:i])
+				start = i + 1
+			}
+		}
+	}
+	return append(entries, header[start:])
+}
+
+// linkEntryHasRelNext reports whether the parameter portion of a Link entry
+// contains a rel attribute whose value includes the token "next"
+// (case-insensitive; handles quoted values and multiple space-separated tokens).
+func linkEntryHasRelNext(params string) bool {
+	inQuote, start := false, 0
+	checkParam := func(p string) bool {
+		p = strings.TrimSpace(p)
+		eq := strings.IndexByte(p, '=')
+		if eq < 0 || !strings.EqualFold(strings.TrimSpace(p[:eq]), "rel") {
+			return false
+		}
+		val := strings.TrimSpace(p[eq+1:])
+		if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
+			val = val[1 : len(val)-1]
+		}
+		for _, tok := range strings.Fields(val) {
+			if strings.EqualFold(tok, "next") {
+				return true
+			}
+		}
+		return false
+	}
+	for i := 0; i < len(params); i++ {
+		switch params[i] {
+		case '"':
+			inQuote = !inQuote
+		case '\\':
+			if inQuote && i+1 < len(params) {
+				i++
+			}
+		case ';':
+			if !inQuote {
+				if checkParam(params[start:i]) {
+					return true
+				}
+				start = i + 1
+			}
+		}
+	}
+	return checkParam(params[start:])
 }
 
 // fetchCanvasCalendarEvents fetches individual Canvas calendar events for all
