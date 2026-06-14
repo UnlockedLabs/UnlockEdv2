@@ -36,11 +36,28 @@ func (db *DB) UpdateLearningRecordEntry(entry *models.LearningRecordEntry) error
 }
 
 func (db *DB) DeleteLearningRecordEntry(id, userID uint) error {
-	if err := db.Where("id = ? AND user_id = ?", id, userID).
-		Delete(&models.LearningRecordEntry{}).Error; err != nil {
-		return newDeleteDBError(err, "learning_record_entries")
+	actorID := userID
+	if ctx := db.Statement.Context; ctx != nil {
+		if uid, ok := ctx.Value(models.UserIDKey).(uint); ok {
+			actorID = uid
+		}
 	}
-	return nil
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.LearningRecordEntry{}).
+			Where("id = ? AND user_id = ?", id, userID).
+			Update("update_user_id", actorID).Error; err != nil {
+			return newUpdateDBError(err, "learning_record_entries")
+		}
+		if err := tx.Where("id = ? AND user_id = ?", id, userID).
+			Delete(&models.LearningRecordEntry{}).Error; err != nil {
+			return newDeleteDBError(err, "learning_record_entries")
+		}
+		history := models.NewUserAccountHistory(userID, models.LearningRecordDeleted, &actorID, nil, nil)
+		if err := tx.Create(history).Error; err != nil {
+			return newCreateDBError(err, "user_account_history")
+		}
+		return nil
+	})
 }
 
 // GetLearningRecordDraft returns the most recently updated draft for the user, or nil.
@@ -61,18 +78,27 @@ func (db *DB) GetLearningRecordDraft(userID uint) (*models.LearningRecordEntry, 
 // UpsertLearningRecordDraft inserts or updates a draft row keyed on (user_id, client_id).
 func (db *DB) UpsertLearningRecordDraft(draft *models.LearningRecordEntry) error {
 	draft.IsDraft = true
+	updateMap := map[string]any{
+		"is_draft": true, "step_index": draft.StepIndex, "ui_phase": draft.UiPhase,
+		"editing_entry_id": draft.EditingEntryID, "program_name": draft.ProgramName,
+		"completion_date": draft.CompletionDate, "confidence": draft.Confidence,
+		"summary": draft.Summary, "top_skills": draft.TopSkills,
+		"barrier_to_completion": draft.BarrierToCompletion, "goal_connection": draft.GoalConnection,
+		"pride": draft.Pride, "standout_moment": draft.StandoutMoment,
+		"advice_to_peer": draft.AdviceToPeer, "challenge_toggle": draft.ChallengeToggle,
+		"challenge_text": draft.ChallengeText, "skill_tags_before": draft.SkillTagsBefore,
+		"skill_tags_after": draft.SkillTagsAfter, "skill_reflection": draft.SkillReflection,
+		"growth_reflection": draft.GrowthReflection, "support_selections": draft.SupportSelections,
+		"next_step_selections": draft.NextStepSelections, "updated_at": gorm.Expr("NOW()"),
+	}
+	if ctx := db.Statement.Context; ctx != nil {
+		if userID, ok := ctx.Value(models.UserIDKey).(uint); ok {
+			updateMap["update_user_id"] = userID
+		}
+	}
 	if err := db.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "user_id"}, {Name: "client_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{
-			"is_draft", "step_index", "ui_phase", "editing_entry_id",
-			"program_name", "completion_date", "confidence", "summary",
-			"top_skills", "barrier_to_completion", "goal_connection",
-			"pride", "standout_moment", "advice_to_peer",
-			"challenge_toggle", "challenge_text",
-			"skill_tags_before", "skill_tags_after", "skill_reflection",
-			"growth_reflection", "support_selections", "next_step_selections",
-			"updated_at",
-		}),
+		Columns:   []clause.Column{{Name: "user_id"}, {Name: "client_id"}},
+		DoUpdates: clause.Assignments(updateMap),
 	}).Create(draft).Error; err != nil {
 		return newCreateDBError(err, "learning_record_entries")
 	}
