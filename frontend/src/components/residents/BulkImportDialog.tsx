@@ -4,13 +4,21 @@ import {
     BulkUploadResponse,
     InvalidUserRow,
     ValidatedUserRow,
-    ServerResponseOne
+    ServerResponseOne,
+    Facility
 } from '@/types';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
 import { FormModal, TonedPanel } from '@/components/shared';
 import { Upload, Download, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -18,12 +26,18 @@ interface BulkImportDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
+    facilities?: Facility[];
+    showFacilitySelect?: boolean;
+    defaultFacilityId?: number;
 }
 
 export function BulkImportDialog({
     open,
     onOpenChange,
-    onSuccess
+    onSuccess,
+    facilities = [],
+    showFacilitySelect = false,
+    defaultFacilityId
 }: BulkImportDialogProps) {
     const [step, setStep] = useState<'upload' | 'validation'>('upload');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -32,6 +46,9 @@ export function BulkImportDialog({
     const [errorCsvData, setErrorCsvData] = useState<string | undefined>();
     const [validating, setValidating] = useState(false);
     const [creating, setCreating] = useState(false);
+    const [selectedFacilityId, setSelectedFacilityId] = useState<
+        number | undefined
+    >(defaultFacilityId);
 
     const reset = () => {
         setStep('upload');
@@ -39,6 +56,7 @@ export function BulkImportDialog({
         setValidRows([]);
         setInvalidRows([]);
         setErrorCsvData(undefined);
+        setSelectedFacilityId(defaultFacilityId);
     };
 
     const handleOpenChange = (value: boolean) => {
@@ -100,9 +118,16 @@ export function BulkImportDialog({
 
     const handleCreateAccounts = async () => {
         if (validRows.length === 0) return;
+        if (showFacilitySelect && !selectedFacilityId) {
+            toast.error('Please select a facility');
+            return;
+        }
         setCreating(true);
+        const createUrl = selectedFacilityId
+            ? `users/bulk/create?facility_id=${selectedFacilityId}`
+            : 'users/bulk/create';
         const response = await API.post<string, ValidatedUserRow[]>(
-            'users/bulk/create',
+            createUrl,
             validRows
         );
         setCreating(false);
@@ -130,6 +155,40 @@ export function BulkImportDialog({
             <div className="space-y-6 py-4">
                 {step === 'upload' ? (
                     <>
+                        {showFacilitySelect && (
+                            <div>
+                                <Label htmlFor="bulk-import-facility">
+                                    Facility
+                                </Label>
+                                <Select
+                                    value={
+                                        selectedFacilityId
+                                            ? String(selectedFacilityId)
+                                            : undefined
+                                    }
+                                    onValueChange={(v) =>
+                                        setSelectedFacilityId(Number(v))
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="bulk-import-facility"
+                                        className="mt-2"
+                                    >
+                                        <SelectValue placeholder="Select facility" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {facilities.map((f) => (
+                                            <SelectItem
+                                                key={f.id}
+                                                value={String(f.id)}
+                                            >
+                                                {f.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                         <Label
                             htmlFor="csv-upload"
                             className="block cursor-pointer"
@@ -361,7 +420,11 @@ export function BulkImportDialog({
                         </Button>
                         <Button
                             onClick={() => void handleCreateAccounts()}
-                            disabled={validRows.length === 0 || creating}
+                            disabled={
+                                validRows.length === 0 ||
+                                creating ||
+                                (showFacilitySelect && !selectedFacilityId)
+                            }
                             variant="brand"
                         >
                             {creating

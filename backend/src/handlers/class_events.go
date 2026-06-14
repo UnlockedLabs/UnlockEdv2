@@ -37,7 +37,7 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
-	args := srv.getQueryContext(r)
+	args := srv.facilityScopedQueryContext(r)
 
 	id := r.URL.Query().Get("class_id")
 	var classID int

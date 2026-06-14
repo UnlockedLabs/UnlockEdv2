@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { toExternalUrl } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
@@ -193,11 +194,11 @@ export default function ResidentKnowledgeCenter() {
         );
         if (resp.success && resp.data) {
             window.open(
-                (resp.data as { url: string }).url ?? link.url,
+                toExternalUrl((resp.data as { url: string }).url ?? link.url),
                 '_blank'
             );
         } else {
-            window.open(link.url ?? '', '_blank');
+            window.open(toExternalUrl(link.url ?? ''), '_blank');
         }
     };
 

@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import LoginTrendChart from '@/components/charts/LoginTrendChart';
 import { MetricCard } from './MetricCard';
-import { InsightsDateParams } from './insightsRange';
+import { InsightsDateParams, priorParams, dateQuery } from './insightsRange';
 
 interface OverviewTabProps {
     dateParams: InsightsDateParams;
@@ -57,6 +57,14 @@ function ratio(part: number, whole: number): number {
     return whole > 0 ? Math.round((part / whole) * 10) / 10 : 0;
 }
 
+function changePct(current: number, prior: number): number {
+    return prior > 0 ? Math.round(((current - prior) / prior) * 100) : 0;
+}
+
+function deltaLabel(change: number): string {
+    return `${change >= 0 ? '+' : ''}${change}% vs prior period`;
+}
+
 export default function OverviewTab({
     dateParams,
     selectedFacility,
@@ -67,7 +75,7 @@ export default function OverviewTab({
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const query = `facility=${selectedFacility}&start_date=${dateParams.start_date}&end_date=${dateParams.end_date}`;
+    const query = `facility=${selectedFacility}&${dateQuery(dateParams)}`;
 
     const {
         data: metricsResp,
@@ -81,11 +89,18 @@ export default function OverviewTab({
         ServerResponseOne<DailyLoginCount[]>
     >(`/api/department-metrics/login-trend?${query}`);
 
+    const prior = priorParams(dateParams);
+    const { data: priorMetricsResp, mutate: mutatePriorMetrics } = useSWR<
+        ServerResponseOne<DepartmentMetrics>
+    >(
+        `/api/department-metrics?facility=${selectedFacility}&${dateQuery(prior)}`
+    );
+
     const { data: comparisonResp, mutate: mutateComparison } = useSWR<
         ServerResponseOne<FacilityEngagement[]>
     >(
         canSwitch
-            ? `/api/department-metrics/facility-comparison?start_date=${dateParams.start_date}&end_date=${dateParams.end_date}`
+            ? `/api/department-metrics/facility-comparison?${dateQuery(dateParams)}`
             : null
     );
 
@@ -121,7 +136,8 @@ export default function OverviewTab({
             await Promise.all([
                 mutateMetrics(),
                 mutateTrend(),
-                mutateComparison()
+                mutateComparison(),
+                mutatePriorMetrics()
             ]);
         } finally {
             setIsRefreshing(false);
@@ -155,6 +171,10 @@ export default function OverviewTab({
         ? new Date(metricsResp.data.last_cache).toLocaleString()
         : '';
 
+    const newUsersChange = changePct(
+        metrics.new_residents_added,
+        priorMetricsResp?.data.data.new_residents_added ?? 0
+    );
     return (
         <div className="space-y-6">
             <div>
@@ -221,7 +241,7 @@ export default function OverviewTab({
                         icon={UserPlusIcon}
                         value={metrics.new_residents_added.toLocaleString()}
                         label="New Residents Added"
-                        sub="in selected range"
+                        sub={deltaLabel(newUsersChange)}
                         tooltip={
                             <>
                                 Residents whose account was <b>first created</b>{' '}

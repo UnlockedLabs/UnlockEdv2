@@ -86,7 +86,10 @@ func stripNonAlphaChars(str string, keepCharacter func(char rune) bool) string {
 // already in the correct format) and creates a new user in the database for each of them, as well as
 // creating a mapping for each user, and creating a login for each user in the provider
 func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facilityId := srv.getFacilityID(r)
+	facilityId, err := srv.requireFacilityID(r)
+	if err != nil {
+		return err
+	}
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")

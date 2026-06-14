@@ -138,7 +138,7 @@ export default function OperationalInsightsPage() {
                 </div>
 
                 <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="bg-card border border-border p-1 h-auto gap-1">
+                    <TabsList className="bg-card border border-gray-200 dark:border-border p-1 h-auto gap-1">
                         <TabsTrigger
                             value="overview"
                             className={TAB_TRIGGER_CLASS}
@@ -161,7 +161,11 @@ export default function OperationalInsightsPage() {
                         />
                     </TabsContent>
                     <TabsContent value="knowledge-center" className="mt-0">
-                        <KnowledgeCenterTab />
+                        <KnowledgeCenterTab
+                            dateParams={dateParams}
+                            selectedFacility={selectedFacility}
+                            rangeLabel={rangeLabel}
+                        />
                     </TabsContent>
                 </Tabs>
             </div>

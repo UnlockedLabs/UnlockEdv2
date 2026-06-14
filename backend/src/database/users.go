@@ -47,7 +47,9 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 			tx = tx.Where("facility_id = ?", args.FacilityID)
 		}
 	default:
-		tx = tx.Where("facility_id = ?", args.FacilityID)
+		if args.FacilityID > 0 {
+			tx = tx.Where("facility_id = ?", args.FacilityID)
+		}
 	}
 	if args.Search != "" {
 		tx = fuzzySearchUsers(tx, args)

@@ -1,8 +1,7 @@
 import { Outlet, useLocation, useMatches } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Facility, RouteTitleHandler, TitleHandler } from '@/types';
+import { RouteTitleHandler, TitleHandler } from '@/types';
 import { useAuth, isAdministrator, canSwitchFacility } from '@/auth/useAuth';
-import API from '@/api/api';
 import TopNav from '@/components/navigation/TopNav';
 import Sidebar from '@/components/navigation/Sidebar';
 import MobileNav from '@/components/navigation/MobileNav';
@@ -19,7 +18,6 @@ import WebsocketSession from '@/session/websocket';
 
 export default function AuthenticatedLayout() {
     const { user } = useAuth();
-    const [facilities, setFacilities] = useState<Facility[]>([]);
     const [helpCenterOpen, setHelpCenterOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const matches = useMatches();
@@ -131,17 +129,6 @@ export default function AuthenticatedLayout() {
     ]);
 
     useEffect(() => {
-        if (user && canSwitchFacility(user)) {
-            void (async () => {
-                const resp = await API.get<Facility>('facilities');
-                if (resp.success && Array.isArray(resp.data)) {
-                    setFacilities(resp.data);
-                }
-            })();
-        }
-    }, [user]);
-
-    useEffect(() => {
         if (user && !isAdministrator(user)) {
             const ws = new WebsocketSession(user);
             ws.connect();
@@ -186,7 +173,7 @@ export default function AuthenticatedLayout() {
                         <MobileNav />
                     </div>
                     <div className="flex-1">
-                        <TopNav facilities={facilities} />
+                        <TopNav />
                     </div>
                 </div>
 

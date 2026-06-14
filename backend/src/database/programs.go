@@ -626,7 +626,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 
 	baseQuery := db.WithContext(args.Ctx).Model(&models.Program{})
 
-	facilityScoped := adminRole == models.FacilityAdmin || adminRole == models.SystemAdmin
+	facilityScoped := adminRole == models.FacilityAdmin
 	var selectFields string
 	if facilityScoped {
 		selectFields = `

@@ -333,6 +333,10 @@ export default function AdminManagement() {
             toast.error('First name, last name, and username are required');
             return;
         }
+        if (!formData.facility_id) {
+            toast.error('Please select a facility');
+            return;
+        }
         const payload = {
             user: {
                 name_first: formData.name_first,
@@ -868,44 +872,42 @@ export default function AdminManagement() {
                             </SelectContent>
                         </Select>
                     </div>
-                    {formData.role === UserRole.FacilityAdmin && (
-                        <div className="space-y-2">
-                            <Label htmlFor="facility">Facility</Label>
-                            {canSwitchFac ? (
-                                <Select
-                                    value={
-                                        formData.facility_id
-                                            ? String(formData.facility_id)
-                                            : ''
-                                    }
-                                    onValueChange={(value) =>
-                                        setFormData({
-                                            ...formData,
-                                            facility_id: Number(value)
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="facility">
-                                        <SelectValue placeholder="Select facility" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {facilities.map((facility) => (
-                                            <SelectItem
-                                                key={facility.id}
-                                                value={String(facility.id)}
-                                            >
-                                                {facility.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            ) : (
-                                <div className="field-readonly">
-                                    {user?.facility?.name ?? '—'}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <div className="space-y-2">
+                        <Label htmlFor="facility">Facility</Label>
+                        {canSwitchFac ? (
+                            <Select
+                                value={
+                                    formData.facility_id
+                                        ? String(formData.facility_id)
+                                        : ''
+                                }
+                                onValueChange={(value) =>
+                                    setFormData({
+                                        ...formData,
+                                        facility_id: Number(value)
+                                    })
+                                }
+                            >
+                                <SelectTrigger id="facility">
+                                    <SelectValue placeholder="Select facility" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {facilities.map((facility) => (
+                                        <SelectItem
+                                            key={facility.id}
+                                            value={String(facility.id)}
+                                        >
+                                            {facility.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <div className="field-readonly">
+                                {user?.facility?.name ?? '—'}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <DialogFooter>
                     <Button
