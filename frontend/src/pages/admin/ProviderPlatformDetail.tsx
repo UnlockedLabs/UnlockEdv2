@@ -555,6 +555,11 @@ function EditProviderModal({
                         placeholder="Leave blank to keep current"
                         className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
+                    {/[\r\n]/.test(accessKey) && (
+                        <p className="mt-1 text-xs text-yellow-600">
+                            Warning: the token contains a newline character, which will cause authentication to fail. Make sure to copy only the token text.
+                        </p>
+                    )}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                     <Button

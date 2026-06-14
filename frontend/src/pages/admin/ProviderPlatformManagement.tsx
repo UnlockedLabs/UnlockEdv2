@@ -308,6 +308,11 @@ function AddProviderModal({
                         required
                         className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
+                    {/[\r\n]/.test(accessKey) && (
+                        <p className="mt-1 text-xs text-yellow-600">
+                            Warning: the token contains a newline character, which will cause authentication to fail. Make sure to copy only the token text.
+                        </p>
+                    )}
                     {isCanvas && (
                         <div className="mt-2 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
                             <p className="font-medium text-foreground">
