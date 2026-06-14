@@ -244,7 +244,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                 />
             )}
 
-            {canSwitchFacility(user) &&
+            {isAdministrator(user) &&
                 hasFeature(user, FeatureAccess.ProviderAccess) && (
                     <NavLink
                         to="/learning-platforms"

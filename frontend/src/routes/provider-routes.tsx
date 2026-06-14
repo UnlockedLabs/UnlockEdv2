@@ -1,6 +1,6 @@
 import { declareAuthenticatedRoutes } from '@/auth/declareAuthenticatedRoutes';
 import { AdminRoles } from '@/auth/useAuth';
-import { FeatureAccess, UserRole } from '@/types';
+import { FeatureAccess } from '@/types';
 import Error from '@/pages/Error';
 import ProviderPlatformManagement from '@/pages/admin/ProviderPlatformManagement';
 import ProviderPlatformDetail from '@/pages/admin/ProviderPlatformDetail';
@@ -34,7 +34,7 @@ const providerDeptAdminRoutes = declareAuthenticatedRoutes(
             handle: { title: 'Learning Platform' }
         }
     ],
-    [UserRole.DepartmentAdmin, UserRole.SystemAdmin],
+    AdminRoles,
     [FeatureAccess.ProviderAccess]
 );
 
