@@ -30,7 +30,6 @@ import {
     AccordionItem,
     AccordionTrigger
 } from '@/components/ui/accordion';
-import { EnrollmentTypeSelector } from '@/components/shared/EnrollmentTypeSelector';
 import {
     EllipsisVerticalIcon,
     PencilSquareIcon,
@@ -472,7 +471,6 @@ function EditProviderModal({
     const [name, setName] = useState('');
     const [baseUrl, setBaseUrl] = useState('');
     const [accessKey, setAccessKey] = useState('');
-    const [enrollmentTypes, setEnrollmentTypes] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
     const isCanvas =
@@ -484,7 +482,6 @@ function EditProviderModal({
             setName(provider.name);
             setBaseUrl(provider.base_url);
             setAccessKey('');
-            setEnrollmentTypes(provider.enrollment_types ?? []);
         }
     }, [open, provider]);
 
@@ -498,7 +495,7 @@ function EditProviderModal({
                 name,
                 base_url: baseUrl,
                 access_key: accessKey,
-                enrollment_types: isCanvas ? enrollmentTypes : []
+                enrollment_types: isCanvas ? ['student'] : []
             }
         );
         setSubmitting(false);
@@ -559,12 +556,6 @@ function EditProviderModal({
                         className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                 </div>
-                {isCanvas && (
-                    <EnrollmentTypeSelector
-                        selected={enrollmentTypes}
-                        onChange={setEnrollmentTypes}
-                    />
-                )}
                 <div className="flex justify-end gap-2 pt-2">
                     <Button
                         type="button"
