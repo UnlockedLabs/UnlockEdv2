@@ -815,7 +815,7 @@ export default function ProviderUserManagement() {
         ServerResponseMany<User>
     >(
         showMapModal
-            ? `/api/users?include=only_unmapped&provider_id=${providerId}&per_page=50`
+            ? `/api/users?include=only_unmapped&provider_id=${providerId}&per_page=50${mapSearch ? `&search=${encodeURIComponent(mapSearch)}` : ''}`
             : null
     );
     const unmappedUsers = unmappedResp?.data ?? [];
@@ -829,15 +829,6 @@ export default function ProviderUserManagement() {
     );
     const mappedUsers = mappedResp?.data ?? [];
 
-    const filteredUnmapped = mapSearch
-        ? unmappedUsers.filter(
-              (u) =>
-                  u.username.toLowerCase().includes(mapSearch.toLowerCase()) ||
-                  `${u.name_first} ${u.name_last}`
-                      .toLowerCase()
-                      .includes(mapSearch.toLowerCase())
-          )
-        : unmappedUsers;
 
     const derived = useMemo(() => {
         if (!matchState) return null;
@@ -1072,7 +1063,7 @@ export default function ProviderUserManagement() {
     const handleMapUser = async () => {
         if (!userToMap || selectedUserId === null) return;
 
-        const resident = filteredUnmapped.find((u) => u.id === selectedUserId);
+        const resident = unmappedUsers.find((u) => u.id === selectedUserId);
         const residentName = resident ? formatResident(resident) : null;
         const canvasName = formatCanvasUser(userToMap);
         const externalId = userToMap.external_user_id;
@@ -1756,12 +1747,12 @@ export default function ProviderUserManagement() {
                             role="listbox"
                             aria-label="Unmapped residents"
                         >
-                            {filteredUnmapped.length === 0 ? (
+                            {unmappedUsers.length === 0 ? (
                                 <p className="py-6 text-center text-sm text-muted-foreground">
                                     No unmapped residents found.
                                 </p>
                             ) : (
-                                filteredUnmapped.map((u) => {
+                                unmappedUsers.map((u) => {
                                     const selected = selectedUserId === u.id;
                                     return (
                                         <button
