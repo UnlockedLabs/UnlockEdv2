@@ -38,11 +38,13 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSearch []string) ([]models.User, error) {
 	var users []models.User
 	tx := db.Model(&models.User{}).
-		Where("facility_id = ? AND role = ? AND id NOT IN (?)",
-			args.FacilityID,
+		Where("role = ? AND id NOT IN (?)",
 			"student",
 			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
 		)
+	if args.FacilityID != 0 {
+		tx = tx.Where("facility_id = ?", args.FacilityID)
+	}
 
 	if len(userSearch) > 0 {
 		tx = applyUserSearchConditions(tx, userSearch)
@@ -58,17 +60,18 @@ func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSe
 
 func (db *DB) GetAllUnmappedUsers(providerID int, facilityID uint) ([]models.User, error) {
 	var users []models.User
-	err := db.Model(&models.User{}).
+	tx := db.Model(&models.User{}).
 		Where(
-			"facility_id = ? AND role = ? AND id NOT IN (?)",
-			facilityID,
+			"role = ? AND id NOT IN (?)",
 			"student",
 			db.Model(&models.ProviderUserMapping{}).
 				Select("user_id").
 				Where("provider_platform_id = ?", providerID),
-		).
-		Find(&users).Error
-	if err != nil {
+		)
+	if facilityID != 0 {
+		tx = tx.Where("facility_id = ?", facilityID)
+	}
+	if err := tx.Find(&users).Error; err != nil {
 		return nil, NewDBError(err, "error getting all unmapped users")
 	}
 	return users, nil
