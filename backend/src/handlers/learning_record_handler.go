@@ -36,7 +36,7 @@ func (srv *Server) handleCreateLearningRecordEntry(w http.ResponseWriter, r *htt
 		return newJSONReqBodyServiceError(err)
 	}
 	entry.UserID = r.Context().Value(ClaimsKey).(*Claims).UserID
-	if err := srv.Db.CreateLearningRecordEntry(&entry); err != nil {
+	if err := srv.WithUserContext(r).CreateLearningRecordEntry(&entry); err != nil {
 		log.add("user_id", entry.UserID)
 		return newDatabaseServiceError(err)
 	}
@@ -54,7 +54,7 @@ func (srv *Server) handleUpdateLearningRecordEntry(w http.ResponseWriter, r *htt
 	}
 	entry.ID = uint(id)
 	entry.UserID = r.Context().Value(ClaimsKey).(*Claims).UserID
-	if err := srv.Db.UpdateLearningRecordEntry(&entry); err != nil {
+	if err := srv.WithUserContext(r).UpdateLearningRecordEntry(&entry); err != nil {
 		log.add("entry_id", id)
 		log.add("user_id", entry.UserID)
 		return newDatabaseServiceError(err)
@@ -68,7 +68,7 @@ func (srv *Server) handleDeleteLearningRecordEntry(w http.ResponseWriter, r *htt
 		return newInvalidIdServiceError(err, "entry ID")
 	}
 	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
-	if err := srv.Db.DeleteLearningRecordEntry(uint(id), userID); err != nil {
+	if err := srv.WithUserContext(r).DeleteLearningRecordEntry(uint(id), userID); err != nil {
 		log.add("entry_id", id)
 		log.add("user_id", userID)
 		return newDatabaseServiceError(err)
@@ -92,7 +92,7 @@ func (srv *Server) handleUpsertLearningRecordDraft(w http.ResponseWriter, r *htt
 		return newJSONReqBodyServiceError(err)
 	}
 	draft.UserID = r.Context().Value(ClaimsKey).(*Claims).UserID
-	if err := srv.Db.UpsertLearningRecordDraft(&draft); err != nil {
+	if err := srv.WithUserContext(r).UpsertLearningRecordDraft(&draft); err != nil {
 		log.add("user_id", draft.UserID)
 		log.add("client_id", draft.ClientID)
 		return newDatabaseServiceError(err)
@@ -106,7 +106,7 @@ func (srv *Server) handleDeleteLearningRecordDraft(w http.ResponseWriter, r *htt
 	if clientID == "" {
 		return newBadRequestServiceError(nil, "client_id query parameter is required")
 	}
-	if err := srv.Db.DeleteLearningRecordDraft(userID, clientID); err != nil {
+	if err := srv.WithUserContext(r).DeleteLearningRecordDraft(userID, clientID); err != nil {
 		log.add("user_id", userID)
 		log.add("client_id", clientID)
 		return newDatabaseServiceError(err)
