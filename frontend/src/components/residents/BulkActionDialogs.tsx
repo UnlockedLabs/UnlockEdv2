@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import API from '@/api/api';
 import {
     User,
@@ -8,13 +10,20 @@ import {
     BulkActionResponse,
     ServerResponseOne
 } from '@/types';
+import { buildConfirmCountSchema, ConfirmCountInput } from '@/lib/validation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import { FormModal, TonedPanel } from '@/components/shared';
-import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
 import { AlertCircle, CheckCircle, Download } from 'lucide-react';
 
 interface BulkDialogProps {
@@ -81,9 +90,13 @@ export function BulkResetPasswordDialog({
     const [completed, setCompleted] = useState(false);
     const [results, setResults] = useState<BulkPasswordResult[]>([]);
     const [failures, setFailures] = useState<BulkActionFailure[]>([]);
-    const confirm = useTypeToConfirm({
-        open,
-        expected: String(users.length)
+    const schema = useMemo(
+        () => buildConfirmCountSchema(String(users.length)),
+        [users.length]
+    );
+    const form = useForm<ConfirmCountInput>({
+        resolver: zodResolver(schema),
+        defaultValues: { confirm: '' }
     });
 
     useEffect(() => {
@@ -91,8 +104,9 @@ export function BulkResetPasswordDialog({
             setCompleted(false);
             setResults([]);
             setFailures([]);
+            form.reset({ confirm: '' });
         }
-    }, [open]);
+    }, [open, form]);
 
     const handleGenerate = async () => {
         setLoading(true);
@@ -148,66 +162,87 @@ export function BulkResetPasswordDialog({
             preventOutsideClose
         >
             {!completed ? (
-                <>
-                    <TonedPanel tone="blue">
-                        <div className="flex items-start gap-3">
-                            <AlertCircle className="size-5 text-blue-600 mt-0.5 shrink-0" />
-                            <div className="flex-1">
-                                <div className="font-medium text-sm text-blue-900 mb-1">
-                                    {cfg.heading}
+                <Form {...form}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void form.handleSubmit(() => void handleGenerate())(
+                                e
+                            );
+                        }}
+                    >
+                        <TonedPanel tone="blue">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="size-5 text-blue-600 mt-0.5 shrink-0" />
+                                <div className="flex-1">
+                                    <div className="font-medium text-sm text-blue-900 mb-1">
+                                        {cfg.heading}
+                                    </div>
+                                    <p className="text-sm text-blue-800 mb-2">
+                                        New temporary passwords will be
+                                        generated for:
+                                    </p>
+                                    <div className="bg-white border border-blue-200 rounded p-3 max-h-48 overflow-y-auto">
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            {users.map((u) => (
+                                                <li key={u.id}>
+                                                    {'•'} {cfg.displayItem(u)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <p className="text-sm text-blue-800 mt-3">
+                                        You will need to distribute these
+                                        passwords securely.
+                                    </p>
                                 </div>
-                                <p className="text-sm text-blue-800 mb-2">
-                                    New temporary passwords will be generated
-                                    for:
-                                </p>
-                                <div className="bg-white border border-blue-200 rounded p-3 max-h-48 overflow-y-auto">
-                                    <ul className="text-sm text-gray-700 space-y-1">
-                                        {users.map((u) => (
-                                            <li key={u.id}>
-                                                {'•'} {cfg.displayItem(u)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <p className="text-sm text-blue-800 mt-3">
-                                    You will need to distribute these passwords
-                                    securely.
-                                </p>
                             </div>
-                        </div>
-                    </TonedPanel>
+                        </TonedPanel>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="bulk-reset-confirm">
-                            Type{' '}
-                            <span className="font-mono font-semibold">
-                                {users.length}
-                            </span>{' '}
-                            to confirm
-                        </Label>
-                        <Input
-                            id="bulk-reset-confirm"
-                            {...confirm.inputProps}
-                            placeholder={`Type ${users.length}`}
+                        <FormField
+                            control={form.control}
+                            name="confirm"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel htmlFor="bulk-reset-confirm">
+                                        Type{' '}
+                                        <span className="font-mono font-semibold">
+                                            {users.length}
+                                        </span>{' '}
+                                        to confirm
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            id="bulk-reset-confirm"
+                                            placeholder={`Type ${users.length}`}
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                    </div>
 
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleGenerate()}
-                            disabled={!confirm.matches || loading}
-                            variant="brand"
-                        >
-                            {loading ? 'Generating...' : 'Generate Passwords'}
-                        </Button>
-                    </DialogFooter>
-                </>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={loading}
+                                variant="brand"
+                            >
+                                {loading
+                                    ? 'Generating...'
+                                    : 'Generate Passwords'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             ) : (
                 <>
                     <TonedPanel tone="green">
@@ -289,10 +324,18 @@ export function BulkDeactivateDialog({
     onSuccess
 }: BulkDialogProps) {
     const [loading, setLoading] = useState(false);
-    const confirm = useTypeToConfirm({
-        open,
-        expected: String(residents.length)
+    const schema = useMemo(
+        () => buildConfirmCountSchema(String(residents.length)),
+        [residents.length]
+    );
+    const form = useForm<ConfirmCountInput>({
+        resolver: zodResolver(schema),
+        defaultValues: { confirm: '' }
     });
+
+    useEffect(() => {
+        if (!open) form.reset({ confirm: '' });
+    }, [open, form]);
 
     const handleDeactivate = async () => {
         setLoading(true);
@@ -330,54 +373,78 @@ export function BulkDeactivateDialog({
             titleClassName="text-foreground"
             preventOutsideClose
         >
-            <TonedPanel tone="orange">
-                <div className="flex items-start gap-3">
-                    <AlertCircle className="size-5 text-orange-600 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                        <div className="font-medium text-sm text-orange-900 mb-1">
-                            This will deactivate these accounts
-                        </div>
-                        <div className="bg-white border border-orange-200 rounded p-3 max-h-48 overflow-y-auto mt-2">
-                            <ul className="text-sm text-gray-700 space-y-1">
-                                {residents.map((r) => (
-                                    <li key={r.id}>
-                                        {'•'} {formatNameLastFirst(r)} (
-                                        {r.doc_id ?? ''})
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </TonedPanel>
-
-            <div className="space-y-2">
-                <Label htmlFor="bulk-deactivate-confirm">
-                    Type{' '}
-                    <span className="font-mono font-semibold">
-                        {residents.length}
-                    </span>{' '}
-                    to confirm
-                </Label>
-                <Input
-                    id="bulk-deactivate-confirm"
-                    {...confirm.inputProps}
-                    placeholder={`Type ${residents.length}`}
-                />
-            </div>
-
-            <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() => void handleDeactivate()}
-                    disabled={!confirm.matches || loading}
-                    variant="warning"
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(() => void handleDeactivate())(
+                            e
+                        );
+                    }}
                 >
-                    Deactivate {residents.length} Accounts
-                </Button>
-            </DialogFooter>
+                    <TonedPanel tone="orange">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="size-5 text-orange-600 mt-0.5 shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-medium text-sm text-orange-900 mb-1">
+                                    This will deactivate these accounts
+                                </div>
+                                <div className="bg-white border border-orange-200 rounded p-3 max-h-48 overflow-y-auto mt-2">
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                        {residents.map((r) => (
+                                            <li key={r.id}>
+                                                {'•'} {formatNameLastFirst(r)} (
+                                                {r.doc_id ?? ''})
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </TonedPanel>
+
+                    <FormField
+                        control={form.control}
+                        name="confirm"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel htmlFor="bulk-deactivate-confirm">
+                                    Type{' '}
+                                    <span className="font-mono font-semibold">
+                                        {residents.length}
+                                    </span>{' '}
+                                    to confirm
+                                </FormLabel>
+                                <FormControl>
+                                    <Input
+                                        id="bulk-deactivate-confirm"
+                                        placeholder={`Type ${residents.length}`}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            variant="warning"
+                        >
+                            Deactivate {residents.length} Accounts
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </Form>
         </FormModal>
     );
 }
@@ -425,10 +492,18 @@ export function BulkDeleteDialog({
 }: BulkDeleteDialogProps) {
     const cfg = kind === 'admin' ? ADMIN_DELETE_CONFIG : RESIDENT_DELETE_CONFIG;
     const [loading, setLoading] = useState(false);
-    const confirm = useTypeToConfirm({
-        open,
-        expected: String(users.length)
+    const schema = useMemo(
+        () => buildConfirmCountSchema(String(users.length)),
+        [users.length]
+    );
+    const form = useForm<ConfirmCountInput>({
+        resolver: zodResolver(schema),
+        defaultValues: { confirm: '' }
     });
+
+    useEffect(() => {
+        if (!open) form.reset({ confirm: '' });
+    }, [open, form]);
 
     const handleDelete = async () => {
         setLoading(true);
@@ -472,60 +547,84 @@ export function BulkDeleteDialog({
             titleClassName="text-foreground"
             preventOutsideClose
         >
-            <TonedPanel tone="red">
-                <div className="flex items-start gap-3">
-                    <AlertCircle className="size-5 text-red-600 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                        <div className="font-medium text-sm text-red-900 mb-1">
-                            This action cannot be undone
-                        </div>
-                        <p className="text-sm text-red-800 mb-2">
-                            {cfg.bodyDescription(users.length)}
-                        </p>
-                        <div className="bg-white border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
-                            <ul className="text-sm text-gray-700 space-y-1">
-                                {users.map((u) => (
-                                    <li key={u.id}>
-                                        {'•'} {cfg.displayItem(u)}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </TonedPanel>
-
-            <div className="space-y-2">
-                <Label htmlFor="bulk-delete-confirm">
-                    Type{' '}
-                    <span className="font-mono font-semibold">
-                        {users.length}
-                    </span>{' '}
-                    to confirm deletion
-                </Label>
-                <Input
-                    id="bulk-delete-confirm"
-                    {...confirm.inputProps}
-                    placeholder={`Type ${users.length}`}
-                />
-            </div>
-
-            <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() => void handleDelete()}
-                    disabled={!confirm.matches || loading}
-                    className="bg-red-600 hover:bg-red-700"
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(() => void handleDelete())(e);
+                    }}
                 >
-                    {loading
-                        ? 'Deleting...'
-                        : `Delete ${users.length} ${
-                              users.length === 1 ? cfg.singular : cfg.plural
-                          }`}
-                </Button>
-            </DialogFooter>
+                    <TonedPanel tone="red">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="size-5 text-red-600 mt-0.5 shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-medium text-sm text-red-900 mb-1">
+                                    This action cannot be undone
+                                </div>
+                                <p className="text-sm text-red-800 mb-2">
+                                    {cfg.bodyDescription(users.length)}
+                                </p>
+                                <div className="bg-white border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                        {users.map((u) => (
+                                            <li key={u.id}>
+                                                {'•'} {cfg.displayItem(u)}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </TonedPanel>
+
+                    <FormField
+                        control={form.control}
+                        name="confirm"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel htmlFor="bulk-delete-confirm">
+                                    Type{' '}
+                                    <span className="font-mono font-semibold">
+                                        {users.length}
+                                    </span>{' '}
+                                    to confirm deletion
+                                </FormLabel>
+                                <FormControl>
+                                    <Input
+                                        id="bulk-delete-confirm"
+                                        placeholder={`Type ${users.length}`}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {loading
+                                ? 'Deleting...'
+                                : `Delete ${users.length} ${
+                                      users.length === 1
+                                          ? cfg.singular
+                                          : cfg.plural
+                                  }`}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </Form>
         </FormModal>
     );
 }

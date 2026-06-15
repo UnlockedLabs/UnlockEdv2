@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { toExternalUrl } from '@/lib/utils';
 import useSWR from 'swr';
@@ -23,8 +25,21 @@ import {
 } from '@/components/ui/tooltip';
 import { DialogFooter } from '@/components/ui/dialog';
 import { FormModal } from '@/components/shared';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    addVideoSchema,
+    AddVideoInput,
+    addLinkSchema,
+    AddLinkInput
+} from '@/lib/validation';
 import { Pagination } from '@/components/Pagination';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useDebounceValue } from 'usehooks-ts';
@@ -376,11 +391,14 @@ export default function KnowledgeCenterManagement() {
 
     const [showAddVideo, setShowAddVideo] = useState(false);
     const [showAddLink, setShowAddLink] = useState(false);
-    const [videoFormData, setVideoFormData] = useState({ url: '' });
-    const [linkFormData, setLinkFormData] = useState({
-        title: '',
-        url: '',
-        description: ''
+
+    const videoForm = useForm<AddVideoInput>({
+        resolver: zodResolver(addVideoSchema),
+        defaultValues: { url: '' }
+    });
+    const linkForm = useForm<AddLinkInput>({
+        resolver: zodResolver(addLinkSchema),
+        defaultValues: { title: '', url: '', description: '' }
     });
 
     const [polling, setPolling] = useState(false);
@@ -395,6 +413,18 @@ export default function KnowledgeCenterManagement() {
         }
         setCurrentPage(1);
     }, [currentTab, setCurrentPage]);
+
+    useEffect(() => {
+        if (showAddVideo) {
+            videoForm.reset({ url: '' });
+        }
+    }, [showAddVideo, videoForm]);
+
+    useEffect(() => {
+        if (showAddLink) {
+            linkForm.reset({ title: '', url: '', description: '' });
+        }
+    }, [showAddLink, linkForm]);
 
     const visibilityParam = useMemo(() => {
         if (
@@ -591,14 +621,14 @@ export default function KnowledgeCenterManagement() {
         }
     };
 
-    const handleAddVideo = async () => {
+    const handleAddVideo = async (formData: AddVideoInput) => {
         const resp = await API.post<null, object>('videos', {
-            video_urls: [videoFormData.url]
+            video_urls: [formData.url]
         });
         if (resp.success) {
             toast.success('Video added successfully');
             setShowAddVideo(false);
-            setVideoFormData({ url: '' });
+            videoForm.reset({ url: '' });
             pollingRef.current = true;
             setPolling(true);
             setTimeout(() => pollVideos(1000), 1000);
@@ -608,12 +638,12 @@ export default function KnowledgeCenterManagement() {
         }
     };
 
-    const handleAddLink = async () => {
-        const resp = await API.put<null, object>('helpful-links', linkFormData);
+    const handleAddLink = async (formData: AddLinkInput) => {
+        const resp = await API.put<null, object>('helpful-links', formData);
         if (resp.success) {
             toast.success('Link added successfully');
             setShowAddLink(false);
-            setLinkFormData({ title: '', url: '', description: '' });
+            linkForm.reset({ title: '', url: '', description: '' });
             void mutateLinks();
         } else {
             toast.error(resp.message ?? 'Failed to add link');
@@ -894,34 +924,49 @@ export default function KnowledgeCenterManagement() {
                 description="Enter a YouTube URL to add a video to the Knowledge Center."
                 titleClassName="text-foreground"
             >
-                <div className="space-y-4 pt-4">
-                    <div>
-                        <Label htmlFor="video-url">YouTube URL</Label>
-                        <Input
-                            id="video-url"
-                            placeholder="https://www.youtube.com/watch?v=..."
-                            value={videoFormData.url}
-                            onChange={(e) =>
-                                setVideoFormData({ url: e.target.value })
-                            }
-                        />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowAddVideo(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="brand"
-                            onClick={() => void handleAddVideo()}
-                            disabled={!videoFormData.url}
-                        >
-                            Add Video
-                        </Button>
-                    </div>
-                </div>
+                <Form {...videoForm}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void videoForm.handleSubmit(handleAddVideo)(e);
+                        }}
+                    >
+                        <div className="space-y-4 pt-4">
+                            <FormField
+                                control={videoForm.control}
+                                name="url"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>YouTube URL</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="https://www.youtube.com/watch?v=..."
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowAddVideo(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="brand"
+                                    disabled={videoForm.formState.isSubmitting}
+                                >
+                                    Add Video
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Form>
             </FormModal>
 
             <FormModal
@@ -931,70 +976,82 @@ export default function KnowledgeCenterManagement() {
                 description="Add a whitelisted website link for residents to access."
                 titleClassName="text-foreground"
             >
-                <div className="space-y-4 pt-4">
-                    <div>
-                        <Label htmlFor="link-title">Title *</Label>
-                        <Input
-                            id="link-title"
-                            placeholder="Enter link title"
-                            value={linkFormData.title}
-                            onChange={(e) =>
-                                setLinkFormData({
-                                    ...linkFormData,
-                                    title: e.target.value
-                                })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="link-url">URL *</Label>
-                        <Input
-                            id="link-url"
-                            placeholder="https://example.com"
-                            value={linkFormData.url}
-                            onChange={(e) =>
-                                setLinkFormData({
-                                    ...linkFormData,
-                                    url: e.target.value
-                                })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="link-description">Description *</Label>
-                        <Textarea
-                            id="link-description"
-                            placeholder="Enter a brief description of this resource"
-                            value={linkFormData.description}
-                            onChange={(e) =>
-                                setLinkFormData({
-                                    ...linkFormData,
-                                    description: e.target.value
-                                })
-                            }
-                            rows={3}
-                        />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowAddLink(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="brand"
-                            onClick={() => void handleAddLink()}
-                            disabled={
-                                !linkFormData.title ||
-                                !linkFormData.url ||
-                                !linkFormData.description
-                            }
-                        >
-                            Add Link
-                        </Button>
-                    </div>
-                </div>
+                <Form {...linkForm}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void linkForm.handleSubmit(handleAddLink)(e);
+                        }}
+                    >
+                        <div className="space-y-4 pt-4">
+                            <FormField
+                                control={linkForm.control}
+                                name="title"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Title *</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Enter link title"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={linkForm.control}
+                                name="url"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>URL *</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="https://example.com"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={linkForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Description *</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Enter a brief description of this resource"
+                                                rows={3}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowAddLink(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="brand"
+                                    disabled={linkForm.formState.isSubmitting}
+                                >
+                                    Add Link
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Form>
             </FormModal>
 
             <FormModal

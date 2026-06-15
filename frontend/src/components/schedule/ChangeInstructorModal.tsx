@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { FacilityProgramClassEvent, Instructor, ChangeReason } from '@/types';
+import {
+    changeInstructorSchema,
+    ChangeInstructorInput
+} from '@/lib/validation';
 import { FormModal } from '@/components/shared/FormModal';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -29,17 +42,26 @@ export function ChangeInstructorModal({
     facilityId,
     onSuccess
 }: ChangeInstructorModalProps) {
-    const [instructorId, setInstructorId] = useState('');
-    const [reason, setReason] = useState('');
-    const [applyToFuture, setApplyToFuture] = useState(false);
+    const form = useForm<ChangeInstructorInput>({
+        resolver: zodResolver(changeInstructorSchema),
+        defaultValues: {
+            instructor_id: '',
+            reason: '',
+            applyToFuture: false
+        }
+    });
     const [submitting, setSubmitting] = useState(false);
     const [instructors, setInstructors] = useState<Instructor[]>([]);
+
+    const instructorId = form.watch('instructor_id');
+    const reason = form.watch('reason');
+    const applyToFuture = form.watch('applyToFuture');
 
     const { submitSingleSessionChange, submitSeriesChange } =
         useChangeEventField(
             event,
             { instructor_id: instructorId ? Number(instructorId) : null },
-            reason
+            reason ?? ''
         );
 
     useEffect(() => {
@@ -56,11 +78,13 @@ export function ChangeInstructorModal({
 
     useEffect(() => {
         if (open) {
-            setInstructorId('');
-            setReason('');
-            setApplyToFuture(false);
+            form.reset({
+                instructor_id: '',
+                reason: '',
+                applyToFuture: false
+            });
         }
-    }, [open]);
+    }, [open, form]);
 
     const selectedInstructor = instructors.find(
         (i) => String(i.id) === instructorId
@@ -70,10 +94,6 @@ export function ChangeInstructorModal({
         : instructorId;
 
     async function handleSubmit() {
-        if (!instructorId) {
-            toast.error('Please select an instructor');
-            return;
-        }
         setSubmitting(true);
 
         const result = applyToFuture
@@ -101,77 +121,124 @@ export function ChangeInstructorModal({
             onOpenChange={onOpenChange}
             title="Change Instructor"
         >
-            <div className="space-y-4 pt-6">
-                <div className="space-y-2">
-                    <Label>New Instructor</Label>
-                    <Select
-                        value={instructorId}
-                        onValueChange={setInstructorId}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select instructor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {instructors.map((inst) => (
-                                <SelectItem
-                                    key={inst.id}
-                                    value={String(inst.id)}
-                                >
-                                    {inst.name_first} {inst.name_last}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(() => void handleSubmit())(e);
+                    }}
+                >
+                    <div className="space-y-4 pt-6">
+                        <FormField
+                            control={form.control}
+                            name="instructor_id"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel>New Instructor</FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select instructor" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {instructors.map((inst) => (
+                                                <SelectItem
+                                                    key={inst.id}
+                                                    value={String(inst.id)}
+                                                >
+                                                    {inst.name_first}{' '}
+                                                    {inst.name_last}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                <div className="space-y-2">
-                    <Label>Reason for Change</Label>
-                    <Select value={reason} onValueChange={setReason}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a reason" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.values(ChangeReason).map((r) => (
-                                <SelectItem key={r} value={r}>
-                                    {r}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                        <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel>Reason for Change</FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a reason" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {Object.values(ChangeReason).map(
+                                                (r) => (
+                                                    <SelectItem
+                                                        key={r}
+                                                        value={r}
+                                                    >
+                                                        {r}
+                                                    </SelectItem>
+                                                )
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                <div className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        id="instructor-apply-to-future"
-                        checked={applyToFuture}
-                        onChange={(e) => setApplyToFuture(e.target.checked)}
-                        className="size-4 rounded border-gray-300"
-                    />
-                    <label
-                        htmlFor="instructor-apply-to-future"
-                        className="text-sm font-normal cursor-pointer"
-                    >
-                        Apply this change to all future sessions
-                    </label>
-                </div>
+                        <FormField
+                            control={form.control}
+                            name="applyToFuture"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center gap-2 space-y-0">
+                                    <FormControl>
+                                        <input
+                                            type="checkbox"
+                                            id="instructor-apply-to-future"
+                                            checked={field.value}
+                                            onChange={(e) =>
+                                                field.onChange(e.target.checked)
+                                            }
+                                            className="size-4 rounded border-gray-300"
+                                        />
+                                    </FormControl>
+                                    <label
+                                        htmlFor="instructor-apply-to-future"
+                                        className="text-sm font-normal cursor-pointer"
+                                    >
+                                        Apply this change to all future sessions
+                                    </label>
+                                </FormItem>
+                            )}
+                        />
 
-                <div className="flex justify-end gap-3 pt-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleSubmit()}
-                        disabled={submitting || !instructorId}
-                        className="bg-brand text-white hover:bg-brand-dark"
-                    >
-                        {submitting ? 'Saving...' : 'Change Instructor'}
-                    </Button>
-                </div>
-            </div>
+                        <div className="flex justify-end gap-3 pt-4">
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={submitting}
+                                className="bg-brand text-white hover:bg-brand-dark"
+                            >
+                                {submitting ? 'Saving...' : 'Change Instructor'}
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }

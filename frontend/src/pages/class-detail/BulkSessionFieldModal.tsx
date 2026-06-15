@@ -1,6 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -11,6 +21,10 @@ import {
 import { FormModal } from '@/components/shared';
 import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
+import {
+    bulkSessionFieldSchema,
+    BulkSessionFieldInput
+} from '@/lib/validation';
 
 export interface BulkSessionFieldSession {
     date: string;
@@ -62,24 +76,24 @@ export function BulkSessionFieldModal({
     payloadKey,
     reasonOptions
 }: BulkSessionFieldModalProps) {
-    const [selectedId, setSelectedId] = useState('');
-    const [reason, setReason] = useState('');
+    const form = useForm<BulkSessionFieldInput>({
+        resolver: zodResolver(bulkSessionFieldSchema),
+        defaultValues: { selectedId: '', reason: '' }
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
-            setSelectedId('');
-            setReason('');
+            form.reset({ selectedId: '', reason: '' });
         }
-    }, [open]);
+    }, [open, form]);
 
     const subjectLower = subject.toLowerCase();
     const fieldId = `${idPrefix}-field`;
     const reasonId = `${idPrefix}-reason`;
     const applyFutureId = `${idPrefix}-apply-future`;
 
-    const handleApply = async () => {
-        if (!selectedId) return;
+    const handleApply = async (formData: BulkSessionFieldInput) => {
         setIsSubmitting(true);
 
         const allSessions =
@@ -94,12 +108,13 @@ export function BulkSessionFieldModal({
                 date: s.date,
                 start_time: s.classTime?.split('-')[0],
                 is_cancelled: false,
-                [payloadKey]: Number(selectedId)
+                [payloadKey]: Number(formData.selectedId)
             })
         );
 
         const selectedLabel =
-            options.find((o) => String(o.id) === selectedId)?.label ?? '';
+            options.find((o) => String(o.id) === formData.selectedId)?.label ??
+            '';
         if (ok) {
             const msg =
                 ok === 1
@@ -132,88 +147,136 @@ export function BulkSessionFieldModal({
             className={useBulkLayout ? 'max-w-2xl' : undefined}
             preventOutsideClose
         >
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor={fieldId}>New {subject}</Label>
-                    <Select value={selectedId} onValueChange={setSelectedId}>
-                        <SelectTrigger id={fieldId}>
-                            <SelectValue
-                                placeholder={`Select ${subjectLower}`}
-                            />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {options.map((opt) => (
-                                <SelectItem key={opt.id} value={String(opt.id)}>
-                                    {opt.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor={reasonId}>Reason for Change</Label>
-                    <Select value={reason} onValueChange={setReason}>
-                        <SelectTrigger id={reasonId}>
-                            <SelectValue placeholder="Select a reason" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {reasonOptions.map((r) => (
-                                <SelectItem key={r.value} value={r.value}>
-                                    {r.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {setApplyToFuture && (
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id={applyFutureId}
-                            checked={applyToFuture}
-                            onChange={(e) => setApplyToFuture(e.target.checked)}
-                            className="size-4 rounded border-gray-300"
-                        />
-                        <Label
-                            htmlFor={applyFutureId}
-                            className="text-sm font-normal cursor-pointer"
-                        >
-                            Apply this change to all future sessions
-                        </Label>
-                    </div>
-                )}
-
-                {applyToFuture && futureSessions.length > 0 && (
-                    <SessionList sessions={futureSessions} showDayName />
-                )}
-
-                {useBulkLayout && sessions.length > 0 && (
-                    <SessionList sessions={sessions} />
-                )}
-            </div>
-            <div className="flex justify-end gap-3">
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        onClose();
-                        setSelectedId('');
-                        setReason('');
-                        if (setApplyToFuture) setApplyToFuture(false);
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit((d) => void handleApply(d))(e);
                     }}
-                    disabled={isSubmitting}
                 >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() => void handleApply()}
-                    disabled={!selectedId || isSubmitting}
-                    variant="brand"
-                >
-                    {isSubmitting ? 'Updating...' : title}
-                </Button>
-            </div>
+                    <div className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="selectedId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor={fieldId}>
+                                        New {subject}
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger id={fieldId}>
+                                                <SelectValue
+                                                    placeholder={`Select ${subjectLower}`}
+                                                />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {options.map((opt) => (
+                                                <SelectItem
+                                                    key={opt.id}
+                                                    value={String(opt.id)}
+                                                >
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor={reasonId}>
+                                        Reason for Change
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger id={reasonId}>
+                                                <SelectValue placeholder="Select a reason" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {reasonOptions.map((r) => (
+                                                <SelectItem
+                                                    key={r.value}
+                                                    value={r.value}
+                                                >
+                                                    {r.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {setApplyToFuture && (
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id={applyFutureId}
+                                    checked={applyToFuture}
+                                    onChange={(e) =>
+                                        setApplyToFuture(e.target.checked)
+                                    }
+                                    className="size-4 rounded border-gray-300"
+                                />
+                                <Label
+                                    htmlFor={applyFutureId}
+                                    className="text-sm font-normal cursor-pointer"
+                                >
+                                    Apply this change to all future sessions
+                                </Label>
+                            </div>
+                        )}
+
+                        {applyToFuture && futureSessions.length > 0 && (
+                            <SessionList
+                                sessions={futureSessions}
+                                showDayName
+                            />
+                        )}
+
+                        {useBulkLayout && sessions.length > 0 && (
+                            <SessionList sessions={sessions} />
+                        )}
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                onClose();
+                                form.reset({ selectedId: '', reason: '' });
+                                if (setApplyToFuture) setApplyToFuture(false);
+                            }}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            variant="brand"
+                        >
+                            {isSubmitting ? 'Updating...' : title}
+                        </Button>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }

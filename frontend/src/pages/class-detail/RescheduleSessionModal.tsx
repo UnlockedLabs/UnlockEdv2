@@ -1,8 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -16,6 +26,10 @@ import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
 import { Room, ServerResponseMany } from '@/types';
 import { formatTime12h } from '@/lib/formatters';
+import {
+    rescheduleSessionSchema,
+    RescheduleSessionInput
+} from '@/lib/validation';
 
 export interface RescheduleFutureSession {
     date: string;
@@ -55,10 +69,15 @@ export function RescheduleSessionModal({
 }: RescheduleSessionModalProps) {
     const [startTime, endTime] =
         classTime?.split('-').map((s) => s.trim()) ?? [];
-    const [newDate, setNewDate] = useState('');
-    const [newStartTime, setNewStartTime] = useState('');
-    const [newEndTime, setNewEndTime] = useState('');
-    const [newRoom, setNewRoom] = useState('');
+    const form = useForm<RescheduleSessionInput>({
+        resolver: zodResolver(rescheduleSessionSchema),
+        defaultValues: {
+            newDate: '',
+            newStartTime: '',
+            newEndTime: '',
+            newRoom: ''
+        }
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
@@ -72,19 +91,22 @@ export function RescheduleSessionModal({
 
     useEffect(() => {
         if (open) {
-            setNewDate('');
-            setNewStartTime('');
-            setNewEndTime('');
-            setNewRoom('');
+            form.reset({
+                newDate: '',
+                newStartTime: '',
+                newEndTime: '',
+                newRoom: ''
+            });
         }
-    }, [open]);
+    }, [open, form]);
 
-    const handleReschedule = async () => {
+    const handleReschedule = async (formData: RescheduleSessionInput) => {
+        const { newDate, newStartTime, newEndTime, newRoom } = formData;
         setIsSubmitting(true);
         const body: Record<string, unknown> = {
             date: originalDate,
             start_time: startTime,
-            new_date: newDate || originalDate
+            new_date: newDate && newDate.length > 0 ? newDate : originalDate
         };
         if (newStartTime) body.new_start_time = newStartTime;
         if (newEndTime) body.new_end_time = newEndTime;
@@ -100,7 +122,9 @@ export function RescheduleSessionModal({
         }
 
         if (applyToFuture && futureSessions.length > 0) {
-            const hasTimeOrRoom = newStartTime || newEndTime || newRoom;
+            const hasTimeOrRoom = [newStartTime, newEndTime, newRoom].some(
+                (val) => (val ?? '').length > 0
+            );
             if (hasTimeOrRoom) {
                 const { ok, fail } = await bulkPatchEvents(
                     classId,
@@ -147,119 +171,176 @@ export function RescheduleSessionModal({
             title="Reschedule Class"
             description={`Reschedule the class from ${dateLabel}. You can change the date, time, and room.`}
         >
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="rescheduleDate">New Date</Label>
-                    <Input
-                        id="rescheduleDate"
-                        type="date"
-                        value={newDate}
-                        onChange={(e) => setNewDate(e.target.value)}
-                        min={today}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="rescheduleStartTime">
-                        New Start Time (optional)
-                    </Label>
-                    <Input
-                        id="rescheduleStartTime"
-                        type="time"
-                        value={newStartTime}
-                        onChange={(e) => setNewStartTime(e.target.value)}
-                        placeholder={
-                            startTime ? formatTime12h(startTime) : undefined
-                        }
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="rescheduleEndTime">
-                        New End Time (optional)
-                    </Label>
-                    <Input
-                        id="rescheduleEndTime"
-                        type="time"
-                        value={newEndTime}
-                        onChange={(e) => setNewEndTime(e.target.value)}
-                        placeholder={
-                            endTime ? formatTime12h(endTime) : undefined
-                        }
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="rescheduleRoom">New Room (optional)</Label>
-                    <Select value={newRoom} onValueChange={setNewRoom}>
-                        <SelectTrigger id="rescheduleRoom">
-                            <SelectValue
-                                placeholder={
-                                    currentRoom
-                                        ? `Keep current room (${currentRoom})`
-                                        : 'Select room'
-                                }
-                            />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {rooms.map((room) => (
-                                <SelectItem
-                                    key={room.id}
-                                    value={String(room.id)}
-                                >
-                                    {room.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-sm text-gray-500">
-                        Leave time and room blank to keep current values.
-                    </p>
-                </div>
-                {setApplyToFuture && (
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id="apply-to-future"
-                            checked={applyToFuture}
-                            onChange={(e) => setApplyToFuture(e.target.checked)}
-                            className="size-4 rounded border-gray-300"
-                        />
-                        <Label
-                            htmlFor="apply-to-future"
-                            className="text-sm font-normal cursor-pointer"
-                        >
-                            Apply this change to all future sessions
-                        </Label>
-                    </div>
-                )}
-            </div>
-            <div className="flex gap-2 justify-end">
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        onClose();
-                        setNewDate('');
-                        setNewStartTime('');
-                        setNewEndTime('');
-                        setNewRoom('');
-                        if (setApplyToFuture) setApplyToFuture(false);
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit((d) => void handleReschedule(d))(
+                            e
+                        );
                     }}
-                    disabled={isSubmitting}
                 >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={() => void handleReschedule()}
-                    disabled={
-                        (!newDate &&
-                            !newStartTime &&
-                            !newEndTime &&
-                            !newRoom) ||
-                        isSubmitting
-                    }
-                    variant="brand"
-                >
-                    {isSubmitting ? 'Rescheduling...' : 'Reschedule Class'}
-                </Button>
-            </div>
+                    <div className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="newDate"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="rescheduleDate">
+                                        New Date
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            id="rescheduleDate"
+                                            type="date"
+                                            min={today}
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="newStartTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="rescheduleStartTime">
+                                        New Start Time (optional)
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            id="rescheduleStartTime"
+                                            type="time"
+                                            placeholder={
+                                                startTime
+                                                    ? formatTime12h(startTime)
+                                                    : undefined
+                                            }
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="newEndTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="rescheduleEndTime">
+                                        New End Time (optional)
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            id="rescheduleEndTime"
+                                            type="time"
+                                            placeholder={
+                                                endTime
+                                                    ? formatTime12h(endTime)
+                                                    : undefined
+                                            }
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="newRoom"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="rescheduleRoom">
+                                        New Room (optional)
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger id="rescheduleRoom">
+                                                <SelectValue
+                                                    placeholder={
+                                                        currentRoom
+                                                            ? `Keep current room (${currentRoom})`
+                                                            : 'Select room'
+                                                    }
+                                                />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {rooms.map((room) => (
+                                                <SelectItem
+                                                    key={room.id}
+                                                    value={String(room.id)}
+                                                >
+                                                    {room.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-sm text-gray-500">
+                                        Leave time and room blank to keep
+                                        current values.
+                                    </p>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        {setApplyToFuture && (
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="apply-to-future"
+                                    checked={applyToFuture}
+                                    onChange={(e) =>
+                                        setApplyToFuture(e.target.checked)
+                                    }
+                                    className="size-4 rounded border-gray-300"
+                                />
+                                <Label
+                                    htmlFor="apply-to-future"
+                                    className="text-sm font-normal cursor-pointer"
+                                >
+                                    Apply this change to all future sessions
+                                </Label>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                onClose();
+                                form.reset({
+                                    newDate: '',
+                                    newStartTime: '',
+                                    newEndTime: '',
+                                    newRoom: ''
+                                });
+                                if (setApplyToFuture) setApplyToFuture(false);
+                            }}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            variant="brand"
+                        >
+                            {isSubmitting
+                                ? 'Rescheduling...'
+                                : 'Reschedule Class'}
+                        </Button>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }
