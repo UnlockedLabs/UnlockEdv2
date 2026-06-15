@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR, { KeyedMutator } from 'swr';
 import API from '@/api/api';
@@ -10,11 +12,23 @@ import {
     BulkCancelSessionsRequest,
     BulkCancelSessionsResponse
 } from '@/types/events';
+import {
+    bulkCancelClassesSchema,
+    BulkCancelClassesInput
+} from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -74,10 +88,22 @@ export function BulkCancelClassesModal({
     const { user } = useAuth();
     const facilityId = user?.facility?.id;
 
-    const [selectedInstructor, setSelectedInstructor] = useState('');
-    const [dateRange, setDateRange] = useState({ start: '', end: '' });
-    const [reason, setReason] = useState('');
-    const [customReason, setCustomReason] = useState('');
+    const form = useForm<BulkCancelClassesInput>({
+        resolver: zodResolver(bulkCancelClassesSchema),
+        defaultValues: {
+            instructorId: '',
+            startDate: '',
+            endDate: '',
+            reason: '',
+            customReason: ''
+        }
+    });
+    const selectedInstructor = form.watch('instructorId');
+    const startDate = form.watch('startDate');
+    const endDate = form.watch('endDate');
+    const reason = form.watch('reason');
+    const customReason = form.watch('customReason') ?? '';
+    const dateRange = { start: startDate, end: endDate };
     const [loading, setLoading] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -112,18 +138,14 @@ export function BulkCancelClassesModal({
         reason === (CancelEventReason['Other (add note)'] as string);
     const finalReason = isOther ? customReason.trim() : reason;
 
-    const canPreview =
-        selectedInstructor &&
-        dateRange.start &&
-        dateRange.end &&
-        reason &&
-        (!isOther || customReason.trim());
-
     function resetState() {
-        setSelectedInstructor('');
-        setDateRange({ start: '', end: '' });
-        setReason('');
-        setCustomReason('');
+        form.reset({
+            instructorId: '',
+            startDate: '',
+            endDate: '',
+            reason: '',
+            customReason: ''
+        });
         setShowConfirmation(false);
         setPreview(null);
         setLoading(false);
@@ -135,7 +157,6 @@ export function BulkCancelClassesModal({
     }
 
     async function handlePreview() {
-        if (!canPreview) return;
         setLoading(true);
 
         try {
@@ -266,143 +287,215 @@ export function BulkCancelClassesModal({
             className="max-w-2xl max-h-[90vh] overflow-y-auto"
         >
             {!showConfirmation ? (
-                <div className="space-y-5 py-4">
-                    <div className="space-y-2">
-                        <Label className="text-sm font-medium text-brand-dark">
-                            Instructor <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                            value={selectedInstructor}
-                            onValueChange={setSelectedInstructor}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an instructor" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {instructors.map((inst) => (
-                                    <SelectItem
-                                        key={inst.id}
-                                        value={String(inst.id)}
-                                    >
-                                        {inst.name_first} {inst.name_last}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div>
-                        <Label className="text-sm font-medium text-brand-dark mb-3 block">
-                            Date Range <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="flex gap-3">
-                            <div className="flex-1 space-y-1">
-                                <Label className="text-xs text-gray-600">
-                                    From
-                                </Label>
-                                <Input
-                                    type="date"
-                                    value={dateRange.start}
-                                    onChange={(e) =>
-                                        setDateRange({
-                                            ...dateRange,
-                                            start: e.target.value
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <Label className="text-xs text-gray-600">
-                                    To
-                                </Label>
-                                <Input
-                                    type="date"
-                                    value={dateRange.end}
-                                    min={dateRange.start}
-                                    onChange={(e) =>
-                                        setDateRange({
-                                            ...dateRange,
-                                            end: e.target.value
-                                        })
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-sm font-medium text-brand-dark">
-                            Cancellation Reason{' '}
-                            <span className="text-red-500">*</span>
-                        </Label>
-                        <Select value={reason} onValueChange={setReason}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a reason" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.values(CancelEventReason).map((r) => (
-                                    <SelectItem key={r} value={r}>
-                                        {r}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {isOther && (
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium text-brand-dark">
-                                Details <span className="text-red-500">*</span>
-                            </Label>
-                            <Textarea
-                                value={customReason}
-                                onChange={(e) =>
-                                    setCustomReason(e.target.value)
-                                }
-                                placeholder="Please provide details for the cancellation..."
-                                rows={3}
+                <Form {...form}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void form.handleSubmit(() => void handlePreview())(
+                                e
+                            );
+                        }}
+                    >
+                        <div className="space-y-5 py-4">
+                            <FormField
+                                control={form.control}
+                                name="instructorId"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel className="text-sm font-medium text-brand-dark">
+                                            Instructor{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select an instructor" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {instructors.map((inst) => (
+                                                    <SelectItem
+                                                        key={inst.id}
+                                                        value={String(inst.id)}
+                                                    >
+                                                        {inst.name_first}{' '}
+                                                        {inst.name_last}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
-                    )}
 
-                    {selectedInstructor && dateRange.start && dateRange.end && (
-                        <TonedPanel tone="blue">
-                            <div className="flex items-start gap-2">
-                                <AlertCircle className="size-4 text-blue-700 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm text-blue-900">
-                                    <strong>Preview:</strong> This will affect{' '}
-                                    <strong>
-                                        {inlinePreview.totalSessions}
-                                    </strong>{' '}
-                                    {inlinePreview.totalSessions === 1
-                                        ? 'session'
-                                        : 'sessions'}{' '}
-                                    across{' '}
-                                    <strong>
-                                        {inlinePreview.totalClasses}
-                                    </strong>{' '}
-                                    {inlinePreview.totalClasses === 1
-                                        ? 'class'
-                                        : 'classes'}
-                                    .
+                            <div>
+                                <Label className="text-sm font-medium text-brand-dark mb-3 block">
+                                    Date Range{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                                <div className="flex gap-3">
+                                    <FormField
+                                        control={form.control}
+                                        name="startDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1 space-y-1">
+                                                <FormLabel className="text-xs text-gray-600">
+                                                    From
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="date"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="endDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1 space-y-1">
+                                                <FormLabel className="text-xs text-gray-600">
+                                                    To
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="date"
+                                                        min={startDate}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                             </div>
-                        </TonedPanel>
-                    )}
 
-                    <div className="flex gap-2 justify-end pt-4 border-t">
-                        <Button variant="outline" onClick={handleClose}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handlePreview()}
-                            disabled={!canPreview || loading}
-                            variant="brand"
-                        >
-                            {loading ? 'Loading...' : 'Preview Cancellations'}
-                        </Button>
-                    </div>
-                </div>
+                            <FormField
+                                control={form.control}
+                                name="reason"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel className="text-sm font-medium text-brand-dark">
+                                            Cancellation Reason{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a reason" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {Object.values(
+                                                    CancelEventReason
+                                                ).map((r) => (
+                                                    <SelectItem
+                                                        key={r}
+                                                        value={r}
+                                                    >
+                                                        {r}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {isOther && (
+                                <FormField
+                                    control={form.control}
+                                    name="customReason"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel className="text-sm font-medium text-brand-dark">
+                                                Details{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Please provide details for the cancellation..."
+                                                    rows={3}
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
+                            {selectedInstructor &&
+                                dateRange.start &&
+                                dateRange.end && (
+                                    <TonedPanel tone="blue">
+                                        <div className="flex items-start gap-2">
+                                            <AlertCircle className="size-4 text-blue-700 mt-0.5 flex-shrink-0" />
+                                            <div className="text-sm text-blue-900">
+                                                <strong>Preview:</strong> This
+                                                will affect{' '}
+                                                <strong>
+                                                    {
+                                                        inlinePreview.totalSessions
+                                                    }
+                                                </strong>{' '}
+                                                {inlinePreview.totalSessions ===
+                                                1
+                                                    ? 'session'
+                                                    : 'sessions'}{' '}
+                                                across{' '}
+                                                <strong>
+                                                    {inlinePreview.totalClasses}
+                                                </strong>{' '}
+                                                {inlinePreview.totalClasses ===
+                                                1
+                                                    ? 'class'
+                                                    : 'classes'}
+                                                .
+                                            </div>
+                                        </div>
+                                    </TonedPanel>
+                                )}
+
+                            <div className="flex gap-2 justify-end pt-4 border-t">
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={handleClose}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={loading}
+                                    variant="brand"
+                                >
+                                    {loading
+                                        ? 'Loading...'
+                                        : 'Preview Cancellations'}
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Form>
             ) : (
                 <div className="space-y-5 py-4">
                     <TonedPanel tone="red">

@@ -1,13 +1,26 @@
 import { useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
 import API from '@/api/api';
 import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
+import {
+    rescheduleSeriesSchema,
+    RescheduleSeriesInput
+} from '@/lib/validation';
 import { FormModal } from '@/components/shared/FormModal';
 import { RoomConflictModal } from './RoomConflictModal';
 import { RRuleControl, RRuleFormHandle } from './RRuleControl';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -85,9 +98,13 @@ export function RescheduleSeriesModal({
     onSuccess
 }: RescheduleSeriesModalProps) {
     const rruleRef = useRef<RRuleFormHandle>(null);
-    const [roomId, setRoomId] = useState(
-        event.room_id ? String(event.room_id) : ''
-    );
+    const form = useForm<RescheduleSeriesInput>({
+        resolver: zodResolver(rescheduleSeriesSchema),
+        defaultValues: {
+            room_id: event.room_id ? String(event.room_id) : ''
+        }
+    });
+    const roomId = form.watch('room_id') ?? '';
     const [submitting, setSubmitting] = useState(false);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
@@ -185,104 +202,119 @@ export function RescheduleSeriesModal({
                 className="max-w-lg max-h-[90vh] overflow-y-auto"
                 preventAutoFocus
             >
-                <div className="pt-4 pb-0">
-                    <div className="space-y-5">
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">
-                                Current Schedule
-                            </h4>
-                            <div className="space-y-1 text-sm text-gray-600">
-                                {currentDays && (
-                                    <div>
-                                        <span className="font-medium">
-                                            Days:
-                                        </span>{' '}
-                                        {currentDays}
-                                    </div>
-                                )}
-                                {currentTimeRange && (
-                                    <div>
-                                        <span className="font-medium">
-                                            Time:
-                                        </span>{' '}
-                                        {currentTimeRange}
-                                    </div>
-                                )}
-                                {currentRoomName && (
-                                    <div>
-                                        <span className="font-medium">
-                                            Room:
-                                        </span>{' '}
-                                        {currentRoomName}
-                                    </div>
-                                )}
+                <Form {...form}>
+                    <div className="pt-4 pb-0">
+                        <div className="space-y-5">
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                    Current Schedule
+                                </h4>
+                                <div className="space-y-1 text-sm text-gray-600">
+                                    {currentDays && (
+                                        <div>
+                                            <span className="font-medium">
+                                                Days:
+                                            </span>{' '}
+                                            {currentDays}
+                                        </div>
+                                    )}
+                                    {currentTimeRange && (
+                                        <div>
+                                            <span className="font-medium">
+                                                Time:
+                                            </span>{' '}
+                                            {currentTimeRange}
+                                        </div>
+                                    )}
+                                    {currentRoomName && (
+                                        <div>
+                                            <span className="font-medium">
+                                                Room:
+                                            </span>{' '}
+                                            {currentRoomName}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
-                        <RRuleControl
-                            ref={rruleRef}
-                            defaultStartDate={`${event.start.getFullYear()}-${String(event.start.getMonth() + 1).padStart(2, '0')}-${String(event.start.getDate()).padStart(2, '0')}`}
-                            defaultStartTime={defaults.startTime}
-                            defaultEndTime={defaults.endTime}
-                            defaultDays={defaults.days}
-                            defaultEndDate={defaults.endDate}
-                            startDateLabel="Effective Starting From *"
-                            startDateHelper="Changes will apply to all sessions on or after this date"
-                        />
+                            <RRuleControl
+                                ref={rruleRef}
+                                defaultStartDate={`${event.start.getFullYear()}-${String(event.start.getMonth() + 1).padStart(2, '0')}-${String(event.start.getDate()).padStart(2, '0')}`}
+                                defaultStartTime={defaults.startTime}
+                                defaultEndTime={defaults.endTime}
+                                defaultDays={defaults.days}
+                                defaultEndDate={defaults.endDate}
+                                startDateLabel="Effective Starting From *"
+                                startDateHelper="Changes will apply to all sessions on or after this date"
+                            />
 
-                        <div className="space-y-2">
-                            <Label>New Room *</Label>
-                            <Select value={roomId} onValueChange={setRoomId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a room" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {rooms.map((room) => (
-                                        <SelectItem
-                                            key={room.id}
-                                            value={String(room.id)}
+                            <FormField
+                                control={form.control}
+                                name="room_id"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>New Room *</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
                                         >
-                                            {room.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a room" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {rooms.map((room) => (
+                                                    <SelectItem
+                                                        key={room.id}
+                                                        value={String(room.id)}
+                                                    >
+                                                        {room.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <div className="flex gap-3">
-                                <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm text-amber-900 font-medium mb-1">
-                                        Important
-                                    </p>
-                                    <p className="text-sm text-amber-700">
-                                        This will update the recurring schedule
-                                        for all future sessions. Sessions before
-                                        the effective date will remain on the
-                                        original schedule.
-                                    </p>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div className="flex gap-3">
+                                    <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm text-amber-900 font-medium mb-1">
+                                            Important
+                                        </p>
+                                        <p className="text-sm text-amber-700">
+                                            This will update the recurring
+                                            schedule for all future sessions.
+                                            Sessions before the effective date
+                                            will remain on the original
+                                            schedule.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex justify-end gap-2 mt-8">
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleSubmit()}
-                            disabled={submitting}
-                            className="bg-brand hover:bg-brand-dark text-white"
-                        >
-                            {submitting ? 'Saving...' : 'Reschedule Series'}
-                        </Button>
+                        <div className="flex justify-end gap-2 mt-8">
+                            <Button
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => void handleSubmit()}
+                                disabled={submitting}
+                                className="bg-brand hover:bg-brand-dark text-white"
+                            >
+                                {submitting ? 'Saving...' : 'Reschedule Series'}
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                </Form>
             </FormModal>
 
             <RoomConflictModal

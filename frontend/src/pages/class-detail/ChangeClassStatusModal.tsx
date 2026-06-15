@@ -1,6 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -12,6 +21,10 @@ import { FormModal } from '@/components/shared';
 import { SelectedClassStatus } from '@/types/attendance';
 import API from '@/api/api';
 import { toast } from 'sonner';
+import {
+    changeClassStatusSchema,
+    ChangeClassStatusInput
+} from '@/lib/validation';
 
 interface ChangeClassStatusModalProps {
     open: boolean;
@@ -56,27 +69,29 @@ export function ChangeClassStatusModal({
     capacity,
     onStatusChanged
 }: ChangeClassStatusModalProps) {
-    const [newStatus, setNewStatus] =
-        useState<SelectedClassStatus>(currentStatus);
+    const form = useForm<ChangeClassStatusInput>({
+        resolver: zodResolver(changeClassStatusSchema),
+        defaultValues: { status: currentStatus }
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
-            setNewStatus(currentStatus);
+            form.reset({ status: currentStatus });
         }
-    }, [open, currentStatus]);
+    }, [open, currentStatus, form]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (formData: ChangeClassStatusInput) => {
         setIsSubmitting(true);
         const resp = await API.patch<
             unknown,
             { status: string; capacity: number }
         >(`programs/${programId}/classes/${classId}`, {
-            status: newStatus,
+            status: formData.status,
             capacity
         });
         if (resp.success) {
-            toast.success(`Class status updated to ${newStatus}`);
+            toast.success(`Class status updated to ${formData.status}`);
             onClose();
             onStatusChanged();
         } else {
@@ -94,47 +109,68 @@ export function ChangeClassStatusModal({
             className="max-w-md"
             titleClassName="text-foreground"
         >
-            <div className="space-y-4">
-                <div>
-                    <Label htmlFor="classStatus">New Status</Label>
-                    <Select
-                        value={newStatus}
-                        onValueChange={(v) =>
-                            setNewStatus(v as SelectedClassStatus)
-                        }
-                    >
-                        <SelectTrigger id="classStatus">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {ALL_STATUSES.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                    {s}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500 mt-2">
-                        {getStatusDescription(newStatus)}
-                    </p>
-                </div>
-                <div className="flex gap-2 justify-end pt-4">
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleSubmit()}
-                        disabled={isSubmitting}
-                        variant="brand"
-                    >
-                        {isSubmitting ? 'Updating...' : 'Update Status'}
-                    </Button>
-                </div>
-            </div>
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit((d) => void handleSubmit(d))(e);
+                    }}
+                >
+                    <div className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="classStatus">
+                                        New Status
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger id="classStatus">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {ALL_STATUSES.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {s}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {getStatusDescription(
+                                            field.value as SelectedClassStatus
+                                        )}
+                                    </p>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="flex gap-2 justify-end pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                variant="brand"
+                            >
+                                {isSubmitting ? 'Updating...' : 'Update Status'}
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }

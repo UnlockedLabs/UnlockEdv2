@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import {
     FacilityProgramClassEvent,
@@ -6,10 +8,18 @@ import {
     RoomConflict,
     ChangeReason
 } from '@/types';
+import { changeRoomSchema, ChangeRoomInput } from '@/lib/validation';
 import { FormModal } from '@/components/shared/FormModal';
 import { RoomConflictModal } from './RoomConflictModal';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -34,36 +44,43 @@ export function ChangeRoomModal({
     rooms,
     onSuccess
 }: ChangeRoomModalProps) {
-    const [roomId, setRoomId] = useState('');
-    const [reason, setReason] = useState('');
-    const [applyToFuture, setApplyToFuture] = useState(false);
+    const form = useForm<ChangeRoomInput>({
+        resolver: zodResolver(changeRoomSchema),
+        defaultValues: {
+            room_id: '',
+            reason: '',
+            applyToFuture: false
+        }
+    });
     const [submitting, setSubmitting] = useState(false);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
+
+    const roomId = form.watch('room_id');
+    const reason = form.watch('reason');
+    const applyToFuture = form.watch('applyToFuture');
 
     const { submitSingleSessionChange, submitSeriesChange } =
         useChangeEventField(
             event,
             { room_id: roomId ? Number(roomId) : null },
-            reason
+            reason ?? ''
         );
 
     useEffect(() => {
         if (open && event) {
-            setRoomId('');
-            setReason('');
-            setApplyToFuture(false);
+            form.reset({
+                room_id: '',
+                reason: '',
+                applyToFuture: false
+            });
         }
-    }, [open, event]);
+    }, [open, event, form]);
 
     const selectedRoomName =
         rooms.find((r) => String(r.id) === roomId)?.name ?? roomId;
 
     async function handleSubmit() {
-        if (!roomId) {
-            toast.error('Please select a room');
-            return;
-        }
         setSubmitting(true);
 
         const result = applyToFuture
@@ -98,74 +115,128 @@ export function ChangeRoomModal({
                 onOpenChange={onOpenChange}
                 title="Change Room"
             >
-                <div className="space-y-4 pt-6">
-                    <div className="space-y-2">
-                        <Label>New Room</Label>
-                        <Select value={roomId} onValueChange={setRoomId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select room" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {rooms.map((room) => (
-                                    <SelectItem
-                                        key={room.id}
-                                        value={String(room.id)}
-                                    >
-                                        {room.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <Form {...form}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void form.handleSubmit(() => void handleSubmit())(
+                                e
+                            );
+                        }}
+                    >
+                        <div className="space-y-4 pt-6">
+                            <FormField
+                                control={form.control}
+                                name="room_id"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>New Room</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select room" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {rooms.map((room) => (
+                                                    <SelectItem
+                                                        key={room.id}
+                                                        value={String(room.id)}
+                                                    >
+                                                        {room.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="space-y-2">
-                        <Label>Reason for Change</Label>
-                        <Select value={reason} onValueChange={setReason}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a reason" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.values(ChangeReason).map((r) => (
-                                    <SelectItem key={r} value={r}>
-                                        {r}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                            <FormField
+                                control={form.control}
+                                name="reason"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>Reason for Change</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a reason" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {Object.values(
+                                                    ChangeReason
+                                                ).map((r) => (
+                                                    <SelectItem
+                                                        key={r}
+                                                        value={r}
+                                                    >
+                                                        {r}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="room-apply-to-future"
-                            checked={applyToFuture}
-                            onChange={(e) => setApplyToFuture(e.target.checked)}
-                            className="size-4 rounded border-gray-300"
-                        />
-                        <label
-                            htmlFor="room-apply-to-future"
-                            className="text-sm font-normal cursor-pointer"
-                        >
-                            Apply this change to all future sessions
-                        </label>
-                    </div>
+                            <FormField
+                                control={form.control}
+                                name="applyToFuture"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center gap-2 space-y-0">
+                                        <FormControl>
+                                            <input
+                                                type="checkbox"
+                                                id="room-apply-to-future"
+                                                checked={field.value}
+                                                onChange={(e) =>
+                                                    field.onChange(
+                                                        e.target.checked
+                                                    )
+                                                }
+                                                className="size-4 rounded border-gray-300"
+                                            />
+                                        </FormControl>
+                                        <label
+                                            htmlFor="room-apply-to-future"
+                                            className="text-sm font-normal cursor-pointer"
+                                        >
+                                            Apply this change to all future
+                                            sessions
+                                        </label>
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleSubmit()}
-                            disabled={submitting || !roomId}
-                            className="bg-brand text-white hover:bg-brand-dark"
-                        >
-                            {submitting ? 'Saving...' : 'Change Room'}
-                        </Button>
-                    </div>
-                </div>
+                            <div className="flex justify-end gap-3 pt-4">
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => onOpenChange(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="bg-brand text-white hover:bg-brand-dark"
+                                >
+                                    {submitting ? 'Saving...' : 'Change Room'}
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Form>
             </FormModal>
 
             <RoomConflictModal

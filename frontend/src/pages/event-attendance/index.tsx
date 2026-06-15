@@ -39,6 +39,10 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+    validateAttendanceRow,
+    type AttendanceRowErrors
+} from '@/lib/validation';
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -78,6 +82,10 @@ export default function EventAttendance() {
     const [rows, setRows] = useState<RowState[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [initialized, setInitialized] = useState(false);
+    const [rowErrors, setRowErrors] = useState<
+        Record<number, AttendanceRowErrors>
+    >({});
+    const [showErrors, setShowErrors] = useState(false);
 
     const { data, isLoading, error, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
@@ -133,6 +141,20 @@ export default function EventAttendance() {
         setRows(mapped);
         setInitialized(true);
     }, [data, initialized, scheduledTimes]);
+
+    // Once the user has attempted to save, keep inline errors in sync as they
+    // edit (so fixing a field clears its error and changing status drops rules
+    // that no longer apply).
+    useEffect(() => {
+        if (!showErrors) return;
+        const next: Record<number, AttendanceRowErrors> = {};
+        rows.forEach((r) => {
+            if (!r.dirty) return;
+            const e = validateAttendanceRow(r);
+            if (Object.keys(e).length > 0) next[r.user_id] = e;
+        });
+        setRowErrors(next);
+    }, [rows, showErrors]);
 
     if (!date || !isoRE.test(date)) {
         return <Navigate to="/404" replace />;
@@ -273,20 +295,15 @@ export default function EventAttendance() {
             return;
         }
 
-        const missingStatus = dirtyRows.find((r) => r.status === '');
-        if (missingStatus) {
-            toast.error('All modified residents must have a status selected');
-            return;
-        }
-
-        const missingCheckin = dirtyRows.find(
-            (r) =>
-                (r.status === Attendance.Present ||
-                    r.status === Attendance.Partial) &&
-                !r.check_in_at
-        );
-        if (missingCheckin) {
-            toast.error('Check-in time is required for present residents');
+        const errs: Record<number, AttendanceRowErrors> = {};
+        dirtyRows.forEach((r) => {
+            const e = validateAttendanceRow(r);
+            if (Object.keys(e).length > 0) errs[r.user_id] = e;
+        });
+        if (Object.keys(errs).length > 0) {
+            setShowErrors(true);
+            setRowErrors(errs);
+            toast.error('Please fix the highlighted fields before saving');
             return;
         }
 
@@ -405,6 +422,7 @@ export default function EventAttendance() {
                                         onStatusChange={handleStatusChange}
                                         onUpdate={updateRow}
                                         scheduledTimes={scheduledTimes}
+                                        errors={rowErrors[row.user_id]}
                                     />
                                 ))
                             )}
@@ -494,12 +512,14 @@ function SummaryStatCard({
 function AttendanceRowCard({
     row,
     onStatusChange,
-    onUpdate
+    onUpdate,
+    errors
 }: {
     row: RowState;
     onStatusChange: (userId: number, status: Attendance) => void;
     onUpdate: (userId: number, patch: Partial<RowState>) => void;
     scheduledTimes: { check_in_at: string; check_out_at: string };
+    errors?: AttendanceRowErrors;
 }) {
     const isPresent = row.status === Attendance.Present;
     const isPartial = row.status === Attendance.Partial;
@@ -552,6 +572,12 @@ function AttendanceRowCard({
                 </div>
             </div>
 
+            {errors?.status && (
+                <p className="mt-2 sm:ml-[116px] text-sm font-medium text-destructive">
+                    {errors.status}
+                </p>
+            )}
+
             {isPartial && (
                 <div className="mt-4 sm:ml-[116px] space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -562,12 +588,18 @@ function AttendanceRowCard({
                             <Input
                                 type="time"
                                 value={row.check_in_at}
+                                aria-invalid={!!errors?.check_in_at}
                                 onChange={(e) =>
                                     onUpdate(row.user_id, {
                                         check_in_at: e.target.value
                                     })
                                 }
                             />
+                            {errors?.check_in_at && (
+                                <p className="mt-1 text-sm font-medium text-destructive">
+                                    {errors.check_in_at}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label className="text-sm text-gray-700 mb-1.5 block">
@@ -576,12 +608,18 @@ function AttendanceRowCard({
                             <Input
                                 type="time"
                                 value={row.check_out_at}
+                                aria-invalid={!!errors?.check_out_at}
                                 onChange={(e) =>
                                     onUpdate(row.user_id, {
                                         check_out_at: e.target.value
                                     })
                                 }
                             />
+                            {errors?.check_out_at && (
+                                <p className="mt-1 text-sm font-medium text-destructive">
+                                    {errors.check_out_at}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label className="text-sm text-gray-700 mb-1.5 block">
@@ -592,13 +630,21 @@ function AttendanceRowCard({
                             </div>
                         </div>
                     </div>
-                    <ReasonAndNote row={row} onUpdate={onUpdate} />
+                    <ReasonAndNote
+                        row={row}
+                        onUpdate={onUpdate}
+                        errors={errors}
+                    />
                 </div>
             )}
 
             {isAbsent && (
                 <div className="mt-4 sm:ml-[116px] space-y-3">
-                    <ReasonAndNote row={row} onUpdate={onUpdate} />
+                    <ReasonAndNote
+                        row={row}
+                        onUpdate={onUpdate}
+                        errors={errors}
+                    />
                 </div>
             )}
 
@@ -682,10 +728,12 @@ function CollapsibleNoteField({
 
 function ReasonAndNote({
     row,
-    onUpdate
+    onUpdate,
+    errors
 }: {
     row: RowState;
     onUpdate: (userId: number, patch: Partial<RowState>) => void;
+    errors?: AttendanceRowErrors;
 }) {
     const noteRequired = row.reason === AttendanceReason.Other;
 
@@ -693,7 +741,7 @@ function ReasonAndNote({
         <>
             <div>
                 <Label className="text-sm text-gray-700 mb-1.5 block">
-                    Reason <span className="text-red-600">*</span>
+                    Reason <span className="text-destructive">*</span>
                 </Label>
                 <Select
                     value={row.reason}
@@ -708,7 +756,7 @@ function ReasonAndNote({
                         });
                     }}
                 >
-                    <SelectTrigger>
+                    <SelectTrigger aria-invalid={!!errors?.reason}>
                         <SelectValue placeholder="Select a reason" />
                     </SelectTrigger>
                     <SelectContent>
@@ -719,18 +767,32 @@ function ReasonAndNote({
                         ))}
                     </SelectContent>
                 </Select>
+                {errors?.reason && (
+                    <p className="mt-1 text-sm font-medium text-destructive">
+                        {errors.reason}
+                    </p>
+                )}
             </div>
 
-            <CollapsibleNoteField
-                value={row.note}
-                expanded={row.showNoteField}
-                required={noteRequired}
-                onExpand={() => onUpdate(row.user_id, { showNoteField: true })}
-                onCollapse={() =>
-                    onUpdate(row.user_id, { showNoteField: false })
-                }
-                onChange={(note) => onUpdate(row.user_id, { note })}
-            />
+            <div>
+                <CollapsibleNoteField
+                    value={row.note}
+                    expanded={row.showNoteField}
+                    required={noteRequired}
+                    onExpand={() =>
+                        onUpdate(row.user_id, { showNoteField: true })
+                    }
+                    onCollapse={() =>
+                        onUpdate(row.user_id, { showNoteField: false })
+                    }
+                    onChange={(note) => onUpdate(row.user_id, { note })}
+                />
+                {errors?.note && (
+                    <p className="mt-1 text-sm font-medium text-destructive">
+                        {errors.note}
+                    </p>
+                )}
+            </div>
         </>
     );
 }

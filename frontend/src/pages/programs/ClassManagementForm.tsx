@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import API from '@/api/api';
@@ -14,6 +15,11 @@ import {
     RoomConflict,
     User
 } from '@/types';
+import {
+    buildClassManagementSchema,
+    ClassManagementInput,
+    ClassManagementFormValues
+} from '@/lib/validation';
 import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
 import { formatRoomConflictRange, getInstructorId } from '@/lib/formatters';
 import { PageHeader } from '@/components/shared';
@@ -21,6 +27,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -31,27 +45,8 @@ import {
 import { FormModal } from '@/components/shared';
 import { AlertCircle, X } from 'lucide-react';
 
-interface ClassFormData {
-    name: string;
-    description: string;
-    instructor_id: number | null;
-    capacity: number;
-    credit_hours: number;
-    start_dt: string;
-    end_dt: string;
-    status: string;
-    room_id: number | null;
-    start_time: string;
-    end_time: string;
-    days: string[];
-    cadence:
-        | 'no-repeat'
-        | 'daily'
-        | 'weekly'
-        | 'biweekly'
-        | 'monthly'
-        | 'custom';
-}
+type ClassFormData = ClassManagementInput;
+type ClassFormValues = ClassManagementFormValues;
 
 interface ClassManagementFormProps {
     programId: string;
@@ -186,16 +181,8 @@ export function ClassManagementFormInner({
             : null
     );
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        reset,
-        setValue,
-        setError,
-        watch,
-        formState: { errors, isSubmitting }
-    } = useForm<ClassFormData>({
+    const form = useForm<ClassFormValues, unknown, ClassFormData>({
+        resolver: zodResolver(buildClassManagementSchema(isNewClass)),
         defaultValues: {
             name: '',
             description: '',
@@ -212,6 +199,14 @@ export function ClassManagementFormInner({
             cadence: 'weekly'
         }
     });
+    const {
+        control,
+        handleSubmit,
+        reset,
+        setValue,
+        watch,
+        formState: { isSubmitting }
+    } = form;
 
     useEffect(() => {
         if (roomsResp?.data && rooms.length === 0) {
@@ -309,14 +304,6 @@ export function ClassManagementFormInner({
         'focus-visible:border-[#b3b3b3] focus-visible:ring-[#b3b3b3]/50';
     const focusRingButton =
         'focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-[1px] focus-visible:outline-hidden';
-
-    function endTimeIsAfterStart(startTime: string, endTime: string): boolean {
-        const [sh, sm] = startTime.split(':').map(Number);
-        const [eh, em] = endTime.split(':').map(Number);
-        if (!Number.isFinite(sh) || !Number.isFinite(sm)) return true;
-        if (!Number.isFinite(eh) || !Number.isFinite(em)) return true;
-        return eh * 60 + em > sh * 60 + sm;
-    }
 
     function getSelectedDayLabels(days: string[]) {
         return WEEKDAY_OPTIONS.filter((opt) => days.includes(opt.value)).map(
@@ -436,39 +423,7 @@ export function ClassManagementFormInner({
             return;
         }
 
-        if (!data.instructor_id) {
-            toast.error('Instructor selection is required');
-            return;
-        }
-
-        if (isNewClass && (!data.start_time || !data.end_time)) {
-            toast.error('Start time and end time are required');
-            return;
-        }
-        if (
-            isNewClass &&
-            (data.cadence === 'weekly' ||
-                data.cadence === 'biweekly' ||
-                data.cadence === 'custom') &&
-            data.days.length === 0
-        ) {
-            toast.error('Select at least one day');
-            return;
-        }
-
-        if (isNewClass && data.days.length === 0) {
-            toast.error('At least one day of the week must be selected');
-            return;
-        }
-
         const duration = formatDuration(data.start_time, data.end_time);
-        if (isNewClass && duration === '0h0m0s') {
-            setError('end_time', {
-                type: 'validate',
-                message: 'End time must be after start time'
-            });
-            return;
-        }
         const rrule = isNewClass
             ? buildRRule(
                   data.start_dt,
@@ -586,240 +541,920 @@ export function ClassManagementFormInner({
                 />
             )}
 
-            <form
-                onSubmit={(event) => void handleSubmit(onSubmit)(event)}
-                className="space-y-6"
-            >
-                {embedded && (
-                    <div className="space-y-6">
-                        <div>
-                            <h4 className="text-sm text-gray-700 mb-3">
-                                Basic Information
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="name">Class Name *</Label>
-                                    <Input
-                                        id="name"
-                                        placeholder="e.g., GED Prep - Morning Section"
-                                        className={focusRing}
-                                        {...register('name', {
-                                            required: 'Class name is required',
-                                            maxLength: {
-                                                value: 255,
-                                                message: 'Max 255 characters'
-                                            }
-                                        })}
+            <Form {...form}>
+                <form
+                    onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+                    className="space-y-6"
+                >
+                    {embedded && (
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="text-sm text-gray-700 mb-3">
+                                    Basic Information
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Class Name *
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="e.g., GED Prep - Morning Section"
+                                                        className={focusRing}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                    {errors.name && (
-                                        <p className="text-sm text-red-600">
-                                            {errors.name.message}
-                                        </p>
-                                    )}
-                                </div>
-                                <div>
-                                    <Label>Instructor *</Label>
-                                    <Controller
+                                    <FormField
+                                        control={control}
                                         name="instructor_id"
-                                        control={control}
-                                        rules={{
-                                            required: 'Instructor is required'
-                                        }}
                                         render={({ field }) => (
-                                            <Select
-                                                value={
-                                                    field.value
-                                                        ? String(field.value)
-                                                        : ''
-                                                }
-                                                onValueChange={(v) =>
-                                                    field.onChange(Number(v))
-                                                }
-                                            >
-                                                <SelectTrigger
-                                                    className={focusRing}
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Instructor *
+                                                </FormLabel>
+                                                <Select
+                                                    value={
+                                                        field.value
+                                                            ? String(
+                                                                  field.value
+                                                              )
+                                                            : ''
+                                                    }
+                                                    onValueChange={(v) =>
+                                                        field.onChange(
+                                                            Number(v)
+                                                        )
+                                                    }
                                                 >
-                                                    <SelectValue placeholder="Select instructor" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {instructors.map((inst) => (
-                                                        <SelectItem
-                                                            key={inst.id}
-                                                            value={String(
-                                                                inst.id
-                                                            )}
+                                                    <FormControl>
+                                                        <SelectTrigger
+                                                            className={
+                                                                focusRing
+                                                            }
                                                         >
-                                                            {inst.name_last},{' '}
-                                                            {inst.name_first}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                            <SelectValue placeholder="Select instructor" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {instructors.map(
+                                                            (inst) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        inst.id
+                                                                    }
+                                                                    value={String(
+                                                                        inst.id
+                                                                    )}
+                                                                >
+                                                                    {
+                                                                        inst.name_last
+                                                                    }
+                                                                    ,{' '}
+                                                                    {
+                                                                        inst.name_first
+                                                                    }
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
                                     />
-                                    {errors.instructor_id && (
-                                        <p className="text-sm text-red-600">
-                                            {errors.instructor_id.message}
-                                        </p>
-                                    )}
-                                </div>
-                                <div>
-                                    <Label>Initial Status *</Label>
-                                    <Controller
-                                        name="status"
+                                    <FormField
                                         control={control}
-                                        rules={{
-                                            required: 'Status is required'
-                                        }}
+                                        name="status"
                                         render={({ field }) => (
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger
-                                                    id="status"
-                                                    className={focusRing}
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Initial Status *
+                                                </FormLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
                                                 >
-                                                    <SelectValue placeholder="Select status" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem
-                                                        value={
-                                                            ProgClassStatus.SCHEDULED
-                                                        }
-                                                    >
-                                                        Scheduled
-                                                    </SelectItem>
-                                                    <SelectItem
-                                                        value={
-                                                            ProgClassStatus.ACTIVE
-                                                        }
-                                                    >
-                                                        Active
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                                    <FormControl>
+                                                        <SelectTrigger
+                                                            id="status"
+                                                            className={
+                                                                focusRing
+                                                            }
+                                                        >
+                                                            <SelectValue placeholder="Select status" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem
+                                                            value={
+                                                                ProgClassStatus.SCHEDULED
+                                                            }
+                                                        >
+                                                            Scheduled
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                            value={
+                                                                ProgClassStatus.ACTIVE
+                                                            }
+                                                        >
+                                                            Active
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Scheduled classes will start
+                                                    on the start date. Active
+                                                    classes are already running.
+                                                </p>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Scheduled classes will start on the
-                                        start date. Active classes are already
-                                        running.
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label htmlFor="capacity">Capacity *</Label>
-                                    <Input
-                                        id="capacity"
-                                        type="number"
-                                        min={1}
-                                        className={focusRing}
-                                        {...register('capacity', {
-                                            required: 'Capacity is required',
-                                            min: {
-                                                value: 1,
-                                                message: 'Minimum 1'
-                                            }
-                                        })}
+                                    <FormField
+                                        control={control}
+                                        name="capacity"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Capacity *
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        min={1}
+                                                        className={focusRing}
+                                                        name={field.name}
+                                                        ref={field.ref}
+                                                        onBlur={field.onBlur}
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            field.onChange(
+                                                                e.target
+                                                                    .value ===
+                                                                    ''
+                                                                    ? undefined
+                                                                    : e.target
+                                                                          .valueAsNumber
+                                                            )
+                                                        }
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                    {errors.capacity && (
-                                        <p className="text-sm text-red-600">
-                                            {errors.capacity.message}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="col-span-2">
-                                    <Label htmlFor="description">
-                                        Description *
-                                    </Label>
-                                    <Textarea
-                                        id="description"
-                                        placeholder="Brief description of the class"
-                                        rows={2}
-                                        className={focusRing}
-                                        {...register('description', {
-                                            required: 'Description is required',
-                                            maxLength: {
-                                                value: 255,
-                                                message: 'Max 255 characters'
-                                            }
-                                        })}
+                                    <FormField
+                                        control={control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>
+                                                    Description *
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        placeholder="Brief description of the class"
+                                                        rows={2}
+                                                        className={focusRing}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                    {errors.description && (
-                                        <p className="text-sm text-red-600">
-                                            {errors.description.message}
-                                        </p>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-gray-200">
+                                <h4 className="text-sm text-gray-700 mb-3">
+                                    Schedule
+                                </h4>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <FormField
+                                            control={control}
+                                            name="start_time"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Start Time *
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="time"
+                                                            className={
+                                                                focusRing
+                                                            }
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={control}
+                                            name="end_time"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        End Time *
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="time"
+                                                            className={
+                                                                focusRing
+                                                            }
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={control}
+                                            name="room_id"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Room *
+                                                    </FormLabel>
+                                                    <Select
+                                                        value={roomSelectValue}
+                                                        onValueChange={(v) => {
+                                                            if (
+                                                                v === '__add__'
+                                                            ) {
+                                                                setShowAddRoom(
+                                                                    true
+                                                                );
+                                                                return;
+                                                            }
+                                                            setRoomSelectValue(
+                                                                v
+                                                            );
+                                                            field.onChange(
+                                                                Number(v)
+                                                            );
+                                                        }}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger
+                                                                id="room"
+                                                                className={
+                                                                    focusRing
+                                                                }
+                                                            >
+                                                                <SelectValue placeholder="Select room" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {rooms.map(
+                                                                (room) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            room.id
+                                                                        }
+                                                                        value={String(
+                                                                            room.id
+                                                                        )}
+                                                                    >
+                                                                        {
+                                                                            room.name
+                                                                        }
+                                                                    </SelectItem>
+                                                                )
+                                                            )}
+                                                            <SelectItem value="__add__">
+                                                                Add Custom Room
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                    {showAddRoom && (
+                                                        <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex-1">
+                                                                    <Label
+                                                                        htmlFor="new-room-name"
+                                                                        className="text-sm font-medium"
+                                                                    >
+                                                                        Custom
+                                                                        Room
+                                                                        Name
+                                                                    </Label>
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Room
+                                                                        names
+                                                                        should
+                                                                        be
+                                                                        specific
+                                                                        (e.g.,
+                                                                        "Library
+                                                                        - Room
+                                                                        3A")
+                                                                    </p>
+                                                                </div>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => {
+                                                                        setShowAddRoom(
+                                                                            false
+                                                                        );
+                                                                        setNewRoomName(
+                                                                            ''
+                                                                        );
+                                                                    }}
+                                                                    className="h-6 w-6 p-0 -mt-1"
+                                                                    type="button"
+                                                                >
+                                                                    <X className="size-4" />
+                                                                </Button>
+                                                            </div>
+                                                            <Input
+                                                                id="new-room-name"
+                                                                placeholder="e.g., Education Wing - Room 205"
+                                                                value={
+                                                                    newRoomName
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setNewRoomName(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                                className={
+                                                                    focusRing
+                                                                }
+                                                                autoFocus
+                                                            />
+                                                            {newRoomName &&
+                                                                rooms.some(
+                                                                    (room) =>
+                                                                        room.name.toLowerCase() ===
+                                                                        newRoomName
+                                                                            .trim()
+                                                                            .toLowerCase()
+                                                                ) && (
+                                                                    <div className="flex items-center gap-2 text-sm text-orange-600">
+                                                                        <AlertCircle className="size-4" />
+                                                                        <span>
+                                                                            This
+                                                                            room
+                                                                            name
+                                                                            already
+                                                                            exists
+                                                                            in
+                                                                            the
+                                                                            list
+                                                                            above
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => {
+                                                                        setShowAddRoom(
+                                                                            false
+                                                                        );
+                                                                        setNewRoomName(
+                                                                            ''
+                                                                        );
+                                                                    }}
+                                                                    className="flex-1"
+                                                                    type="button"
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        void handleAddRoom()
+                                                                    }
+                                                                    disabled={
+                                                                        !newRoomName.trim()
+                                                                    }
+                                                                    className="flex-1 bg-brand hover:bg-brand-dark"
+                                                                    type="button"
+                                                                >
+                                                                    Add Room
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={control}
+                                            name="start_dt"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Start Date *
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="date"
+                                                            className={
+                                                                focusRing
+                                                            }
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={control}
+                                            name="end_dt"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        End Date
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="date"
+                                                            className={
+                                                                focusRing
+                                                            }
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <FormField
+                                        control={control}
+                                        name="cadence"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Repeats *</FormLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        if (
+                                                            value === 'custom'
+                                                        ) {
+                                                            setShowCustomRecurrence(
+                                                                true
+                                                            );
+                                                        } else {
+                                                            setShowCustomRecurrence(
+                                                                false
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger
+                                                            id="cadence"
+                                                            className={
+                                                                focusRing
+                                                            }
+                                                        >
+                                                            <SelectValue placeholder="Select recurrence" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="no-repeat">
+                                                            Does not repeat
+                                                        </SelectItem>
+                                                        <SelectItem value="daily">
+                                                            Daily
+                                                        </SelectItem>
+                                                        <SelectItem value="weekly">
+                                                            Weekly
+                                                        </SelectItem>
+                                                        <SelectItem value="biweekly">
+                                                            Every 2 weeks
+                                                        </SelectItem>
+                                                        <SelectItem value="monthly">
+                                                            Monthly
+                                                        </SelectItem>
+                                                        <SelectItem value="custom">
+                                                            Custom
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {cadenceHelpText(
+                                                        watchedCadence ??
+                                                            'weekly'
+                                                    )}
+                                                </p>
+                                                {watchedCadence === 'custom' &&
+                                                    !showCustomRecurrence && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                setShowCustomRecurrence(
+                                                                    true
+                                                                )
+                                                            }
+                                                            className="mt-1 h-7 text-xs text-brand hover:text-brand-dark px-2"
+                                                            type="button"
+                                                        >
+                                                            Edit pattern
+                                                        </Button>
+                                                    )}
+                                                {showCustomRecurrence && (
+                                                    <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label className="text-sm font-medium text-gray-700">
+                                                                Custom
+                                                                Recurrence
+                                                                Pattern
+                                                            </Label>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setShowCustomRecurrence(
+                                                                        false
+                                                                    );
+                                                                    setValue(
+                                                                        'cadence',
+                                                                        'weekly',
+                                                                        {
+                                                                            shouldDirty: true,
+                                                                            shouldValidate: true
+                                                                        }
+                                                                    );
+                                                                }}
+                                                                className="h-6 w-6 p-0 -mt-1"
+                                                                type="button"
+                                                            >
+                                                                <X className="size-4" />
+                                                            </Button>
+                                                        </div>
+                                                        <div>
+                                                            <Label
+                                                                htmlFor="customInterval"
+                                                                className="text-xs"
+                                                            >
+                                                                Repeats every X
+                                                                weeks
+                                                            </Label>
+                                                            <Select
+                                                                value={String(
+                                                                    customRecurrenceInterval
+                                                                )}
+                                                                onValueChange={(
+                                                                    value
+                                                                ) =>
+                                                                    setCustomRecurrenceInterval(
+                                                                        Number(
+                                                                            value
+                                                                        )
+                                                                    )
+                                                                }
+                                                            >
+                                                                <SelectTrigger
+                                                                    id="customInterval"
+                                                                    className={`bg-white ${focusRing}`}
+                                                                >
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {[
+                                                                        1, 2, 3,
+                                                                        4, 5, 6,
+                                                                        7, 8
+                                                                    ].map(
+                                                                        (
+                                                                            num
+                                                                        ) => (
+                                                                            <SelectItem
+                                                                                key={
+                                                                                    num
+                                                                                }
+                                                                                value={String(
+                                                                                    num
+                                                                                )}
+                                                                            >
+                                                                                {
+                                                                                    num
+                                                                                }{' '}
+                                                                                {num ===
+                                                                                1
+                                                                                    ? 'week'
+                                                                                    : 'weeks'}
+                                                                            </SelectItem>
+                                                                        )
+                                                                    )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Use the "Days of
+                                                                Week" selector
+                                                                below to choose
+                                                                which days
+                                                            </p>
+                                                        </div>
+                                                        <div className="pt-3 border-t border-gray-200">
+                                                            <Label className="text-xs text-gray-600">
+                                                                Preview
+                                                            </Label>
+                                                            <p className="text-sm text-gray-700 mt-1">
+                                                                {getCustomRecurrencePreview()}
+                                                            </p>
+                                                        </div>
+                                                        {!isCustomRecurrenceValid() && (
+                                                            <div className="flex items-center gap-2 text-sm text-destructive">
+                                                                <AlertCircle className="size-4" />
+                                                                <span>
+                                                                    Please
+                                                                    select at
+                                                                    least one
+                                                                    day of the
+                                                                    week below
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex gap-2 pt-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setShowCustomRecurrence(
+                                                                        false
+                                                                    );
+                                                                    setValue(
+                                                                        'cadence',
+                                                                        'weekly',
+                                                                        {
+                                                                            shouldDirty: true,
+                                                                            shouldValidate: true
+                                                                        }
+                                                                    );
+                                                                }}
+                                                                className="flex-1"
+                                                                type="button"
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    if (
+                                                                        isCustomRecurrenceValid()
+                                                                    ) {
+                                                                        setValue(
+                                                                            'cadence',
+                                                                            'custom',
+                                                                            {
+                                                                                shouldDirty: true,
+                                                                                shouldValidate: true
+                                                                            }
+                                                                        );
+                                                                        setShowCustomRecurrence(
+                                                                            false
+                                                                        );
+                                                                        toast.success(
+                                                                            'Custom recurrence pattern applied'
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                disabled={
+                                                                    !isCustomRecurrenceValid()
+                                                                }
+                                                                className="flex-1 bg-brand hover:bg-brand-dark"
+                                                                type="button"
+                                                            >
+                                                                Apply Pattern
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {(watchedCadence === 'weekly' ||
+                                        watchedCadence === 'biweekly' ||
+                                        watchedCadence === 'custom') && (
+                                        <FormField
+                                            control={control}
+                                            name="days"
+                                            render={() => (
+                                                <FormItem className="!mt-0">
+                                                    <FormLabel>
+                                                        Days of Week *
+                                                    </FormLabel>
+                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                        {WEEKDAY_OPTIONS.map(
+                                                            (day) => (
+                                                                <button
+                                                                    key={
+                                                                        day.value
+                                                                    }
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        toggleDay(
+                                                                            day.value
+                                                                        )
+                                                                    }
+                                                                    className={`px-4 py-2 rounded-lg border transition-colors ${
+                                                                        watchedDays.includes(
+                                                                            day.value
+                                                                        )
+                                                                            ? 'bg-brand text-white border-brand'
+                                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-brand'
+                                                                    } ${focusRingButton}`}
+                                                                >
+                                                                    {day.label.slice(
+                                                                        0,
+                                                                        3
+                                                                    )}
+                                                                </button>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     )}
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="pt-4 border-t border-gray-200">
-                            <h4 className="text-sm text-gray-700 mb-3">
-                                Schedule
-                            </h4>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <Label htmlFor="start_time">
-                                            Start Time *
-                                        </Label>
-                                        <Input
-                                            id="start_time"
-                                            type="time"
-                                            className={focusRing}
-                                            {...register('start_time', {
-                                                required:
-                                                    'Start time is required'
-                                            })}
-                                        />
-                                        {errors.start_time && (
-                                            <p className="text-sm text-red-600">
-                                                {errors.start_time.message}
-                                            </p>
+                            <div className="flex justify-end gap-3 pt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => onCancel?.()}
+                                    className={`border-gray-300 ${focusRingButton}`}
+                                    type="button"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    className={`bg-brand hover:bg-brand-dark text-white ${focusRingButton}`}
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting
+                                        ? 'Saving...'
+                                        : 'Create Class'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {!embedded && (
+                        <>
+                            <div className="section-card">
+                                <h2 className="text-lg font-semibold text-foreground">
+                                    Class Information
+                                </h2>
+
+                                <FormField
+                                    control={control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Name</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={control}
+                                    name="description"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Description</FormLabel>
+                                            <FormControl>
+                                                <Textarea rows={3} {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={control}
+                                        name="instructor_id"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>
+                                                    Instructor
+                                                </FormLabel>
+                                                <Select
+                                                    value={
+                                                        field.value
+                                                            ? String(
+                                                                  field.value
+                                                              )
+                                                            : ''
+                                                    }
+                                                    onValueChange={(v) => {
+                                                        if (v === '__add__') {
+                                                            setShowAddInstructor(
+                                                                true
+                                                            );
+                                                            return;
+                                                        }
+                                                        field.onChange(
+                                                            Number(v)
+                                                        );
+                                                    }}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select instructor" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {instructors.map(
+                                                            (inst) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        inst.id
+                                                                    }
+                                                                    value={String(
+                                                                        inst.id
+                                                                    )}
+                                                                >
+                                                                    {
+                                                                        inst.name_last
+                                                                    }
+                                                                    ,{' '}
+                                                                    {
+                                                                        inst.name_first
+                                                                    }
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                        <SelectItem
+                                                            value="__add__"
+                                                            className="text-brand font-medium"
+                                                        >
+                                                            + Add Instructor
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="end_time">
-                                            End Time *
-                                        </Label>
-                                        <Input
-                                            id="end_time"
-                                            type="time"
-                                            className={focusRing}
-                                            {...register('end_time', {
-                                                required:
-                                                    'End time is required',
-                                                validate: (value) => {
-                                                    const start =
-                                                        watch('start_time');
-                                                    if (!start || !value)
-                                                        return true;
-                                                    return (
-                                                        endTimeIsAfterStart(
-                                                            start,
-                                                            value
-                                                        ) ||
-                                                        'End time must be after start time'
-                                                    );
-                                                }
-                                            })}
-                                        />
-                                        {errors.end_time && (
-                                            <p className="text-sm text-red-600">
-                                                {errors.end_time.message}
-                                            </p>
+                                    />
+
+                                    <FormField
+                                        control={control}
+                                        name="capacity"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Capacity</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        min={1}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
-                                    </div>
-                                    <div>
-                                        <Label>Room *</Label>
-                                        <Controller
-                                            name="room_id"
-                                            control={control}
-                                            rules={{
-                                                required: 'Room is required'
-                                            }}
-                                            render={({ field }) => (
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={control}
+                                        name="room_id"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Room</FormLabel>
                                                 <Select
                                                     value={roomSelectValue}
                                                     onValueChange={(v) => {
@@ -835,12 +1470,11 @@ export function ClassManagementFormInner({
                                                         );
                                                     }}
                                                 >
-                                                    <SelectTrigger
-                                                        id="room"
-                                                        className={focusRing}
-                                                    >
-                                                        <SelectValue placeholder="Select room" />
-                                                    </SelectTrigger>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select room" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
                                                     <SelectContent>
                                                         {rooms.map((room) => (
                                                             <SelectItem
@@ -852,811 +1486,260 @@ export function ClassManagementFormInner({
                                                                 {room.name}
                                                             </SelectItem>
                                                         ))}
-                                                        <SelectItem value="__add__">
-                                                            Add Custom Room
+                                                        <SelectItem
+                                                            value="__add__"
+                                                            className="text-brand font-medium"
+                                                        >
+                                                            + Add Room
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
-                                            )}
-                                        />
-                                        {errors.room_id && (
-                                            <p className="text-sm text-red-600 mt-1">
-                                                {String(errors.room_id.message)}
-                                            </p>
-                                        )}
-                                        {showAddRoom && (
-                                            <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50 space-y-3 animate-in slide-in-from-top-2 duration-200">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <Label
-                                                            htmlFor="new-room-name"
-                                                            className="text-sm font-medium"
-                                                        >
-                                                            Custom Room Name
-                                                        </Label>
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            Room names should be
-                                                            specific (e.g.,
-                                                            "Library - Room 3A")
-                                                        </p>
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setShowAddRoom(
-                                                                false
-                                                            );
-                                                            setNewRoomName('');
-                                                        }}
-                                                        className="h-6 w-6 p-0 -mt-1"
-                                                        type="button"
-                                                    >
-                                                        <X className="size-4" />
-                                                    </Button>
-                                                </div>
-                                                <Input
-                                                    id="new-room-name"
-                                                    placeholder="e.g., Education Wing - Room 205"
-                                                    value={newRoomName}
-                                                    onChange={(e) =>
-                                                        setNewRoomName(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className={focusRing}
-                                                    autoFocus
-                                                />
-                                                {newRoomName &&
-                                                    rooms.some(
-                                                        (room) =>
-                                                            room.name.toLowerCase() ===
-                                                            newRoomName
-                                                                .trim()
-                                                                .toLowerCase()
-                                                    ) && (
-                                                        <div className="flex items-center gap-2 text-sm text-orange-600">
-                                                            <AlertCircle className="size-4" />
-                                                            <span>
-                                                                This room name
-                                                                already exists
-                                                                in the list
-                                                                above
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setShowAddRoom(
-                                                                false
-                                                            );
-                                                            setNewRoomName('');
-                                                        }}
-                                                        className="flex-1"
-                                                        type="button"
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            void handleAddRoom()
-                                                        }
-                                                        disabled={
-                                                            !newRoomName.trim()
-                                                        }
-                                                        className="flex-1 bg-brand hover:bg-brand-dark"
-                                                        type="button"
-                                                    >
-                                                        Add Room
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="start_dt">
-                                            Start Date *
-                                        </Label>
-                                        <Input
-                                            id="start_dt"
-                                            type="date"
-                                            className={focusRing}
-                                            {...register('start_dt', {
-                                                required:
-                                                    'Start date is required'
-                                            })}
-                                        />
-                                        {errors.start_dt && (
-                                            <p className="text-sm text-red-600">
-                                                {errors.start_dt.message}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="end_dt">End Date</Label>
-                                        <Input
-                                            id="end_dt"
-                                            type="date"
-                                            className={focusRing}
-                                            {...register('end_dt')}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label htmlFor="cadence">Repeats *</Label>
-                                    <Controller
-                                        name="cadence"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={(value) => {
-                                                    field.onChange(value);
-                                                    if (value === 'custom') {
-                                                        setShowCustomRecurrence(
-                                                            true
-                                                        );
-                                                    } else {
-                                                        setShowCustomRecurrence(
-                                                            false
-                                                        );
-                                                    }
-                                                }}
-                                            >
-                                                <SelectTrigger
-                                                    id="cadence"
-                                                    className={focusRing}
-                                                >
-                                                    <SelectValue placeholder="Select recurrence" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="no-repeat">
-                                                        Does not repeat
-                                                    </SelectItem>
-                                                    <SelectItem value="daily">
-                                                        Daily
-                                                    </SelectItem>
-                                                    <SelectItem value="weekly">
-                                                        Weekly
-                                                    </SelectItem>
-                                                    <SelectItem value="biweekly">
-                                                        Every 2 weeks
-                                                    </SelectItem>
-                                                    <SelectItem value="monthly">
-                                                        Monthly
-                                                    </SelectItem>
-                                                    <SelectItem value="custom">
-                                                        Custom
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {cadenceHelpText(
-                                            watchedCadence ?? 'weekly'
+
+                                    <FormField
+                                        control={control}
+                                        name="credit_hours"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>
+                                                    Credit Hours
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        name={field.name}
+                                                        ref={field.ref}
+                                                        onBlur={field.onBlur}
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            field.onChange(
+                                                                e.target
+                                                                    .value ===
+                                                                    ''
+                                                                    ? null
+                                                                    : e.target
+                                                                          .valueAsNumber
+                                                            )
+                                                        }
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
-                                    </p>
-                                    {watchedCadence === 'custom' &&
-                                        !showCustomRecurrence && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                    setShowCustomRecurrence(
-                                                        true
-                                                    )
-                                                }
-                                                className="mt-1 h-7 text-xs text-brand hover:text-brand-dark px-2"
-                                                type="button"
-                                            >
-                                                Edit pattern
-                                            </Button>
-                                        )}
-                                    {showCustomRecurrence && (
-                                        <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <Label className="text-sm font-medium text-gray-700">
-                                                    Custom Recurrence Pattern
-                                                </Label>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setShowCustomRecurrence(
-                                                            false
-                                                        );
-                                                        setValue(
-                                                            'cadence',
-                                                            'weekly',
-                                                            {
-                                                                shouldDirty: true,
-                                                                shouldValidate: true
-                                                            }
-                                                        );
-                                                    }}
-                                                    className="h-6 w-6 p-0 -mt-1"
-                                                    type="button"
-                                                >
-                                                    <X className="size-4" />
-                                                </Button>
-                                            </div>
-                                            <div>
-                                                <Label
-                                                    htmlFor="customInterval"
-                                                    className="text-xs"
-                                                >
-                                                    Repeats every X weeks
-                                                </Label>
-                                                <Select
-                                                    value={String(
-                                                        customRecurrenceInterval
-                                                    )}
-                                                    onValueChange={(value) =>
-                                                        setCustomRecurrenceInterval(
-                                                            Number(value)
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger
-                                                        id="customInterval"
-                                                        className={`bg-white ${focusRing}`}
-                                                    >
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {[
-                                                            1, 2, 3, 4, 5, 6, 7,
-                                                            8
-                                                        ].map((num) => (
-                                                            <SelectItem
-                                                                key={num}
-                                                                value={String(
-                                                                    num
-                                                                )}
-                                                            >
-                                                                {num}{' '}
-                                                                {num === 1
-                                                                    ? 'week'
-                                                                    : 'weeks'}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Use the "Days of Week"
-                                                    selector below to choose
-                                                    which days
-                                                </p>
-                                            </div>
-                                            <div className="pt-3 border-t border-gray-200">
-                                                <Label className="text-xs text-gray-600">
-                                                    Preview
-                                                </Label>
-                                                <p className="text-sm text-gray-700 mt-1">
-                                                    {getCustomRecurrencePreview()}
-                                                </p>
-                                            </div>
-                                            {!isCustomRecurrenceValid() && (
-                                                <div className="flex items-center gap-2 text-sm text-red-600">
-                                                    <AlertCircle className="size-4" />
-                                                    <span>
-                                                        Please select at least
-                                                        one day of the week
-                                                        below
-                                                    </span>
-                                                </div>
+                                    />
+                                </div>
+                            </div>
+
+                            {isNewClass && (
+                                <div className="section-card">
+                                    <h2 className="text-lg font-semibold text-foreground">
+                                        Scheduling
+                                    </h2>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={control}
+                                            name="start_dt"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel>
+                                                        Start Date
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="date"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
                                             )}
-                                            <div className="flex gap-2 pt-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setShowCustomRecurrence(
-                                                            false
-                                                        );
-                                                        setValue(
-                                                            'cadence',
-                                                            'weekly',
-                                                            {
-                                                                shouldDirty: true,
-                                                                shouldValidate: true
-                                                            }
-                                                        );
-                                                    }}
-                                                    className="flex-1"
-                                                    type="button"
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        if (
-                                                            isCustomRecurrenceValid()
-                                                        ) {
-                                                            setValue(
-                                                                'cadence',
-                                                                'custom',
-                                                                {
-                                                                    shouldDirty: true,
-                                                                    shouldValidate: true
+                                        />
+                                        <FormField
+                                            control={control}
+                                            name="end_dt"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel>
+                                                        End Date
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="date"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={control}
+                                            name="start_time"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel>
+                                                        Start Time
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="time"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={control}
+                                            name="end_time"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel>
+                                                        End Time
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="time"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <FormField
+                                        control={control}
+                                        name="days"
+                                        render={() => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>
+                                                    Days of Week *
+                                                </FormLabel>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {WEEKDAY_OPTIONS.map(
+                                                        (day) => (
+                                                            <Button
+                                                                key={day.value}
+                                                                type="button"
+                                                                variant={
+                                                                    watchedDays.includes(
+                                                                        day.value
+                                                                    )
+                                                                        ? 'default'
+                                                                        : 'outline'
                                                                 }
-                                                            );
-                                                            setShowCustomRecurrence(
-                                                                false
-                                                            );
-                                                            toast.success(
-                                                                'Custom recurrence pattern applied'
-                                                            );
-                                                        }
-                                                    }}
-                                                    disabled={
-                                                        !isCustomRecurrenceValid()
-                                                    }
-                                                    className="flex-1 bg-brand hover:bg-brand-dark"
-                                                    type="button"
-                                                >
-                                                    Apply Pattern
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                {(watchedCadence === 'weekly' ||
-                                    watchedCadence === 'biweekly' ||
-                                    watchedCadence === 'custom') && (
-                                    <div className="!mt-0">
-                                        <Label>Days of Week *</Label>
-                                        <input
-                                            type="hidden"
-                                            {...register('days', {
-                                                validate: (value) =>
-                                                    (value?.length ?? 0) > 0 ||
-                                                    'Days of week is required'
-                                            })}
-                                        />
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {WEEKDAY_OPTIONS.map((day) => (
-                                                <button
-                                                    key={day.value}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        toggleDay(day.value)
-                                                    }
-                                                    className={`px-4 py-2 rounded-lg border transition-colors ${
-                                                        watchedDays.includes(
-                                                            day.value
+                                                                size="sm"
+                                                                className={
+                                                                    watchedDays.includes(
+                                                                        day.value
+                                                                    )
+                                                                        ? 'bg-brand hover:bg-brand-dark text-white'
+                                                                        : 'border-gray-300'
+                                                                }
+                                                                onClick={() =>
+                                                                    toggleDay(
+                                                                        day.value
+                                                                    )
+                                                                }
+                                                            >
+                                                                {day.label.slice(
+                                                                    0,
+                                                                    3
+                                                                )}
+                                                            </Button>
                                                         )
-                                                            ? 'bg-brand text-white border-brand'
-                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-brand'
-                                                    } ${focusRingButton}`}
-                                                >
-                                                    {day.label.slice(0, 3)}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        {errors.days && (
-                                            <p className="text-sm text-red-600 mt-1">
-                                                {String(errors.days.message)}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 pt-4">
-                            <Button
-                                variant="outline"
-                                onClick={() => onCancel?.()}
-                                className={`border-gray-300 ${focusRingButton}`}
-                                type="button"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className={`bg-brand hover:bg-brand-dark text-white ${focusRingButton}`}
-                                type="submit"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? 'Saving...' : 'Create Class'}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {!embedded && (
-                    <>
-                        <div className="section-card">
-                            <h2 className="text-lg font-semibold text-foreground">
-                                Class Information
-                            </h2>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    {...register('name', {
-                                        required: 'Class name is required',
-                                        maxLength: {
-                                            value: 255,
-                                            message: 'Max 255 characters'
-                                        }
-                                    })}
-                                />
-                                {errors.name && (
-                                    <p className="text-sm text-red-600">
-                                        {errors.name.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Description</Label>
-                                <Textarea
-                                    id="description"
-                                    rows={3}
-                                    {...register('description', {
-                                        required: 'Description is required',
-                                        maxLength: {
-                                            value: 255,
-                                            message: 'Max 255 characters'
-                                        }
-                                    })}
-                                />
-                                {errors.description && (
-                                    <p className="text-sm text-red-600">
-                                        {errors.description.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Instructor</Label>
-                                    <Controller
-                                        name="instructor_id"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select
-                                                value={
-                                                    field.value
-                                                        ? String(field.value)
-                                                        : ''
-                                                }
-                                                onValueChange={(v) => {
-                                                    if (v === '__add__') {
-                                                        setShowAddInstructor(
-                                                            true
-                                                        );
-                                                        return;
-                                                    }
-                                                    field.onChange(Number(v));
-                                                }}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select instructor" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {instructors.map((inst) => (
-                                                        <SelectItem
-                                                            key={inst.id}
-                                                            value={String(
-                                                                inst.id
-                                                            )}
-                                                        >
-                                                            {inst.name_last},{' '}
-                                                            {inst.name_first}
-                                                        </SelectItem>
-                                                    ))}
-                                                    <SelectItem
-                                                        value="__add__"
-                                                        className="text-brand font-medium"
-                                                    >
-                                                        + Add Instructor
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                                    )}
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
                                     />
                                 </div>
+                            )}
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="capacity">Capacity</Label>
-                                    <Input
-                                        id="capacity"
-                                        type="number"
-                                        min={1}
-                                        {...register('capacity', {
-                                            required: 'Capacity is required',
-                                            min: {
-                                                value: 1,
-                                                message: 'Minimum 1'
-                                            }
-                                        })}
-                                    />
-                                    {errors.capacity && (
-                                        <p className="text-sm text-red-600">
-                                            {errors.capacity.message}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Room</Label>
-                                    <Controller
-                                        name="room_id"
-                                        control={control}
-                                        rules={{
-                                            required: 'Room is required'
-                                        }}
-                                        render={({ field }) => (
-                                            <Select
-                                                value={roomSelectValue}
-                                                onValueChange={(v) => {
-                                                    if (v === '__add__') {
-                                                        setShowAddRoom(true);
-                                                        return;
-                                                    }
-                                                    setRoomSelectValue(v);
-                                                    field.onChange(Number(v));
-                                                }}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select room" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {rooms.map((room) => (
-                                                        <SelectItem
-                                                            key={room.id}
-                                                            value={String(
-                                                                room.id
-                                                            )}
-                                                        >
-                                                            {room.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                    <SelectItem
-                                                        value="__add__"
-                                                        className="text-brand font-medium"
-                                                    >
-                                                        + Add Room
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                    />
-                                    {errors.room_id && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {String(errors.room_id.message)}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="credit_hours">
-                                        Credit Hours
-                                    </Label>
-                                    <Input
-                                        id="credit_hours"
-                                        type="number"
-                                        min={0}
-                                        {...register('credit_hours')}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {isNewClass && (
                             <div className="section-card">
                                 <h2 className="text-lg font-semibold text-foreground">
-                                    Scheduling
+                                    Status
                                 </h2>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="start_dt">
-                                            Start Date
-                                        </Label>
-                                        <Input
-                                            id="start_dt"
-                                            type="date"
-                                            {...register('start_dt', {
-                                                required:
-                                                    'Start date is required'
-                                            })}
-                                        />
-                                        {errors.start_dt && (
-                                            <p className="text-sm text-red-600">
-                                                {errors.start_dt.message}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="end_dt">End Date</Label>
-                                        <Input
-                                            id="end_dt"
-                                            type="date"
-                                            {...register('end_dt')}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="start_time">
-                                            Start Time
-                                        </Label>
-                                        <Input
-                                            id="start_time"
-                                            type="time"
-                                            {...register('start_time', {
-                                                required:
-                                                    'Start time is required'
-                                            })}
-                                        />
-                                        {errors.start_time && (
-                                            <p className="text-sm text-red-600">
-                                                {errors.start_time.message}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="end_time">
-                                            End Time
-                                        </Label>
-                                        <Input
-                                            id="end_time"
-                                            type="time"
-                                            {...register('end_time', {
-                                                required:
-                                                    'End time is required',
-                                                validate: (value) => {
-                                                    const start =
-                                                        watch('start_time');
-                                                    if (!start || !value)
-                                                        return true;
-                                                    return (
-                                                        endTimeIsAfterStart(
-                                                            start,
-                                                            value
-                                                        ) ||
-                                                        'End time must be after start time'
-                                                    );
-                                                }
-                                            })}
-                                        />
-                                        {errors.end_time && (
-                                            <p className="text-sm text-red-600">
-                                                {errors.end_time.message}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Days of Week *</Label>
-                                    <input
-                                        type="hidden"
-                                        {...register('days', {
-                                            validate: (value) =>
-                                                (value?.length ?? 0) > 0 ||
-                                                'Days of week is required'
-                                        })}
-                                    />
-                                    <div className="flex flex-wrap gap-2">
-                                        {WEEKDAY_OPTIONS.map((day) => (
-                                            <Button
-                                                key={day.value}
-                                                type="button"
-                                                variant={
-                                                    watchedDays.includes(
-                                                        day.value
-                                                    )
-                                                        ? 'default'
-                                                        : 'outline'
-                                                }
-                                                size="sm"
-                                                className={
-                                                    watchedDays.includes(
-                                                        day.value
-                                                    )
-                                                        ? 'bg-brand hover:bg-brand-dark text-white'
-                                                        : 'border-gray-300'
-                                                }
-                                                onClick={() =>
-                                                    toggleDay(day.value)
-                                                }
-                                            >
-                                                {day.label.slice(0, 3)}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                    {errors.days && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {String(errors.days.message)}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="section-card">
-                            <h2 className="text-lg font-semibold text-foreground">
-                                Status
-                            </h2>
-                            <div className="space-y-2">
-                                <Label>Class Status</Label>
-                                <Controller
-                                    name="status"
+                                <FormField
                                     control={control}
-                                    rules={{ required: 'Status is required' }}
+                                    name="status"
                                     render={({ field }) => (
-                                        <Select
-                                            value={field.value}
-                                            onValueChange={field.onChange}
-                                            disabled={blockEdits}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(
-                                                    statusOptions
-                                                ).map(([label, value]) => (
-                                                    <SelectItem
-                                                        key={value}
-                                                        value={value}
-                                                    >
-                                                        {label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Class Status</FormLabel>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                                disabled={blockEdits}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {Object.entries(
+                                                        statusOptions
+                                                    ).map(([label, value]) => (
+                                                        <SelectItem
+                                                            key={value}
+                                                            value={value}
+                                                        >
+                                                            {label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
                                 />
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-end gap-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    if (onCancel) {
-                                        onCancel();
-                                        return;
-                                    }
-                                    navigate(`/programs/${programId}`);
-                                }}
-                                className="border-gray-300"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="btn-gold-thin"
-                            >
-                                {isSubmitting
-                                    ? 'Saving...'
-                                    : isNewClass
-                                      ? 'Create Class'
-                                      : 'Save Changes'}
-                            </Button>
-                        </div>
-                    </>
-                )}
-            </form>
+                            <div className="flex items-center justify-end gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        if (onCancel) {
+                                            onCancel();
+                                            return;
+                                        }
+                                        navigate(`/programs/${programId}`);
+                                    }}
+                                    className="border-gray-300"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="btn-gold-thin"
+                                >
+                                    {isSubmitting
+                                        ? 'Saving...'
+                                        : isNewClass
+                                          ? 'Create Class'
+                                          : 'Save Changes'}
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </form>
+            </Form>
 
             <FormModal
                 open={showConflicts}
