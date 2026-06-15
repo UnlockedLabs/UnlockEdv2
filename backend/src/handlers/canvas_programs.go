@@ -462,13 +462,20 @@ func (srv *Server) fetchCanvasCalendarEvents(
 // fetchCanvasClassesAllProviders returns a ProgramClass for every Canvas course
 // across all active Canvas provider platforms. Failures per-provider are logged
 // and skipped so a single unreachable provider doesn't break the response.
-// If facilityID is non-nil, Enrolled is scoped to that facility.
+// facilityID must be non-nil and non-zero; for the statewide (all-facilities) case
+// use fetchCanvasClassesAllProvidersAllFacilities instead.
 func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.ProgramClass, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		return nil, err
 	}
 	now := time.Now()
+	var facility *models.Facility
+	if facilityID != nil && *facilityID != 0 {
+		if f, err := srv.Db.GetFacilityByID(int(*facilityID)); err == nil {
+			facility = f
+		}
+	}
 	var result []models.ProgramClass
 	for _, provider := range providers {
 		if !isCanvasProvider(&provider) {
@@ -489,21 +496,85 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 			var enrolled int64
 			if facilityID != nil && *facilityID != 0 {
 				enrolled = srv.countMappedCanvasEnrolleesForFacility(&provider, entry.rawID, *facilityID)
-			} else {
-				enrolled = srv.countMappedCanvasEnrollees(&provider, entry.rawID)
+				result = append(result, models.ProgramClass{
+					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(*facilityID, provider.ID, entry.rawID)},
+					ProgramID:      programID,
+					FacilityID:     *facilityID,
+					Facility:       facility,
+					Name:           entry.name,
+					Description:    entry.description,
+					StartDt:        entry.startDt,
+					EndDt:          entry.endDt,
+					Status:         entry.status,
+					Enrolled:       enrolled,
+					IsCanvas:       true,
+					Program: &models.Program{
+						DatabaseFields: models.DatabaseFields{ID: programID},
+						Name:           "College - " + provider.Name,
+					},
+				})
 			}
-			result = append(result, models.ProgramClass{
-				DatabaseFields: models.DatabaseFields{ID: entry.encodedID},
-				ProgramID:      programID,
-				FacilityID:     0,
-				Name:           entry.name,
-				Description:    entry.description,
-				StartDt:        entry.startDt,
-				EndDt:          entry.endDt,
-				Status:         entry.status,
-				Enrolled:       enrolled,
-				IsCanvas:       true,
-			})
+		}
+	}
+	return result, nil
+}
+
+// fetchCanvasClassesAllProvidersAllFacilities returns one ProgramClass per
+// (facility × Canvas course) with facility-scoped IDs. Used by the statewide
+// classes index when facility=all so every returned class has a navigable,
+// facility-scoped ID.
+func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.ProgramClass, error) {
+	providers, err := srv.Db.GetAllActiveProviderPlatforms()
+	if err != nil {
+		return nil, err
+	}
+	facilities, err := srv.Db.GetAllFacilitiesOrdered()
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	var result []models.ProgramClass
+	for _, provider := range providers {
+		if !isCanvasProvider(&provider) {
+			continue
+		}
+		programID := models.CanvasProgramIDOffset + provider.ID
+		apiURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
+		courses, err := srv.fetchAllCanvasPages(&provider, apiURL, 0)
+		if err != nil {
+			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
+			continue
+		}
+		entries := make([]canvasCourseEntry, 0, len(courses))
+		for _, course := range courses {
+			entry, ok := parseCanvasCourse(course, provider.ID, now)
+			if !ok {
+				continue
+			}
+			entries = append(entries, entry)
+		}
+		for _, facility := range facilities {
+			facilityPtr := facility
+			for _, entry := range entries {
+				enrolled := srv.countMappedCanvasEnrolleesForFacility(&provider, entry.rawID, facility.ID)
+				result = append(result, models.ProgramClass{
+					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(facility.ID, provider.ID, entry.rawID)},
+					ProgramID:      programID,
+					FacilityID:     facility.ID,
+					Facility:       &facilityPtr,
+					Name:           entry.name,
+					Description:    entry.description,
+					StartDt:        entry.startDt,
+					EndDt:          entry.endDt,
+					Status:         entry.status,
+					Enrolled:       enrolled,
+					IsCanvas:       true,
+					Program: &models.Program{
+						DatabaseFields: models.DatabaseFields{ID: programID},
+						Name:           "College - " + provider.Name,
+					},
+				})
+			}
 		}
 	}
 	return result, nil
@@ -582,7 +653,8 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", connectionID), "program ID")
 	}
 
-	if r.URL.Query().Get("all") == "true" {
+	facilityID := srv.getQueryContext(r).FacilityID
+	if r.URL.Query().Get("all") == "true" || facilityID == 0 {
 		return srv.handleGetCanvasClassesByFacility(w, r, provider, programID, connectionID)
 	}
 
@@ -615,9 +687,6 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 			FacilityName: provider.Name,
 		})
 	}
-
-	// Determine which facility to scope enrollment counts to.
-	facilityID := srv.getQueryContext(r).FacilityID
 
 	// Concurrently count mapped enrollees for each course, scoped to facility when set.
 	counts := make(map[uint]int64, len(classes))
@@ -664,6 +733,17 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 			}
 			sched, _ := services.FormatClassScheduleAndRoom([]models.ProgramClassEvent{ev}, tz)
 			classes[i].Schedule = sched
+		}
+	}
+
+	// Swap non-scoped IDs for facility-scoped IDs now that all processing is done.
+	// This must happen last because enrollment counting and schedule lookups use
+	// decodeCanvasClassID on the old-style IDs.
+	if facilityID != 0 {
+		for i := range classes {
+			_, rawID := decodeCanvasClassID(classes[i].ProgramClass.ID)
+			classes[i].ProgramClass.ID = encodeFacilityCanvasClassID(facilityID, connectionID, rawID)
+			classes[i].ProgramClass.FacilityID = facilityID
 		}
 	}
 
@@ -746,7 +826,7 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			}
 			classes = append(classes, models.ProgramClassDetail{
 				ProgramClass: models.ProgramClass{
-					DatabaseFields: models.DatabaseFields{ID: entry.encodedID},
+					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(facility.ID, connectionID, entry.rawID)},
 					ProgramID:      programID,
 					FacilityID:     facility.ID,
 					Name:           entry.name,
@@ -899,6 +979,35 @@ func decodeCanvasClassID(classID uint) (providerID uint, rawCourseID uint) {
 	return remainder / 1_000_000, remainder % 1_000_000
 }
 
+// encodeFacilityCanvasClassID packs (facilityID, providerID, rawCourseID) into a
+// facility-scoped synthetic class ID so detail/enrollment handlers can extract the
+// facility from the ID itself without relying on a URL parameter.
+// Limits: facilityID 0–999, providerID 0–999, rawCourseID 0–999_999.
+func encodeFacilityCanvasClassID(facilityID, providerID, rawCourseID uint) uint {
+	return models.CanvasFacilityClassIDOffset + facilityID*1_000_000_000 + providerID*1_000_000 + rawCourseID
+}
+
+// decodeFacilityCanvasClassID is the reverse of encodeFacilityCanvasClassID.
+func decodeFacilityCanvasClassID(classID uint) (facilityID, providerID, rawCourseID uint) {
+	remainder := classID - models.CanvasFacilityClassIDOffset
+	facilityID = remainder / 1_000_000_000
+	remainder = remainder % 1_000_000_000
+	providerID = remainder / 1_000_000
+	rawCourseID = remainder % 1_000_000
+	return
+}
+
+// resolveCanvasClassParts extracts (facilityID, providerID, rawCourseID) from any
+// canvas class ID. For facility-scoped IDs the embedded facilityID is returned;
+// for old-style IDs facilityID is 0 and the caller should fall back to JWT claims.
+func resolveCanvasClassParts(classID uint) (facilityID, providerID, rawCourseID uint) {
+	if classID >= models.CanvasFacilityClassIDOffset {
+		return decodeFacilityCanvasClassID(classID)
+	}
+	p, c := decodeCanvasClassID(classID)
+	return 0, p, c
+}
+
 // countMappedCanvasEnrolleesForFacility is like countMappedCanvasEnrollees but
 // only counts users belonging to the given facility.
 func (srv *Server) countMappedCanvasEnrolleesForFacility(provider *models.ProviderPlatform, rawCourseID uint, facilityID uint) int64 {
@@ -1018,7 +1127,7 @@ func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform
 }
 
 func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Request, log sLog, classID uint) error {
-	providerID, rawCourseID := decodeCanvasClassID(classID)
+	facilityIDFromID, providerID, rawCourseID := resolveCanvasClassParts(classID)
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -1056,7 +1165,11 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	canvasTimezone, _ := course["time_zone"].(string)
 	programID := models.CanvasProgramIDOffset + providerID
 
-	facilityID := srv.getQueryContext(r).FacilityID
+	// Use the facility embedded in the ID; fall back to JWT claims for old-style IDs.
+	facilityID := facilityIDFromID
+	if facilityID == 0 {
+		facilityID = srv.getQueryContext(r).FacilityID
+	}
 	var enrolled int64
 	if facilityID != 0 {
 		enrolled = srv.countMappedCanvasEnrolleesForFacility(provider, rawCourseID, facilityID)
@@ -1145,7 +1258,7 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 	if uint(classID) < models.CanvasClassIDOffset {
 		return newInvalidIdServiceError(fmt.Errorf("class %d is not a canvas class", classID), "class_id")
 	}
-	providerID, rawCourseID := decodeCanvasClassID(uint(classID))
+	_, providerID, rawCourseID := resolveCanvasClassParts(uint(classID))
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -1237,7 +1350,7 @@ type canvasEnrollmentRow struct {
 }
 
 func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog, classID uint) error {
-	providerID, rawCourseID := decodeCanvasClassID(classID)
+	facilityIDFromID, providerID, rawCourseID := resolveCanvasClassParts(classID)
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -1251,7 +1364,10 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 		return newInternalServerServiceError(err, "failed to fetch canvas enrollments")
 	}
 
-	facilityID := srv.getQueryContext(r).FacilityID
+	facilityID := facilityIDFromID
+	if facilityID == 0 {
+		facilityID = srv.getQueryContext(r).FacilityID
+	}
 	userMap, err := srv.fetchCanvasMappedUsers(providerID, canvasUserIDs, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -1288,7 +1404,7 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 //   - participations == 0 with assignments present (no submissions)
 //   - missing / total > 0.30 (>30 % of assignments not submitted)
 func (srv *Server) handleGetCanvasAtRiskStudents(w http.ResponseWriter, r *http.Request, classID uint) error {
-	providerID, rawCourseID := decodeCanvasClassID(classID)
+	facilityIDFromID, providerID, rawCourseID := resolveCanvasClassParts(classID)
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -1314,7 +1430,10 @@ func (srv *Server) handleGetCanvasAtRiskStudents(w http.ResponseWriter, r *http.
 		}
 	}
 
-	facilityID := srv.getQueryContext(r).FacilityID
+	facilityID := facilityIDFromID
+	if facilityID == 0 {
+		facilityID = srv.getQueryContext(r).FacilityID
+	}
 	userMap, err := srv.fetchCanvasMappedUsers(providerID, canvasUserIDs, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)

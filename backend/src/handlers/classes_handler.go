@@ -24,8 +24,12 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		if err != nil {
 			return false
 		}
-		// Canvas classes are virtual (no DB row) — authenticated facility admins are allowed through;
-		// the handlers themselves scope data to the user's facility via claims.
+		// Facility-scoped canvas ID: assert the embedded facility matches the JWT.
+		if uint(id) >= models.CanvasFacilityClassIDOffset {
+			embeddedFacilityID, _, _ := decodeFacilityCanvasClassID(uint(id))
+			return claims.FacilityID == embeddedFacilityID
+		}
+		// Old-style canvas ID: allow through; handlers scope data via JWT claims.
 		if uint(id) >= models.CanvasClassIDOffset {
 			return true
 		}
@@ -134,9 +138,15 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	canvasClasses, err := srv.fetchCanvasClassesAllProviders(facilityID)
-	if err != nil {
-		logrus.WithError(err).Warn("failed to fetch canvas classes, returning DB classes only")
+	var canvasClasses []models.ProgramClass
+	var canvasErr error
+	if facilityID == nil {
+		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
+	} else {
+		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProviders(facilityID)
+	}
+	if canvasErr != nil {
+		logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
 	} else {
 		classes = append(classes, canvasClasses...)
 		args.Total += int64(len(canvasClasses))
@@ -529,6 +539,16 @@ func (srv *Server) handleGetClassDeleteCheck(w http.ResponseWriter, r *http.Requ
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", id)
+	if uint(id) >= models.CanvasClassIDOffset {
+		payload := struct {
+			CanDelete bool                          `json:"can_delete"`
+			Blockers  models.DeleteBlockingChildren `json:"blockers"`
+		}{
+			CanDelete: false,
+			Blockers:  models.DeleteBlockingChildren{NonDeletableStatus: "Canvas"},
+		}
+		return writeJsonResponse(w, http.StatusOK, payload)
+	}
 	blockers, err := srv.Db.ClassBlockingChildren(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -549,6 +569,9 @@ func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", id)
+	if uint(id) >= models.CanvasClassIDOffset {
+		return newBadRequestServiceError(fmt.Errorf("canvas classes cannot be deleted"), "class ID")
+	}
 
 	blockers, err := srv.Db.ClassBlockingChildren(id)
 	if err != nil {

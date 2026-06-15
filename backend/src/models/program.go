@@ -16,6 +16,11 @@ type CreditType string
 const (
 	CanvasProgramIDOffset = uint(100_000_000)
 	CanvasClassIDOffset   = uint(100_000_000)
+	// CanvasFacilityClassIDOffset marks facility-scoped synthetic canvas class IDs.
+	// Encoding: offset + facilityID×1_000_000_000 + providerID×1_000_000 + rawCourseID
+	// Limits: facilityID 0–999, providerID 0–999, rawCourseID 0–999_999.
+	// Larger than CanvasClassIDOffset so existing ">= CanvasClassIDOffset" guards still fire.
+	CanvasFacilityClassIDOffset = uint(1_000_000_000_000)
 )
 
 const (
