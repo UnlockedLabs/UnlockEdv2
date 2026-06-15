@@ -213,6 +213,19 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             overrideId = session.instance.override_id;
         }
 
+        // Series-level cancellation has no override; restore it via uncancel-series.
+        if (!overrideId && session.isCancelled && session.instance.event_id) {
+            const resp = await API.post(
+                `program-classes/${cls.id}/events/${session.instance.event_id}/uncancel-series`,
+                { restore_date: session.instance.date }
+            );
+            if (resp.success) {
+                toast.success('Future sessions restored');
+            }
+            await refreshData();
+            return;
+        }
+
         if (!overrideId) return;
         const hasAppliedFuture =
             rescheduleMaps.appliedFutureDates.size > 0 &&

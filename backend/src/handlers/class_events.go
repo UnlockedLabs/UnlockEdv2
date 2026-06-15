@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/services"
 	"encoding/json"
@@ -472,7 +471,8 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	if err := json.NewDecoder(r.Body).Decode(&eventSeriesRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	if eventSeriesRequest.EventSeries.RoomID != nil {
+	// A cancelled series frees the room, so skip the conflict check for cancellations.
+	if eventSeriesRequest.EventSeries.RoomID != nil && !eventSeriesRequest.EventSeries.IsCancelled {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
@@ -502,32 +502,9 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		}
 	}
 	args := srv.getQueryContext(r)
-	args.All = true
-	allEvents, err := srv.Db.GetClassEvents(&args, classID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
 	eventSeriesRequest.EventSeries.ClassID = uint(classID)
 	eventSeriesRequest.ClosedEventSeries.ClassID = uint(classID)
-	var events []models.ProgramClassEvent
-	if eventSeriesRequest.EventSeries.RecurrenceRule != "" {
-		events = append(events, eventSeriesRequest.EventSeries)
-	}
-	events = append(events, eventSeriesRequest.ClosedEventSeries)
-	var maxEvent *models.ProgramClassEvent
-	for i := range allEvents {
-		if maxEvent == nil || allEvents[i].ID > maxEvent.ID {
-			maxEvent = &allEvents[i]
-		}
-	}
-	if maxEvent != nil && maxEvent.ID != eventSeriesRequest.ClosedEventSeries.ID { //making sure of only one active rrule
-		untilDate := src.GetUntilDateFromRule(eventSeriesRequest.ClosedEventSeries.RecurrenceRule)
-		if untilDate != "" {
-			maxEvent.RecurrenceRule = src.ReplaceOrAddUntilDate(maxEvent.RecurrenceRule, untilDate)
-			events = append(events, *maxEvent)
-		}
-	}
-	err = srv.WithUserContext(r).CreateRescheduleEventSeries(&args, events)
+	err = srv.WithUserContext(r).CreateRescheduleEventSeries(&args, uint(classID), eventSeriesRequest.EventSeries, eventSeriesRequest.ClosedEventSeries)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
