@@ -42,6 +42,7 @@ function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return { days: [], startTime: '', endTime: '', room: '' };
 
+    const tz = cls.canvas_timezone;
     let days: string[] = [];
     let startTime = '';
     let endTime = '';
@@ -62,9 +63,21 @@ function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
 
         if (rule.options.dtstart) {
             const dt = rule.options.dtstart;
-            const h = String(dt.getHours()).padStart(2, '0');
-            const m = String(dt.getMinutes()).padStart(2, '0');
-            startTime = `${h}:${m}`;
+            if (tz) {
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).formatToParts(dt);
+                const h = parts.find((p) => p.type === 'hour')?.value ?? '00';
+                const m = parts.find((p) => p.type === 'minute')?.value ?? '00';
+                startTime = `${h}:${m}`;
+            } else {
+                const h = String(dt.getUTCHours()).padStart(2, '0');
+                const m = String(dt.getUTCMinutes()).padStart(2, '0');
+                startTime = `${h}:${m}`;
+            }
         }
     } catch {
         /* rrule parse failure */
@@ -105,6 +118,7 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return null;
     const tz =
+        cls.canvas_timezone ??
         cls.facility?.timezone ??
         Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
@@ -138,12 +152,19 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
         const next = rule.after(nowInFacilityTz, true);
         if (!next) return null;
         const date = next.toLocaleDateString('en-US', {
+            timeZone: tz,
             weekday: 'short',
             month: 'short',
             day: 'numeric'
         });
-        const h = String(next.getHours()).padStart(2, '0');
-        const m = String(next.getMinutes()).padStart(2, '0');
+        const timeParts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).formatToParts(next);
+        const h = timeParts.find((p) => p.type === 'hour')?.value ?? '00';
+        const m = timeParts.find((p) => p.type === 'minute')?.value ?? '00';
         return { date, time: formatTime12h(`${h}:${m}`) };
     } catch {
         return null;

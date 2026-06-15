@@ -40,6 +40,7 @@ type ProgramClass struct {
 	Enrolled         int64       `json:"enrolled" gorm:"-"`
 	Completed        int64       `json:"completed" gorm:"-"`
 	IsCanvas         bool        `json:"is_canvas" gorm:"-"`
+	CanvasTimezone   string      `json:"canvas_timezone,omitempty" gorm:"-"`
 
 	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

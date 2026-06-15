@@ -159,6 +159,7 @@ export interface Class {
     room?: string;
     attendance_rate?: number;
     is_canvas?: boolean;
+    canvas_timezone?: string;
 }
 
 export interface MissingAttendanceItem {

@@ -11,6 +11,7 @@ interface CanvasScheduleEvent {
     start_at: string;
     end_at: string;
     is_cancelled: boolean;
+    timezone?: string;
 }
 
 interface Props {
@@ -19,9 +20,20 @@ interface Props {
 
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function formatTime(isoStr: string): string {
+function formatTime(isoStr: string, timezone?: string): string {
     const d = new Date(isoStr);
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        ...(timezone ? { timeZone: timezone } : {})
+    });
+}
+
+// Returns YYYY-MM-DD in the given timezone (or UTC if none provided).
+function getDateInTimezone(isoStr: string, timezone?: string): string {
+    return new Date(isoStr).toLocaleDateString('en-CA', {
+        timeZone: timezone ?? 'UTC'
+    });
 }
 
 export function CanvasScheduleTab({ classId }: Props) {
@@ -35,12 +47,13 @@ export function CanvasScheduleTab({ classId }: Props) {
 
     const eventsByDate = new Map<string, CanvasScheduleEvent[]>();
     for (const ev of eventsResp?.data ?? []) {
-        const dateStr = ev.start_at.split('T')[0];
+        const dateStr = getDateInTimezone(ev.start_at, ev.timezone);
         if (!eventsByDate.has(dateStr)) eventsByDate.set(dateStr, []);
         eventsByDate.get(dateStr)!.push(ev);
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const startOfMonth = new Date(year, month - 1, 1);
     const calStart = new Date(startOfMonth);
     calStart.setDate(calStart.getDate() - calStart.getDay());
@@ -53,7 +66,7 @@ export function CanvasScheduleTab({ classId }: Props) {
         for (let d = 0; d < 7; d++) {
             week.push({
                 date: new Date(cursor),
-                dateStr: cursor.toISOString().split('T')[0],
+                dateStr: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`,
                 isCurrentMonth: cursor.getMonth() === month - 1
             });
             cursor.setDate(cursor.getDate() + 1);
@@ -124,7 +137,7 @@ export function CanvasScheduleTab({ classId }: Props) {
                                                         ? 'bg-gray-200 text-gray-500 line-through'
                                                         : 'bg-[#556830] text-white'
                                                 )}>
-                                                    {formatTime(ev.start_at)}
+                                                    {formatTime(ev.start_at, ev.timezone)}
                                                 </div>
                                             ))}
                                         </div>

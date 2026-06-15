@@ -78,6 +78,20 @@ func parseCanvasCourse(course map[string]interface{}, providerID uint, now time.
 	}, true
 }
 
+// buildCourseTimezoneMap extracts the "time_zone" field from each Canvas API
+// course map and returns a mapping of raw course ID → IANA timezone string.
+func buildCourseTimezoneMap(courses []map[string]interface{}) map[uint]string {
+	courseTimezones := make(map[uint]string, len(courses))
+	for _, course := range courses {
+		if idFloat, ok := course["id"].(float64); ok {
+			if tz, ok := course["time_zone"].(string); ok && tz != "" {
+				courseTimezones[uint(idFloat)] = tz
+			}
+		}
+	}
+	return courseTimezones
+}
+
 // canvasMappedUser holds the local user record for a Canvas external_user_id.
 type canvasMappedUser struct {
 	UserID    uint
@@ -377,6 +391,8 @@ func (srv *Server) fetchCanvasCalendarEvents(
 		return []models.FacilityProgramClassEvent{}, nil
 	}
 
+	courseTimezones := buildCourseTimezoneMap(courses)
+
 	// Step 2: build context_codes[] query params using url.Values so brackets are encoded
 	params := url.Values{}
 	params.Set("start_date", start.Format("2006-01-02"))
@@ -417,21 +433,24 @@ func (srv *Server) fetchCanvasCalendarEvents(
 		}
 
 		var classID uint
+		var canvasTimezone string
 		if contextCode, ok := event["context_code"].(string); ok && strings.HasPrefix(contextCode, "course_") {
 			if rawCourseID, err := strconv.ParseUint(strings.TrimPrefix(contextCode, "course_"), 10, 64); err == nil {
 				classID = encodeCanvasClassID(provider.ID, uint(rawCourseID))
+				canvasTimezone = courseTimezones[uint(rawCourseID)]
 			}
 		}
 
 		ev := models.FacilityProgramClassEvent{
-			IsCanvasEvent: true,
-			IsCancelled:   isCancelled,
-			ProgramID:     models.CanvasProgramIDOffset + provider.ID,
-			ProgramName:   provider.Name,
-			ClassName:     title,
-			StartTime:     &startAt,
-			EndTime:       &endAt,
-			ClassStatus:   models.Active,
+			IsCanvasEvent:  true,
+			IsCancelled:    isCancelled,
+			ProgramID:      models.CanvasProgramIDOffset + provider.ID,
+			ProgramName:    provider.Name,
+			ClassName:      title,
+			StartTime:      &startAt,
+			EndTime:        &endAt,
+			ClassStatus:    models.Active,
+			CanvasTimezone: canvasTimezone,
 		}
 		ev.ID = id
 		ev.ClassID = classID
@@ -573,6 +592,8 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		return newInternalServerServiceError(err, "failed to fetch canvas courses")
 	}
 
+	courseTimezones := buildCourseTimezoneMap(courses)
+
 	now := time.Now()
 	classes := make([]models.ProgramClassDetail, 0, len(courses))
 	for _, course := range courses {
@@ -632,12 +653,16 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		_, rawIDs[i] = decodeCanvasClassID(cls.ProgramClass.ID)
 	}
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, rawIDs)
-	timezone := srv.getQueryContext(r).Timezone
+	facilityTimezone := srv.getQueryContext(r).Timezone
 	for i, cls := range classes {
 		_, rawID := decodeCanvasClassID(cls.ProgramClass.ID)
 		if ev, ok := scheduleEvents[rawID]; ok {
 			classes[i].ProgramClass.Events = []models.ProgramClassEvent{ev}
-			sched, _ := services.FormatClassScheduleAndRoom([]models.ProgramClassEvent{ev}, timezone)
+			tz := courseTimezones[rawID]
+			if tz == "" {
+				tz = facilityTimezone
+			}
+			sched, _ := services.FormatClassScheduleAndRoom([]models.ProgramClassEvent{ev}, tz)
 			classes[i].Schedule = sched
 		}
 	}
@@ -657,6 +682,8 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to fetch canvas courses")
 	}
+
+	courseTimezones := buildCourseTimezoneMap(courses)
 
 	now := time.Now()
 	entries := make([]canvasCourseEntry, 0, len(courses))
@@ -697,7 +724,7 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 		rawIDs[i] = e.rawID
 	}
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, rawIDs)
-	timezone := srv.getQueryContext(r).Timezone
+	facilityTimezone := srv.getQueryContext(r).Timezone
 
 	// Build one row per (facility × course).
 	classes := make([]models.ProgramClassDetail, 0, len(facilities)*len(entries))
@@ -711,7 +738,11 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			var evSlice []models.ProgramClassEvent
 			if ev, ok := scheduleEvents[entry.rawID]; ok {
 				evSlice = []models.ProgramClassEvent{ev}
-				sched, _ = services.FormatClassScheduleAndRoom(evSlice, timezone)
+				tz := courseTimezones[entry.rawID]
+				if tz == "" {
+					tz = facilityTimezone
+				}
+				sched, _ = services.FormatClassScheduleAndRoom(evSlice, tz)
 			}
 			classes = append(classes, models.ProgramClassDetail{
 				ProgramClass: models.ProgramClass{
@@ -1022,6 +1053,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	}
 
 	entry, _ := parseCanvasCourse(course, providerID, time.Now())
+	canvasTimezone, _ := course["time_zone"].(string)
 	programID := models.CanvasProgramIDOffset + providerID
 
 	facilityID := srv.getQueryContext(r).FacilityID
@@ -1059,6 +1091,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		Status:         entry.status,
 		Enrolled:       enrolled,
 		IsCanvas:       true,
+		CanvasTimezone: canvasTimezone,
 		Program: &models.Program{
 			DatabaseFields: models.DatabaseFields{ID: programID},
 			Name:           "College - " + provider.Name,
@@ -1069,12 +1102,39 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	return writeJsonResponse(w, http.StatusOK, cls)
 }
 
+// fetchCanvasCourseTimezone returns the IANA timezone string for a Canvas course,
+// falling back to empty string on any error so callers can use a default.
+func (srv *Server) fetchCanvasCourseTimezone(provider *models.ProviderPlatform, rawCourseID uint) string {
+	courseURL := fmt.Sprintf("%s/api/v1/courses/%d", provider.BaseUrl, rawCourseID)
+	req, err := http.NewRequest("GET", courseURL, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Add("Authorization", "Bearer "+provider.AccessKey)
+	req.Header.Add("Accept", "application/json")
+	resp, err := srv.Client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		return ""
+	}
+	defer resp.Body.Close()
+	var course map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&course); err != nil {
+		return ""
+	}
+	tz, _ := course["time_zone"].(string)
+	return tz
+}
+
 type canvasScheduleEvent struct {
 	ID          uint      `json:"id"`
 	Title       string    `json:"title"`
 	StartAt     time.Time `json:"start_at"`
 	EndAt       time.Time `json:"end_at"`
 	IsCancelled bool      `json:"is_cancelled"`
+	Timezone    string    `json:"timezone,omitempty"`
 }
 
 func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -1127,6 +1187,8 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 		return newInternalServerServiceError(err, "failed to fetch canvas events")
 	}
 
+	courseTimezone := srv.fetchCanvasCourseTimezone(provider, rawCourseID)
+
 	events := make([]canvasScheduleEvent, 0, len(raw))
 	for _, ev := range raw {
 		startAtStr, _ := ev["start_at"].(string)
@@ -1154,6 +1216,7 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 			StartAt:     startAt,
 			EndAt:       endAt,
 			IsCancelled: isCancelled,
+			Timezone:    courseTimezone,
 		})
 	}
 

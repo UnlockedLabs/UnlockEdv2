@@ -209,11 +209,17 @@ export default function Schedule() {
     const rawEvents = useMemo(() => eventsResp?.data ?? [], [eventsResp]);
 
     const formattedEvents = useMemo(() => {
-        return rawEvents.map((event) => ({
-            ...event,
-            start: toZonedTime(new Date(event.start), timezone),
-            end: toZonedTime(new Date(event.end), timezone)
-        }));
+        return rawEvents.map((event) => {
+            const tz =
+                event.is_canvas_event && event.canvas_timezone
+                    ? event.canvas_timezone
+                    : timezone;
+            return {
+                ...event,
+                start: toZonedTime(new Date(event.start), tz),
+                end: toZonedTime(new Date(event.end), tz)
+            };
+        });
     }, [rawEvents, timezone]);
 
     const availablePrograms = useMemo(() => {

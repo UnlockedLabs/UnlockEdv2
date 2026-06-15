@@ -10,17 +10,19 @@ interface CanvasEvent {
     start_at: string;
     end_at: string;
     is_cancelled: boolean;
+    timezone?: string;
 }
 
 interface Props {
     classId: number;
 }
 
-function formatEventTime(start: string, end: string): string {
+function formatEventTime(start: string, end: string, timezone?: string): string {
     const fmt = (s: string) =>
         new Date(s).toLocaleTimeString('en-US', {
             hour: 'numeric',
-            minute: '2-digit'
+            minute: '2-digit',
+            ...(timezone ? { timeZone: timezone } : {})
         });
     return `${fmt(start)} – ${fmt(end)}`;
 }
@@ -28,14 +30,18 @@ function formatEventTime(start: string, end: string): string {
 function CanvasEventRow({ ev }: { ev: CanvasEvent }) {
     const now = new Date();
     const startDate = new Date(ev.start_at);
-    const isToday = startDate.toDateString() === now.toDateString();
+    const tz = ev.timezone;
+    const todayStr = now.toLocaleDateString('en-CA', tz ? { timeZone: tz } : undefined);
+    const startStr = startDate.toLocaleDateString('en-CA', tz ? { timeZone: tz } : undefined);
+    const isToday = startStr === todayStr;
     const isPast = startDate < now && !isToday;
 
     const dateLabel = startDate.toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
+        ...(tz ? { timeZone: tz } : {})
     });
 
     const borderClass = ev.is_cancelled
@@ -96,7 +102,7 @@ function CanvasEventRow({ ev }: { ev: CanvasEvent }) {
                                 : 'text-gray-600'
                         )}
                     >
-                        {formatEventTime(ev.start_at, ev.end_at)}
+                        {formatEventTime(ev.start_at, ev.end_at, ev.timezone)}
                     </div>
                 </div>
             </div>
