@@ -162,7 +162,7 @@ function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSour
     return (
         <div className="flex min-w-0 flex-col gap-3">
             {showSummary ? (
-                <div className="break-inside-avoid">
+                <div data-funnel-preview-field="oneSentence" className="break-inside-avoid">
                     <p className="font-serif text-[20px] font-normal leading-[1.4] text-center text-foreground">
                         &ldquo;{source.oneSentence.trim()}&rdquo;
                     </p>
@@ -176,7 +176,7 @@ function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSour
                 if (!sectionHasAnswers) return null;
 
                 return (
-                    <div key={section.id} className="space-y-3">
+                    <div key={section.id} data-funnel-step-section={section.id} className="space-y-3">
                         <div className="flex break-inside-avoid items-center justify-center rounded-[24px] border border-border bg-muted/30 py-0.5">
                             <span
                                 id={`lr-funnel-section-${section.id}`}
@@ -195,6 +195,7 @@ function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSour
                             return (
                                 <section
                                     key={field}
+                                    data-funnel-preview-field={field}
                                     aria-labelledby={labelId}
                                     className="break-inside-avoid"
                                 >

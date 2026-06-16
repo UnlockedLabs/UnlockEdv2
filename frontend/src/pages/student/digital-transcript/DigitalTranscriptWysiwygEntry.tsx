@@ -42,6 +42,27 @@ import {
     TOP_SKILLS_MAX
 } from './transcriptReflectionConfig';
 
+/** Maps a TranscriptEntry patch key to its corresponding preview field id. */
+function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
+    switch (key) {
+        case 'programName':
+        case 'completionDate': return 'programName';
+        case 'whatMadeYouFinish': return 'whatMadeYouFinish';
+        case 'q4Toggle':
+        case 'q4Text': return 'q4';
+        case 'q5BeforeTags':
+        case 'q5AfterTags':
+        case 'q5FreeText': return 'q5';
+        case 'adviceToPeer': return 'adviceToPeer';
+        case 'confidence':
+        case 'q7Text': return 'confidence';
+        case 'q8Selections': return 'q8Selections';
+        case 'q9Selections': return 'q9Selections';
+        case 'oneSentence': return 'oneSentence';
+        default: return null;
+    }
+}
+
 /** Newest uncommitted row with no answers yet — safe to reopen instead of duplicating. */
 function findReusableBlankDraftRow(
     rows: TranscriptEntry[],
@@ -191,9 +212,12 @@ export function DigitalTranscriptWysiwygEntry({
     const [session, setSession] = useState<TranscriptEntrySession | null>(null);
     const [saveErrorRowId, setSaveErrorRowId] = useState<string | null>(null);
     const [activeStep, setActiveStep] = useState(0);
+    const [activePreviewField, setActivePreviewField] = useState<string | null>(null);
     const [deleteConfirmFor, setDeleteConfirmFor] = useState<TranscriptEntry | null>(null);
     const baselinesRef = useRef<Record<string, TranscriptEntry>>({});
     const prevExpandedIdRef = useRef<string | null>(null);
+    const activePreviewFieldRef = useRef<string | null>(null);
+    activePreviewFieldRef.current = activePreviewField;
     const achievementListRef = useRef<HTMLDivElement>(null);
     const sessionRef = useRef<TranscriptEntrySession | null>(null);
     sessionRef.current = session;
@@ -313,6 +337,7 @@ export function DigitalTranscriptWysiwygEntry({
         if (!entryIsComplete(row, 'funnel')) {
             setSaveErrorRowId(id);
             setActiveStep(firstIncompleteFunnelStep(row));
+            setActivePreviewField(null);
             return false;
         }
 
@@ -386,7 +411,22 @@ export function DigitalTranscriptWysiwygEntry({
         onExportRowsChange?.(filterEntriesForExport(session.rows));
     }, [session, onExportRowsChange]);
 
+    const handleActiveStepChange = useCallback((step: number) => {
+        setActiveStep(step);
+        setActivePreviewField(null);
+        achievementListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
+
     const patchRow = useCallback((id: string, patch: Partial<TranscriptEntry>) => {
+        if (isFunnel) {
+            const patchedKey = (Object.keys(patch)[0] ?? null) as keyof TranscriptEntry | null;
+            if (patchedKey) {
+                const previewField = patchKeyToPreviewField(patchedKey);
+                if (previewField !== null && previewField !== activePreviewFieldRef.current) {
+                    setActivePreviewField(previewField);
+                }
+            }
+        }
         setSession((prev) => {
             if (!prev) return prev;
             const rows = prev.rows.map((r) => {
@@ -397,7 +437,7 @@ export function DigitalTranscriptWysiwygEntry({
             const lastPreviewId = prev.expandedId === id ? id : prev.lastPreviewId;
             return { ...prev, rows, lastPreviewId };
         });
-    }, []);
+    }, [isFunnel]);
 
     const handleToggleExpand = useCallback((id: string) => {
         setSession((prev) => {
@@ -559,12 +599,7 @@ export function DigitalTranscriptWysiwygEntry({
                                                 ? 'rounded-md border border-[#556830] bg-background'
                                                 : 'cursor-pointer rounded-md border border-transparent hover:bg-muted'
                                         )}
-                                        onClick={() => {
-                                            if (index !== activeStep) {
-                                                setActiveStep(index);
-                                                achievementListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                                            }
-                                        }}
+                                        onClick={() => handleActiveStepChange(index)}
                                     >
                                         <span
                                             className={cn(
@@ -640,7 +675,7 @@ export function DigitalTranscriptWysiwygEntry({
                                         showDoneErrors={false}
                                         showSaveErrors={saveErrorRowId === entry.id}
                                         activeStep={activeStep}
-                                        onActiveStepChange={setActiveStep}
+                                        onActiveStepChange={handleActiveStepChange}
                                         onFinish={funnelOnFinish}
                                         showDelete={committedIds.has(entry.id)}
                                         onDeleteRequest={() => setDeleteConfirmFor(entry)}
@@ -690,7 +725,7 @@ export function DigitalTranscriptWysiwygEntry({
                                         showDoneErrors={saveErrorRowId === entry.id}
                                         showSaveErrors={false}
                                         activeStep={activeStep}
-                                        onActiveStepChange={setActiveStep}
+                                        onActiveStepChange={handleActiveStepChange}
                                         showDelete={committedIds.has(entry.id)}
                                         onDeleteRequest={() => setDeleteConfirmFor(entry)}
                                     />
@@ -706,6 +741,8 @@ export function DigitalTranscriptWysiwygEntry({
                         anchorId={session.expandedId}
                         variant="funnel"
                         funnelDownload={funnelDownload}
+                        activeStep={activeStep}
+                        activePreviewField={activePreviewField}
                     />
                 ) : (
                     <div

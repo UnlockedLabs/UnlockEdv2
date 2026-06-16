@@ -231,6 +231,7 @@ export function LearningRecordDocument({
                     {showFunnelHeader ? (
                         <header
                             data-slot="funnel-achievement-header"
+                            data-funnel-preview-field="programName"
                             className="shrink-0 space-y-3 border-b border-border bg-muted/30 px-4 py-4"
                         >
                             {residentDisplayName || !filledSectionsOnly ? (
