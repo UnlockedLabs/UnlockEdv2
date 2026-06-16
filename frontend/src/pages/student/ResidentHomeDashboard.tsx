@@ -17,9 +17,6 @@ import {
     ServerResponseMany
 } from '@/types';
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import ContinueLearningSection, {
-    mapOpenContentToContinueItems
-} from '@/components/dashboard/ContinueLearningSection';
 import DiscoverContentSection, {
     buildDiscoverSectionData
 } from '@/components/dashboard/DiscoverContentSection';
@@ -425,13 +422,6 @@ export function ResidentHomeDashboard({
 
     const heroCtaLabel = heroIsFirstTime ? 'Start my record' : 'Add an achievement';
 
-    const continueLearningItems = useMemo(
-        () => mapOpenContentToContinueItems(topUserContent),
-        [topUserContent]
-    );
-
-    const pickUpIsEmpty = topUserContent.length === 0;
-
     // --- Discover section (Scenario A / Knowledge Center block) ---
     /** Scenario A — Knowledge Center enabled; gates the entire Discover section. */
     const scenarioA = knowledgeCenterEnabled;
@@ -594,7 +584,6 @@ export function ResidentHomeDashboard({
                     {/* ── Tier 2 (Scenario A only): Knowledge Center ─ */}
                     {knowledgeCenterEnabled ? (
                         <div className="space-y-6">
-                            <ContinueLearningSection items={continueLearningItems} />
                             <DiscoverContentSection
                                 scenarioA={scenarioA}
                                 isNewResident={isNewResident}
@@ -606,7 +595,7 @@ export function ResidentHomeDashboard({
                     ) : null}
                 </div>
 
-                {knowledgeCenterEnabled && !pickUpIsEmpty ? (
+                {knowledgeCenterEnabled ? (
                     <aside className="hidden w-[320px] shrink-0 space-y-6 self-start sticky top-6 xl:block">
                         <FavoritesPanel favoriteItems={favoriteItems} />
                     </aside>
