@@ -129,8 +129,8 @@ export interface ChangePasswordInput {
  * ------------------------------------------------------------------ */
 
 /**
- * Add Admin. Facility is required only when the current user can switch
- * facilities and the target role is Facility Admin (enforced via superRefine so
+ * Add Admin. Facility is required whenever the current user can switch
+ * facilities (the dropdown is shown for every role; enforced via superRefine so
  * it surfaces inline). `facility_id` is a Radix Select string; coerce at payload.
  */
 export const buildAdminAddSchema = (canSelectFacility: boolean) =>
@@ -143,11 +143,7 @@ export const buildAdminAddSchema = (canSelectFacility: boolean) =>
             facility_id: z.string().optional()
         })
         .superRefine((data, ctx) => {
-            if (
-                canSelectFacility &&
-                data.role === UserRole.FacilityAdmin &&
-                !data.facility_id
-            ) {
+            if (canSelectFacility && !data.facility_id) {
                 ctx.addIssue({
                     code: 'custom',
                     path: ['facility_id'],

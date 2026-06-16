@@ -193,8 +193,6 @@ export default function AdminManagement() {
             facility_id: ''
         }
     });
-    const addRole = addForm.watch('role');
-
     const editRequireFacility =
         canSwitchFac && selectedAdmin?.role === UserRole.FacilityAdmin;
     const editResolver = useMemo(
@@ -876,57 +874,54 @@ export default function AdminManagement() {
                                     </FormItem>
                                 )}
                             />
-                            {addRole === UserRole.FacilityAdmin && (
-                                <FormField
-                                    control={addForm.control}
-                                    name="facility_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Facility</FormLabel>
-                                            {canSwitchFac ? (
-                                                <>
-                                                    <Select
-                                                        value={field.value}
-                                                        onValueChange={
-                                                            field.onChange
-                                                        }
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select facility" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {facilities.map(
-                                                                (facility) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            facility.id
-                                                                        }
-                                                                        value={String(
-                                                                            facility.id
-                                                                        )}
-                                                                    >
-                                                                        {
-                                                                            facility.name
-                                                                        }
-                                                                    </SelectItem>
-                                                                )
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </>
-                                            ) : (
-                                                <div className="field-readonly">
-                                                    {user?.facility?.name ??
-                                                        '—'}
-                                                </div>
-                                            )}
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
+                            <FormField
+                                control={addForm.control}
+                                name="facility_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Facility</FormLabel>
+                                        {canSwitchFac ? (
+                                            <>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select facility" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {facilities.map(
+                                                            (facility) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        facility.id
+                                                                    }
+                                                                    value={String(
+                                                                        facility.id
+                                                                    )}
+                                                                >
+                                                                    {
+                                                                        facility.name
+                                                                    }
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </>
+                                        ) : (
+                                            <div className="field-readonly">
+                                                {user?.facility?.name ?? '—'}
+                                            </div>
+                                        )}
+                                    </FormItem>
+                                )}
+                            />
                         </div>
                         <DialogFooter>
                             <Button
