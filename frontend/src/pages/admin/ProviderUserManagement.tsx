@@ -867,6 +867,16 @@ export default function ProviderUserManagement() {
         unmatchedToCreate
     ]);
 
+    const filteredUnmappedUsers = useMemo(() => {
+        if (!derived) return unmappedUsers;
+        const pendingResidentIds = new Set(
+            derived.pendingLinks
+                .filter((l) => l.residentId != null)
+                .map((l) => l.residentId!)
+        );
+        return unmappedUsers.filter((u) => !pendingResidentIds.has(u.id));
+    }, [unmappedUsers, derived]);
+
     const autoCount = derived?.autoCount ?? 0;
     const reviewCount = derived?.reviewCount ?? 0;
     const outstandingUnmatchedCount = derived?.outstandingUnmatchedCount ?? 0;
@@ -1658,12 +1668,12 @@ export default function ProviderUserManagement() {
                             role="listbox"
                             aria-label="Unmapped residents"
                         >
-                            {unmappedUsers.length === 0 ? (
+                            {filteredUnmappedUsers.length === 0 ? (
                                 <p className="py-6 text-center text-sm text-muted-foreground">
                                     No unmapped residents found.
                                 </p>
                             ) : (
-                                unmappedUsers.map((u) => {
+                                filteredUnmappedUsers.map((u) => {
                                     const selected = selectedUserId === u.id;
                                     return (
                                         <button
