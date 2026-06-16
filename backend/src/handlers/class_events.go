@@ -435,25 +435,44 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	event.ClassID = uint(classID)
-	if event.RoomID != nil {
+	if event.RoomID != nil || event.InstructorID != nil {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
+		if event.RoomID != nil {
+			if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
+				return newDatabaseServiceError(err)
+			}
+			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+				FacilityID:     class.FacilityID,
+				RoomID:         *event.RoomID,
+				RecurrenceRule: event.RecurrenceRule,
+				Duration:       event.Duration,
+			})
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			if len(conflicts) > 0 {
+				return writeConflictResponse(w, conflicts)
+			}
 		}
-		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
-			FacilityID:     class.FacilityID,
-			RoomID:         *event.RoomID,
-			RecurrenceRule: event.RecurrenceRule,
-			Duration:       event.Duration,
-		})
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		if len(conflicts) > 0 {
-			return writeConflictResponse(w, conflicts)
+		if event.InstructorID != nil {
+			if name, err := srv.Db.GetInstructorNameByID(*event.InstructorID, class.FacilityID); err != nil || name == "" {
+				return newBadRequestServiceError(err, "invalid instructor for this facility")
+			}
+			conflicts, err := srv.Db.CheckConflicts(&models.ConflictCheckRequest{
+				FacilityID:     class.FacilityID,
+				InstructorID:   *event.InstructorID,
+				RecurrenceRule: event.RecurrenceRule,
+				Duration:       event.Duration,
+			})
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			if len(conflicts) > 0 {
+				return writeConflictResponse(w, conflicts)
+			}
 		}
 	}
 	_, err = srv.WithUserContext(r).CreateNewEvent(classID, event)

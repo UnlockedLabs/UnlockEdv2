@@ -39,21 +39,58 @@ func (db *DB) CreateRoom(room *models.Room) (*models.Room, error) {
 	return room, nil
 }
 
-func LockRoomAndCheckConflicts(tx *gorm.DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
-	var room models.Room
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&room, req.RoomID).Error; err != nil {
-		return nil, newNotFoundDBError(err, "room")
+func LockAndCheckConflicts(tx *gorm.DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	db := &DB{tx}
+	if req.RoomID != 0 {
+		var room models.Room
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&room, req.RoomID).Error; err != nil {
+			return nil, newNotFoundDBError(err, "room")
+		}
 	}
-	return checkRRuleConflictsInternal(&DB{tx}, req)
+	if req.InstructorID != 0 {
+		var instructor models.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&instructor, req.InstructorID).Error; err != nil {
+			return nil, newNotFoundDBError(err, "instructor")
+		}
+	}
+	return db.CheckConflicts(req)
 }
 
 const maxConflictsToReturn = 50
 
-func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
-	return checkRRuleConflictsInternal(db, req)
+func (db *DB) CheckConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	var conflicts []models.RoomConflict
+	if req.RoomID != 0 {
+		roomConflicts, err := checkRoomRRuleConflicts(db, req)
+		if err != nil {
+			return nil, err
+		}
+		conflicts = append(conflicts, roomConflicts...)
+	}
+	if req.InstructorID != 0 {
+		instructorConflicts, err := checkInstructorRRuleConflicts(db, req)
+		if err != nil {
+			return nil, err
+		}
+		conflicts = append(conflicts, instructorConflicts...)
+	}
+	return conflicts, nil
 }
 
-func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	return checkRoomRRuleConflicts(db, req)
+}
+
+type conflictWindow struct {
+	occurrences []time.Time
+	duration    time.Duration
+	tz          *time.Location
+	facilityTZ  string
+	rangeStart  time.Time
+	rangeEnd    time.Time
+}
+
+func (db *DB) prepareConflictWindow(req *models.ConflictCheckRequest) (*conflictWindow, error) {
 	if req.RecurrenceRule == "" {
 		return nil, NewDBError(errors.New("recurrence rule is required"), "invalid conflict check request")
 	}
@@ -95,12 +132,17 @@ func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]mo
 		until = rangeStart.AddDate(1, 0, 0)
 	}
 
-	bookings, err := db.getRoomBookingsInRange(req.FacilityID, req.RoomID, rangeStart, until, facility.Timezone)
-	if err != nil {
-		return nil, err
-	}
+	return &conflictWindow{
+		occurrences: rule.Between(rangeStart, until, true),
+		duration:    duration,
+		tz:          tz,
+		facilityTZ:  facility.Timezone,
+		rangeStart:  rangeStart,
+		rangeEnd:    until,
+	}, nil
+}
 
-	occurrences := rule.Between(rangeStart, until, true)
+func buildConflictsFromBookings(db *DB, w *conflictWindow, bookings []models.RoomBooking, req *models.ConflictCheckRequest, conflictType string) []models.RoomConflict {
 	var conflicts []models.RoomConflict
 
 	classIDs := make(map[uint]struct{})
@@ -123,11 +165,11 @@ func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]mo
 		}
 	}
 
-	for _, occ := range occurrences {
+	for _, occ := range w.occurrences {
 		if len(conflicts) >= maxConflictsToReturn {
 			break
 		}
-		endTime := occ.Add(duration)
+		endTime := occ.Add(w.duration)
 		for _, booking := range bookings {
 			if req.ExcludeEventID != nil && booking.EventID == *req.ExcludeEventID {
 				continue
@@ -135,20 +177,19 @@ func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]mo
 			if req.ExcludeClassID != nil && booking.ClassID == *req.ExcludeClassID {
 				continue
 			}
-			if hasLocalTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime, tz) {
+			if hasLocalTimeOverlap(occ, endTime, booking.StartTime, booking.EndTime, w.tz) {
 				className := classNamesCache[booking.ClassID]
 				if className == "" {
 					className = "Unknown Class"
 				}
-
-				conflict := models.RoomConflict{
+				conflicts = append(conflicts, models.RoomConflict{
 					ConflictingEventID: booking.EventID,
 					ConflictingClassID: booking.ClassID,
 					ClassName:          className,
 					StartTime:          booking.StartTime,
 					EndTime:            booking.EndTime,
-				}
-				conflicts = append(conflicts, conflict)
+					ConflictType:       conflictType,
+				})
 				if len(conflicts) >= maxConflictsToReturn {
 					break
 				}
@@ -156,7 +197,19 @@ func checkRRuleConflictsInternal(db *DB, req *models.ConflictCheckRequest) ([]mo
 		}
 	}
 
-	return conflicts, nil
+	return conflicts
+}
+
+func checkRoomRRuleConflicts(db *DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	w, err := db.prepareConflictWindow(req)
+	if err != nil {
+		return nil, err
+	}
+	bookings, err := db.getRoomBookingsInRange(req.FacilityID, req.RoomID, w.rangeStart, w.rangeEnd, w.facilityTZ)
+	if err != nil {
+		return nil, err
+	}
+	return buildConflictsFromBookings(db, w, bookings, req, models.ConflictTypeRoom), nil
 }
 
 func (db *DB) getRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeEnd time.Time, facilityTimezone string) ([]models.RoomBooking, error) {

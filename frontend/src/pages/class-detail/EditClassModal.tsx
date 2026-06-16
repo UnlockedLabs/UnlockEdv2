@@ -47,6 +47,16 @@ interface EditClassModalProps {
 
 type EditClassFormData = EditClassInput;
 
+function conflictSubjectLabel(conflicts: RoomConflict[]): string {
+    const hasInstructor = conflicts.some(
+        (c) => c.conflict_type === 'instructor'
+    );
+    const hasRoom = conflicts.some((c) => c.conflict_type !== 'instructor');
+    if (hasInstructor && hasRoom) return 'This class';
+    if (hasInstructor) return 'Instructor';
+    return 'Room';
+}
+
 const ALL_DAYS = [
     'Monday',
     'Tuesday',
@@ -1101,7 +1111,8 @@ export function EditClassModal({
                             {conflicts.length > 0 && (
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-red-700">
-                                        Room has {conflicts.length} scheduling{' '}
+                                        {conflictSubjectLabel(conflicts)} has{' '}
+                                        {conflicts.length} scheduling{' '}
                                         {conflicts.length === 1
                                             ? 'conflict'
                                             : 'conflicts'}
