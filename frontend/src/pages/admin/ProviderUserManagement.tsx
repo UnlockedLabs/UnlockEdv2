@@ -88,6 +88,7 @@ interface LinkedResidentEntry {
     residentName: string;
     residentUsername: string;
     isPending: boolean;
+    source?: PendingLinkSource;
     mappedUser?: User;
 }
 
@@ -293,7 +294,8 @@ function deriveReconciliationState(
             canvasLabel: canvasLabel(link.canvasUser),
             residentName: link.residentName,
             residentUsername: link.residentUsername,
-            isPending: link.isPendingApply
+            isPending: link.isPendingApply,
+            source: link.source
         });
     }
 
@@ -1208,6 +1210,31 @@ export default function ProviderUserManagement() {
         announce(`${canvasName} returned to Needs review`);
     };
 
+    const handleCancelPendingLink = (
+        externalId: string,
+        source: PendingLinkSource,
+        canvasName: string
+    ) => {
+        if (source === 'review') {
+            undoConfirmReview(externalId, canvasName);
+        } else if (source === 'auto') {
+            const canvasUser = derived?.pendingLinks.find(
+                (l) => l.externalUserId === externalId
+            )?.canvasUser;
+            if (canvasUser) {
+                setDemotedFromAuto((prev) => [...prev, canvasUser]);
+            }
+            announce(`${canvasName} returned to Unmatched`);
+        } else if (source === 'create') {
+            setUnmatchedToCreate((prev) => {
+                const next = new Set(prev);
+                next.delete(externalId);
+                return next;
+            });
+            announce(`${canvasName} removed from queue`);
+        }
+    };
+
     const openMapModal = (
         canvasUser: ProviderUser,
         source: 'unmatched' | 'review'
@@ -1609,6 +1636,7 @@ export default function ProviderUserManagement() {
                                 appliedFlashIds={appliedFlashIds}
                                 applySubmitting={applySubmitting}
                                 onUnlink={setUserToUnlink}
+                                onCancelPending={handleCancelPendingLink}
                             />
                         </div>
                     )}
@@ -2177,13 +2205,19 @@ function LinkedResidentsTable({
     highlightedIds,
     appliedFlashIds,
     applySubmitting,
-    onUnlink
+    onUnlink,
+    onCancelPending
 }: {
     entries: LinkedResidentEntry[];
     highlightedIds: Set<string>;
     appliedFlashIds: Set<string>;
     applySubmitting: boolean;
     onUnlink: (user: User) => void;
+    onCancelPending: (
+        externalUserId: string,
+        source: PendingLinkSource,
+        canvasName: string
+    ) => void;
 }) {
     const statusBadge = (entry: LinkedResidentEntry) => {
         if (entry.externalUserId && appliedFlashIds.has(entry.externalUserId)) {
@@ -2275,6 +2309,25 @@ function LinkedResidentsTable({
                                             <LinkSlashIcon className="size-4" />
                                             Unlink
                                         </Button>
+                                    ) : entry.isPending &&
+                                      entry.externalUserId &&
+                                      entry.source ? (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled={applySubmitting}
+                                            onClick={() =>
+                                                onCancelPending(
+                                                    entry.externalUserId!,
+                                                    entry.source!,
+                                                    entry.canvasLabel
+                                                )
+                                            }
+                                            className="text-muted-foreground hover:text-destructive"
+                                        >
+                                            <X className="size-4" />
+                                            Cancel
+                                        </Button>
                                     ) : null}
                                 </TableCell>
                             </TableRow>
@@ -2316,6 +2369,25 @@ function LinkedResidentsTable({
                             >
                                 <LinkSlashIcon className="size-4" />
                                 Unlink
+                            </Button>
+                        ) : entry.isPending &&
+                          entry.externalUserId &&
+                          entry.source ? (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={applySubmitting}
+                                className="mt-2 text-muted-foreground hover:text-destructive"
+                                onClick={() =>
+                                    onCancelPending(
+                                        entry.externalUserId!,
+                                        entry.source!,
+                                        entry.canvasLabel
+                                    )
+                                }
+                            >
+                                <X className="size-4" />
+                                Cancel
                             </Button>
                         ) : null}
                     </div>
