@@ -127,23 +127,37 @@ func (srv *Server) fetchCanvasMappedUsers(providerID uint, canvasUserIDs []strin
 // course and returns the Canvas user IDs as strings, ready to query
 // provider_user_mappings.external_user_id.
 func (srv *Server) fetchCanvasCourseEnrolleeIDs(provider *models.ProviderPlatform, rawCourseID uint) ([]string, error) {
+	ids, _, err := srv.fetchCanvasCourseEnrollmentData(provider, rawCourseID)
+	return ids, err
+}
+
+// fetchCanvasCourseEnrollmentData fetches active student enrollments for a Canvas
+// course and returns both the Canvas user IDs and a map of userID → enrollment created_at.
+func (srv *Server) fetchCanvasCourseEnrollmentData(provider *models.ProviderPlatform, rawCourseID uint) ([]string, map[string]*time.Time, error) {
 	enrollURL := fmt.Sprintf(
 		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
 		provider.BaseUrl, rawCourseID,
 	)
 	enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	ids := make([]string, 0, len(enrollments))
+	dates := make(map[string]*time.Time, len(enrollments))
 	for _, e := range enrollments {
 		if u, ok := e["user"].(map[string]interface{}); ok {
 			if id, ok := u["id"].(float64); ok {
-				ids = append(ids, fmt.Sprintf("%d", int(id)))
+				userIDStr := fmt.Sprintf("%d", int(id))
+				ids = append(ids, userIDStr)
+				if createdAtStr, ok := e["created_at"].(string); ok && createdAtStr != "" {
+					if t, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
+						dates[userIDStr] = &t
+					}
+				}
 			}
 		}
 	}
-	return ids, nil
+	return ids, dates, nil
 }
 
 // getCanvasProviderPrograms returns one synthetic ProgramsOverviewTable entry per
@@ -1359,7 +1373,7 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
 	}
 
-	canvasUserIDs, err := srv.fetchCanvasCourseEnrolleeIDs(provider, rawCourseID)
+	canvasUserIDs, enrollmentDates, err := srv.fetchCanvasCourseEnrollmentData(provider, rawCourseID)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to fetch canvas enrollments")
 	}
@@ -1385,6 +1399,7 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 				ClassID:          classID,
 				UserID:           info.UserID,
 				EnrollmentStatus: models.Enrolled,
+				EnrolledAt:       enrollmentDates[externalID],
 			},
 			NameFull:  info.NameFirst + " " + info.NameLast,
 			DocID:     info.DocID,
