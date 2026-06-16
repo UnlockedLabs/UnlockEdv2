@@ -562,6 +562,7 @@ export function DigitalTranscriptWysiwygEntry({
                                         onClick={() => {
                                             if (index !== activeStep) {
                                                 setActiveStep(index);
+                                                achievementListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                                             }
                                         }}
                                     >
