@@ -16,6 +16,7 @@ func (sh *ServiceHandler) registerRoutes() {
 		w.WriteHeader(http.StatusOK)
 	})
 	sh.Mux.HandleFunc("GET /api/users", sh.handleUsers)
+	sh.Mux.HandleFunc("GET /api/users/all", sh.handleAllUsers)
 }
 
 const (
@@ -117,6 +118,42 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	if _, err = w.Write(responseData); err != nil {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return
+	}
+}
+
+// handleAllUsers returns all Canvas users including those already mapped,
+// so the backend can resolve canvas display names for the mapped-users page.
+func (sh *ServiceHandler) handleAllUsers(w http.ResponseWriter, r *http.Request) {
+	fields := logrus.Fields{"handler": "handleAllUsers"}
+	service, err := sh.initServiceFromRequest(sh.ctx, r)
+	if err != nil {
+		fields["error"] = err.Error()
+		logger().WithFields(fields).Error("Failed to initialize service")
+		http.Error(w, "Failed to initialize service", http.StatusInternalServerError)
+		return
+	}
+	canvas, ok := service.(*CanvasService)
+	if !ok {
+		// Non-Canvas providers don't need this endpoint; return empty list.
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[]"))
+		return
+	}
+	users, err := canvas.GetAllUsers()
+	if err != nil {
+		logger().WithFields(fields).Errorln("Failed to retrieve all users")
+		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
+		return
+	}
+	responseData, err := json.Marshal(&users)
+	if err != nil {
+		logger().WithFields(fields).Errorln("Failed to marshal users")
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err = w.Write(responseData); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 	}
 }
 

@@ -35,3 +35,12 @@ type CanvasMappedUser struct {
 	NameLast       string `gorm:"column:name_last"`
 	DocID          string `gorm:"column:doc_id"`
 }
+
+// MappedUserResponse is returned by the mapped-users endpoint.
+// It embeds the local User and adds canvas display-name fields
+// that are resolved live from the provider API (never stored in the DB).
+type MappedUserResponse struct {
+	User
+	CanvasNameFirst string `json:"canvas_name_first"`
+	CanvasNameLast  string `json:"canvas_name_last"`
+}

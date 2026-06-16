@@ -134,6 +134,26 @@ func (db *DB) GetMappedUsers(args *models.QueryContext, providerID int) ([]model
 	return users, nil
 }
 
+// GetMappedUsersExternalIDs returns a map of user_id → external_user_id for all
+// users mapped to the given provider platform. Used to join with live Canvas data.
+func (db *DB) GetMappedUsersExternalIDs(providerID int) (map[uint]string, error) {
+	var rows []struct {
+		UserID         uint   `gorm:"column:user_id"`
+		ExternalUserID string `gorm:"column:external_user_id"`
+	}
+	if err := db.Model(&models.ProviderUserMapping{}).
+		Select("user_id, external_user_id").
+		Where("provider_platform_id = ?", providerID).
+		Find(&rows).Error; err != nil {
+		return nil, NewDBError(err, "error getting mapped user external IDs")
+	}
+	result := make(map[uint]string, len(rows))
+	for _, row := range rows {
+		result[row.UserID] = row.ExternalUserID
+	}
+	return result, nil
+}
+
 func (db *DB) DeleteProviderUserMappingByUserID(userID, providerID int) error {
 	result := db.Model(&models.ProviderUserMapping{}).Where("user_id = ? AND provider_platform_id = ?", userID, providerID).Delete(&models.ProviderUserMapping{})
 	if result.Error != nil {

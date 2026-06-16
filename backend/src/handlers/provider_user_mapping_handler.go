@@ -29,7 +29,34 @@ func (srv *Server) handleGetMappedUsers(w http.ResponseWriter, r *http.Request, 
 		log.add("providerId", id)
 		return newDatabaseServiceError(err)
 	}
-	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
+
+	result := make([]models.MappedUserResponse, len(users))
+	for i, u := range users {
+		result[i] = models.MappedUserResponse{User: u}
+	}
+
+	// Enrich each entry with the canvas user's display name, fetched live from
+	// the provider API. Failures are non-fatal — the frontend handles empty fields.
+	if service, sErr := srv.getService(r); sErr == nil {
+		if canvasUsers, cErr := service.GetAllUsers(); cErr == nil {
+			canvasMap := make(map[string]models.ImportUser, len(canvasUsers))
+			for _, cu := range canvasUsers {
+				canvasMap[cu.ExternalUserID] = cu
+			}
+			if extIDs, dbErr := srv.Db.GetMappedUsersExternalIDs(id); dbErr == nil {
+				for i, u := range users {
+					if extID, ok := extIDs[u.ID]; ok {
+						if cu, ok := canvasMap[extID]; ok {
+							result[i].CanvasNameFirst = cu.NameFirst
+							result[i].CanvasNameLast = cu.NameLast
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, result, args.IntoMeta())
 }
 
 func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request, log sLog) error {

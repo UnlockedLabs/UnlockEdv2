@@ -266,9 +266,14 @@ function deriveReconciliationState(
     const linkedEntries: LinkedResidentEntry[] = [];
 
     for (const user of mappedUsers) {
+        const apiCanvasLabel =
+            user.canvas_name_first !== undefined
+                ? `${user.canvas_name_first} ${user.canvas_name_last ?? ''}`.trim()
+                : undefined;
         linkedEntries.push({
             key: `mapped-${user.id}`,
-            canvasLabel: residentCanvasLabels.get(user.id) ?? '—',
+            canvasLabel:
+                residentCanvasLabels.get(user.id) ?? apiCanvasLabel ?? '—',
             residentName: residentLabel(user),
             residentUsername: user.username,
             isPending: false,

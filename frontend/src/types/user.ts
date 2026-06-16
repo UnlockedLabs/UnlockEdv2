@@ -43,6 +43,9 @@ export interface User {
     facilities?: Facility[];
     login_metrics: LoginMetrics;
     deactivated_at?: string | null;
+    /** Canvas user's display name — populated by the mapped-users endpoint from the live provider API */
+    canvas_name_first?: string;
+    canvas_name_last?: string;
     [key: string]:
         | number
         | string

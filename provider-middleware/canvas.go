@@ -65,15 +65,15 @@ func (cs *CanvasService) GetJobParams() map[string]any {
 	return cs.JobParams
 }
 
-func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
-	// TODO: handle sis, prefix, or something that accounts for sheer amt of users
+// fetchCanvasUsers retrieves and parses all users from the Canvas API.
+// It does not apply any mapping filter — callers decide what to do with the full list.
+func (srv *CanvasService) fetchCanvasUsers() ([]models.ImportUser, error) {
 	baseURL := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users?per_page=1000"
 	for _, t := range srv.EnrollmentTypes {
 		baseURL += "&enrollment_type=" + t
 	}
-	url := baseURL
-	log.Printf("url: %v", url)
-	resp, err := srv.SendRequest(url)
+	log.Printf("fetchCanvasUsers url: %v", baseURL)
+	resp, err := srv.SendRequest(baseURL)
 	if err != nil {
 		log.Printf("Failed to send request: %v", err)
 		return nil, err
@@ -88,57 +88,77 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 		log.Errorf("Canvas users endpoint returned %d: %s", resp.StatusCode, string(body))
 		return nil, fmt.Errorf("canvas API returned status %d", resp.StatusCode)
 	}
-	users := make([]map[string]interface{}, 0)
-	err = json.NewDecoder(resp.Body).Decode(&users)
-	if err != nil {
-		log.Errorf("Failed to decode response: %v", err)
+	raw := make([]map[string]interface{}, 0)
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		log.Errorf("Failed to decode Canvas users: %v", err)
 		return nil, err
 	}
-	log.Printf("Request sent to canvas Users: %v", users)
-	unlockedUsers := make([]models.ImportUser, 0)
-	for _, user := range users {
+	result := make([]models.ImportUser, 0, len(raw))
+	for _, user := range raw {
 		loginId, ok := user["login_id"].(string)
 		if !ok {
 			continue
 		}
 		name := strings.Split(user["name"].(string), " ")
-		sortable := user["sortable_name"].(string)
-		sortableName := strings.Split(sortable, ",")
+		sortableName := strings.Split(user["sortable_name"].(string), ",")
 		nameFirst, nameLast := "", ""
 		if len(sortableName) > 1 {
-			nameFirst = sortableName[1]
-			nameLast = sortableName[0]
-		} else if nameFirst == "" && len(name) > 1 {
+			nameFirst = strings.TrimSpace(sortableName[1])
+			nameLast = strings.TrimSpace(sortableName[0])
+		} else if len(name) > 1 {
 			nameFirst = name[0]
 			nameLast = name[1]
 		} else {
-			shortName := user["short_name"].(string)
-			nameFirst = shortName
+			nameFirst = user["short_name"].(string)
 			nameLast = name[0]
 		}
 		userId, _ := user["id"].(float64)
-		var count int64 = 0
-		err := db.Model(&models.ProviderUserMapping{}).Where("external_user_id = ?", fmt.Sprintf("%d", int(userId))).Where("provider_platform_id = ?", srv.ProviderPlatformID).Count(&count).Error
-		if err != nil {
-			log.Errorf("Error counting provider_user_mappings: %v", err)
-			continue
-		}
-		if count > 0 {
-			log.Println("User found in provider_user_mappings, not returning user to client")
-			continue
-		}
-		unlockedUser := models.ImportUser{
+		result = append(result, models.ImportUser{
 			ExternalUserID:   fmt.Sprintf("%d", int(userId)),
 			ExternalUsername: loginId,
 			NameFirst:        nameFirst,
 			NameLast:         nameLast,
 			Email:            loginId,
 			Username:         nameLast + nameFirst,
-		}
-		unlockedUsers = append(unlockedUsers, unlockedUser)
+		})
 	}
-	log.Printf("returning %d Unlocked Users", len(unlockedUsers))
-	return unlockedUsers, nil
+	return result, nil
+}
+
+// GetUsers returns only Canvas users that have not yet been mapped to an UnlockEd user.
+func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
+	all, err := srv.fetchCanvasUsers()
+	if err != nil {
+		return nil, err
+	}
+	unmapped := make([]models.ImportUser, 0, len(all))
+	for _, u := range all {
+		var count int64
+		if err := db.Model(&models.ProviderUserMapping{}).
+			Where("external_user_id = ? AND provider_platform_id = ?", u.ExternalUserID, srv.ProviderPlatformID).
+			Count(&count).Error; err != nil {
+			log.Errorf("Error counting provider_user_mappings: %v", err)
+			continue
+		}
+		if count > 0 {
+			log.Printf("User %s already mapped, skipping", u.ExternalUserID)
+			continue
+		}
+		unmapped = append(unmapped, u)
+	}
+	log.Printf("returning %d unmapped Canvas users", len(unmapped))
+	return unmapped, nil
+}
+
+// GetAllUsers returns all Canvas users regardless of whether they are already mapped.
+// Used by the mapped-users endpoint to resolve canvas display names.
+func (srv *CanvasService) GetAllUsers() ([]models.ImportUser, error) {
+	users, err := srv.fetchCanvasUsers()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("returning %d total Canvas users (including mapped)", len(users))
+	return users, nil
 }
 
 func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
