@@ -36,13 +36,15 @@ interface SidebarProps {
     onToggleCollapse: () => void;
     onNavigate?: () => void;
     onToggleHelpCenter?: () => void;
+    showCollapseToggle?: boolean;
 }
 
 export default function Sidebar({
     collapsed,
     onToggleCollapse,
     onNavigate,
-    onToggleHelpCenter
+    onToggleHelpCenter,
+    showCollapseToggle = true
 }: SidebarProps) {
     const { user } = useAuth();
     const location = useLocation();
@@ -61,20 +63,22 @@ export default function Sidebar({
         >
             <div className="h-16 border-b border-border flex items-center justify-between px-4 shrink-0">
                 {!collapsed && <Brand />}
-                <button
-                    onClick={onToggleCollapse}
-                    className="p-2 rounded-lg hover:bg-accent transition-colors"
-                    aria-label={
-                        collapsed ? 'Expand sidebar' : 'Collapse sidebar'
-                    }
-                >
-                    <ChevronRightIcon
-                        className={cn(
-                            'size-5 text-muted-foreground transition-transform',
-                            !collapsed && 'rotate-180'
-                        )}
-                    />
-                </button>
+                {showCollapseToggle && (
+                    <button
+                        onClick={onToggleCollapse}
+                        className="p-2 rounded-lg hover:bg-accent transition-colors"
+                        aria-label={
+                            collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+                        }
+                    >
+                        <ChevronRightIcon
+                            className={cn(
+                                'size-5 text-muted-foreground transition-transform',
+                                !collapsed && 'rotate-180'
+                            )}
+                        />
+                    </button>
+                )}
             </div>
 
             <nav className="p-3 space-y-1 overflow-y-auto flex-1">

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -515,50 +516,4 @@ input[type='checkbox']:focus {
 .unlocked-calendar .rbc-show-more:hover {
     background-color: #f0fdf4;
     text-decoration: underline;
-}
-
-/* Sheet slide animation — targeting Radix dialog data-state directly */
-@keyframes sheet-slide-in-right {
-    from {
-        transform: translateX(100%);
-    }
-    to {
-        transform: translateX(0);
-    }
-}
-@keyframes sheet-slide-out-right {
-    from {
-        transform: translateX(0);
-    }
-    to {
-        transform: translateX(100%);
-    }
-}
-@keyframes sheet-fade-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-@keyframes sheet-fade-out {
-    from {
-        opacity: 1;
-    }
-    to {
-        opacity: 0;
-    }
-}
-[data-slot='sheet-content'][data-state='open'] {
-    animation: sheet-slide-in-right 300ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-[data-slot='sheet-content'][data-state='closed'] {
-    animation: sheet-slide-out-right 200ms ease-in;
-}
-[data-slot='sheet-overlay'][data-state='open'] {
-    animation: sheet-fade-in 300ms ease-out;
-}
-[data-slot='sheet-overlay'][data-state='closed'] {
-    animation: sheet-fade-out 200ms ease-in;
 }
