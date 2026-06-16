@@ -22,7 +22,6 @@ export interface ProviderPlatform {
     state: ProviderPlatformState;
     type: ProviderPlatformType;
     oidc_id: number;
-    enrollment_types: string[];
 }
 
 export interface ProviderUser {

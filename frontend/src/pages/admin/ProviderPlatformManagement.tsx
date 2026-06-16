@@ -219,8 +219,7 @@ function AddProviderModal({
                 base_url: baseUrl,
                 account_id: '1',
                 access_key: accessKey,
-                state: 'enabled',
-                enrollment_types: isCanvas ? ['student'] : []
+                state: 'enabled'
             }
         );
         setSubmitting(false);

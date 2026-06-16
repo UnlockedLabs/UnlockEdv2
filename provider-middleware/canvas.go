@@ -25,7 +25,6 @@ type CanvasService struct {
 	ClientID           string
 	RedirectURI        string
 	JobParams          map[string]any
-	EnrollmentTypes    []string
 }
 
 func newCanvasService(provider *models.ProviderPlatform, params map[string]any) *CanvasService {
@@ -42,7 +41,6 @@ func newCanvasService(provider *models.ProviderPlatform, params map[string]any) 
 		AccountID:          provider.AccountID,
 		BaseHeaders:        headers,
 		JobParams:          params,
-		EnrollmentTypes:    provider.EnrollmentTypes,
 	}
 }
 
@@ -68,8 +66,9 @@ func (cs *CanvasService) GetJobParams() map[string]any {
 // fetchCanvasUsers retrieves and parses all users from the Canvas API.
 // It does not apply any mapping filter — callers decide what to do with the full list.
 func (srv *CanvasService) fetchCanvasUsers() ([]models.ImportUser, error) {
+	enrollmentTypes := []string{"student"}
 	baseURL := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users?per_page=1000"
-	for _, t := range srv.EnrollmentTypes {
+	for _, t := range enrollmentTypes {
 		baseURL += "&enrollment_type=" + t
 	}
 	log.Printf("fetchCanvasUsers url: %v", baseURL)

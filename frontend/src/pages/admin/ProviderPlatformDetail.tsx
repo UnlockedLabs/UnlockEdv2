@@ -494,8 +494,7 @@ function EditProviderModal({
             {
                 name,
                 base_url: baseUrl,
-                access_key: accessKey,
-                enrollment_types: isCanvas ? ['student'] : []
+                access_key: accessKey
             }
         );
         setSubmitting(false);

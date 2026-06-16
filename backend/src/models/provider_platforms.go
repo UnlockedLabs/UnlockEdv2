@@ -53,7 +53,6 @@ type ProviderPlatform struct {
 	BaseUrl                string                `gorm:"size:255"                    json:"base_url"`
 	State                  ProviderPlatformState `gorm:"size:100"                    json:"state"`
 	ExternalAuthProviderId string                `gorm:"size:128"                    json:"external_auth_provider_id"`
-	EnrollmentTypes        []string              `gorm:"serializer:json;type:text"   json:"enrollment_types"`
 	/* this field needs to be fetched by joining oidc_clients when querying the provider_platforms */
 	OidcID uint `gorm:"-" json:"oidc_id"`
 
