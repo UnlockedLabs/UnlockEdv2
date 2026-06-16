@@ -9,6 +9,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import {
+    Facility,
     ProviderPlatform,
     ProviderPlatformType,
     ProviderUser,
@@ -23,6 +24,8 @@ import {
     UserMatchResult
 } from '@/types';
 import API from '@/api/api';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
+import { AddResidentDialog } from '@/components/residents/AddResidentDialog';
 import { FormModal } from '@/components/shared/FormModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { SearchInput } from '@/components/shared/SearchInput';
@@ -59,7 +62,6 @@ import {
     CheckCircle2,
     ChevronDown,
     ChevronUp,
-    Undo2,
     UserX,
     Users,
     Upload,
@@ -753,6 +755,7 @@ function MatchSectionCard({
 export default function ProviderUserManagement() {
     const { id: providerId } = useParams();
     const navigate = useNavigate();
+    const { user: authUser } = useAuth();
 
     const [userToMap, setUserToMap] = useState<ProviderUser | undefined>();
     const [provider, setProvider] = useState<ProviderPlatform | undefined>();
@@ -762,20 +765,14 @@ export default function ProviderUserManagement() {
     const [showImportedModal, setShowImportedModal] = useState(false);
     const [showImportAllConfirm, setShowImportAllConfirm] = useState(false);
     const [showApplyConfirm, setShowApplyConfirm] = useState(false);
-    const [showCreateAllConfirm, setShowCreateAllConfirm] = useState(false);
     const [appliedFlashIds, setAppliedFlashIds] = useState<Set<string>>(
         new Set()
     );
-    const [bulkCreateSubmitting, setBulkCreateSubmitting] = useState(false);
     const [liveMessage, setLiveMessage] = useState('');
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
     const [mapSearch, setMapSearch] = useState('');
     const [mapSubmitting, setMapSubmitting] = useState(false);
     const [applySubmitting, setApplySubmitting] = useState(false);
-    const [demotedFromAuto, setDemotedFromAuto] = useState<ProviderUser[]>([]);
-    const [demotedFromReview, setDemotedFromReview] = useState<ProviderUser[]>(
-        []
-    );
     const [ambiguousSelections, setAmbiguousSelections] = useState<
         Record<string, number>
     >({});
@@ -785,14 +782,9 @@ export default function ProviderUserManagement() {
             Pick<User, 'id' | 'name_first' | 'name_last' | 'username'>
         >
     >({});
-    const [unmatchedToCreate, setUnmatchedToCreate] = useState<Set<string>>(
-        new Set()
-    );
     const [highlightedIds, setHighlightedIds] = useState<Set<string>>(
         new Set()
     );
-    const [autoDemotePending, setAutoDemotePending] =
-        useState<UserMatchResult | null>(null);
     const [mapModalSource, setMapModalSource] = useState<
         'unmatched' | 'review' | null
     >(null);
@@ -800,6 +792,27 @@ export default function ProviderUserManagement() {
     const [lastSynced, setLastSynced] = useState<Date | null>(null);
     const [showWorkflowHint, setShowWorkflowHint] = useState(
         () => !readSessionBool(sessionKey(providerId, 'hint-dismissed'), false)
+    );
+    const [showCreateResidentDialog, setShowCreateResidentDialog] =
+        useState(false);
+    const [canvasUserToCreate, setCanvasUserToCreate] =
+        useState<ProviderUser | null>(null);
+    const [unmatchedToCreate, setUnmatchedToCreate] = useState<Set<string>>(
+        new Set()
+    );
+    const [demotedFromAuto, setDemotedFromAuto] = useState<ProviderUser[]>([]);
+    const [demotedFromReview, setDemotedFromReview] = useState<ProviderUser[]>(
+        []
+    );
+
+    const showFacilityColumn = authUser ? canSwitchFacility(authUser) : false;
+    const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
+        showCreateResidentDialog && showFacilityColumn
+            ? '/api/facilities'
+            : null
+    );
+    const facilities = [...(facilitiesResp?.data ?? [])].sort((a, b) =>
+        a.name.localeCompare(b.name)
     );
 
     const summaryRef = useRef<HTMLDivElement>(null);
@@ -847,10 +860,10 @@ export default function ProviderUserManagement() {
     }, [
         matchState,
         mappedUsers,
-        demotedFromAuto,
-        demotedFromReview,
         ambiguousSelections,
         reviewResidentLabels,
+        demotedFromAuto,
+        demotedFromReview,
         unmatchedToCreate
     ]);
 
@@ -1141,38 +1154,6 @@ export default function ProviderUserManagement() {
         }
     };
 
-    const confirmDemoteFromAuto = () => {
-        if (!autoDemotePending) return;
-        const { canvas_user: canvasUser } = autoDemotePending;
-        const canvasName = formatCanvasUser(canvasUser);
-        const externalId = canvasUser.external_user_id;
-
-        setDemotedFromAuto((prev) => {
-            if (prev.some((u) => u.external_user_id === externalId)) {
-                return prev;
-            }
-            return [...prev, canvasUser];
-        });
-        setAutoDemotePending(null);
-
-        toast.success(`${canvasName} moved to Unmatched`, {
-            action: {
-                label: 'Undo',
-                onClick: () => undoDemoteFromAuto(canvasUser)
-            }
-        });
-        announce(`${canvasName} moved to Unmatched`);
-        flashHighlight(externalId);
-    };
-
-    const undoDemoteFromAuto = (canvasUser: ProviderUser) => {
-        const externalId = canvasUser.external_user_id;
-        setDemotedFromAuto((prev) =>
-            prev.filter((u) => u.external_user_id !== externalId)
-        );
-        announce(`${formatCanvasUser(canvasUser)} restored to Auto-confirmed`);
-    };
-
     const confirmReviewMatch = (result: UserMatchResult) => {
         if (!result.suggested_user) return;
         const externalId = result.canvas_user.external_user_id;
@@ -1217,72 +1198,6 @@ export default function ProviderUserManagement() {
         announce(`${canvasName} returned to Needs review`);
     };
 
-    const demoteFromReview = (result: UserMatchResult) => {
-        const canvasUser = result.canvas_user;
-        const externalId = canvasUser.external_user_id;
-        const canvasName = formatCanvasUser(canvasUser);
-
-        setDemotedFromReview((prev) => {
-            if (prev.some((u) => u.external_user_id === externalId)) {
-                return prev;
-            }
-            return [...prev, canvasUser];
-        });
-        setAmbiguousSelections((prev) => {
-            const next = { ...prev };
-            delete next[externalId];
-            return next;
-        });
-        setReviewResidentLabels((prev) => {
-            const next = { ...prev };
-            delete next[externalId];
-            return next;
-        });
-
-        toast.success(`${canvasName} moved to Unmatched`, {
-            action: {
-                label: 'Undo',
-                onClick: () => undoDemoteFromReview(canvasUser)
-            }
-        });
-        announce(`${canvasName} moved to Unmatched`);
-        flashHighlight(externalId);
-    };
-
-    const undoDemoteFromReview = (canvasUser: ProviderUser) => {
-        const externalId = canvasUser.external_user_id;
-        setDemotedFromReview((prev) =>
-            prev.filter((u) => u.external_user_id !== externalId)
-        );
-        announce(`${formatCanvasUser(canvasUser)} restored to Needs review`);
-    };
-
-    const queueUnmatchedCreate = (externalUserId: string) => {
-        const canvasUser = derived?.unmatchedRows.find(
-            (u) => u.external_user_id === externalUserId
-        );
-        const canvasName = canvasUser ? formatCanvasUser(canvasUser) : 'User';
-
-        setUnmatchedToCreate((prev) => new Set(prev).add(externalUserId));
-        toast.success(`${canvasName} queued to create`, {
-            action: {
-                label: 'Undo',
-                onClick: () => undoUnmatchedCreate(externalUserId)
-            }
-        });
-        announce(`${canvasName} queued to create`);
-        flashHighlight(externalUserId);
-    };
-
-    const undoUnmatchedCreate = (externalUserId: string) => {
-        setUnmatchedToCreate((prev) => {
-            const next = new Set(prev);
-            next.delete(externalUserId);
-            return next;
-        });
-        announce('Create action undone');
-    };
-
     const openMapModal = (
         canvasUser: ProviderUser,
         source: 'unmatched' | 'review'
@@ -1292,6 +1207,40 @@ export default function ProviderUserManagement() {
         setSelectedUserId(null);
         setMapSearch('');
         setShowMapModal(true);
+    };
+
+    const openCreateResidentDialog = (canvasUser: ProviderUser) => {
+        setCanvasUserToCreate(canvasUser);
+        setShowCreateResidentDialog(true);
+    };
+
+    const handleResidentCreated = async (newUser?: User) => {
+        if (!newUser || !canvasUserToCreate || !providerId) {
+            void mutateMatch();
+            void mutateMapped();
+            setCanvasUserToCreate(null);
+            return;
+        }
+        const externalId = canvasUserToCreate.external_user_id;
+        const canvasName = formatCanvasUser(canvasUserToCreate);
+        const residentName = formatResident(newUser);
+
+        const res = await API.post(
+            `provider-platforms/${providerId}/map-user/${newUser.id}`,
+            canvasUserToCreate
+        );
+        if (res.success) {
+            toast.success(`${canvasName} linked to ${residentName}.`);
+            announce(`${canvasName} linked to ${residentName}`);
+            flashHighlight(externalId);
+        } else {
+            toast.error(
+                `Resident created but could not be linked. Please link ${residentName} manually.`
+            );
+        }
+        setCanvasUserToCreate(null);
+        void mutateMatch();
+        void mutateMapped();
     };
 
     const handleConfirmAllReview = () => {
@@ -1320,32 +1269,6 @@ export default function ProviderUserManagement() {
         setReviewResidentLabels(nextLabels);
         toast.success(`Confirmed ${count} suggestion${count === 1 ? '' : 's'}`);
         announce(`${count} match${count === 1 ? '' : 'es'} confirmed`);
-    };
-
-    const handleConfirmCreateAllUnmatched = () => {
-        if (!matchState) return;
-        setBulkCreateSubmitting(true);
-
-        const idsToQueue = (derived?.unmatchedRows ?? [])
-            .filter((u) => !unmatchedToCreate.has(u.external_user_id))
-            .map((u) => u.external_user_id);
-
-        setUnmatchedToCreate((prev) => new Set([...prev, ...idsToQueue]));
-
-        setBulkCreateSubmitting(false);
-        setShowCreateAllConfirm(false);
-
-        if (idsToQueue.length === 0) {
-            toast.message('All unmatched users already have an action.');
-            return;
-        }
-
-        toast.success(
-            `Queued ${idsToQueue.length} resident${idsToQueue.length === 1 ? '' : 's'} to create.`
-        );
-        announce(
-            `${idsToQueue.length} resident${idsToQueue.length === 1 ? '' : 's'} queued to create`
-        );
     };
 
     const dismissWorkflowHint = () => {
@@ -1557,7 +1480,7 @@ export default function ProviderUserManagement() {
                             icon={<CheckCircle2 className="size-5" />}
                             title="Auto-confirmed"
                             count={autoCount}
-                            instruction="Matched automatically. Expand to verify or remove incorrect pairs."
+                            instruction="Matched automatically. Expand to verify — link to a different resident or create a new one if incorrect."
                             open={autoOpen}
                             onOpenChange={handleAutoOpenChange}
                             emptyTitle="No items in this group ✓"
@@ -1566,7 +1489,12 @@ export default function ProviderUserManagement() {
                             <AutoConfirmedTable
                                 rows={derived?.autoRows ?? []}
                                 highlightedIds={highlightedIds}
-                                onRemove={(row) => setAutoDemotePending(row)}
+                                onLinkExisting={(user) =>
+                                    openMapModal(user, 'unmatched')
+                                }
+                                onCreate={(user) =>
+                                    openCreateResidentDialog(user)
+                                }
                             />
                         </MatchSectionCard>
 
@@ -1597,9 +1525,11 @@ export default function ProviderUserManagement() {
                                 rows={derived?.reviewRows ?? []}
                                 highlightedIds={highlightedIds}
                                 onConfirm={confirmReviewMatch}
-                                onReject={demoteFromReview}
                                 onLinkExisting={(user) =>
                                     openMapModal(user, 'review')
+                                }
+                                onCreate={(user) =>
+                                    openCreateResidentDialog(user)
                                 }
                             />
                         </MatchSectionCard>
@@ -1613,39 +1543,15 @@ export default function ProviderUserManagement() {
                             instruction="No match found. Create a new resident or link to an existing one."
                             open={unmatchedOpen}
                             onOpenChange={handleUnmatchedOpenChange}
-                            headerAction={
-                                outstandingUnmatchedCount > 0 ? (
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={bulkCreateSubmitting}
-                                        onClick={() =>
-                                            setShowCreateAllConfirm(true)
-                                        }
-                                    >
-                                        {bulkCreateSubmitting
-                                            ? 'Queuing…'
-                                            : 'Create all as residents'}
-                                    </Button>
-                                ) : undefined
-                            }
                             emptyTitle="All Canvas users have been matched ✓"
                             isEmpty={(derived?.unmatchedRows.length ?? 0) === 0}
                         >
-                            {outstandingUnmatchedCount === 0 &&
-                            (derived?.unmatchedRows.length ?? 0) > 0 ? (
-                                <div className="mb-4 flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                                    <CheckCircle2 className="size-4 shrink-0" />
-                                    All unmatched users have an action. Apply
-                                    from Linked residents below.
-                                </div>
-                            ) : null}
                             <UnmatchedTable
                                 rows={derived?.unmatchedRows ?? []}
-                                unmatchedToCreate={unmatchedToCreate}
                                 highlightedIds={highlightedIds}
-                                onCreate={queueUnmatchedCreate}
-                                onUndoCreate={undoUnmatchedCreate}
+                                onCreate={(user) =>
+                                    openCreateResidentDialog(user)
+                                }
                                 onLinkExisting={(user) =>
                                     openMapModal(user, 'unmatched')
                                 }
@@ -1877,30 +1783,6 @@ export default function ProviderUserManagement() {
                 />
 
                 <ConfirmDialog
-                    open={showCreateAllConfirm}
-                    onOpenChange={setShowCreateAllConfirm}
-                    title="Create all as residents"
-                    description={`Create ${outstandingUnmatchedCount} new resident${outstandingUnmatchedCount === 1 ? '' : 's'} from unmatched Canvas users? They will be queued until you apply matches.`}
-                    confirmLabel="Queue all"
-                    onConfirm={handleConfirmCreateAllUnmatched}
-                />
-
-                <ConfirmDialog
-                    open={autoDemotePending !== null}
-                    onOpenChange={(open) => {
-                        if (!open) setAutoDemotePending(null);
-                    }}
-                    title="Remove auto-confirmed match?"
-                    description={
-                        autoDemotePending
-                            ? `This will unlink ${formatCanvasUser(autoDemotePending.canvas_user)} from ${formatResident(autoDemotePending.suggested_user)} and move them to Unmatched.`
-                            : ''
-                    }
-                    confirmLabel="Move to Unmatched"
-                    onConfirm={confirmDemoteFromAuto}
-                />
-
-                <ConfirmDialog
                     open={userToUnlink !== null}
                     onOpenChange={(open) => {
                         if (!open) setUserToUnlink(null);
@@ -1911,6 +1793,22 @@ export default function ProviderUserManagement() {
                     onConfirm={() => void handleUnlinkUser()}
                     variant="destructive"
                 />
+
+                <AddResidentDialog
+                    open={showCreateResidentDialog}
+                    onOpenChange={(open) => {
+                        setShowCreateResidentDialog(open);
+                        if (!open) setCanvasUserToCreate(null);
+                    }}
+                    facilities={facilities}
+                    showFacilityColumn={showFacilityColumn}
+                    defaultFacilityId={
+                        showFacilityColumn && authUser
+                            ? authUser.facility_id
+                            : undefined
+                    }
+                    onSuccess={(newUser) => void handleResidentCreated(newUser)}
+                />
             </div>
         </div>
     );
@@ -1919,12 +1817,37 @@ export default function ProviderUserManagement() {
 function AutoConfirmedTable({
     rows,
     highlightedIds,
-    onRemove
+    onLinkExisting,
+    onCreate
 }: {
     rows: UserMatchResult[];
     highlightedIds: Set<string>;
-    onRemove: (row: UserMatchResult) => void;
+    onLinkExisting: (user: ProviderUser) => void;
+    onCreate: (user: ProviderUser) => void;
 }) {
+    const renderActions = (r: UserMatchResult) => (
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="sm:min-w-[5.5rem]"
+                onClick={() => onLinkExisting(r.canvas_user)}
+            >
+                Link existing
+            </Button>
+            <Button
+                type="button"
+                size="sm"
+                variant="brand"
+                className="sm:min-w-[5.5rem]"
+                onClick={() => onCreate(r.canvas_user)}
+            >
+                Create
+            </Button>
+        </div>
+    );
+
     return (
         <>
             <div className="hidden md:block">
@@ -1961,14 +1884,7 @@ function AutoConfirmedTable({
                                     {Math.round(r.score * 100)}%
                                 </TableCell>
                                 <TableCell className="text-right pr-0">
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => onRemove(r)}
-                                        className="text-muted-foreground hover:text-destructive"
-                                    >
-                                        Remove
-                                    </Button>
+                                    {renderActions(r)}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -1993,19 +1909,10 @@ function AutoConfirmedTable({
                         <div className="mt-1 text-sm text-gray-600">
                             → {formatResident(r.suggested_user)}
                         </div>
-                        <div className="mt-2 flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                                {Math.round(r.score * 100)}% match
-                            </span>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onRemove(r)}
-                                className="text-muted-foreground hover:text-destructive"
-                            >
-                                Remove
-                            </Button>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                            {Math.round(r.score * 100)}% match
                         </div>
+                        <div className="mt-3">{renderActions(r)}</div>
                     </div>
                 ))}
             </div>
@@ -2017,14 +1924,14 @@ function NeedsReviewTable({
     rows,
     highlightedIds,
     onConfirm,
-    onReject,
-    onLinkExisting
+    onLinkExisting,
+    onCreate
 }: {
     rows: UserMatchResult[];
     highlightedIds: Set<string>;
     onConfirm: (result: UserMatchResult) => void;
-    onReject: (result: UserMatchResult) => void;
     onLinkExisting: (user: ProviderUser) => void;
+    onCreate: (user: ProviderUser) => void;
 }) {
     return (
         <>
@@ -2088,11 +1995,13 @@ function NeedsReviewTable({
                                         <Button
                                             type="button"
                                             size="sm"
-                                            variant="ghost"
-                                            className="text-muted-foreground hover:text-destructive"
-                                            onClick={() => onReject(r)}
+                                            variant="brand"
+                                            className="sm:min-w-[5.5rem]"
+                                            onClick={() =>
+                                                onCreate(r.canvas_user)
+                                            }
                                         >
-                                            Remove
+                                            Create
                                         </Button>
                                     </div>
                                 </TableCell>
@@ -2144,11 +2053,10 @@ function NeedsReviewTable({
                             <Button
                                 type="button"
                                 size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-destructive"
-                                onClick={() => onReject(r)}
+                                variant="brand"
+                                onClick={() => onCreate(r.canvas_user)}
                             >
-                                Remove
+                                Create
                             </Button>
                         </div>
                     </div>
@@ -2160,73 +2068,37 @@ function NeedsReviewTable({
 
 function UnmatchedTable({
     rows,
-    unmatchedToCreate,
     highlightedIds,
     onCreate,
-    onUndoCreate,
     onLinkExisting
 }: {
     rows: ProviderUser[];
-    unmatchedToCreate: Set<string>;
     highlightedIds: Set<string>;
-    onCreate: (externalUserId: string) => void;
-    onUndoCreate: (externalUserId: string) => void;
+    onCreate: (user: ProviderUser) => void;
     onLinkExisting: (user: ProviderUser) => void;
 }) {
-    const renderQueuedStatus = (externalUserId: string) => (
-        <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
-                <CheckCircle2 className="size-4 shrink-0 text-green-600" />
-                Queued to create
-            </span>
+    const renderActions = (user: ProviderUser) => (
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
             <Button
                 type="button"
                 size="sm"
-                variant="ghost"
-                className="text-muted-foreground hover:text-brand-dark"
-                onClick={() => onUndoCreate(externalUserId)}
+                variant="brand"
+                className="sm:min-w-[5.5rem]"
+                onClick={() => onCreate(user)}
             >
-                <Undo2 className="size-4" />
-                Undo
+                Create
+            </Button>
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="sm:min-w-[5.5rem]"
+                onClick={() => onLinkExisting(user)}
+            >
+                Link existing
             </Button>
         </div>
     );
-
-    const renderActions = (user: ProviderUser) => {
-        if (unmatchedToCreate.has(user.external_user_id)) {
-            return renderQueuedStatus(user.external_user_id);
-        }
-
-        return (
-            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="brand"
-                    className="sm:min-w-[5.5rem]"
-                    onClick={() => onCreate(user.external_user_id)}
-                >
-                    Create
-                </Button>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="sm:min-w-[5.5rem]"
-                    onClick={() => onLinkExisting(user)}
-                >
-                    Link existing
-                </Button>
-            </div>
-        );
-    };
-
-    const rowClassName = (externalUserId: string) =>
-        cn(
-            'transition-colors hover:bg-muted/50',
-            unmatchedToCreate.has(externalUserId) &&
-                'bg-muted/30 text-muted-foreground'
-        );
 
     return (
         <>
@@ -2242,75 +2114,49 @@ function UnmatchedTable({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {rows.map((u) => {
-                            const queued = unmatchedToCreate.has(
-                                u.external_user_id
-                            );
-                            return (
-                                <TableRow
-                                    key={u.external_user_id}
-                                    className={cn(
-                                        rowClassName(u.external_user_id),
-                                        highlightRowClass(
-                                            u.external_user_id,
-                                            highlightedIds
-                                        )
-                                    )}
-                                >
-                                    <TableCell
-                                        className={cn(
-                                            'pl-0 font-medium',
-                                            queued
-                                                ? 'text-muted-foreground'
-                                                : 'text-brand-dark'
-                                        )}
-                                    >
-                                        {formatCanvasUser(u)}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {u.username}
-                                    </TableCell>
-                                    <TableCell className="text-right pr-0">
-                                        {renderActions(u)}
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
+                        {rows.map((u) => (
+                            <TableRow
+                                key={u.external_user_id}
+                                className={cn(
+                                    'transition-colors hover:bg-muted/50',
+                                    highlightRowClass(
+                                        u.external_user_id,
+                                        highlightedIds
+                                    )
+                                )}
+                            >
+                                <TableCell className="pl-0 font-medium text-brand-dark">
+                                    {formatCanvasUser(u)}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                    {u.username}
+                                </TableCell>
+                                <TableCell className="text-right pr-0">
+                                    {renderActions(u)}
+                                </TableCell>
+                            </TableRow>
+                        ))}
                     </TableBody>
                 </Table>
             </div>
             <div className="space-y-3 md:hidden">
-                {rows.map((u) => {
-                    const queued = unmatchedToCreate.has(u.external_user_id);
-                    return (
-                        <div
-                            key={u.external_user_id}
-                            className={cn(
-                                'rounded-lg border border-gray-200 p-3 transition-colors',
-                                queued && 'bg-muted/30',
-                                highlightRowClass(
-                                    u.external_user_id,
-                                    highlightedIds
-                                )
-                            )}
-                        >
-                            <div
-                                className={cn(
-                                    'font-medium',
-                                    queued
-                                        ? 'text-muted-foreground'
-                                        : 'text-brand-dark'
-                                )}
-                            >
-                                {formatCanvasUser(u)}
-                            </div>
-                            <div className="mt-1 text-sm text-muted-foreground">
-                                {u.username}
-                            </div>
-                            <div className="mt-3">{renderActions(u)}</div>
+                {rows.map((u) => (
+                    <div
+                        key={u.external_user_id}
+                        className={cn(
+                            'rounded-lg border border-gray-200 p-3 transition-colors',
+                            highlightRowClass(u.external_user_id, highlightedIds)
+                        )}
+                    >
+                        <div className="font-medium text-brand-dark">
+                            {formatCanvasUser(u)}
                         </div>
-                    );
-                })}
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            {u.username}
+                        </div>
+                        <div className="mt-3">{renderActions(u)}</div>
+                    </div>
+                ))}
             </div>
         </>
     );
