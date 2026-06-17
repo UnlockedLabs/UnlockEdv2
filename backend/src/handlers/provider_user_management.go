@@ -58,6 +58,7 @@ func (srv *Server) handleMapProviderUser(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	srv.invalidateCanvasProgramCache(provider.ID, int(user.ID))
 	// create login for user
 	if provider.OidcID != 0 {
 		if err := srv.registerProviderLogin(provider, user); err != nil {
