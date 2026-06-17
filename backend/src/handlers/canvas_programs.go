@@ -1052,6 +1052,32 @@ func (srv *Server) fetchCanvasCoursesScheduleEvents(
 	return result
 }
 
+// invalidateCanvasProgramCache deletes the NATS KV cache entries for the given Canvas
+// provider so the next read recomputes enrollment counts. Both the global (scopedFacility=0)
+// entry and the facility-scoped entry for the unlinked user's facility are purged.
+// Non-Canvas providers and nil buckets are silently skipped.
+func (srv *Server) invalidateCanvasProgramCache(providerID uint, userID int) {
+	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
+	if err != nil || !isCanvasProvider(provider) {
+		return
+	}
+	kv := srv.buckets[CanvasPrograms]
+	if kv == nil {
+		return
+	}
+	globalKey := fmt.Sprintf("canvas_program_%d_0", providerID)
+	if err := kv.Delete(globalKey); err != nil {
+		log.WithError(err).Warnf("invalidateCanvasProgramCache: failed to delete key %s", globalKey)
+	}
+	user, err := srv.Db.GetUserByID(uint(userID))
+	if err == nil && user.FacilityID != 0 {
+		facilityKey := fmt.Sprintf("canvas_program_%d_%d", providerID, user.FacilityID)
+		if err := kv.Delete(facilityKey); err != nil {
+			log.WithError(err).Warnf("invalidateCanvasProgramCache: failed to delete key %s", facilityKey)
+		}
+	}
+}
+
 // countMappedCanvasEnrolleesPerFacility fetches active enrollments for a Canvas course
 // and returns a map of facility_id → count of mapped users from that facility.
 func (srv *Server) countMappedCanvasEnrolleesPerFacility(provider *models.ProviderPlatform, rawCourseID uint) map[uint]int64 {
