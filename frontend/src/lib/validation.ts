@@ -36,6 +36,7 @@ export const VMSG = {
     minLen: (label: string, n: number) =>
         `${label} must be at least ${n} characters`,
     selectOne: (label: string) => `Select at least one ${label}`,
+    selectField: (label: string) => `Please select ${label}`,
     passwordLength: 'Password must be at least 8 characters',
     passwordNumber: 'Password must include at least one number',
     passwordsMatch: 'Passwords do not match'
@@ -65,6 +66,14 @@ export const optionalString = (label = 'Field', max = 255) =>
 /** A non-empty array (e.g. a checkbox group requiring at least one choice). */
 export const nonEmptyArray = <T extends z.ZodTypeAny>(item: T, label: string) =>
     z.array(item).min(1, VMSG.selectOne(label));
+
+export const confirmField = (
+    expected: string,
+    message = 'Entry does not match'
+) =>
+    z
+        .string()
+        .refine((v) => expected.length > 0 && v === expected, { message });
 
 /* ------------------------------------------------------------------ *
  * Auth — login
@@ -219,11 +228,7 @@ export const buildConfirmResidentIdSchema = (
     label = 'Resident ID'
 ) =>
     z.object({
-        confirm: z
-            .string()
-            .refine((v) => expected.length > 0 && v === expected, {
-                message: `Entry does not match the ${label}`
-            })
+        confirm: confirmField(expected, `Entry does not match the ${label}`)
     });
 
 export type ConfirmResidentIdInput = z.infer<
@@ -236,12 +241,8 @@ export const buildTransferResidentSchema = (
     label = 'Resident ID'
 ) =>
     z.object({
-        facility_id: z.string().min(1, 'Select a facility'),
-        confirm: z
-            .string()
-            .refine((v) => expected.length > 0 && v === expected, {
-                message: `Entry does not match the ${label}`
-            })
+        facility_id: z.string().min(1, VMSG.selectField('a facility')),
+        confirm: confirmField(expected, `Entry does not match the ${label}`)
     });
 
 export type TransferResidentInput = z.infer<
@@ -251,11 +252,7 @@ export type TransferResidentInput = z.infer<
 /** Bulk type-to-confirm dialogs (reset password / deactivate / delete) — type the count. */
 export const buildConfirmCountSchema = (expected: string) =>
     z.object({
-        confirm: z
-            .string()
-            .refine((v) => expected.length > 0 && v === expected, {
-                message: 'Entry does not match the number shown'
-            })
+        confirm: confirmField(expected, 'Entry does not match the number shown')
     });
 
 export type ConfirmCountInput = z.infer<
@@ -298,7 +295,7 @@ export const programFormSchema = z.object({
     program_types: nonEmptyArray(z.enum(ProgramType), 'program type'),
     credit_types: nonEmptyArray(z.enum(CreditType), 'credit type'),
     funding_type: z.enum(FundingType, {
-        message: 'Funding type is required'
+        message: VMSG.required('Funding type')
     }),
     is_active: z.boolean(),
     facility_ids: z.array(z.number())
@@ -317,7 +314,7 @@ export const editProgramSchema = z.object({
     program_types: nonEmptyArray(z.enum(ProgramType), 'program type'),
     credit_types: nonEmptyArray(z.enum(CreditType), 'credit type'),
     funding_type: z.enum(FundingType, {
-        message: 'Funding type is required'
+        message: VMSG.required('Funding type')
     }),
     status: z.enum(['Available', 'Inactive', 'Archived']),
     facilities: z.array(z.number())
@@ -332,9 +329,10 @@ export type EditProgramInput = z.infer<typeof editProgramSchema>;
  */
 export const programTypeToConfirmSchema = (expected: string) =>
     z.object({
-        confirmation: z.string().refine((v) => v === expected, {
-            message: 'Type the program name exactly to confirm'
-        })
+        confirmation: confirmField(
+            expected,
+            'Type the program name exactly to confirm'
+        )
     });
 
 export type ProgramTypeToConfirmInput = z.infer<
@@ -429,7 +427,7 @@ export const buildClassManagementSchema = (isNewClass: boolean) =>
                 ctx.addIssue({
                     code: 'custom',
                     path: ['days'],
-                    message: 'Days of week is required'
+                    message: VMSG.required('Days of week')
                 });
             }
         });
@@ -480,7 +478,7 @@ export type EditClassInput = z.infer<typeof editClassSchema>;
  * be selected; the reason is optional. `applyToFuture` is parent-owned.
  */
 export const bulkSessionFieldSchema = z.object({
-    selectedId: z.string().trim().min(1, 'Please make a selection'),
+    selectedId: z.string().trim().min(1, VMSG.selectField('an option')),
     reason: optionalString('Reason')
 });
 
@@ -488,7 +486,7 @@ export type BulkSessionFieldInput = z.infer<typeof bulkSessionFieldSchema>;
 
 /** "Change class status" modal — a status is always selected. */
 export const changeClassStatusSchema = z.object({
-    status: z.string().trim().min(1, 'Status is required')
+    status: z.string().trim().min(1, VMSG.required('Status'))
 });
 
 export type ChangeClassStatusInput = z.infer<typeof changeClassStatusSchema>;
@@ -523,7 +521,7 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
  * rules are layered on per-render in the modal via the runtime status.
  */
 export const changeEnrollmentStatusSchema = z.object({
-    status: z.string().trim().min(1, 'Status is required'),
+    status: z.string().trim().min(1, VMSG.required('Status')),
     reason: optionalString('Reason')
 });
 
@@ -536,7 +534,7 @@ export type ChangeEnrollmentStatusInput = z.infer<
  * runtime values and are layered on with `.superRefine` from the modal.
  */
 export const editEnrollmentDateSchema = z.object({
-    newDate: z.string().trim().min(1, 'Please select an enrollment date')
+    newDate: z.string().trim().min(1, VMSG.selectField('an enrollment date'))
 });
 
 export type EditEnrollmentDateInput = z.infer<typeof editEnrollmentDateSchema>;
@@ -547,7 +545,7 @@ export type EditEnrollmentDateInput = z.infer<typeof editEnrollmentDateSchema>;
  */
 export const bulkCancelSessionsSchema = z
     .object({
-        reason: z.string().trim().min(1, 'Reason is required'),
+        reason: z.string().trim().min(1, VMSG.required('Reason')),
         note: optionalString('Note')
     })
     .refine((v) => v.reason !== 'other' || (v.note?.trim().length ?? 0) > 0, {
@@ -563,11 +561,7 @@ export type BulkCancelSessionsInput = z.infer<typeof bulkCancelSessionsSchema>;
  */
 export const typeToConfirmSchema = (expected: string) =>
     z.object({
-        confirmation: z
-            .string()
-            .refine((v) => expected.length > 0 && v === expected, {
-                message: 'Entry does not match'
-            })
+        confirmation: confirmField(expected)
     });
 
 export type TypeToConfirmInput = z.infer<
@@ -636,7 +630,7 @@ export type ScheduleRescheduleSessionInput = z.infer<
  */
 export const cancelEventSchema = z
     .object({
-        reason: z.string().min(1, 'Please select a reason'),
+        reason: z.string().min(1, VMSG.selectField('a reason')),
         customReason: z.string().trim().max(255).optional().or(z.literal('')),
         applyToFuture: z.boolean()
     })
@@ -665,7 +659,7 @@ export const bulkCancelClassesSchema = z
         instructorId: z.string().min(1, VMSG.required('Instructor')),
         startDate: z.string().min(1, VMSG.required('Start date')),
         endDate: z.string().min(1, VMSG.required('End date')),
-        reason: z.string().min(1, 'Please select a reason'),
+        reason: z.string().min(1, VMSG.selectField('a reason')),
         customReason: z.string().trim().max(255).optional().or(z.literal(''))
     })
     .refine((v) => !v.startDate || !v.endDate || v.endDate >= v.startDate, {
@@ -689,7 +683,7 @@ export type BulkCancelClassesInput = z.infer<typeof bulkCancelClassesSchema>;
 
 /** "Change Room" modal. A new room is required; the reason is optional. */
 export const changeRoomSchema = z.object({
-    room_id: z.string().min(1, 'Please select a room'),
+    room_id: z.string().min(1, VMSG.selectField('a room')),
     reason: z.string().optional(),
     applyToFuture: z.boolean()
 });
@@ -698,7 +692,7 @@ export type ChangeRoomInput = z.infer<typeof changeRoomSchema>;
 
 /** "Change Instructor" modal. A new instructor is required; reason optional. */
 export const changeInstructorSchema = z.object({
-    instructor_id: z.string().min(1, 'Please select an instructor'),
+    instructor_id: z.string().min(1, VMSG.selectField('an instructor')),
     reason: z.string().optional(),
     applyToFuture: z.boolean()
 });
