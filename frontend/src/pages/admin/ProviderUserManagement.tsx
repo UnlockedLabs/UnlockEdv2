@@ -64,7 +64,6 @@ import {
     ChevronUp,
     UserX,
     Users,
-    Upload,
     X
 } from 'lucide-react';
 
@@ -784,7 +783,6 @@ export default function ProviderUserManagement() {
     const [providerLoading, setProviderLoading] = useState(true);
     const [showMapModal, setShowMapModal] = useState(false);
     const [showImportedModal, setShowImportedModal] = useState(false);
-    const [showImportAllConfirm, setShowImportAllConfirm] = useState(false);
     const [showApplyConfirm, setShowApplyConfirm] = useState(false);
     const [appliedFlashIds, setAppliedFlashIds] = useState<Set<string>>(
         new Set()
@@ -1115,23 +1113,6 @@ export default function ProviderUserManagement() {
             );
             announce('Failed to apply matches');
         }
-    };
-
-    const handleImportAll = async () => {
-        const res = await API.post(
-            `actions/provider-platforms/${providerId}/import-users`,
-            {}
-        );
-        if (res.success) {
-            toast.success(
-                'Users imported successfully. Please check for accounts not created.'
-            );
-            void mutateMatch();
-            void mutateMapped();
-        } else {
-            toast.error('Error importing users.');
-        }
-        setShowImportAllConfirm(false);
     };
 
     const handleMapUser = async () => {
@@ -1490,15 +1471,7 @@ export default function ProviderUserManagement() {
                                 <ArrowPathIcon className="size-4" />
                                 {matchLoading ? 'Syncing…' : 'Refresh'}
                             </Button>
-                            <Button
-                                variant="brand"
-                                className="gap-2"
-                                onClick={() => setShowImportAllConfirm(true)}
-                                disabled={!provider}
-                            >
-                                <Upload className="size-4" />
-                                Import All Users
-                            </Button>
+
                         </div>
                     </div>
                 </div>
@@ -1900,15 +1873,6 @@ export default function ProviderUserManagement() {
                         </Button>
                     </div>
                 </FormModal>
-
-                <ConfirmDialog
-                    open={showImportAllConfirm}
-                    onOpenChange={setShowImportAllConfirm}
-                    title="Import All Users"
-                    description="This will import all users from the provider platform. Are you sure you want to continue?"
-                    confirmLabel="Import All"
-                    onConfirm={() => void handleImportAll()}
-                />
 
                 <ConfirmDialog
                     open={showApplyConfirm}
