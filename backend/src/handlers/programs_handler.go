@@ -94,7 +94,7 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	for i := range programs {
 		programs[i].Source = "unlocked"
 	}
-	if canvasPrograms, canvasErr := srv.getCanvasProviderPrograms(); canvasErr != nil {
+	if canvasPrograms, canvasErr := srv.getCanvasProviderPrograms(args.FacilityID, adminRole); canvasErr != nil {
 		log.errorf("failed to fetch canvas provider programs: %v", canvasErr)
 	} else {
 		programs = append(programs, canvasPrograms...)

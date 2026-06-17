@@ -125,6 +125,9 @@ func (db *DB) GetMappedUsers(args *models.QueryContext, providerID int) ([]model
 		Where("id IN (?)",
 			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
 		)
+	if args.FacilityID != 0 {
+		tx = tx.Where("facility_id = ?", args.FacilityID)
+	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, NewDBError(err, "error counting mapped users")
 	}

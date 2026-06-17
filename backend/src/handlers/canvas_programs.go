@@ -163,7 +163,8 @@ func (srv *Server) fetchCanvasCourseEnrollmentData(provider *models.ProviderPlat
 // getCanvasProviderPrograms returns one synthetic ProgramsOverviewTable entry per
 // enabled Canvas provider platform. Results are served from NATS KV when fresh
 // (< 5 min old) and populated via a live Canvas API call on cache miss.
-func (srv *Server) getCanvasProviderPrograms() ([]models.ProgramsOverviewTable, error) {
+// When adminRole is FacilityAdmin, enrollment counts are scoped to facilityID.
+func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		return nil, err
@@ -174,11 +175,16 @@ func (srv *Server) getCanvasProviderPrograms() ([]models.ProgramsOverviewTable, 
 	}
 	var result []models.ProgramsOverviewTable
 
+	scopedFacilityID := uint(0)
+	if adminRole == models.FacilityAdmin {
+		scopedFacilityID = facilityID
+	}
+
 	for _, provider := range providers {
 		if !isCanvasProvider(&provider) {
 			continue
 		}
-		cacheKey := fmt.Sprintf("canvas_program_%d", provider.ID)
+		cacheKey := fmt.Sprintf("canvas_program_%d_%d", provider.ID, scopedFacilityID)
 
 		if kv != nil {
 			if entry, err := kv.Get(cacheKey); err == nil {
@@ -192,7 +198,7 @@ func (srv *Server) getCanvasProviderPrograms() ([]models.ProgramsOverviewTable, 
 			}
 		}
 
-		program, err := srv.fetchCanvasProviderProgram(&provider)
+		program, err := srv.fetchCanvasProviderProgram(&provider, scopedFacilityID)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas program for provider %d, skipping", provider.ID)
 			continue
@@ -214,8 +220,11 @@ func (srv *Server) getCanvasProviderPrograms() ([]models.ProgramsOverviewTable, 
 //
 //	GET /api/v1/accounts/{accountID}/courses?per_page=100
 //
-// and builds the synthetic program entry.
-func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform) (models.ProgramsOverviewTable, error) {
+// and builds the synthetic program entry. When facilityID is non-zero, enrollment
+// counts are scoped to users belonging to that facility.
+// active enrollment is the sum of per-course mapped enrollees (matching the detail
+// page calculation), while total enrollment is the all-time provider_user_mappings count.
+func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform, facilityID uint) (models.ProgramsOverviewTable, error) {
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
 	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
 	if err != nil {
@@ -226,7 +235,17 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 	now := time.Now()
 	totalClasses = int64(len(courses))
 
+	type courseEntry struct {
+		rawID    uint
+		isActive bool
+	}
+	entries := make([]courseEntry, 0, len(courses))
 	for _, course := range courses {
+		idFloat, ok := course["id"].(float64)
+		if !ok {
+			continue
+		}
+		rawID := uint(idFloat)
 		isActive := true
 		if endAt, ok := course["end_at"].(string); ok && endAt != "" {
 			if t, err := time.Parse("2006-01-02T15:04:05Z", endAt); err == nil {
@@ -236,9 +255,35 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 		if isActive {
 			activeClasses++
 		}
+		entries = append(entries, courseEntry{rawID: rawID, isActive: isActive})
 	}
 
-	totalEnrollments, err := srv.Db.CountProviderUserMappings(provider.ID)
+	// Sum per-course mapped enrollee counts concurrently, scoped to facility when set.
+	// This matches the calculation used on the program detail page.
+	var activeEnrollments int64
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, e := range entries {
+		if !e.isActive {
+			continue
+		}
+		wg.Add(1)
+		go func(rawID uint) {
+			defer wg.Done()
+			var n int64
+			if facilityID != 0 {
+				n = srv.countMappedCanvasEnrolleesForFacility(provider, rawID, facilityID)
+			} else {
+				n = srv.countMappedCanvasEnrollees(provider, rawID)
+			}
+			mu.Lock()
+			activeEnrollments += n
+			mu.Unlock()
+		}(e.rawID)
+	}
+	wg.Wait()
+
+	_, totalEnrollments, err := srv.Db.CountProviderEnrollments(provider.ID, facilityID)
 	if err != nil {
 		return models.ProgramsOverviewTable{}, err
 	}
@@ -249,7 +294,7 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform)
 		ProgramName:            provider.Name,
 		Description:            "Courses pulled live from Canvas connection: " + provider.Name,
 		TotalEnrollments:       &totalEnrollments,
-		TotalActiveEnrollments: &totalEnrollments,
+		TotalActiveEnrollments: &activeEnrollments,
 		TotalClasses:           &totalClasses,
 		TotalActiveClasses:     &activeClasses,
 		Types:                  "College",
@@ -502,32 +547,52 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
 			continue
 		}
+		entries := make([]canvasCourseEntry, 0, len(courses))
 		for _, course := range courses {
 			entry, ok := parseCanvasCourse(course, provider.ID, now)
 			if !ok {
 				continue
 			}
-			var enrolled int64
-			if facilityID != nil && *facilityID != 0 {
-				enrolled = srv.countMappedCanvasEnrolleesForFacility(&provider, entry.rawID, *facilityID)
-				result = append(result, models.ProgramClass{
-					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(*facilityID, provider.ID, entry.rawID)},
-					ProgramID:      programID,
-					FacilityID:     *facilityID,
-					Facility:       facility,
-					Name:           entry.name,
-					Description:    entry.description,
-					StartDt:        entry.startDt,
-					EndDt:          entry.endDt,
-					Status:         entry.status,
-					Enrolled:       enrolled,
-					IsCanvas:       true,
-					Program: &models.Program{
-						DatabaseFields: models.DatabaseFields{ID: programID},
-						Name:           "College - " + provider.Name,
-					},
-				})
-			}
+			entries = append(entries, entry)
+		}
+		if facilityID == nil || *facilityID == 0 {
+			continue
+		}
+		counts := make([]int64, len(entries))
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+		sem := make(chan struct{}, 10)
+		for i := range entries {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(idx int) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				n := srv.countMappedCanvasEnrolleesForFacility(&provider, entries[idx].rawID, *facilityID)
+				mu.Lock()
+				counts[idx] = n
+				mu.Unlock()
+			}(i)
+		}
+		wg.Wait()
+		for i, entry := range entries {
+			result = append(result, models.ProgramClass{
+				DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(*facilityID, provider.ID, entry.rawID)},
+				ProgramID:      programID,
+				FacilityID:     *facilityID,
+				Facility:       facility,
+				Name:           entry.name,
+				Description:    entry.description,
+				StartDt:        entry.startDt,
+				EndDt:          entry.endDt,
+				Status:         entry.status,
+				Enrolled:       counts[i],
+				IsCanvas:       true,
+				Program: &models.Program{
+					DatabaseFields: models.DatabaseFields{ID: programID},
+					Name:           "College - " + provider.Name,
+				},
+			})
 		}
 	}
 	return result, nil
@@ -567,10 +632,34 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 			}
 			entries = append(entries, entry)
 		}
+		// Fetch per-facility enrollment counts for each course concurrently.
+		// countMappedCanvasEnrolleesPerFacility makes one Canvas HTTP call and
+		// one DB query per course, returning counts for all facilities at once,
+		// so this is O(courses) HTTP calls rather than O(courses × facilities).
+		facilityCounts := make([]map[uint]int64, len(entries))
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+		sem := make(chan struct{}, 10)
+		for i := range entries {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(idx int) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				counts := srv.countMappedCanvasEnrolleesPerFacility(&provider, entries[idx].rawID)
+				mu.Lock()
+				facilityCounts[idx] = counts
+				mu.Unlock()
+			}(i)
+		}
+		wg.Wait()
 		for _, facility := range facilities {
 			facilityPtr := facility
-			for _, entry := range entries {
-				enrolled := srv.countMappedCanvasEnrolleesForFacility(&provider, entry.rawID, facility.ID)
+			for i, entry := range entries {
+				enrolled := int64(0)
+				if facilityCounts[i] != nil {
+					enrolled = facilityCounts[i][facility.ID]
+				}
 				result = append(result, models.ProgramClass{
 					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(facility.ID, provider.ID, entry.rawID)},
 					ProgramID:      programID,
@@ -625,7 +714,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", connectionID), "program ID")
 	}
-	prog, err := srv.fetchCanvasProviderProgram(provider)
+	prog, err := srv.fetchCanvasProviderProgram(provider, srv.getQueryContext(r).FacilityID)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to fetch canvas program")
 	}

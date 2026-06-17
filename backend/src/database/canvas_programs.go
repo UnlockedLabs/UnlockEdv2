@@ -1,6 +1,10 @@
 package database
 
-import "UnlockEdv2/src/models"
+import (
+	"UnlockEdv2/src/models"
+
+	"gorm.io/gorm"
+)
 
 // GetCanvasMappedUsers resolves a slice of Canvas external user IDs to their local
 // user records via provider_user_mappings. When facilityID is non-zero only users
@@ -29,6 +33,35 @@ func (db *DB) CountProviderUserMappings(providerID uint) (int64, error) {
 		return 0, newGetRecordsDBError(err, "provider_user_mappings")
 	}
 	return count, nil
+}
+
+// CountProviderEnrollments returns (active, total) enrollment counts for a Canvas provider.
+// active = currently linked users (soft-deleted excluded).
+// total  = all users ever linked (soft-deleted included), matching the "all-time" semantics
+// used by regular program_class_enrollments.
+// When facilityID is non-zero only users belonging to that facility are counted.
+func (db *DB) CountProviderEnrollments(providerID uint, facilityID uint) (active, total int64, err error) {
+	base := func(unscoped bool) *gorm.DB {
+		var q *gorm.DB
+		if unscoped {
+			q = db.Unscoped().Model(&models.ProviderUserMapping{})
+		} else {
+			q = db.Model(&models.ProviderUserMapping{})
+		}
+		q = q.Where("provider_user_mappings.provider_platform_id = ?", providerID)
+		if facilityID != 0 {
+			q = q.Joins("JOIN users ON users.id = provider_user_mappings.user_id").
+				Where("users.facility_id = ?", facilityID)
+		}
+		return q
+	}
+	if err = base(false).Count(&active).Error; err != nil {
+		return 0, 0, newGetRecordsDBError(err, "provider_user_mappings")
+	}
+	if err = base(true).Count(&total).Error; err != nil {
+		return 0, 0, newGetRecordsDBError(err, "provider_user_mappings")
+	}
+	return active, total, nil
 }
 
 // CountCanvasMappedEnrollees returns how many of the given Canvas external user IDs
