@@ -101,6 +101,7 @@ interface ReconciliationOverrides {
         Pick<User, 'id' | 'name_first' | 'name_last' | 'username'>
     >;
     unmatchedToCreate: Set<string>;
+    confirmedAutoIds: Set<string>;
 }
 
 interface DerivedReconciliation {
@@ -147,7 +148,8 @@ function deriveReconciliationState(
         demotedFromReview,
         ambiguousSelections,
         reviewResidentLabels,
-        unmatchedToCreate
+        unmatchedToCreate,
+        confirmedAutoIds
     } = overrides;
 
     const demotedAutoIds = new Set(
@@ -159,7 +161,10 @@ function deriveReconciliationState(
     const mappedUserIds = new Set(mappedUsers.map((u) => u.id));
 
     const autoRows = matchState.auto_confirmed.filter(
-        (r) => !demotedAutoIds.has(r.canvas_user.external_user_id)
+        (r) =>
+            !demotedAutoIds.has(r.canvas_user.external_user_id) &&
+            !confirmedAutoIds.has(r.canvas_user.external_user_id) &&
+            !mappedUserIds.has(r.suggested_user?.id ?? -1)
     );
 
     const reviewRows = matchState.ambiguous.filter((r) => {
@@ -186,16 +191,20 @@ function deriveReconciliationState(
 
     const pendingLinks: PendingLinkEntry[] = [];
 
-    for (const row of autoRows) {
+    for (const row of matchState.auto_confirmed) {
         if (!row.suggested_user) continue;
+        const externalId = row.canvas_user.external_user_id;
+        if (demotedAutoIds.has(externalId)) continue;
+        const alreadyMapped = mappedUserIds.has(row.suggested_user.id);
+        if (!confirmedAutoIds.has(externalId) && !alreadyMapped) continue;
         pendingLinks.push({
-            externalUserId: row.canvas_user.external_user_id,
+            externalUserId: externalId,
             canvasUser: row.canvas_user,
             residentId: row.suggested_user.id,
             residentName: residentLabel(row.suggested_user),
             residentUsername: row.suggested_user.username,
             source: 'auto',
-            isPendingApply: !mappedUserIds.has(row.suggested_user.id)
+            isPendingApply: !alreadyMapped
         });
     }
 
@@ -300,6 +309,11 @@ function deriveReconciliationState(
     }
 
     const autoCount = autoRows.length;
+    const confirmedAutoCount = matchState.auto_confirmed.filter(
+        (r) =>
+            !demotedAutoIds.has(r.canvas_user.external_user_id) &&
+            confirmedAutoIds.has(r.canvas_user.external_user_id)
+    ).length;
     const reviewCount = reviewRows.length;
     const outstandingUnmatchedCount = unmatchedRows.filter(
         (u) => !unmatchedToCreate.has(u.external_user_id)
@@ -307,9 +321,14 @@ function deriveReconciliationState(
     const resolvedReviewCount = Object.keys(ambiguousSelections).length;
     const queuedCreateCount = unmatchedToCreate.size;
     const totalCanvasUsers =
-        autoCount + reviewCount + unmatchedRows.length + resolvedReviewCount;
+        autoCount +
+        confirmedAutoCount +
+        reviewCount +
+        unmatchedRows.length +
+        resolvedReviewCount;
 
-    const resolvedCount = autoCount + resolvedReviewCount + queuedCreateCount;
+    const resolvedCount =
+        confirmedAutoCount + resolvedReviewCount + queuedCreateCount;
 
     return {
         autoRows,
@@ -324,7 +343,7 @@ function deriveReconciliationState(
         linkedCount: linkedEntries.length,
         resolvedCount,
         resolvedReviewCount,
-        progressGreenCount: autoCount + queuedCreateCount,
+        progressGreenCount: confirmedAutoCount + queuedCreateCount,
         progressAmberCount: resolvedReviewCount
     };
 }
@@ -806,6 +825,9 @@ export default function ProviderUserManagement() {
     const [demotedFromReview, setDemotedFromReview] = useState<ProviderUser[]>(
         []
     );
+    const [confirmedAutoIds, setConfirmedAutoIds] = useState<Set<string>>(
+        new Set()
+    );
 
     const showFacilityColumn = authUser ? canSwitchFacility(authUser) : false;
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
@@ -857,7 +879,8 @@ export default function ProviderUserManagement() {
             demotedFromReview,
             ambiguousSelections,
             reviewResidentLabels,
-            unmatchedToCreate
+            unmatchedToCreate,
+            confirmedAutoIds
         });
     }, [
         matchState,
@@ -866,7 +889,8 @@ export default function ProviderUserManagement() {
         reviewResidentLabels,
         demotedFromAuto,
         demotedFromReview,
-        unmatchedToCreate
+        unmatchedToCreate,
+        confirmedAutoIds
     ]);
 
     const filteredUnmappedUsers = useMemo(() => {
@@ -913,6 +937,21 @@ export default function ProviderUserManagement() {
     const [unmatchedOpen, setUnmatchedOpen] = useState(() =>
         readSessionBool(sessionKey(providerId, 'section-unmatched'), false)
     );
+
+    useEffect(() => {
+        if (!matchState || matchState.auto_confirmed.length === 0) return;
+        try {
+            if (
+                sessionStorage.getItem(
+                    sessionKey(providerId, 'section-auto')
+                ) === null
+            ) {
+                setAutoOpen(true);
+            }
+        } catch {
+            setAutoOpen(true);
+        }
+    }, [matchState, providerId]);
 
     useEffect(() => {
         if (!matchState || matchState.ambiguous.length === 0) return;
@@ -1009,8 +1048,12 @@ export default function ProviderUserManagement() {
                 .map((l) => l.externalUserId) ?? [];
 
         const confirmed: ConfirmedMatch[] = [
-            ...(derived?.autoRows ?? [])
-                .filter((r) => r.suggested_user)
+            ...matchState.auto_confirmed
+                .filter(
+                    (r) =>
+                        r.suggested_user &&
+                        confirmedAutoIds.has(r.canvas_user.external_user_id)
+                )
                 .map((r) => ({
                     canvas_user: r.canvas_user,
                     unlocked_user_id: r.suggested_user!.id
@@ -1062,6 +1105,7 @@ export default function ProviderUserManagement() {
                 setAmbiguousSelections({});
                 setReviewResidentLabels({});
                 setUnmatchedToCreate(new Set());
+                setConfirmedAutoIds(new Set());
             }
             void mutateMatch();
             void mutateMapped();
@@ -1166,6 +1210,49 @@ export default function ProviderUserManagement() {
         }
     };
 
+    const confirmAutoMatch = (result: UserMatchResult) => {
+        if (!result.suggested_user) return;
+        const externalId = result.canvas_user.external_user_id;
+        const canvasName = formatCanvasUser(result.canvas_user);
+        const residentName = formatResident(result.suggested_user);
+
+        setConfirmedAutoIds((prev) => new Set(prev).add(externalId));
+        toast.success(`${canvasName} confirmed → ${residentName}`, {
+            action: {
+                label: 'Undo',
+                onClick: () => {
+                    setConfirmedAutoIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(externalId);
+                        return next;
+                    });
+                    announce(`${canvasName} returned to Auto-confirmed`);
+                }
+            }
+        });
+        announce(`${canvasName} confirmed`);
+        flashHighlight(externalId);
+    };
+
+    const handleConfirmAllAuto = () => {
+        if (!derived) return;
+        const next = new Set(confirmedAutoIds);
+        let count = 0;
+        for (const row of derived.autoRows) {
+            if (!row.suggested_user) continue;
+            const externalId = row.canvas_user.external_user_id;
+            if (!next.has(externalId)) {
+                next.add(externalId);
+                count++;
+            }
+        }
+        setConfirmedAutoIds(next);
+        toast.success(
+            `Confirmed ${count} auto-match${count === 1 ? '' : 'es'}`
+        );
+        announce(`${count} auto-match${count === 1 ? '' : 'es'} confirmed`);
+    };
+
     const confirmReviewMatch = (result: UserMatchResult) => {
         if (!result.suggested_user) return;
         const externalId = result.canvas_user.external_user_id;
@@ -1218,13 +1305,12 @@ export default function ProviderUserManagement() {
         if (source === 'review') {
             undoConfirmReview(externalId, canvasName);
         } else if (source === 'auto') {
-            const canvasUser = derived?.pendingLinks.find(
-                (l) => l.externalUserId === externalId
-            )?.canvasUser;
-            if (canvasUser) {
-                setDemotedFromAuto((prev) => [...prev, canvasUser]);
-            }
-            announce(`${canvasName} returned to Unmatched`);
+            setConfirmedAutoIds((prev) => {
+                const next = new Set(prev);
+                next.delete(externalId);
+                return next;
+            });
+            announce(`${canvasName} returned to Auto-confirmed`);
         } else if (source === 'create') {
             setUnmatchedToCreate((prev) => {
                 const next = new Set(prev);
@@ -1517,15 +1603,28 @@ export default function ProviderUserManagement() {
                             icon={<CheckCircle2 className="size-5" />}
                             title="Auto-confirmed"
                             count={autoCount}
-                            instruction="Matched automatically. Expand to verify — link to a different resident or create a new one if incorrect."
+                            instruction="Matched automatically. Confirm each pair — or link to a different resident or create a new one."
                             open={autoOpen}
                             onOpenChange={handleAutoOpenChange}
+                            headerAction={
+                                autoCount > 0 ? (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleConfirmAllAuto}
+                                    >
+                                        Confirm all
+                                    </Button>
+                                ) : undefined
+                            }
                             emptyTitle="No items in this group ✓"
                             isEmpty={autoCount === 0}
                         >
                             <AutoConfirmedTable
                                 rows={derived?.autoRows ?? []}
                                 highlightedIds={highlightedIds}
+                                confirmedAutoIds={confirmedAutoIds}
+                                onConfirm={confirmAutoMatch}
                                 onLinkExisting={(user) =>
                                     openMapModal(user, 'unmatched')
                                 }
@@ -1855,36 +1954,56 @@ export default function ProviderUserManagement() {
 function AutoConfirmedTable({
     rows,
     highlightedIds,
+    confirmedAutoIds,
+    onConfirm,
     onLinkExisting,
     onCreate
 }: {
     rows: UserMatchResult[];
     highlightedIds: Set<string>;
+    confirmedAutoIds: Set<string>;
+    onConfirm: (result: UserMatchResult) => void;
     onLinkExisting: (user: ProviderUser) => void;
     onCreate: (user: ProviderUser) => void;
 }) {
-    const renderActions = (r: UserMatchResult) => (
-        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="sm:min-w-[5.5rem]"
-                onClick={() => onLinkExisting(r.canvas_user)}
-            >
-                Link existing
-            </Button>
-            <Button
-                type="button"
-                size="sm"
-                variant="brand"
-                className="sm:min-w-[5.5rem]"
-                onClick={() => onCreate(r.canvas_user)}
-            >
-                Create
-            </Button>
-        </div>
-    );
+    const renderActions = (r: UserMatchResult) => {
+        const isConfirmed = confirmedAutoIds.has(
+            r.canvas_user.external_user_id
+        );
+        return (
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+                {!isConfirmed && r.suggested_user ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="brand"
+                        className="sm:min-w-[5.5rem]"
+                        onClick={() => onConfirm(r)}
+                    >
+                        Confirm
+                    </Button>
+                ) : null}
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="sm:min-w-[5.5rem]"
+                    onClick={() => onLinkExisting(r.canvas_user)}
+                >
+                    Link existing
+                </Button>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="sm:min-w-[5.5rem]"
+                    onClick={() => onCreate(r.canvas_user)}
+                >
+                    Create
+                </Button>
+            </div>
+        );
+    };
 
     return (
         <>
