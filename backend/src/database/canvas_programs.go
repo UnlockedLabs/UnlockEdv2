@@ -14,7 +14,7 @@ func (db *DB) GetCanvasMappedUsers(providerID uint, canvasUserIDs []string, faci
 	q := db.Model(&models.ProviderUserMapping{}).
 		Select("provider_user_mappings.external_user_id, provider_user_mappings.user_id, users.name_first, users.name_last, users.doc_id").
 		Joins("JOIN users ON users.id = provider_user_mappings.user_id").
-		Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ?", providerID, canvasUserIDs)
+		Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ? AND users.deleted_at IS NULL", providerID, canvasUserIDs)
 	if facilityID != 0 {
 		q = q.Where("users.facility_id = ?", facilityID)
 	}
@@ -36,9 +36,9 @@ func (db *DB) CountProviderUserMappings(providerID uint) (int64, error) {
 }
 
 // CountProviderEnrollments returns (active, total) enrollment counts for a Canvas provider.
-// active = currently linked users (soft-deleted excluded).
-// total  = all users ever linked (soft-deleted included), matching the "all-time" semantics
-// used by regular program_class_enrollments.
+// Both counts exclude soft-deleted users. Active excludes soft-deleted mappings;
+// total includes soft-deleted mappings (all-time) but still requires the user record
+// to be present (not soft-deleted).
 // When facilityID is non-zero only users belonging to that facility are counted.
 func (db *DB) CountProviderEnrollments(providerID uint, facilityID uint) (active, total int64, err error) {
 	base := func(unscoped bool) *gorm.DB {
@@ -48,10 +48,10 @@ func (db *DB) CountProviderEnrollments(providerID uint, facilityID uint) (active
 		} else {
 			q = db.Model(&models.ProviderUserMapping{})
 		}
-		q = q.Where("provider_user_mappings.provider_platform_id = ?", providerID)
+		q = q.Joins("JOIN users ON users.id = provider_user_mappings.user_id").
+			Where("provider_user_mappings.provider_platform_id = ? AND users.deleted_at IS NULL", providerID)
 		if facilityID != 0 {
-			q = q.Joins("JOIN users ON users.id = provider_user_mappings.user_id").
-				Where("users.facility_id = ?", facilityID)
+			q = q.Where("users.facility_id = ?", facilityID)
 		}
 		return q
 	}
@@ -69,7 +69,8 @@ func (db *DB) CountProviderEnrollments(providerID uint, facilityID uint) (active
 func (db *DB) CountCanvasMappedEnrollees(providerID uint, canvasUserIDs []string) (int64, error) {
 	var count int64
 	if err := db.Model(&models.ProviderUserMapping{}).
-		Where("provider_platform_id = ? AND external_user_id IN ?", providerID, canvasUserIDs).
+		Joins("JOIN users ON users.id = provider_user_mappings.user_id").
+		Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ? AND users.deleted_at IS NULL", providerID, canvasUserIDs).
 		Count(&count).Error; err != nil {
 		return 0, newGetRecordsDBError(err, "provider_user_mappings")
 	}
@@ -82,7 +83,7 @@ func (db *DB) CountCanvasMappedEnrolleesForFacility(providerID uint, canvasUserI
 	var count int64
 	if err := db.Model(&models.ProviderUserMapping{}).
 		Joins("JOIN users ON users.id = provider_user_mappings.user_id").
-		Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ? AND users.facility_id = ?",
+		Where("provider_user_mappings.provider_platform_id = ? AND provider_user_mappings.external_user_id IN ? AND users.facility_id = ? AND users.deleted_at IS NULL",
 			providerID, canvasUserIDs, facilityID).
 		Count(&count).Error; err != nil {
 		return 0, newGetRecordsDBError(err, "provider_user_mappings")
@@ -103,6 +104,7 @@ func (db *DB) CountCanvasMappedEnrolleesPerFacility(providerID uint, canvasUserI
 		FROM provider_user_mappings pum
 		JOIN users u ON u.id = pum.user_id
 		WHERE pum.provider_platform_id = ? AND pum.external_user_id IN ?
+		  AND pum.deleted_at IS NULL AND u.deleted_at IS NULL
 		GROUP BY u.facility_id
 	`, providerID, canvasUserIDs).Scan(&rows).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_user_mappings")
