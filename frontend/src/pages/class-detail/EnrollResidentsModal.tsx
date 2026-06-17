@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
+import { ANALYTICS_EVENTS, captureEvent } from '@/lib/analytics';
 import { useDebounceValue } from 'usehooks-ts';
 import { Search, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -39,6 +40,18 @@ export function EnrollResidentsModal({
     const [searchQuery] = useDebounceValue(searchTerm, 300);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const selectionFiredRef = useRef(false);
+
+    useEffect(() => {
+        if (open) {
+            selectionFiredRef.current = false;
+            captureEvent(ANALYTICS_EVENTS.EnrollModalOpened, {
+                class_id: classId,
+                capacity,
+                enrolled
+            });
+        }
+    }, [open, classId, capacity, enrolled]);
 
     const encodedSearch = encodeURIComponent(searchQuery);
     const { data: usersResp } = useSWR<ServerResponseMany<User>>(
@@ -79,6 +92,12 @@ export function EnrollResidentsModal({
         } else {
             next.add(id);
         }
+        if (next.size > 0 && !selectionFiredRef.current) {
+            selectionFiredRef.current = true;
+            captureEvent(ANALYTICS_EVENTS.EnrollResidentsSelected, {
+                class_id: classId
+            });
+        }
         setSelectedIds(next);
     };
 
@@ -105,6 +124,10 @@ export function EnrollResidentsModal({
         });
 
         if (resp.success) {
+            captureEvent(ANALYTICS_EVENTS.EnrollCompleted, {
+                class_id: classId,
+                selected_count: userIds.length
+            });
             toast.success(
                 `${userIds.length} ${userIds.length === 1 ? 'resident' : 'residents'} enrolled in ${className}`
             );
