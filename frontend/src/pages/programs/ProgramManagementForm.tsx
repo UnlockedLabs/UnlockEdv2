@@ -16,6 +16,12 @@ import {
     FundingType
 } from '@/types';
 import { programFormSchema, ProgramFormInput } from '@/lib/validation';
+import {
+    ANALYTICS_EVENTS,
+    captureEvent,
+    flowTimerSeconds
+} from '@/lib/analytics';
+import { useFlowTimer } from '@/lib/useFlowTimer';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +79,9 @@ export default function ProgramManagementForm() {
     const { user } = useAuth();
     const isEditing = !!program_id;
     const [showFacilityWarning, setShowFacilityWarning] = useState(false);
+    const startMsRef = useFlowTimer(
+        isEditing ? null : ANALYTICS_EVENTS.ProgramCreationStarted
+    );
 
     const { data: programResp } = useSWR<ServerResponseOne<ProgramOverview>>(
         program_id ? `/api/programs/${program_id}` : null
@@ -144,6 +153,11 @@ export default function ProgramManagementForm() {
                 ? 'Program updated successfully'
                 : 'Program created successfully'
         );
+        if (!isEditing) {
+            captureEvent(ANALYTICS_EVENTS.ProgramCreationCompleted, {
+                duration_seconds: flowTimerSeconds(startMsRef.current)
+            });
+        }
         navigate(`/programs/${resp.data.id}`);
     }
 
