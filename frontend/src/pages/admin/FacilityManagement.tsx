@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -25,7 +27,15 @@ import {
 } from '@/components/ui/select';
 import { FacilityWithStats } from '@/types';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
+import { facilitySchema, FacilityInput } from '@/lib/validation';
 import { Pagination } from '@/components/Pagination';
 
 type SortColumn = 'name' | 'timezone' | 'programs' | 'classes' | 'residents';
@@ -54,10 +64,7 @@ function getTimezoneLabel(tz: string): string {
     return match ? match.label : tz;
 }
 
-interface FacilityFormData {
-    name: string;
-    timezone: string;
-}
+const DEFAULT_TIMEZONE = 'America/New_York';
 
 export default function FacilityManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -69,11 +76,15 @@ export default function FacilityManagement() {
     const [showEditFacility, setShowEditFacility] = useState(false);
     const [selectedFacility, setSelectedFacility] =
         useState<FacilityWithStats | null>(null);
-    const [formData, setFormData] = useState<FacilityFormData>({
-        name: '',
-        timezone: 'America/New_York'
+
+    const addForm = useForm<FacilityInput>({
+        resolver: zodResolver(facilitySchema),
+        defaultValues: { name: '', timezone: DEFAULT_TIMEZONE }
     });
-    const [saving, setSaving] = useState(false);
+    const editForm = useForm<FacilityInput>({
+        resolver: zodResolver(facilitySchema),
+        defaultValues: { name: '', timezone: DEFAULT_TIMEZONE }
+    });
 
     const { data, mutate } = useSWR<ServerResponseMany<FacilityWithStats>>(
         '/api/facilities?per_page=1000'
@@ -124,29 +135,26 @@ export default function FacilityManagement() {
         }
     }
 
-    async function handleAddFacility() {
-        setSaving(true);
-        const resp = await API.post<FacilityWithStats, FacilityFormData>(
+    async function handleAddFacility(data: FacilityInput) {
+        const resp = await API.post<FacilityWithStats, FacilityInput>(
             'facilities',
-            formData
+            data
         );
         if (resp.success) {
-            toast.success(`Facility "${formData.name}" added successfully`);
+            toast.success(`Facility "${data.name}" added successfully`);
             setShowAddFacility(false);
-            setFormData({ name: '', timezone: 'America/New_York' });
+            addForm.reset({ name: '', timezone: DEFAULT_TIMEZONE });
             void mutate();
         } else {
             toast.error(resp.message || 'Failed to create facility');
         }
-        setSaving(false);
     }
 
-    async function handleEditFacility() {
+    async function handleEditFacility(data: FacilityInput) {
         if (!selectedFacility) return;
-        setSaving(true);
-        const resp = await API.patch<FacilityWithStats, FacilityFormData>(
+        const resp = await API.patch<FacilityWithStats, FacilityInput>(
             `facilities/${selectedFacility.id}`,
-            formData
+            data
         );
         if (resp.success) {
             toast.success(`${selectedFacility.name} updated successfully`);
@@ -156,12 +164,14 @@ export default function FacilityManagement() {
         } else {
             toast.error(resp.message || 'Failed to update facility');
         }
-        setSaving(false);
     }
 
     function openEdit(facility: FacilityWithStats) {
         setSelectedFacility(facility);
-        setFormData({ name: facility.name, timezone: facility.timezone });
+        editForm.reset({
+            name: facility.name,
+            timezone: facility.timezone
+        });
         setShowEditFacility(true);
     }
 
@@ -180,9 +190,9 @@ export default function FacilityManagement() {
                         </div>
                         <Button
                             onClick={() => {
-                                setFormData({
+                                addForm.reset({
                                     name: '',
-                                    timezone: 'America/New_York'
+                                    timezone: DEFAULT_TIMEZONE
                                 });
                                 setShowAddFacility(true);
                             }}
@@ -353,63 +363,81 @@ export default function FacilityManagement() {
                     description="Create a new correctional facility"
                     titleClassName="text-foreground"
                 >
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="add-name">Facility Name</Label>
-                            <Input
-                                id="add-name"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name: e.target.value
-                                    })
-                                }
-                                placeholder="Northern Regional Facility"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="add-timezone">Timezone</Label>
-                            <Select
-                                value={formData.timezone}
-                                onValueChange={(value) =>
-                                    setFormData({
-                                        ...formData,
-                                        timezone: value
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="add-timezone">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {timezones.map((tz) => (
-                                        <SelectItem
-                                            key={tz.value}
-                                            value={tz.value}
-                                        >
-                                            {tz.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowAddFacility(false)}
+                    <Form {...addForm}>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                void addForm.handleSubmit(handleAddFacility)(e);
+                            }}
                         >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleAddFacility()}
-                            disabled={saving || !formData.name.trim()}
-                            variant="brand"
-                        >
-                            {saving ? 'Adding...' : 'Add Facility'}
-                        </Button>
-                    </DialogFooter>
+                            <div className="space-y-4 py-4">
+                                <FormField
+                                    control={addForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Facility Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Northern Regional Facility"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={addForm.control}
+                                    name="timezone"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Timezone</FormLabel>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {timezones.map((tz) => (
+                                                        <SelectItem
+                                                            key={tz.value}
+                                                            value={tz.value}
+                                                        >
+                                                            {tz.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowAddFacility(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={addForm.formState.isSubmitting}
+                                    variant="brand"
+                                >
+                                    {addForm.formState.isSubmitting
+                                        ? 'Adding...'
+                                        : 'Add Facility'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
                 </FormModal>
 
                 {/* Edit Facility Dialog */}
@@ -420,62 +448,80 @@ export default function FacilityManagement() {
                     description="Update facility information"
                     titleClassName="text-foreground"
                 >
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-name">Facility Name</Label>
-                            <Input
-                                id="edit-name"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name: e.target.value
-                                    })
-                                }
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-timezone">Timezone</Label>
-                            <Select
-                                value={formData.timezone}
-                                onValueChange={(value) =>
-                                    setFormData({
-                                        ...formData,
-                                        timezone: value
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="edit-timezone">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {timezones.map((tz) => (
-                                        <SelectItem
-                                            key={tz.value}
-                                            value={tz.value}
-                                        >
-                                            {tz.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowEditFacility(false)}
+                    <Form {...editForm}>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                void editForm.handleSubmit(handleEditFacility)(
+                                    e
+                                );
+                            }}
                         >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleEditFacility()}
-                            disabled={saving || !formData.name.trim()}
-                            variant="brand"
-                        >
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </DialogFooter>
+                            <div className="space-y-4 py-4">
+                                <FormField
+                                    control={editForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Facility Name</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={editForm.control}
+                                    name="timezone"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Timezone</FormLabel>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {timezones.map((tz) => (
+                                                        <SelectItem
+                                                            key={tz.value}
+                                                            value={tz.value}
+                                                        >
+                                                            {tz.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowEditFacility(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={editForm.formState.isSubmitting}
+                                    variant="brand"
+                                >
+                                    {editForm.formState.isSubmitting
+                                        ? 'Saving...'
+                                        : 'Save Changes'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
                 </FormModal>
             </div>
         </div>

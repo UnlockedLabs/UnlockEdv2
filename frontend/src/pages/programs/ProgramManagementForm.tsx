@@ -1,27 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
     ProgramOverview,
-    ProgramType,
-    CreditType,
-    FundingType,
     PgmType,
     ProgramCreditType,
     ServerResponseOne,
     Program,
-    Facility
+    Facility,
+    FundingType
 } from '@/types';
+import { programFormSchema, ProgramFormInput } from '@/lib/validation';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -36,17 +44,7 @@ import {
     ALL_FUNDING_TYPES
 } from '@/pages/program-detail/constants';
 
-interface ProgramFormData {
-    name: string;
-    description: string;
-    program_types: ProgramType[];
-    credit_types: CreditType[];
-    funding_type: FundingType;
-    is_active: boolean;
-    facility_ids: number[];
-}
-
-function buildDefaultValues(program?: ProgramOverview): ProgramFormData {
+function buildDefaultValues(program?: ProgramOverview): ProgramFormInput {
     if (program) {
         return {
             name: program.name,
@@ -81,17 +79,16 @@ export default function ProgramManagementForm() {
     );
     const program = programResp?.data;
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        reset,
-        watch,
-        setValue,
-        formState: { errors, isSubmitting }
-    } = useForm<ProgramFormData>({
+    const form = useForm<ProgramFormInput>({
+        resolver: zodResolver(programFormSchema),
         defaultValues: buildDefaultValues()
     });
+    const {
+        control,
+        handleSubmit,
+        reset,
+        formState: { isSubmitting }
+    } = form;
 
     useEffect(() => {
         if (program) {
@@ -99,51 +96,9 @@ export default function ProgramManagementForm() {
         }
     }, [program, reset]);
 
-    const selectedProgramTypes = watch('program_types');
-    const selectedCreditTypes = watch('credit_types');
-    const selectedFacilities = watch('facility_ids');
     const facilities: Facility[] = user?.facilities ?? [];
 
-    function handleCheckboxToggle<T>(
-        field: 'program_types' | 'credit_types',
-        value: T,
-        checked: boolean
-    ) {
-        const current = (
-            field === 'program_types'
-                ? selectedProgramTypes
-                : selectedCreditTypes
-        ) as T[];
-        const updated = checked
-            ? [...current, value]
-            : current.filter((item) => item !== value);
-        setValue(field, updated as ProgramType[] & CreditType[]);
-    }
-
-    function handleFacilityToggle(facilityId: number, checked: boolean) {
-        if (!checked && program) {
-            const activeClassIds = program.active_class_facility_ids ?? [];
-            if (activeClassIds.includes(facilityId)) {
-                setShowFacilityWarning(true);
-                return;
-            }
-        }
-        const updated = checked
-            ? [...selectedFacilities, facilityId]
-            : selectedFacilities.filter((id) => id !== facilityId);
-        setValue('facility_ids', updated);
-    }
-
-    async function onSubmit(data: ProgramFormData) {
-        if (data.program_types.length === 0) {
-            toast.error('Please select at least one program type');
-            return;
-        }
-        if (data.credit_types.length === 0) {
-            toast.error('Please select at least one credit type');
-            return;
-        }
-
+    async function onSubmit(data: ProgramFormInput) {
         const payload = {
             ...(program_id && { id: Number(program_id) }),
             name: data.name,
@@ -203,241 +158,308 @@ export default function ProgramManagementForm() {
                 }
             />
 
-            <form
-                onSubmit={(event) => {
-                    void handleSubmit(onSubmit)(event);
-                }}
-                className="space-y-6"
-            >
-                <div className="section-card">
-                    <h2 className="text-lg font-semibold text-foreground">
-                        Program Information
-                    </h2>
+            <Form {...form}>
+                <form
+                    onSubmit={(event) => {
+                        void handleSubmit(onSubmit)(event);
+                    }}
+                    className="space-y-6"
+                >
+                    <div className="section-card">
+                        <h2 className="text-lg font-semibold text-foreground">
+                            Program Information
+                        </h2>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                            id="name"
-                            {...register('name', {
-                                required: 'Program name is required',
-                                maxLength: {
-                                    value: 255,
-                                    message:
-                                        'Name must be 255 characters or fewer'
-                                }
-                            })}
+                        <FormField
+                            control={control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                        {errors.name && (
-                            <p className="text-sm text-red-600">
-                                {errors.name.message}
-                            </p>
-                        )}
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            rows={3}
-                            {...register('description', {
-                                required: 'Description is required',
-                                maxLength: {
-                                    value: 255,
-                                    message:
-                                        'Description must be 255 characters or fewer'
-                                }
-                            })}
+                        <FormField
+                            control={control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea rows={3} {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                        {errors.description && (
-                            <p className="text-sm text-red-600">
-                                {errors.description.message}
-                            </p>
-                        )}
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label>Program Types</Label>
-                            <div className="space-y-2 mt-1">
-                                {ALL_PROGRAM_TYPES.map((type) => (
-                                    <label
-                                        key={type}
-                                        className="flex items-center gap-2 cursor-pointer"
-                                    >
-                                        <Checkbox
-                                            checked={selectedProgramTypes?.includes(
-                                                type
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                                handleCheckboxToggle(
-                                                    'program_types',
-                                                    type,
-                                                    checked === true
-                                                )
-                                            }
-                                        />
-                                        <span className="text-sm text-foreground">
-                                            {type.replace(/_/g, ' ')}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <FormField
+                                control={control}
+                                name="program_types"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>Program Types</FormLabel>
+                                        <div className="space-y-2 mt-1">
+                                            {ALL_PROGRAM_TYPES.map((type) => (
+                                                <label
+                                                    key={type}
+                                                    className="flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <Checkbox
+                                                        checked={field.value?.includes(
+                                                            type
+                                                        )}
+                                                        onCheckedChange={(
+                                                            checked
+                                                        ) =>
+                                                            field.onChange(
+                                                                checked === true
+                                                                    ? [
+                                                                          ...field.value,
+                                                                          type
+                                                                      ]
+                                                                    : field.value.filter(
+                                                                          (v) =>
+                                                                              v !==
+                                                                              type
+                                                                      )
+                                                            )
+                                                        }
+                                                    />
+                                                    <span className="text-sm text-foreground">
+                                                        {type.replace(
+                                                            /_/g,
+                                                            ' '
+                                                        )}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={control}
+                                name="credit_types"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>Credit Types</FormLabel>
+                                        <div className="space-y-2 mt-1">
+                                            {ALL_CREDIT_TYPES.map((type) => (
+                                                <label
+                                                    key={type}
+                                                    className="flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <Checkbox
+                                                        checked={field.value?.includes(
+                                                            type
+                                                        )}
+                                                        onCheckedChange={(
+                                                            checked
+                                                        ) =>
+                                                            field.onChange(
+                                                                checked === true
+                                                                    ? [
+                                                                          ...field.value,
+                                                                          type
+                                                                      ]
+                                                                    : field.value.filter(
+                                                                          (v) =>
+                                                                              v !==
+                                                                              type
+                                                                      )
+                                                            )
+                                                        }
+                                                    />
+                                                    <span className="text-sm text-foreground">
+                                                        {type}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Credit Types</Label>
-                            <div className="space-y-2 mt-1">
-                                {ALL_CREDIT_TYPES.map((type) => (
-                                    <label
-                                        key={type}
-                                        className="flex items-center gap-2 cursor-pointer"
-                                    >
-                                        <Checkbox
-                                            checked={selectedCreditTypes?.includes(
-                                                type
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                                handleCheckboxToggle(
-                                                    'credit_types',
-                                                    type,
-                                                    checked === true
-                                                )
-                                            }
-                                        />
-                                        <span className="text-sm text-foreground">
-                                            {type}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Funding Type</Label>
-                        <Controller
+                        <FormField
+                            control={control}
                             name="funding_type"
-                            control={control}
-                            rules={{ required: 'Funding type is required' }}
                             render={({ field }) => (
-                                <Select
-                                    value={field.value}
-                                    onValueChange={field.onChange}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select funding type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ALL_FUNDING_TYPES.map((ft) => (
-                                            <SelectItem key={ft} value={ft}>
-                                                {ft.replace(/_/g, ' ')}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <FormItem className="space-y-2">
+                                    <FormLabel>Funding Type</FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select funding type" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {ALL_FUNDING_TYPES.map((ft) => (
+                                                <SelectItem key={ft} value={ft}>
+                                                    {ft.replace(/_/g, ' ')}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
                             )}
                         />
                     </div>
-                </div>
 
-                <div className="section-card">
-                    <h2 className="text-lg font-semibold text-foreground">
-                        Availability
-                    </h2>
+                    <div className="section-card">
+                        <h2 className="text-lg font-semibold text-foreground">
+                            Availability
+                        </h2>
 
-                    {user &&
-                        canSwitchFacility(user) &&
-                        facilities.length > 0 && (
-                            <div className="space-y-2">
-                                <Label>Facilities</Label>
-                                <div className="space-y-2 mt-1">
-                                    {facilities.map((fac) => (
-                                        <label
-                                            key={fac.id}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <Checkbox
-                                                checked={selectedFacilities?.includes(
-                                                    fac.id
-                                                )}
-                                                onCheckedChange={(checked) =>
-                                                    handleFacilityToggle(
-                                                        fac.id,
-                                                        checked === true
-                                                    )
-                                                }
-                                            />
-                                            <span className="text-sm text-foreground">
-                                                {fac.name}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {user &&
+                            canSwitchFacility(user) &&
+                            facilities.length > 0 && (
+                                <FormField
+                                    control={control}
+                                    name="facility_ids"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Facilities</FormLabel>
+                                            <div className="space-y-2 mt-1">
+                                                {facilities.map((fac) => (
+                                                    <label
+                                                        key={fac.id}
+                                                        className="flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <Checkbox
+                                                            checked={field.value?.includes(
+                                                                fac.id
+                                                            )}
+                                                            onCheckedChange={(
+                                                                checked
+                                                            ) => {
+                                                                if (
+                                                                    !checked &&
+                                                                    program
+                                                                ) {
+                                                                    const activeClassIds =
+                                                                        program.active_class_facility_ids ??
+                                                                        [];
+                                                                    if (
+                                                                        activeClassIds.includes(
+                                                                            fac.id
+                                                                        )
+                                                                    ) {
+                                                                        setShowFacilityWarning(
+                                                                            true
+                                                                        );
+                                                                        return;
+                                                                    }
+                                                                }
+                                                                field.onChange(
+                                                                    checked ===
+                                                                        true
+                                                                        ? [
+                                                                              ...field.value,
+                                                                              fac.id
+                                                                          ]
+                                                                        : field.value.filter(
+                                                                              (
+                                                                                  id
+                                                                              ) =>
+                                                                                  id !==
+                                                                                  fac.id
+                                                                          )
+                                                                );
+                                                            }}
+                                                        />
+                                                        <span className="text-sm text-foreground">
+                                                            {fac.name}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
 
-                    <div className="space-y-2">
-                        <Label>Program Status</Label>
-                        <Controller
+                        <FormField
+                            control={control}
                             name="is_active"
-                            control={control}
                             render={({ field }) => (
-                                <Select
-                                    value={field.value ? 'active' : 'inactive'}
-                                    onValueChange={(v) =>
-                                        field.onChange(v === 'active')
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="active">
-                                            Available
-                                        </SelectItem>
-                                        <SelectItem value="inactive">
-                                            Inactive
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <FormItem className="space-y-2">
+                                    <Label>Program Status</Label>
+                                    <Select
+                                        value={
+                                            field.value ? 'active' : 'inactive'
+                                        }
+                                        onValueChange={(v) =>
+                                            field.onChange(v === 'active')
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="active">
+                                                Available
+                                            </SelectItem>
+                                            <SelectItem value="inactive">
+                                                Inactive
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Set to &apos;Available&apos; to let
+                                        facility admins schedule classes.
+                                        &apos;Inactive&apos; programs stay
+                                        hidden.
+                                    </p>
+                                </FormItem>
                             )}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            Set to &apos;Available&apos; to let facility admins
-                            schedule classes. &apos;Inactive&apos; programs stay
-                            hidden.
-                        </p>
                     </div>
-                </div>
 
-                {isEditing && (
-                    <p className="text-sm text-muted-foreground text-right">
-                        This change will not impact historical data.
-                    </p>
-                )}
+                    {isEditing && (
+                        <p className="text-sm text-muted-foreground text-right">
+                            This change will not impact historical data.
+                        </p>
+                    )}
 
-                <div className="flex items-center justify-end gap-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => navigate('/programs')}
-                        className="border-gray-300"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="btn-gold-thin"
-                    >
-                        {isSubmitting
-                            ? 'Saving...'
-                            : isEditing
-                              ? 'Save Changes'
-                              : 'Create Program'}
-                    </Button>
-                </div>
-            </form>
+                    <div className="flex items-center justify-end gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => navigate('/programs')}
+                            className="border-gray-300"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="btn-gold-thin"
+                        >
+                            {isSubmitting
+                                ? 'Saving...'
+                                : isEditing
+                                  ? 'Save Changes'
+                                  : 'Create Program'}
+                        </Button>
+                    </div>
+                </form>
+            </Form>
 
             <ConfirmDialog
                 open={showFacilityWarning}

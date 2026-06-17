@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { Pagination } from '@/components/Pagination';
 import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
@@ -21,6 +23,7 @@ import { FormModal } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -36,6 +39,10 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
+import {
+    classEnrollmentsSchema,
+    ClassEnrollmentsInput
+} from '@/lib/validation';
 
 function StatItem({
     icon,
@@ -63,7 +70,21 @@ export default function AddClassEnrollments() {
     const loaderData = useLoaderData() as ClassLoaderData;
     const classInfo = loaderData?.class;
 
-    const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+    const form = useForm<ClassEnrollmentsInput>({
+        resolver: zodResolver(classEnrollmentsSchema),
+        defaultValues: { user_ids: [] }
+    });
+    const selectedUsers = form.watch('user_ids');
+    const setSelectedUsers = (
+        next: number[] | ((prev: number[]) => number[])
+    ) => {
+        const value =
+            typeof next === 'function'
+                ? next(form.getValues('user_ids'))
+                : next;
+        form.setValue('user_ids', value);
+    };
+
     const [errorMessage, setErrorMessage] = useState('');
     const { page, perPage, setPage, setPerPage } = useUrlPagination();
     const [searchTerm, setSearchTerm] = useState('');
@@ -100,6 +121,7 @@ export default function AddClassEnrollments() {
         } else if (remainingCapacity > 0 && errorMessage === 'Class is full') {
             setErrorMessage('');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [remainingCapacity, errorMessage]);
 
     function handleToggleRow(userId: number) {
@@ -128,7 +150,7 @@ export default function AddClassEnrollments() {
             EnrollmentResponse,
             { user_ids: number[]; confirm: boolean }
         >(`program-classes/${class_id}/enrollments`, {
-            user_ids: selectedUsers,
+            user_ids: form.getValues('user_ids'),
             confirm
         });
 
@@ -146,7 +168,7 @@ export default function AddClassEnrollments() {
         }
 
         toast.success('Residents enrolled successfully');
-        setSelectedUsers([]);
+        form.setValue('user_ids', []);
         navigate(`/program-classes/${class_id}/enrollments`);
     }
 
@@ -158,11 +180,6 @@ export default function AddClassEnrollments() {
             setErrorMessage(
                 'Cannot add users to a class that is completed or cancelled.'
             );
-            return;
-        }
-        if (selectedUsers.length === 0) {
-            setErrorMessage('Please select at least one user.');
-            setTimeout(() => setErrorMessage(''), 8000);
             return;
         }
         await submitEnrollment(false);
@@ -230,135 +247,150 @@ export default function AddClassEnrollments() {
                 </Select>
             </div>
 
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    void handleSubmit();
-                }}
-            >
-                <div className="bg-card rounded-lg border border-border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-10">
-                                    <Checkbox
-                                        checked={allSelected}
-                                        onCheckedChange={handleSelectAll}
-                                    />
-                                </TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Resident ID</TableHead>
-                                <TableHead>Username</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={4}
-                                        className="text-center py-8"
-                                    >
-                                        Loading...
-                                    </TableCell>
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(() => void handleSubmit())(e);
+                    }}
+                >
+                    <div className="bg-card rounded-lg border border-border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="w-10">
+                                        <Checkbox
+                                            checked={allSelected}
+                                            onCheckedChange={handleSelectAll}
+                                        />
+                                    </TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Resident ID</TableHead>
+                                    <TableHead>Username</TableHead>
                                 </TableRow>
-                            ) : users.length === 0 ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={4}
-                                        className="text-center py-8 text-muted-foreground"
-                                    >
-                                        No eligible residents available at this
-                                        facility.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                users.map((user) => {
-                                    const isSelected = selectedUsers.includes(
-                                        user.id
-                                    );
-                                    return (
-                                        <TableRow
-                                            key={user.id}
-                                            className={`cursor-pointer ${isSelected ? 'bg-muted/30' : ''}`}
-                                            onClick={() =>
-                                                handleToggleRow(user.id)
-                                            }
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={4}
+                                            className="text-center py-8"
                                         >
-                                            <TableCell
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
+                                            Loading...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : users.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={4}
+                                            className="text-center py-8 text-muted-foreground"
+                                        >
+                                            No eligible residents available at
+                                            this facility.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    users.map((user) => {
+                                        const isSelected =
+                                            selectedUsers.includes(user.id);
+                                        return (
+                                            <TableRow
+                                                key={user.id}
+                                                className={`cursor-pointer ${isSelected ? 'bg-muted/30' : ''}`}
+                                                onClick={() =>
+                                                    handleToggleRow(user.id)
                                                 }
                                             >
-                                                <Checkbox
-                                                    checked={isSelected}
-                                                    onCheckedChange={() =>
-                                                        handleToggleRow(user.id)
+                                                <TableCell
+                                                    onClick={(e) =>
+                                                        e.stopPropagation()
                                                     }
-                                                />
-                                            </TableCell>
-                                            <TableCell className="font-medium text-foreground">
-                                                {user.name_last},{' '}
-                                                {user.name_first}
-                                            </TableCell>
-                                            <TableCell>{user.doc_id}</TableCell>
-                                            <TableCell>
-                                                {user.username}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
+                                                >
+                                                    <Checkbox
+                                                        checked={isSelected}
+                                                        onCheckedChange={() =>
+                                                            handleToggleRow(
+                                                                user.id
+                                                            )
+                                                        }
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="font-medium text-foreground">
+                                                    {user.name_last},{' '}
+                                                    {user.name_first}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {user.doc_id}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {user.username}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
 
-                    {(meta?.total ?? 0) > 0 && (
-                        <Pagination
-                            currentPage={page}
-                            totalItems={meta?.total ?? 0}
-                            itemsPerPage={perPage}
-                            onPageChange={setPage}
-                            onItemsPerPageChange={setPerPage}
-                            itemLabel="residents"
-                        />
+                        {(meta?.total ?? 0) > 0 && (
+                            <Pagination
+                                currentPage={page}
+                                totalItems={meta?.total ?? 0}
+                                itemsPerPage={perPage}
+                                onPageChange={setPage}
+                                onItemsPerPageChange={setPerPage}
+                                itemLabel="residents"
+                            />
+                        )}
+                    </div>
+
+                    <FormField
+                        control={form.control}
+                        name="user_ids"
+                        render={() => (
+                            <FormItem>
+                                <FormMessage className="mt-2" />
+                            </FormItem>
+                        )}
+                    />
+
+                    {errorMessage && (
+                        <div className="text-sm text-destructive mt-2">
+                            {errorMessage}
+                        </div>
                     )}
-                </div>
 
-                {errorMessage && (
-                    <div className="text-sm text-red-600 mt-2">
-                        {errorMessage}
+                    <div className="flex items-center justify-between py-4 border-t mt-4 sticky bottom-0 bg-card">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>
+                                {selectedUsers.length} resident
+                                {selectedUsers.length === 1 ? '' : 's'} selected
+                            </span>
+                            <span>
+                                {remainingCapacity} spot
+                                {remainingCapacity === 1 ? '' : 's'} remaining
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() =>
+                                    navigate(
+                                        `/program-classes/${class_id}/enrollments`
+                                    )
+                                }
+                                className="border-gray-300"
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="btn-gold-thin">
+                                Enroll Residents
+                            </Button>
+                        </div>
                     </div>
-                )}
-
-                <div className="flex items-center justify-between py-4 border-t mt-4 sticky bottom-0 bg-card">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>
-                            {selectedUsers.length} resident
-                            {selectedUsers.length === 1 ? '' : 's'} selected
-                        </span>
-                        <span>
-                            {remainingCapacity} spot
-                            {remainingCapacity === 1 ? '' : 's'} remaining
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() =>
-                                navigate(
-                                    `/program-classes/${class_id}/enrollments`
-                                )
-                            }
-                            className="border-gray-300"
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" className="btn-gold-thin">
-                            Enroll Residents
-                        </Button>
-                    </div>
-                </div>
-            </form>
+                </form>
+            </Form>
 
             <FormModal
                 open={showConflictDialog}

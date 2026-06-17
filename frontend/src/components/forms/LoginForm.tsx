@@ -1,22 +1,24 @@
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import { AuthFlow, AuthResponse, ServerResponseOne } from '@/types';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import API from '@/api/api';
 import { useEffect, useState } from 'react';
 import { tabSessionManager } from '@/session/tabSession';
+import { loginSchema, LoginInput } from '@/lib/validation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useTourContext } from '@/contexts/useTourContext';
-
-interface Inputs {
-    identifier: string;
-    password: string;
-    flow_id: string;
-    challenge: string;
-    csrf_token: string;
-}
 
 function formatCountdown(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -40,12 +42,17 @@ export default function LoginForm() {
     const [lockedOutSeconds, setLockedOutSeconds] = useState<number | null>(
         null
     );
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        formState: { errors }
-    } = useForm<Inputs>();
+    const form = useForm<LoginInput>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            identifier: '',
+            password: '',
+            flow_id: '',
+            challenge: '',
+            csrf_token: ''
+        }
+    });
+    const { control, handleSubmit, setValue } = form;
 
     const isLockedOut = lockedOutSeconds !== null && lockedOutSeconds > 0;
     useEffect(() => {
@@ -62,14 +69,14 @@ export default function LoginForm() {
         return () => clearInterval(timer);
     }, [isLockedOut]);
 
-    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    const onSubmit: SubmitHandler<LoginInput> = async (data) => {
         if (user) {
             data.identifier = user;
         }
         setErrorMessage(false);
         setErrorType('generic');
         setProcessing(true);
-        const resp = (await API.post<AuthResponse, Inputs>(
+        const resp = (await API.post<AuthResponse, LoginInput>(
             'login',
             data
         )) as ServerResponseOne<AuthResponse>;
@@ -115,6 +122,9 @@ export default function LoginForm() {
         }
         if (loaderData.identifier) {
             setUser(loaderData.identifier);
+            // Pre-fill the identifier so validation passes when the username is
+            // shown read-only; onSubmit reassigns it from `user` regardless.
+            setValue('identifier', loaderData.identifier);
         }
         setValue('flow_id', loaderData.flow_id ?? '');
         setValue('challenge', loaderData.challenge ?? '');
@@ -137,79 +147,86 @@ export default function LoginForm() {
     };
 
     return (
-        <form
-            onSubmit={(e) => {
-                void handleSubmit(onSubmit)(e);
-            }}
-        >
-            <input type="hidden" {...register('flow_id')} />
-            <input type="hidden" {...register('challenge')} />
-            <input type="hidden" {...register('csrf_token')} />
-            {user ? (
-                <div className="space-y-2">
-                    <Label className="text-foreground">Username</Label>
-                    <div className="flex h-9 w-full items-center rounded-md border px-3 py-1 text-sm text-foreground bg-muted">
-                        {user}
+        <Form {...form}>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
+                <input type="hidden" {...form.register('flow_id')} />
+                <input type="hidden" {...form.register('challenge')} />
+                <input type="hidden" {...form.register('csrf_token')} />
+                {user ? (
+                    <div className="space-y-2">
+                        <Label className="text-foreground">Username</Label>
+                        <div className="flex h-9 w-full items-center rounded-md border px-3 py-1 text-sm text-foreground bg-muted">
+                            {user}
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-foreground">
-                        Username
-                    </Label>
-                    <Input
-                        id="identifier"
-                        type="text"
-                        maxLength={50}
-                        autoFocus
-                        {...register('identifier', {
-                            required: 'Username is required'
-                        })}
+                ) : (
+                    <FormField
+                        control={control}
+                        name="identifier"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel className="text-foreground">
+                                    Username
+                                </FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="text"
+                                        maxLength={50}
+                                        autoFocus
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
-                    {errors.identifier && (
-                        <p className="text-sm text-destructive">
-                            {errors.identifier.message}
-                        </p>
-                    )}
-                </div>
-            )}
+                )}
 
-            <div className="space-y-2 mt-4">
-                <Label htmlFor="password" className="text-foreground">
-                    Password
-                </Label>
-                <Input
-                    id="password"
-                    type="password"
-                    maxLength={50}
-                    {...register('password', {
-                        required: 'Password is required'
-                    })}
+                <FormField
+                    control={control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem className="space-y-2 mt-4">
+                            <FormLabel className="text-foreground">
+                                Password
+                            </FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="password"
+                                    maxLength={50}
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
                 />
-                {errors.password && (
-                    <p className="text-sm text-destructive">
-                        {errors.password.message}
+
+                {errorMessage && (
+                    <p className="mt-3 text-sm text-destructive">
+                        {renderError()}
                     </p>
                 )}
-            </div>
 
-            {errorMessage && (
-                <p className="mt-3 text-sm text-destructive">{renderError()}</p>
-            )}
-
-            <div className="flex items-center justify-end mt-6">
-                <Button
-                    type="submit"
-                    disabled={processing}
-                    className="btn-gold"
-                >
-                    {processing ? (
-                        <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                        'Log in'
-                    )}
-                </Button>
-            </div>
-        </form>
+                <div className="flex items-center justify-end mt-6">
+                    <Button
+                        type="submit"
+                        disabled={processing}
+                        className="btn-gold"
+                    >
+                        {processing ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            'Log in'
+                        )}
+                    </Button>
+                </div>
+            </form>
+        </Form>
     );
 }

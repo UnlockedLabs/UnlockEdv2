@@ -37,6 +37,7 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
 		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
 		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
+		{models.ActivateScheduledClassesJob.PubName(), sh.handleActivateScheduledClasses},
 	}
 	for _, sub := range subscriptions {
 		timeout := CANCEL_TIMEOUT

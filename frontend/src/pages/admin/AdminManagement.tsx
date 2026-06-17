@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import {
@@ -19,8 +21,7 @@ import {
     Facility,
     ServerResponseMany,
     ServerResponseOne,
-    NewUserResponse,
-    ResetPasswordResponse
+    NewUserResponse
 } from '@/types';
 import {
     BulkResetPasswordDialog,
@@ -38,7 +39,7 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { DialogFooter } from '@/components/ui/dialog';
-import { FormModal, TonedPanel } from '@/components/shared';
+import { FormModal, TonedPanel, ResetPasswordModal } from '@/components/shared';
 import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
 import {
     DropdownMenu,
@@ -55,6 +56,20 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
+import {
+    buildAdminAddSchema,
+    buildAdminEditSchema,
+    AdminAddInput,
+    AdminEditInput
+} from '@/lib/validation';
 import { Pagination } from '@/components/Pagination';
 
 type SortColumn = 'name' | 'username' | 'role' | 'facility' | 'lastActive';
@@ -66,24 +81,6 @@ const SORT_FIELD: Record<SortColumn, string> = {
     role: 'role',
     facility: 'facility_name',
     lastActive: 'last_login'
-};
-
-interface AdminFormData {
-    name_first: string;
-    name_last: string;
-    username: string;
-    email: string;
-    role: UserRole;
-    facility_id: number | null;
-}
-
-const emptyForm: AdminFormData = {
-    name_first: '',
-    name_last: '',
-    username: '',
-    email: '',
-    role: UserRole.FacilityAdmin,
-    facility_id: null
 };
 
 function formatLastActive(dateString?: string | null) {
@@ -175,7 +172,6 @@ export default function AdminManagement() {
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [tempPassword, setTempPassword] = useState('');
-    const [passwordCopied, setPasswordCopied] = useState(false);
     const [passwordModalContext, setPasswordModalContext] = useState<
         'create' | 'reset'
     >('reset');
@@ -183,7 +179,30 @@ export default function AdminManagement() {
     const [showBulkResetPassword, setShowBulkResetPassword] = useState(false);
     const [showBulkDelete, setShowBulkDelete] = useState(false);
 
-    const [formData, setFormData] = useState<AdminFormData>(emptyForm);
+    const addResolver = useMemo(
+        () => zodResolver(buildAdminAddSchema(canSwitchFac)),
+        [canSwitchFac]
+    );
+    const addForm = useForm<AdminAddInput>({
+        resolver: addResolver,
+        defaultValues: {
+            name_first: '',
+            name_last: '',
+            username: '',
+            role: UserRole.FacilityAdmin,
+            facility_id: ''
+        }
+    });
+    const editRequireFacility =
+        canSwitchFac && selectedAdmin?.role === UserRole.FacilityAdmin;
+    const editResolver = useMemo(
+        () => zodResolver(buildAdminEditSchema(editRequireFacility)),
+        [editRequireFacility]
+    );
+    const editForm = useForm<AdminEditInput>({
+        resolver: editResolver,
+        defaultValues: { name_first: '', name_last: '', facility_id: '' }
+    });
 
     const deleteConfirm = useTypeToConfirm({
         open: showDeleteDialog,
@@ -301,50 +320,37 @@ export default function AdminManagement() {
     };
 
     const openAddDialog = () => {
-        setFormData({
-            ...emptyForm,
+        addForm.reset({
+            name_first: '',
+            name_last: '',
+            username: '',
             role: canManageDeptAdmins
                 ? UserRole.DepartmentAdmin
                 : UserRole.FacilityAdmin,
-            facility_id: user?.facility_id ?? null
+            facility_id: user?.facility_id ? String(user.facility_id) : ''
         });
         setShowAddAdmin(true);
     };
 
     const openEditDialog = (admin: User) => {
         setSelectedAdmin(admin);
-        setFormData({
+        editForm.reset({
             name_first: admin.name_first,
             name_last: admin.name_last,
-            username: admin.username,
-            email: admin.email,
-            role: admin.role,
-            facility_id: admin.facility_id ?? null
+            facility_id: admin.facility_id ? String(admin.facility_id) : ''
         });
         setShowEditAdmin(true);
     };
 
-    const handleAddAdmin = async () => {
-        if (
-            !formData.name_first.trim() ||
-            !formData.name_last.trim() ||
-            !formData.username.trim()
-        ) {
-            toast.error('First name, last name, and username are required');
-            return;
-        }
-        if (!formData.facility_id) {
-            toast.error('Please select a facility');
-            return;
-        }
+    const handleAddAdmin = async (data: AdminAddInput) => {
         const payload = {
             user: {
-                name_first: formData.name_first,
-                name_last: formData.name_last,
-                username: formData.username,
-                email: formData.email,
-                role: formData.role,
-                facility_id: formData.facility_id ?? 0
+                name_first: data.name_first,
+                name_last: data.name_last,
+                username: data.username,
+                email: '',
+                role: data.role,
+                facility_id: data.facility_id ? Number(data.facility_id) : 0
             },
             provider_platforms: []
         };
@@ -354,11 +360,10 @@ export default function AdminManagement() {
         )) as ServerResponseOne<NewUserResponse>;
         if (response.success) {
             toast.success(
-                `Admin ${formData.name_first} ${formData.name_last} added successfully`
+                `Admin ${data.name_first} ${data.name_last} added successfully`
             );
             setShowAddAdmin(false);
             setTempPassword(response.data.temp_password);
-            setPasswordCopied(false);
             setPasswordModalContext('create');
             setShowResetPassword(true);
             setSelectedAdmin(response.data.user);
@@ -369,17 +374,17 @@ export default function AdminManagement() {
         }
     };
 
-    const handleEditAdmin = async () => {
+    const handleEditAdmin = async (data: AdminEditInput) => {
         if (!selectedAdmin) return;
         const payload = {
-            name_first: formData.name_first,
-            name_last: formData.name_last,
-            username: formData.username,
-            email: formData.email,
+            name_first: data.name_first,
+            name_last: data.name_last,
+            username: selectedAdmin.username,
+            email: selectedAdmin.email,
             ...(canSwitchFac &&
-            formData.role === UserRole.FacilityAdmin &&
-            formData.facility_id
-                ? { facility_id: formData.facility_id }
+            selectedAdmin.role === UserRole.FacilityAdmin &&
+            data.facility_id
+                ? { facility_id: Number(data.facility_id) }
                 : {})
         };
         const response = await API.patch<User, object>(
@@ -399,23 +404,11 @@ export default function AdminManagement() {
         }
     };
 
-    const handleResetPassword = async (admin: User) => {
+    const handleResetPassword = (admin: User) => {
         setSelectedAdmin(admin);
-        const response = (await API.post<ResetPasswordResponse, object>(
-            `users/${admin.id}/student-password`,
-            {}
-        )) as ServerResponseOne<ResetPasswordResponse>;
-        if (response.success) {
-            setTempPassword(response.data.temp_password);
-            setPasswordCopied(false);
-            setPasswordModalContext('reset');
-            setShowResetPassword(true);
-            toast.success(
-                `Password reset for ${admin.name_first} ${admin.name_last}`
-            );
-        } else {
-            toast.error('Failed to reset password');
-        }
+        setTempPassword('');
+        setPasswordModalContext('reset');
+        setShowResetPassword(true);
     };
 
     const handleDelete = async () => {
@@ -435,20 +428,6 @@ export default function AdminManagement() {
             void mutateStats();
         } else {
             toast.error(response.message || 'Failed to delete administrator');
-        }
-    };
-
-    const copyToClipboard = (text: string) => {
-        if (navigator.clipboard?.writeText) {
-            navigator.clipboard
-                .writeText(text)
-                .then(() => {
-                    setPasswordCopied(true);
-                    setTimeout(() => setPasswordCopied(false), 2000);
-                })
-                .catch(() => {
-                    toast.error('Failed to copy password');
-                });
         }
     };
 
@@ -732,9 +711,7 @@ export default function AdminManagement() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() =>
-                                                    void handleResetPassword(
-                                                        admin
-                                                    )
+                                                    handleResetPassword(admin)
                                                 }
                                                 className="h-8 w-8 p-0"
                                                 title="Reset password"
@@ -803,126 +780,163 @@ export default function AdminManagement() {
                 description="Create a new administrator account"
                 titleClassName="text-foreground"
             >
-                <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="firstName">First Name</Label>
-                            <Input
-                                id="firstName"
-                                value={formData.name_first}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name_first: e.target.value
-                                    })
-                                }
-                                placeholder="John"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input
-                                id="lastName"
-                                value={formData.name_last}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name_last: e.target.value
-                                    })
-                                }
-                                placeholder="Doe"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
-                        <Input
-                            id="username"
-                            value={formData.username}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    username: e.target.value
-                                })
-                            }
-                            placeholder="jdoe"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="role">Role</Label>
-                        <Select
-                            value={formData.role}
-                            onValueChange={(value) =>
-                                setFormData({
-                                    ...formData,
-                                    role: value as UserRole
-                                })
-                            }
-                        >
-                            <SelectTrigger id="role">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={UserRole.DepartmentAdmin}>
-                                    Department Admin
-                                </SelectItem>
-                                <SelectItem value={UserRole.FacilityAdmin}>
-                                    Facility Admin
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="facility">Facility</Label>
-                        {canSwitchFac ? (
-                            <Select
-                                value={
-                                    formData.facility_id
-                                        ? String(formData.facility_id)
-                                        : ''
-                                }
-                                onValueChange={(value) =>
-                                    setFormData({
-                                        ...formData,
-                                        facility_id: Number(value)
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="facility">
-                                    <SelectValue placeholder="Select facility" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {facilities.map((facility) => (
-                                        <SelectItem
-                                            key={facility.id}
-                                            value={String(facility.id)}
-                                        >
-                                            {facility.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        ) : (
-                            <div className="field-readonly">
-                                {user?.facility?.name ?? '—'}
+                <Form {...addForm}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void addForm.handleSubmit(handleAddAdmin)(e);
+                        }}
+                    >
+                        <div className="space-y-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={addForm.control}
+                                    name="name_first"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>First Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="John"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={addForm.control}
+                                    name="name_last"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Last Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Doe"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
-                        )}
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowAddAdmin(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleAddAdmin()}
-                        variant="brand"
-                    >
-                        Add Admin
-                    </Button>
-                </DialogFooter>
+                            <FormField
+                                control={addForm.control}
+                                name="username"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Username</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="jdoe"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={addForm.control}
+                                name="role"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Role</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem
+                                                    value={
+                                                        UserRole.DepartmentAdmin
+                                                    }
+                                                >
+                                                    Department Admin
+                                                </SelectItem>
+                                                <SelectItem
+                                                    value={
+                                                        UserRole.FacilityAdmin
+                                                    }
+                                                >
+                                                    Facility Admin
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={addForm.control}
+                                name="facility_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Facility</FormLabel>
+                                        {canSwitchFac ? (
+                                            <>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select facility" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {facilities.map(
+                                                            (facility) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        facility.id
+                                                                    }
+                                                                    value={String(
+                                                                        facility.id
+                                                                    )}
+                                                                >
+                                                                    {
+                                                                        facility.name
+                                                                    }
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </>
+                                        ) : (
+                                            <div className="field-readonly">
+                                                {user?.facility?.name ?? '—'}
+                                            </div>
+                                        )}
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowAddAdmin(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="brand">
+                                Add Admin
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </FormModal>
 
             {/* Edit Admin Dialog */}
@@ -933,115 +947,140 @@ export default function AdminManagement() {
                 description="Update administrator information"
                 titleClassName="text-foreground"
             >
-                <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-firstName">First Name</Label>
-                            <Input
-                                id="edit-firstName"
-                                value={formData.name_first}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name_first: e.target.value
-                                    })
-                                }
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-lastName">Last Name</Label>
-                            <Input
-                                id="edit-lastName"
-                                value={formData.name_last}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name_last: e.target.value
-                                    })
-                                }
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-username">Username</Label>
-                        <div className="field-readonly">
-                            {formData.username}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            Usernames cannot be changed after account creation
-                        </p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-role">Role</Label>
-                        <div className="field-readonly">
-                            {getRoleLabel(formData.role)}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            Role cannot be changed after account creation
-                        </p>
-                    </div>
-                    {formData.role === UserRole.FacilityAdmin && (
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-facility">Facility</Label>
-                            {canSwitchFac ? (
-                                <Select
-                                    value={
-                                        formData.facility_id
-                                            ? String(formData.facility_id)
-                                            : ''
-                                    }
-                                    onValueChange={(value) =>
-                                        setFormData({
-                                            ...formData,
-                                            facility_id: Number(value)
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="edit-facility">
-                                        <SelectValue placeholder="Select facility" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {facilities.map((facility) => (
-                                            <SelectItem
-                                                key={facility.id}
-                                                value={String(facility.id)}
-                                            >
-                                                {facility.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            ) : (
+                <Form {...editForm}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void editForm.handleSubmit(handleEditAdmin)(e);
+                        }}
+                    >
+                        <div className="space-y-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={editForm.control}
+                                    name="name_first"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>First Name</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={editForm.control}
+                                    name="name_last"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Last Name</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Username</Label>
                                 <div className="field-readonly">
-                                    {selectedAdmin?.facility?.name ??
-                                        facilityById.get(
-                                            formData.facility_id ?? 0
-                                        )?.name ??
-                                        user?.facility?.name ??
-                                        '—'}
+                                    {selectedAdmin?.username}
                                 </div>
+                                <p className="text-xs text-gray-500">
+                                    Usernames cannot be changed after account
+                                    creation
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Role</Label>
+                                <div className="field-readonly">
+                                    {selectedAdmin
+                                        ? getRoleLabel(selectedAdmin.role)
+                                        : ''}
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                    Role cannot be changed after account
+                                    creation
+                                </p>
+                            </div>
+                            {selectedAdmin?.role === UserRole.FacilityAdmin && (
+                                <FormField
+                                    control={editForm.control}
+                                    name="facility_id"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Facility</FormLabel>
+                                            {canSwitchFac ? (
+                                                <>
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select facility" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {facilities.map(
+                                                                (facility) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            facility.id
+                                                                        }
+                                                                        value={String(
+                                                                            facility.id
+                                                                        )}
+                                                                    >
+                                                                        {
+                                                                            facility.name
+                                                                        }
+                                                                    </SelectItem>
+                                                                )
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </>
+                                            ) : (
+                                                <div className="field-readonly">
+                                                    {selectedAdmin?.facility
+                                                        ?.name ??
+                                                        facilityById.get(
+                                                            selectedAdmin?.facility_id ??
+                                                                0
+                                                        )?.name ??
+                                                        user?.facility?.name ??
+                                                        '—'}
+                                                </div>
+                                            )}
+                                        </FormItem>
+                                    )}
+                                />
                             )}
                         </div>
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowEditAdmin(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleEditAdmin()}
-                        variant="brand"
-                    >
-                        Save Changes
-                    </Button>
-                </DialogFooter>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowEditAdmin(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="brand">
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </FormModal>
 
             {/* Reset Password / New Password Dialog */}
-            <FormModal
+            <ResetPasswordModal
                 open={showResetPassword}
                 onOpenChange={(open) => {
                     setShowResetPassword(open);
@@ -1050,46 +1089,22 @@ export default function AdminManagement() {
                         setSelectedAdmin(null);
                     }
                 }}
-                title={
+                name={`${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
+                subject="administrator"
+                userId={
+                    passwordModalContext === 'reset'
+                        ? selectedAdmin?.id
+                        : undefined
+                }
+                presetPassword={
+                    passwordModalContext === 'create' ? tempPassword : undefined
+                }
+                resultTitle={
                     passwordModalContext === 'create'
                         ? 'New Password'
                         : 'Password Reset'
                 }
-                description={`New temporary password for ${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
-                titleClassName="text-foreground"
-            >
-                <div className="py-4">
-                    <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
-                        <div className="text-sm text-gray-600 mb-2">
-                            Temporary Password
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <code className="flex-1 text-lg font-mono font-semibold text-brand-dark select-all">
-                                {tempPassword}
-                            </code>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyToClipboard(tempPassword)}
-                            >
-                                {passwordCopied ? 'Copied!' : 'Copy'}
-                            </Button>
-                        </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-4">
-                        Share this password securely with the administrator.
-                        They will be prompted to change it on their next login.
-                    </p>
-                </div>
-                <DialogFooter>
-                    <Button
-                        onClick={() => setShowResetPassword(false)}
-                        variant="brand"
-                    >
-                        Done
-                    </Button>
-                </DialogFooter>
-            </FormModal>
+            />
 
             {/* Delete Dialog */}
             <FormModal

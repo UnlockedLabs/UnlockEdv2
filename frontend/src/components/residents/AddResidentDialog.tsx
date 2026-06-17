@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import API from '@/api/api';
 import { Facility, NewUserResponse, ServerResponseOne, User } from '@/types';
+import { addResidentSchema, AddResidentInput } from '@/lib/validation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -15,14 +24,6 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { FormModal } from '@/components/shared';
-
-interface AddResidentFormData {
-    name_first: string;
-    name_last: string;
-    username: string;
-    doc_id?: string;
-    facility_id?: number;
-}
 
 interface AddResidentDialogProps {
     open: boolean;
@@ -41,19 +42,35 @@ export function AddResidentDialog({
     defaultFacilityId,
     onSuccess
 }: AddResidentDialogProps) {
-    const form = useForm<AddResidentFormData>();
+    const form = useForm<AddResidentInput>({
+        resolver: zodResolver(addResidentSchema),
+        defaultValues: {
+            name_first: '',
+            name_last: '',
+            username: '',
+            doc_id: '',
+            facility_id: defaultFacilityId
+                ? String(defaultFacilityId)
+                : undefined
+        }
+    });
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (open) {
-            form.reset();
-            if (defaultFacilityId !== undefined) {
-                form.setValue('facility_id', defaultFacilityId);
-            }
+            form.reset({
+                name_first: '',
+                name_last: '',
+                username: '',
+                doc_id: '',
+                facility_id: defaultFacilityId
+                    ? String(defaultFacilityId)
+                    : undefined
+            });
         }
     }, [open, defaultFacilityId, form]);
 
-    const handleAddUser = async (formData: AddResidentFormData) => {
+    const handleAddUser = async (formData: AddResidentInput) => {
         if (submitting) return;
         setSubmitting(true);
         try {
@@ -64,7 +81,7 @@ export function AddResidentDialog({
                 doc_id: formData.doc_id,
                 role: 'student' as const,
                 ...(formData.facility_id
-                    ? { facility_id: formData.facility_id }
+                    ? { facility_id: Number(formData.facility_id) }
                     : {})
             };
             const response = (await API.post<NewUserResponse, object>('users', {
@@ -79,17 +96,12 @@ export function AddResidentDialog({
                 form.reset();
                 onSuccess((response.data as NewUserResponse).user);
             } else {
-                toast.error(response.message || 'Failed to create resident');
+                toast.error(response.message ?? 'Failed to create resident');
             }
         } finally {
             setSubmitting(false);
         }
     };
-
-    const isFormValid =
-        form.watch('name_first') &&
-        form.watch('name_last') &&
-        form.watch('username');
 
     return (
         <FormModal
@@ -99,102 +111,131 @@ export function AddResidentDialog({
             description="Create a new resident profile in the system"
             titleClassName="text-foreground"
         >
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    void form.handleSubmit((d) => void handleAddUser(d))(e);
-                }}
-            >
-                <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="add-first">First Name</Label>
-                            <Input
-                                id="add-first"
-                                placeholder="First name"
-                                {...form.register('name_first', {
-                                    required: true
-                                })}
-                                className="mt-2"
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit((d) => void handleAddUser(d))(e);
+                    }}
+                >
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="name_first"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>First Name</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="First name"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="name_last"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Last Name</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Last name"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
                         </div>
-                        <div>
-                            <Label htmlFor="add-last">Last Name</Label>
-                            <Input
-                                id="add-last"
-                                placeholder="Last name"
-                                {...form.register('name_last', {
-                                    required: true
-                                })}
-                                className="mt-2"
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <Label htmlFor="add-username">Username</Label>
-                        <Input
-                            id="add-username"
-                            placeholder="Enter username for login"
-                            {...form.register('username', { required: true })}
-                            className="mt-2"
+                        <FormField
+                            control={form.control}
+                            name="username"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Username</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="Enter username for login"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                    </div>
-                    <div>
-                        <Label htmlFor="add-doc-id">Resident ID</Label>
-                        <Input
-                            id="add-doc-id"
-                            placeholder="e.g., R001"
-                            {...form.register('doc_id')}
-                            className="mt-2"
+                        <FormField
+                            control={form.control}
+                            name="doc_id"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Resident ID</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="e.g., R001"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                    </div>
-                    {showFacilityColumn && (
-                        <div>
-                            <Label htmlFor="add-facility">Facility</Label>
-                            <Select
-                                value={
-                                    form.watch('facility_id')
-                                        ? String(form.watch('facility_id'))
-                                        : undefined
-                                }
-                                onValueChange={(v) =>
-                                    form.setValue('facility_id', Number(v))
-                                }
-                            >
-                                <SelectTrigger className="mt-2">
-                                    <SelectValue placeholder="Select facility" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {facilities.map((f) => (
-                                        <SelectItem
-                                            key={f.id}
-                                            value={String(f.id)}
+                        {showFacilityColumn && (
+                            <FormField
+                                control={form.control}
+                                name="facility_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Facility</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
                                         >
-                                            {f.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                </div>
-                <DialogFooter className="pt-4">
-                    <Button
-                        variant="outline"
-                        type="button"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        disabled={!isFormValid || submitting}
-                        variant="brand"
-                    >
-                        {submitting ? 'Adding...' : 'Add Resident'}
-                    </Button>
-                </DialogFooter>
-            </form>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select facility" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {facilities.map((f) => (
+                                                    <SelectItem
+                                                        key={f.id}
+                                                        value={String(f.id)}
+                                                    >
+                                                        {f.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+                    </div>
+                    <DialogFooter className="pt-4">
+                        <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={submitting}
+                            variant="brand"
+                        >
+                            {submitting ? 'Adding...' : 'Add Resident'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </Form>
         </FormModal>
     );
 }

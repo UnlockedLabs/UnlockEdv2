@@ -1,13 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SubmitHandler, useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import API from '@/api/api';
 import { AuthResponse, ServerResponseOne, UserRole, Timezones } from '@/types';
+import {
+    buildChangePasswordSchema,
+    ChangePasswordInput
+} from '@/lib/validation';
 import { AUTHCALLBACK, fetchUser } from '@/auth/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -16,13 +28,6 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-
-interface Inputs {
-    password: string;
-    confirm: string;
-    facility_name: string;
-    timezone: string;
-}
 
 function getDefaultTimezone(): string {
     const allowed = Object.values(Timezones) as string[];
@@ -35,16 +40,21 @@ export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
     const [isFirstLogin, setIsFirstLogin] = useState(false);
-    const {
-        control,
-        register,
-        handleSubmit,
-        reset,
-        setValue,
-        formState: { errors }
-    } = useForm<Inputs>({
-        defaultValues: { timezone: getDefaultTimezone() }
+
+    const resolver = useMemo(
+        () => zodResolver(buildChangePasswordSchema(isFirstLogin)),
+        [isFirstLogin]
+    );
+    const form = useForm<ChangePasswordInput>({
+        resolver,
+        defaultValues: {
+            password: '',
+            confirm: '',
+            facility_name: '',
+            timezone: getDefaultTimezone()
+        }
     });
+    const { control, handleSubmit, reset } = form;
 
     useEffect(() => {
         const getUser = async () => {
@@ -63,24 +73,20 @@ export default function ChangePasswordForm() {
     const password = useWatch({ control, name: 'password' });
     const confirm = useWatch({ control, name: 'confirm' });
     const facility = useWatch({ control, name: 'facility_name' });
-    const timezone = useWatch({ control, name: 'timezone' });
 
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);
-    const passwordsMatch = password === confirm;
-    const validTimezone = !isFirstLogin || timezone;
-    const isValid =
-        isLengthValid && hasNumber && passwordsMatch && validTimezone;
+    const passwordsMatch = !!password && password === confirm;
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
 
-    const submit: SubmitHandler<Inputs> = async (data) => {
+    const submit: SubmitHandler<ChangePasswordInput> = async (data) => {
         setErrorMessage('');
         setProcessing(true);
         if (data.facility_name) {
             data.facility_name = data.facility_name.trim();
         }
-        const response = (await API.post<AuthResponse, Inputs>(
+        const response = (await API.post<AuthResponse, ChangePasswordInput>(
             'reset-password',
             data
         )) as ServerResponseOne<AuthResponse>;
@@ -115,155 +121,159 @@ export default function ChangePasswordForm() {
     );
 
     return (
-        <form
-            onSubmit={(e) => {
-                void handleSubmit(submit)(e);
-            }}
-        >
-            <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">
-                    New password
-                </Label>
-                <Input
-                    id="password"
-                    type="password"
-                    maxLength={50}
-                    autoComplete="new-password"
-                    autoFocus
-                    {...register('password', {
-                        required: 'Password is required'
-                    })}
-                />
-                {errors.password && (
-                    <p className="text-sm text-destructive">
-                        {errors.password.message}
-                    </p>
-                )}
-            </div>
-
-            <div className="mt-2 text-sm space-y-1">
-                <ValidationItem
-                    valid={!!isLengthValid}
-                    text="Password is 8 or more characters"
-                />
-                <ValidationItem
-                    valid={hasNumber}
-                    text="Password includes at least one number"
-                />
-            </div>
-
-            <div className="space-y-2 mt-4">
-                <Label htmlFor="confirm" className="text-foreground">
-                    Confirm password
-                </Label>
-                <Input
-                    id="confirm"
-                    type="password"
-                    maxLength={50}
-                    autoComplete="new-password"
-                    {...register('confirm', {
-                        required: 'Please confirm your password'
-                    })}
-                />
-                {errors.confirm && (
-                    <p className="text-sm text-destructive">
-                        {errors.confirm.message}
-                    </p>
-                )}
-            </div>
-
-            <div className="mt-2 text-sm">
-                <ValidationItem valid={passwordsMatch} text="Passwords match" />
-            </div>
-
-            {errorMessage && (
-                <p className="mt-3 text-sm text-destructive">{errorMessage}</p>
-            )}
-
-            {isFirstLogin && (
-                <>
-                    <div className="space-y-2 mt-4">
-                        <Label
-                            htmlFor="facility_name"
-                            className="text-foreground"
-                        >
-                            New default facility name
-                        </Label>
-                        <Input
-                            id="facility_name"
-                            type="text"
-                            maxLength={50}
-                            {...register('facility_name', {
-                                required: 'Facility name is required'
-                            })}
-                        />
-                        {errors.facility_name && (
-                            <p className="text-sm text-destructive">
-                                {errors.facility_name.message}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="mt-2 text-sm">
-                        <ValidationItem
-                            valid={!!validFacility}
-                            text="Valid facility name"
-                        />
-                    </div>
-
-                    <div className="space-y-2 mt-4">
-                        <Label htmlFor="timezone" className="text-foreground">
-                            Timezone
-                        </Label>
-                        <Input
-                            type="hidden"
-                            {...register('timezone', {
-                                required: 'Timezone is required'
-                            })}
-                        />
-                        <Select
-                            value={timezone}
-                            onValueChange={(value) =>
-                                setValue('timezone', value, {
-                                    shouldValidate: true
-                                })
-                            }
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a timezone" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.entries(Timezones).map(
-                                    ([label, value]) => (
-                                        <SelectItem key={value} value={value}>
-                                            {label}
-                                        </SelectItem>
-                                    )
-                                )}
-                            </SelectContent>
-                        </Select>
-                        {errors.timezone && (
-                            <p className="text-sm text-destructive">
-                                {errors.timezone.message}
-                            </p>
-                        )}
-                    </div>
-                </>
-            )}
-
-            <div className="flex items-center justify-end mt-6">
-                <Button
-                    type="submit"
-                    disabled={processing || !isValid}
-                    className="btn-gold"
-                >
-                    {processing ? (
-                        <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                        'Reset Password'
+        <Form {...form}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(submit)(e);
+                }}
+            >
+                <FormField
+                    control={control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem className="space-y-2">
+                            <FormLabel className="text-foreground">
+                                New password
+                            </FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="password"
+                                    maxLength={50}
+                                    autoComplete="new-password"
+                                    autoFocus
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )}
-                </Button>
-            </div>
-        </form>
+                />
+
+                <div className="mt-2 text-sm space-y-1">
+                    <ValidationItem
+                        valid={!!isLengthValid}
+                        text="Password is 8 or more characters"
+                    />
+                    <ValidationItem
+                        valid={hasNumber}
+                        text="Password includes at least one number"
+                    />
+                </div>
+
+                <FormField
+                    control={control}
+                    name="confirm"
+                    render={({ field }) => (
+                        <FormItem className="space-y-2 mt-4">
+                            <FormLabel className="text-foreground">
+                                Confirm password
+                            </FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="password"
+                                    maxLength={50}
+                                    autoComplete="new-password"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <div className="mt-2 text-sm">
+                    <ValidationItem
+                        valid={passwordsMatch}
+                        text="Passwords match"
+                    />
+                </div>
+
+                {errorMessage && (
+                    <p className="mt-3 text-sm text-destructive">
+                        {errorMessage}
+                    </p>
+                )}
+
+                {isFirstLogin && (
+                    <>
+                        <FormField
+                            control={control}
+                            name="facility_name"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2 mt-4">
+                                    <FormLabel className="text-foreground">
+                                        New default facility name
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="text"
+                                            maxLength={50}
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <div className="mt-2 text-sm">
+                            <ValidationItem
+                                valid={!!validFacility}
+                                text="Valid facility name"
+                            />
+                        </div>
+
+                        <FormField
+                            control={control}
+                            name="timezone"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2 mt-4">
+                                    <FormLabel className="text-foreground">
+                                        Timezone
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a timezone" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {Object.entries(Timezones).map(
+                                                ([label, value]) => (
+                                                    <SelectItem
+                                                        key={value}
+                                                        value={value}
+                                                    >
+                                                        {label}
+                                                    </SelectItem>
+                                                )
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </>
+                )}
+
+                <div className="flex items-center justify-end mt-6">
+                    <Button
+                        type="submit"
+                        disabled={processing}
+                        className="btn-gold"
+                    >
+                        {processing ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            'Reset Password'
+                        )}
+                    </Button>
+                </div>
+            </form>
+        </Form>
     );
 }

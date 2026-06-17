@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -20,8 +22,16 @@ import API from '@/api/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
+import { programCreateSchema, ProgramCreateInput } from '@/lib/validation';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
@@ -103,47 +113,37 @@ export default function ProgramsPage() {
     >([]);
 
     const [showAddProgram, setShowAddProgram] = useState(false);
-    const [programFormData, setProgramFormData] = useState({
+    const emptyProgramForm: ProgramCreateInput = {
         name: '',
         description: '',
-        types: [] as ProgramType[],
-        creditTypes: [] as CreditType[],
-        fundingTypes: [] as FundingType[],
+        types: [],
+        creditTypes: [],
+        fundingTypes: [],
         status: ProgramEffectiveStatus.Available,
-        facilities: [] as number[]
+        facilities: []
+    };
+    const programForm = useForm<ProgramCreateInput>({
+        resolver: zodResolver(programCreateSchema),
+        defaultValues: emptyProgramForm
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const {
+        formState: { isSubmitting }
+    } = programForm;
 
-    const handleCreateProgram = async () => {
-        if (programFormData.types.length === 0) {
-            toast.error('Please select at least one program type');
-            return;
-        }
-        if (programFormData.creditTypes.length === 0) {
-            toast.error('Please select at least one credit type');
-            return;
-        }
-        if (programFormData.fundingTypes.length === 0) {
-            toast.error('Please select at least one funding type');
-            return;
-        }
-
-        setIsSubmitting(true);
-
+    const handleCreateProgram = async (data: ProgramCreateInput) => {
         try {
             const payload = {
-                name: programFormData.name,
-                description: programFormData.description,
-                program_types: programFormData.types.map(
+                name: data.name,
+                description: data.description,
+                program_types: data.types.map(
                     (type): PgmType => ({ program_type: type })
                 ),
-                credit_types: programFormData.creditTypes.map(
+                credit_types: data.creditTypes.map(
                     (type): ProgramCreditType => ({ credit_type: type })
                 ),
-                funding_type: programFormData.fundingTypes[0],
-                is_active:
-                    programFormData.status === ProgramEffectiveStatus.Available,
-                facilities: programFormData.facilities
+                funding_type: data.fundingTypes[0],
+                is_active: data.status === ProgramEffectiveStatus.Available,
+                facilities: data.facilities
             };
 
             const resp = (await API.post<Program, typeof payload>(
@@ -159,21 +159,11 @@ export default function ProgramsPage() {
             toast.success('Program created successfully');
 
             setShowAddProgram(false);
-            setProgramFormData({
-                name: '',
-                description: '',
-                types: [],
-                creditTypes: [],
-                fundingTypes: [],
-                status: ProgramEffectiveStatus.Available,
-                facilities: []
-            });
+            programForm.reset(emptyProgramForm);
 
             void mutate();
         } catch {
             toast.error('Failed to create program');
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -573,394 +563,423 @@ export default function ProgramsPage() {
                                 ? 'Create Statewide Program'
                                 : 'Add New Program'}
                         </h3>
-                        <div className="space-y-6">
-                            {/* Basic Information */}
-                            <div>
-                                <h4 className="text-sm text-gray-700 mb-3">
-                                    Basic Information
-                                </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label
-                                            htmlFor="programName"
-                                            className="text-black"
-                                        >
-                                            Program Name *
-                                        </Label>
-                                        <Input
-                                            id="programName"
-                                            placeholder="e.g., GED Preparation"
-                                            value={programFormData.name}
-                                            onChange={(e) =>
-                                                setProgramFormData({
-                                                    ...programFormData,
-                                                    name: e.target.value
-                                                })
-                                            }
-                                            className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <Label
-                                            htmlFor="programDescription"
-                                            className="text-black"
-                                        >
-                                            Description
-                                        </Label>
-                                        <Textarea
-                                            id="programDescription"
-                                            placeholder="Brief description of the program and its goals"
-                                            value={programFormData.description}
-                                            onChange={(e) =>
-                                                setProgramFormData({
-                                                    ...programFormData,
-                                                    description: e.target.value
-                                                })
-                                            }
-                                            rows={2}
-                                            className="min-h-0 focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Categorization */}
-                            <div className="pt-4 border-t border-gray-200">
-                                <h4 className="text-sm text-gray-700 mb-3">
-                                    Categorization
-                                </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label
-                                            htmlFor="category"
-                                            className="text-black"
-                                        >
-                                            Category (Program Types) *
-                                        </Label>
-                                        <div className="mt-2 space-y-2">
-                                            {programTypes.map((type) => (
-                                                <label
-                                                    key={type.value}
-                                                    className="flex items-center gap-2 cursor-pointer"
-                                                >
-                                                    <span className="inline-flex rounded-[1px] focus-within:ring-2 focus-within:ring-gray-300/80 focus-within:ring-offset-1 focus-within:ring-offset-white">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={programFormData.types.includes(
-                                                                type.value
-                                                            )}
-                                                            onChange={(e) => {
-                                                                if (
-                                                                    e.target
-                                                                        .checked
-                                                                ) {
-                                                                    setProgramFormData(
-                                                                        {
-                                                                            ...programFormData,
-                                                                            types: [
-                                                                                ...programFormData.types,
-                                                                                type.value
-                                                                            ]
-                                                                        }
-                                                                    );
-                                                                } else {
-                                                                    setProgramFormData(
-                                                                        {
-                                                                            ...programFormData,
-                                                                            types: programFormData.types.filter(
-                                                                                (
-                                                                                    t
-                                                                                ) =>
-                                                                                    t !==
-                                                                                    type.value
-                                                                            )
-                                                                        }
-                                                                    );
-                                                                }
-                                                            }}
-                                                            className="checkbox-brand"
-                                                        />
-                                                    </span>
-                                                    <span className="text-sm text-gray-700">
-                                                        {type.label}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label
-                                            htmlFor="creditTypes"
-                                            className="text-black"
-                                        >
-                                            Credit Types *
-                                        </Label>
-                                        <div className="mt-2 space-y-2">
-                                            {creditTypes.map((type) => (
-                                                <label
-                                                    key={type.value}
-                                                    className="flex items-center gap-2 cursor-pointer"
-                                                >
-                                                    <span className="inline-flex rounded-[1px] focus-within:ring-2 focus-within:ring-gray-300/80 focus-within:ring-offset-1 focus-within:ring-offset-white">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={programFormData.creditTypes.includes(
-                                                                type.value
-                                                            )}
-                                                            onChange={(e) => {
-                                                                if (
-                                                                    e.target
-                                                                        .checked
-                                                                ) {
-                                                                    setProgramFormData(
-                                                                        {
-                                                                            ...programFormData,
-                                                                            creditTypes:
-                                                                                [
-                                                                                    ...programFormData.creditTypes,
-                                                                                    type.value
-                                                                                ]
-                                                                        }
-                                                                    );
-                                                                } else {
-                                                                    setProgramFormData(
-                                                                        {
-                                                                            ...programFormData,
-                                                                            creditTypes:
-                                                                                programFormData.creditTypes.filter(
-                                                                                    (
-                                                                                        t
-                                                                                    ) =>
-                                                                                        t !==
-                                                                                        type.value
-                                                                                )
-                                                                        }
-                                                                    );
-                                                                }
-                                                            }}
-                                                            className="checkbox-brand"
-                                                        />
-                                                    </span>
-                                                    <span className="text-sm text-gray-700">
-                                                        {type.label}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="col-span-2">
-                                        <Label
-                                            htmlFor="fundingType"
-                                            className="text-black"
-                                        >
-                                            Funding Type *
-                                        </Label>
-                                        <Select
-                                            value={
-                                                programFormData
-                                                    .fundingTypes[0] ?? ''
-                                            }
-                                            onValueChange={(value) =>
-                                                setProgramFormData({
-                                                    ...programFormData,
-                                                    fundingTypes: [
-                                                        value as FundingType
-                                                    ]
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="fundingType"
-                                                className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
-                                            >
-                                                <SelectValue placeholder="Select funding type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {fundingTypes.map((type) => (
-                                                    <SelectItem
-                                                        key={type.value}
-                                                        value={type.value}
+                        <Form {...programForm}>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    void programForm.handleSubmit(
+                                        handleCreateProgram
+                                    )(e);
+                                }}
+                                className="space-y-6"
+                            >
+                                {/* Basic Information */}
+                                <div>
+                                    <h4 className="text-sm text-gray-700 mb-3">
+                                        Basic Information
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={programForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel
+                                                        htmlFor="programName"
+                                                        className="text-black"
                                                     >
-                                                        {type.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                                        Program Name *
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            id="programName"
+                                                            placeholder="e.g., GED Preparation"
+                                                            className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={programForm.control}
+                                            name="description"
+                                            render={({ field }) => (
+                                                <FormItem className="col-span-2">
+                                                    <FormLabel
+                                                        htmlFor="programDescription"
+                                                        className="text-black"
+                                                    >
+                                                        Description
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Textarea
+                                                            id="programDescription"
+                                                            placeholder="Brief description of the program and its goals"
+                                                            rows={2}
+                                                            className="min-h-0 focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
-
-                                    <div className="col-span-2">
-                                        <Label
-                                            htmlFor="programStatus"
-                                            className="text-black"
-                                        >
-                                            Program Availability *
-                                        </Label>
-                                        <Select
-                                            value={programFormData.status}
-                                            onValueChange={(value) =>
-                                                setProgramFormData({
-                                                    ...programFormData,
-                                                    status: value as ProgramEffectiveStatus
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="programStatus"
-                                                className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
-                                            >
-                                                <SelectValue placeholder="Select program status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem
-                                                    value={
-                                                        ProgramEffectiveStatus.Available
-                                                    }
-                                                >
-                                                    Available
-                                                </SelectItem>
-                                                <SelectItem
-                                                    value={
-                                                        ProgramEffectiveStatus.Inactive
-                                                    }
-                                                >
-                                                    Inactive
-                                                </SelectItem>
-                                                <SelectItem
-                                                    value={
-                                                        ProgramEffectiveStatus.Archived
-                                                    }
-                                                >
-                                                    Archived
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Available programs can accept new
-                                            class enrollments. Inactive programs
-                                            are temporarily paused. Archived
-                                            programs are no longer offered.
-                                        </p>
-                                    </div>
-
-                                    {/* Facilities Selection - Only for Department Admin */}
-                                    {isDeptAdminUser && (
-                                        <div className="col-span-2">
-                                            <Label
-                                                htmlFor="facilities"
-                                                className="text-black"
-                                            >
-                                                Facilities Offered *
-                                            </Label>
-                                            <div className="mt-2 max-h-60 overflow-y-auto space-y-2 p-3">
-                                                {facilities.length === 0 ? (
-                                                    <p className="text-sm text-gray-500">
-                                                        Loading facilities...
-                                                    </p>
-                                                ) : (
-                                                    facilities.map(
-                                                        (facility) => (
-                                                            <label
-                                                                key={
-                                                                    facility.id
-                                                                }
-                                                                className="flex items-center gap-2 cursor-pointer"
-                                                            >
-                                                                <span className="inline-flex rounded-[1px] focus-within:ring-2 focus-within:ring-gray-300/80 focus-within:ring-offset-1 focus-within:ring-offset-white">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={programFormData.facilities.includes(
-                                                                            facility.id
-                                                                        )}
-                                                                        onChange={(
-                                                                            e
-                                                                        ) => {
-                                                                            if (
-                                                                                e
-                                                                                    .target
-                                                                                    .checked
-                                                                            ) {
-                                                                                setProgramFormData(
-                                                                                    {
-                                                                                        ...programFormData,
-                                                                                        facilities:
-                                                                                            [
-                                                                                                ...programFormData.facilities,
-                                                                                                facility.id
-                                                                                            ]
-                                                                                    }
-                                                                                );
-                                                                            } else {
-                                                                                setProgramFormData(
-                                                                                    {
-                                                                                        ...programFormData,
-                                                                                        facilities:
-                                                                                            programFormData.facilities.filter(
-                                                                                                (
-                                                                                                    f
-                                                                                                ) =>
-                                                                                                    f !==
-                                                                                                    facility.id
-                                                                                            )
-                                                                                    }
-                                                                                );
-                                                                            }
-                                                                        }}
-                                                                        className="checkbox-brand"
-                                                                    />
-                                                                </span>
-                                                                <span className="text-sm text-gray-700">
-                                                                    {
-                                                                        facility.name
-                                                                    }
-                                                                </span>
-                                                            </label>
-                                                        )
-                                                    )
-                                                )}
-                                            </div>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Select which facilities will
-                                                offer this program. You can add
-                                                more facilities later.
-                                            </p>
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setShowAddProgram(false);
-                                        // Reset form
-                                        setProgramFormData({
-                                            name: '',
-                                            description: '',
-                                            types: [],
-                                            creditTypes: [],
-                                            fundingTypes: [],
-                                            status: ProgramEffectiveStatus.Available,
-                                            facilities: []
-                                        });
-                                    }}
-                                    className="border-gray-300 dark:!bg-[rgba(38,38,38,0.3)]"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    className="bg-brand hover:bg-brand-dark text-white"
-                                    onClick={() => void handleCreateProgram()}
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting
-                                        ? 'Creating...'
-                                        : 'Create Program'}
-                                </Button>
-                            </div>
-                        </div>
+                                {/* Categorization */}
+                                <div className="pt-4 border-t border-gray-200">
+                                    <h4 className="text-sm text-gray-700 mb-3">
+                                        Categorization
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={programForm.control}
+                                            name="types"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-black">
+                                                        Category (Program Types)
+                                                        *
+                                                    </FormLabel>
+                                                    <div className="mt-2 space-y-2">
+                                                        {programTypes.map(
+                                                            (type) => (
+                                                                <label
+                                                                    key={
+                                                                        type.value
+                                                                    }
+                                                                    className="flex items-center gap-2 cursor-pointer"
+                                                                >
+                                                                    <span className="inline-flex rounded-[1px] focus-within:ring-2 focus-within:ring-gray-300/80 focus-within:ring-offset-1 focus-within:ring-offset-white">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={field.value.includes(
+                                                                                type.value
+                                                                            )}
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                field.onChange(
+                                                                                    e
+                                                                                        .target
+                                                                                        .checked
+                                                                                        ? [
+                                                                                              ...field.value,
+                                                                                              type.value
+                                                                                          ]
+                                                                                        : field.value.filter(
+                                                                                              (
+                                                                                                  t
+                                                                                              ) =>
+                                                                                                  t !==
+                                                                                                  type.value
+                                                                                          )
+                                                                                )
+                                                                            }
+                                                                            className="checkbox-brand"
+                                                                        />
+                                                                    </span>
+                                                                    <span className="text-sm text-gray-700">
+                                                                        {
+                                                                            type.label
+                                                                        }
+                                                                    </span>
+                                                                </label>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={programForm.control}
+                                            name="creditTypes"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-black">
+                                                        Credit Types *
+                                                    </FormLabel>
+                                                    <div className="mt-2 space-y-2">
+                                                        {creditTypes.map(
+                                                            (type) => (
+                                                                <label
+                                                                    key={
+                                                                        type.value
+                                                                    }
+                                                                    className="flex items-center gap-2 cursor-pointer"
+                                                                >
+                                                                    <span className="inline-flex rounded-[1px] focus-within:ring-2 focus-within:ring-gray-300/80 focus-within:ring-offset-1 focus-within:ring-offset-white">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={field.value.includes(
+                                                                                type.value
+                                                                            )}
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                field.onChange(
+                                                                                    e
+                                                                                        .target
+                                                                                        .checked
+                                                                                        ? [
+                                                                                              ...field.value,
+                                                                                              type.value
+                                                                                          ]
+                                                                                        : field.value.filter(
+                                                                                              (
+                                                                                                  t
+                                                                                              ) =>
+                                                                                                  t !==
+                                                                                                  type.value
+                                                                                          )
+                                                                                )
+                                                                            }
+                                                                            className="checkbox-brand"
+                                                                        />
+                                                                    </span>
+                                                                    <span className="text-sm text-gray-700">
+                                                                        {
+                                                                            type.label
+                                                                        }
+                                                                    </span>
+                                                                </label>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={programForm.control}
+                                            name="fundingTypes"
+                                            render={({ field }) => (
+                                                <FormItem className="col-span-2">
+                                                    <FormLabel
+                                                        htmlFor="fundingType"
+                                                        className="text-black"
+                                                    >
+                                                        Funding Type *
+                                                    </FormLabel>
+                                                    <Select
+                                                        value={
+                                                            field.value[0] ?? ''
+                                                        }
+                                                        onValueChange={(
+                                                            value
+                                                        ) =>
+                                                            field.onChange([
+                                                                value as FundingType
+                                                            ])
+                                                        }
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger
+                                                                id="fundingType"
+                                                                className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
+                                                            >
+                                                                <SelectValue placeholder="Select funding type" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {fundingTypes.map(
+                                                                (type) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            type.value
+                                                                        }
+                                                                        value={
+                                                                            type.value
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            type.label
+                                                                        }
+                                                                    </SelectItem>
+                                                                )
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={programForm.control}
+                                            name="status"
+                                            render={({ field }) => (
+                                                <FormItem className="col-span-2">
+                                                    <FormLabel
+                                                        htmlFor="programStatus"
+                                                        className="text-black"
+                                                    >
+                                                        Program Availability *
+                                                    </FormLabel>
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger
+                                                                id="programStatus"
+                                                                className="focus-visible:border-gray-400 focus-visible:ring-gray-400/50 dark:!bg-[rgba(38,38,38,0.3)]"
+                                                            >
+                                                                <SelectValue placeholder="Select program status" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem
+                                                                value={
+                                                                    ProgramEffectiveStatus.Available
+                                                                }
+                                                            >
+                                                                Available
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value={
+                                                                    ProgramEffectiveStatus.Inactive
+                                                                }
+                                                            >
+                                                                Inactive
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value={
+                                                                    ProgramEffectiveStatus.Archived
+                                                                }
+                                                            >
+                                                                Archived
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Available programs can
+                                                        accept new class
+                                                        enrollments. Inactive
+                                                        programs are temporarily
+                                                        paused. Archived
+                                                        programs are no longer
+                                                        offered.
+                                                    </p>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        {/* Facilities Selection - Only for Department Admin */}
+                                        {isDeptAdminUser && (
+                                            <FormField
+                                                control={programForm.control}
+                                                name="facilities"
+                                                render={({ field }) => (
+                                                    <FormItem className="col-span-2">
+                                                        <FormLabel className="text-black">
+                                                            Facilities Offered *
+                                                        </FormLabel>
+                                                        <div className="mt-2 max-h-60 overflow-y-auto space-y-2 p-3">
+                                                            {facilities.length ===
+                                                            0 ? (
+                                                                <p className="text-sm text-gray-500">
+                                                                    Loading
+                                                                    facilities...
+                                                                </p>
+                                                            ) : (
+                                                                facilities.map(
+                                                                    (
+                                                                        facility
+                                                                    ) => (
+                                                                        <label
+                                                                            key={
+                                                                                facility.id
+                                                                            }
+                                                                            className="flex items-center gap-2 cursor-pointer"
+                                                                        >
+                                                                            <span className="inline-flex rounded-[1px] focus-within:ring-2 focus-within:ring-gray-300/80 focus-within:ring-offset-1 focus-within:ring-offset-white">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={field.value.includes(
+                                                                                        facility.id
+                                                                                    )}
+                                                                                    onChange={(
+                                                                                        e
+                                                                                    ) =>
+                                                                                        field.onChange(
+                                                                                            e
+                                                                                                .target
+                                                                                                .checked
+                                                                                                ? [
+                                                                                                      ...field.value,
+                                                                                                      facility.id
+                                                                                                  ]
+                                                                                                : field.value.filter(
+                                                                                                      (
+                                                                                                          f
+                                                                                                      ) =>
+                                                                                                          f !==
+                                                                                                          facility.id
+                                                                                                  )
+                                                                                        )
+                                                                                    }
+                                                                                    className="checkbox-brand"
+                                                                                />
+                                                                            </span>
+                                                                            <span className="text-sm text-gray-700">
+                                                                                {
+                                                                                    facility.name
+                                                                                }
+                                                                            </span>
+                                                                        </label>
+                                                                    )
+                                                                )
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Select which
+                                                            facilities will
+                                                            offer this program.
+                                                            You can add more
+                                                            facilities later.
+                                                        </p>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setShowAddProgram(false);
+                                            programForm.reset(emptyProgramForm);
+                                        }}
+                                        className="border-gray-300 dark:!bg-[rgba(38,38,38,0.3)]"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="bg-brand hover:bg-brand-dark text-white"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting
+                                            ? 'Creating...'
+                                            : 'Create Program'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
                     </div>
                 )}
 

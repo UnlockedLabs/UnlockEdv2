@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { FacilityProgramClassEvent, CancelEventReason } from '@/types';
+import { cancelEventSchema, CancelEventInput } from '@/lib/validation';
 import { FormModal } from '@/components/shared/FormModal';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -29,30 +39,38 @@ export function CancelEventModal({
     onSuccess,
     showApplyToFuture = true
 }: CancelEventModalProps) {
-    const [reason, setReason] = useState<CancelEventReason | ''>('');
-    const [customReason, setCustomReason] = useState('');
-    const [applyToFuture, setApplyToFuture] = useState(false);
+    const form = useForm<CancelEventInput>({
+        resolver: zodResolver(cancelEventSchema),
+        defaultValues: {
+            reason: '',
+            customReason: '',
+            applyToFuture: false
+        }
+    });
     const [submitting, setSubmitting] = useState(false);
 
-    const isOther = reason === CancelEventReason['Other (add note)'];
-    const finalReason = isOther ? customReason.trim() : reason;
+    const reason = form.watch('reason');
+    const customReason = form.watch('customReason');
+    const applyToFuture = form.watch('applyToFuture');
+
+    const isOther =
+        reason === (CancelEventReason['Other (add note)'] as string);
+    const finalReason = isOther ? (customReason ?? '').trim() : reason;
 
     const { submitSingleSessionChange, submitCancelSeriesChange } =
         useChangeEventField(event, { is_cancelled: true }, finalReason);
 
     useEffect(() => {
         if (open) {
-            setReason('');
-            setCustomReason('');
-            setApplyToFuture(false);
+            form.reset({
+                reason: '',
+                customReason: '',
+                applyToFuture: false
+            });
         }
-    }, [open]);
+    }, [open, form]);
 
     async function handleSubmit() {
-        if (!finalReason) {
-            toast.error('Please select a reason');
-            return;
-        }
         setSubmitting(true);
 
         const result = applyToFuture
@@ -81,74 +99,118 @@ export function CancelEventModal({
             title="Cancel Class"
             description={`Cancel the class scheduled for ${event.start.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`}
         >
-            <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                    <Label>Reason for Cancellation *</Label>
-                    <Select
-                        value={reason}
-                        onValueChange={(v) => setReason(v as CancelEventReason)}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a reason" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.values(CancelEventReason).map((r) => (
-                                <SelectItem key={r} value={r}>
-                                    {r}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {isOther && (
-                    <div className="space-y-2 min-w-0">
-                        <Label>Details</Label>
-                        <Textarea
-                            value={customReason}
-                            onChange={(e) => setCustomReason(e.target.value)}
-                            placeholder="Describe the reason..."
-                            rows={3}
-                            maxLength={255}
-                            className="break-all [field-sizing:fixed]"
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(() => void handleSubmit())(e);
+                    }}
+                >
+                    <div className="space-y-4 pt-4">
+                        <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel>
+                                        Reason for Cancellation *
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a reason" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {Object.values(
+                                                CancelEventReason
+                                            ).map((r) => (
+                                                <SelectItem key={r} value={r}>
+                                                    {r}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                    </div>
-                )}
 
-                {showApplyToFuture && (
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="apply-to-future"
-                            checked={applyToFuture}
-                            onChange={(e) => setApplyToFuture(e.target.checked)}
-                            className="size-4 rounded border-gray-300"
-                        />
-                        <label
-                            htmlFor="apply-to-future"
-                            className="text-sm font-normal cursor-pointer"
-                        >
-                            Apply this change to all future sessions
-                        </label>
-                    </div>
-                )}
+                        {isOther && (
+                            <FormField
+                                control={form.control}
+                                name="customReason"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2 min-w-0">
+                                        <FormLabel>Details</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Describe the reason..."
+                                                rows={3}
+                                                maxLength={255}
+                                                className="break-all [field-sizing:fixed]"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => void handleSubmit()}
-                        disabled={submitting || !finalReason}
-                        className="bg-red-600 text-white hover:bg-red-700"
-                    >
-                        {submitting ? 'Cancelling...' : 'Cancel Class'}
-                    </Button>
-                </div>
-            </div>
+                        {showApplyToFuture && (
+                            <FormField
+                                control={form.control}
+                                name="applyToFuture"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center gap-2 space-y-0">
+                                        <FormControl>
+                                            <input
+                                                type="checkbox"
+                                                id="apply-to-future"
+                                                checked={field.value}
+                                                onChange={(e) =>
+                                                    field.onChange(
+                                                        e.target.checked
+                                                    )
+                                                }
+                                                className="size-4 rounded border-gray-300"
+                                            />
+                                        </FormControl>
+                                        <label
+                                            htmlFor="apply-to-future"
+                                            className="text-sm font-normal cursor-pointer"
+                                        >
+                                            Apply this change to all future
+                                            sessions
+                                        </label>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+
+                        <div className="flex justify-end gap-2 pt-4">
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={submitting}
+                                className="bg-red-600 text-white hover:bg-red-700"
+                            >
+                                {submitting ? 'Cancelling...' : 'Cancel Class'}
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }

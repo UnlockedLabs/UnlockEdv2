@@ -1,4 +1,6 @@
 import { useState, startTransition } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { Pagination } from '@/components/Pagination';
 import { useNavigate, useParams, useLoaderData } from 'react-router-dom';
@@ -21,8 +23,19 @@ import { ConfirmDialog, FormModal } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
+import {
+    enrollmentReasonSchema,
+    EnrollmentReasonInput
+} from '@/lib/validation';
 import {
     Select,
     SelectContent,
@@ -82,7 +95,11 @@ export default function ClassEnrollmentDetails() {
     const [changeStatusValue, setChangeStatusValue] = useState<StatusChange>();
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showReasonModal, setShowReasonModal] = useState(false);
-    const [reason, setReason] = useState('');
+
+    const reasonForm = useForm<EnrollmentReasonInput>({
+        resolver: zodResolver(enrollmentReasonSchema),
+        defaultValues: { reason: '' }
+    });
 
     function getStatusParam(): string {
         if (viewMode === 'enrolled') return 'enrolled';
@@ -141,7 +158,7 @@ export default function ClassEnrollmentDetails() {
             name_full: enrollment.name_full
         });
         if (requiresReason(value)) {
-            setReason('');
+            reasonForm.reset({ reason: '' });
             setShowReasonModal(true);
         } else {
             setShowConfirmDialog(true);
@@ -547,36 +564,53 @@ export default function ClassEnrollmentDetails() {
                 title="Confirm Enrollment Action"
                 description={`Please add the reason for changing ${changeStatusValue?.name_full}'s status to ${changeStatusValue?.status}`}
             >
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="reason">Reason</Label>
-                        <Textarea
-                            id="reason"
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            rows={3}
-                            placeholder="Enter reason..."
+                <Form {...reasonForm}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void reasonForm.handleSubmit((values) =>
+                                submitEnrollmentChange(values.reason)
+                            )(e);
+                        }}
+                        className="space-y-4"
+                    >
+                        <FormField
+                            control={reasonForm.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reason</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            rows={3}
+                                            placeholder="Enter reason..."
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setShowReasonModal(false);
-                                setChangeStatusValue(undefined);
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            disabled={!reason.trim()}
-                            className="bg-brand hover:bg-brand-dark text-white"
-                            onClick={() => void submitEnrollmentChange(reason)}
-                        >
-                            Confirm
-                        </Button>
-                    </div>
-                </div>
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setShowReasonModal(false);
+                                    setChangeStatusValue(undefined);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="bg-brand hover:bg-brand-dark text-white"
+                            >
+                                Confirm
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
             </FormModal>
         </div>
     );

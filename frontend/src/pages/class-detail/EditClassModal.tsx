@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { AlertCircle, X } from 'lucide-react';
@@ -10,12 +11,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { editClassSchema, EditClassInput } from '@/lib/validation';
 import { SelectedClassStatus } from '@/types/attendance';
 import {
     Class,
@@ -35,20 +45,7 @@ interface EditClassModalProps {
     onUpdated: () => void;
 }
 
-interface EditClassFormData {
-    name: string;
-    description: string;
-    instructor_id: number | null;
-    capacity: number;
-    credit_hours: number | null;
-    start_dt: string;
-    end_dt: string;
-    room_id: number | null;
-    start_time: string;
-    end_time: string;
-    cadence: string;
-    status: string;
-}
+type EditClassFormData = EditClassInput;
 
 const ALL_DAYS = [
     'Monday',
@@ -257,14 +254,8 @@ export function EditClassModal({
     );
     const rooms = roomsResp?.data ?? [];
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        watch,
-        setValue,
-        formState: { errors, isSubmitting }
-    } = useForm<EditClassFormData>({
+    const form = useForm<EditClassFormData>({
+        resolver: zodResolver(editClassSchema),
         values: {
             name: cls.name,
             description: cls.description,
@@ -281,8 +272,9 @@ export function EditClassModal({
         },
         resetOptions: { keepDirtyValues: true }
     });
+    const { control, handleSubmit, watch, setValue } = form;
+    const isSubmitting = form.formState.isSubmitting;
 
-    const watchedInstructorId = watch('instructor_id');
     const watchedCapacity = watch('capacity');
     const watchedCadence = watch('cadence');
     const watchedStatus = watch('status');
@@ -370,7 +362,7 @@ export function EditClassModal({
             scheduleDays,
             data.cadence,
             data.cadence === 'custom' ? customRecurrence.interval : undefined,
-            data.end_dt || undefined
+            data.end_dt || undefined // eslint-disable-line @typescript-eslint/prefer-nullish-coalescing -- empty string must collapse to undefined
         );
         const newDuration = formatDuration(data.start_time, data.end_time);
 
@@ -436,631 +428,726 @@ export function EditClassModal({
                 description="Make changes to the class details."
                 className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
             >
-                <div className="space-y-6">
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-brand-dark">
-                            Class Details
-                        </h4>
+                <Form {...form}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void handleSubmit(onSubmit)(e);
+                        }}
+                    >
+                        <div className="space-y-6">
+                            <div className="space-y-4">
+                                <h4 className="font-medium text-brand-dark">
+                                    Class Details
+                                </h4>
 
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="edit-name"
-                                className="text-sm font-medium"
-                            >
-                                Class Name
-                            </label>
-                            <Input
-                                id="edit-name"
-                                {...register('name', {
-                                    required: 'Class name is required',
-                                    maxLength: {
-                                        value: 255,
-                                        message: 'Max 255 characters'
-                                    }
-                                })}
-                            />
-                            {errors.name && (
-                                <p className="text-sm text-red-600">
-                                    {errors.name.message}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="edit-instructor"
-                                className="text-sm font-medium"
-                            >
-                                Instructor
-                            </label>
-                            <Select
-                                value={
-                                    watchedInstructorId
-                                        ? String(watchedInstructorId)
-                                        : undefined
-                                }
-                                onValueChange={(v) => {
-                                    if (v === '__add__') {
-                                        setShowAddInstructor(true);
-                                        return;
-                                    }
-                                    setValue('instructor_id', Number(v));
-                                }}
-                            >
-                                <SelectTrigger id="edit-instructor">
-                                    <SelectValue placeholder="Select instructor" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {instructors.map((inst) => (
-                                        <SelectItem
-                                            key={inst.id}
-                                            value={String(inst.id)}
-                                        >
-                                            {inst.name_last}, {inst.name_first}
-                                        </SelectItem>
-                                    ))}
-                                    <SelectItem
-                                        value="__add__"
-                                        className="text-brand font-medium"
-                                    >
-                                        + Add Instructor
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label
-                                    htmlFor="edit-capacity"
-                                    className="text-sm font-medium"
-                                >
-                                    Capacity
-                                </label>
-                                <Input
-                                    id="edit-capacity"
-                                    type="number"
-                                    min={1}
-                                    {...register('capacity', {
-                                        required: 'Capacity is required',
-                                        min: {
-                                            value: 1,
-                                            message: 'Minimum 1'
-                                        }
-                                    })}
-                                />
-                                {errors.capacity && (
-                                    <p className="text-sm text-red-600">
-                                        {errors.capacity.message}
-                                    </p>
-                                )}
-                                {capacityBelowEnrolled && (
-                                    <p className="text-sm text-amber-600 flex items-start gap-1">
-                                        <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
-                                        <span>
-                                            Warning: Capacity is below current
-                                            enrollment ({cls.enrolled} students)
-                                        </span>
-                                    </p>
-                                )}
-                            </div>
-                            <div className="space-y-2">
-                                <label
-                                    htmlFor="edit-credit-hours"
-                                    className="text-sm font-medium"
-                                >
-                                    Credit Hours
-                                </label>
-                                <Input
-                                    id="edit-credit-hours"
-                                    type="number"
-                                    min={0}
-                                    {...register('credit_hours', {
-                                        min: {
-                                            value: 0,
-                                            message: 'Minimum 0'
-                                        }
-                                    })}
-                                />
-                                {errors.credit_hours && (
-                                    <p className="text-sm text-red-600">
-                                        {errors.credit_hours.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label
-                            htmlFor="edit-description"
-                            className="text-sm font-medium"
-                        >
-                            Description
-                        </label>
-                        <textarea
-                            id="edit-description"
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand resize-none"
-                            {...register('description', {
-                                required: 'Description is required',
-                                maxLength: {
-                                    value: 255,
-                                    message: 'Max 255 characters'
-                                }
-                            })}
-                        />
-                        {errors.description && (
-                            <p className="text-sm text-red-600">
-                                {errors.description.message}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-brand-dark">
-                            Schedule
-                        </h4>
-
-                        <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <Label htmlFor="edit-start-time">
-                                    Start Time *
-                                </Label>
-                                <Input
-                                    id="edit-start-time"
-                                    type="time"
-                                    {...register('start_time')}
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="edit-end-time">
-                                    End Time *
-                                </Label>
-                                <Input
-                                    id="edit-end-time"
-                                    type="time"
-                                    {...register('end_time')}
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="edit-room">Room *</Label>
-                                <Controller
-                                    name="room_id"
+                                <FormField
                                     control={control}
+                                    name="name"
                                     render={({ field }) => (
-                                        <Select
-                                            value={
-                                                field.value
-                                                    ? String(field.value)
-                                                    : ''
-                                            }
-                                            onValueChange={(v) => {
-                                                if (v === '__add__') {
-                                                    setShowAddRoom(true);
-                                                    return;
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Class Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    id="edit-name"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={control}
+                                    name="instructor_id"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Instructor</FormLabel>
+                                            <Select
+                                                value={
+                                                    field.value
+                                                        ? String(field.value)
+                                                        : undefined
                                                 }
-                                                field.onChange(Number(v));
-                                            }}
-                                        >
-                                            <SelectTrigger id="edit-room">
-                                                <SelectValue placeholder="Select room" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {rooms.map((room) => (
+                                                onValueChange={(v) => {
+                                                    if (v === '__add__') {
+                                                        setShowAddInstructor(
+                                                            true
+                                                        );
+                                                        return;
+                                                    }
+                                                    field.onChange(Number(v));
+                                                }}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger id="edit-instructor">
+                                                        <SelectValue placeholder="Select instructor" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {instructors.map((inst) => (
+                                                        <SelectItem
+                                                            key={inst.id}
+                                                            value={String(
+                                                                inst.id
+                                                            )}
+                                                        >
+                                                            {inst.name_last},{' '}
+                                                            {inst.name_first}
+                                                        </SelectItem>
+                                                    ))}
                                                     <SelectItem
-                                                        key={room.id}
-                                                        value={String(room.id)}
+                                                        value="__add__"
+                                                        className="text-brand font-medium"
                                                     >
-                                                        {room.name}
+                                                        + Add Instructor
                                                     </SelectItem>
-                                                ))}
-                                                <SelectItem
-                                                    value="__add__"
-                                                    className="text-brand font-medium"
-                                                >
-                                                    + Add Room
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
                                 />
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="edit-start-dt">
-                                    Start Date *
-                                </Label>
-                                <Input
-                                    id="edit-start-dt"
-                                    type="date"
-                                    {...register('start_dt', {
-                                        required: 'Start date is required'
-                                    })}
-                                />
-                                {errors.start_dt && (
-                                    <p className="text-sm text-red-600">
-                                        {errors.start_dt.message}
-                                    </p>
-                                )}
-                                {cls.status === SelectedClassStatus.Active &&
-                                    watchedStartDt !==
-                                        new Date(cls.start_dt)
-                                            .toISOString()
-                                            .split('T')[0] && (
-                                        <p className="text-sm text-amber-600 flex items-start gap-1">
-                                            <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
-                                            <span>
-                                                Warning: Class has already
-                                                started
-                                            </span>
-                                        </p>
-                                    )}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={control}
+                                        name="capacity"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Capacity</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        id="edit-capacity"
+                                                        type="number"
+                                                        min={1}
+                                                        name={field.name}
+                                                        ref={field.ref}
+                                                        onBlur={field.onBlur}
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            field.onChange(
+                                                                e.target
+                                                                    .value ===
+                                                                    ''
+                                                                    ? undefined
+                                                                    : e.target
+                                                                          .valueAsNumber
+                                                            )
+                                                        }
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                                {capacityBelowEnrolled && (
+                                                    <p className="text-sm text-amber-600 flex items-start gap-1">
+                                                        <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                                        <span>
+                                                            Warning: Capacity is
+                                                            below current
+                                                            enrollment (
+                                                            {cls.enrolled}{' '}
+                                                            students)
+                                                        </span>
+                                                    </p>
+                                                )}
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={control}
+                                        name="credit_hours"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>
+                                                    Credit Hours
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        id="edit-credit-hours"
+                                                        type="number"
+                                                        min={0}
+                                                        name={field.name}
+                                                        ref={field.ref}
+                                                        onBlur={field.onBlur}
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            field.onChange(
+                                                                e.target
+                                                                    .value ===
+                                                                    ''
+                                                                    ? null
+                                                                    : e.target
+                                                                          .valueAsNumber
+                                                            )
+                                                        }
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <Label htmlFor="edit-end-dt">End Date</Label>
-                                <Input
-                                    id="edit-end-dt"
-                                    type="date"
-                                    {...register('end_dt')}
-                                />
-                            </div>
-                        </div>
 
-                        <div>
-                            <Label htmlFor="edit-cadence">Repeats *</Label>
-                            <Controller
-                                name="cadence"
+                            <FormField
                                 control={control}
+                                name="description"
                                 render={({ field }) => (
-                                    <Select
-                                        value={field.value}
-                                        onValueChange={(value) => {
-                                            field.onChange(value);
-                                            if (value === 'custom') {
-                                                setShowCustomRecurrence(true);
-                                            } else {
-                                                setShowCustomRecurrence(false);
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger id="edit-cadence">
-                                            <SelectValue placeholder="Select recurrence" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="no-repeat">
-                                                Does not repeat
-                                            </SelectItem>
-                                            <SelectItem value="daily">
-                                                Daily
-                                            </SelectItem>
-                                            <SelectItem value="weekly">
-                                                Weekly
-                                            </SelectItem>
-                                            <SelectItem value="biweekly">
-                                                Every 2 weeks
-                                            </SelectItem>
-                                            <SelectItem value="monthly">
-                                                Monthly
-                                            </SelectItem>
-                                            <SelectItem value="custom">
-                                                Custom
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>Description</FormLabel>
+                                        <FormControl>
+                                            <textarea
+                                                id="edit-description"
+                                                rows={3}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand resize-none"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
-                            {!showCustomRecurrence && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {watchedCadence === 'weekly' &&
-                                        'Class repeats every week on the selected days'}
-                                    {watchedCadence === 'biweekly' &&
-                                        'Class repeats every 2 weeks on the selected days'}
-                                    {watchedCadence === 'daily' &&
-                                        'Class repeats every day'}
-                                    {watchedCadence === 'monthly' &&
-                                        'Class repeats monthly on the same day'}
-                                    {watchedCadence === 'no-repeat' &&
-                                        'Class is a one-time event'}
-                                    {watchedCadence === 'custom' &&
-                                        getCustomRecurrencePreview()}
-                                </p>
-                            )}
-                            {watchedCadence === 'custom' &&
-                                !showCustomRecurrence && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        type="button"
-                                        onClick={() =>
-                                            setShowCustomRecurrence(true)
-                                        }
-                                        className="mt-1 h-7 text-xs text-brand hover:text-brand-dark px-2"
-                                    >
-                                        Edit pattern
-                                    </Button>
-                                )}
 
-                            {showCustomRecurrence && (
-                                <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-sm font-medium text-gray-700">
-                                            Custom Recurrence Pattern
-                                        </Label>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            type="button"
-                                            onClick={() => {
-                                                setShowCustomRecurrence(false);
-                                                setValue('cadence', 'weekly');
-                                            }}
-                                            className="h-6 w-6 p-0 -mt-1"
-                                        >
-                                            <X className="size-4" />
-                                        </Button>
-                                    </div>
+                            <div className="space-y-4">
+                                <h4 className="font-medium text-brand-dark">
+                                    Schedule
+                                </h4>
 
-                                    <div>
-                                        <Label
-                                            htmlFor="customInterval"
-                                            className="text-xs"
-                                        >
-                                            Repeats every X weeks
-                                        </Label>
-                                        <Select
-                                            value={customRecurrence.interval.toString()}
-                                            onValueChange={(value) =>
-                                                setCustomRecurrence({
-                                                    ...customRecurrence,
-                                                    interval: parseInt(value)
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="customInterval"
-                                                className="bg-white"
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {[1, 2, 3, 4, 5, 6, 7, 8].map(
-                                                    (num) => (
+                                <div className="grid grid-cols-3 gap-4">
+                                    <FormField
+                                        control={control}
+                                        name="start_time"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Start Time *
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        id="edit-start-time"
+                                                        type="time"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={control}
+                                        name="end_time"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    End Time *
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        id="edit-end-time"
+                                                        type="time"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={control}
+                                        name="room_id"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Room *</FormLabel>
+                                                <Select
+                                                    value={
+                                                        field.value
+                                                            ? String(
+                                                                  field.value
+                                                              )
+                                                            : ''
+                                                    }
+                                                    onValueChange={(v) => {
+                                                        if (v === '__add__') {
+                                                            setShowAddRoom(
+                                                                true
+                                                            );
+                                                            return;
+                                                        }
+                                                        field.onChange(
+                                                            Number(v)
+                                                        );
+                                                    }}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger id="edit-room">
+                                                            <SelectValue placeholder="Select room" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {rooms.map((room) => (
+                                                            <SelectItem
+                                                                key={room.id}
+                                                                value={String(
+                                                                    room.id
+                                                                )}
+                                                            >
+                                                                {room.name}
+                                                            </SelectItem>
+                                                        ))}
                                                         <SelectItem
-                                                            key={num}
-                                                            value={num.toString()}
+                                                            value="__add__"
+                                                            className="text-brand font-medium"
                                                         >
-                                                            {num}{' '}
-                                                            {num === 1
-                                                                ? 'week'
-                                                                : 'weeks'}
+                                                            + Add Room
                                                         </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={control}
+                                        name="start_dt"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Start Date *
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        id="edit-start-dt"
+                                                        type="date"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                                {cls.status ===
+                                                    SelectedClassStatus.Active &&
+                                                    watchedStartDt !==
+                                                        new Date(cls.start_dt)
+                                                            .toISOString()
+                                                            .split('T')[0] && (
+                                                        <p className="text-sm text-amber-600 flex items-start gap-1">
+                                                            <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                                            <span>
+                                                                Warning: Class
+                                                                has already
+                                                                started
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={control}
+                                        name="end_dt"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>End Date</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        id="edit-end-dt"
+                                                        type="date"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="edit-cadence">
+                                        Repeats *
+                                    </Label>
+                                    <FormField
+                                        control={control}
+                                        name="cadence"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    if (value === 'custom') {
+                                                        setShowCustomRecurrence(
+                                                            true
+                                                        );
+                                                    } else {
+                                                        setShowCustomRecurrence(
+                                                            false
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger id="edit-cadence">
+                                                    <SelectValue placeholder="Select recurrence" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="no-repeat">
+                                                        Does not repeat
+                                                    </SelectItem>
+                                                    <SelectItem value="daily">
+                                                        Daily
+                                                    </SelectItem>
+                                                    <SelectItem value="weekly">
+                                                        Weekly
+                                                    </SelectItem>
+                                                    <SelectItem value="biweekly">
+                                                        Every 2 weeks
+                                                    </SelectItem>
+                                                    <SelectItem value="monthly">
+                                                        Monthly
+                                                    </SelectItem>
+                                                    <SelectItem value="custom">
+                                                        Custom
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {!showCustomRecurrence && (
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Use the &quot;Days of Week&quot;
-                                            selector below to choose which days
+                                            {watchedCadence === 'weekly' &&
+                                                'Class repeats every week on the selected days'}
+                                            {watchedCadence === 'biweekly' &&
+                                                'Class repeats every 2 weeks on the selected days'}
+                                            {watchedCadence === 'daily' &&
+                                                'Class repeats every day'}
+                                            {watchedCadence === 'monthly' &&
+                                                'Class repeats monthly on the same day'}
+                                            {watchedCadence === 'no-repeat' &&
+                                                'Class is a one-time event'}
+                                            {watchedCadence === 'custom' &&
+                                                getCustomRecurrencePreview()}
                                         </p>
-                                    </div>
+                                    )}
+                                    {watchedCadence === 'custom' &&
+                                        !showCustomRecurrence && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                type="button"
+                                                onClick={() =>
+                                                    setShowCustomRecurrence(
+                                                        true
+                                                    )
+                                                }
+                                                className="mt-1 h-7 text-xs text-brand hover:text-brand-dark px-2"
+                                            >
+                                                Edit pattern
+                                            </Button>
+                                        )}
 
-                                    <div className="pt-3 border-t border-gray-200">
-                                        <Label className="text-xs text-gray-600">
-                                            Preview
-                                        </Label>
-                                        <p className="text-sm text-gray-700 mt-1">
-                                            {getCustomRecurrencePreview()}
-                                        </p>
-                                    </div>
+                                    {showCustomRecurrence && (
+                                        <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-sm font-medium text-gray-700">
+                                                    Custom Recurrence Pattern
+                                                </Label>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowCustomRecurrence(
+                                                            false
+                                                        );
+                                                        setValue(
+                                                            'cadence',
+                                                            'weekly'
+                                                        );
+                                                    }}
+                                                    className="h-6 w-6 p-0 -mt-1"
+                                                >
+                                                    <X className="size-4" />
+                                                </Button>
+                                            </div>
 
-                                    {!isCustomRecurrenceValid() && (
-                                        <div className="flex items-center gap-2 text-sm text-red-600">
-                                            <AlertCircle className="size-4" />
-                                            <span>
-                                                Please select at least one day
-                                                of the week below
-                                            </span>
+                                            <div>
+                                                <Label
+                                                    htmlFor="customInterval"
+                                                    className="text-xs"
+                                                >
+                                                    Repeats every X weeks
+                                                </Label>
+                                                <Select
+                                                    value={customRecurrence.interval.toString()}
+                                                    onValueChange={(value) =>
+                                                        setCustomRecurrence({
+                                                            ...customRecurrence,
+                                                            interval:
+                                                                parseInt(value)
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id="customInterval"
+                                                        className="bg-white"
+                                                    >
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {[
+                                                            1, 2, 3, 4, 5, 6, 7,
+                                                            8
+                                                        ].map((num) => (
+                                                            <SelectItem
+                                                                key={num}
+                                                                value={num.toString()}
+                                                            >
+                                                                {num}{' '}
+                                                                {num === 1
+                                                                    ? 'week'
+                                                                    : 'weeks'}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Use the &quot;Days of
+                                                    Week&quot; selector below to
+                                                    choose which days
+                                                </p>
+                                            </div>
+
+                                            <div className="pt-3 border-t border-gray-200">
+                                                <Label className="text-xs text-gray-600">
+                                                    Preview
+                                                </Label>
+                                                <p className="text-sm text-gray-700 mt-1">
+                                                    {getCustomRecurrencePreview()}
+                                                </p>
+                                            </div>
+
+                                            {!isCustomRecurrenceValid() && (
+                                                <div className="flex items-center gap-2 text-sm text-destructive">
+                                                    <AlertCircle className="size-4" />
+                                                    <span>
+                                                        Please select at least
+                                                        one day of the week
+                                                        below
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-2 pt-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowCustomRecurrence(
+                                                            false
+                                                        );
+                                                        setValue(
+                                                            'cadence',
+                                                            'weekly'
+                                                        );
+                                                    }}
+                                                    className="flex-1"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (
+                                                            isCustomRecurrenceValid()
+                                                        ) {
+                                                            setShowCustomRecurrence(
+                                                                false
+                                                            );
+                                                            toast.success(
+                                                                'Custom recurrence pattern applied'
+                                                            );
+                                                        }
+                                                    }}
+                                                    disabled={
+                                                        !isCustomRecurrenceValid()
+                                                    }
+                                                    className="flex-1 bg-brand hover:bg-brand-dark"
+                                                >
+                                                    Apply Pattern
+                                                </Button>
+                                            </div>
                                         </div>
                                     )}
 
-                                    <div className="flex gap-2 pt-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            type="button"
-                                            onClick={() => {
-                                                setShowCustomRecurrence(false);
-                                                setValue('cadence', 'weekly');
-                                            }}
-                                            className="flex-1"
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            type="button"
-                                            onClick={() => {
-                                                if (isCustomRecurrenceValid()) {
-                                                    setShowCustomRecurrence(
-                                                        false
+                                    {(watchedCadence === 'weekly' ||
+                                        watchedCadence === 'biweekly' ||
+                                        watchedCadence === 'custom') && (
+                                        <div className="mt-2">
+                                            <Label>Days of Week *</Label>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {ALL_DAYS.map((day) => {
+                                                    const isSelected =
+                                                        scheduleDays.includes(
+                                                            day
+                                                        );
+                                                    return (
+                                                        <button
+                                                            key={day}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                toggleDay(day)
+                                                            }
+                                                            className={`px-4 py-2 rounded-lg border transition-colors ${
+                                                                isSelected
+                                                                    ? 'bg-brand text-white border-brand'
+                                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-brand'
+                                                            }`}
+                                                        >
+                                                            {day.slice(0, 3)}
+                                                        </button>
                                                     );
-                                                    toast.success(
-                                                        'Custom recurrence pattern applied'
-                                                    );
-                                                }
-                                            }}
-                                            disabled={
-                                                !isCustomRecurrenceValid()
-                                            }
-                                            className="flex-1 bg-brand hover:bg-brand-dark"
-                                        >
-                                            Apply Pattern
-                                        </Button>
-                                    </div>
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-
-                            {(watchedCadence === 'weekly' ||
-                                watchedCadence === 'biweekly' ||
-                                watchedCadence === 'custom') && (
-                                <div className="mt-2">
-                                    <Label>Days of Week *</Label>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {ALL_DAYS.map((day) => {
-                                            const isSelected =
-                                                scheduleDays.includes(day);
-                                            return (
-                                                <button
-                                                    key={day}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        toggleDay(day)
-                                                    }
-                                                    className={`px-4 py-2 rounded-lg border transition-colors ${
-                                                        isSelected
-                                                            ? 'bg-brand text-white border-brand'
-                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-brand'
-                                                    }`}
-                                                >
-                                                    {day.slice(0, 3)}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-brand-dark">Status</h4>
-                        <div className="space-y-2">
-                            <Controller
-                                name="status"
-                                control={control}
-                                render={({ field }) => (
-                                    <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem
-                                                value={
-                                                    SelectedClassStatus.Scheduled
-                                                }
-                                            >
-                                                Scheduled
-                                            </SelectItem>
-                                            <SelectItem
-                                                value={
-                                                    SelectedClassStatus.Active
-                                                }
-                                            >
-                                                Active
-                                            </SelectItem>
-                                            <SelectItem
-                                                value={
-                                                    SelectedClassStatus.Paused
-                                                }
-                                            >
-                                                Paused
-                                            </SelectItem>
-                                            <SelectItem
-                                                value={
-                                                    SelectedClassStatus.Completed
-                                                }
-                                            >
-                                                Completed
-                                            </SelectItem>
-                                            <SelectItem
-                                                value={
-                                                    SelectedClassStatus.Cancelled
-                                                }
-                                            >
-                                                Cancelled
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {watchedStatus === 'Paused' && (
-                                <p className="text-sm text-gray-600 flex items-start gap-1">
-                                    <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
-                                    <span>
-                                        Pausing will hide this class from daily
-                                        attendance views
-                                    </span>
-                                </p>
-                            )}
-                            {watchedStatus === 'Cancelled' && (
-                                <p className="text-sm text-gray-600 flex items-start gap-1">
-                                    <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
-                                    <span>
-                                        Cancelling will end this class and
-                                        update all enrollments
-                                    </span>
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    {conflicts.length > 0 && (
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium text-red-700">
-                                Room has {conflicts.length} scheduling{' '}
-                                {conflicts.length === 1
-                                    ? 'conflict'
-                                    : 'conflicts'}
-                                :
-                            </p>
-                            <div className="max-h-32 overflow-y-auto space-y-2">
-                                {conflicts.map((c, i) => (
-                                    <div
-                                        key={i}
-                                        className="bg-red-50 p-2 rounded text-sm"
-                                    >
-                                        <p className="font-medium text-red-800">
-                                            {c.class_name}
-                                        </p>
-                                        <p className="text-red-600">
-                                            {formatRoomConflictRange(
-                                                c.start_time,
-                                                c.end_time,
-                                                timezone
-                                            )}
-                                        </p>
-                                    </div>
-                                ))}
                             </div>
-                        </div>
-                    )}
-                </div>
 
-                <div className="mt-6 flex justify-end gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => void handleSubmit(onSubmit)()}
-                        className="bg-brand hover:bg-brand-dark text-white"
-                    >
-                        {isSubmitting ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                </div>
+                            <div className="space-y-4">
+                                <h4 className="font-medium text-brand-dark">
+                                    Status
+                                </h4>
+                                <div className="space-y-2">
+                                    <FormField
+                                        control={control}
+                                        name="status"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem
+                                                        value={
+                                                            SelectedClassStatus.Scheduled
+                                                        }
+                                                    >
+                                                        Scheduled
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        value={
+                                                            SelectedClassStatus.Active
+                                                        }
+                                                    >
+                                                        Active
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        value={
+                                                            SelectedClassStatus.Paused
+                                                        }
+                                                    >
+                                                        Paused
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        value={
+                                                            SelectedClassStatus.Completed
+                                                        }
+                                                    >
+                                                        Completed
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        value={
+                                                            SelectedClassStatus.Cancelled
+                                                        }
+                                                    >
+                                                        Cancelled
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {watchedStatus === 'Paused' && (
+                                        <p className="text-sm text-gray-600 flex items-start gap-1">
+                                            <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                            <span>
+                                                Pausing will hide this class
+                                                from daily attendance views
+                                            </span>
+                                        </p>
+                                    )}
+                                    {watchedStatus === 'Cancelled' && (
+                                        <p className="text-sm text-gray-600 flex items-start gap-1">
+                                            <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+                                            <span>
+                                                Cancelling will end this class
+                                                and update all enrollments
+                                            </span>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {conflicts.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-red-700">
+                                        Room has {conflicts.length} scheduling{' '}
+                                        {conflicts.length === 1
+                                            ? 'conflict'
+                                            : 'conflicts'}
+                                        :
+                                    </p>
+                                    <div className="max-h-32 overflow-y-auto space-y-2">
+                                        {conflicts.map((c, i) => (
+                                            <div
+                                                key={i}
+                                                className="bg-red-50 p-2 rounded text-sm"
+                                            >
+                                                <p className="font-medium text-red-800">
+                                                    {c.class_name}
+                                                </p>
+                                                <p className="text-red-600">
+                                                    {formatRoomConflictRange(
+                                                        c.start_time,
+                                                        c.end_time,
+                                                        timezone
+                                                    )}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-brand hover:bg-brand-dark text-white"
+                            >
+                                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
             </FormModal>
 
             <FormModal

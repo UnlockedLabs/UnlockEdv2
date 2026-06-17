@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormMessage
+} from '@/components/ui/form';
 import { FormModal, TonedPanel } from '@/components/shared';
-import { useTypeToConfirm } from '@/components/shared/useTypeToConfirm';
+import {
+    programTypeToConfirmSchema,
+    ProgramTypeToConfirmInput
+} from '@/lib/validation';
 
 interface ArchiveConfirmDialogProps {
     open: boolean;
@@ -21,7 +33,14 @@ export function ArchiveConfirmDialog({
     facilityCount,
     onConfirm
 }: ArchiveConfirmDialogProps) {
-    const confirm = useTypeToConfirm({ open, expected: programName });
+    const form = useForm<ProgramTypeToConfirmInput>({
+        resolver: zodResolver(programTypeToConfirmSchema(programName)),
+        defaultValues: { confirmation: '' }
+    });
+
+    useEffect(() => {
+        if (!open) form.reset({ confirmation: '' });
+    }, [open, form]);
 
     function handleConfirm() {
         onConfirm();
@@ -51,37 +70,52 @@ export function ArchiveConfirmDialog({
                     </div>
                 </div>
             </TonedPanel>
-            <div className="space-y-4">
-                <div>
-                    <Label htmlFor="archiveConfirmation">
-                        To confirm, type the program name:{' '}
-                        <strong>{programName}</strong>
-                    </Label>
-                    <Input
-                        id="archiveConfirmation"
-                        placeholder="Type program name to confirm"
-                        {...confirm.inputProps}
-                        className="mt-2"
-                    />
-                </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-                <Button
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(handleConfirm)(e);
+                    }}
                 >
-                    Cancel
-                </Button>
-                <Button
-                    variant="warning"
-                    disabled={!confirm.matches}
-                    onClick={handleConfirm}
-                >
-                    <AlertCircle className="size-4 mr-2" />
-                    Archive Program
-                </Button>
-            </div>
+                    <div className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="confirmation"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <Label htmlFor="archiveConfirmation">
+                                        To confirm, type the program name:{' '}
+                                        <strong>{programName}</strong>
+                                    </Label>
+                                    <FormControl>
+                                        <Input
+                                            id="archiveConfirmation"
+                                            placeholder="Type program name to confirm"
+                                            className="mt-2"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                            className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="warning">
+                            <AlertCircle className="size-4 mr-2" />
+                            Archive Program
+                        </Button>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }
@@ -227,7 +261,14 @@ export function DeleteProgramDialog({
     programName,
     onConfirm
 }: DeleteProgramDialogProps) {
-    const confirm = useTypeToConfirm({ open, expected: programName });
+    const form = useForm<ProgramTypeToConfirmInput>({
+        resolver: zodResolver(programTypeToConfirmSchema(programName)),
+        defaultValues: { confirmation: '' }
+    });
+
+    useEffect(() => {
+        if (!open) form.reset({ confirmation: '' });
+    }, [open, form]);
 
     async function handleConfirm() {
         const ok = await onConfirm();
@@ -256,37 +297,52 @@ export function DeleteProgramDialog({
                     </div>
                 </div>
             </TonedPanel>
-            <div className="space-y-4">
-                <div>
-                    <Label htmlFor="deleteConfirmation">
-                        To confirm, type the program name:{' '}
-                        <strong>{programName}</strong>
-                    </Label>
-                    <Input
-                        id="deleteConfirmation"
-                        placeholder="Type program name to confirm"
-                        {...confirm.inputProps}
-                        className="mt-2"
-                    />
-                </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-                <Button
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+            <Form {...form}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void form.handleSubmit(() => void handleConfirm())(e);
+                    }}
                 >
-                    Cancel
-                </Button>
-                <Button
-                    variant="destructive"
-                    disabled={!confirm.matches}
-                    onClick={() => void handleConfirm()}
-                >
-                    <Trash2 className="size-4 mr-2" />
-                    Delete Program
-                </Button>
-            </div>
+                    <div className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="confirmation"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <Label htmlFor="deleteConfirmation">
+                                        To confirm, type the program name:{' '}
+                                        <strong>{programName}</strong>
+                                    </Label>
+                                    <FormControl>
+                                        <Input
+                                            id="deleteConfirmation"
+                                            placeholder="Type program name to confirm"
+                                            className="mt-2"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                            className="border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="destructive">
+                            <Trash2 className="size-4 mr-2" />
+                            Delete Program
+                        </Button>
+                    </div>
+                </form>
+            </Form>
         </FormModal>
     );
 }

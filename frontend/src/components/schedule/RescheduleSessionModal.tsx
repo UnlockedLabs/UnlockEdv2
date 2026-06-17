@@ -1,13 +1,26 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
 import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
+import {
+    scheduleRescheduleSessionSchema,
+    ScheduleRescheduleSessionInput
+} from '@/lib/validation';
 import { FormModal } from '@/components/shared/FormModal';
 import { RoomConflictModal } from './RoomConflictModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
 import {
     Select,
     SelectContent,
@@ -33,10 +46,15 @@ export function RescheduleSessionModal({
     onSuccess
 }: RescheduleSessionModalProps) {
     const { user } = useAuth();
-    const [date, setDate] = useState('');
-    const [startTime, setStartTime] = useState('');
-    const [endTime, setEndTime] = useState('');
-    const [roomId, setRoomId] = useState('');
+    const form = useForm<ScheduleRescheduleSessionInput>({
+        resolver: zodResolver(scheduleRescheduleSessionSchema),
+        defaultValues: {
+            date: '',
+            startTime: '',
+            endTime: '',
+            room_id: ''
+        }
+    });
     const [submitting, setSubmitting] = useState(false);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
@@ -46,22 +64,20 @@ export function RescheduleSessionModal({
 
     useEffect(() => {
         if (open && event) {
-            setDate(toDateInput(event.start));
-            setStartTime('');
-            setEndTime('');
-            setRoomId('');
+            form.reset({
+                date: toDateInput(event.start),
+                startTime: '',
+                endTime: '',
+                room_id: ''
+            });
         }
-    }, [open, event]);
+    }, [open, event, form]);
 
-    async function handleSubmit() {
-        if (!date) {
-            toast.error('Date is required');
-            return;
-        }
+    async function handleSubmit(formData: ScheduleRescheduleSessionInput) {
         if (!user) return;
 
-        const effectiveStart = startTime || toTimeInput(event.start);
-        const effectiveEnd = endTime || toTimeInput(event.end);
+        const effectiveStart = formData.startTime || toTimeInput(event.start);
+        const effectiveEnd = formData.endTime || toTimeInput(event.end);
         const duration = formatDurationStr(effectiveStart, effectiveEnd);
         if (duration === '0h0m0s') {
             toast.error('End time must be after start time');
@@ -70,7 +86,7 @@ export function RescheduleSessionModal({
 
         setSubmitting(true);
         const origDt = `${toDateInput(event.start).replace(/-/g, '')}T${toTimeInput(event.start).replace(':', '')}00`;
-        const newDt = `${date.replace(/-/g, '')}T${effectiveStart.replace(':', '')}00`;
+        const newDt = `${formData.date.replace(/-/g, '')}T${effectiveStart.replace(':', '')}00`;
 
         const resp = await API.put(
             `program-classes/${event.class_id}/events/${event.id}`,
@@ -87,7 +103,9 @@ export function RescheduleSessionModal({
                     is_cancelled: false,
                     override_rrule: `DTSTART;TZID=${user.timezone}:${newDt}\nRRULE:FREQ=DAILY;COUNT=1`,
                     duration,
-                    room_id: roomId ? Number(roomId) : (event.room_id ?? null),
+                    room_id: formData.room_id
+                        ? Number(formData.room_id)
+                        : (event.room_id ?? null),
                     instructor_id: event.instructor_id ?? null
                 }
             ]
@@ -124,89 +142,144 @@ export function RescheduleSessionModal({
                 title="Reschedule Class"
                 description={`Reschedule the class from ${sessionDateLong}. You can change the date, time, and room.`}
             >
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="reschedule-date">New Date</Label>
-                        <Input
-                            id="reschedule-date"
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
-                    </div>
+                <Form {...form}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void form.handleSubmit((d) => handleSubmit(d))(e);
+                        }}
+                    >
+                        <div className="space-y-4 py-4">
+                            <FormField
+                                control={form.control}
+                                name="date"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel htmlFor="reschedule-date">
+                                            New Date
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                id="reschedule-date"
+                                                type="date"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reschedule-start">
-                            New Start Time (optional)
-                        </Label>
-                        <Input
-                            id="reschedule-start"
-                            type="time"
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                            placeholder={toTimeInput(event.start)}
-                        />
-                    </div>
+                            <FormField
+                                control={form.control}
+                                name="startTime"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel htmlFor="reschedule-start">
+                                            New Start Time (optional)
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                id="reschedule-start"
+                                                type="time"
+                                                placeholder={toTimeInput(
+                                                    event.start
+                                                )}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reschedule-end">
-                            New End Time (optional)
-                        </Label>
-                        <Input
-                            id="reschedule-end"
-                            type="time"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                            placeholder={toTimeInput(event.end)}
-                        />
-                    </div>
+                            <FormField
+                                control={form.control}
+                                name="endTime"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel htmlFor="reschedule-end">
+                                            New End Time (optional)
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                id="reschedule-end"
+                                                type="time"
+                                                placeholder={toTimeInput(
+                                                    event.end
+                                                )}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reschedule-room">
-                            New Room (optional)
-                        </Label>
-                        <Select value={roomId} onValueChange={setRoomId}>
-                            <SelectTrigger id="reschedule-room">
-                                <SelectValue
-                                    placeholder={
-                                        currentRoomName
-                                            ? `Keep current room (${currentRoomName})`
-                                            : 'Select room'
-                                    }
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {rooms.map((room) => (
-                                    <SelectItem
-                                        key={room.id}
-                                        value={String(room.id)}
-                                    >
-                                        {room.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-sm text-gray-500">
-                            Leave time and room blank to keep current values.
-                        </p>
-                    </div>
+                            <FormField
+                                control={form.control}
+                                name="room_id"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel htmlFor="reschedule-room">
+                                            New Room (optional)
+                                        </FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger id="reschedule-room">
+                                                    <SelectValue
+                                                        placeholder={
+                                                            currentRoomName
+                                                                ? `Keep current room (${currentRoomName})`
+                                                                : 'Select room'
+                                                        }
+                                                    />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {rooms.map((room) => (
+                                                    <SelectItem
+                                                        key={room.id}
+                                                        value={String(room.id)}
+                                                    >
+                                                        {room.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-sm text-gray-500">
+                                            Leave time and room blank to keep
+                                            current values.
+                                        </p>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="flex gap-2 justify-end">
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => void handleSubmit()}
-                            disabled={submitting || !date}
-                            className="bg-brand hover:bg-brand-dark text-white"
-                        >
-                            {submitting ? 'Saving...' : 'Reschedule Class'}
-                        </Button>
-                    </div>
-                </div>
+                            <div className="flex gap-2 justify-end">
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => onOpenChange(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="bg-brand hover:bg-brand-dark text-white"
+                                >
+                                    {submitting
+                                        ? 'Saving...'
+                                        : 'Reschedule Class'}
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Form>
             </FormModal>
 
             <RoomConflictModal
