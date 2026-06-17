@@ -283,17 +283,12 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform,
 	}
 	wg.Wait()
 
-	_, totalEnrollments, err := srv.Db.CountProviderEnrollments(provider.ID, facilityID)
-	if err != nil {
-		return models.ProgramsOverviewTable{}, err
-	}
-
 	programID := models.CanvasProgramIDOffset + provider.ID
 	return models.ProgramsOverviewTable{
 		ProgramID:              programID,
 		ProgramName:            provider.Name,
 		Description:            "Courses pulled live from Canvas connection: " + provider.Name,
-		TotalEnrollments:       &totalEnrollments,
+		TotalEnrollments:       &activeEnrollments,
 		TotalActiveEnrollments: &activeEnrollments,
 		TotalClasses:           &totalClasses,
 		TotalActiveClasses:     &activeClasses,
