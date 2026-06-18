@@ -45,7 +45,7 @@ type ApplyMatchesResponse struct {
 // --- Similarity metrics ---
 
 var (
-	jwMetric = metrics.NewJaroWinkler()
+	jwMetric  = metrics.NewJaroWinkler()
 	swgMetric = func() *metrics.SmithWatermanGotoh {
 		swg := metrics.NewSmithWatermanGotoh()
 		swg.CaseSensitive = false
@@ -198,6 +198,7 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 			failed = append(failed, c.CanvasUser.Username)
 			continue
 		}
+		srv.invalidateCanvasProgramCache(service.ProviderPlatformID, int(c.UnlockEdUserID))
 		if provider.OidcID != 0 {
 			if err := srv.registerProviderLogin(provider, user); err != nil {
 				log.errorf("error registering provider login for user %d: %v", c.UnlockEdUserID, err)
@@ -245,6 +246,7 @@ func (srv *Server) handleApplyMatches(w http.ResponseWriter, r *http.Request, lo
 			failed = append(failed, cu.Username)
 			continue
 		}
+		srv.invalidateCanvasProgramCache(service.ProviderPlatformID, int(newUser.ID))
 		if provider.OidcID != 0 {
 			if err := srv.registerProviderLogin(provider, &newUser); err != nil {
 				log.errorf("error registering provider login for %s: %v", cu.Username, err)

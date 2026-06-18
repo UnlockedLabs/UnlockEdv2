@@ -721,7 +721,9 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 	if prog.TotalActiveEnrollments != nil {
 		activeEnrollments = int(*prog.TotalActiveEnrollments)
 	}
-	completionRate := srv.computeCanvasCompletionRate(provider)
+	// Completion rate for Canvas programs is expensive to compute (N+1 Canvas API
+	// calls). The frontend falls back to computing it from the classes endpoint data,
+	// so returning 0 here is safe and avoids proxy timeouts on slow Canvas instances.
 	overview := models.ProgramOverviewResponse{
 		Program: models.Program{
 			DatabaseFields:     models.DatabaseFields{ID: programID},
@@ -735,7 +737,7 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 		ActiveResidents:        activeEnrollments,
 		ActiveEnrollments:      activeEnrollments,
 		TotalEnrollments:       totalEnrollments,
-		CompletionRate:         completionRate,
+		CompletionRate:         0,
 		ActiveClassFacilityIDs: []int{},
 	}
 	return writeJsonResponse(w, http.StatusOK, overview)
@@ -946,7 +948,6 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 	args.Total = int64(len(classes))
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }
-
 
 // weekdayToRRuleDay converts a time.Weekday to the two-letter iCalendar abbreviation.
 func weekdayToRRuleDay(day time.Weekday) string {

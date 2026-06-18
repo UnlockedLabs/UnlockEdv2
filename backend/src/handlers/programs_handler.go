@@ -284,6 +284,12 @@ func (srv *Server) handleGetProgramDeleteCheck(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		return writeJsonResponse(w, http.StatusOK, struct {
+			CanDelete bool                          `json:"can_delete"`
+			Blockers  models.DeleteBlockingChildren `json:"blockers"`
+		}{CanDelete: false, Blockers: models.DeleteBlockingChildren{}})
+	}
 	log.add("program_id", id)
 	blockers, err := srv.Db.ProgramBlockingChildren(id)
 	if err != nil {
