@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -26,22 +27,23 @@ import (
 )
 
 type Server struct {
-	sesClient   *sesv2.Client
-	port        string
-	Db          *database.DB
-	Mux         *http.ServeMux
-	OryClient   *ory.APIClient
-	Client      *http.Client
-	nats        *nats.Conn
-	dev         bool
-	buckets     map[string]nats.KeyValue
-	features    []models.FeatureAccess
-	testingMode bool
-	s3          *s3.Client
-	presigner   *s3.PresignClient
-	s3Bucket    string
-	wsClient    *ClientManager
-	scheduler   *tasks.Scheduler
+	sesClient      *sesv2.Client
+	port           string
+	Db             *database.DB
+	Mux            *http.ServeMux
+	OryClient      *ory.APIClient
+	Client         *http.Client
+	nats           *nats.Conn
+	dev            bool
+	buckets        map[string]nats.KeyValue
+	features       []models.FeatureAccess
+	testingMode    bool
+	s3             *s3.Client
+	presigner      *s3.PresignClient
+	s3Bucket       string
+	wsClient       *ClientManager
+	scheduler      *tasks.Scheduler
+	canvasInflight sync.Map
 }
 
 type routeDef struct {

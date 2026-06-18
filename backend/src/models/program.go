@@ -185,6 +185,7 @@ type ProgramsOverviewTable struct {
 	FundingType            string   `json:"funding_type"`
 	Status                 bool     `json:"status"`
 	Source                 string   `json:"source"`
+	Loading                bool     `json:"loading,omitempty"`
 }
 
 type ProgramOverviewResponse struct {
@@ -196,6 +197,7 @@ type ProgramOverviewResponse struct {
 	CompletionRate         float64 `json:"completion_rate"`
 	AttendanceRate         float64 `json:"attendance_rate"`
 	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids" gorm:"-"`
+	Loading                bool    `json:"loading,omitempty"`
 }
 
 type ProgramCSVData struct {

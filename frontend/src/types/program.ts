@@ -92,6 +92,7 @@ export interface ProgramOverview extends Program {
     completion_rate: number;
     attendance_rate: number;
     active_class_facility_ids: number[];
+    loading?: boolean;
 }
 
 export interface ProgramClassOutcomes {
@@ -126,6 +127,7 @@ export interface ProgramsOverviewTable {
     funding_type: string;
     status: boolean;
     source?: string;
+    loading?: boolean;
 }
 
 export interface ProgramsOverview {

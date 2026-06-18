@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCanvasLoadingPoll } from '@/hooks/useCanvasLoadingPoll';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
@@ -7,9 +8,11 @@ import {
     BookOpen,
     ChevronDown,
     ChevronUp,
+    Loader2,
     MoreVertical,
     Trash2
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import API from '@/api/api';
 import {
     Class,
@@ -149,6 +152,10 @@ export default function ProgramOverviewStatewide() {
         ServerResponseOne<ProgramOverview>
     >(`/api/programs/${program_id}`);
     const program = programResp?.data;
+    const { exhausted: detailPollExhausted } = useCanvasLoadingPoll(
+        !!(program?.loading),
+        mutateProgram
+    );
 
     const { data: deleteCheckResp, mutate: mutateDeleteCheck } = useSWR<
         ServerResponseOne<{
@@ -464,6 +471,52 @@ export default function ProgramOverviewStatewide() {
         return (
             <div className="flex items-center justify-center h-64">
                 <p className="text-muted-foreground">Loading program...</p>
+            </div>
+        );
+    }
+
+    if (program.loading) {
+        return (
+            <div className="min-h-screen bg-surface-hover">
+                <div className="bg-white border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-6 py-6">
+                        <div className="flex items-start gap-6">
+                            <Skeleton className="h-18 w-18 rounded-lg" />
+                            <div className="flex-1 space-y-3">
+                                <Skeleton className="h-7 w-64" />
+                                <Skeleton className="h-4 w-96" />
+                                <div className="flex items-center gap-2 mt-2">
+                                    {detailPollExhausted ? (
+                                        <span className="text-sm text-amber-600">
+                                            Taking longer than expected —{' '}
+                                            <button
+                                                className="underline"
+                                                onClick={() =>
+                                                    window.location.reload()
+                                                }
+                                            >
+                                                refresh to retry
+                                            </button>
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                            <span className="text-sm text-blue-600">
+                                                Syncing Canvas data, this may
+                                                take a moment…
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-4 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-24 rounded-lg" />
+                    ))}
+                </div>
             </div>
         );
     }

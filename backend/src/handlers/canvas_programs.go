@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/services"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,8 +17,10 @@ import (
 )
 
 type CachedCanvasProgram struct {
-	Program     models.ProgramsOverviewTable
-	LastUpdated time.Time
+	Program        models.ProgramsOverviewTable
+	LastUpdated    time.Time
+	CompletionRate float64
+	Loading        bool
 }
 
 // canvasCourseEntry holds parsed metadata for a single Canvas course.
@@ -138,7 +141,7 @@ func (srv *Server) fetchCanvasCourseEnrollmentData(provider *models.ProviderPlat
 		"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&per_page=100",
 		provider.BaseUrl, rawCourseID,
 	)
-	enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
+	enrollments, err := srv.fetchAllCanvasPages(context.Background(), provider, enrollURL, 0)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -160,9 +163,68 @@ func (srv *Server) fetchCanvasCourseEnrollmentData(provider *models.ProviderPlat
 	return ids, dates, nil
 }
 
+// warmCanvasProgramCache fires a background goroutine that fetches program data
+// from Canvas and writes the result to NATS KV at cacheKey. An in-flight dedup
+// guard (canvasInflight) prevents concurrent fetches for the same provider.
+func (srv *Server) warmCanvasProgramCache(provider *models.ProviderPlatform, facilityID uint, cacheKey string) {
+	key := provider.ID
+	if _, loaded := srv.canvasInflight.LoadOrStore(key, struct{}{}); loaded {
+		return
+	}
+	kv := srv.buckets[CanvasPrograms]
+	providerCopy := *provider
+	go func() {
+		defer srv.canvasInflight.Delete(key)
+		result, err := srv.fetchCanvasProviderProgram(&providerCopy, facilityID)
+		if err != nil {
+			log.WithError(err).Warnf("warmCanvasProgramCache: failed to fetch canvas program for provider %d", providerCopy.ID)
+			return
+		}
+		if kv == nil {
+			return
+		}
+		cached := CachedCanvasProgram{Program: result, LastUpdated: time.Now(), Loading: false}
+		data, err := json.Marshal(cached)
+		if err != nil {
+			return
+		}
+		if _, err := kv.Put(cacheKey, data); err != nil {
+			log.WithError(err).Warnf("warmCanvasProgramCache: failed to store canvas program for provider %d", providerCopy.ID)
+			return
+		}
+		// Kick off completion-rate computation in the background.
+		// Uses the global (facility=0) key so all callers share the result.
+		globalKey := fmt.Sprintf("canvas_program_%d_0", providerCopy.ID)
+		go func(p models.ProviderPlatform, gKey string) {
+			rateCtx, rateCancel := context.WithTimeout(context.Background(), 90*time.Second)
+			defer rateCancel()
+			log.Debugf("background: starting completion rate computation for provider %d", p.ID)
+			rate := srv.computeCanvasCompletionRate(rateCtx, &p)
+			log.Debugf("background: completion rate for provider %d = %.2f%%", p.ID, rate)
+			entry, err := kv.Get(gKey)
+			if err != nil {
+				return
+			}
+			var c CachedCanvasProgram
+			if json.Unmarshal(entry.Value(), &c) != nil {
+				return
+			}
+			c.CompletionRate = rate
+			if d, err := json.Marshal(c); err == nil {
+				if _, err := kv.Put(gKey, d); err != nil {
+					log.WithError(err).Warnf("background: failed to update completion rate for provider %d", p.ID)
+				}
+			}
+			log.Debugf("background: completion rate cached for provider %d", p.ID)
+		}(providerCopy, globalKey)
+	}()
+}
+
 // getCanvasProviderPrograms returns one synthetic ProgramsOverviewTable entry per
 // enabled Canvas provider platform. Results are served from NATS KV when fresh
-// (< 5 min old) and populated via a live Canvas API call on cache miss.
+// (< 5 min old). On cache miss or stale entry a loading placeholder is written
+// to KV and warmCanvasProgramCache is fired in the background, returning a
+// Loading=true entry so the frontend can poll until data is ready.
 // When adminRole is FacilityAdmin, enrollment counts are scoped to facilityID.
 func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
@@ -190,6 +252,13 @@ func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.U
 			if entry, err := kv.Get(cacheKey); err == nil {
 				var cached CachedCanvasProgram
 				if json.Unmarshal(entry.Value(), &cached) == nil {
+					if cached.Loading {
+						// Computation already in progress — return placeholder.
+						placeholder := cached.Program
+						placeholder.Loading = true
+						result = append(result, placeholder)
+						continue
+					}
 					if cached.LastUpdated.Add(5 * time.Minute).After(time.Now()) {
 						result = append(result, cached.Program)
 						continue
@@ -198,20 +267,30 @@ func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.U
 			}
 		}
 
-		program, err := srv.fetchCanvasProviderProgram(&provider, scopedFacilityID)
-		if err != nil {
-			log.WithError(err).Warnf("failed to fetch canvas program for provider %d, skipping", provider.ID)
-			continue
-		}
-
+		// Cache miss or stale — write a loading placeholder and kick off background fetch.
 		if kv != nil {
-			if data, err := json.Marshal(CachedCanvasProgram{Program: program, LastUpdated: time.Now()}); err == nil {
+			placeholder := models.ProgramsOverviewTable{
+				ProgramID:   models.CanvasProgramIDOffset + provider.ID,
+				ProgramName: provider.Name,
+				Source:      "canvas",
+				Status:      true,
+				Loading:     true,
+			}
+			if data, err := json.Marshal(CachedCanvasProgram{Program: placeholder, LastUpdated: time.Now(), Loading: true}); err == nil {
 				if _, err := kv.Put(cacheKey, data); err != nil {
-					log.WithError(err).Warn("failed to store canvas program in NATS KV cache")
+					log.WithError(err).Warn("getCanvasProviderPrograms: failed to write loading placeholder")
 				}
 			}
 		}
-		result = append(result, program)
+		providerCopy := provider
+		srv.warmCanvasProgramCache(&providerCopy, scopedFacilityID, cacheKey)
+		result = append(result, models.ProgramsOverviewTable{
+			ProgramID:   models.CanvasProgramIDOffset + provider.ID,
+			ProgramName: provider.Name,
+			Source:      "canvas",
+			Status:      true,
+			Loading:     true,
+		})
 	}
 	return result, nil
 }
@@ -226,7 +305,7 @@ func (srv *Server) getCanvasProviderPrograms(facilityID uint, adminRole models.U
 // page calculation), while total enrollment is the all-time provider_user_mappings count.
 func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform, facilityID uint) (models.ProgramsOverviewTable, error) {
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
+	courses, err := srv.fetchAllCanvasPages(context.Background(), provider, coursesURL, 0)
 	if err != nil {
 		return models.ProgramsOverviewTable{}, fmt.Errorf("canvas API error for provider %d: %w", provider.ID, err)
 	}
@@ -300,10 +379,10 @@ func (srv *Server) fetchCanvasProviderProgram(provider *models.ProviderPlatform,
 
 // fetchAllCanvasPages fetches pages from a Canvas API endpoint and returns the combined results.
 // max limits the total number of items returned; 0 means no limit (fetch all pages).
-func (srv *Server) fetchAllCanvasPages(provider *models.ProviderPlatform, startURL string, max int) ([]map[string]interface{}, error) {
+func (srv *Server) fetchAllCanvasPages(ctx context.Context, provider *models.ProviderPlatform, startURL string, max int) ([]map[string]interface{}, error) {
 	var all []map[string]interface{}
 	for pageURL := startURL; pageURL != ""; {
-		req, err := http.NewRequest("GET", pageURL, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -436,7 +515,7 @@ func (srv *Server) fetchCanvasCalendarEvents(
 ) ([]models.FacilityProgramClassEvent, error) {
 	// Step 1: fetch all courses for this provider (paginated)
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
+	courses, err := srv.fetchAllCanvasPages(context.Background(), provider, coursesURL, 0)
 	if err != nil {
 		return nil, fmt.Errorf("fetching courses for provider %d: %w", provider.ID, err)
 	}
@@ -457,7 +536,7 @@ func (srv *Server) fetchCanvasCalendarEvents(
 			params.Add("context_codes[]", fmt.Sprintf("course_%d", int(idFloat)))
 		}
 	}
-	rawEvents, err := srv.fetchAllCanvasPages(provider, provider.BaseUrl+"/api/v1/calendar_events?"+params.Encode(), 0)
+	rawEvents, err := srv.fetchAllCanvasPages(context.Background(), provider, provider.BaseUrl+"/api/v1/calendar_events?"+params.Encode(), 0)
 	if err != nil {
 		return nil, fmt.Errorf("canvas API error fetching calendar events for provider %d: %w", provider.ID, err)
 	}
@@ -537,7 +616,7 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 		}
 		programID := models.CanvasProgramIDOffset + provider.ID
 		apiURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-		courses, err := srv.fetchAllCanvasPages(&provider, apiURL, 0)
+		courses, err := srv.fetchAllCanvasPages(context.Background(), &provider, apiURL, 0)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
 			continue
@@ -614,7 +693,7 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 		}
 		programID := models.CanvasProgramIDOffset + provider.ID
 		apiURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-		courses, err := srv.fetchAllCanvasPages(&provider, apiURL, 0)
+		courses, err := srv.fetchAllCanvasPages(context.Background(), &provider, apiURL, 0)
 		if err != nil {
 			log.WithError(err).Warnf("failed to fetch canvas courses for provider %d, skipping", provider.ID)
 			continue
@@ -709,38 +788,96 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", connectionID), "program ID")
 	}
-	prog, err := srv.fetchCanvasProviderProgram(provider, srv.getQueryContext(r).FacilityID)
-	if err != nil {
-		return newInternalServerServiceError(err, "failed to fetch canvas program")
+
+	facilityID := srv.getQueryContext(r).FacilityID
+	cacheKey := fmt.Sprintf("canvas_program_%d_%d", connectionID, facilityID)
+	globalKey := fmt.Sprintf("canvas_program_%d_0", connectionID)
+	kv := srv.buckets[CanvasPrograms]
+
+	// Try facility-scoped key first, then global key.
+	if kv != nil {
+		for _, key := range []string{cacheKey, globalKey} {
+			entry, err := kv.Get(key)
+			if err != nil {
+				continue
+			}
+			var cached CachedCanvasProgram
+			if json.Unmarshal(entry.Value(), &cached) != nil {
+				continue
+			}
+			if cached.Loading {
+				return writeJsonResponse(w, http.StatusOK, models.ProgramOverviewResponse{
+					Program: models.Program{
+						DatabaseFields:     models.DatabaseFields{ID: programID},
+						Name:               "College - " + provider.Name,
+						IsActive:           true,
+						ProgramTypes:       []models.ProgramType{},
+						ProgramCreditTypes: []models.ProgramCreditType{},
+						Facilities:         []models.Facility{},
+					},
+					ActiveClassFacilityIDs: []int{},
+					Loading:                true,
+				})
+			}
+			if cached.LastUpdated.Add(5 * time.Minute).After(time.Now()) {
+				prog := cached.Program
+				totalEnrollments := 0
+				if prog.TotalEnrollments != nil {
+					totalEnrollments = int(*prog.TotalEnrollments)
+				}
+				activeEnrollments := 0
+				if prog.TotalActiveEnrollments != nil {
+					activeEnrollments = int(*prog.TotalActiveEnrollments)
+				}
+				return writeJsonResponse(w, http.StatusOK, models.ProgramOverviewResponse{
+					Program: models.Program{
+						DatabaseFields:     models.DatabaseFields{ID: programID},
+						Name:               "College - " + provider.Name,
+						Description:        prog.Description,
+						IsActive:           true,
+						ProgramTypes:       []models.ProgramType{},
+						ProgramCreditTypes: []models.ProgramCreditType{},
+						Facilities:         []models.Facility{},
+					},
+					ActiveResidents:        activeEnrollments,
+					ActiveEnrollments:      activeEnrollments,
+					TotalEnrollments:       totalEnrollments,
+					CompletionRate:         cached.CompletionRate,
+					ActiveClassFacilityIDs: []int{},
+				})
+			}
+			break
+		}
 	}
-	totalEnrollments := 0
-	if prog.TotalEnrollments != nil {
-		totalEnrollments = int(*prog.TotalEnrollments)
+
+	// Cache miss — write a loading placeholder, kick off warm, return loading response.
+	if kv != nil {
+		placeholder := models.ProgramsOverviewTable{
+			ProgramID:   programID,
+			ProgramName: "College - " + provider.Name,
+			Source:      "canvas",
+			Status:      true,
+			Loading:     true,
+		}
+		if data, err := json.Marshal(CachedCanvasProgram{Program: placeholder, LastUpdated: time.Now(), Loading: true}); err == nil {
+			if _, putErr := kv.Put(cacheKey, data); putErr != nil {
+				_ = putErr
+			}
+		}
 	}
-	activeEnrollments := 0
-	if prog.TotalActiveEnrollments != nil {
-		activeEnrollments = int(*prog.TotalActiveEnrollments)
-	}
-	// Completion rate for Canvas programs is expensive to compute (N+1 Canvas API
-	// calls). The frontend falls back to computing it from the classes endpoint data,
-	// so returning 0 here is safe and avoids proxy timeouts on slow Canvas instances.
-	overview := models.ProgramOverviewResponse{
+	srv.warmCanvasProgramCache(provider, facilityID, cacheKey)
+	return writeJsonResponse(w, http.StatusOK, models.ProgramOverviewResponse{
 		Program: models.Program{
 			DatabaseFields:     models.DatabaseFields{ID: programID},
 			Name:               "College - " + provider.Name,
-			Description:        prog.Description,
 			IsActive:           true,
 			ProgramTypes:       []models.ProgramType{},
 			ProgramCreditTypes: []models.ProgramCreditType{},
 			Facilities:         []models.Facility{},
 		},
-		ActiveResidents:        activeEnrollments,
-		ActiveEnrollments:      activeEnrollments,
-		TotalEnrollments:       totalEnrollments,
-		CompletionRate:         0,
 		ActiveClassFacilityIDs: []int{},
-	}
-	return writeJsonResponse(w, http.StatusOK, overview)
+		Loading:                true,
+	})
 }
 
 func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request, log sLog, programID uint) error {
@@ -759,7 +896,7 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	}
 
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
+	courses, err := srv.fetchAllCanvasPages(r.Context(), provider, coursesURL, 0)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to fetch canvas courses")
 	}
@@ -858,7 +995,7 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *http.Request, provider *models.ProviderPlatform, programID, connectionID uint) error {
 	// Fetch all Canvas courses.
 	canvasURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	courses, err := srv.fetchAllCanvasPages(provider, canvasURL, 0)
+	courses, err := srv.fetchAllCanvasPages(r.Context(), provider, canvasURL, 0)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to fetch canvas courses")
 	}
@@ -1011,7 +1148,7 @@ func (srv *Server) fetchCanvasCoursesScheduleEvents(
 		params.Add("context_codes[]", fmt.Sprintf("course_%d", id))
 	}
 
-	rawEvents, err := srv.fetchAllCanvasPages(provider, provider.BaseUrl+"/api/v1/calendar_events?"+params.Encode(), 0)
+	rawEvents, err := srv.fetchAllCanvasPages(context.Background(), provider, provider.BaseUrl+"/api/v1/calendar_events?"+params.Encode(), 0)
 	if err != nil {
 		log.WithError(err).Warnf("fetchCanvasCoursesScheduleEvents: failed to fetch events for provider %d", provider.ID)
 		return result
@@ -1174,9 +1311,11 @@ func (srv *Server) countMappedCanvasEnrollees(provider *models.ProviderPlatform,
 // computeCanvasCompletionRate fetches all enrollments across every course for
 // the provider (active + completed states) and returns the percentage of mapped
 // enrollments that have enrollment_state == "completed".
-func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform) float64 {
+// ctx should carry a deadline — callers launching this in a goroutine must use
+// context.WithTimeout to bound the N+1 Canvas API requests.
+func (srv *Server) computeCanvasCompletionRate(ctx context.Context, provider *models.ProviderPlatform) float64 {
 	coursesURL := provider.BaseUrl + "/api/v1/accounts/" + provider.AccountID + "/courses?per_page=100"
-	courses, err := srv.fetchAllCanvasPages(provider, coursesURL, 0)
+	courses, err := srv.fetchAllCanvasPages(ctx, provider, coursesURL, 0)
 	if err != nil || len(courses) == 0 {
 		return 0
 	}
@@ -1204,7 +1343,7 @@ func (srv *Server) computeCanvasCompletionRate(provider *models.ProviderPlatform
 				"%s/api/v1/courses/%d/enrollments?type[]=StudentEnrollment&state[]=active&state[]=completed&per_page=100",
 				provider.BaseUrl, courseID,
 			)
-			enrollments, err := srv.fetchAllCanvasPages(provider, enrollURL, 0)
+			enrollments, err := srv.fetchAllCanvasPages(ctx, provider, enrollURL, 0)
 			if err != nil {
 				return
 			}
@@ -1420,7 +1559,7 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 		start.Format("2006-01-02"), end.Format("2006-01-02"),
 	)
 
-	raw, err := srv.fetchAllCanvasPages(provider, fetchURL, 0)
+	raw, err := srv.fetchAllCanvasPages(r.Context(), provider, fetchURL, 0)
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to fetch canvas events")
 	}
@@ -1540,7 +1679,7 @@ func (srv *Server) handleGetCanvasAtRiskStudents(w http.ResponseWriter, r *http.
 	}
 
 	summaryURL := fmt.Sprintf("%s/api/v1/courses/%d/analytics/student_summaries", provider.BaseUrl, rawCourseID)
-	summaries, err := srv.fetchAllCanvasPages(provider, summaryURL, 0)
+	summaries, err := srv.fetchAllCanvasPages(r.Context(), provider, summaryURL, 0)
 	if err != nil {
 		// Analytics may not be enabled on this Canvas instance — return empty rather than error.
 		log.WithError(err).Warnf("canvas student_summaries unavailable for course %d, returning empty at-risk list", rawCourseID)

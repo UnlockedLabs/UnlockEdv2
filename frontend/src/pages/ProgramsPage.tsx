@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { useCanvasLoadingPoll } from '@/hooks/useCanvasLoadingPoll';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -46,7 +47,8 @@ import {
     PopoverTrigger
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Filter, ChevronDown } from 'lucide-react';
+import { Search, Plus, Filter, ChevronDown, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/Pagination';
 import {
@@ -98,6 +100,15 @@ export default function ProgramsPage() {
     const { data: resp, mutate } = useSWR<
         ServerResponseMany<ProgramsOverviewTable>
     >('/api/programs/detailed-list?include_archived=true&per_page=100');
+
+    const programs = resp?.data ?? [];
+    const hasLoadingCanvas = programs.some(
+        (p) => p.source === 'canvas' && p.loading
+    );
+    const { exhausted: canvasPollExhausted } = useCanvasLoadingPoll(
+        hasLoadingCanvas,
+        mutate
+    );
 
     // Fetch facilities for Department Admin
     const { data: facilitiesResp } = useSWR<ServerResponseMany<Facility>>(
@@ -995,6 +1006,7 @@ export default function ProgramsPage() {
                         {isDeptAdminUser ? (
                             <ProgramsTable
                                 programs={paginatedPrograms}
+                                pollExhausted={canvasPollExhausted}
                                 onRowClick={(programId) =>
                                     navigate('/programs/' + programId)
                                 }
@@ -1006,6 +1018,7 @@ export default function ProgramsPage() {
                                         key={program.program_id}
                                         program={program}
                                         showFacilities={false}
+                                        pollExhausted={canvasPollExhausted}
                                         onClick={() =>
                                             navigate(
                                                 '/programs/' +
@@ -1067,15 +1080,65 @@ function StatCard({
     );
 }
 
+function ProgramCardSkeleton({ exhausted }: { exhausted: boolean }) {
+    return (
+        <Card className="bg-white !p-0">
+            <CardContent className="pt-6">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-4 w-full" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+                <div className="flex gap-2 mb-4">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    <Skeleton className="h-16 rounded-md" />
+                    <Skeleton className="h-16 rounded-md" />
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                    {exhausted ? (
+                        <span className="text-xs text-amber-600">
+                            Taking longer than expected —{' '}
+                            <button
+                                className="underline"
+                                onClick={() => window.location.reload()}
+                            >
+                                refresh to retry
+                            </button>
+                        </span>
+                    ) : (
+                        <>
+                            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                            <span className="text-xs text-blue-600">
+                                Syncing from Canvas…
+                            </span>
+                        </>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 function ProgramCard({
     program,
     showFacilities,
-    onClick
+    onClick,
+    pollExhausted
 }: {
     program: ProgramsOverviewTable;
     showFacilities: boolean;
     onClick: () => void;
+    pollExhausted?: boolean;
 }) {
+    if (program.source === 'canvas' && program.loading) {
+        return <ProgramCardSkeleton exhausted={!!pollExhausted} />;
+    }
     const status = getEffectiveStatus(program);
     const types = parseCommaSeparated(program.program_types);
     const credits = parseCommaSeparated(program.credit_types);
@@ -1246,10 +1309,12 @@ function getPercentageColorClass(percentage: number): string {
 
 function ProgramsTable({
     programs,
-    onRowClick
+    onRowClick,
+    pollExhausted
 }: {
     programs: ProgramsOverviewTable[];
     onRowClick: (programId: number) => void;
+    pollExhausted?: boolean;
 }) {
     const navigate = useNavigate();
     const nameRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -1304,6 +1369,40 @@ function ProgramsTable({
                     </TableHeader>
                     <TableBody>
                         {programs.map((program) => {
+                            if (program.source === 'canvas' && program.loading) {
+                                return (
+                                    <TableRow key={program.program_id}>
+                                        <TableCell className="px-6 py-4">
+                                            <div className="space-y-1.5">
+                                                <Skeleton className="h-4 w-48" />
+                                                {pollExhausted ? (
+                                                    <span className="text-xs text-amber-600">
+                                                        Taking longer than expected —{' '}
+                                                        <button
+                                                            className="underline"
+                                                            onClick={() => window.location.reload()}
+                                                        >
+                                                            refresh to retry
+                                                        </button>
+                                                    </span>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                                                        <span className="text-xs text-blue-600">
+                                                            Syncing from Canvas…
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        {[...Array(5)].map((_, i) => (
+                                            <TableCell key={i} className="px-6 py-4">
+                                                <Skeleton className="h-4 w-12" />
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                );
+                            }
                             const status = getEffectiveStatus(program);
                             const types = parseCommaSeparated(
                                 program.program_types
