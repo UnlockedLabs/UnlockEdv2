@@ -153,7 +153,7 @@ export default function ProgramOverviewStatewide() {
     >(`/api/programs/${program_id}`);
     const program = programResp?.data;
     const { exhausted: detailPollExhausted } = useCanvasLoadingPoll(
-        !!(program?.loading),
+        !!program?.loading,
         mutateProgram
     );
 
@@ -513,7 +513,7 @@ export default function ProgramOverviewStatewide() {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-4 gap-4">
-                    {[...Array(4)].map((_, i) => (
+                    {Array.from({ length: 4 }).map((_, i) => (
                         <Skeleton key={i} className="h-24 rounded-lg" />
                     ))}
                 </div>
@@ -606,73 +606,83 @@ export default function ProgramOverviewStatewide() {
                                 Archived
                             </Badge>
                         )}
-                        {!isCanvasProgram && <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-9 w-9 p-0 hover:bg-gray-100 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                        {!isCanvasProgram && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-9 w-9 p-0 hover:bg-gray-100 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                    >
+                                        <MoreVertical className="size-5" />
+                                        <span className="sr-only">
+                                            Open menu
+                                        </span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-48 p-1"
                                 >
-                                    <MoreVertical className="size-5" />
-                                    <span className="sr-only">Open menu</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-48 p-1"
-                            >
-                                {programStatus === 'Archived' ? (
-                                    <>
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                setShowReactivateDialog(true)
-                                            }
-                                        >
-                                            Reactivate Program
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                    </>
-                                ) : (
-                                    <>
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                void handleArchiveCheck()
-                                            }
-                                            disabled={archiveCheckLoading}
-                                            className="text-orange-600"
-                                        >
-                                            Archive Program
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                    </>
-                                )}
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div>
+                                    {programStatus === 'Archived' ? (
+                                        <>
                                             <DropdownMenuItem
                                                 onClick={() =>
-                                                    setShowDeleteDialog(true)
+                                                    setShowReactivateDialog(
+                                                        true
+                                                    )
                                                 }
-                                                disabled={!canDelete}
-                                                className="text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                                             >
-                                                <Trash2 className="size-4" />
-                                                Delete Program
+                                                Reactivate Program
                                             </DropdownMenuItem>
-                                        </div>
-                                    </TooltipTrigger>
-                                    {!canDelete && deleteBlockerReason && (
-                                        <TooltipContent side="left">
-                                            {deleteBlockerReason}
-                                        </TooltipContent>
+                                            <DropdownMenuSeparator />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    void handleArchiveCheck()
+                                                }
+                                                disabled={archiveCheckLoading}
+                                                className="text-orange-600"
+                                            >
+                                                Archive Program
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                        </>
                                     )}
-                                </Tooltip>
-                            </DropdownMenuContent>
-                        </DropdownMenu>}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        setShowDeleteDialog(
+                                                            true
+                                                        )
+                                                    }
+                                                    disabled={!canDelete}
+                                                    className="text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                    Delete Program
+                                                </DropdownMenuItem>
+                                            </div>
+                                        </TooltipTrigger>
+                                        {!canDelete && deleteBlockerReason && (
+                                            <TooltipContent side="left">
+                                                {deleteBlockerReason}
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
                 </div>
 
-                <div className={`grid ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'} gap-6 mb-8`}>
+                <div
+                    className={`grid ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'} gap-6 mb-8`}
+                >
                     <div className="card-block p-6">
                         <div className="text-sm text-gray-600 mb-2">
                             Total Enrollment
@@ -709,17 +719,17 @@ export default function ProgramOverviewStatewide() {
                         </div>
                     </div>
                     {!isCanvasProgram && (
-                    <div className="card-block p-6">
-                        <div className="text-sm text-gray-600 mb-2">
-                            Avg Attendance Rate
+                        <div className="card-block p-6">
+                            <div className="text-sm text-gray-600 mb-2">
+                                Avg Attendance Rate
+                            </div>
+                            <div className="text-3xl text-brand-dark mb-1">
+                                {avgAttendanceRate}%
+                            </div>
+                            <div className="text-xs text-gray-500">
+                                across all classes
+                            </div>
                         </div>
-                        <div className="text-3xl text-brand-dark mb-1">
-                            {avgAttendanceRate}%
-                        </div>
-                        <div className="text-xs text-gray-500">
-                            across all classes
-                        </div>
-                    </div>
                     )}
                 </div>
 
@@ -780,7 +790,9 @@ export default function ProgramOverviewStatewide() {
                                             ))}
                                     </div>
                                 </TableHead>
-                                {!isCanvasProgram && <TableHead>Utilization</TableHead>}
+                                {!isCanvasProgram && (
+                                    <TableHead>Utilization</TableHead>
+                                )}
                                 <TableHead
                                     className="cursor-pointer hover:bg-gray-50"
                                     onClick={() => toggleSort('completion')}
@@ -795,7 +807,9 @@ export default function ProgramOverviewStatewide() {
                                             ))}
                                     </div>
                                 </TableHead>
-                                {!isCanvasProgram && <TableHead>Attendance</TableHead>}
+                                {!isCanvasProgram && (
+                                    <TableHead>Attendance</TableHead>
+                                )}
                                 <TableHead className="w-32" />
                             </TableRow>
                         </TableHeader>
@@ -809,7 +823,9 @@ export default function ProgramOverviewStatewide() {
                                         <TableRow
                                             className="hover:bg-gray-50 cursor-pointer"
                                             onClick={() =>
-                                                toggleFacilityExpanded(stat.facilityId)
+                                                toggleFacilityExpanded(
+                                                    stat.facilityId
+                                                )
                                             }
                                         >
                                             <TableCell>
@@ -892,36 +908,39 @@ export default function ProgramOverviewStatewide() {
                                                 </div>
                                             </TableCell>
                                             {!isCanvasProgram && (
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className="bg-brand rounded-full h-2"
-                                                            style={{
-                                                                width: `${Math.min(
-                                                                    stat.utilization,
-                                                                    100
-                                                                )}%`
-                                                            }}
-                                                        />
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                                            <div
+                                                                className="bg-brand rounded-full h-2"
+                                                                style={{
+                                                                    width: `${Math.min(
+                                                                        stat.utilization,
+                                                                        100
+                                                                    )}%`
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <Tooltip>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
+                                                                <span className="text-sm text-gray-600 w-12 cursor-help">
+                                                                    {Math.round(
+                                                                        stat.utilization
+                                                                    )}
+                                                                    %
+                                                                </span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                                                Percentage of
+                                                                available
+                                                                capacity
+                                                                currently filled
+                                                            </TooltipContent>
+                                                        </Tooltip>
                                                     </div>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <span className="text-sm text-gray-600 w-12 cursor-help">
-                                                                {Math.round(
-                                                                    stat.utilization
-                                                                )}
-                                                                %
-                                                            </span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                            Percentage of
-                                                            available capacity
-                                                            currently filled
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </div>
-                                            </TableCell>
+                                                </TableCell>
                                             )}
                                             <TableCell>
                                                 <Tooltip>
@@ -954,50 +973,52 @@ export default function ProgramOverviewStatewide() {
                                                 </Tooltip>
                                             </TableCell>
                                             {!isCanvasProgram && (
-                                            <TableCell>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <span
-                                                            className={`text-sm font-medium cursor-help ${
-                                                                stat.attendanceRate >=
-                                                                85
-                                                                    ? 'text-green-700'
-                                                                    : stat.attendanceRate >=
-                                                                        70
-                                                                      ? 'text-yellow-700'
-                                                                      : 'text-red-700'
-                                                            }`}
-                                                        >
-                                                            {Math.round(
-                                                                stat.attendanceRate
-                                                            )}
-                                                            %
-                                                        </span>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                        Average attendance rate
-                                                        across all active
-                                                        classes in this program
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TableCell>
+                                                <TableCell>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <span
+                                                                className={`text-sm font-medium cursor-help ${
+                                                                    stat.attendanceRate >=
+                                                                    85
+                                                                        ? 'text-green-700'
+                                                                        : stat.attendanceRate >=
+                                                                            70
+                                                                          ? 'text-yellow-700'
+                                                                          : 'text-red-700'
+                                                                }`}
+                                                            >
+                                                                {Math.round(
+                                                                    stat.attendanceRate
+                                                                )}
+                                                                %
+                                                            </span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                                            Average attendance
+                                                            rate across all
+                                                            active classes in
+                                                            this program
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TableCell>
                                             )}
                                             <TableCell>
-                                                {(program?.id ?? 0) < 100_000_000 && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        handleViewAtFacility(
-                                                            stat.facilityId
-                                                        );
-                                                    }}
-                                                    className="gap-2 text-brand hover:text-brand-dark hover:bg-surface-hover focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                                                >
-                                                    View at Facility
-                                                    <ArrowRight className="size-4" />
-                                                </Button>
+                                                {(program?.id ?? 0) <
+                                                    100_000_000 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            handleViewAtFacility(
+                                                                stat.facilityId
+                                                            );
+                                                        }}
+                                                        className="gap-2 text-brand hover:text-brand-dark hover:bg-surface-hover focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                                    >
+                                                        View at Facility
+                                                        <ArrowRight className="size-4" />
+                                                    </Button>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -1015,7 +1036,9 @@ export default function ProgramOverviewStatewide() {
                                                         <div className="px-12 py-4">
                                                             <div className="text-sm font-medium text-gray-700 mb-3">
                                                                 Classes at{' '}
-                                                                {stat.facilityName}
+                                                                {
+                                                                    stat.facilityName
+                                                                }
                                                             </div>
                                                             <Table>
                                                                 <TableHeader>
@@ -1041,13 +1064,19 @@ export default function ProgramOverviewStatewide() {
                                                                 </TableHeader>
                                                                 <TableBody>
                                                                     {stat.classes.map(
-                                                                        (cls) => (
+                                                                        (
+                                                                            cls
+                                                                        ) => (
                                                                             <TableRow
-                                                                                key={cls.id}
+                                                                                key={
+                                                                                    cls.id
+                                                                                }
                                                                                 className="hover:bg-white"
                                                                             >
                                                                                 <TableCell className="font-medium">
-                                                                                    {cls.name}
+                                                                                    {
+                                                                                        cls.name
+                                                                                    }
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">
                                                                                     {getInstructorName(
@@ -1067,7 +1096,9 @@ export default function ProgramOverviewStatewide() {
                                                                                         variant="outline"
                                                                                         className={`${classStatusColors[cls.status]} text-xs`}
                                                                                     >
-                                                                                        {cls.status}
+                                                                                        {
+                                                                                            cls.status
+                                                                                        }
                                                                                     </Badge>
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">
@@ -1076,16 +1107,18 @@ export default function ProgramOverviewStatewide() {
                                                                                             {cls.schedule
                                                                                                 ? isCanvasProgram
                                                                                                     ? cls.schedule
-                                                                                                    : abbreviateScheduleDays(cls.schedule)
+                                                                                                    : abbreviateScheduleDays(
+                                                                                                          cls.schedule
+                                                                                                      )
                                                                                                 : '—'}
                                                                                         </div>
                                                                                         {!isCanvasProgram && (
-                                                                                        <div className="text-xs text-gray-500">
-                                                                                            {formatDateRange(
-                                                                                                cls.start_dt,
-                                                                                                cls.end_dt
-                                                                                            )}
-                                                                                        </div>
+                                                                                            <div className="text-xs text-gray-500">
+                                                                                                {formatDateRange(
+                                                                                                    cls.start_dt,
+                                                                                                    cls.end_dt
+                                                                                                )}
+                                                                                            </div>
                                                                                         )}
                                                                                     </div>
                                                                                 </TableCell>
@@ -1093,9 +1126,13 @@ export default function ProgramOverviewStatewide() {
                                                                                     <Button
                                                                                         variant="ghost"
                                                                                         size="sm"
-                                                                                        onClick={(event) => {
+                                                                                        onClick={(
+                                                                                            event
+                                                                                        ) => {
                                                                                             event.stopPropagation();
-                                                                                            navigate(`/program-classes/${cls.id}/detail`);
+                                                                                            navigate(
+                                                                                                `/program-classes/${cls.id}/detail`
+                                                                                            );
                                                                                         }}
                                                                                         className="gap-2 text-brand hover:text-brand-dark focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                                                                                     >

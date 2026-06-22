@@ -137,7 +137,7 @@ export default function ProgramOverviewFacilityAdmin() {
     );
     const program = programResp?.data;
     const { exhausted: detailPollExhausted } = useCanvasLoadingPoll(
-        !!(program?.loading),
+        !!program?.loading,
         mutateProgram
     );
 
@@ -369,7 +369,7 @@ export default function ProgramOverviewFacilityAdmin() {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-4 gap-4">
-                    {[...Array(4)].map((_, i) => (
+                    {Array.from({ length: 4 }).map((_, i) => (
                         <Skeleton key={i} className="h-24 rounded-lg" />
                     ))}
                 </div>
@@ -608,7 +608,9 @@ export default function ProgramOverviewFacilityAdmin() {
                                         <Button
                                             variant="outline"
                                             className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                                            onClick={() => setShowEditDialog(true)}
+                                            onClick={() =>
+                                                setShowEditDialog(true)
+                                            }
                                         >
                                             <Edit className="size-4 mr-2" />
                                             Edit Program
@@ -639,7 +641,9 @@ export default function ProgramOverviewFacilityAdmin() {
                                                                         true
                                                                     )
                                                                 }
-                                                                disabled={!canDelete}
+                                                                disabled={
+                                                                    !canDelete
+                                                                }
                                                             >
                                                                 <Trash2 className="size-4" />
                                                                 Delete Program
@@ -648,7 +652,8 @@ export default function ProgramOverviewFacilityAdmin() {
                                                     </TooltipTrigger>
                                                     {!canDelete && (
                                                         <TooltipContent side="left">
-                                                            {deleteBlockerReason ?? 'Cannot delete program'}
+                                                            {deleteBlockerReason ??
+                                                                'Cannot delete program'}
                                                         </TooltipContent>
                                                     )}
                                                 </Tooltip>
@@ -664,7 +669,9 @@ export default function ProgramOverviewFacilityAdmin() {
                                 </p>
                             )}
 
-                            <div className={`grid gap-4 ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                            <div
+                                className={`grid gap-4 ${isCanvasProgram ? 'grid-cols-3' : 'grid-cols-4'}`}
+                            >
                                 <MetricBox
                                     label="Classes"
                                     value={nonArchivedClasses.length}
@@ -673,7 +680,11 @@ export default function ProgramOverviewFacilityAdmin() {
                                 <MetricBox
                                     label="Enrollment"
                                     value={totalEnrolled}
-                                    subtitle={isCanvasProgram || totalCapacity === 0 ? undefined : `${totalCapacity} capacity`}
+                                    subtitle={
+                                        isCanvasProgram || totalCapacity === 0
+                                            ? undefined
+                                            : `${totalCapacity} capacity`
+                                    }
                                 />
                                 {!isCanvasProgram && (
                                     <MetricBox
@@ -1184,8 +1195,12 @@ function ClassRow({
                     <div className="flex items-center gap-6 text-sm">
                         {!isCanvas && (
                             <div className="flex items-center gap-2">
-                                <span className="text-gray-600">Attendance:</span>
-                                <span className={`font-medium ${attendanceClass}`}>
+                                <span className="text-gray-600">
+                                    Attendance:
+                                </span>
+                                <span
+                                    className={`font-medium ${attendanceClass}`}
+                                >
                                     {attendanceRate !== null
                                         ? `${attendanceRate}%`
                                         : '—'}

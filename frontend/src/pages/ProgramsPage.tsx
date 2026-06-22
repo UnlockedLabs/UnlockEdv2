@@ -1369,7 +1369,10 @@ function ProgramsTable({
                     </TableHeader>
                     <TableBody>
                         {programs.map((program) => {
-                            if (program.source === 'canvas' && program.loading) {
+                            if (
+                                program.source === 'canvas' &&
+                                program.loading
+                            ) {
                                 return (
                                     <TableRow key={program.program_id}>
                                         <TableCell className="px-6 py-4">
@@ -1377,10 +1380,13 @@ function ProgramsTable({
                                                 <Skeleton className="h-4 w-48" />
                                                 {pollExhausted ? (
                                                     <span className="text-xs text-amber-600">
-                                                        Taking longer than expected —{' '}
+                                                        Taking longer than
+                                                        expected —{' '}
                                                         <button
                                                             className="underline"
-                                                            onClick={() => window.location.reload()}
+                                                            onClick={() =>
+                                                                window.location.reload()
+                                                            }
                                                         >
                                                             refresh to retry
                                                         </button>
@@ -1395,11 +1401,16 @@ function ProgramsTable({
                                                 )}
                                             </div>
                                         </TableCell>
-                                        {[...Array(5)].map((_, i) => (
-                                            <TableCell key={i} className="px-6 py-4">
-                                                <Skeleton className="h-4 w-12" />
-                                            </TableCell>
-                                        ))}
+                                        {Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <TableCell
+                                                    key={i}
+                                                    className="px-6 py-4"
+                                                >
+                                                    <Skeleton className="h-4 w-12" />
+                                                </TableCell>
+                                            )
+                                        )}
                                     </TableRow>
                                 );
                             }
@@ -1606,25 +1617,29 @@ function ProgramsTable({
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
                                         {program.source === 'canvas' ? (
-                                            <div className="text-sm text-gray-400">—</div>
-                                        ) : (
-                                        <div className="text-sm">
-                                            <div className="font-medium text-brand-dark">
-                                                {program.total_capacity ?? 0}
+                                            <div className="text-sm text-gray-400">
+                                                —
                                             </div>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">
-                                                        {utilizationRate}%
-                                                        utilized
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="bg-brand-dark text-white max-w-xs">
-                                                    Percentage of available
-                                                    capacity currently filled
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
+                                        ) : (
+                                            <div className="text-sm">
+                                                <div className="font-medium text-brand-dark">
+                                                    {program.total_capacity ??
+                                                        0}
+                                                </div>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="text-xs text-gray-500 mt-0.5 cursor-help w-fit">
+                                                            {utilizationRate}%
+                                                            utilized
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-brand-dark text-white max-w-xs">
+                                                        Percentage of available
+                                                        capacity currently
+                                                        filled
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                         )}
                                     </TableCell>
                                     <TableCell className="px-6 py-4">

@@ -94,7 +94,7 @@ export function AddResidentDialog({
                     `Resident ${formData.name_first} ${formData.name_last} added successfully`
                 );
                 form.reset();
-                onSuccess((response.data as NewUserResponse).user);
+                onSuccess(response.data.user);
             } else {
                 toast.error(response.message ?? 'Failed to create resident');
             }

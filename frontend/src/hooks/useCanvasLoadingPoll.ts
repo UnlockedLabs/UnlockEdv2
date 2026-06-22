@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
  */
 export function useCanvasLoadingPoll(
     shouldPoll: boolean,
-    mutate: () => void,
+    mutate: () => void | Promise<unknown>,
     { maxAttempts = 10, intervalMs = 5000 } = {}
 ): { exhausted: boolean } {
     const countRef = useRef(0);
@@ -23,7 +23,7 @@ export function useCanvasLoadingPoll(
         if (countRef.current >= maxAttempts) return;
         const id = setInterval(() => {
             countRef.current += 1;
-            mutate();
+            void mutate();
             if (countRef.current >= maxAttempts) {
                 clearInterval(id);
                 setExhausted(true);
