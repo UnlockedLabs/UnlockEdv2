@@ -418,7 +418,6 @@ function OidcInfoSection({ oidcId }: { oidcId: number }) {
         );
     }
 
-
     const fields = [
         { label: 'Client ID', value: client.client_id },
         { label: 'Client Secret', value: client.client_secret },
@@ -473,9 +472,9 @@ function EditProviderModal({
     const [accessKey, setAccessKey] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const isCanvas =
-        provider?.type === ProviderPlatformType.CANVAS_CLOUD ||
-        provider?.type === ProviderPlatformType.CANVAS_OSS;
+    // const isCanvas =
+    //     provider?.type === ProviderPlatformType.CANVAS_CLOUD ||
+    //     provider?.type === ProviderPlatformType.CANVAS_OSS;
 
     useEffect(() => {
         if (open && provider) {
@@ -556,7 +555,9 @@ function EditProviderModal({
                     />
                     {/[\r\n]/.test(accessKey) && (
                         <p className="mt-1 text-xs text-yellow-600">
-                            Warning: the token contains a newline character, which will cause authentication to fail. Make sure to copy only the token text.
+                            Warning: the token contains a newline character,
+                            which will cause authentication to fail. Make sure
+                            to copy only the token text.
                         </p>
                     )}
                 </div>
