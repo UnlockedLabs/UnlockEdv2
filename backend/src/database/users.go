@@ -283,17 +283,22 @@ func (db *DB) CreateUser(user *models.User) error {
 }
 
 func (db *DB) DeleteUser(id int) error {
-	updates := db.softDeleteMap()
-	result := db.Model(&models.User{}).
-		Where("id = ? AND deleted_at IS NULL", id).
-		Updates(updates)
-	if result.Error != nil {
-		return newDeleteDBError(result.Error, "users")
-	}
-	if result.RowsAffected == 0 {
-		return newDeleteDBError(gorm.ErrRecordNotFound, "users")
-	}
-	return nil
+	return db.Transaction(func(tx *gorm.DB) error {
+		updates := db.softDeleteMap()
+		result := tx.Model(&models.User{}).
+			Where("id = ? AND deleted_at IS NULL", id).
+			Updates(updates)
+		if result.Error != nil {
+			return newDeleteDBError(result.Error, "users")
+		}
+		if result.RowsAffected == 0 {
+			return newDeleteDBError(gorm.ErrRecordNotFound, "users")
+		}
+		if err := tx.Where("user_id = ?", id).Delete(&models.ProviderUserMapping{}).Error; err != nil {
+			return newDeleteDBError(err, "provider_user_mappings")
+		}
+		return nil
+	})
 }
 
 func (db *DB) GetUserByUsername(username string) (*models.User, error) {

@@ -67,6 +67,41 @@ func (serv *ProviderService) Request(url string) (*http.Request, error) {
 	return request, nil
 }
 
+// GetAllUsers fetches every Canvas user including those already mapped to a resident.
+// Use this when you need canvas display names for already-linked accounts.
+func (serv *ProviderService) GetAllUsers() ([]models.ImportUser, error) {
+	fields := log.Fields{"handler": "GetAllUsers"}
+	req, err := serv.Request("/api/users/all")
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("error creating request")
+		return nil, err
+	}
+	resp, err := serv.Client.Do(req)
+	if err != nil {
+		fields["error"] = err
+		log.WithFields(fields).Errorln("error getting all users Client.Do(req)")
+		return nil, err
+	}
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.WithFields(fields).Errorln("error closing response body")
+		}
+	}()
+	if resp.StatusCode != 200 {
+		fields["status_code"] = resp.Status
+		log.Errorln("request failed with code", resp.Status)
+		return nil, errors.New("request failed")
+	}
+	var users []models.ImportUser
+	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
+		fields["error"] = err
+		log.Errorln("error decoding all users from middleware")
+		return nil, err
+	}
+	return users, nil
+}
+
 func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	fields := log.Fields{"handler": "GetUsers"}
 	req, err := serv.Request("/api/users")

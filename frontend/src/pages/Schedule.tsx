@@ -32,6 +32,7 @@ import { RescheduleSessionModal } from '@/components/schedule/RescheduleSessionM
 import { RescheduleSeriesModal } from '@/components/schedule/RescheduleSeriesModal';
 import { RestoreEventModal } from '@/components/schedule/RestoreEventModal';
 import { SessionDetailSheet } from '@/components/schedule/SessionDetailSheet';
+import { CanvasEventSheet } from '@/components/schedule/CanvasEventSheet';
 import type { SessionDisplay } from '@/pages/class-detail/session-utils';
 import { BRAND, BRAND_DARK } from '@/lib/brand';
 
@@ -45,6 +46,19 @@ interface CalendarEvent {
     start: Date;
     end: Date;
     resource: FacilityProgramClassEvent;
+}
+
+function CalendarEventContent({ event }: { event: CalendarEvent }) {
+    return (
+        <div className="h-full overflow-hidden">
+            <div className="truncate text-xs font-medium leading-tight">{event.title}</div>
+            {event.resource.is_canvas_event && (
+                <span className="text-[9px] bg-white/25 rounded px-1 mt-0.5 inline-block leading-tight">
+                    Canvas
+                </span>
+            )}
+        </div>
+    );
 }
 
 function toDateString(d: Date): string {
@@ -138,6 +152,7 @@ export default function Schedule() {
     const [selectedEvent, setSelectedEvent] =
         useState<FacilityProgramClassEvent | null>(null);
     const [showSheet, setShowSheet] = useState(false);
+    const [showCanvasSheet, setShowCanvasSheet] = useState(false);
     const [showReschedule, setShowReschedule] = useState(false);
     const [showRescheduleSingle, setShowRescheduleSingle] = useState(false);
     const [showRescheduleSeries, setShowRescheduleSeries] = useState(false);
@@ -194,11 +209,17 @@ export default function Schedule() {
     const rawEvents = useMemo(() => eventsResp?.data ?? [], [eventsResp]);
 
     const formattedEvents = useMemo(() => {
-        return rawEvents.map((event) => ({
-            ...event,
-            start: toZonedTime(new Date(event.start), timezone),
-            end: toZonedTime(new Date(event.end), timezone)
-        }));
+        return rawEvents.map((event) => {
+            const tz =
+                event.is_canvas_event && event.canvas_timezone
+                    ? event.canvas_timezone
+                    : timezone;
+            return {
+                ...event,
+                start: toZonedTime(new Date(event.start), tz),
+                end: toZonedTime(new Date(event.end), tz)
+            };
+        });
     }, [rawEvents, timezone]);
 
     const availablePrograms = useMemo(() => {
@@ -285,6 +306,10 @@ export default function Schedule() {
         const e = event.resource;
         let backgroundColor = BRAND;
         let borderColor = BRAND_DARK;
+        if (e.is_canvas_event) {
+            backgroundColor = '#1d4ed8';  // blue-700
+            borderColor = '#1e3a8a';      // blue-900
+        }
         if (e.is_cancelled) {
             backgroundColor = '#9ca3af';
             borderColor = '#6b7280';
@@ -305,7 +330,13 @@ export default function Schedule() {
 
     const handleSelectEvent = (event: CalendarEvent) => {
         setSelectedEvent(event.resource);
-        setShowSheet(true);
+        if (event.resource.is_canvas_event) {
+            setShowSheet(false);
+            setShowCanvasSheet(true);
+        } else {
+            setShowCanvasSheet(false);
+            setShowSheet(true);
+        }
     };
 
     const handleModalSuccess = () => {
@@ -494,10 +525,11 @@ export default function Schedule() {
                         min={new Date(0, 0, 0, 0, 0, 0, 0)}
                         max={new Date(0, 0, 0, 23, 59, 59, 999)}
                         scrollToTime={SCROLL_TO_TIME}
+                        components={{ event: CalendarEventContent }}
                     />
                 </div>
 
-                {selectedEvent && (
+                {selectedEvent && !selectedEvent.is_canvas_event && (
                     <SessionDetailSheet
                         session={sessionView}
                         onClose={() => setShowSheet(false)}
@@ -533,6 +565,19 @@ export default function Schedule() {
                                 : undefined
                         }
                         onViewClassDetails={handleViewClassDetails}
+                    />
+                )}
+
+                {selectedEvent?.is_canvas_event && showCanvasSheet && (
+                    <CanvasEventSheet
+                        event={selectedEvent}
+                        onClose={() => {
+                            setShowCanvasSheet(false);
+                            setSelectedEvent(null);
+                        }}
+                        onViewClassDetails={() => {
+                            navigate(`/program-classes/${selectedEvent.class_id}/detail`);
+                        }}
                     />
                 )}
 

@@ -75,6 +75,8 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     linked_override_event: FacilityProgramClassEvent | null;
     credit_types: string;
     class_status: SelectedClassStatus;
+    is_canvas_event?: boolean;
+    canvas_timezone?: string;
 }
 
 export interface Instructor {

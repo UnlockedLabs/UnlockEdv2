@@ -91,6 +91,15 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	for i := range programs {
+		programs[i].Source = "unlocked"
+	}
+	if canvasPrograms, canvasErr := srv.getCanvasProviderPrograms(args.FacilityID, adminRole); canvasErr != nil {
+		log.errorf("failed to fetch canvas provider programs: %v", canvasErr)
+	} else {
+		programs = append(programs, canvasPrograms...)
+		args.Total += int64(len(canvasPrograms))
+	}
 	return writePaginatedResponse(w, http.StatusOK, programs, args.IntoMeta())
 }
 
@@ -98,6 +107,9 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
+	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		return srv.handleShowCanvasProgram(w, r, log, uint(id))
 	}
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -249,6 +261,11 @@ func (srv *Server) handleGetProgramArchiveCheck(w http.ResponseWriter, r *http.R
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		return writeJsonResponse(w, http.StatusOK, struct {
+			Facilities []string `json:"facilities"`
+		}{Facilities: []string{}})
+	}
 	log.add("program_id", id)
 	facilities, err := srv.Db.GetProgramActiveClassFacilities(r.Context(), uint(id))
 	if err != nil {
@@ -266,6 +283,12 @@ func (srv *Server) handleGetProgramDeleteCheck(w http.ResponseWriter, r *http.Re
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
+	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		return writeJsonResponse(w, http.StatusOK, struct {
+			CanDelete bool                          `json:"can_delete"`
+			Blockers  models.DeleteBlockingChildren `json:"blockers"`
+		}{CanDelete: false, Blockers: models.DeleteBlockingChildren{}})
 	}
 	log.add("program_id", id)
 	blockers, err := srv.Db.ProgramBlockingChildren(id)
@@ -309,6 +332,12 @@ func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Reques
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
+	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		args := srv.getQueryContext(r)
+		return writePaginatedResponse(w, http.StatusOK,
+			[]models.ChangeLogEntry{},
+			models.NewPaginationInfo(1, args.PerPage, 0))
 	}
 	args := srv.getQueryContext(r)
 	categories := r.URL.Query()["categories"]

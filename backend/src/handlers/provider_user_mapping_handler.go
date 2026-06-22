@@ -14,7 +14,49 @@ func (srv *Server) registerProviderMappingRoutes() []routeDef {
 		adminFeatureRoute("POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, axx),
 		adminFeatureRoute("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, axx),
 		adminFeatureRoute("DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, axx),
+		adminFeatureRoute("GET /api/provider-platforms/{id}/mapped-users", srv.handleGetMappedUsers, axx),
 	}
+}
+
+func (srv *Server) handleGetMappedUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "provider platform ID")
+	}
+	args := srv.getQueryContext(r)
+	users, err := srv.Db.GetMappedUsers(&args, id)
+	if err != nil {
+		log.add("providerId", id)
+		return newDatabaseServiceError(err)
+	}
+
+	result := make([]models.MappedUserResponse, len(users))
+	for i, u := range users {
+		result[i] = models.MappedUserResponse{User: u}
+	}
+
+	// Enrich each entry with the canvas user's display name, fetched live from
+	// the provider API. Failures are non-fatal — the frontend handles empty fields.
+	if service, sErr := srv.getService(r); sErr == nil {
+		if canvasUsers, cErr := service.GetAllUsers(); cErr == nil {
+			canvasMap := make(map[string]models.ImportUser, len(canvasUsers))
+			for _, cu := range canvasUsers {
+				canvasMap[cu.ExternalUserID] = cu
+			}
+			if extIDs, dbErr := srv.Db.GetMappedUsersExternalIDs(id); dbErr == nil {
+				for i, u := range users {
+					if extID, ok := extIDs[u.ID]; ok {
+						if cu, ok := canvasMap[extID]; ok {
+							result[i].CanvasNameFirst = cu.NameFirst
+							result[i].CanvasNameLast = cu.NameLast
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, result, args.IntoMeta())
 }
 
 func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -41,6 +83,7 @@ func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *htt
 		log.add("userId", mapping.UserID)
 		return newDatabaseServiceError(err)
 	}
+	srv.invalidateCanvasProgramCache(mapping.ProviderPlatformID, int(mapping.UserID))
 	return writeJsonResponse(w, http.StatusCreated, mapping)
 }
 
@@ -60,5 +103,6 @@ func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *htt
 		log.add("providerId", providerId)
 		return newDatabaseServiceError(err)
 	}
+	srv.invalidateCanvasProgramCache(uint(providerId), userId)
 	return writeJsonResponse(w, http.StatusNoContent, "Mapping deleted successfully")
 }

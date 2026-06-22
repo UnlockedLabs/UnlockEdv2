@@ -38,11 +38,13 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSearch []string) ([]models.User, error) {
 	var users []models.User
 	tx := db.Model(&models.User{}).
-		Where("facility_id = ? AND role = ? AND id NOT IN (?)",
-			args.FacilityID,
+		Where("role = ? AND id NOT IN (?)",
 			"student",
 			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
 		)
+	if args.FacilityID != 0 {
+		tx = tx.Where("facility_id = ?", args.FacilityID)
+	}
 
 	if len(userSearch) > 0 {
 		tx = applyUserSearchConditions(tx, userSearch)
@@ -52,6 +54,25 @@ func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSe
 	}
 	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&users).Error; err != nil {
 		return nil, NewDBError(err, "error getting unmapped users")
+	}
+	return users, nil
+}
+
+func (db *DB) GetAllUnmappedUsers(providerID int, facilityID uint) ([]models.User, error) {
+	var users []models.User
+	tx := db.Model(&models.User{}).
+		Where(
+			"role = ? AND id NOT IN (?)",
+			"student",
+			db.Model(&models.ProviderUserMapping{}).
+				Select("user_id").
+				Where("provider_platform_id = ?", providerID),
+		)
+	if facilityID != 0 {
+		tx = tx.Where("facility_id = ?", facilityID)
+	}
+	if err := tx.Find(&users).Error; err != nil {
+		return nil, NewDBError(err, "error getting all unmapped users")
 	}
 	return users, nil
 }
@@ -96,6 +117,44 @@ func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMa
 		return nil, newGetRecordsDBError(err, "provider_user_mappings")
 	}
 	return providerUserMappings, nil
+}
+
+func (db *DB) GetMappedUsers(args *models.QueryContext, providerID int) ([]models.User, error) {
+	var users []models.User
+	tx := db.Model(&models.User{}).
+		Where("id IN (?)",
+			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
+		)
+	if args.FacilityID != 0 {
+		tx = tx.Where("facility_id = ?", args.FacilityID)
+	}
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, NewDBError(err, "error counting mapped users")
+	}
+	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&users).Error; err != nil {
+		return nil, NewDBError(err, "error getting mapped users")
+	}
+	return users, nil
+}
+
+// GetMappedUsersExternalIDs returns a map of user_id → external_user_id for all
+// users mapped to the given provider platform. Used to join with live Canvas data.
+func (db *DB) GetMappedUsersExternalIDs(providerID int) (map[uint]string, error) {
+	var rows []struct {
+		UserID         uint   `gorm:"column:user_id"`
+		ExternalUserID string `gorm:"column:external_user_id"`
+	}
+	if err := db.Model(&models.ProviderUserMapping{}).
+		Select("user_id, external_user_id").
+		Where("provider_platform_id = ?", providerID).
+		Find(&rows).Error; err != nil {
+		return nil, NewDBError(err, "error getting mapped user external IDs")
+	}
+	result := make(map[uint]string, len(rows))
+	for _, row := range rows {
+		result[row.UserID] = row.ExternalUserID
+	}
+	return result, nil
 }
 
 func (db *DB) DeleteProviderUserMappingByUserID(userID, providerID int) error {

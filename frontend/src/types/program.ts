@@ -92,6 +92,7 @@ export interface ProgramOverview extends Program {
     completion_rate: number;
     attendance_rate: number;
     active_class_facility_ids: number[];
+    loading?: boolean;
 }
 
 export interface ProgramClassOutcomes {
@@ -125,6 +126,8 @@ export interface ProgramsOverviewTable {
     credit_types: string;
     funding_type: string;
     status: boolean;
+    source?: string;
+    loading?: boolean;
 }
 
 export interface ProgramsOverview {
@@ -157,6 +160,8 @@ export interface Class {
     schedule?: string;
     room?: string;
     attendance_rate?: number;
+    is_canvas?: boolean;
+    canvas_timezone?: string;
 }
 
 export interface MissingAttendanceItem {
@@ -215,6 +220,7 @@ export interface ResidentProgramOverview {
     attendance_percentage?: number;
     change_reason?: string;
     schedule?: string;
+    is_canvas?: boolean;
 }
 
 export interface ProgramCompletion {

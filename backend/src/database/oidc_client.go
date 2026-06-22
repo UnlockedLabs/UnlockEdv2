@@ -31,3 +31,10 @@ func (db *DB) GetOidcClientById(id string) (*models.OidcClient, error) {
 	}
 	return client, nil
 }
+
+func (db *DB) DeleteOidcClient(id uint) error {
+	if err := db.Delete(&models.OidcClient{}, id).Error; err != nil {
+		return newDeleteDBError(err, "oidc_clients")
+	}
+	return nil
+}

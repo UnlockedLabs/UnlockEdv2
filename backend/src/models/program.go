@@ -14,6 +14,16 @@ type ProgType string
 type CreditType string
 
 const (
+	CanvasProgramIDOffset = uint(100_000_000)
+	CanvasClassIDOffset   = uint(100_000_000)
+	// CanvasFacilityClassIDOffset marks facility-scoped synthetic canvas class IDs.
+	// Encoding: offset + facilityID×1_000_000_000 + providerID×1_000_000 + rawCourseID
+	// Limits: facilityID 0–999, providerID 0–999, rawCourseID 0–999_999.
+	// Larger than CanvasClassIDOffset so existing ">= CanvasClassIDOffset" guards still fire.
+	CanvasFacilityClassIDOffset = uint(1_000_000_000_000)
+)
+
+const (
 	//funding types
 	FederalGrants FundingType = "Federal_Grants"
 	StateGrants   FundingType = "State_Grants"
@@ -174,6 +184,8 @@ type ProgramsOverviewTable struct {
 	CreditTypes            string   `json:"credit_types"`
 	FundingType            string   `json:"funding_type"`
 	Status                 bool     `json:"status"`
+	Source                 string   `json:"source"`
+	Loading                bool     `json:"loading,omitempty"`
 }
 
 type ProgramOverviewResponse struct {
@@ -185,6 +197,7 @@ type ProgramOverviewResponse struct {
 	CompletionRate         float64 `json:"completion_rate"`
 	AttendanceRate         float64 `json:"attendance_rate"`
 	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids" gorm:"-"`
+	Loading                bool    `json:"loading,omitempty"`
 }
 
 type ProgramCSVData struct {

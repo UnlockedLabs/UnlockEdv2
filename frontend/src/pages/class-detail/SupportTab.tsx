@@ -7,14 +7,16 @@ import { ServerResponseMany } from '@/types/server';
 
 interface SupportTabProps {
     classId: number;
+    isCanvasClass?: boolean;
 }
 
-export function SupportTab({ classId }: SupportTabProps) {
+export function SupportTab({ classId, isCanvasClass = false }: SupportTabProps) {
     const { data: flagsResp } = useSWR<ServerResponseMany<AttendanceFlag>>(
         `/api/program-classes/${classId}/attendance-flags`
     );
 
     const flags = flagsResp?.data ?? [];
+    const unit = isCanvasClass ? 'assignments' : 'sessions';
 
     return (
         <div className="card-block">
@@ -23,8 +25,9 @@ export function SupportTab({ classId }: SupportTabProps) {
                     At-Risk Residents ({flagsResp?.meta?.total ?? 0})
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                    Residents with attendance below 75% or multiple consecutive
-                    absences
+                    {isCanvasClass
+                        ? 'Residents with missing assignments or no course engagement in Canvas'
+                        : 'Residents with attendance below 75% or multiple consecutive absences'}
                 </p>
             </div>
             {flags.length === 0 ? (
@@ -64,7 +67,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                             </span>
                                             <span className="text-xs text-gray-500">
                                                 ({flag.attended_sessions}/
-                                                {flag.total_sessions} sessions)
+                                                {flag.total_sessions} {unit})
                                             </span>
                                         </div>
                                         <Progress
@@ -75,7 +78,7 @@ export function SupportTab({ classId }: SupportTabProps) {
                                         <div className="flex gap-4 text-xs text-gray-600">
                                             <span>
                                                 Missed: {flag.missed_sessions}{' '}
-                                                sessions
+                                                {unit}
                                             </span>
                                             {flag.consecutive_absences > 0 && (
                                                 <span className="text-amber-700 font-medium">

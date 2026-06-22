@@ -211,6 +211,7 @@ type ResidentProgramClassInfo struct {
 	ChangeReason         string                  `json:"change_reason"`
 	Schedule             string                  `json:"schedule"`
 	RecurrenceRule       string                  `json:"-"`
+	IsCanvas             bool                    `json:"is_canvas"`
 }
 
 // calculates the attendance percentage, sets the feild AttendancePercentage and returns it's value

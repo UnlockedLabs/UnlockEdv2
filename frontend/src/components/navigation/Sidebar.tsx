@@ -28,7 +28,8 @@ import {
     ChevronRightIcon,
     ArrowPathIcon,
     QuestionMarkCircleIcon,
-    AdjustmentsHorizontalIcon
+    AdjustmentsHorizontalIcon,
+    CircleStackIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -242,6 +243,18 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     ]}
                 />
             )}
+
+            {isAdministrator(user) &&
+                hasFeature(user, FeatureAccess.ProviderAccess) && (
+                    <NavLink
+                        to="/learning-platforms"
+                        icon={CircleStackIcon}
+                        label="Learning Platforms"
+                        active={isActive(['/learning-platforms', '/provider-users'])}
+                        collapsed={collapsed}
+                        onClick={onNavigate}
+                    />
+                )}
 
             {hasFeature(user, FeatureAccess.OpenContentAccess) && (
                 <CollapsibleSection

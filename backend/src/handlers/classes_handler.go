@@ -9,11 +9,36 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+
+	logrus "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolver := FacilityAdminResolver("program_classes", "class_id")
+	resolver := func(tx *database.DB, r *http.Request) bool {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			return true
+		}
+		id, err := strconv.ParseUint(r.PathValue("class_id"), 10, 64)
+		if err != nil {
+			return false
+		}
+		// Facility-scoped canvas ID: assert the embedded facility matches the JWT.
+		if uint(id) >= models.CanvasFacilityClassIDOffset {
+			embeddedFacilityID, _, _ := decodeFacilityCanvasClassID(uint(id))
+			return claims.FacilityID == embeddedFacilityID
+		}
+		// Old-style canvas ID: allow through; handlers scope data via JWT claims.
+		if uint(id) >= models.CanvasClassIDOffset {
+			return true
+		}
+		var facID uint
+		return tx.Table("program_classes").
+			Select("facility_id").
+			Where("id = ?", id).
+			Limit(1).Scan(&facID).Error == nil && claims.FacilityID == facID
+	}
 	validateFacility := func(check string) RouteResolver {
 		return func(tx *database.DB, r *http.Request) bool {
 			// Facility comes from getQueryContext: the ?facility_id= param for
@@ -70,6 +95,9 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		return srv.handleGetCanvasClasses(w, r, log, uint(id))
+	}
 	args := srv.getQueryContext(r)
 	service := services.NewClassesService(srv.Db)
 	classes, err := service.GetProgramClassDetailsForProgram(&args, id)
@@ -84,6 +112,9 @@ func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sL
 	id, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
+	}
+	if uint(id) >= models.CanvasClassIDOffset {
+		return srv.handleGetCanvasClassDetail(w, r, log, uint(id))
 	}
 	class, err := srv.Db.GetClassByID(id)
 	if err != nil {
@@ -106,6 +137,19 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	classes, err := srv.Db.GetClasses(&args, facilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	var canvasClasses []models.ProgramClass
+	var canvasErr error
+	if facilityID == nil {
+		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
+	} else {
+		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProviders(facilityID)
+	}
+	if canvasErr != nil {
+		logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
+	} else {
+		classes = append(classes, canvasClasses...)
+		args.Total += int64(len(canvasClasses))
 	}
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }
@@ -287,6 +331,12 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
+	if uint(id) >= models.CanvasClassIDOffset {
+		args := srv.getQueryContext(r)
+		return writePaginatedResponse(w, http.StatusOK,
+			[]models.ChangeLogEntry{},
+			models.NewPaginationInfo(1, args.PerPage, 0))
+	}
 	args := srv.getQueryContext(r)
 	categories := r.URL.Query()["categories"]
 	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "program_classes", id, categories)
@@ -307,6 +357,9 @@ func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *ht
 	id, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
+	}
+	if uint(id) >= models.CanvasClassIDOffset {
+		return srv.handleGetCanvasAtRiskStudents(w, r, uint(id))
 	}
 	args := srv.getQueryContext(r)
 	flags, err := srv.Db.GetAttendanceFlagsForClass(id, &args)
@@ -389,6 +442,9 @@ func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *h
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
+	}
+	if uint(classID) >= models.CanvasClassIDOffset {
+		return writeJsonResponse(w, http.StatusOK, map[string]float64{"attendance_rate": 0})
 	}
 	attendanceRate, err := srv.Db.GetCumulativeAttendanceRateForClass(r.Context(), classID)
 	if err != nil {
@@ -483,6 +539,16 @@ func (srv *Server) handleGetClassDeleteCheck(w http.ResponseWriter, r *http.Requ
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", id)
+	if uint(id) >= models.CanvasClassIDOffset {
+		payload := struct {
+			CanDelete bool                          `json:"can_delete"`
+			Blockers  models.DeleteBlockingChildren `json:"blockers"`
+		}{
+			CanDelete: false,
+			Blockers:  models.DeleteBlockingChildren{NonDeletableStatus: "Canvas"},
+		}
+		return writeJsonResponse(w, http.StatusOK, payload)
+	}
 	blockers, err := srv.Db.ClassBlockingChildren(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -503,6 +569,9 @@ func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", id)
+	if uint(id) >= models.CanvasClassIDOffset {
+		return newBadRequestServiceError(fmt.Errorf("canvas classes cannot be deleted"), "class ID")
+	}
 
 	blockers, err := srv.Db.ClassBlockingChildren(id)
 	if err != nil {

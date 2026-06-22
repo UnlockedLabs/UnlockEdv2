@@ -46,15 +46,15 @@ const (
 
 type ProviderPlatform struct {
 	DatabaseFields
-	Type                   ProviderPlatformType  `gorm:"size:100"  json:"type"`
-	Name                   string                `gorm:"size:255"  json:"name"`
-	AccountID              string                `gorm:"size:64"   json:"account_id"`
-	AccessKey              string                `gorm:"size:255"  json:"access_key"`
-	BaseUrl                string                `gorm:"size:255"  json:"base_url"`
-	State                  ProviderPlatformState `gorm:"size:100"  json:"state"`
-	ExternalAuthProviderId string                `gorm:"size:128"  json:"external_auth_provider_id"`
+	Type                   ProviderPlatformType  `gorm:"size:100"                    json:"type"`
+	Name                   string                `gorm:"size:255"                    json:"name"`
+	AccountID              string                `gorm:"size:64"                     json:"account_id"`
+	AccessKey              string                `gorm:"size:255"                    json:"access_key"`
+	BaseUrl                string                `gorm:"size:255"                    json:"base_url"`
+	State                  ProviderPlatformState `gorm:"size:100"                    json:"state"`
+	ExternalAuthProviderId string                `gorm:"size:128"                    json:"external_auth_provider_id"`
 	/* this field needs to be fetched by joining oidc_clients when querying the provider_platforms */
-	OidcID uint `gorm:"-"         json:"oidc_id"`
+	OidcID uint `gorm:"-" json:"oidc_id"`
 
 	Courses              []Course              `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 	ProviderUserMappings []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
@@ -88,7 +88,7 @@ func (provider *ProviderPlatform) BeforeUpdate(tx *gorm.DB) (err error) {
 
 func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
 	if key, keyErr := DecryptAccessKey(provider.AccessKey); keyErr == nil {
-		provider.AccessKey = key
+		provider.AccessKey = strings.TrimSpace(key)
 	}
 	return nil
 }

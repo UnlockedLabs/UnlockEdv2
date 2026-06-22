@@ -52,6 +52,7 @@ interface RosterTabProps {
     enrolled: number;
     flaggedUserIds: Set<number>;
     onClassMutate: () => void;
+    isCanvasClass?: boolean;
 }
 
 function getAllowedStatuses(
@@ -77,7 +78,8 @@ export function RosterTab({
     capacity,
     enrolled,
     flaggedUserIds,
-    onClassMutate
+    onClassMutate,
+    isCanvasClass = false
 }: RosterTabProps) {
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -214,14 +216,16 @@ export function RosterTab({
                 <div className="border-b border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
-                            <Checkbox
-                                checked={
-                                    selectedIds.size === filteredRows.length &&
-                                    filteredRows.length > 0
-                                }
-                                onCheckedChange={toggleAll}
-                                aria-label="Select all residents"
-                            />
+                            {!isCanvasClass && (
+                                <Checkbox
+                                    checked={
+                                        selectedIds.size === filteredRows.length &&
+                                        filteredRows.length > 0
+                                    }
+                                    onCheckedChange={toggleAll}
+                                    aria-label="Select all residents"
+                                />
+                            )}
                             <div>
                                 <h3 className="text-brand-dark">
                                     Enrolled Residents ({enrolledRows.length})
@@ -236,14 +240,16 @@ export function RosterTab({
                                 </p>
                             </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            className="border-gray-300"
-                            onClick={() => setShowEnrollModal(true)}
-                        >
-                            <Plus className="size-4 mr-2" />
-                            Enroll Resident
-                        </Button>
+                        {!isCanvasClass && (
+                            <Button
+                                variant="outline"
+                                className="border-gray-300"
+                                onClick={() => setShowEnrollModal(true)}
+                            >
+                                <Plus className="size-4 mr-2" />
+                                Enroll Resident
+                            </Button>
+                        )}
                     </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
@@ -281,18 +287,20 @@ export function RosterTab({
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-6 flex-1">
-                                            <Checkbox
-                                                checked={selectedIds.has(
-                                                    enrollment.id
-                                                )}
-                                                onCheckedChange={() =>
-                                                    toggleSelection(
+                                            {!isCanvasClass && (
+                                                <Checkbox
+                                                    checked={selectedIds.has(
                                                         enrollment.id
-                                                    )
-                                                }
-                                                aria-label={`Select ${enrollment.doc_id}`}
-                                                className="shrink-0"
-                                            />
+                                                    )}
+                                                    onCheckedChange={() =>
+                                                        toggleSelection(
+                                                            enrollment.id
+                                                        )
+                                                    }
+                                                    aria-label={`Select ${enrollment.doc_id}`}
+                                                    className="shrink-0"
+                                                />
+                                            )}
                                             <div className="w-[140px] shrink-0">
                                                 <div className="text-brand-dark font-medium">
                                                     {enrollment.doc_id}
@@ -301,29 +309,31 @@ export function RosterTab({
                                                     {enrollment.name_full}
                                                 </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <span className="text-sm text-gray-600">
-                                                        Attendance:
-                                                    </span>
-                                                    <span className="text-sm text-brand-dark font-medium">
-                                                        {stats.rate}%
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        ({stats.attended}/
-                                                        {stats.total} sessions)
-                                                    </span>
+                                            {!isCanvasClass && (
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className="text-sm text-gray-600">
+                                                            Attendance:
+                                                        </span>
+                                                        <span className="text-sm text-brand-dark font-medium">
+                                                            {stats.rate}%
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            ({stats.attended}/
+                                                            {stats.total} sessions)
+                                                        </span>
+                                                    </div>
+                                                    <Progress
+                                                        value={stats.rate}
+                                                        className="h-2 w-64"
+                                                        indicatorClassName={
+                                                            needsSupport
+                                                                ? 'bg-brand-gold'
+                                                                : 'bg-brand'
+                                                        }
+                                                    />
                                                 </div>
-                                                <Progress
-                                                    value={stats.rate}
-                                                    className="h-2 w-64"
-                                                    indicatorClassName={
-                                                        needsSupport
-                                                            ? 'bg-brand-gold'
-                                                            : 'bg-brand'
-                                                    }
-                                                />
-                                            </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="text-sm text-gray-600 inline-flex items-center gap-1">
@@ -334,25 +344,27 @@ export function RosterTab({
                                                         enrollment.created_at
                                                     ).split('T')[0]
                                                 }
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <button
-                                                            type="button"
-                                                            className="text-gray-500 hover:text-brand-dark transition-colors p-0.5 rounded"
-                                                            onClick={() =>
-                                                                setEditDateTarget(
-                                                                    enrollment
-                                                                )
-                                                            }
-                                                            aria-label={`Edit enrollment date for ${enrollment.doc_id ?? enrollment.name_full ?? 'resident'}`}
-                                                        >
-                                                            <SquarePen className="size-4" />
-                                                        </button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top">
-                                                        Edit enrollment date
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                                {!isCanvasClass && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                className="text-gray-500 hover:text-brand-dark transition-colors p-0.5 rounded"
+                                                                onClick={() =>
+                                                                    setEditDateTarget(
+                                                                        enrollment
+                                                                    )
+                                                                }
+                                                                aria-label={`Edit enrollment date for ${enrollment.doc_id ?? enrollment.name_full ?? 'resident'}`}
+                                                            >
+                                                                <SquarePen className="size-4" />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent side="top">
+                                                            Edit enrollment date
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
                                             </span>
                                             {needsSupport && (
                                                 <Badge
@@ -363,6 +375,20 @@ export function RosterTab({
                                                 </Badge>
                                             )}
                                             {(() => {
+                                                if (isCanvasClass) {
+                                                    return (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={getEnrollmentStatusColor(
+                                                                enrollment.enrollment_status
+                                                            )}
+                                                        >
+                                                            {formatEnrollmentStatus(
+                                                                enrollment.enrollment_status
+                                                            )}
+                                                        </Badge>
+                                                    );
+                                                }
                                                 const allowed =
                                                     getAllowedStatuses(
                                                         classStatus,
@@ -415,59 +441,61 @@ export function RosterTab({
                                                     </button>
                                                 );
                                             })()}
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-8 w-8 p-0">
-                                                    <MoreVertical className="size-4" />
-                                                    <span className="sr-only">
-                                                        Resident actions
-                                                    </span>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent
-                                                    align="end"
-                                                    className="z-[100]"
-                                                >
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            setStatusModalEnrollment(
-                                                                enrollment
-                                                            )
-                                                        }
+                                            {!isCanvasClass && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-8 w-8 p-0">
+                                                        <MoreVertical className="size-4" />
+                                                        <span className="sr-only">
+                                                            Resident actions
+                                                        </span>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent
+                                                        align="end"
+                                                        className="z-[100]"
                                                     >
-                                                        <Edit className="size-4 mr-2" />
-                                                        Change Status
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <div>
-                                                                <DropdownMenuItem
-                                                                    variant="destructive"
-                                                                    onClick={() =>
-                                                                        setUnenrollTarget(
-                                                                            enrollment
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        stats.total >
-                                                                        0
-                                                                    }
-                                                                >
-                                                                    <UserMinus className="size-4 mr-2" />
-                                                                    Unenroll
-                                                                    Resident
-                                                                </DropdownMenuItem>
-                                                            </div>
-                                                        </TooltipTrigger>
-                                                        {stats.total > 0 && (
-                                                            <TooltipContent side="left">
-                                                                Cannot unenroll
-                                                                after attendance
-                                                                has been taken
-                                                            </TooltipContent>
-                                                        )}
-                                                    </Tooltip>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                setStatusModalEnrollment(
+                                                                    enrollment
+                                                                )
+                                                            }
+                                                        >
+                                                            <Edit className="size-4 mr-2" />
+                                                            Change Status
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <div>
+                                                                    <DropdownMenuItem
+                                                                        variant="destructive"
+                                                                        onClick={() =>
+                                                                            setUnenrollTarget(
+                                                                                enrollment
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            stats.total >
+                                                                            0
+                                                                        }
+                                                                    >
+                                                                        <UserMinus className="size-4 mr-2" />
+                                                                        Unenroll
+                                                                        Resident
+                                                                    </DropdownMenuItem>
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            {stats.total > 0 && (
+                                                                <TooltipContent side="left">
+                                                                    Cannot unenroll
+                                                                    after attendance
+                                                                    has been taken
+                                                                </TooltipContent>
+                                                            )}
+                                                        </Tooltip>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -477,7 +505,7 @@ export function RosterTab({
                 </div>
             </div>
 
-            {selectedIds.size > 0 && (
+            {!isCanvasClass && selectedIds.size > 0 && (
                 <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-6 py-4 z-50">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">

@@ -25,3 +25,22 @@ type ProviderUserMapping struct {
 func (ProviderUserMapping) TableName() string {
 	return "provider_user_mappings"
 }
+
+// CanvasMappedUser is a projection returned by database.GetCanvasMappedUsers,
+// pairing a Canvas external_user_id with the matching local user fields.
+type CanvasMappedUser struct {
+	ExternalUserID string `gorm:"column:external_user_id"`
+	UserID         uint   `gorm:"column:user_id"`
+	NameFirst      string `gorm:"column:name_first"`
+	NameLast       string `gorm:"column:name_last"`
+	DocID          string `gorm:"column:doc_id"`
+}
+
+// MappedUserResponse is returned by the mapped-users endpoint.
+// It embeds the local User and adds canvas display-name fields
+// that are resolved live from the provider API (never stored in the DB).
+type MappedUserResponse struct {
+	User
+	CanvasNameFirst string `json:"canvas_name_first"`
+	CanvasNameLast  string `json:"canvas_name_last"`
+}
