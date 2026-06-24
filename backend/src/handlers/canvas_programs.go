@@ -979,8 +979,12 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	if facilityID != 0 {
 		for i := range classes {
 			_, rawID := decodeCanvasClassID(classes[i].ID)
-			classes[i].ID = encodeFacilityCanvasClassID(facilityID, connectionID, rawID)
+			newID := encodeFacilityCanvasClassID(facilityID, connectionID, rawID)
+			classes[i].ID = newID
 			classes[i].FacilityID = facilityID
+			for j := range classes[i].Events {
+				classes[i].Events[j].ClassID = newID
+			}
 		}
 	}
 
