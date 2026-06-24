@@ -1055,9 +1055,11 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			if facilityCounts[i] != nil {
 				enrolled = facilityCounts[i][facility.ID]
 			}
+			scopedID := encodeFacilityCanvasClassID(facility.ID, connectionID, entry.rawID)
 			var sched string
 			var evSlice []models.ProgramClassEvent
 			if ev, ok := scheduleEvents[entry.rawID]; ok {
+				ev.ClassID = scopedID
 				evSlice = []models.ProgramClassEvent{ev}
 				tz := courseTimezones[entry.rawID]
 				if tz == "" {
@@ -1067,7 +1069,7 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			}
 			classes = append(classes, models.ProgramClassDetail{
 				ProgramClass: models.ProgramClass{
-					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(facility.ID, connectionID, entry.rawID)},
+					DatabaseFields: models.DatabaseFields{ID: scopedID},
 					ProgramID:      programID,
 					FacilityID:     facility.ID,
 					Name:           entry.name,
