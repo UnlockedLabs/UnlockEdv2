@@ -178,7 +178,7 @@ export default function ProgramsPage() {
         }
     };
 
-    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
 
     const isFirstRender = useRef(true);
     useEffect(() => {
