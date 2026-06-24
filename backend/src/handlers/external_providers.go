@@ -81,7 +81,7 @@ func (srv *Server) getExistingCanvasOidcLoginID(provider *models.ProviderPlatfor
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var logins []map[string]interface{}
 	if err = json.NewDecoder(resp.Body).Decode(&logins); err != nil {
 		return ""

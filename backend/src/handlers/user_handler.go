@@ -590,10 +590,10 @@ func (srv *Server) fetchCanvasCoursesForUser(provider *models.ProviderPlatform, 
 		}
 		var courses []map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&courses); err != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return result
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		programID := models.CanvasProgramIDOffset + provider.ID
 		for _, course := range courses {
 			name, _ := course["name"].(string)
