@@ -338,26 +338,14 @@ export default function EventAttendance() {
             );
             toast.success('Attendance saved successfully');
 
-            const presentCount = payload.filter(
-                (p) => p.attendance_status === Attendance.Present
-            ).length;
-            const partialCount = payload.filter(
-                (p) => p.attendance_status === Attendance.Partial
-            ).length;
-            const absentCount = payload.filter(
-                (p) =>
-                    p.attendance_status === Attendance.Absent_Excused ||
-                    p.attendance_status === Attendance.Absent_Unexcused
-            ).length;
-
             const submittedAt = new Date();
 
             captureEvent(ANALYTICS_EVENTS.AttendanceSessionCompleted, {
                 duration_seconds: flowTimerSeconds(startMsRef.current),
-                num_records: payload.length,
-                present_count: presentCount,
-                partial_count: partialCount,
-                absent_count: absentCount,
+                num_records: rows.length,
+                present_count: summary.present,
+                partial_count: summary.partial,
+                absent_count: summary.absentExcused + summary.absentUnexcused,
                 class_id,
                 event_id,
                 date,
