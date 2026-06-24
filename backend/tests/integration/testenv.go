@@ -263,9 +263,11 @@ func (env *TestEnv) CreateTestEvent(classID uint, rrule string, instructorID uin
 	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
 		return nil, err
 	}
-	instructorID, err := env.getOrCreateTestInstructor(class.FacilityID)
-	if err != nil {
-		return nil, err
+	if instructorID == 0 {
+		instructorID, err = env.getOrCreateTestInstructor(class.FacilityID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
@@ -299,9 +301,11 @@ func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string, i
 	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
 		return nil, err
 	}
-	instructorID, err := env.getOrCreateTestInstructor(class.FacilityID)
-	if err != nil {
-		return nil, err
+	if instructorID == 0 {
+		instructorID, err = env.getOrCreateTestInstructor(class.FacilityID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
