@@ -180,13 +180,33 @@ export default function ProgramsPage() {
 
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
 
-    const isFirstRender = useRef(true);
+    // Reset to page 1 only when a filter/sort/search value actually changes.
+    // Comparing against the previous values (rather than a first-render ref) keeps
+    // this correct under React StrictMode, which double-invokes effects on mount
+    // and would otherwise defeat the ref guard and reset a deep-linked/refreshed
+    // page back to 1.
+    const prevFilters = useRef({
+        search,
+        sort,
+        selectedTypes,
+        selectedStatuses
+    });
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
+        const prev = prevFilters.current;
+        if (
+            prev.search !== search ||
+            prev.sort !== sort ||
+            prev.selectedTypes !== selectedTypes ||
+            prev.selectedStatuses !== selectedStatuses
+        ) {
+            prevFilters.current = {
+                search,
+                sort,
+                selectedTypes,
+                selectedStatuses
+            };
+            setPage(1);
         }
-        setPage(1);
     }, [search, sort, selectedTypes, selectedStatuses, setPage]);
 
     const toggleTypeFilter = (type: ProgramType) => {
