@@ -470,11 +470,11 @@ func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 		perPage = "20"
 	}
 	intPage, err := strconv.Atoi(page)
-	if err != nil {
+	if err != nil || intPage < 1 {
 		intPage = 1
 	}
 	intPerPage, err := strconv.Atoi(perPage)
-	if err != nil {
+	if err != nil || intPerPage < 1 {
 		intPerPage = 20
 	}
 	return intPage, intPerPage
