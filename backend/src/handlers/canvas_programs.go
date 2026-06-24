@@ -393,16 +393,16 @@ func (srv *Server) fetchAllCanvasPages(ctx context.Context, provider *models.Pro
 			return nil, err
 		}
 		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("canvas API returned %d", resp.StatusCode)
 		}
 		var page []map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, err
 		}
 		pageURL = NextPageURL(resp.Header.Get("Link"))
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		all = append(all, page...)
 		if max > 0 && len(all) >= max {
 			break
@@ -933,7 +933,7 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			_, rawID := decodeCanvasClassID(classes[idx].ProgramClass.ID)
+			_, rawID := decodeCanvasClassID(classes[idx].ID)
 			var n int64
 			if facilityID != 0 {
 				n = srv.countMappedCanvasEnrolleesForFacility(provider, rawID, facilityID)
@@ -941,14 +941,14 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 				n = srv.countMappedCanvasEnrollees(provider, rawID)
 			}
 			mu.Lock()
-			counts[classes[idx].ProgramClass.ID] = n
+			counts[classes[idx].ID] = n
 			mu.Unlock()
 		}(i)
 	}
 	wg.Wait()
 
 	for i := range classes {
-		n := counts[classes[i].ProgramClass.ID]
+		n := counts[classes[i].ID]
 		classes[i].ProgramClass.Enrolled = n
 		classes[i].Enrolled = int(n)
 	}
@@ -956,14 +956,14 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	// Batch-fetch upcoming calendar events to populate schedule info.
 	rawIDs := make([]uint, len(classes))
 	for i, cls := range classes {
-		_, rawIDs[i] = decodeCanvasClassID(cls.ProgramClass.ID)
+		_, rawIDs[i] = decodeCanvasClassID(cls.ID)
 	}
 	scheduleEvents := srv.fetchCanvasCoursesScheduleEvents(provider, rawIDs)
 	facilityTimezone := srv.getQueryContext(r).Timezone
 	for i, cls := range classes {
-		_, rawID := decodeCanvasClassID(cls.ProgramClass.ID)
+		_, rawID := decodeCanvasClassID(cls.ID)
 		if ev, ok := scheduleEvents[rawID]; ok {
-			classes[i].ProgramClass.Events = []models.ProgramClassEvent{ev}
+			classes[i].Events = []models.ProgramClassEvent{ev}
 			tz := courseTimezones[rawID]
 			if tz == "" {
 				tz = facilityTimezone
@@ -978,9 +978,9 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	// decodeCanvasClassID on the old-style IDs.
 	if facilityID != 0 {
 		for i := range classes {
-			_, rawID := decodeCanvasClassID(classes[i].ProgramClass.ID)
-			classes[i].ProgramClass.ID = encodeFacilityCanvasClassID(facilityID, connectionID, rawID)
-			classes[i].ProgramClass.FacilityID = facilityID
+			_, rawID := decodeCanvasClassID(classes[i].ID)
+			classes[i].ID = encodeFacilityCanvasClassID(facilityID, connectionID, rawID)
+			classes[i].FacilityID = facilityID
 		}
 	}
 
@@ -1412,7 +1412,7 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return newInternalServerServiceError(err, "failed to reach canvas")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return newInternalServerServiceError(
 			fmt.Errorf("canvas returned %d", resp.StatusCode),
@@ -1492,11 +1492,11 @@ func (srv *Server) fetchCanvasCourseTimezone(provider *models.ProviderPlatform, 
 	resp, err := srv.Client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var course map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&course); err != nil {
 		return ""
