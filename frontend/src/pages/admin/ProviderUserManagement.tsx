@@ -858,7 +858,10 @@ export default function ProviderUserManagement() {
             ? `/api/users?include=only_unmapped&provider_id=${providerId}&per_page=50${mapSearch ? `&search=${encodeURIComponent(mapSearch)}` : ''}`
             : null
     );
-    const unmappedUsers = unmappedResp?.data ?? [];
+    const unmappedUsers = useMemo(
+        () => unmappedResp?.data ?? [],
+        [unmappedResp]
+    );
 
     const { data: mappedResp, mutate: mutateMapped } = useSWR<
         ServerResponseMany<User>
@@ -867,8 +870,7 @@ export default function ProviderUserManagement() {
             ? `/api/provider-platforms/${providerId}/mapped-users?per_page=50`
             : null
     );
-    const mappedUsers = mappedResp?.data ?? [];
-
+    const mappedUsers = useMemo(() => mappedResp?.data ?? [], [mappedResp]);
 
     const derived = useMemo(() => {
         if (!matchState) return null;
@@ -1471,7 +1473,6 @@ export default function ProviderUserManagement() {
                                 <ArrowPathIcon className="size-4" />
                                 {matchLoading ? 'Syncing…' : 'Refresh'}
                             </Button>
-
                         </div>
                     </div>
                 </div>
@@ -2266,7 +2267,10 @@ function UnmatchedTable({
                         key={u.external_user_id}
                         className={cn(
                             'rounded-lg border border-gray-200 p-3 transition-colors',
-                            highlightRowClass(u.external_user_id, highlightedIds)
+                            highlightRowClass(
+                                u.external_user_id,
+                                highlightedIds
+                            )
                         )}
                     >
                         <div className="font-medium text-brand-dark">
