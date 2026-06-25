@@ -97,8 +97,17 @@ export function SessionDetailSheet({
     const [showChangeInstructor, setShowChangeInstructor] = useState(false);
     const [showChangeRoom, setShowChangeRoom] = useState(false);
 
+    const normalizedFacilityId = (() => {
+        const trimmed = facilityId?.trim();
+        if (!trimmed) return undefined;
+        const n = Number(trimmed);
+        return Number.isFinite(n) ? n : undefined;
+    })();
+
     const { data: roomsResp } = useSWR<ServerResponseMany<Room>>(
-        facilityId ? `/api/rooms?facility_id=${facilityId}` : '/api/rooms'
+        normalizedFacilityId
+            ? `/api/rooms?facility_id=${normalizedFacilityId}`
+            : '/api/rooms'
     );
     const rooms = roomsResp?.data ?? [];
 
@@ -270,12 +279,7 @@ export function SessionDetailSheet({
                     open={showRescheduleModal}
                     onClose={() => setShowRescheduleModal(false)}
                     classId={classId}
-                    classFacilityId={(() => {
-                        if (facilityId == null || facilityId === '')
-                            return undefined;
-                        const n = Number(facilityId);
-                        return Number.isFinite(n) ? n : undefined;
-                    })()}
+                    classFacilityId={normalizedFacilityId}
                     eventId={eventId}
                     originalDate={instance.date}
                     dateLabel={shortDateLabel}
