@@ -270,9 +270,12 @@ export function SessionDetailSheet({
                     open={showRescheduleModal}
                     onClose={() => setShowRescheduleModal(false)}
                     classId={classId}
-                    classFacilityId={
-                        facilityId ? Number(facilityId) : undefined
-                    }
+                    classFacilityId={(() => {
+                        if (facilityId == null || facilityId === '')
+                            return undefined;
+                        const n = Number(facilityId);
+                        return Number.isFinite(n) ? n : undefined;
+                    })()}
                     eventId={eventId}
                     originalDate={instance.date}
                     dateLabel={shortDateLabel}
