@@ -1,9 +1,7 @@
 import { declareAuthenticatedRoutes } from '@/auth/declareAuthenticatedRoutes';
 import { AdminRoles, AllRoles } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
-import { getStudentLevel1Data } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
-import ResidentHome from '@/pages/student/ResidentHome';
 import KnowledgeCenterManagement from '@/pages/knowledge-center/KnowledgeCenterManagement';
 import ResidentKnowledgeCenter from '@/pages/knowledge-center/ResidentKnowledgeCenter';
 import LibraryViewer from '@/pages/knowledge-center/LibraryViewer';
@@ -25,12 +23,6 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
 
 export const KnowledgeCenterRoutes: RouteObject = declareAuthenticatedRoutes(
     [
-        {
-            path: 'home',
-            element: <ResidentHome />,
-            loader: getStudentLevel1Data,
-            handle: { title: 'Home' }
-        },
         {
             path: 'knowledge-center',
             element: <ResidentKnowledgeCenter />,

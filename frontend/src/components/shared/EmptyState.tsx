@@ -1,21 +1,24 @@
 import { ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
     icon?: ReactNode;
     title: string;
     description?: string;
     action?: ReactNode;
+    className?: string;
 }
 
 export function EmptyState({
     icon,
     title,
     description,
-    action
+    action,
+    className
 }: EmptyStateProps) {
     return (
-        <Card className="bg-card">
+        <Card className={cn('bg-card', className)}>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 {icon && (
                     <div className="rounded-full bg-muted p-3 mb-4">{icon}</div>

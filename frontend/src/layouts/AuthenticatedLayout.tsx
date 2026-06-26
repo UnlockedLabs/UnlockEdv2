@@ -52,6 +52,9 @@ export default function AuthenticatedLayout() {
         location.pathname === '/knowledge-center-management' ||
         location.pathname === '/knowledge-center';
     const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
+    const isLearningRecord =
+        location.pathname.startsWith('/learning-record-funnel') ||
+        location.pathname.startsWith('/learning-record-categories');
     const isContentViewer = location.pathname.startsWith('/viewer/');
     const isResidentPage = [
         '/learning-path',
@@ -71,6 +74,7 @@ export default function AuthenticatedLayout() {
         isProgramsList ||
         isFacilities ||
         isKnowledgeCenter ||
+        isLearningRecord ||
         isContentViewer ||
         isResidentPage ||
         isSchedule ||
@@ -85,6 +89,7 @@ export default function AuthenticatedLayout() {
         isClassDetail ||
         isClassesPage ||
         isKnowledgeCenter ||
+        isLearningRecord ||
         isContentViewer ||
         isResidentPage ||
         isSchedule ||

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from './button';
@@ -53,7 +54,7 @@ AlertDialogOverlay.displayName = 'AlertDialogOverlay';
 const AlertDialogContent = React.forwardRef<
     React.ComponentRef<typeof AlertDialogPrimitive.Content>,
     React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
     <AlertDialogPortal>
         <AlertDialogOverlay />
         <AlertDialogPrimitive.Content
@@ -64,7 +65,13 @@ const AlertDialogContent = React.forwardRef<
                 className
             )}
             {...props}
-        />
+        >
+            {children}
+            <AlertDialogPrimitive.Cancel className="ring-offset-background focus-visible:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+                <XIcon />
+                <span className="sr-only">Close</span>
+            </AlertDialogPrimitive.Cancel>
+        </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
 ));
 AlertDialogContent.displayName = 'AlertDialogContent';

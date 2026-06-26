@@ -4,6 +4,7 @@ import {
     KnowledgeCenterRoutes,
     KnowledgeCenterAdminRoutes
 } from './knowledge-routes';
+import { LearningRecordRoutes } from './learning-record-routes';
 import {
     ProgramRoutes,
     AdminProgramRoutes,
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
     AllUserRoutes,
     KnowledgeCenterRoutes,
     KnowledgeCenterAdminRoutes,
+    LearningRecordRoutes,
     ProgramRoutes,
     AdminProgramRoutes,
     DeptAdminProgramRoutes,
