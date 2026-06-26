@@ -29,6 +29,7 @@ import {
     HelpfulLinkAndSort,
     ServerResponseMany,
     ServerResponseOne,
+    OpenContentItem,
     Option
 } from '@/types';
 import { formatVideoDuration } from '@/lib/formatters';
@@ -105,6 +106,41 @@ export default function ResidentKnowledgeCenter() {
         `/api/helpful-links?visibility=true&per_page=500&order_by=title&order=asc&search=${searchQuery}`
     );
 
+    const isFavoritesTab = contentTypeFilter === 'favorites';
+
+    const { data: favData, mutate: mutateFavorites } = useSWR<
+        ServerResponseMany<OpenContentItem>
+    >(
+        // Always fetched (like the other tabs) so the Favorites count shows
+        // even when the tab isn't active.
+        `/api/open-content/favorites?page=1&per_page=500&search=${searchQuery}`
+    );
+
+    const favoritesContent: ContentItem[] = useMemo(
+        () =>
+            (favData?.data ?? []).map((f) => ({
+                id: f.content_id,
+                type:
+                    f.content_type === 'helpful_link'
+                        ? ('link' as const)
+                        : (f.content_type as 'library' | 'video'),
+                title: f.title,
+                description: f.description ?? '',
+                featured: false,
+                favorited: true,
+                openContentProviderId: f.open_content_provider_id,
+                imageUrl:
+                    f.content_type === 'library' ? f.thumbnail_url : undefined,
+                thumbnailUrl:
+                    f.content_type === 'video'
+                        ? `/api/photos/${f.external_id}.jpg`
+                        : undefined,
+                author: f.channel_title,
+                url: f.url
+            })),
+        [favData?.data]
+    );
+
     const allContent: ContentItem[] = useMemo(() => {
         const libs: ContentItem[] = (libData?.data ?? []).map((lib) => ({
             id: lib.id,
@@ -152,6 +188,11 @@ export default function ResidentKnowledgeCenter() {
     }, [libData?.data, vidData?.data, linkData?.data?.helpful_links]);
 
     const filteredContent = useMemo(() => {
+        if (isFavoritesTab) {
+            // Favorites are cross-type and returned in server order
+            // (most recent first); no content-type/category filtering.
+            return favoritesContent;
+        }
         return allContent
             .filter((item) => {
                 if (
@@ -170,7 +211,13 @@ export default function ResidentKnowledgeCenter() {
                 if (!a.featured && b.featured) return 1;
                 return a.title.localeCompare(b.title);
             });
-    }, [allContent, contentTypeFilter, categoryFilter]);
+    }, [
+        isFavoritesTab,
+        favoritesContent,
+        allContent,
+        contentTypeFilter,
+        categoryFilter
+    ]);
 
     const paginatedContent = filteredContent.slice(
         (currentPage - 1) * itemsPerPage,
@@ -242,6 +289,10 @@ export default function ResidentKnowledgeCenter() {
                 return m;
             });
             toast.error('Failed to update favorites');
+        } else {
+            // Refresh so the Favorites count (and the tab's list, when active)
+            // stays in sync after favoriting/unfavoriting from any tab.
+            await mutateFavorites();
         }
     };
 
@@ -506,6 +557,27 @@ export default function ResidentKnowledgeCenter() {
                         >
                             Helpful Links ({counts.link})
                         </button>
+                        <button
+                            onClick={() => {
+                                setContentTypeFilter('favorites');
+                                setCategoryFilter('all');
+                                setCurrentPage(1);
+                            }}
+                            className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 ${
+                                contentTypeFilter === 'favorites'
+                                    ? 'bg-brand text-white shadow-sm'
+                                    : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
+                            }`}
+                        >
+                            <Star
+                                className={`size-4 ${
+                                    contentTypeFilter === 'favorites'
+                                        ? 'fill-white'
+                                        : 'fill-brand-gold text-brand-gold'
+                                }`}
+                            />
+                            Favorites ({favData?.data?.length ?? 0})
+                        </button>
                     </div>
 
                     {(contentTypeFilter === 'library' ||
@@ -542,7 +614,11 @@ export default function ResidentKnowledgeCenter() {
 
                 {paginatedContent.length === 0 ? (
                     <div className="empty-state">
-                        <p className="text-gray-500">No resources found.</p>
+                        <p className="text-gray-500">
+                            {isFavoritesTab
+                                ? 'No favorites yet. Tap the star on any resource to add it here.'
+                                : 'No resources found.'}
+                        </p>
                     </div>
                 ) : (
                     <>
