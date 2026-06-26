@@ -18,7 +18,18 @@ import { IncompleteEntryReminder } from '@/components/dashboard/IncompleteEntryR
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ExternalLink, PenLine, Plus, Star, X } from 'lucide-react';
+import {
+    ExternalLink,
+    PenLine,
+    Plus,
+    Star,
+    X,
+    ChevronRight,
+    BookOpen,
+    Video,
+    Link2,
+    LucideIcon
+} from 'lucide-react';
 import { EmptyState } from '@/components/shared';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
@@ -200,6 +211,86 @@ function FavoriteItem({ item }: { item: OpenContentItem }) {
                 <div className="w-10 h-10 rounded bg-muted shrink-0" />
             )}
             <p className="text-sm text-foreground truncate">{title}</p>
+        </div>
+    );
+}
+
+interface FavoriteGroup {
+    title: string;
+    icon: LucideIcon;
+    items: OpenContentItem[];
+}
+
+function FavoritesAccordion({ items }: { items: OpenContentItem[] }) {
+    const groups: FavoriteGroup[] = [
+        {
+            title: 'Libraries',
+            icon: BookOpen,
+            items: items.filter((i) => i.content_type === 'library')
+        },
+        {
+            title: 'Videos',
+            icon: Video,
+            items: items.filter((i) => i.content_type === 'video')
+        },
+        {
+            title: 'Helpful Links',
+            icon: Link2,
+            items: items.filter((i) => i.content_type === 'helpful_link')
+        }
+    ].filter((g) => g.items.length > 0);
+
+    const [activeKey, setActiveKey] = useState<string | null>(null);
+    const toggle = (key: string) =>
+        setActiveKey(activeKey === key ? null : key);
+
+    return (
+        <div className="space-y-2">
+            {groups.map(({ title, icon: Icon, items: groupItems }) => {
+                const open = activeKey === title;
+                return (
+                    <div
+                        key={title}
+                        className="rounded-lg border border-border overflow-hidden"
+                    >
+                        <button
+                            type="button"
+                            onClick={() => toggle(title)}
+                            aria-expanded={open}
+                            className="flex items-center w-full gap-2 px-3 py-2.5 text-left hover:bg-muted transition-colors"
+                        >
+                            <ChevronRight
+                                className={`size-4 text-muted-foreground transition-transform ${
+                                    open ? 'rotate-90' : ''
+                                }`}
+                            />
+                            <Icon className="size-4 text-brand shrink-0" />
+                            <span className="flex-1 text-sm font-medium text-foreground">
+                                {title}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                {groupItems.length}
+                            </span>
+                        </button>
+                        <div
+                            className={`transition-[max-height] duration-300 ${
+                                open
+                                    ? 'max-h-[800px]'
+                                    : 'max-h-0 overflow-hidden'
+                            }`}
+                        >
+                            <div className="space-y-2 p-2">
+                                {groupItems.map((item) => (
+                                    <FavoriteItem
+                                        key={`${item.content_id}-${item.url}`}
+                                        item={item}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -655,14 +746,7 @@ export default function ResidentHome() {
                             </h2>
                         </div>
                         {favoriteItems.length > 0 ? (
-                            <div className="space-y-2">
-                                {favoriteItems.map((item) => (
-                                    <FavoriteItem
-                                        key={`${item.content_id}-${item.url}`}
-                                        item={item}
-                                    />
-                                ))}
-                            </div>
+                            <FavoritesAccordion items={favoriteItems} />
                         ) : (
                             <EmptyState
                                 title="No Favorites Yet"
