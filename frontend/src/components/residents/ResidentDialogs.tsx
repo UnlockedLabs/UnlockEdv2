@@ -548,8 +548,9 @@ export function TransferDialog({
             onOpenChange={onOpenChange}
             title="Transfer Resident"
             description={`Move ${resident.name_last}, ${resident.name_first} to a different facility`}
-            className="max-w-2xl"
+            className="max-w-2xl max-h-[90vh] flex flex-col"
             titleClassName="text-foreground"
+            headerClassName="shrink-0"
             preventOutsideClose
         >
             <Form {...form}>
@@ -559,7 +560,7 @@ export function TransferDialog({
                         void form.handleSubmit(() => void handleTransfer())(e);
                     }}
                 >
-                    <div className="space-y-6 py-4">
+                    <div className="space-y-6 py-4 flex-1 min-h-0 overflow-y-auto pr-1">
                         <div className="space-y-3">
                             <div className="text-sm text-gray-600">
                                 Current Facility:{' '}
@@ -699,7 +700,7 @@ export function TransferDialog({
                             </>
                         )}
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="shrink-0">
                         <Button
                             variant="outline"
                             type="button"
