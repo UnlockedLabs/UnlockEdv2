@@ -24,6 +24,8 @@ import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
 import FeatureControl from '@/pages/admin/FeatureControl';
+import ResidentHome from '@/pages/student/ResidentHome';
+import { getStudentLevel1Data } from '@/loaders/routeLoaders';
 
 const systemAdminRoutes = declareAuthenticatedRoutes(
     [
@@ -108,6 +110,12 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
         path: 'temp-home',
         element: <StudentLayer0 />,
         handle: { title: 'UnlockEd' }
+    },
+    {
+        path: 'home',
+        element: <ResidentHome />,
+        loader: getStudentLevel1Data,
+        handle: { title: 'Home' }
     }
 ]);
 

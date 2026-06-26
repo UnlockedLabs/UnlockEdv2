@@ -19,6 +19,7 @@ export enum FeatureAccess {
     ProviderAccess = 'provider_platforms',
     OpenContentAccess = 'open_content',
     ProgramAccess = 'program_management',
+    LearningRecordAccess = 'learning_record',
     RequestContentAccess = 'request_content',
     HelpfulLinksAccess = 'helpful_links',
     UploadVideoAccess = 'upload_video'

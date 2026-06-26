@@ -29,6 +29,7 @@ import {
     ArrowPathIcon,
     QuestionMarkCircleIcon,
     AdjustmentsHorizontalIcon,
+    PencilSquareIcon,
     CircleStackIcon
 } from '@heroicons/react/24/outline';
 
@@ -250,7 +251,10 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                         to="/learning-platforms"
                         icon={CircleStackIcon}
                         label="Learning Platforms"
-                        active={isActive(['/learning-platforms', '/provider-users'])}
+                        active={isActive([
+                            '/learning-platforms',
+                            '/provider-users'
+                        ])}
                         collapsed={collapsed}
                         onClick={onNavigate}
                     />
@@ -288,7 +292,12 @@ function StudentNav({
     const { tourState } = useTourContext();
     if (!user) return null;
     const hasOpen = hasFeature(user, FeatureAccess.OpenContentAccess);
+    const hasLearningRecord = hasFeature(
+        user,
+        FeatureAccess.LearningRecordAccess
+    );
     const hasProgram = hasFeature(user, FeatureAccess.ProgramAccess);
+    const hasHome = hasOpen || hasLearningRecord;
 
     const tourHighlight = (target: string) =>
         tourState.tourActive && tourState.target === target
@@ -297,7 +306,7 @@ function StudentNav({
 
     return (
         <>
-            {hasOpen ? (
+            {hasHome ? (
                 <NavLink
                     id="navigate-homepage"
                     to="/home"
@@ -319,6 +328,19 @@ function StudentNav({
                         onClick={onNavigate}
                     />
                 )
+            )}
+            {hasLearningRecord && (
+                <NavLink
+                    to="/learning-record-funnel"
+                    icon={PencilSquareIcon}
+                    label="Learning Record"
+                    active={isActive([
+                        '/learning-record-funnel',
+                        '/learning-record-categories'
+                    ])}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                />
             )}
             {hasOpen && (
                 <NavLink
