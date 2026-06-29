@@ -184,6 +184,7 @@ export interface TodaysScheduleItem {
     start_time: string;
     room: string;
     has_attendance?: boolean;
+    enrolled_count?: number;
 }
 
 export interface ClassMetrics {
