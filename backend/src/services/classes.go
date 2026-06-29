@@ -353,6 +353,21 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 				items[i].HasAttendance = taken[fmt.Sprintf("%d|%s", item.EventID, item.Date)]
 			}
 		}
+
+		classIDSet := make(map[uint]struct{}, len(items))
+		for _, item := range items {
+			classIDSet[item.ClassID] = struct{}{}
+		}
+		classIDs := make([]uint, 0, len(classIDSet))
+		for id := range classIDSet {
+			classIDs = append(classIDs, id)
+		}
+		enrollmentCounts, err := svc.db.GetActiveEnrollmentCountsForClasses(args, classIDs)
+		if err == nil {
+			for i := range items {
+				items[i].EnrolledCount = enrollmentCounts[items[i].ClassID]
+			}
+		}
 	}
 
 	sort.Slice(items, func(i, j int) bool {
