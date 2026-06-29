@@ -51,7 +51,9 @@ interface CalendarEvent {
 function CalendarEventContent({ event }: { event: CalendarEvent }) {
     return (
         <div className="h-full overflow-hidden">
-            <div className="truncate text-xs font-medium leading-tight">{event.title}</div>
+            <div className="truncate text-xs font-medium leading-tight">
+                {event.title}
+            </div>
             {event.resource.is_canvas_event && (
                 <span className="text-[9px] bg-white/25 rounded px-1 mt-0.5 inline-block leading-tight">
                     Canvas
@@ -307,8 +309,8 @@ export default function Schedule() {
         let backgroundColor = BRAND;
         let borderColor = BRAND_DARK;
         if (e.is_canvas_event) {
-            backgroundColor = '#1d4ed8';  // blue-700
-            borderColor = '#1e3a8a';      // blue-900
+            backgroundColor = '#1d4ed8'; // blue-700
+            borderColor = '#1e3a8a'; // blue-900
         }
         if (e.is_cancelled) {
             backgroundColor = '#9ca3af';
@@ -576,7 +578,9 @@ export default function Schedule() {
                             setSelectedEvent(null);
                         }}
                         onViewClassDetails={() => {
-                            navigate(`/program-classes/${selectedEvent.class_id}/detail`);
+                            navigate(
+                                `/program-classes/${selectedEvent.class_id}/detail`
+                            );
                         }}
                     />
                 )}
@@ -601,6 +605,7 @@ export default function Schedule() {
                             onOpenChange={setShowRescheduleSingle}
                             event={selectedEvent}
                             rooms={rooms}
+                            facilityId={activeFacilityId}
                             onSuccess={handleModalSuccess}
                         />
                         <RescheduleSeriesModal
@@ -608,6 +613,7 @@ export default function Schedule() {
                             onOpenChange={setShowRescheduleSeries}
                             event={selectedEvent}
                             rooms={rooms}
+                            facilityId={activeFacilityId}
                             onSuccess={handleModalSuccess}
                         />
                         <RestoreEventModal

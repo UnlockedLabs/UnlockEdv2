@@ -292,6 +292,10 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		if req.RoomID != nil {
 			newRoomID = req.RoomID
 		}
+		newInstructorID := event.InstructorID
+		if req.InstructorID != nil {
+			newInstructorID = req.InstructorID
+		}
 		rescheduleReason := "rescheduled"
 		if req.Reason != "" {
 			rescheduleReason = req.Reason
@@ -312,6 +316,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 				OverrideRrule: newRRule,
 				IsCancelled:   false,
 				RoomID:        newRoomID,
+				InstructorID:  newInstructorID,
 			},
 		}
 		if err := srv.WithUserContext(r).CreateOverrideEvents(&ctx, overrides); err != nil {
