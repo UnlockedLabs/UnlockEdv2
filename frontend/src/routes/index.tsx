@@ -1,5 +1,12 @@
 import { createBrowserRouter } from 'react-router-dom';
-import { NonAdminRoutes, AdminRoutes, AllUserRoutes } from './app-routes';
+import AuthenticatedShell from '@/layouts/AuthenticatedShell';
+import Error from '@/pages/Error';
+import {
+    NonAdminRoutes,
+    AdminRoutes,
+    AllUserRoutes,
+    globalRoutes
+} from './app-routes';
 import {
     KnowledgeCenterRoutes,
     KnowledgeCenterAdminRoutes
@@ -13,14 +20,25 @@ import {
 import { ProviderPlatformRoutes } from './provider-routes';
 
 export const router = createBrowserRouter([
-    NonAdminRoutes,
-    AdminRoutes,
-    AllUserRoutes,
-    KnowledgeCenterRoutes,
-    KnowledgeCenterAdminRoutes,
-    LearningRecordRoutes,
-    ProgramRoutes,
-    AdminProgramRoutes,
-    DeptAdminProgramRoutes,
-    ProviderPlatformRoutes
+    {
+        // Single shared shell: AuthProvider + context providers + nav layout,
+        // mounted once. All authenticated route groups nest as children so the
+        // nav bar persists and only the <Outlet/> content swaps on navigation.
+        element: <AuthenticatedShell />,
+        errorElement: <Error />,
+        children: [
+            NonAdminRoutes,
+            AdminRoutes,
+            AllUserRoutes,
+            KnowledgeCenterRoutes,
+            KnowledgeCenterAdminRoutes,
+            LearningRecordRoutes,
+            ProgramRoutes,
+            AdminProgramRoutes,
+            DeptAdminProgramRoutes,
+            ProviderPlatformRoutes
+        ]
+    },
+    // Public routes (login, reset-password, error, 404) — no authenticated shell.
+    globalRoutes
 ]);

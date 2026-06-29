@@ -181,6 +181,9 @@ export const AllUserRoutes = {
     children: [allUserRoutes]
 };
 
+// Authenticated routes only — these nest under AuthenticatedShell.
+// globalRoutes (login, error, etc.) are public and registered separately
+// in routes/index.tsx so they render without the authenticated layout.
 export const NonAdminRoutes = {
-    children: [nonAdminLoggedInRoutes, globalRoutes]
+    children: [nonAdminLoggedInRoutes]
 };
