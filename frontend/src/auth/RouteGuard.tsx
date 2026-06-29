@@ -1,11 +1,6 @@
-import { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { AUTHCALLBACK, hasFeature, useAuth } from '@/auth/useAuth';
-import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW, UserRole } from '@/types';
-import { PageTitleProvider } from '@/contexts/PageTitleContext';
-import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
-import { Toaster } from '@/components/ui/sonner';
-import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
+import { FeatureAccess, UserRole } from '@/types';
 
 export default function RouteGuard({
     allowedRoles,
@@ -16,12 +11,8 @@ export default function RouteGuard({
 }) {
     const { user } = useAuth();
 
-    useEffect(() => {
-        if (!user) {
-            window.location.href = INIT_KRATOS_LOGIN_FLOW;
-        }
-    }, [user]);
-
+    // AuthProvider (mounted in AuthenticatedShell) guarantees a user before
+    // children render, but guard defensively.
     if (!user) {
         return null;
     }
@@ -31,14 +22,5 @@ export default function RouteGuard({
     ) {
         return <Navigate to={AUTHCALLBACK} />;
     }
-    return (
-        <>
-            <PageTitleProvider>
-                <BreadcrumbProvider>
-                    <AuthenticatedLayout />
-                </BreadcrumbProvider>
-            </PageTitleProvider>
-            <Toaster position="bottom-right" />
-        </>
-    );
+    return <Outlet />;
 }
