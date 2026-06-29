@@ -24,7 +24,8 @@ import { FormModal } from '@/components/shared';
 import API from '@/api/api';
 import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
-import { Room, ServerResponseMany } from '@/types';
+import { useAuth } from '@/auth/useAuth';
+import { Room, User, UserRole, ServerResponseMany } from '@/types';
 import { formatTime12h } from '@/lib/formatters';
 import {
     rescheduleSessionSchema,
@@ -45,6 +46,7 @@ interface RescheduleSessionModalProps {
     originalDate: string;
     dateLabel: string;
     currentRoom?: string;
+    currentInstructor?: string;
     classTime?: string;
     onRescheduled: () => void;
     applyToFuture?: boolean;
@@ -61,12 +63,14 @@ export function RescheduleSessionModal({
     originalDate,
     dateLabel,
     currentRoom,
+    currentInstructor,
     classTime,
     onRescheduled,
     applyToFuture,
     setApplyToFuture,
     futureSessions = []
 }: RescheduleSessionModalProps) {
+    const { user } = useAuth();
     const [startTime, endTime] =
         classTime?.split('-').map((s) => s.trim()) ?? [];
     const form = useForm<RescheduleSessionInput>({
@@ -75,7 +79,8 @@ export function RescheduleSessionModal({
             newDate: '',
             newStartTime: '',
             newEndTime: '',
-            newRoom: ''
+            newRoom: '',
+            instructor_id: ''
         }
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,19 +94,32 @@ export function RescheduleSessionModal({
     );
     const rooms = roomsResp?.data ?? [];
 
+    const roleParam =
+        user?.role === UserRole.FacilityAdmin
+            ? 'facility_admin'
+            : 'department_admin';
+    const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
+        open && user && classFacilityId
+            ? `/api/users?role=${roleParam}&facility_id=${classFacilityId}&per_page=100`
+            : null
+    );
+    const instructors = instructorsResp?.data ?? [];
+
     useEffect(() => {
         if (open) {
             form.reset({
                 newDate: '',
                 newStartTime: '',
                 newEndTime: '',
-                newRoom: ''
+                newRoom: '',
+                instructor_id: ''
             });
         }
     }, [open, form]);
 
     const handleReschedule = async (formData: RescheduleSessionInput) => {
-        const { newDate, newStartTime, newEndTime, newRoom } = formData;
+        const { newDate, newStartTime, newEndTime, newRoom, instructor_id } =
+            formData;
         setIsSubmitting(true);
         const body: Record<string, unknown> = {
             date: originalDate,
@@ -111,6 +129,7 @@ export function RescheduleSessionModal({
         if (newStartTime) body.new_start_time = newStartTime;
         if (newEndTime) body.new_end_time = newEndTime;
         if (newRoom) body.room_id = Number(newRoom);
+        if (instructor_id) body.instructor_id = Number(instructor_id);
         const resp = await API.patch(
             `program-classes/${classId}/events/${eventId}`,
             body
@@ -291,6 +310,45 @@ export function RescheduleSessionModal({
                                 </FormItem>
                             )}
                         />
+                        <FormField
+                            control={form.control}
+                            name="instructor_id"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="rescheduleInstructor">
+                                        Instructor (optional)
+                                    </FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger id="rescheduleInstructor">
+                                                <SelectValue
+                                                    placeholder={
+                                                        currentInstructor
+                                                            ? `Keep current instructor (${currentInstructor})`
+                                                            : 'Select an instructor'
+                                                    }
+                                                />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {instructors.map((inst) => (
+                                                <SelectItem
+                                                    key={inst.id}
+                                                    value={String(inst.id)}
+                                                >
+                                                    {inst.name_last},{' '}
+                                                    {inst.name_first}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         {setApplyToFuture && (
                             <div className="flex items-center space-x-2">
                                 <input
@@ -321,7 +379,8 @@ export function RescheduleSessionModal({
                                     newDate: '',
                                     newStartTime: '',
                                     newEndTime: '',
-                                    newRoom: ''
+                                    newRoom: '',
+                                    instructor_id: ''
                                 });
                                 if (setApplyToFuture) setApplyToFuture(false);
                             }}
