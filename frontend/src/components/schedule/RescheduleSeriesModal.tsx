@@ -1,10 +1,19 @@
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import useSWR from 'swr';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
 import API from '@/api/api';
-import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
+import { useAuth } from '@/auth/useAuth';
+import {
+    FacilityProgramClassEvent,
+    Room,
+    RoomConflict,
+    User,
+    UserRole,
+    ServerResponseMany
+} from '@/types';
 import {
     rescheduleSeriesSchema,
     RescheduleSeriesInput
@@ -34,6 +43,7 @@ interface RescheduleSeriesModalProps {
     onOpenChange: (open: boolean) => void;
     event: FacilityProgramClassEvent;
     rooms: Room[];
+    facilityId: string;
     onSuccess: () => void;
 }
 
@@ -95,19 +105,36 @@ export function RescheduleSeriesModal({
     onOpenChange,
     event,
     rooms,
+    facilityId,
     onSuccess
 }: RescheduleSeriesModalProps) {
+    const { user } = useAuth();
     const rruleRef = useRef<RRuleFormHandle>(null);
     const form = useForm<RescheduleSeriesInput>({
         resolver: zodResolver(rescheduleSeriesSchema),
         defaultValues: {
-            room_id: event.room_id ? String(event.room_id) : ''
+            room_id: event.room_id ? String(event.room_id) : '',
+            instructor_id: event.instructor_id
+                ? String(event.instructor_id)
+                : ''
         }
     });
     const roomId = form.watch('room_id') ?? '';
+    const instructorId = form.watch('instructor_id') ?? '';
     const [submitting, setSubmitting] = useState(false);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
+
+    const roleParam =
+        user?.role === UserRole.FacilityAdmin
+            ? 'facility_admin'
+            : 'department_admin';
+    const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
+        open && user && facilityId
+            ? `/api/users?role=${roleParam}&facility_id=${facilityId}&per_page=100`
+            : null
+    );
+    const instructors = instructorsResp?.data ?? [];
 
     const defaults = parseRRuleDefaults(event);
     const currentRoomName =
@@ -162,7 +189,9 @@ export function RescheduleSeriesModal({
                 recurrence_rule: result.rule,
                 duration: result.duration,
                 room_id: roomId ? Number(roomId) : event.room_id,
-                instructor_id: event.instructor_id ?? null
+                instructor_id: instructorId
+                    ? Number(instructorId)
+                    : (event.instructor_id ?? null)
             },
             closed_event_series: {
                 id: event.id,
@@ -234,6 +263,14 @@ export function RescheduleSeriesModal({
                                             {currentRoomName}
                                         </div>
                                     )}
+                                    {event.instructor_name && (
+                                        <div>
+                                            <span className="font-medium">
+                                                Instructor:
+                                            </span>{' '}
+                                            {event.instructor_name}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -270,6 +307,38 @@ export function RescheduleSeriesModal({
                                                         value={String(room.id)}
                                                     >
                                                         {room.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="instructor_id"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>Instructor</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select an instructor" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {instructors.map((inst) => (
+                                                    <SelectItem
+                                                        key={inst.id}
+                                                        value={String(inst.id)}
+                                                    >
+                                                        {inst.name_last},{' '}
+                                                        {inst.name_first}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
