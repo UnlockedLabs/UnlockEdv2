@@ -376,26 +376,34 @@ function TodaysSchedule({
                                             {item.room || '-'}
                                         </div>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        variant={
-                                            item.has_attendance
-                                                ? 'outline'
-                                                : 'default'
-                                        }
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onNavigate(item);
-                                        }}
-                                        className={
-                                            item.has_attendance
-                                                ? 'border-gray-300 w-full sm:w-auto'
-                                                : 'bg-brand hover:bg-brand-dark text-white w-full sm:w-auto'
-                                        }
-                                    >
-                                        {item.has_attendance ? 'Edit' : 'Take'}{' '}
-                                        Attendance
-                                    </Button>
+                                    {item.enrolled_count === 0 ? (
+                                        <span className="text-sm italic text-gray-500 dark:text-gray-400 w-full sm:w-auto sm:text-right shrink-0">
+                                            No residents enrolled
+                                        </span>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            variant={
+                                                item.has_attendance
+                                                    ? 'outline'
+                                                    : 'default'
+                                            }
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onNavigate(item);
+                                            }}
+                                            className={
+                                                item.has_attendance
+                                                    ? 'border-gray-300 w-full sm:w-auto'
+                                                    : 'bg-brand hover:bg-brand-dark text-white w-full sm:w-auto'
+                                            }
+                                        >
+                                            {item.has_attendance
+                                                ? 'Edit'
+                                                : 'Take'}{' '}
+                                            Attendance
+                                        </Button>
+                                    )}
                                 </div>
                             );
                         })}

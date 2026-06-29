@@ -547,6 +547,31 @@ func (db *DB) GetAttendanceCountsForEvents(args *models.QueryContext, eventIDs [
 	return attendanceCounts, nil
 }
 
+type ClassEnrollmentCount struct {
+	ClassID uint  `json:"class_id"`
+	Count   int64 `json:"count"`
+}
+
+// GetActiveEnrollmentCountsForClasses returns the number of currently-enrolled
+// residents per class, keyed by class_id. Classes with no active enrollments
+// are absent from the map (callers treat a missing key as zero).
+func (db *DB) GetActiveEnrollmentCountsForClasses(args *models.QueryContext, classIDs []uint) (map[uint]int, error) {
+	var rows []ClassEnrollmentCount
+	if err := db.WithContext(args.Ctx).
+		Model(&models.ProgramClassEnrollment{}).
+		Select("class_id, COUNT(*) as count").
+		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
+		Group("class_id").
+		Scan(&rows).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	counts := make(map[uint]int, len(rows))
+	for _, row := range rows {
+		counts[row.ClassID] = int(row.Count)
+	}
+	return counts, nil
+}
+
 func (db *DB) GetActiveEnrollmentsForClasses(args *models.QueryContext, classIDs []uint) ([]models.ProgramClassEnrollment, error) {
 	var enrollments []models.ProgramClassEnrollment
 	if err := db.WithContext(args.Ctx).
