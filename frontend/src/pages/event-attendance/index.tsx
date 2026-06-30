@@ -24,6 +24,12 @@ import {
     diffMinutes,
     formatPartialTime
 } from '@/lib/formatters';
+import {
+    ANALYTICS_EVENTS,
+    captureEvent,
+    flowTimerSeconds
+} from '@/lib/analytics';
+import { useFlowTimer } from '@/lib/useFlowTimer';
 import { PageHeader } from '@/components/shared';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { ATTENDANCE_STATUSES } from './constants';
@@ -86,6 +92,11 @@ export default function EventAttendance() {
         Record<number, AttendanceRowErrors>
     >({});
     const [showErrors, setShowErrors] = useState(false);
+    const startMsRef = useFlowTimer(
+        ANALYTICS_EVENTS.AttendanceSessionStarted,
+        { class_id, event_id, date },
+        [class_id, event_id, date]
+    );
 
     const { data, isLoading, error, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
@@ -326,6 +337,21 @@ export default function EventAttendance() {
                 payload
             );
             toast.success('Attendance saved successfully');
+
+            const submittedAt = new Date();
+
+            captureEvent(ANALYTICS_EVENTS.AttendanceSessionCompleted, {
+                duration_seconds: flowTimerSeconds(startMsRef.current),
+                num_records: rows.length,
+                present_count: summary.present,
+                partial_count: summary.partial,
+                absent_count: summary.absentExcused + summary.absentUnexcused,
+                class_id,
+                event_id,
+                date,
+                submitted_at: submittedAt.toISOString()
+            });
+
             void mutate();
             navigate(`/program-classes/${class_id}/detail`);
         } catch {

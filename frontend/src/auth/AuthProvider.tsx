@@ -3,6 +3,7 @@ import { INIT_KRATOS_LOGIN_FLOW, User } from '@/types';
 import { AuthContext, fetchUser, handleLogout } from '@/auth/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { tabSessionManager } from '@/session/tabSession';
+import { identifyUser } from '@/lib/analytics';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children
@@ -25,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                     await handleLogout();
                     return;
                 }
+                identifyUser(authUser);
                 setUser(authUser);
             }
             setLoading(false);

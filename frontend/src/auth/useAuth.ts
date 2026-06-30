@@ -14,6 +14,7 @@ import {
 } from '@/types';
 import API from '@/api/api';
 import { tabSessionManager } from '@/session/tabSession';
+import { resetAnalytics } from '@/lib/analytics';
 
 interface AuthContextType {
     user: User | undefined;
@@ -164,6 +165,7 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
 
 export async function handleLogout(): Promise<void> {
     try {
+        resetAnalytics();
         tabSessionManager.onLogout();
         const resp = await API.post<AuthResponse, object>('logout', {});
         if (resp.success) {
