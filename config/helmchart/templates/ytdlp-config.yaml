@@ -5,3 +5,4 @@ metadata:
 data:
   yt-dlp.conf: |
     --cookies=/app/cookies.txt
+    --js-runtimes node
