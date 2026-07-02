@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useMatches } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RouteTitleHandler, TitleHandler } from '@/types';
 import { useAuth, isAdministrator, canSwitchFacility } from '@/auth/useAuth';
 import TopNav from '@/components/navigation/TopNav';
@@ -20,6 +20,7 @@ export default function AuthenticatedLayout() {
     const { user } = useAuth();
     const [helpCenterOpen, setHelpCenterOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const matches = useMatches();
     const location = useLocation();
     const currentRoute = matches[matches.length - 1];
@@ -131,6 +132,12 @@ export default function AuthenticatedLayout() {
         user
     ]);
 
+    // The app scrolls this inner container, never the document, so it must
+    // hold focus for keyboard scrolling (arrows/PageDown/Space) to work
+    useEffect(() => {
+        scrollContainerRef.current?.focus({ preventScroll: true });
+    }, [location.pathname]);
+
     useEffect(() => {
         if (user && !isAdministrator(user)) {
             const ws = new WebsocketSession(user);
@@ -171,20 +178,28 @@ export default function AuthenticatedLayout() {
             </div>
 
             <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-                <div className="flex items-center shrink-0 h-16 border-b border-border">
-                    <div className="md:hidden px-2">
+                {isAdministrator(user) ? (
+                    <div className="flex items-center shrink-0 h-16 border-b border-border">
+                        <div className="md:hidden px-2">
+                            <MobileNav />
+                        </div>
+                        <div className="flex-1">
+                            <TopNav />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="md:hidden flex items-center shrink-0 h-16 border-b border-border px-2">
                         <MobileNav />
                     </div>
-                    <div className="flex-1">
-                        <TopNav />
-                    </div>
-                </div>
+                )}
 
                 <TitleManager />
                 <UnlockEdTour />
 
                 <div
-                    className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}
+                    ref={scrollContainerRef}
+                    tabIndex={-1}
+                    className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto outline-none`}
                 >
                     <div
                         className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}
