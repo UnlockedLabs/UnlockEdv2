@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import useSWR from 'swr';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
-import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
+import {
+    FacilityProgramClassEvent,
+    Room,
+    RoomConflict,
+    User,
+    UserRole,
+    ServerResponseMany
+} from '@/types';
 import {
     scheduleRescheduleSessionSchema,
     ScheduleRescheduleSessionInput
@@ -35,6 +43,7 @@ interface RescheduleSessionModalProps {
     onOpenChange: (open: boolean) => void;
     event: FacilityProgramClassEvent;
     rooms: Room[];
+    facilityId: string;
     onSuccess: () => void;
 }
 
@@ -43,6 +52,7 @@ export function RescheduleSessionModal({
     onOpenChange,
     event,
     rooms,
+    facilityId,
     onSuccess
 }: RescheduleSessionModalProps) {
     const { user } = useAuth();
@@ -52,7 +62,8 @@ export function RescheduleSessionModal({
             date: '',
             startTime: '',
             endTime: '',
-            room_id: ''
+            room_id: '',
+            instructor_id: ''
         }
     });
     const [submitting, setSubmitting] = useState(false);
@@ -62,13 +73,27 @@ export function RescheduleSessionModal({
     const currentRoomName =
         rooms.find((r) => r.id === event.room_id)?.name ?? '';
 
+    const roleParam =
+        user?.role === UserRole.FacilityAdmin
+            ? 'facility_admin'
+            : 'department_admin';
+    const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
+        open && user && facilityId
+            ? `/api/users?role=${roleParam}&facility_id=${facilityId}&per_page=100`
+            : null
+    );
+    const instructors = instructorsResp?.data ?? [];
+
     useEffect(() => {
         if (open && event) {
             form.reset({
                 date: toDateInput(event.start),
                 startTime: '',
                 endTime: '',
-                room_id: ''
+                room_id: '',
+                instructor_id: event.instructor_id
+                    ? String(event.instructor_id)
+                    : ''
             });
         }
     }, [open, event, form]);
@@ -106,7 +131,9 @@ export function RescheduleSessionModal({
                     room_id: formData.room_id
                         ? Number(formData.room_id)
                         : (event.room_id ?? null),
-                    instructor_id: event.instructor_id ?? null
+                    instructor_id: formData.instructor_id
+                        ? Number(formData.instructor_id)
+                        : (event.instructor_id ?? null)
                 }
             ]
         );
@@ -254,6 +281,40 @@ export function RescheduleSessionModal({
                                             Leave time and room blank to keep
                                             current values.
                                         </p>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="instructor_id"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel htmlFor="reschedule-instructor">
+                                            Instructor (optional)
+                                        </FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger id="reschedule-instructor">
+                                                    <SelectValue placeholder="Select an instructor" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {instructors.map((inst) => (
+                                                    <SelectItem
+                                                        key={inst.id}
+                                                        value={String(inst.id)}
+                                                    >
+                                                        {inst.name_last},{' '}
+                                                        {inst.name_first}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

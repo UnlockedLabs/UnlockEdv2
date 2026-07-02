@@ -118,6 +118,7 @@ export function SessionsTabModals({
                         }
                     )}
                     currentRoom={cls.events?.[0]?.room_ref?.name}
+                    currentInstructor={baseInstructor}
                     classTime={rescheduleTarget.instance.class_time}
                     onRescheduled={onMutate}
                 />

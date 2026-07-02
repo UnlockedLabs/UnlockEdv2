@@ -500,16 +500,21 @@ export const rescheduleSessionSchema = z
         newDate: optionalString('Date'),
         newStartTime: optionalString('Start time'),
         newEndTime: optionalString('End time'),
-        newRoom: z.string().optional().or(z.literal(''))
+        newRoom: z.string().optional().or(z.literal('')),
+        instructor_id: z.string().optional().or(z.literal(''))
     })
     .refine(
         (v) =>
-            [v.newDate, v.newStartTime, v.newEndTime, v.newRoom].some(
-                (val) => (val ?? '').length > 0
-            ),
+            [
+                v.newDate,
+                v.newStartTime,
+                v.newEndTime,
+                v.newRoom,
+                v.instructor_id
+            ].some((val) => (val ?? '').length > 0),
         {
             message:
-                'Change at least one of date, start time, end time, or room',
+                'Change at least one of date, start time, end time, room, or instructor',
             path: ['newDate']
         }
     );
@@ -598,7 +603,8 @@ export type EnrollmentReasonInput = z.infer<typeof enrollmentReasonSchema>;
  * by `RRuleControl`, so only the (optional) room Select lives in the form.
  */
 export const rescheduleSeriesSchema = z.object({
-    room_id: z.string().optional()
+    room_id: z.string().optional(),
+    instructor_id: z.string().optional()
 });
 
 export type RescheduleSeriesInput = z.infer<typeof rescheduleSeriesSchema>;
@@ -613,7 +619,8 @@ export const scheduleRescheduleSessionSchema = z
         date: z.string().trim().min(1, VMSG.required('Date')),
         startTime: z.string(),
         endTime: z.string(),
-        room_id: z.string().optional()
+        room_id: z.string().optional(),
+        instructor_id: z.string().optional()
     })
     .refine((v) => !v.startTime || !v.endTime || v.endTime > v.startTime, {
         message: 'End time must be after start time',
