@@ -9,7 +9,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o provider-service provider-middleware/.
 
 
-FROM alpine:3.20.3 as final
+FROM alpine:3.22 as final
 WORKDIR /app
 RUN apk add --no-cache ca-certificates python3 py3-pip nodejs && \
 	pip install --break-system-packages requests brotli websockets certifi yt-dlp[default,curl-cffi] yt-dlp-ejs && \
