@@ -1,4 +1,9 @@
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+    Sheet,
+    SheetContent,
+    SheetTitle,
+    SheetTrigger
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
@@ -15,11 +20,13 @@ export default function MobileNav() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
+                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
                 <Sidebar
                     collapsed={false}
                     onToggleCollapse={() => {
                         // no-op: mobile nav doesn't collapse
                     }}
+                    showCollapseToggle={false}
                     onNavigate={() => setOpen(false)}
                 />
             </SheetContent>
