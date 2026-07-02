@@ -1,6 +1,7 @@
 import { Video } from '@/types/content';
 import { Class } from '@/types/program';
 import { ProgramClassEvent } from '@/types/events';
+import { RoomConflict } from '@/types/facility';
 import { RRule, Weekday } from 'rrule';
 
 export enum Timezones {
@@ -85,6 +86,16 @@ export function formatRoomConflictRange(
 
     if (startDate === endDate) return `${startDate} ${startTime} - ${endTime}`;
     return `${startDate} ${startTime} - ${endDate} ${endTime}`;
+}
+
+export function conflictSubjectLabel(conflicts: RoomConflict[]): string {
+    const hasInstructor = conflicts.some(
+        (c) => c.conflict_type === 'instructor'
+    );
+    const hasRoom = conflicts.some((c) => c.conflict_type !== 'instructor');
+    if (hasInstructor && hasRoom) return 'This class';
+    if (hasInstructor) return 'Instructor';
+    return 'Room';
 }
 
 export function formatLastActive(dateStr?: string | null): string {

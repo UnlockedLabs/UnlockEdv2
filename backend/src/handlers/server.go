@@ -584,13 +584,33 @@ func writeConflictResponse(w http.ResponseWriter, conflicts []models.RoomConflic
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusConflict)
 	resp := models.Resource[[]models.RoomConflict]{
-		Message: "room is already booked during this time",
+		Message: conflictResponseMessage(conflicts),
 		Data:    conflicts,
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		return newResponseServiceError(err)
 	}
 	return nil
+}
+
+func conflictResponseMessage(conflicts []models.RoomConflict) string {
+	var hasRoom, hasInstructor bool
+	for _, c := range conflicts {
+		switch c.ConflictType {
+		case models.ConflictTypeInstructor:
+			hasInstructor = true
+		default:
+			hasRoom = true
+		}
+	}
+	switch {
+	case hasRoom && hasInstructor:
+		return "the room and instructor are already booked during this time"
+	case hasInstructor:
+		return "the instructor is already teaching during this time"
+	default:
+		return "room is already booked during this time"
+	}
 }
 
 func writeDeleteConflictResponse(w http.ResponseWriter, message string, blockers models.DeleteBlockingChildren) error {
