@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/models"
 	"cmp"
 	"errors"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -55,38 +56,91 @@ func (db *DB) GetEventById(eventId int) (*models.ProgramClassEvent, error) {
 	return &event, nil
 }
 
-func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, events []models.ProgramClassEvent) error {
+var dtStartDateRegex = regexp.MustCompile(`DTSTART[^\n:]*:(\d{8})`)
+
+func getRuleDTStartDate(rule string) string {
+	m := dtStartDateRegex.FindStringSubmatch(rule)
+	if len(m) < 2 {
+		return ""
+	}
+	return m[1]
+}
+
+// ruleStartsAfterUntil reports whether DTSTART falls after UNTIL (a dead, zero-occurrence row).
+func ruleStartsAfterUntil(rule string) bool {
+	start := getRuleDTStartDate(rule)
+	until := src.GetUntilDateFromRule(rule)
+	if start == "" || len(until) < 8 {
+		return false
+	}
+	return start > until[:8]
+}
+
+// CreateRescheduleEventSeries applies a series-level reschedule or cancel from a cut
+// date (closedSeries' UNTIL, = cut - 1). It reconciles every existing row so the new
+// series owns all sessions on/after the cut: rows starting before the cut are capped to
+// it, rows starting on/after it are soft-deleted. This stays correct when a class has
+// multiple recurrence rows, not just the one being edited.
+func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, classID uint, newSeries, closedSeries models.ProgramClassEvent) error {
+	untilDate := src.GetUntilDateFromRule(closedSeries.RecurrenceRule)
+	if len(untilDate) < 8 {
+		return NewDBError(errors.New("closed_event_series is missing a valid UNTIL date"), "invalid event series request")
+	}
+	cutMinusOne := untilDate[:8] // YYYYMMDD of (cut date - 1)
+
 	tx := db.WithContext(ctx.Ctx).Begin()
 	if tx.Error != nil {
 		return NewDBError(tx.Error, "unable to start the database transaction")
 	}
 
-	var changeLogEntry *models.ChangeLogEntry
-	for _, event := range events {
-		if event.ID == 0 {
-			logField := "event_rescheduled_series"
-			if event.IsCancelled {
-				logField = "event_cancelled_series"
-			}
-			changeLogEntry = models.NewChangeLogEntry("program_classes", logField, models.StringPtr(""), &event.RecurrenceRule, event.ClassID, ctx.UserID)
-			if err := tx.Create(&event).Error; err != nil {
-				tx.Rollback()
-				return newCreateDBError(err, "program_class_events")
-			}
-		} else {
-			if err := tx.Model(&models.ProgramClassEvent{}).Where("id = ?", event.ID).Update("recurrence_rule", event.RecurrenceRule).Error; err != nil {
+	var existing []models.ProgramClassEvent
+	if err := tx.Where("class_id = ?", classID).Find(&existing).Error; err != nil {
+		tx.Rollback()
+		return newGetRecordsDBError(err, "program_class_events")
+	}
+
+	for i := range existing {
+		row := existing[i]
+		if dtStart := getRuleDTStartDate(row.RecurrenceRule); dtStart != "" && dtStart > cutMinusOne {
+			if err := tx.Delete(&models.ProgramClassEvent{}, row.ID).Error; err != nil {
 				tx.Rollback()
 				return newUpdateDBError(err, "program_class_events")
 			}
+			continue
+		}
+		// Skip rows that already end on/before the cut; only ever shorten, never extend.
+		if existingUntil := src.GetUntilDateFromRule(row.RecurrenceRule); len(existingUntil) >= 8 && existingUntil[:8] <= cutMinusOne {
+			continue
+		}
+		cappedRule := src.ReplaceOrAddUntilDate(row.RecurrenceRule, untilDate)
+		if cappedRule == row.RecurrenceRule {
+			continue
+		}
+		if err := tx.Model(&models.ProgramClassEvent{}).Where("id = ?", row.ID).Update("recurrence_rule", cappedRule).Error; err != nil {
+			tx.Rollback()
+			return newUpdateDBError(err, "program_class_events")
 		}
 	}
 
-	if changeLogEntry != nil {
+	// Create the new series from the cut, unless it would be empty (DTSTART after UNTIL).
+	if newSeries.RecurrenceRule != "" && !ruleStartsAfterUntil(newSeries.RecurrenceRule) {
+		newSeries.ID = 0
+		newSeries.ClassID = classID
+		logField := "event_rescheduled_series"
+		if newSeries.IsCancelled {
+			logField = "event_cancelled_series"
+		}
+		changeLogEntry := models.NewChangeLogEntry("program_classes", logField, models.StringPtr(""), &newSeries.RecurrenceRule, classID, ctx.UserID)
+		if err := tx.Create(&newSeries).Error; err != nil {
+			tx.Rollback()
+			return newCreateDBError(err, "program_class_events")
+		}
 		if err := tx.Create(&changeLogEntry).Error; err != nil {
 			tx.Rollback()
 			return newCreateDBError(err, "change_log_entries")
 		}
 	}
+
 	if err := tx.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
 	}
@@ -445,28 +499,18 @@ func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*m
 }
 
 func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
-	var event models.ProgramClassEvent
-	if err := trans.Preload("Overrides").Where("class_id = ?", classID).First(&event).Error; err != nil {
+	// Boundaries must be derived from all rows, since a class can have multiple.
+	var events []models.ProgramClassEvent
+	if err := trans.Preload("Overrides").Where("class_id = ?", classID).Order("created_at ASC").Find(&events).Error; err != nil {
 		return newGetRecordsDBError(err, "program_class_events")
+	}
+	if len(events) == 0 {
+		return newGetRecordsDBError(gorm.ErrRecordNotFound, "program_class_events")
 	}
 
 	var class models.ProgramClass
 	if err := trans.First(&class, "id = ?", classID).Error; err != nil {
 		return newGetRecordsDBError(err, "program_classes")
-	}
-
-	rRule, err := event.GetRRule()
-	if err != nil {
-		return err
-	}
-
-	originalBaseStart := rRule.OrigOptions.Dtstart.In(time.UTC)
-	// rrule-go's GetUntil() returns a far-future date (~year 2318) instead of zero
-	// when no UNTIL is present, so check the raw string for an explicit UNTIL clause
-	hasExplicitUntil := strings.Contains(event.RecurrenceRule, "UNTIL=")
-	var ruleUntil time.Time
-	if hasExplicitUntil {
-		ruleUntil = rRule.GetUntil()
 	}
 
 	startBoundary := class.StartDt
@@ -475,45 +519,66 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 		endBoundary = class.EndDt.AddDate(0, 3, 0)
 	}
 
-	baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
-	if len(baseOccurrences) == 0 {
-		return nil
-	}
+	var originalBaseStart, ruleUntil, earliestReschedule time.Time
+	allDates := make([]time.Time, 0)
+	hasOverrides := false
 
-	cancelledDates := make(map[string]bool)
-	rescheduledDates := make([]time.Time, 0)
-	var earliestReschedule time.Time
-
-	for _, override := range event.Overrides {
-		overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
+	for i := range events {
+		event := events[i]
+		rRule, err := event.GetRRule()
 		if err != nil {
-			logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
-			continue
-		}
-		occurrences := overrideRule.All()
-		if len(occurrences) == 0 {
-			continue
+			return err
 		}
 
-		overrideDate := occurrences[0].In(time.UTC)
-		if override.IsCancelled {
-			cancelledDates[overrideDate.Format("2006-01-02")] = true
-			continue
+		baseStart := rRule.OrigOptions.Dtstart.In(time.UTC)
+		if originalBaseStart.IsZero() || baseStart.Before(originalBaseStart) {
+			originalBaseStart = baseStart
+		}
+		// rrule-go's GetUntil() returns a far-future date (~year 2318) instead of zero
+		// when no UNTIL is present, so check the raw string for an explicit UNTIL clause
+		if strings.Contains(event.RecurrenceRule, "UNTIL=") {
+			if u := rRule.GetUntil(); u.After(ruleUntil) {
+				ruleUntil = u
+			}
 		}
 
-		rescheduledDates = append(rescheduledDates, overrideDate)
-		if earliestReschedule.IsZero() || overrideDate.Before(earliestReschedule) {
-			earliestReschedule = overrideDate
+		baseOccurrences := rRule.Between(startBoundary, endBoundary, true)
+
+		if len(event.Overrides) > 0 {
+			hasOverrides = true
 		}
+		cancelledDates := make(map[string]bool)
+		rescheduledDates := make([]time.Time, 0)
+		for _, override := range event.Overrides {
+			overrideRule, err := rrule.StrToRRule(override.OverrideRrule)
+			if err != nil {
+				logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
+				continue
+			}
+			occurrences := overrideRule.All()
+			if len(occurrences) == 0 {
+				continue
+			}
+
+			overrideDate := occurrences[0].In(time.UTC)
+			if override.IsCancelled {
+				cancelledDates[overrideDate.Format("2006-01-02")] = true
+				continue
+			}
+
+			rescheduledDates = append(rescheduledDates, overrideDate)
+			if earliestReschedule.IsZero() || overrideDate.Before(earliestReschedule) {
+				earliestReschedule = overrideDate
+			}
+		}
+
+		for _, occurrence := range baseOccurrences {
+			if !cancelledDates[occurrence.Format("2006-01-02")] {
+				allDates = append(allDates, occurrence)
+			}
+		}
+		allDates = append(allDates, rescheduledDates...)
 	}
-
-	allDates := make([]time.Time, 0, len(baseOccurrences)+len(rescheduledDates))
-	for _, occurrence := range baseOccurrences {
-		if !cancelledDates[occurrence.Format("2006-01-02")] {
-			allDates = append(allDates, occurrence)
-		}
-	}
-	allDates = append(allDates, rescheduledDates...)
 
 	if len(allDates) == 0 {
 		return nil
@@ -534,8 +599,6 @@ func (db *DB) syncClassDateBoundaries(trans *gorm.DB, classID uint) error {
 	if !targetStart.Equal(class.StartDt) {
 		updates["start_dt"] = targetStart
 	}
-
-	hasOverrides := len(event.Overrides) > 0
 
 	if class.EndDt == nil || !computedEnd.Equal(*class.EndDt) {
 		if (!hasOverrides && !ruleUntil.IsZero()) || (!ruleUntil.IsZero() && ruleUntil.After(computedEnd)) {
@@ -1125,19 +1188,41 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, NewDBError(err, "failed to load timezone")
 	}
 
-	var event models.ProgramClassEvent
+	// Load all rows, not just the newest: "apply to all future sessions" leaves a class
+	// with multiple rows whose RRULEs together describe the full schedule.
+	var events []models.ProgramClassEvent
 	if err := db.WithContext(qryCtx.Ctx).
 		Model(&models.ProgramClassEvent{}).
 		Preload("Overrides").
 		Where("class_id = ?", classId).
-		Order("created_at DESC").
-		First(&event).Error; err != nil {
+		Order("created_at ASC").
+		Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
+	if len(events) == 0 {
+		return nil, newGetRecordsDBError(gorm.ErrRecordNotFound, "program_class_events")
+	}
 
-	rRule, err := event.GetRRuleWithTimezone(qryCtx.Timezone)
-	if err != nil {
-		logrus.Errorf("event has invalid rule, event: %v", event)
+	type parsedEvent struct {
+		event models.ProgramClassEvent
+		rule  *rrule.RRule
+	}
+	parsed := make([]parsedEvent, 0, len(events))
+	var earliestStart time.Time
+	for i := range events {
+		rule, err := events[i].GetRRuleWithTimezone(qryCtx.Timezone)
+		if err != nil {
+			logrus.Errorf("event has invalid rule, event: %v", events[i])
+			continue
+		}
+		parsed = append(parsed, parsedEvent{event: events[i], rule: rule})
+		dtStart := rule.GetDTStart()
+		if earliestStart.IsZero() || dtStart.Before(earliestStart) {
+			earliestStart = dtStart
+		}
+	}
+	if len(parsed) == 0 {
+		return []models.ClassEventInstance{}, nil
 	}
 
 	var startTime, untilTime time.Time
@@ -1152,7 +1237,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 			if err != nil {
 				return nil, newGetRecordsDBError(err, "program_class_enrollments")
 			}
-			startTime = rRule.GetDTStart()
+			startTime = earliestStart
 			if enrollment.CreatedAt.After(startTime) {
 				startTime = enrollment.CreatedAt.Truncate(24 * time.Hour)
 			}
@@ -1161,15 +1246,21 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 				untilTime = enrollment.UpdatedAt.AddDate(0, 0, 1).Truncate(24 * time.Hour)
 			}
 		} else {
-			startTime = rRule.GetDTStart()
+			startTime = earliestStart
 			if allInstances {
 				// rrule-go's GetUntil() returns a far-future date (~year 2318) instead of zero
-				// when no UNTIL is present, so check the raw string for an explicit UNTIL clause
-				hasExplicitUntil := strings.Contains(event.RecurrenceRule, "UNTIL=")
-				if hasExplicitUntil {
-					untilTime = rRule.GetUntil().AddDate(0, 0, 1)
-				} else {
-					untilTime = time.Now().AddDate(1, 0, 0).Truncate(24 * time.Hour)
+				// when no UNTIL is present, so check the raw string for an explicit UNTIL clause.
+				untilTime = time.Now().AddDate(1, 0, 0).Truncate(24 * time.Hour)
+				var latestUntil time.Time
+				for _, pe := range parsed {
+					if strings.Contains(pe.event.RecurrenceRule, "UNTIL=") {
+						if u := pe.rule.GetUntil().AddDate(0, 0, 1); u.After(latestUntil) {
+							latestUntil = u
+						}
+					}
+				}
+				if !latestUntil.IsZero() {
+					untilTime = latestUntil
 				}
 				maxFuture := time.Now().AddDate(0, 6, 0).Truncate(24 * time.Hour)
 				if untilTime.After(maxFuture) {
@@ -1192,54 +1283,14 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		untilTime = startTime.AddDate(0, 1, 0)
 	}
 
-	occurrences := rRule.Between(startTime, untilTime, true)
-
-	// occurrences can be empty if there are no base rule occurrences in the window
-	// but we still need to check for overrides and fetch attendance
-	var classTime string
-	var canonicalHour, canonicalMinute int
-	if len(occurrences) > 0 {
-		duration, err := time.ParseDuration(event.Duration)
-		if err != nil {
-			logrus.Errorf("error parsing duration for event: %v", err)
-		}
-
-		startTime = rRule.GetDTStart()
-		// Use the DTSTART's own timezone to extract the canonical wall-clock time,
-		// not the user's timezone. The DTSTART time represents the class's local
-		// wall-clock time at the facility, so converting to a different timezone
-		// would shift the displayed time incorrectly.
-		canonicalHour = startTime.Hour()
-		canonicalMinute = startTime.Minute()
-
-		firstOcc := occurrences[0]
-		//day light savings time issue
-		consistentOccurrence := time.Date(
-			firstOcc.Year(),
-			firstOcc.Month(),
-			firstOcc.Day(),
-			canonicalHour,
-			canonicalMinute,
-			0,
-			0,
-			loc,
-		)
-
-		startTimeStr := consistentOccurrence.Format("15:04")
-		endTimeStr := consistentOccurrence.Add(duration).Format("15:04")
-		classTime = startTimeStr + "-" + endTimeStr
+	// Fetch attendance across all event IDs so records on older (capped) rows still surface.
+	classEventIDs := make([]uint, 0, len(events))
+	for i := range events {
+		classEventIDs = append(classEventIDs, events[i].ID)
 	}
 	var attendances []models.ProgramClassEventAttendance
-
 	startDateStr := startTime.Format("2006-01-02")
 	endDateStr := untilTime.Format("2006-01-02")
-
-	// Fetch all event IDs for this class to ensure we get attendance even if it's linked to an older event rule
-	var classEventIDs []uint
-	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEvent{}).Where("class_id = ?", classId).Pluck("id", &classEventIDs).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_class_events")
-	}
-
 	tx := db.WithContext(qryCtx.Ctx).
 		Model(&models.ProgramClassEventAttendance{}).
 		Where("event_id IN (?) AND date >= ? AND date < ?", classEventIDs, startDateStr, endDateStr)
@@ -1252,7 +1303,13 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, newGetRecordsDBError(err, "program_class_event_attendances")
 	}
 
-	eventInstances := createEventInstances(event, occurrences, loc, classTime, attendances, canonicalHour, canonicalMinute)
+	var eventInstances []models.ClassEventInstance
+	for _, pe := range parsed {
+		occurrences := pe.rule.Between(startTime, untilTime, true)
+		classTime, canonicalHour, canonicalMinute := eventClassTime(pe.event, pe.rule, occurrences, loc)
+		eventInstances = append(eventInstances, createEventInstances(pe.event, occurrences, loc, classTime, attendances, canonicalHour, canonicalMinute)...)
+	}
+	eventInstances = dedupeClassEventInstances(eventInstances)
 
 	qryCtx.Total = int64(len(eventInstances))
 	if !qryCtx.All {
@@ -1298,8 +1355,9 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 			ClassTime:         classTime,
 			Date:              occDateStr,
 			AttendanceRecords: attendanceByDate[occDateStr],
-			IsCancelled:       isCancelled,
-			IsRescheduled:     isRescheduled,
+			// event.IsCancelled is a series-level cancellation: every occurrence is cancelled.
+			IsCancelled:   isCancelled || event.IsCancelled,
+			IsRescheduled: isRescheduled,
 		}
 		if isCancelled {
 			eventInstance.OverrideID = overrideID
@@ -1463,6 +1521,55 @@ func createEventInstances(event models.ProgramClassEvent, occurrences []time.Tim
 	return eventInstances
 }
 
+// eventClassTime returns the displayed "HH:MM-HH:MM" class time and canonical
+// hour/minute, locked to the DTSTART's wall-clock time to avoid DST shifts.
+func eventClassTime(event models.ProgramClassEvent, rRule *rrule.RRule, occurrences []time.Time, loc *time.Location) (string, int, int) {
+	if len(occurrences) == 0 {
+		return "", 0, 0
+	}
+	duration, err := time.ParseDuration(event.Duration)
+	if err != nil {
+		logrus.Errorf("error parsing duration for event: %v", err)
+	}
+	dtStart := rRule.GetDTStart()
+	canonicalHour := dtStart.Hour()
+	canonicalMinute := dtStart.Minute()
+
+	firstOcc := occurrences[0]
+	consistentOccurrence := time.Date(
+		firstOcc.Year(), firstOcc.Month(), firstOcc.Day(),
+		canonicalHour, canonicalMinute, 0, 0, loc,
+	)
+	startTimeStr := consistentOccurrence.Format("15:04")
+	endTimeStr := consistentOccurrence.Add(duration).Format("15:04")
+	return startTimeStr + "-" + endTimeStr, canonicalHour, canonicalMinute
+}
+
+// dedupeClassEventInstances merges instances from multiple rows. On a date+start-time
+// collision the newest row wins (rows arrive oldest-first); sorted by date descending.
+func dedupeClassEventInstances(instances []models.ClassEventInstance) []models.ClassEventInstance {
+	type instanceKey struct{ date, start string }
+	indexByKey := make(map[instanceKey]int, len(instances))
+	result := make([]models.ClassEventInstance, 0, len(instances))
+	for _, inst := range instances {
+		start := inst.ClassTime
+		if dash := strings.Index(start, "-"); dash != -1 {
+			start = start[:dash]
+		}
+		key := instanceKey{date: inst.Date, start: start}
+		if idx, ok := indexByKey[key]; ok {
+			result[idx] = inst
+			continue
+		}
+		indexByKey[key] = len(result)
+		result = append(result, inst)
+	}
+	slices.SortFunc(result, func(a, b models.ClassEventInstance) int {
+		return cmp.Compare(b.Date, a.Date)
+	})
+	return result
+}
+
 func (db *DB) GetCancelledOverrideEvents(qryCtx *models.QueryContext, eventId int) ([]models.ProgramClassEventOverride, error) {
 	overrides := make([]models.ProgramClassEventOverride, 0)
 	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id = ? and is_cancelled = true", eventId).Find(&overrides).Error; err != nil {
@@ -1472,31 +1579,43 @@ func (db *DB) GetCancelledOverrideEvents(qryCtx *models.QueryContext, eventId in
 }
 
 func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, month, year string, eventId *int) ([]models.EventDates, error) {
-	var event models.ProgramClassEvent
+	// Load all rows so a multi-row class shows every date; honor a specific event_id if given.
+	var events []models.ProgramClassEvent
 	query := db.Preload("Overrides").Where("class_id = ?", classID)
-
-	// if specific event_id is provided, use it, otherwise get the latest event
 	if eventId != nil {
 		query = query.Where("id = ?", *eventId)
-	} else {
-		query = query.Order("created_at DESC")
 	}
-
-	if err := query.First(&event).Error; err != nil {
+	if err := query.Order("created_at ASC").Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	if len(events) == 0 {
+		return nil, newGetRecordsDBError(gorm.ErrRecordNotFound, "program_class_events")
 	}
 
 	loc, _ := time.LoadLocation(timezone)
-	rule, err := event.GetRRuleWithTimezone(timezone)
-	if err != nil {
-		return nil, err
-	}
-
 	y, _ := strconv.Atoi(year)
 	m, _ := strconv.Atoi(month)
 	start := time.Date(y, time.Month(m), 1, 0, 0, 0, 0, loc)
 	until := start.AddDate(0, 1, 0)
 
+	out := make([]models.EventDates, 0)
+	for i := range events {
+		rule, err := events[i].GetRRuleWithTimezone(timezone)
+		if err != nil {
+			logrus.Errorf("event has invalid rule, event: %v", events[i])
+			continue
+		}
+		out = append(out, eventDatesForRow(events[i], rule, start, until, loc)...)
+	}
+
+	return dedupeEventDates(out), nil
+}
+
+func eventDatesForRow(event models.ProgramClassEvent, rule *rrule.RRule, start, until time.Time, loc *time.Location) []models.EventDates {
+	// A fully cancelled series contributes no scheduled dates.
+	if event.IsCancelled {
+		return nil
+	}
 	occs := rule.Between(start, until, true)
 
 	duration, err := time.ParseDuration(event.Duration)
@@ -1514,7 +1633,7 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 
 	out := make([]models.EventDates, 0, len(occs))
 	for _, occ := range occs {
-		isCancelled, _, _, _, _ := checkEventCancelledAndRescheduled(occ, event.Overrides, timezone)
+		isCancelled, _, _, _, _ := checkEventCancelledAndRescheduled(occ, event.Overrides, loc.String())
 		if isCancelled {
 			continue
 		}
@@ -1565,7 +1684,24 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 		})
 	}
 
-	return out, nil
+	return out
+}
+
+// dedupeEventDates drops entries sharing a date and class time; newest row wins on a tie.
+func dedupeEventDates(dates []models.EventDates) []models.EventDates {
+	type dateKey struct{ date, classTime string }
+	indexByKey := make(map[dateKey]int, len(dates))
+	result := make([]models.EventDates, 0, len(dates))
+	for _, d := range dates {
+		key := dateKey{date: d.Date, classTime: d.ClassTime}
+		if idx, ok := indexByKey[key]; ok {
+			result[idx] = d
+			continue
+		}
+		indexByKey[key] = len(result)
+		result = append(result, d)
+	}
+	return result
 }
 
 func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventIDs ...uint) ([]models.ProgramClassEventOverride, error) {
