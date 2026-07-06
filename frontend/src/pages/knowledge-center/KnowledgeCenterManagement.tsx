@@ -45,6 +45,7 @@ import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useDebounceValue } from 'usehooks-ts';
 import { toast } from 'sonner';
 import {
+    Facility,
     Library,
     Video,
     HelpfulLink,
@@ -54,6 +55,8 @@ import {
     Option,
     MAX_DOWNLOAD_ATTEMPTS
 } from '@/types';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
+import { FacilityVisibilitySheet } from '@/components/knowledge-center';
 import {
     videoIsAvailable,
     getVideoErrorMessage,
@@ -78,10 +81,14 @@ interface CardHandlers {
 
 function LibraryCard({
     library,
-    handlers
+    handlers,
+    facilityCount,
+    onManage
 }: {
     library: Library;
     handlers: CardHandlers;
+    facilityCount?: number;
+    onManage?: (library: Library) => void;
 }) {
     const title = decodeHtmlEntities(library.title);
     const description = decodeHtmlEntities(library.description ?? '');
@@ -135,31 +142,52 @@ function LibraryCard({
                 className="row-with-border mt-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                <label className="clickable-row">
-                    <Switch
-                        checked={library.visibility_status}
-                        onCheckedChange={() =>
-                            handlers.onToggleVisibility(
-                                library.id,
-                                'library',
+                {onManage ? (
+                    <>
+                        <span className="text-sm text-gray-700">
+                            {(library.visible_facility_count ?? 0) === 0
+                                ? 'Hidden everywhere'
+                                : `Visible at ${library.visible_facility_count} / ${facilityCount}`}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onManage(library)}
+                        >
+                            Manage
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <label className="clickable-row">
+                            <Switch
+                                checked={library.visibility_status}
+                                onCheckedChange={() =>
+                                    handlers.onToggleVisibility(
+                                        library.id,
+                                        'library',
+                                        library.visibility_status
+                                    )
+                                }
+                            />
+                            <span className="text-gray-700">Visible</span>
+                        </label>
+                        <Badge
+                            variant={
                                 library.visibility_status
-                            )
-                        }
-                    />
-                    <span className="text-gray-700">Visible</span>
-                </label>
-                <Badge
-                    variant={
-                        library.visibility_status ? 'default' : 'secondary'
-                    }
-                    className={
-                        library.visibility_status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                    }
-                >
-                    {library.visibility_status ? 'Visible' : 'Hidden'}
-                </Badge>
+                                    ? 'default'
+                                    : 'secondary'
+                            }
+                            className={
+                                library.visibility_status
+                                    ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                            }
+                        >
+                            {library.visibility_status ? 'Visible' : 'Hidden'}
+                        </Badge>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -376,6 +404,9 @@ function LinkCard({
 
 export default function KnowledgeCenterManagement() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const canManageFacilities = !!user && canSwitchFacility(user);
+    const [manageLibrary, setManageLibrary] = useState<Library | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
@@ -443,6 +474,11 @@ export default function KnowledgeCenterManagement() {
 
     const { data: tagsData } = useSWR<ServerResponseMany<Option>>('/api/tags');
     const categories = tagsData?.data ?? [];
+
+    const { data: facilitiesData } = useSWR<ServerResponseMany<Facility>>(
+        canManageFacilities ? '/api/facilities?page=1&per_page=1' : null
+    );
+    const facilityCount = facilitiesData?.meta?.total ?? 0;
 
     const { data: libData, mutate: mutateLibs } = useSWR<
         ServerResponseMany<Library>
@@ -836,6 +872,12 @@ export default function KnowledgeCenterManagement() {
                                         key={library.id}
                                         library={library}
                                         handlers={cardHandlers}
+                                        facilityCount={facilityCount}
+                                        onManage={
+                                            canManageFacilities
+                                                ? setManageLibrary
+                                                : undefined
+                                        }
                                     />
                                 ))}
                             </div>
@@ -1075,6 +1117,12 @@ export default function KnowledgeCenterManagement() {
                     </Button>
                 </DialogFooter>
             </FormModal>
+
+            <FacilityVisibilitySheet
+                library={manageLibrary}
+                onClose={() => setManageLibrary(null)}
+                onChanged={() => void mutateLibs()}
+            />
         </div>
     );
 }

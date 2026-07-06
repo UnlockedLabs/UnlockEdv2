@@ -53,10 +53,17 @@ export interface Library {
     updated_at: string;
     url: string;
     visibility_status: boolean;
+    visible_facility_count?: number;
     open_content_provider: OpenContentProvider;
     is_favorited: boolean;
     is_featured?: boolean;
     tags?: string[];
+}
+
+export interface LibraryFacilityVisibility {
+    facility_id: number;
+    facility_name: string;
+    visibility_status: boolean;
 }
 
 export interface HelpfulLink {

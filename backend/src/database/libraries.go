@@ -11,9 +11,10 @@ import (
 
 type LibraryResponse struct {
 	models.Library
-	IsFavorited bool     `json:"is_favorited"`
-	IsFeatured  bool     `json:"is_featured"`
-	Tags        []string `json:"tags" gorm:"-"`
+	IsFavorited          bool     `json:"is_favorited"`
+	IsFeatured           bool     `json:"is_featured"`
+	VisibleFacilityCount int      `json:"visible_facility_count"`
+	Tags                 []string `json:"tags" gorm:"-"`
 }
 
 // Retrieves either a paginated list of libraries or all libraries based upon the given parameters.
@@ -38,6 +39,14 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 		CASE WHEN fvs.visibility_status IS NULL THEN false
 			ELSE fvs.visibility_status
 		END AS visibility_status,
+		(
+			SELECT COUNT(*)
+			FROM facility_visibility_statuses v
+			JOIN facilities fac ON fac.id = v.facility_id AND fac.deleted_at IS NULL
+			WHERE v.content_id = libraries.id
+				AND v.open_content_provider_id = libraries.open_content_provider_id
+				AND v.visibility_status = true
+		) AS visible_facility_count,
 		EXISTS (
 			SELECT 1
 			FROM open_content_favorites ff
@@ -274,5 +283,64 @@ func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int, args *models.QueryConte
 		return nil, newUpdateDBError(err, "libraries")
 	}
 	library.VisibilityStatus = visibility.VisibilityStatus
+	return &library, nil
+}
+
+type LibraryFacilityVisibility struct {
+	FacilityID       uint   `json:"facility_id"`
+	FacilityName     string `json:"facility_name"`
+	VisibilityStatus bool   `json:"visibility_status"`
+}
+
+func (db *DB) GetLibraryFacilityVisibility(args *models.QueryContext, id int) ([]LibraryFacilityVisibility, error) {
+	var library models.Library
+	if err := db.WithContext(args.Ctx).First(&library, "id = ?", id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "libraries")
+	}
+	visibilities := make([]LibraryFacilityVisibility, 0, 12)
+	if err := db.WithContext(args.Ctx).Table("facilities f").
+		Select(`f.id AS facility_id, f.name AS facility_name,
+			COALESCE(fvs.visibility_status, false) AS visibility_status`).
+		Joins(`LEFT JOIN facility_visibility_statuses fvs ON fvs.facility_id = f.id
+			AND fvs.content_id = ? AND fvs.open_content_provider_id = ?`,
+			library.ID, library.OpenContentProviderID).
+		Where("f.deleted_at IS NULL").
+		Order("f.name asc").
+		Scan(&visibilities).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facility_visibility_statuses")
+	}
+	return visibilities, nil
+}
+
+func (db *DB) SetLibraryVisibilityForFacilities(args *models.QueryContext, id int, facilityIDs []uint, visible bool) (*models.Library, error) {
+	var library models.Library
+	if err := db.WithContext(args.Ctx).Preload("OpenContentProvider").First(&library, "id = ?", id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "libraries")
+	}
+	statuses := make([]models.FacilityVisibilityStatus, 0, len(facilityIDs))
+	seen := make(map[uint]bool, len(facilityIDs))
+	for _, facilityID := range facilityIDs {
+		if seen[facilityID] {
+			continue
+		}
+		seen[facilityID] = true
+		statuses = append(statuses, models.FacilityVisibilityStatus{
+			FacilityID:            facilityID,
+			OpenContentProviderID: library.OpenContentProviderID,
+			ContentID:             library.ID,
+			VisibilityStatus:      visible,
+		})
+	}
+	updateMap := map[string]any{"visibility_status": visible}
+	if args.UserID != 0 {
+		updateMap["update_user_id"] = args.UserID
+	}
+	if err := db.WithContext(args.Ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "facility_id"}, {Name: "open_content_provider_id"}, {Name: "content_id"}},
+		DoUpdates: clause.Assignments(updateMap),
+	}).Create(&statuses).Error; err != nil {
+		return nil, newUpdateDBError(err, "facility_visibility_statuses")
+	}
+	library.VisibilityStatus = visible
 	return &library, nil
 }

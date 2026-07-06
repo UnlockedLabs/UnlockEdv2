@@ -25,6 +25,8 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 		featureRoute("PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, axx),
 		/* admin */
 		adminFeatureRoute("PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, axx),
+		deptAdminFeatureRoute("GET /api/libraries/{id}/facilities", srv.handleGetLibraryFacilityVisibility, axx),
+		deptAdminFeatureRoute("PUT /api/libraries/{id}/facilities", srv.handleSetLibraryFacilityVisibility, axx),
 	}
 }
 
@@ -223,6 +225,49 @@ func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.
 		return newDatabaseServiceError(err)
 	}
 	if srv.buckets != nil { //make sure to update value in bucket if exists
+		srv.updateLibraryBucket(r.PathValue("id"), library, log)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Library visibility updated successfully")
+}
+
+func (srv *Server) handleGetLibraryFacilityVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.facilityScopedQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "library id")
+	}
+	visibilities, err := srv.Db.GetLibraryFacilityVisibility(&args, id)
+	if err != nil {
+		log.add("library_id", id)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, visibilities)
+}
+
+type setFacilityVisibilityRequest struct {
+	FacilityIDs      []uint `json:"facility_ids"`
+	VisibilityStatus bool   `json:"visibility_status"`
+}
+
+func (srv *Server) handleSetLibraryFacilityVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.facilityScopedQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "library id")
+	}
+	var req setFacilityVisibilityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.FacilityIDs) == 0 {
+		return newBadRequestServiceError(errors.New("facility_ids required"), "facility_ids required")
+	}
+	library, err := srv.WithUserContext(r).SetLibraryVisibilityForFacilities(&args, id, req.FacilityIDs, req.VisibilityStatus)
+	if err != nil {
+		log.add("library_id", id)
+		return newDatabaseServiceError(err)
+	}
+	if srv.buckets != nil && slices.Contains(req.FacilityIDs, args.FacilityID) {
 		srv.updateLibraryBucket(r.PathValue("id"), library, log)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Library visibility updated successfully")
