@@ -41,9 +41,13 @@ export function EnrollResidentsModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const selectionFiredRef = useRef(false);
+    const wasOpenRef = useRef(false);
 
     useEffect(() => {
-        if (open) {
+        // Only fire on the closed→open transition — prop changes (capacity /
+        // enrolled from parent revalidation) while the modal stays open must
+        // not re-emit the open event or reset the first-selection guard.
+        if (open && !wasOpenRef.current) {
             selectionFiredRef.current = false;
             captureEvent(ANALYTICS_EVENTS.EnrollModalOpened, {
                 class_id: classId,
@@ -51,6 +55,7 @@ export function EnrollResidentsModal({
                 enrolled
             });
         }
+        wasOpenRef.current = open;
     }, [open, classId, capacity, enrolled]);
 
     const encodedSearch = encodeURIComponent(searchQuery);
