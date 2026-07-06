@@ -92,11 +92,6 @@ export default function EventAttendance() {
         Record<number, AttendanceRowErrors>
     >({});
     const [showErrors, setShowErrors] = useState(false);
-    const startMsRef = useFlowTimer(
-        ANALYTICS_EVENTS.AttendanceSessionStarted,
-        { class_id, event_id, date },
-        [class_id, event_id, date]
-    );
 
     const { data, isLoading, error, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
@@ -166,6 +161,30 @@ export default function EventAttendance() {
         });
         setRowErrors(next);
     }, [rows, showErrors]);
+
+    // Only start the attendance flow timer once the session is real and
+    // actionable — otherwise 404 / error / unscheduled / future-date renders
+    // would be counted as attendance-session starts.
+    const dateValid = !!date && isoRE.test(date);
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const sessionReady =
+        dateValid &&
+        !isLoading &&
+        !datesLoading &&
+        !error &&
+        !!data?.data &&
+        (Array.isArray(dates?.data) ? dates.data : []).some(
+            (d) => d.event_id === Number(event_id) && d.date === date
+        ) &&
+        !(parseLocalDay(date) > todayMidnight);
+
+    const startMsRef = useFlowTimer(
+        ANALYTICS_EVENTS.AttendanceSessionStarted,
+        { class_id, event_id, date },
+        [class_id, event_id, date],
+        sessionReady
+    );
 
     if (!date || !isoRE.test(date)) {
         return <Navigate to="/404" replace />;
@@ -332,10 +351,14 @@ export default function EventAttendance() {
 
         setIsSaving(true);
         try {
-            await API.post(
+            const resp = await API.post(
                 `program-classes/${class_id}/events/${event_id}/attendance`,
                 payload
             );
+            if (!resp.success) {
+                toast.error('Failed to save attendance');
+                return;
+            }
             toast.success('Attendance saved successfully');
 
             const submittedAt = new Date();
