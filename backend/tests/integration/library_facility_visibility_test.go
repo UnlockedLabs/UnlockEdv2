@@ -36,7 +36,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 	facClaims := &handlers.Claims{UserID: facAdmin.ID, Role: models.FacilityAdmin, FacilityID: facilityA.ID}
 	visibilityURL := fmt.Sprintf("/api/libraries/%d/facilities", library.ID)
 
-	statusFor := func(rows []database.LibraryFacilityVisibility, facilityID uint) bool {
+	statusFor := func(rows []database.ContentFacilityVisibility, facilityID uint) bool {
 		for _, row := range rows {
 			if row.FacilityID == facilityID {
 				return row.VisibilityStatus
@@ -47,7 +47,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 	}
 
 	t.Run("new library is hidden at all facilities", func(t *testing.T) {
-		rows := NewRequest[[]database.LibraryFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.GreaterOrEqual(t, len(rows), 3)
@@ -62,7 +62,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			"visibility_status": true,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.LibraryFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.True(t, statusFor(rows, facilityA.ID))
@@ -85,7 +85,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			"visibility_status": false,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.LibraryFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		for _, row := range rows {
@@ -99,7 +99,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			"visibility_status": true,
 		}).WithTestClaims(deptClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.LibraryFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.True(t, statusFor(rows, facilityA.ID))
@@ -131,7 +131,7 @@ func TestLibraryFacilityVisibility(t *testing.T) {
 			fmt.Sprintf("/api/libraries/%d/toggle", library.ID), map[string]any{}).
 			WithTestClaims(facClaims).Do().ExpectStatus(http.StatusOK)
 
-		rows := NewRequest[[]database.LibraryFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
+		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
 		require.True(t, statusFor(rows, facilityA.ID))

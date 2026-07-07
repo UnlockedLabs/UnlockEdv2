@@ -66,8 +66,9 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 
 type VideoResponse struct {
 	models.Video
-	IsFavorited bool `json:"is_favorited"`
-	IsFeatured  bool `json:"is_featured"`
+	IsFavorited          bool `json:"is_favorited"`
+	IsFeatured           bool `json:"is_featured"`
+	VisibleFacilityCount int  `json:"visible_facility_count"`
 }
 
 func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]VideoResponse, error) {
@@ -77,6 +78,7 @@ func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]Vide
         CASE WHEN fvs.visibility_status is null then false
         else fvs.visibility_status
     end as visibility_status,
+	`+visibleFacilityCountSubquery("videos")+`,
 	EXISTS (
 		SELECT 1
 		FROM open_content_favorites f
@@ -150,6 +152,22 @@ func (db *DB) ToggleVideoVisibility(id int, facilityId uint) error {
 	}
 
 	return nil
+}
+
+func (db *DB) GetVideoFacilityVisibility(args *models.QueryContext, id int) ([]ContentFacilityVisibility, error) {
+	var video models.Video
+	if err := db.WithContext(args.Ctx).First(&video, "id = ?", id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "videos")
+	}
+	return db.getContentFacilityVisibility(args, video.ID, video.OpenContentProviderID)
+}
+
+func (db *DB) SetVideoVisibilityForFacilities(args *models.QueryContext, id int, facilityIDs []uint, visible bool) error {
+	var video models.Video
+	if err := db.WithContext(args.Ctx).First(&video, "id = ?", id).Error; err != nil {
+		return newNotFoundDBError(err, "videos")
+	}
+	return db.setContentVisibilityForFacilities(args, video.ID, video.OpenContentProviderID, facilityIDs, visible)
 }
 
 func (db *DB) DeleteVideo(id int) error {

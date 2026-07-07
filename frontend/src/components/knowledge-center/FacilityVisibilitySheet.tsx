@@ -13,12 +13,17 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Library, LibraryFacilityVisibility, ServerResponseOne } from '@/types';
+import { ContentFacilityVisibility, ServerResponseOne } from '@/types';
 import API from '@/api/api';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
+export interface ManagedContent {
+    title: string;
+    endpoint: string;
+}
+
 interface FacilityVisibilitySheetProps {
-    library: Library | null;
+    content: ManagedContent | null;
     onClose: () => void;
     onChanged: () => void;
 }
@@ -27,7 +32,7 @@ function FacilityRow({
     row,
     onToggle
 }: {
-    row: LibraryFacilityVisibility;
+    row: ContentFacilityVisibility;
     onToggle: (facilityId: number, visible: boolean) => void;
 }) {
     return (
@@ -42,6 +47,7 @@ function FacilityRow({
                     onCheckedChange={(checked) =>
                         onToggle(row.facility_id, checked)
                     }
+                    className="data-[state=checked]:bg-brand"
                 />
             </div>
         </div>
@@ -49,26 +55,26 @@ function FacilityRow({
 }
 
 export default function FacilityVisibilitySheet({
-    library,
+    content,
     onClose,
     onChanged
 }: FacilityVisibilitySheetProps) {
     const [filter, setFilter] = useState('');
     const { data, mutate } = useSWR<
-        ServerResponseOne<LibraryFacilityVisibility[]>
-    >(library ? `/api/libraries/${library.id}/facilities` : null);
+        ServerResponseOne<ContentFacilityVisibility[]>
+    >(content ? `/api/${content.endpoint}` : null);
     const rows = data?.data ?? [];
     const visibleRows = rows.filter((r) => r.visibility_status);
     const hiddenRows = rows.filter((r) => !r.visibility_status);
-    const matchesFilter = (r: LibraryFacilityVisibility) =>
+    const matchesFilter = (r: ContentFacilityVisibility) =>
         r.facility_name.toLowerCase().includes(filter.trim().toLowerCase());
 
     const setVisibility = async (facilityIds: number[], visible: boolean) => {
-        if (!library || facilityIds.length === 0) return;
-        const resp = await API.put<null, object>(
-            `libraries/${library.id}/facilities`,
-            { facility_ids: facilityIds, visibility_status: visible }
-        );
+        if (!content || facilityIds.length === 0) return;
+        const resp = await API.put<null, object>(content.endpoint, {
+            facility_ids: facilityIds,
+            visibility_status: visible
+        });
         if (resp.success) {
             void mutate();
             onChanged();
@@ -86,14 +92,14 @@ export default function FacilityVisibilitySheet({
     ];
 
     return (
-        <Sheet open={!!library} onOpenChange={(open) => !open && onClose()}>
+        <Sheet open={!!content} onOpenChange={(open) => !open && onClose()}>
             <SheetContent className="w-100 sm:w-125 sm:max-w-md flex flex-col gap-4 p-6 overflow-y-auto">
                 <SheetHeader className="p-0 text-left">
                     <SheetTitle>
-                        {library ? decodeHtmlEntities(library.title) : ''}
+                        {content ? decodeHtmlEntities(content.title) : ''}
                     </SheetTitle>
                     <SheetDescription>
-                        Choose which facilities can show this library to
+                        Choose which facilities can show this content to
                         residents.
                     </SheetDescription>
                 </SheetHeader>
@@ -109,6 +115,7 @@ export default function FacilityVisibilitySheet({
                                 ? (visibleRows.length / rows.length) * 100
                                 : 0
                         }
+                        indicatorClassName="bg-brand"
                     />
                 </div>
                 <div className="flex gap-2">
@@ -169,7 +176,7 @@ export default function FacilityVisibilitySheet({
                     <span className="text-xs text-muted-foreground">
                         Changes are saved automatically
                     </span>
-                    <Button size="sm" onClick={onClose}>
+                    <Button variant="brand" size="sm" onClick={onClose}>
                         Done
                     </Button>
                 </SheetFooter>

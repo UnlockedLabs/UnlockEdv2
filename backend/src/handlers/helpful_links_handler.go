@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -20,6 +21,8 @@ func (srv *Server) registerLeftMenuRoutes() []routeDef {
 		adminFeatureRoute("PATCH /api/helpful-links/{id}/edit", srv.handleEditLink, axx),
 		adminFeatureRoute("PUT /api/helpful-links/toggle/{id}", srv.handleToggleVisibilityStatus, axx),
 		adminFeatureRoute("DELETE /api/helpful-links/{id}", srv.handleDeleteLink, axx),
+		deptAdminFeatureRoute("GET /api/helpful-links/facilities/{id}", srv.handleGetLinkFacilityVisibility, axx),
+		deptAdminFeatureRoute("PUT /api/helpful-links/facilities/{id}", srv.handleSetLinkFacilityVisibility, axx),
 		featureRoute("PUT /api/helpful-links/activity/{id}", srv.handleAddUserActivity, axx),
 		adminFeatureRoute("PUT /api/helpful-links/sort", srv.changeSortOrder, axx),
 		featureRoute("PUT /api/helpful-links/favorite/{id}", srv.handleFavoriteLink, axx),
@@ -65,11 +68,10 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	facilityID := srv.getFacilityID(r)
-	link.FacilityID = facilityID
+	args := srv.facilityScopedQueryContext(r)
 	link.ThumbnailUrl = srv.getFavicon(link.Url)
 	log.infof("Adding helpful link icon %s", link.ThumbnailUrl)
-	if err := srv.WithUserContext(r).AddHelpfulLink(&link); err != nil {
+	if err := srv.WithUserContext(r).AddHelpfulLink(&args, &link); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Link added successfully")
@@ -98,10 +100,45 @@ func (srv *Server) handleToggleVisibilityStatus(w http.ResponseWriter, r *http.R
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
 	log.infof("Toggling visibility status for link with id %d", id)
-	if err := srv.WithUserContext(r).ToggleVisibilityStatus(id); err != nil {
+	args := srv.facilityScopedQueryContext(r)
+	if err := srv.WithUserContext(r).ToggleVisibilityStatus(&args, id); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Visibility status toggled")
+}
+
+func (srv *Server) handleGetLinkFacilityVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.facilityScopedQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "link id")
+	}
+	visibilities, err := srv.Db.GetHelpfulLinkFacilityVisibility(&args, id)
+	if err != nil {
+		log.add("link_id", id)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, visibilities)
+}
+
+func (srv *Server) handleSetLinkFacilityVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.facilityScopedQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "link id")
+	}
+	var req setFacilityVisibilityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.FacilityIDs) == 0 {
+		return newBadRequestServiceError(errors.New("facility_ids required"), "facility_ids required")
+	}
+	if err := srv.WithUserContext(r).SetHelpfulLinkVisibilityForFacilities(&args, id, req.FacilityIDs, req.VisibilityStatus); err != nil {
+		log.add("link_id", id)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Link visibility updated successfully")
 }
 
 func (srv *Server) handleDeleteLink(w http.ResponseWriter, r *http.Request, log sLog) error {
