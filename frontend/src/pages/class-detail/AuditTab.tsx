@@ -153,7 +153,7 @@ function formatEntry(entry: HistoryEntry): React.ReactNode {
 export function AuditTab({ classId }: AuditTabProps) {
     const { page, perPage, setPage, setPerPage } = useUrlPagination(
         1,
-        20,
+        10,
         'audit'
     );
 
@@ -207,6 +207,7 @@ export function AuditTab({ classId }: AuditTabProps) {
                     onPageChange={setPage}
                     onItemsPerPageChange={setPerPage}
                     itemLabel="entries"
+                    perPageOptions={[10, 20, 40]}
                 />
             )}
         </div>

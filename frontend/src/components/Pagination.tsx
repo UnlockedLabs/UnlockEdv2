@@ -9,6 +9,7 @@ interface PaginationProps {
     onItemsPerPageChange: (itemsPerPage: number) => void;
     itemLabel?: string;
     instanceId?: string;
+    perPageOptions?: number[];
 }
 
 export function Pagination({
@@ -18,7 +19,8 @@ export function Pagination({
     onPageChange,
     onItemsPerPageChange,
     itemLabel = 'items',
-    instanceId
+    instanceId,
+    perPageOptions = [20, 40, 80]
 }: PaginationProps) {
     const generatedId = useId();
     const itemsPerPageId = `${instanceId ?? `pagination-${generatedId}`}-items-per-page`;
@@ -98,9 +100,11 @@ export function Pagination({
                             }}
                             className="bg-white dark:bg-[#262626] text-gray-900 dark:text-white px-3 py-1.5 rounded border border-gray-200 dark:border-[#404040] text-sm focus:outline-none focus:ring-2 focus:ring-brand dark:focus:ring-[#8fb55e]"
                         >
-                            <option value={20}>20</option>
-                            <option value={40}>40</option>
-                            <option value={80}>80</option>
+                            {perPageOptions.map((n) => (
+                                <option key={n} value={n}>
+                                    {n}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>
