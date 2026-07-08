@@ -132,6 +132,7 @@ func MigrateTesting(db *gorm.DB) {
 		&models.RunnableTask{},
 		&models.Library{},
 		&models.FacilityVisibilityStatus{},
+		&models.FacilityFeatureFlag{},
 		&models.Video{},
 		&models.VideoDownloadAttempt{},
 		&models.OpenContentFavorite{},
