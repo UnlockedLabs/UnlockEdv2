@@ -19,6 +19,7 @@ import (
 	"github.com/teambition/rrule-go"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -68,6 +69,14 @@ func seedTestData(db *gorm.DB) {
 			Name:     "Potosi Correctional Facility",
 			Timezone: "America/Chicago",
 		},
+		{
+			Name:     "Northgate",
+			Timezone: "America/Chicago",
+		},
+		{
+			Name:     "Eastfield",
+			Timezone: "America/Denver",
+		},
 	}
 	for idx := range facilities {
 		if err := db.Create(&facilities[idx]).Error; err != nil {
@@ -110,6 +119,7 @@ func seedTestData(db *gorm.DB) {
 	if err != nil {
 		log.Printf("Failed to get facilities: %v", err)
 	}
+	createFacilityFeatureFlags(db, facilities)
 	videos := []models.Video{}
 	libraries := []models.Library{}
 	libraries = generateFakeLibraries(2, 25)
@@ -540,6 +550,53 @@ func generateFakeVideos(providerID uint, count int) []models.Video {
 	}
 	return videos
 }
+
+// createFacilityFeatureFlags seeds a spread of per-facility feature overrides so
+// the per-facility feature-flag UI/queries have realistic variety to work with.
+// Overrides are keyed by facility name (not ID) so ordering doesn't matter, and
+// use OnConflict DoNothing so re-running the seeder is harmless. Facilities with
+// no entry here inherit the global flags (the "all on" case). Remember: only rows
+// with enabled=false actually change behavior; enabled=true rows exercise the
+// explicit-override/audit path but resolve the same as inherit when global is on.
+func createFacilityFeatureFlags(db *gorm.DB, facilities []models.Facility) {
+	overrides := map[string][]models.FacilityFeatureFlag{
+		// mixed: Knowledge Center inherits (on), Program Hub explicitly off
+		"BCF": {
+			{Feature: models.ProgramAccess, Enabled: false},
+		},
+		// all off: both top-level features explicitly disabled
+		"Potosi Correctional Facility": {
+			{Feature: models.OpenContentAccess, Enabled: false},
+			{Feature: models.ProgramAccess, Enabled: false},
+		},
+		// explicit-on top-level + a page feature turned off underneath it
+		"Northgate": {
+			{Feature: models.OpenContentAccess, Enabled: true},
+			{Feature: models.HelpfulLinksAccess, Enabled: false},
+		},
+		// mixed with an explicit-on: Knowledge Center off, Program Hub explicitly on
+		"Eastfield": {
+			{Feature: models.OpenContentAccess, Enabled: false},
+			{Feature: models.ProgramAccess, Enabled: true},
+		},
+	}
+	for _, facility := range facilities {
+		rows, ok := overrides[facility.Name]
+		if !ok {
+			continue
+		}
+		for i := range rows {
+			rows[i].FacilityID = facility.ID
+			if err := db.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "facility_id"}, {Name: "feature"}},
+				DoNothing: true,
+			}).Create(&rows[i]).Error; err != nil {
+				log.Printf("Failed to create facility feature flag (%s/%s): %v", facility.Name, rows[i].Feature, err)
+			}
+		}
+	}
+}
+
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
