@@ -241,7 +241,7 @@ func (db *DB) ToggleFacilityFeature(facilityID uint, feature models.FeatureAcces
 		// Must be a known page feature whose parent is a manageable top-level feature.
 		var pf models.PageFeatureFlags
 		if err := db.Model(&models.PageFeatureFlags{}).Where("page_feature = ?", feature).First(&pf).Error; err != nil {
-			return NewDBError(errors.New("feature is not manageable per-facility"), "invalid facility feature")
+			return newBadRequestDBError("feature is not manageable per-facility")
 		}
 		var parent models.FeatureFlags
 		if err := db.Model(&models.FeatureFlags{}).Where("id = ?", pf.FeatureFlagID).First(&parent).Error; err != nil {
@@ -250,14 +250,14 @@ func (db *DB) ToggleFacilityFeature(facilityID uint, feature models.FeatureAcces
 		parentName = parent.Name
 		if enabled {
 			if !pf.Enabled {
-				return NewDBError(errors.New("page feature disabled globally"), "cannot enable a feature that is disabled statewide")
+				return newBadRequestDBError("cannot enable a feature that is disabled statewide")
 			}
 			effectiveParent, err := db.featureEffectiveAtFacility(facilityID, parentName)
 			if err != nil {
 				return err
 			}
 			if !effectiveParent {
-				return NewDBError(errors.New("parent feature disabled"), "cannot enable a sub-feature while its parent is off")
+				return newBadRequestDBError("cannot enable a sub-feature while its parent is off")
 			}
 		}
 	} else if enabled {
@@ -266,7 +266,7 @@ func (db *DB) ToggleFacilityFeature(facilityID uint, feature models.FeatureAcces
 			return err
 		}
 		if !globalOn {
-			return NewDBError(errors.New("feature disabled globally"), "cannot enable a feature that is disabled statewide")
+			return newBadRequestDBError("cannot enable a feature that is disabled statewide")
 		}
 	}
 
