@@ -29,6 +29,9 @@ func (db *DB) getContentFacilityVisibility(args *models.QueryContext, contentID,
 }
 
 func (db *DB) setContentVisibilityForFacilities(args *models.QueryContext, contentID, providerID uint, facilityIDs []uint, visible bool) error {
+	if len(facilityIDs) == 0 {
+		return nil
+	}
 	statuses := make([]models.FacilityVisibilityStatus, 0, len(facilityIDs))
 	seen := make(map[uint]bool, len(facilityIDs))
 	for _, facilityID := range facilityIDs {

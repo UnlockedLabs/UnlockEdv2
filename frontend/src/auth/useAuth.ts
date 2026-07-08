@@ -14,7 +14,7 @@ import {
 } from '@/types';
 import API from '@/api/api';
 import { tabSessionManager } from '@/session/tabSession';
-import { resetAnalytics } from '@/lib/analytics';
+import { resetAnalytics } from '@/lib/events';
 
 interface AuthContextType {
     user: User | undefined;

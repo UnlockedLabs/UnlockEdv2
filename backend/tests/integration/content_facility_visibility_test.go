@@ -37,6 +37,7 @@ func TestVideoFacilityVisibility(t *testing.T) {
 		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
+		require.GreaterOrEqual(t, len(rows), 2)
 		for _, row := range rows {
 			require.False(t, row.VisibilityStatus)
 		}
@@ -49,6 +50,7 @@ func TestVideoFacilityVisibility(t *testing.T) {
 		rows = NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
+		require.GreaterOrEqual(t, len(rows), 2)
 		for _, row := range rows {
 			require.Equal(t, row.FacilityID == facilityA.ID, row.VisibilityStatus)
 		}
@@ -80,6 +82,7 @@ func TestVideoFacilityVisibility(t *testing.T) {
 		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
+		require.GreaterOrEqual(t, len(rows), 2)
 		for _, row := range rows {
 			require.False(t, row.VisibilityStatus)
 		}
@@ -123,6 +126,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
+		require.GreaterOrEqual(t, len(rows), 2)
 		for _, row := range rows {
 			require.Equal(t, row.FacilityID == facilityA.ID, row.VisibilityStatus)
 		}
@@ -153,6 +157,7 @@ func TestHelpfulLinkFacilityVisibility(t *testing.T) {
 		rows := NewRequest[[]database.ContentFacilityVisibility](env.Client, t, http.MethodGet, visibilityURL, nil).
 			WithTestClaims(deptClaims).Do().
 			ExpectStatus(http.StatusOK).GetData()
+		require.GreaterOrEqual(t, len(rows), 2)
 		for _, row := range rows {
 			require.Equal(t, row.FacilityID == facilityB.ID, row.VisibilityStatus)
 		}

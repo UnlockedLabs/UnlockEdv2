@@ -16,11 +16,7 @@ import {
     FundingType
 } from '@/types';
 import { programFormSchema, ProgramFormInput } from '@/lib/validation';
-import {
-    ANALYTICS_EVENTS,
-    captureEvent,
-    flowTimerSeconds
-} from '@/lib/analytics';
+import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';

@@ -24,11 +24,7 @@ import {
     diffMinutes,
     formatPartialTime
 } from '@/lib/formatters';
-import {
-    ANALYTICS_EVENTS,
-    captureEvent,
-    flowTimerSeconds
-} from '@/lib/analytics';
+import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
 import { PageHeader } from '@/components/shared';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';

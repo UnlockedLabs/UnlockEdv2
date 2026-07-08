@@ -27,7 +27,8 @@ WHERE a.content_id = hl.id
   AND hl.deleted_at IS NULL
   AND hl.id <> c.keep_id;
 
--- Preserve each facility's current visibility as a per-facility row.
+-- Copy each facility's current visibility to a per-facility row. On conflict
+-- with a pre-existing row, visible wins.
 INSERT INTO public.facility_visibility_statuses AS fvs (facility_id, open_content_provider_id, content_id, visibility_status)
 SELECT hl.facility_id, hl.open_content_provider_id, c.keep_id, hl.visibility_status
 FROM public.helpful_links hl

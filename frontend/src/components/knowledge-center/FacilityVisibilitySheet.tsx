@@ -47,6 +47,7 @@ function FacilityRow({
                     onCheckedChange={(checked) =>
                         onToggle(row.facility_id, checked)
                     }
+                    aria-label={`Visibility for ${row.facility_name}`}
                     className="data-[state=checked]:bg-brand"
                 />
             </div>
@@ -60,7 +61,7 @@ export default function FacilityVisibilitySheet({
     onChanged
 }: FacilityVisibilitySheetProps) {
     const [filter, setFilter] = useState('');
-    const { data, mutate } = useSWR<
+    const { data, mutate, isLoading } = useSWR<
         ServerResponseOne<ContentFacilityVisibility[]>
     >(content ? `/api/${content.endpoint}` : null);
     const rows = data?.data ?? [];
@@ -79,7 +80,7 @@ export default function FacilityVisibilitySheet({
             void mutate();
             onChanged();
         } else {
-            toast.error('Failed to update library visibility');
+            toast.error('Failed to update facility visibility');
         }
     };
 
@@ -105,9 +106,11 @@ export default function FacilityVisibilitySheet({
                 </SheetHeader>
                 <div className="space-y-2">
                     <p className="text-sm font-medium">
-                        {visibleRows.length === 0
-                            ? 'Hidden at all facilities'
-                            : `Visible at ${visibleRows.length} of ${rows.length} facilities`}
+                        {isLoading
+                            ? 'Loading facilities...'
+                            : visibleRows.length === 0
+                              ? 'Hidden at all facilities'
+                              : `Visible at ${visibleRows.length} of ${rows.length} facilities`}
                     </p>
                     <Progress
                         value={
@@ -148,6 +151,7 @@ export default function FacilityVisibilitySheet({
                 </div>
                 <Input
                     placeholder="Filter facilities..."
+                    aria-label="Filter facilities"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
                 />
