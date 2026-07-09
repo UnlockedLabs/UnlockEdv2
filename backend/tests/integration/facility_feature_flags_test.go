@@ -244,7 +244,6 @@ func TestToggleFacilityFeatureRoundTrip(t *testing.T) {
 	// Re-enable it and confirm it comes back.
 	toggle(models.ProgramAccess, true).ExpectStatus(http.StatusOK)
 
-
 	features, err = env.DB.GetFacilityFeatureAccess(facility.ID)
 	require.NoError(t, err)
 	require.Contains(t, features, models.ProgramAccess, "re-enable restored the feature")
