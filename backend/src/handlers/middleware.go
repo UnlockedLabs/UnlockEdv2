@@ -64,7 +64,7 @@ func (srv *Server) applyStandardMiddleware(next http.Handler, resolver RouteReso
 func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(ClaimsKey).(*Claims)
-		if !srv.hasFeatureAccess(models.OpenContentAccess) {
+		if !user.hasFeature(models.OpenContentAccess) {
 			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
 			return
 		}
@@ -96,7 +96,7 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(ClaimsKey).(*Claims)
-		if !srv.hasFeatureAccess(models.OpenContentAccess) {
+		if !user.hasFeature(models.OpenContentAccess) {
 			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
 			return
 		}
@@ -186,7 +186,10 @@ func isOriginAllowed(origin string) bool {
 
 func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel ...models.FeatureAccess) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !srv.hasFeatureAccess(accessLevel...) {
+		// authMiddleware runs first and puts the resolved claims (with the caller's
+		// per-facility feature set) in context; enforce against that.
+		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		if !ok || claims == nil || !claims.hasFeature(accessLevel...) {
 			srv.errorResponse(w, http.StatusUnauthorized, "Feature not enabled")
 			return
 		}

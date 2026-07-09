@@ -42,6 +42,37 @@ func (c *Claims) canSwitchFacility() bool {
 	return slices.Contains([]models.UserRole{models.SystemAdmin, models.DepartmentAdmin}, c.Role)
 }
 
+// hasFeature reports whether the caller's resolved feature set includes all the
+// given features. This is the single enforcement check — mirrors the frontend
+// hasFeature() and reads the per-facility set already resolved into the claims.
+func (c *Claims) hasFeature(axx ...models.FeatureAccess) bool {
+	for _, a := range axx {
+		if !slices.Contains(c.FeatureAccess, a) {
+			return false
+		}
+	}
+	return true
+}
+
+// resolveFeatureAccessFor computes the feature set that gates a user. There is
+// no facility switcher, so cross-facility admins (system/dept) are statewide
+// operators and get the global set — never blocked by a single facility's
+// toggle. Pinned users (facility_admin, residents/students) get their facility's
+// effective set (global ∩ facility overrides). On a DB error it fails open to
+// the global set, since these features gate access and locking users out on a
+// transient error is worse than briefly ignoring a facility override.
+func (srv *Server) resolveFeatureAccessFor(role models.UserRole, facilityID uint) []models.FeatureAccess {
+	if role == models.SystemAdmin || role == models.DepartmentAdmin {
+		return srv.features
+	}
+	features, err := srv.Db.GetFacilityFeatureAccess(facilityID)
+	if err != nil {
+		log.WithError(err).Errorf("failed to resolve facility feature access for facility %d; falling back to global set", facilityID)
+		return srv.features
+	}
+	return features
+}
+
 func (srv *Server) registerAuthRoutes() []routeDef {
 	return []routeDef{
 		newRoute("POST /api/reset-password", srv.handleResetPassword),
@@ -88,6 +119,12 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 			if testClaimsJSON := r.Header.Get("X-Test-Claims"); testClaimsJSON != "" {
 				var testClaims Claims
 				if err := json.Unmarshal([]byte(testClaimsJSON), &testClaims); err == nil {
+					// Enforcement now reads Claims.FeatureAccess. Existing tests set
+					// claims without feature_access, so default to all features unless
+					// a test explicitly restricts the set to exercise feature gating.
+					if len(testClaims.FeatureAccess) == 0 {
+						testClaims.FeatureAccess = models.AllFeatures
+					}
 					claims = &testClaims
 				}
 			}
@@ -216,7 +253,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	traits["name_last"] = user.NameLast
 	traits["timezone"] = claims.TimeZone
 	traits["facility"] = fac
-	if traits["feature_access"] == nil || len(srv.features) == 0 {
+	if traits["feature_access"] == nil {
 		traits["feature_access"] = []models.FeatureAccess{}
 	}
 	return writeJsonResponse(w, http.StatusOK, traits)
@@ -300,7 +337,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
-					FeatureAccess: srv.features,
+					FeatureAccess: srv.resolveFeatureAccessFor(user.Role, user.FacilityID),
 					SessionID:     sessionID,
 					TimeZone:      user.Facility.Timezone,
 				}

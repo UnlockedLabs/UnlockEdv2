@@ -10,7 +10,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -313,15 +312,6 @@ func (srv *Server) setupNatsKvBuckets() error {
 	}
 	srv.buckets = buckets
 	return nil
-}
-
-func (srv *Server) hasFeatureAccess(axx ...models.FeatureAccess) bool {
-	for _, a := range axx {
-		if !slices.Contains(srv.features, a) {
-			return false
-		}
-	}
-	return true
 }
 
 func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {
