@@ -231,8 +231,8 @@ export default function OverviewTab({
                         tooltip={
                             <>
                                 Registered residents who{' '}
-                                <b>logged in at least once</b>
-                                in the range. <b>% of Registered</b> is active
+                                <b>logged in at least once </b>
+                                in the range. <b>% of Registered </b> is active
                                 residents &divide; registered residents
                             </>
                         }
@@ -245,8 +245,8 @@ export default function OverviewTab({
                         tooltip={
                             <>
                                 Residents whose account was <b>first created</b>{' '}
-                                within the range. The <b>+12%</b> compares
-                                against the prior window.
+                                within the range. The <b>+{newUsersChange}%</b>{' '}
+                                compares against the prior window.
                             </>
                         }
                     />
@@ -271,9 +271,13 @@ export default function OverviewTab({
                         tooltip={
                             <>
                                 Total resident logins &divide; active residents
-                                (<b>18,210 &divide; 1,552</b>). Divided by{' '}
-                                <b>active</b>, not registered, so inactive
-                                accounts don't dilute it.
+                                (
+                                <b>
+                                    {metrics.total_logins}&nbsp;&divide;{' '}
+                                    {metrics.active_users}
+                                </b>
+                                ). Divided by <b>active</b>, not registered, so
+                                inactive accounts don't dilute it.
                             </>
                         }
                     />
