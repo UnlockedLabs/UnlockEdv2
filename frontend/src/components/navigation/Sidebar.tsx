@@ -31,7 +31,8 @@ import {
     AdjustmentsHorizontalIcon,
     PencilSquareIcon,
     CircleStackIcon,
-    ArrowDownTrayIcon
+    ArrowDownTrayIcon,
+    Squares2X2Icon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -106,7 +107,7 @@ export default function Sidebar({
                     {!collapsed ? (
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-full bg-brand flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                <div className="size-10 rounded-full bg-brand flex items-center justify-center text-white font-semibold shrink-0">
                                     {user.name_first?.[0]}
                                     {user.name_last?.[0]}
                                 </div>
@@ -201,6 +202,16 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     icon={AdjustmentsHorizontalIcon}
                     label="Feature Control"
                     active={isActive(['/feature-control'])}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                />
+            )}
+            {canSwitchFacility(user) && (
+                <NavLink
+                    to="/facility-features"
+                    icon={Squares2X2Icon}
+                    label="Facility Features"
+                    active={isActive(['/facility-features'])}
                     collapsed={collapsed}
                     onClick={onNavigate}
                 />

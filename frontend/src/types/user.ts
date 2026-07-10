@@ -25,6 +25,32 @@ export enum FeatureAccess {
     UploadVideoAccess = 'upload_video'
 }
 
+export interface FeatureToggleStatus {
+    feature: FeatureAccess;
+    enabled: boolean;
+}
+
+export interface FacilityFeatureStatus {
+    facility_id: number;
+    facility_name: string;
+    features: FeatureToggleStatus[];
+    enabled_count: number;
+    total_count: number;
+}
+
+export interface FacilityFeatureDetailItem {
+    feature: FeatureAccess;
+    enabled: boolean;
+    globally_enabled: boolean;
+    page_features?: FacilityFeatureDetailItem[];
+}
+
+export interface FacilityFeatureDetail {
+    facility_id: number;
+    facility_name: string;
+    features: FacilityFeatureDetailItem[];
+}
+
 export interface User {
     id: number;
     name_first: string;
