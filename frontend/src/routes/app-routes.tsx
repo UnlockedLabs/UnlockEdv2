@@ -24,6 +24,7 @@ import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
 import FeatureControl from '@/pages/admin/FeatureControl';
+import FacilityFeatureControl from '@/pages/admin/FacilityFeatureControl';
 import ResidentHome from '@/pages/student/ResidentHome';
 import Exports from '@/pages/admin/Exports';
 import { getStudentLevel1Data } from '@/loaders/routeLoaders';
@@ -54,6 +55,12 @@ const deptAdminRoutes = declareAuthenticatedRoutes(
             handle: { title: 'Facilities' },
             element: <FacilityManagement />,
             errorElement: <Error />
+        },
+        {
+            path: 'facility-features',
+            element: <FacilityFeatureControl />,
+            errorElement: <Error />,
+            handle: { title: 'Facility Features' }
         }
     ],
     [UserRole.SystemAdmin, UserRole.DepartmentAdmin]
