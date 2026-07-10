@@ -293,6 +293,62 @@ func (db *DB) ToggleFacilityFeature(facilityID uint, feature models.FeatureAcces
 	return nil
 }
 
+// ApplyFacilityFeaturesToAll copies the source facility's effective feature
+// settings to every other facility. It snapshots the source's effective
+// top-level + page-feature states (from GetFacilityFeatureDetail, which also
+// existence-checks the source -> 404), then applies that snapshot to each other
+// facility in a single transaction via the audited ToggleFacilityFeature upsert.
+//
+// The snapshot is applied parents-before-children and page states are clamped
+// to their parent (a sub is only enabled when its parent is), so the existing
+// layering guards always pass. Globally-disabled features are skipped — they are
+// off everywhere regardless, so there is nothing to copy. The source facility is
+// left untouched.
+func (db *DB) ApplyFacilityFeaturesToAll(sourceFacilityID uint) error {
+	source, err := db.GetFacilityFeatureDetail(sourceFacilityID)
+	if err != nil {
+		return err
+	}
+
+	type featureState struct {
+		feature models.FeatureAccess
+		enabled bool
+	}
+	// Ordered so each top-level feature precedes its own page features.
+	var snapshot []featureState
+	for _, item := range source.Features {
+		if !item.GloballyEnabled {
+			continue
+		}
+		snapshot = append(snapshot, featureState{feature: item.Feature, enabled: item.Enabled})
+		for _, pf := range item.PageFeatures {
+			if !pf.GloballyEnabled {
+				continue
+			}
+			snapshot = append(snapshot, featureState{feature: pf.Feature, enabled: item.Enabled && pf.Enabled})
+		}
+	}
+
+	var targetIDs []uint
+	if err := db.Model(&models.Facility{}).
+		Where("id <> ?", sourceFacilityID).
+		Pluck("id", &targetIDs).Error; err != nil {
+		return newGetRecordsDBError(err, "facilities")
+	}
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		txDB := NewDB(tx)
+		for _, targetID := range targetIDs {
+			for _, state := range snapshot {
+				if err := txDB.ToggleFacilityFeature(targetID, state.feature, state.enabled); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+}
+
 // featureGloballyEnabled reports whether a top-level feature's global master is on.
 func (db *DB) featureGloballyEnabled(feature models.FeatureAccess) (bool, error) {
 	var flag models.FeatureFlags

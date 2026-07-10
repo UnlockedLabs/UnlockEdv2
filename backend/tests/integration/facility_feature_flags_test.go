@@ -73,6 +73,23 @@ func detailItem(detail models.FacilityFeatureDetail, feature models.FeatureAcces
 	return models.FacilityFeatureDetailItem{}, false
 }
 
+// effectiveSet resolves a facility's effective feature set via the DB layer.
+func effectiveSet(t *testing.T, env *TestEnv, facilityID uint) []models.FeatureAccess {
+	t.Helper()
+	features, err := env.DB.GetFacilityFeatureAccess(facilityID)
+	require.NoError(t, err)
+	return features
+}
+
+// applyToAll issues the bulk apply-all request for the given source facility.
+func applyToAll(t *testing.T, env *TestEnv, sourceID uint) *Response[any] {
+	t.Helper()
+	return NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+		map[string]uint{"source_facility_id": sourceID}).
+		WithTestClaims(deptAdminClaims()).
+		Do()
+}
+
 func TestFacilityFeatureFlagsOverview(t *testing.T) {
 	env = SetupTestEnv(t)
 	defer env.CleanupTestEnv()
@@ -485,4 +502,275 @@ func TestFacilityFeatureFacilityNotFound(t *testing.T) {
 			Do().
 			ExpectStatus(http.StatusBadRequest)
 	})
+}
+
+// TestApplyFacilityFeaturesToAll covers the bulk endpoint: the source facility's
+// effective settings (a disabled top-level feature and a disabled page feature)
+// are copied to every other facility, overwriting each target's prior state,
+// while the source itself is left untouched.
+func TestApplyFacilityFeaturesToAll(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Source Facility")
+	require.NoError(t, err)
+	targetA, err := env.CreateTestFacility("Target A")
+	require.NoError(t, err)
+	targetB, err := env.CreateTestFacility("Target B")
+	require.NoError(t, err)
+
+	// Source state: program_management off, request_content (a sub-feature) off.
+	require.NoError(t, env.DB.ToggleFacilityFeature(source.ID, models.ProgramAccess, false))
+	require.NoError(t, env.DB.ToggleFacilityFeature(source.ID, models.RequestContentAccess, false))
+
+	// Target A starts in a conflicting state (open_content disabled) to prove the
+	// apply overwrites prior target settings to match the source.
+	require.NoError(t, env.DB.ToggleFacilityFeature(targetA.ID, models.OpenContentAccess, false))
+
+	NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+		map[string]uint{"source_facility_id": source.ID}).
+		WithTestClaims(deptAdminClaims()).
+		Do().
+		ExpectStatus(http.StatusOK).
+		ExpectMessage("settings applied to all facilities")
+
+	assertMatchesSource := func(facilityID uint) {
+		features, err := env.DB.GetFacilityFeatureAccess(facilityID)
+		require.NoError(t, err)
+		require.NotContains(t, features, models.ProgramAccess, "program_management copied as off")
+		require.NotContains(t, features, models.RequestContentAccess, "request_content copied as off")
+		require.Contains(t, features, models.OpenContentAccess, "open_content on (parent re-enabled on target A)")
+		require.Contains(t, features, models.HelpfulLinksAccess, "sibling sub-feature stays on")
+		require.Contains(t, features, models.UploadVideoAccess, "sibling sub-feature stays on")
+	}
+	assertMatchesSource(targetA.ID)
+	assertMatchesSource(targetB.ID)
+
+	// Source is unchanged: still exactly its own overrides.
+	sourceFeatures, err := env.DB.GetFacilityFeatureAccess(source.ID)
+	require.NoError(t, err)
+	require.NotContains(t, sourceFeatures, models.ProgramAccess)
+	require.NotContains(t, sourceFeatures, models.RequestContentAccess)
+	require.Contains(t, sourceFeatures, models.OpenContentAccess)
+}
+
+// TestApplyFacilityFeaturesToAllGuards covers the bulk endpoint's error paths:
+// a missing source id, a nonexistent source facility, and RBAC.
+func TestApplyFacilityFeaturesToAllGuards(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	facility, err := env.CreateTestFacility("Apply Guard Facility")
+	require.NoError(t, err)
+
+	t.Run("missing source_facility_id is rejected", func(t *testing.T) {
+		NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+			map[string]uint{}).
+			WithTestClaims(deptAdminClaims()).
+			Do().
+			ExpectStatus(http.StatusBadRequest).
+			ExpectBodyContains("source_facility_id is required")
+	})
+
+	t.Run("nonexistent source facility is rejected", func(t *testing.T) {
+		// ErrRecordNotFound maps to 400 via NewDBError (codebase convention).
+		NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+			map[string]uint{"source_facility_id": 999999}).
+			WithTestClaims(deptAdminClaims()).
+			Do().
+			ExpectStatus(http.StatusBadRequest)
+	})
+
+	t.Run("facility admin cannot apply to all", func(t *testing.T) {
+		NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+			map[string]uint{"source_facility_id": facility.ID}).
+			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, FacilityID: facility.ID}).
+			Do().
+			ExpectStatus(http.StatusUnauthorized)
+	})
+}
+
+// TestApplyFacilityFeaturesToAllInvariant is the core correctness property: after
+// apply-all, EVERY facility (created targets AND the pre-existing seeded Default
+// facility that the test never touched) resolves to the exact same effective
+// feature set as the source, regardless of the target's prior state.
+func TestApplyFacilityFeaturesToAllInvariant(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Invariant Source")
+	require.NoError(t, err)
+	// Source: program off, request_content off (a mixed state).
+	require.NoError(t, env.DB.ToggleFacilityFeature(source.ID, models.ProgramAccess, false))
+	require.NoError(t, env.DB.ToggleFacilityFeature(source.ID, models.RequestContentAccess, false))
+
+	// Targets in varied prior states.
+	allOn, err := env.CreateTestFacility("Invariant All On") // no overrides
+	require.NoError(t, err)
+	conflicting, err := env.CreateTestFacility("Invariant Conflicting")
+	require.NoError(t, err)
+	require.NoError(t, env.DB.ToggleFacilityFeature(conflicting.ID, models.OpenContentAccess, false))
+	require.NoError(t, env.DB.ToggleFacilityFeature(conflicting.ID, models.HelpfulLinksAccess, false))
+
+	applyToAll(t, env, source.ID).
+		ExpectStatus(http.StatusOK).
+		ExpectMessage("settings applied to all facilities")
+
+	want := effectiveSet(t, env, source.ID)
+	require.ElementsMatch(t, want, effectiveSet(t, env, allOn.ID), "all-on target matches source")
+	require.ElementsMatch(t, want, effectiveSet(t, env, conflicting.ID), "conflicting target overwritten to match source")
+
+	// The seeded Default facility (never referenced by this test) also matches.
+	var def models.Facility
+	require.NoError(t, env.DB.Where("name = ?", "Default").First(&def).Error)
+	require.ElementsMatch(t, want, effectiveSet(t, env, def.ID), "pre-existing facility is included in 'all'")
+}
+
+// TestApplyFacilityFeaturesToAllReenablesFromInheritSource proves apply-all can
+// turn features back ON: an all-inherit (all-on) source re-enables features a
+// target had previously disabled.
+func TestApplyFacilityFeaturesToAllReenablesFromInheritSource(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Reenable Source") // no overrides -> everything on
+	require.NoError(t, err)
+
+	target, err := env.CreateTestFacility("Reenable Target")
+	require.NoError(t, err)
+	require.NoError(t, env.DB.ToggleFacilityFeature(target.ID, models.ProgramAccess, false))
+	require.NoError(t, env.DB.ToggleFacilityFeature(target.ID, models.UploadVideoAccess, false))
+
+	// Precondition: target is missing the disabled features.
+	before := effectiveSet(t, env, target.ID)
+	require.NotContains(t, before, models.ProgramAccess)
+	require.NotContains(t, before, models.UploadVideoAccess)
+
+	applyToAll(t, env, source.ID).ExpectStatus(http.StatusOK)
+
+	after := effectiveSet(t, env, target.ID)
+	require.Contains(t, after, models.ProgramAccess, "program_management re-enabled")
+	require.Contains(t, after, models.UploadVideoAccess, "upload_video re-enabled")
+	require.ElementsMatch(t, effectiveSet(t, env, source.ID), after)
+}
+
+// TestApplyFacilityFeaturesToAllCascadesParentOff proves that copying a source
+// whose parent feature is off drives the parent AND all its sub-features off at
+// every target, even subs the target had explicitly on.
+func TestApplyFacilityFeaturesToAllCascadesParentOff(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Cascade Source")
+	require.NoError(t, err)
+	require.NoError(t, env.DB.ToggleFacilityFeature(source.ID, models.OpenContentAccess, false)) // parent off
+
+	target, err := env.CreateTestFacility("Cascade Target") // all inherit -> KC + subs on
+	require.NoError(t, err)
+
+	applyToAll(t, env, source.ID).ExpectStatus(http.StatusOK)
+
+	after := effectiveSet(t, env, target.ID)
+	require.NotContains(t, after, models.OpenContentAccess, "parent copied off")
+	require.NotContains(t, after, models.RequestContentAccess, "sub dropped with parent")
+	require.NotContains(t, after, models.HelpfulLinksAccess, "sub dropped with parent")
+	require.NotContains(t, after, models.UploadVideoAccess, "sub dropped with parent")
+	require.ElementsMatch(t, effectiveSet(t, env, source.ID), after)
+}
+
+// TestApplyFacilityFeaturesToAllIdempotent confirms a second identical apply is a
+// no-op: state and effective sets are unchanged and the call still succeeds.
+func TestApplyFacilityFeaturesToAllIdempotent(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Idempotent Source")
+	require.NoError(t, err)
+	require.NoError(t, env.DB.ToggleFacilityFeature(source.ID, models.ProgramAccess, false))
+
+	target, err := env.CreateTestFacility("Idempotent Target")
+	require.NoError(t, err)
+
+	applyToAll(t, env, source.ID).ExpectStatus(http.StatusOK)
+	first := effectiveSet(t, env, target.ID)
+
+	applyToAll(t, env, source.ID).ExpectStatus(http.StatusOK)
+	second := effectiveSet(t, env, target.ID)
+
+	require.ElementsMatch(t, first, second, "re-applying the same source changes nothing")
+	require.ElementsMatch(t, effectiveSet(t, env, source.ID), second)
+}
+
+// TestApplyFacilityFeaturesToAllWritesExpectedRows inspects the persisted override
+// rows: apply materializes an explicit row for every globally-enabled manageable
+// feature (top-level + page) and skips features that are not manageable
+// per-facility (provider_platforms) or globally disabled (learning_record).
+func TestApplyFacilityFeaturesToAllWritesExpectedRows(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Rows Source") // all inherit -> everything on
+	require.NoError(t, err)
+	target, err := env.CreateTestFacility("Rows Target") // fresh, no prior rows
+	require.NoError(t, err)
+
+	require.NoError(t, env.DB.ApplyFacilityFeaturesToAll(source.ID))
+
+	var rows []models.FacilityFeatureFlag
+	require.NoError(t, env.DB.Where("facility_id = ?", target.ID).Find(&rows).Error)
+
+	got := make(map[models.FeatureAccess]bool, len(rows))
+	for _, r := range rows {
+		got[r.Feature] = r.Enabled
+	}
+	expected := map[models.FeatureAccess]bool{
+		models.OpenContentAccess:    true,
+		models.RequestContentAccess: true,
+		models.HelpfulLinksAccess:   true,
+		models.UploadVideoAccess:    true,
+		models.ProgramAccess:        true,
+	}
+	require.Equal(t, expected, got, "exactly the globally-enabled manageable features are materialized as on")
+
+	// Never write rows for non-manageable / globally-off features.
+	_, hasProvider := got[models.ProviderAccess]
+	require.False(t, hasProvider, "provider_platforms is not managed per-facility")
+	_, hasLearningRecord := got[models.LearningRecordAccess]
+	require.False(t, hasLearningRecord, "globally-disabled learning_record is skipped")
+}
+
+// TestApplyFacilityFeaturesToAllRecordsAuditUser confirms the acting admin's user
+// id propagates through the bulk transaction onto the materialized override rows
+// (the audit trail the storage model was designed to preserve).
+func TestApplyFacilityFeaturesToAllRecordsAuditUser(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	source, err := env.CreateTestFacility("Audit Source")
+	require.NoError(t, err)
+	target, err := env.CreateTestFacility("Audit Target")
+	require.NoError(t, err)
+
+	const actingUserID = uint(4242)
+	NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+		map[string]uint{"source_facility_id": source.ID}).
+		WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: actingUserID}).
+		Do().
+		ExpectStatus(http.StatusOK)
+
+	var rows []models.FacilityFeatureFlag
+	require.NoError(t, env.DB.Where("facility_id = ?", target.ID).Find(&rows).Error)
+	require.NotEmpty(t, rows, "apply materializes rows on the target")
+	for _, r := range rows {
+		require.NotNil(t, r.CreateUserID, "create_user_id set inside the transaction for %s", r.Feature)
+		require.Equal(t, actingUserID, *r.CreateUserID, "audit user propagated for %s", r.Feature)
+	}
 }

@@ -14,6 +14,7 @@ func (srv *Server) registerFacilityFeatureRoutes() []routeDef {
 		newDeptAdminRoute("GET /api/facilities/features", srv.handleGetFacilitiesFeatureStatus),
 		newDeptAdminRoute("GET /api/facilities/{id}/features", srv.handleGetFacilityFeatureDetail),
 		newDeptAdminRoute("PUT /api/facilities/{id}/features/{feature}", srv.handleToggleFacilityFeature),
+		newDeptAdminRoute("PUT /api/facilities/features/apply-all", srv.handleApplyFacilityFeaturesToAll),
 	}
 }
 
@@ -100,4 +101,30 @@ func (srv *Server) handleToggleFacilityFeature(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "facility feature toggled successfully")
+}
+
+type applyFacilityFeaturesRequest struct {
+	SourceFacilityID uint `json:"source_facility_id"`
+}
+
+/*
+PUT: /api/facilities/features/apply-all
+Copies the source facility's effective feature settings to every other facility.
+Body: { "source_facility_id": uint }. Layering guards are enforced per feature in
+the DB layer; the source facility is left untouched.
+*/
+func (srv *Server) handleApplyFacilityFeaturesToAll(w http.ResponseWriter, r *http.Request, log sLog) error {
+	var body applyFacilityFeaturesRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if body.SourceFacilityID == 0 {
+		return newBadRequestServiceError(errors.New("missing source_facility_id"), "source_facility_id is required")
+	}
+	log.add("source_facility_id", body.SourceFacilityID)
+
+	if err := srv.WithUserContext(r).ApplyFacilityFeaturesToAll(body.SourceFacilityID); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "settings applied to all facilities")
 }
