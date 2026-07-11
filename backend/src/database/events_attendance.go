@@ -55,10 +55,12 @@ func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAtten
 			att.UpdateUserID = &updateUserID
 		}
 
+		// include deleted_at so re-marking a previously soft-deleted record revives it
+		// (excluded.deleted_at is NULL on insert) instead of updating a hidden, soft-deleted row
 		if err := tx.
 			Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},
-				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note", "reason_category", "check_in_at", "check_out_at", "minutes_attended", "scheduled_minutes", "update_user_id"}),
+				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note", "reason_category", "check_in_at", "check_out_at", "minutes_attended", "scheduled_minutes", "update_user_id", "deleted_at"}),
 			}).
 			Create(&att).Error; err != nil {
 			tx.Rollback()
@@ -147,7 +149,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
         FROM program_class_enrollments AS e
         JOIN users AS u ON u.id = e.user_id
         LEFT JOIN program_class_event_attendance AS a
-            ON a.user_id = e.user_id AND a.event_id = ? AND a.date = ?
+            ON a.user_id = e.user_id AND a.event_id = ? AND a.date = ? AND a.deleted_at IS NULL
         WHERE e.class_id = ?
         `
 
@@ -241,7 +243,7 @@ func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classI
 	) as attendance_percentage
 	from program_class_event_attendance pcea
 	inner join program_class_events pce ON pce.id = pcea.event_id
-	where pcea.event_id = ? AND pcea.date = ?`
+	where pcea.event_id = ? AND pcea.date = ? AND pcea.deleted_at IS NULL`
 
 	if err := db.WithContext(ctx).Raw(sql, classID, eventDate, eventDate, eventID, eventDate).Scan(&attendanceRate).Error; err != nil {
 		return 0, newNotFoundDBError(err, "program_class_event_attendance")
@@ -259,29 +261,29 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		and c.status = 'Active'
 		and u.deleted_at is null
 		and exists (select 1 from program_class_events evt
-				inner join program_class_event_attendance att on att.event_id = evt.id
+				inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 				where evt.class_id = c.id
 						and att.attendance_status is not null
 		)`
 	noAttendanceSQL := `and exists (select 1 from program_class_events evt
-			inner join program_class_event_attendance att on att.event_id = evt.id
+			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
 		)
 		and not exists (select 1 from program_class_events evt
-			inner join program_class_event_attendance att on att.event_id = evt.id
+			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
 					and att.attendance_status in ('present','partial')
 		)`
 	multiAbsencesSQL := `and exists (select 1 from program_class_events evt
-			inner join program_class_event_attendance att on att.event_id = evt.id
+			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 			where evt.class_id = c.id
 					and att.user_id = e.user_id
 					and att.attendance_status in ('present','partial')
 		)
 		and (select count(*) from program_class_events evt
-				inner join program_class_event_attendance att on att.event_id = evt.id
+				inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 				where evt.class_id = c.id
 						and att.user_id = e.user_id
 						and att.attendance_status = 'absent_unexcused'
@@ -290,11 +292,11 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 	statsSQL := `,
 		e.user_id,
 		(select count(*) from program_class_events evt
-			inner join program_class_event_attendance att on att.event_id = evt.id
+			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 			where evt.class_id = c.id and att.user_id = e.user_id
 		) as total_sessions,
 		(select count(*) from program_class_events evt
-			inner join program_class_event_attendance att on att.event_id = evt.id
+			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 			where evt.class_id = c.id and att.user_id = e.user_id
 				and att.attendance_status in ('present','partial')
 		) as attended_sessions`
@@ -354,7 +356,7 @@ func (db *DB) computeConsecutiveAbsences(classID int, flags []models.AttendanceF
 		SELECT att.user_id, att.date, att.attendance_status
 		FROM program_class_event_attendance att
 		INNER JOIN program_class_events evt ON evt.id = att.event_id
-		WHERE evt.class_id = ? AND att.user_id IN ?
+		WHERE evt.class_id = ? AND att.user_id IN ? AND att.deleted_at IS NULL
 		ORDER BY att.user_id, att.date DESC`,
 		classID, userIDs,
 	).Scan(&records).Error; err != nil {
@@ -597,7 +599,7 @@ func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID i
 			END as credit
 		FROM program_class_event_attendance pcea
 		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
-		WHERE pce.class_id = ? AND pcea.date <= ?
+		WHERE pce.class_id = ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
 	)
 	SELECT COALESCE(
 		(SELECT SUM(credit) FROM attendance_credits) * 100.0 /
@@ -631,7 +633,7 @@ func (db *DB) GetCumulativeAttendanceRatesForClasses(ctx context.Context, classI
 			END as credit
 		FROM program_class_event_attendance pcea
 		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
-		WHERE pce.class_id IN ? AND pcea.date <= ?
+		WHERE pce.class_id IN ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
 	)
 	SELECT class_id,
 		COALESCE(
