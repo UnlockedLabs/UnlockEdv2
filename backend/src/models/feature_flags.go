@@ -27,8 +27,8 @@ type (
 	// making it impossible to disable a feature.
 	FacilityFeatureFlag struct {
 		DatabaseFields
-		FacilityID uint          `json:"facility_id" gorm:"not null;index"`
-		Feature    FeatureAccess `json:"feature" gorm:"not null;type:feature"`
+		FacilityID uint          `json:"facility_id" gorm:"not null;index;uniqueIndex:idx_facility_feature"`
+		Feature    FeatureAccess `json:"feature" gorm:"not null;type:feature;uniqueIndex:idx_facility_feature"`
 		Enabled    bool          `json:"enabled" gorm:"not null"`
 		Facility   *Facility     `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
 	}

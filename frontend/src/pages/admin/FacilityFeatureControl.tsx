@@ -235,8 +235,7 @@ export default function FacilityFeatureControl() {
                     </Select>
 
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
-                        Facilities —{' '}
-                        {listResp?.meta?.total ?? facilities.length} shown
+                        Facilities — {filteredFacilities.length} shown
                     </p>
 
                     <div className="space-y-2">
