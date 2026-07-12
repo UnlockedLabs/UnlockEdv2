@@ -105,7 +105,7 @@ func (db *DB) GetAttendanceConcernsCount(ctx *models.QueryContext, facilityID *u
 	attendanceSQL += ` AND (
 	select count(*)
 	from program_class_events evt
-	inner join program_class_event_attendance att on att.event_id = evt.id
+	inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 	where evt.class_id = c.id
 		and att.user_id = e.user_id
 		and att.attendance_status = 'absent_unexcused'
@@ -175,7 +175,7 @@ func (db *DB) GetFacilityAttendanceConcerns(ctx *models.QueryContext, facilityID
 	attendanceSQL += ` AND (
 	select count(*)
 	from program_class_events evt
-	inner join program_class_event_attendance att on att.event_id = evt.id
+	inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
 	where evt.class_id = c.id
 		and att.user_id = e.user_id
 		and att.attendance_status = 'absent_unexcused'
