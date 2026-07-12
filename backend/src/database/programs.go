@@ -67,7 +67,7 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		FROM program_classes pc
 		LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
 		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
-		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL
 		WHERE pc.program_id = ?`, partialAttendanceSQL)
 
 	attendanceArgs := []any{programID}
@@ -484,7 +484,7 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		FROM program_class_enrollments pce
 		LEFT JOIN program_classes pc ON pc.id = pce.class_id
 		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
-		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL
 		WHERE pce.enrolled_at IS NOT NULL %s
 	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter, partialAttendanceSQL, attendanceTimeFilter, completionTimeFilter)
 
@@ -567,7 +567,7 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 		FROM program_class_enrollments pce
 		LEFT JOIN program_classes pc ON pc.id = pce.class_id
 		LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
-		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+		LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL
 		WHERE pc.facility_id = ? AND pce.enrolled_at IS NOT NULL %s
 	`, completionTimeFilter, attendanceTimeFilter, attendanceTimeFilter, partialAttendanceSQL, attendanceTimeFilter, completionTimeFilter)
 
@@ -748,7 +748,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			LEFT JOIN program_classes pc ON pc.program_id = p.id ` + facilityFilterForRates + `
 			LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id
 			LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id
-			LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id
+			LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL
 			WHERE 1=1 ` + timeFilterCondition + `
 			GROUP BY p.id
 		) AS time_filtered_rates ON time_filtered_rates.program_id = programs.id
@@ -885,7 +885,7 @@ func (db *DB) GetProgramsCSVData(args *models.QueryContext) ([]models.ProgramCSV
 		Joins("LEFT JOIN program_completions c on c.program_class_id = pc.id and c.user_id = u.id").
 		Joins("LEFT JOIN program_class_events pce on pce.class_id = pc.id").
 		Joins("LEFT JOIN users iu ON iu.id = pce.instructor_id").
-		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id = pce.id AND pca.user_id = u.id").
+		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id = pce.id AND pca.user_id = u.id AND pca.deleted_at IS NULL").
 		Select(`
 				f.name AS facility_name,
 				p.name AS program_name,

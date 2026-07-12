@@ -852,7 +852,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		Joins(
 			`LEFT JOIN program_class_event_attendance pcea
             ON pcea.event_id = e.id
-           AND pcea.user_id = ?`,
+           AND pcea.user_id = ?
+           AND pcea.deleted_at IS NULL`,
 			userId,
 		).
 		Where("pce.user_id = ?", userId).
@@ -885,7 +886,7 @@ func (db *DB) GetUserWeeklyAttendanceRows(ctx context.Context, userID, weeks int
 			COALESCE(SUM(CASE WHEN attendance_status IN ('present','partial') THEN 1 ELSE 0 END), 0) AS present_count,
 			COUNT(*) AS total_count
 		FROM program_class_event_attendance
-		WHERE user_id = ? AND date::date >= NOW() - INTERVAL '1 week' * ?
+		WHERE user_id = ? AND date::date >= NOW() - INTERVAL '1 week' * ? AND deleted_at IS NULL
 		GROUP BY week_start
 		ORDER BY week_start ASC`
 	if err := db.WithContext(ctx).Raw(query, userID, weeks).Scan(&rows).Error; err != nil {
@@ -1108,6 +1109,7 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 		JOIN program_class_enrollments e ON e.class_id = pc.id AND e.user_id = pcea.user_id
 		JOIN users u ON u.id = pcea.user_id
 		WHERE pcea.user_id = ?
+			AND pcea.deleted_at IS NULL
 			AND (e.enrolled_at IS NULL OR CAST(DATE(e.enrolled_at) AS TEXT) <= pcea.date)
 			AND (e.enrollment_ended_at IS NULL OR CAST(DATE(e.enrollment_ended_at) AS TEXT) >= pcea.date)
 	`

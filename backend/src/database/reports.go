@@ -39,6 +39,7 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 		Joins("JOIN users u ON u.id = pcea.user_id").
 		Joins("JOIN facilities f ON f.id = u.facility_id").
 		Where("DATE(pcea.date) >= ? AND DATE(pcea.date) <= ?", req.StartDate, req.EndDate).
+		Where("pcea.deleted_at IS NULL").
 		Order("f.name, p.name, pc.name, pcea.date, u.name_last")
 
 	if req.FacilityID != nil {
@@ -103,7 +104,7 @@ func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.Rep
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id AND pce.enrolled_at <= ?", req.EndDate).
 		Joins("LEFT JOIN program_types pt ON pt.program_id = p.id").
 		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
-		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND DATE(pcea.date) BETWEEN ? AND ?", req.StartDate, req.EndDate).
+		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL AND DATE(pcea.date) BETWEEN ? AND ?", req.StartDate, req.EndDate).
 		Group("f.id, f.name, p.id, p.name, p.funding_type").
 		Order("f.name, p.name")
 
@@ -180,7 +181,7 @@ func (db *DB) GenerateFacilityComparisonReport(ctx context.Context, req *models.
 		Joins("LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = f.id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id AND pce.enrolled_at <= ?", req.EndDate).
 		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
-		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND DATE(pcea.date) BETWEEN ? AND ?", req.StartDate, req.EndDate).
+		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL AND DATE(pcea.date) BETWEEN ? AND ?", req.StartDate, req.EndDate).
 		Where("f.id IN ?", facilityIDs)
 
 	if len(req.ProgramTypes) > 0 {
