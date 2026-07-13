@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -134,7 +135,8 @@ func (srv *Server) handleSetLinkFacilityVisibility(w http.ResponseWriter, r *htt
 	if len(req.FacilityIDs) == 0 {
 		return newBadRequestServiceError(errors.New("facility_ids required"), "facility_ids required")
 	}
-	if err := srv.WithUserContext(r).SetHelpfulLinkVisibilityForFacilities(&args, id, req.FacilityIDs, req.VisibilityStatus); err != nil {
+	service := services.NewContentVisibilityService(srv.WithUserContext(r))
+	if err := service.SetHelpfulLinkVisibility(&args, id, req.FacilityIDs, req.VisibilityStatus); err != nil {
 		log.add("link_id", id)
 		return newDatabaseServiceError(err)
 	}

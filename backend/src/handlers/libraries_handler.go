@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -262,7 +263,8 @@ func (srv *Server) handleSetLibraryFacilityVisibility(w http.ResponseWriter, r *
 	if len(req.FacilityIDs) == 0 {
 		return newBadRequestServiceError(errors.New("facility_ids required"), "facility_ids required")
 	}
-	library, err := srv.WithUserContext(r).SetLibraryVisibilityForFacilities(&args, id, req.FacilityIDs, req.VisibilityStatus)
+	service := services.NewContentVisibilityService(srv.WithUserContext(r))
+	library, err := service.SetLibraryVisibility(&args, id, req.FacilityIDs, req.VisibilityStatus)
 	if err != nil {
 		log.add("library_id", id)
 		return newDatabaseServiceError(err)

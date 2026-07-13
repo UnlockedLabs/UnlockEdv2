@@ -66,9 +66,7 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 
 type VideoResponse struct {
 	models.Video
-	IsFavorited          bool `json:"is_favorited"`
-	IsFeatured           bool `json:"is_featured"`
-	VisibleFacilityCount int  `json:"visible_facility_count"`
+	OpenContentMeta
 }
 
 func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]VideoResponse, error) {
@@ -160,14 +158,6 @@ func (db *DB) GetVideoFacilityVisibility(args *models.QueryContext, id int) ([]C
 		return nil, newNotFoundDBError(err, "videos")
 	}
 	return db.getContentFacilityVisibility(args, video.ID, video.OpenContentProviderID)
-}
-
-func (db *DB) SetVideoVisibilityForFacilities(args *models.QueryContext, id int, facilityIDs []uint, visible bool) error {
-	var video models.Video
-	if err := db.WithContext(args.Ctx).First(&video, "id = ?", id).Error; err != nil {
-		return newNotFoundDBError(err, "videos")
-	}
-	return db.setContentVisibilityForFacilities(args, video.ID, video.OpenContentProviderID, facilityIDs, visible)
 }
 
 func (db *DB) DeleteVideo(id int) error {

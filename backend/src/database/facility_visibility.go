@@ -6,6 +6,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+type OpenContentMeta struct {
+	IsFavorited          bool `json:"is_favorited"`
+	IsFeatured           bool `json:"is_featured"`
+	VisibleFacilityCount int  `json:"visible_facility_count"`
+}
+
 type ContentFacilityVisibility struct {
 	FacilityID       uint   `json:"facility_id"`
 	FacilityName     string `json:"facility_name"`
@@ -28,23 +34,9 @@ func (db *DB) getContentFacilityVisibility(args *models.QueryContext, contentID,
 	return visibilities, nil
 }
 
-func (db *DB) setContentVisibilityForFacilities(args *models.QueryContext, contentID, providerID uint, facilityIDs []uint, visible bool) error {
-	if len(facilityIDs) == 0 {
+func (db *DB) UpsertFacilityVisibilityStatuses(args *models.QueryContext, statuses []models.FacilityVisibilityStatus, visible bool) error {
+	if len(statuses) == 0 {
 		return nil
-	}
-	statuses := make([]models.FacilityVisibilityStatus, 0, len(facilityIDs))
-	seen := make(map[uint]bool, len(facilityIDs))
-	for _, facilityID := range facilityIDs {
-		if seen[facilityID] {
-			continue
-		}
-		seen[facilityID] = true
-		statuses = append(statuses, models.FacilityVisibilityStatus{
-			FacilityID:            facilityID,
-			OpenContentProviderID: providerID,
-			ContentID:             contentID,
-			VisibilityStatus:      visible,
-		})
 	}
 	updateMap := map[string]any{"visibility_status": visible}
 	if args.UserID != 0 {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -182,7 +183,8 @@ func (srv *Server) handleSetVideoFacilityVisibility(w http.ResponseWriter, r *ht
 	if len(req.FacilityIDs) == 0 {
 		return newBadRequestServiceError(errors.New("facility_ids required"), "facility_ids required")
 	}
-	if err := srv.WithUserContext(r).SetVideoVisibilityForFacilities(&args, id, req.FacilityIDs, req.VisibilityStatus); err != nil {
+	service := services.NewContentVisibilityService(srv.WithUserContext(r))
+	if err := service.SetVideoVisibility(&args, id, req.FacilityIDs, req.VisibilityStatus); err != nil {
 		log.add("video_id", id)
 		return newDatabaseServiceError(err)
 	}

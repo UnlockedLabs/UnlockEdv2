@@ -8,9 +8,7 @@ import (
 
 type HelpfulLinkResp struct {
 	models.HelpfulLink
-	IsFavorited          bool `json:"is_favorited"`
-	IsFeatured           bool `json:"is_featured"`
-	VisibleFacilityCount int  `json:"visible_facility_count"`
+	OpenContentMeta
 }
 
 func (db *DB) GetHelpfulLinks(args *models.QueryContext, onlyVisible bool) ([]HelpfulLinkResp, error) {
@@ -64,7 +62,12 @@ func (db *DB) AddHelpfulLink(args *models.QueryContext, link *models.HelpfulLink
 	if err := db.Create(link).Error; err != nil {
 		return newCreateDBError(err, "helpful_links")
 	}
-	return db.setContentVisibilityForFacilities(args, link.ID, link.OpenContentProviderID, []uint{args.FacilityID}, true)
+	return db.UpsertFacilityVisibilityStatuses(args, []models.FacilityVisibilityStatus{{
+		FacilityID:            args.FacilityID,
+		OpenContentProviderID: link.OpenContentProviderID,
+		ContentID:             link.ID,
+		VisibilityStatus:      true,
+	}}, true)
 }
 
 func (db *DB) DeleteLink(id uint) error {
@@ -99,7 +102,12 @@ func (db *DB) ToggleVisibilityStatus(args *models.QueryContext, id int) error {
 		Where("helpful_links.id = ?", id).First(&link).Error; err != nil {
 		return newGetRecordsDBError(err, "helpful_links")
 	}
-	return db.setContentVisibilityForFacilities(args, link.ID, link.OpenContentProviderID, []uint{args.FacilityID}, !link.VisibilityStatus)
+	return db.UpsertFacilityVisibilityStatuses(args, []models.FacilityVisibilityStatus{{
+		FacilityID:            args.FacilityID,
+		OpenContentProviderID: link.OpenContentProviderID,
+		ContentID:             link.ID,
+		VisibilityStatus:      !link.VisibilityStatus,
+	}}, !link.VisibilityStatus)
 }
 
 func (db *DB) GetHelpfulLinkFacilityVisibility(args *models.QueryContext, id int) ([]ContentFacilityVisibility, error) {
@@ -108,14 +116,6 @@ func (db *DB) GetHelpfulLinkFacilityVisibility(args *models.QueryContext, id int
 		return nil, newNotFoundDBError(err, "helpful_links")
 	}
 	return db.getContentFacilityVisibility(args, link.ID, link.OpenContentProviderID)
-}
-
-func (db *DB) SetHelpfulLinkVisibilityForFacilities(args *models.QueryContext, id int, facilityIDs []uint, visible bool) error {
-	var link models.HelpfulLink
-	if err := db.WithContext(args.Ctx).First(&link, "id = ?", id).Error; err != nil {
-		return newNotFoundDBError(err, "helpful_links")
-	}
-	return db.setContentVisibilityForFacilities(args, link.ID, link.OpenContentProviderID, facilityIDs, visible)
 }
 
 func (db *DB) GetLinkFromId(id uint) (*models.HelpfulLink, error) {

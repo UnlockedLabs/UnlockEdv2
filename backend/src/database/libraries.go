@@ -11,10 +11,8 @@ import (
 
 type LibraryResponse struct {
 	models.Library
-	IsFavorited          bool     `json:"is_favorited"`
-	IsFeatured           bool     `json:"is_featured"`
-	VisibleFacilityCount int      `json:"visible_facility_count"`
-	Tags                 []string `json:"tags" gorm:"-"`
+	OpenContentMeta
+	Tags []string `json:"tags" gorm:"-"`
 }
 
 // Retrieves either a paginated list of libraries or all libraries based upon the given parameters.
@@ -285,16 +283,4 @@ func (db *DB) GetLibraryFacilityVisibility(args *models.QueryContext, id int) ([
 		return nil, newNotFoundDBError(err, "libraries")
 	}
 	return db.getContentFacilityVisibility(args, library.ID, library.OpenContentProviderID)
-}
-
-func (db *DB) SetLibraryVisibilityForFacilities(args *models.QueryContext, id int, facilityIDs []uint, visible bool) (*models.Library, error) {
-	var library models.Library
-	if err := db.WithContext(args.Ctx).Preload("OpenContentProvider").First(&library, "id = ?", id).Error; err != nil {
-		return nil, newNotFoundDBError(err, "libraries")
-	}
-	if err := db.setContentVisibilityForFacilities(args, library.ID, library.OpenContentProviderID, facilityIDs, visible); err != nil {
-		return nil, err
-	}
-	library.VisibilityStatus = visible
-	return &library, nil
 }
