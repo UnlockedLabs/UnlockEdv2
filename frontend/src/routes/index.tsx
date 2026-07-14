@@ -18,6 +18,7 @@ import {
     DeptAdminProgramRoutes
 } from './program-routes';
 import { ProviderPlatformRoutes } from './provider-routes';
+import { TutorRoutes } from './tutor-routes';
 
 export const router = createBrowserRouter([
     {
@@ -36,7 +37,8 @@ export const router = createBrowserRouter([
             ProgramRoutes,
             AdminProgramRoutes,
             DeptAdminProgramRoutes,
-            ProviderPlatformRoutes
+            ProviderPlatformRoutes,
+            TutorRoutes
         ]
     },
     // Public routes (login, reset-password, error, 404) — no authenticated shell.
