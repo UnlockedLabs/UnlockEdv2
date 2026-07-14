@@ -245,7 +245,11 @@ export default function OverviewTab({
                         tooltip={
                             <>
                                 Residents whose account was <b>first created</b>{' '}
-                                within the range. The <b>+{newUsersChange}%</b>{' '}
+                                within the range. The{' '}
+                                <b>
+                                    {newUsersChange >= 0 ? '+' : ''}
+                                    {newUsersChange}%
+                                </b>{' '}
                                 compares against the prior window.
                             </>
                         }
