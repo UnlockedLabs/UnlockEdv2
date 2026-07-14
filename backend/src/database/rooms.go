@@ -59,16 +59,23 @@ func LockAndCheckConflicts(tx *gorm.DB, req *models.ConflictCheckRequest) ([]mod
 const maxConflictsToReturn = 50
 
 func (db *DB) CheckConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
+	if req.RoomID == 0 && req.InstructorID == 0 {
+		return nil, nil
+	}
+	w, err := db.prepareConflictWindow(req)
+	if err != nil {
+		return nil, err
+	}
 	var conflicts []models.RoomConflict
 	if req.RoomID != 0 {
-		roomConflicts, err := checkRoomRRuleConflicts(db, req)
+		roomConflicts, err := checkRoomRRuleConflicts(db, w, req)
 		if err != nil {
 			return nil, err
 		}
 		conflicts = append(conflicts, roomConflicts...)
 	}
 	if req.InstructorID != 0 {
-		instructorConflicts, err := checkInstructorRRuleConflicts(db, req)
+		instructorConflicts, err := checkInstructorRRuleConflicts(db, w, req)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +85,11 @@ func (db *DB) CheckConflicts(req *models.ConflictCheckRequest) ([]models.RoomCon
 }
 
 func (db *DB) CheckRRuleConflicts(req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
-	return checkRoomRRuleConflicts(db, req)
+	w, err := db.prepareConflictWindow(req)
+	if err != nil {
+		return nil, err
+	}
+	return checkRoomRRuleConflicts(db, w, req)
 }
 
 type conflictWindow struct {
@@ -200,11 +211,7 @@ func buildConflictsFromBookings(db *DB, w *conflictWindow, bookings []models.Roo
 	return conflicts
 }
 
-func checkRoomRRuleConflicts(db *DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
-	w, err := db.prepareConflictWindow(req)
-	if err != nil {
-		return nil, err
-	}
+func checkRoomRRuleConflicts(db *DB, w *conflictWindow, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
 	bookings, err := db.getRoomBookingsInRange(req.FacilityID, req.RoomID, w.rangeStart, w.rangeEnd, w.facilityTZ)
 	if err != nil {
 		return nil, err

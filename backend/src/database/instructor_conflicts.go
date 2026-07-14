@@ -10,11 +10,7 @@ import (
 	"github.com/teambition/rrule-go"
 )
 
-func checkInstructorRRuleConflicts(db *DB, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
-	w, err := db.prepareConflictWindow(req)
-	if err != nil {
-		return nil, err
-	}
+func checkInstructorRRuleConflicts(db *DB, w *conflictWindow, req *models.ConflictCheckRequest) ([]models.RoomConflict, error) {
 	bookings, err := db.getInstructorBookingsInRange(req.FacilityID, req.InstructorID, w.rangeStart, w.rangeEnd, w.facilityTZ)
 	if err != nil {
 		return nil, err
