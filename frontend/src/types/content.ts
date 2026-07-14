@@ -16,6 +16,7 @@ export interface Video {
     channel_title: string;
     external_id: string;
     visibility_status: boolean;
+    visible_facility_count?: number;
     thumbnail_url: string;
     open_content_provider_id: number;
     availability: 'available' | 'processing' | 'has_error';
@@ -53,10 +54,17 @@ export interface Library {
     updated_at: string;
     url: string;
     visibility_status: boolean;
+    visible_facility_count?: number;
     open_content_provider: OpenContentProvider;
     is_favorited: boolean;
     is_featured?: boolean;
     tags?: string[];
+}
+
+export interface ContentFacilityVisibility {
+    facility_id: number;
+    facility_name: string;
+    visibility_status: boolean;
 }
 
 export interface HelpfulLink {
@@ -65,9 +73,9 @@ export interface HelpfulLink {
     description: string;
     url: string;
     visibility_status: boolean;
+    visible_facility_count?: number;
     thumbnail_url: string;
     open_content_provider_id: number;
-    facility_id: number;
     is_favorited: boolean;
     is_featured?: boolean;
 }

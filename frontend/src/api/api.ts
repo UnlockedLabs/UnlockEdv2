@@ -3,7 +3,7 @@ import {
     ServerResponseOne,
     ServerResponseMany
 } from '@/types/server';
-import { ANALYTICS_EVENTS, captureEvent } from '@/lib/analytics';
+import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
 
 class API {
     private static getCSRFToken(): string {

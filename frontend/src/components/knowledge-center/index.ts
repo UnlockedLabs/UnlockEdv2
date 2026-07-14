@@ -1,3 +1,4 @@
+export { default as FacilityVisibilitySheet } from './FacilityVisibilitySheet';
 export { default as LibraryCard } from './LibraryCard';
 export { default as VideoCard } from './VideoCard';
 export { default as HelpfulLinkCard } from './HelpfulLinkCard';

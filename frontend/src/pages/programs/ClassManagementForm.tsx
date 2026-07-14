@@ -5,11 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import API from '@/api/api';
-import {
-    ANALYTICS_EVENTS,
-    captureEvent,
-    flowTimerSeconds
-} from '@/lib/analytics';
+import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
 import { useAuth } from '@/auth/useAuth';
 import {

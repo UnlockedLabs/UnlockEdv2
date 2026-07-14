@@ -114,7 +114,7 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
 			hl.url,
 			hl.thumbnail_url,
 			hl.description,
-			hl.visibility_status,
+			COALESCE(fvs.visibility_status, false) AS visibility_status,
 			hl.open_content_provider_id AS open_content_provider_id,
 			NULL AS provider_name,
 			NULL AS channel_title,
@@ -126,6 +126,9 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
 				AND ocp.deleted_at IS NULL
 		JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
 				AND hl.id = f.content_id
+		left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = hl.open_content_provider_id
+				and fvs.content_id = hl.id
+				and fvs.facility_id = ?
 		WHERE f.user_id = ?
 	)
 	SELECT 
@@ -147,7 +150,7 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
 		UNION ALL
 		SELECT * FROM ordered_helpful_links WHERE row_num <= 10
 	)`
-	if err := db.WithContext(args.Ctx).Raw(favoritesQuery, args.FacilityID, args.UserID, args.FacilityID, args.UserID, args.UserID).Scan(&favorites).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(favoritesQuery, args.FacilityID, args.UserID, args.FacilityID, args.UserID, args.FacilityID, args.UserID).Scan(&favorites).Error; err != nil {
 		return nil, err
 	}
 	return favorites, nil
@@ -196,7 +199,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 		queryArgs = append(queryArgs, searchTerm)
 	}
 	// Helpful links
-	queryArgs = append(queryArgs, args.UserID)
+	queryArgs = append(queryArgs, args.FacilityID, args.UserID)
 	if args.Search != "" {
 		queryArgs = append(queryArgs, searchTerm)
 	}
@@ -275,7 +278,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
             hl.url,
             hl.thumbnail_url,
             hl.description,
-            hl.visibility_status,
+            COALESCE(fvs.visibility_status, false) AS visibility_status,
             hl.open_content_provider_id AS open_content_provider_id,
             NULL AS provider_name,
             NULL AS channel_title,
@@ -286,6 +289,9 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
             AND ocp.deleted_at IS NULL
         JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
             AND hl.id = f.content_id
+        left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = hl.open_content_provider_id
+            and fvs.content_id = hl.id
+            and fvs.facility_id = ?
         WHERE f.user_id = ? %s
     ) AS all_favorites
     ORDER BY %s

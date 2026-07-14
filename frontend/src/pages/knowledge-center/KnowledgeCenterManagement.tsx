@@ -45,6 +45,7 @@ import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useDebounceValue } from 'usehooks-ts';
 import { toast } from 'sonner';
 import {
+    Facility,
     Library,
     Video,
     HelpfulLink,
@@ -54,6 +55,9 @@ import {
     Option,
     MAX_DOWNLOAD_ATTEMPTS
 } from '@/types';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
+import { FacilityVisibilitySheet } from '@/components/knowledge-center';
+import { ManagedContent } from '@/components/knowledge-center/FacilityVisibilitySheet';
 import {
     videoIsAvailable,
     getVideoErrorMessage,
@@ -76,12 +80,71 @@ interface CardHandlers {
     onNavigate: (path: string) => void;
 }
 
+function VisibilityFooter({
+    visible,
+    visibleFacilityCount,
+    facilityCount,
+    onToggle,
+    onManage
+}: {
+    visible: boolean;
+    visibleFacilityCount?: number;
+    facilityCount?: number;
+    onToggle: () => void;
+    onManage?: () => void;
+}) {
+    return (
+        <div
+            className="row-with-border mt-auto"
+            onClick={(e) => e.stopPropagation()}
+        >
+            {onManage ? (
+                <>
+                    <span className="text-sm text-gray-700">
+                        {(visibleFacilityCount ?? 0) === 0
+                            ? 'Hidden everywhere'
+                            : `Visible at ${visibleFacilityCount} / ${facilityCount}`}
+                    </span>
+                    <Button variant="outline" size="sm" onClick={onManage}>
+                        Manage
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <label className="clickable-row">
+                        <Switch
+                            checked={visible}
+                            onCheckedChange={onToggle}
+                            className="data-[state=checked]:bg-brand"
+                        />
+                        <span className="text-gray-700">Visible</span>
+                    </label>
+                    <Badge
+                        variant={visible ? 'default' : 'secondary'}
+                        className={
+                            visible
+                                ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                        }
+                    >
+                        {visible ? 'Visible' : 'Hidden'}
+                    </Badge>
+                </>
+            )}
+        </div>
+    );
+}
+
 function LibraryCard({
     library,
-    handlers
+    handlers,
+    facilityCount,
+    onManage
 }: {
     library: Library;
     handlers: CardHandlers;
+    facilityCount?: number;
+    onManage?: (library: Library) => void;
 }) {
     const title = decodeHtmlEntities(library.title);
     const description = decodeHtmlEntities(library.description ?? '');
@@ -131,36 +194,19 @@ function LibraryCard({
             <p className="text-sm text-gray-600 line-clamp-2 mb-3 flex-1">
                 {description}
             </p>
-            <div
-                className="row-with-border mt-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <label className="clickable-row">
-                    <Switch
-                        checked={library.visibility_status}
-                        onCheckedChange={() =>
-                            handlers.onToggleVisibility(
-                                library.id,
-                                'library',
-                                library.visibility_status
-                            )
-                        }
-                    />
-                    <span className="text-gray-700">Visible</span>
-                </label>
-                <Badge
-                    variant={
-                        library.visibility_status ? 'default' : 'secondary'
-                    }
-                    className={
+            <VisibilityFooter
+                visible={library.visibility_status}
+                visibleFacilityCount={library.visible_facility_count}
+                facilityCount={facilityCount}
+                onToggle={() =>
+                    handlers.onToggleVisibility(
+                        library.id,
+                        'library',
                         library.visibility_status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                    }
-                >
-                    {library.visibility_status ? 'Visible' : 'Hidden'}
-                </Badge>
-            </div>
+                    )
+                }
+                onManage={onManage && (() => onManage(library))}
+            />
         </div>
     );
 }
@@ -170,9 +216,18 @@ interface VideoCardProps {
     handlers: CardHandlers;
     onRetry: (video: Video) => void;
     onViewStatus: (video: Video) => void;
+    facilityCount?: number;
+    onManage?: (video: Video) => void;
 }
 
-function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
+function VideoCard({
+    video,
+    handlers,
+    onRetry,
+    onViewStatus,
+    facilityCount,
+    onManage
+}: VideoCardProps) {
     const available = videoIsAvailable(video);
     const title = decodeHtmlEntities(video.title);
     const channelTitle = decodeHtmlEntities(video.channel_title ?? '');
@@ -261,34 +316,19 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
                     </Button>
                 </div>
             )}
-            <div
-                className="row-with-border mt-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <label className="clickable-row">
-                    <Switch
-                        checked={video.visibility_status}
-                        onCheckedChange={() =>
-                            handlers.onToggleVisibility(
-                                video.id,
-                                'video',
-                                video.visibility_status
-                            )
-                        }
-                    />
-                    <span className="text-gray-700">Visible</span>
-                </label>
-                <Badge
-                    variant={video.visibility_status ? 'default' : 'secondary'}
-                    className={
+            <VisibilityFooter
+                visible={video.visibility_status}
+                visibleFacilityCount={video.visible_facility_count}
+                facilityCount={facilityCount}
+                onToggle={() =>
+                    handlers.onToggleVisibility(
+                        video.id,
+                        'video',
                         video.visibility_status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                    }
-                >
-                    {video.visibility_status ? 'Visible' : 'Hidden'}
-                </Badge>
-            </div>
+                    )
+                }
+                onManage={onManage && (() => onManage(video))}
+            />
         </div>
     );
 }
@@ -296,11 +336,15 @@ function VideoCard({ video, handlers, onRetry, onViewStatus }: VideoCardProps) {
 function LinkCard({
     link,
     handlers,
-    onLinkClick
+    onLinkClick,
+    facilityCount,
+    onManage
 }: {
     link: HelpfulLink;
     handlers: CardHandlers;
     onLinkClick: (link: HelpfulLink) => void;
+    facilityCount?: number;
+    onManage?: (link: HelpfulLink) => void;
 }) {
     const title = decodeHtmlEntities(link.title);
     const description = decodeHtmlEntities(link.description ?? '');
@@ -342,40 +386,30 @@ function LinkCard({
             <p className="text-sm text-gray-600 line-clamp-2 mb-3 flex-1">
                 {description}
             </p>
-            <div
-                className="row-with-border mt-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <label className="clickable-row">
-                    <Switch
-                        checked={link.visibility_status}
-                        onCheckedChange={() =>
-                            handlers.onToggleVisibility(
-                                link.id,
-                                'link',
-                                link.visibility_status
-                            )
-                        }
-                    />
-                    <span className="text-gray-700">Visible</span>
-                </label>
-                <Badge
-                    variant={link.visibility_status ? 'default' : 'secondary'}
-                    className={
+            <VisibilityFooter
+                visible={link.visibility_status}
+                visibleFacilityCount={link.visible_facility_count}
+                facilityCount={facilityCount}
+                onToggle={() =>
+                    handlers.onToggleVisibility(
+                        link.id,
+                        'link',
                         link.visibility_status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                    }
-                >
-                    {link.visibility_status ? 'Visible' : 'Hidden'}
-                </Badge>
-            </div>
+                    )
+                }
+                onManage={onManage && (() => onManage(link))}
+            />
         </div>
     );
 }
 
 export default function KnowledgeCenterManagement() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const canManageFacilities = !!user && canSwitchFacility(user);
+    const [manageContent, setManageContent] = useState<ManagedContent | null>(
+        null
+    );
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
@@ -443,6 +477,11 @@ export default function KnowledgeCenterManagement() {
 
     const { data: tagsData } = useSWR<ServerResponseMany<Option>>('/api/tags');
     const categories = tagsData?.data ?? [];
+
+    const { data: facilitiesData } = useSWR<ServerResponseMany<Facility>>(
+        canManageFacilities ? '/api/facilities?page=1&per_page=1' : null
+    );
+    const facilityCount = facilitiesData?.meta?.total ?? 0;
 
     const { data: libData, mutate: mutateLibs } = useSWR<
         ServerResponseMany<Library>
@@ -836,6 +875,16 @@ export default function KnowledgeCenterManagement() {
                                         key={library.id}
                                         library={library}
                                         handlers={cardHandlers}
+                                        facilityCount={facilityCount}
+                                        onManage={
+                                            canManageFacilities
+                                                ? (l) =>
+                                                      setManageContent({
+                                                          title: l.title,
+                                                          endpoint: `libraries/${l.id}/facilities`
+                                                      })
+                                                : undefined
+                                        }
                                     />
                                 ))}
                             </div>
@@ -863,6 +912,16 @@ export default function KnowledgeCenterManagement() {
                                         key={video.id}
                                         video={video}
                                         handlers={cardHandlers}
+                                        facilityCount={facilityCount}
+                                        onManage={
+                                            canManageFacilities
+                                                ? (v) =>
+                                                      setManageContent({
+                                                          title: v.title,
+                                                          endpoint: `videos/${v.id}/facilities`
+                                                      })
+                                                : undefined
+                                        }
                                         onRetry={(v) =>
                                             void handleRetryVideo(v)
                                         }
@@ -899,6 +958,16 @@ export default function KnowledgeCenterManagement() {
                                         key={link.id}
                                         link={link}
                                         handlers={cardHandlers}
+                                        facilityCount={facilityCount}
+                                        onManage={
+                                            canManageFacilities
+                                                ? (l) =>
+                                                      setManageContent({
+                                                          title: l.title,
+                                                          endpoint: `helpful-links/facilities/${l.id}`
+                                                      })
+                                                : undefined
+                                        }
                                         onLinkClick={(l) =>
                                             void handleLinkClick(l)
                                         }
@@ -1075,6 +1144,16 @@ export default function KnowledgeCenterManagement() {
                     </Button>
                 </DialogFooter>
             </FormModal>
+
+            <FacilityVisibilitySheet
+                content={manageContent}
+                onClose={() => setManageContent(null)}
+                onChanged={() => {
+                    void mutateLibs();
+                    void mutateVids();
+                    void mutateLinks();
+                }}
+            />
         </div>
     );
 }

@@ -3,7 +3,7 @@ import {
     type AnalyticsEvent,
     type AnalyticsProps,
     captureEvent
-} from './analytics';
+} from './events';
 
 /**
  * Starts a flow timer and fires a *_started analytics event on mount (or when

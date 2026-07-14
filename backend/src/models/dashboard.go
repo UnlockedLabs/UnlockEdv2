@@ -11,10 +11,9 @@ type HelpfulLink struct {
 	Title                 string `gorm:"size:255;not null" json:"title"`
 	Description           string `gorm:"size:255;not null" json:"description"`
 	Url                   string `gorm:"size:255;not null" json:"url"`
-	VisibilityStatus      bool   `gorm:"default:true" json:"visibility_status"`
+	VisibilityStatus      bool   `gorm:"->" json:"visibility_status"`
 	OpenContentProviderID uint   `json:"open_content_provider_id"`
 	ThumbnailUrl          string `gorm:"size:255;" json:"thumbnail_url"`
-	FacilityID            uint   `json:"facility_id"`
 }
 
 func (HelpfulLink) TableName() string {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/services"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -44,6 +45,8 @@ func (srv *Server) registerVideoRoutes() []routeDef {
 		featureRoute("PUT /api/videos/{id}/favorite", srv.handleFavoriteVideo, axx),
 		adminFeatureRoute("POST /api/videos", srv.handlePostVideos, axx, models.UploadVideoAccess),
 		adminFeatureRoute("PUT /api/videos/{id}/{action}", srv.handleVideoAction, axx),
+		deptAdminFeatureRoute("GET /api/videos/{id}/facilities", srv.handleGetVideoFacilityVisibility, axx),
+		deptAdminFeatureRoute("PUT /api/videos/{id}/facilities", srv.handleSetVideoFacilityVisibility, axx),
 		adminFeatureRoute("DELETE /api/videos/{id}", srv.handleDeleteVideo, axx),
 	}
 }
@@ -151,6 +154,41 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		return writeJsonResponse(w, http.StatusOK, "retry job published, please wait...")
 	}
 	return newBadRequestServiceError(errors.New("invalid action"), "invalid action")
+}
+
+func (srv *Server) handleGetVideoFacilityVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.facilityScopedQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "video id")
+	}
+	visibilities, err := srv.Db.GetVideoFacilityVisibility(&args, id)
+	if err != nil {
+		log.add("video_id", id)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, visibilities)
+}
+
+func (srv *Server) handleSetVideoFacilityVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.facilityScopedQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "video id")
+	}
+	var req setFacilityVisibilityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if len(req.FacilityIDs) == 0 {
+		return newBadRequestServiceError(errors.New("facility_ids required"), "facility_ids required")
+	}
+	service := services.NewContentVisibilityService(srv.WithUserContext(r))
+	if err := service.SetVideoVisibility(&args, id, req.FacilityIDs, req.VisibilityStatus); err != nil {
+		log.add("video_id", id)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Video visibility updated successfully")
 }
 
 func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
-import { ANALYTICS_EVENTS, captureEvent } from '@/lib/analytics';
+import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
 import { useDebounceValue } from 'usehooks-ts';
 import { Search, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';

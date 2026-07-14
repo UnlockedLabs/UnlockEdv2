@@ -11,9 +11,8 @@ import (
 
 type LibraryResponse struct {
 	models.Library
-	IsFavorited bool     `json:"is_favorited"`
-	IsFeatured  bool     `json:"is_featured"`
-	Tags        []string `json:"tags" gorm:"-"`
+	OpenContentMeta
+	Tags []string `json:"tags" gorm:"-"`
 }
 
 // Retrieves either a paginated list of libraries or all libraries based upon the given parameters.
@@ -38,6 +37,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 		CASE WHEN fvs.visibility_status IS NULL THEN false
 			ELSE fvs.visibility_status
 		END AS visibility_status,
+		` + visibleFacilityCountSubquery("libraries") + `,
 		EXISTS (
 			SELECT 1
 			FROM open_content_favorites ff
@@ -275,4 +275,12 @@ func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int, args *models.QueryConte
 	}
 	library.VisibilityStatus = visibility.VisibilityStatus
 	return &library, nil
+}
+
+func (db *DB) GetLibraryFacilityVisibility(args *models.QueryContext, id int) ([]ContentFacilityVisibility, error) {
+	var library models.Library
+	if err := db.WithContext(args.Ctx).First(&library, "id = ?", id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "libraries")
+	}
+	return db.getContentFacilityVisibility(args, library.ID, library.OpenContentProviderID)
 }

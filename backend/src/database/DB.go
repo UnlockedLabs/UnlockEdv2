@@ -222,6 +222,20 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 		if err := dbWithCtx.Create(&links).Error; err != nil {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
+		for _, link := range links {
+			if link.OpenContentProviderID == 0 {
+				continue
+			}
+			visibility := models.FacilityVisibilityStatus{
+				FacilityID:            defaultFacility.ID,
+				OpenContentProviderID: link.OpenContentProviderID,
+				ContentID:             link.ID,
+				VisibilityStatus:      true,
+			}
+			if err := dbWithCtx.Create(&visibility).Error; err != nil {
+				logrus.Fatalf("Failed to create link visibility: %v", err)
+			}
+		}
 		for idx := range defaultOpenContentProviders {
 			if err := dbWithCtx.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
 				logrus.Fatalf("Failed to create default open content providers: %v", err)
