@@ -472,7 +472,7 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		return newJSONReqBodyServiceError(err)
 	}
 	// A cancelled series frees the room, so skip the conflict check for cancellations.
-	if eventSeriesRequest.EventSeries.RoomID != nil && !eventSeriesRequest.EventSeries.IsCancelled {
+	if eventSeriesRequest.EventSeries.RoomID != nil {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
@@ -480,25 +480,27 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		if _, err := srv.Db.GetRoomByIDForFacility(*eventSeriesRequest.EventSeries.RoomID, class.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
-		var excludeEventID *uint
-		if eventSeriesRequest.ClosedEventSeries.ID > 0 {
-			closedID := eventSeriesRequest.ClosedEventSeries.ID
-			excludeEventID = &closedID
-		} else if eventSeriesRequest.EventSeries.ID > 0 {
-			excludeEventID = &eventSeriesRequest.EventSeries.ID
-		}
-		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
-			FacilityID:     class.FacilityID,
-			RoomID:         *eventSeriesRequest.EventSeries.RoomID,
-			RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
-			Duration:       eventSeriesRequest.EventSeries.Duration,
-			ExcludeEventID: excludeEventID,
-		})
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		if len(conflicts) > 0 {
-			return writeConflictResponse(w, conflicts)
+		if !eventSeriesRequest.EventSeries.IsCancelled {
+			var excludeEventID *uint
+			if eventSeriesRequest.ClosedEventSeries.ID > 0 {
+				closedID := eventSeriesRequest.ClosedEventSeries.ID
+				excludeEventID = &closedID
+			} else if eventSeriesRequest.EventSeries.ID > 0 {
+				excludeEventID = &eventSeriesRequest.EventSeries.ID
+			}
+			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+				FacilityID:     class.FacilityID,
+				RoomID:         *eventSeriesRequest.EventSeries.RoomID,
+				RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
+				Duration:       eventSeriesRequest.EventSeries.Duration,
+				ExcludeEventID: excludeEventID,
+			})
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			if len(conflicts) > 0 {
+				return writeConflictResponse(w, conflicts)
+			}
 		}
 	}
 	args := srv.getQueryContext(r)

@@ -365,11 +365,14 @@ func TestDedupeEventDates_PrefersNewestRowOnCollision(t *testing.T) {
 	result := dedupeEventDates(dates)
 
 	assert.Len(t, result, 2, "duplicate date+classTime should collapse to one entry")
+	foundCollisionDate := false
 	for _, d := range result {
 		if d.Date == "2026-01-05" {
+			foundCollisionDate = true
 			assert.Equal(t, uint(2), d.EventID, "newest row should win on collision")
 		}
 	}
+	assert.True(t, foundCollisionDate, "expected deduped result to include 2026-01-05")
 }
 
 func TestDedupeEventDates_KeepsDistinctTimesSameDate(t *testing.T) {
