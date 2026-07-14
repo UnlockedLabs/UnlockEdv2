@@ -48,6 +48,7 @@ export default function AuthenticatedLayout() {
     const isFacilities = location.pathname === '/facilities';
     const isSchedule = location.pathname === '/schedule';
     const isOperationalInsights = location.pathname === '/operational-insights';
+    const isAiTutor = location.pathname === '/ai-tutor';
     const isAdmins = location.pathname === '/admins';
     const isKnowledgeCenter =
         location.pathname === '/knowledge-center-management' ||
@@ -79,7 +80,8 @@ export default function AuthenticatedLayout() {
         isContentViewer ||
         isResidentPage ||
         isSchedule ||
-        isOperationalInsights;
+        isOperationalInsights ||
+        isAiTutor;
     const fullBleedWrapperClass =
         isDashboard ||
         isProgramsList ||
@@ -94,7 +96,8 @@ export default function AuthenticatedLayout() {
         isContentViewer ||
         isResidentPage ||
         isSchedule ||
-        isOperationalInsights
+        isOperationalInsights ||
+        isAiTutor
             ? 'py-0'
             : 'py-4';
     const showBreadcrumbs =
