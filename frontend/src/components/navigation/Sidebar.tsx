@@ -293,6 +293,17 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     ]}
                 />
             )}
+
+            {hasFeature(user, FeatureAccess.AiTutorAccess) && (
+                <NavLink
+                    to="/ai-tutor"
+                    icon={AcademicCapIcon}
+                    label="AI Tutor"
+                    active={isActive(['/ai-tutor'])}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                />
+            )}
         </>
     );
 }
@@ -375,6 +386,16 @@ function StudentNav({
                     icon={ArrowPathIcon}
                     label="Programs"
                     active={isActive(['/resident-programs'])}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                />
+            )}
+            {hasFeature(user, FeatureAccess.AiTutorAccess) && (
+                <NavLink
+                    to="/ai-tutor"
+                    icon={AcademicCapIcon}
+                    label="AI Tutor"
+                    active={isActive(['/ai-tutor'])}
                     collapsed={collapsed}
                     onClick={onNavigate}
                 />

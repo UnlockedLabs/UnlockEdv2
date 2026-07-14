@@ -98,6 +98,27 @@ services:
       postgres:
         condition: service_healthy
 
+  # AI tutor sidecar (served under basePath /tutor; see tutor-integration.md)
+  tutor-service:
+    build:
+      context: ../ai/unlocked-hiset-ai
+    networks:
+      - intranet
+    environment:
+      - AUTH_MODE=unlocked
+      - DATABASE_URL=postgres://unlocked:dev@postgres:5432/unlocked
+      - KRATOS_PUBLIC_URL=http://kratos:4433
+      - TUTOR_FEATURE_FLAG=ai_tutor
+      - AI_PROVIDER=${TUTOR_AI_PROVIDER:-anthropic}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kratos:
+        condition: service_started
+
   # Provider middleware
   provider-service:
     build:
