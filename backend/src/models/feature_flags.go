@@ -25,6 +25,7 @@ const (
 	ProviderAccess       FeatureAccess = "provider_platforms"
 	ProgramAccess        FeatureAccess = "program_management"
 	LearningRecordAccess FeatureAccess = "learning_record"
+	AiTutorAccess        FeatureAccess = "ai_tutor"
 
 	// these are the page level features
 	RequestContentAccess FeatureAccess = "request_content"
@@ -32,7 +33,7 @@ const (
 	UploadVideoAccess    FeatureAccess = "upload_video"
 )
 
-var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess}
+var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess}
 
 func Feature(kinds ...FeatureAccess) []FeatureAccess {
 	return kinds
