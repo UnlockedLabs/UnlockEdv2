@@ -221,12 +221,17 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		name, err := srv.Db.GetInstructorNameByID(*req.InstructorID, class.FacilityID)
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		allowedRoles := []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}
+		if claims.Role == models.FacilityAdmin {
+			allowedRoles = []models.UserRole{models.FacilityAdmin}
+		}
+		name, err := srv.Db.GetInstructorNameByID(*req.InstructorID, class.FacilityID, allowedRoles...)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
 		if name == "" {
-			return newForbiddenServiceError(errors.New("instructor does not belong to this facility"), "instructor not authorized for this facility")
+			return newForbiddenServiceError(errors.New("instructor not authorized for this facility"), "instructor not authorized for this facility")
 		}
 	}
 	ctx := srv.getQueryContext(r)

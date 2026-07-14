@@ -1,18 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import useSWR from 'swr';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
-import {
-    FacilityProgramClassEvent,
-    Room,
-    RoomConflict,
-    User,
-    UserRole,
-    ServerResponseMany
-} from '@/types';
+import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
+import { useInstructors } from '@/hooks/useInstructors';
 import {
     scheduleRescheduleSessionSchema,
     ScheduleRescheduleSessionInput
@@ -73,16 +66,7 @@ export function RescheduleSessionModal({
     const currentRoomName =
         rooms.find((r) => r.id === event.room_id)?.name ?? '';
 
-    const roleParam =
-        user?.role === UserRole.FacilityAdmin
-            ? 'facility_admin'
-            : 'department_admin';
-    const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
-        open && user && facilityId
-            ? `/api/users?role=${roleParam}&facility_id=${facilityId}&per_page=100`
-            : null
-    );
-    const instructors = instructorsResp?.data ?? [];
+    const instructors = useInstructors(facilityId, open);
 
     useEffect(() => {
         if (open && event) {

@@ -1,19 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import useSWR from 'swr';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
 import API from '@/api/api';
-import { useAuth } from '@/auth/useAuth';
-import {
-    FacilityProgramClassEvent,
-    Room,
-    RoomConflict,
-    User,
-    UserRole,
-    ServerResponseMany
-} from '@/types';
+import { FacilityProgramClassEvent, Room, RoomConflict } from '@/types';
+import { useInstructors } from '@/hooks/useInstructors';
 import {
     rescheduleSeriesSchema,
     RescheduleSeriesInput
@@ -108,7 +100,6 @@ export function RescheduleSeriesModal({
     facilityId,
     onSuccess
 }: RescheduleSeriesModalProps) {
-    const { user } = useAuth();
     const rruleRef = useRef<RRuleFormHandle>(null);
     const form = useForm<RescheduleSeriesInput>({
         resolver: zodResolver(rescheduleSeriesSchema),
@@ -125,16 +116,18 @@ export function RescheduleSeriesModal({
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
 
-    const roleParam =
-        user?.role === UserRole.FacilityAdmin
-            ? 'facility_admin'
-            : 'department_admin';
-    const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
-        open && user && facilityId
-            ? `/api/users?role=${roleParam}&facility_id=${facilityId}&per_page=100`
-            : null
-    );
-    const instructors = instructorsResp?.data ?? [];
+    const instructors = useInstructors(facilityId, open);
+
+    useEffect(() => {
+        if (open) {
+            form.reset({
+                room_id: event.room_id ? String(event.room_id) : '',
+                instructor_id: event.instructor_id
+                    ? String(event.instructor_id)
+                    : ''
+            });
+        }
+    }, [open, event, form]);
 
     const defaults = parseRRuleDefaults(event);
     const currentRoomName =
