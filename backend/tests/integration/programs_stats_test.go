@@ -330,6 +330,37 @@ func (suite *ProgramsStatsTestSuite) TestGetProgramsFacilityStats_FacilitySpecif
 	assert.Equal(suite.T(), float64(2), *stats.AvgActiveProgramsPerFacility) // For single facility, this equals program count
 }
 
+// TestFetchEnrollmentMetrics_CompletionRateCappedAt100 is a regression for ID-716
+// ("Statewide Program View — Avg Completion Rate = 130%"). FetchEnrollmentMetrics counted
+// Completed enrollments in the numerator without requiring enrolled_at IS NOT NULL, while the
+// denominator required it. Completing a class leaves enrolled_at NULL for enrollments created
+// while the class was not Active, so those rows landed in the numerator but not the denominator,
+// letting the rate exceed 100%.
+func (suite *ProgramsStatsTestSuite) TestFetchEnrollmentMetrics_CompletionRateCappedAt100() {
+	facility := suite.createTestFacility("ID716 Facility")
+	program := suite.createTestProgram("ID716 Program")
+	suite.createProgramFacilityAssociation(program.ID, facility.ID)
+
+	// Class must be Completed for the completion_rate branch to engage.
+	class := suite.createTestClass(program.ID, facility.ID, models.Completed)
+
+	now := time.Now()
+	// Completed enrollment WITH enrolled_at: counts in both numerator and denominator.
+	s1 := suite.createTestUser(facility.ID, models.Student)
+	suite.createTestEnrollment(class.ID, s1.ID, models.EnrollmentCompleted, &now, &now)
+	// Completed enrollment WITHOUT enrolled_at: pre-fix this was counted in the numerator only,
+	// pushing the rate to 200%.
+	s2 := suite.createTestUser(facility.ID, models.Student)
+	suite.createTestEnrollment(class.ID, s2.ID, models.EnrollmentCompleted, nil, nil)
+
+	metrics, err := suite.env.DB.FetchEnrollmentMetrics(int(program.ID), facility.ID)
+	assert.NoError(suite.T(), err)
+	assert.LessOrEqual(suite.T(), metrics.CompletionRate, float64(100),
+		"completion rate must never exceed 100%")
+	assert.Equal(suite.T(), float64(100), metrics.CompletionRate,
+		"1 completed-with-enrolled_at / 1 terminal-with-enrolled_at should be 100%")
+}
+
 func TestProgramsStatsTestSuite(t *testing.T) {
 	suite.Run(t, new(ProgramsStatsTestSuite))
 }

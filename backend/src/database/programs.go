@@ -47,7 +47,7 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.Pr
 		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.user_id END) as active_residents,
 		CASE
 			WHEN COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) = 0 THEN 0
-			ELSE COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrollment_status = 'Completed' THEN 1 END) * 1.0
+			ELSE COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status = 'Completed' THEN 1 END) * 1.0
 				/ COUNT(CASE WHEN pc.status = 'Completed' AND pce.enrolled_at IS NOT NULL AND pce.enrollment_status != 'Enrolled' THEN 1 END) * 100
 		END AS completion_rate
 	`
