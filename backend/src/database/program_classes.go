@@ -513,12 +513,15 @@ func (db *DB) GetFacilityInstructors(facilityID int) ([]models.Instructor, error
 	return result, nil
 }
 
-func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint) (string, error) {
+func (db *DB) GetInstructorNameByID(instructorID uint, facilityID uint, roles ...models.UserRole) (string, error) {
+	if len(roles) == 0 {
+		roles = []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}
+	}
 	var instructorName string
 	err := db.Table("users").
 		Select("COALESCE(name_first || ' ' || name_last, username)").
 		Where("id = ? AND facility_id = ? AND role IN ?",
-			instructorID, facilityID, []models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}).
+			instructorID, facilityID, roles).
 		Scan(&instructorName).Error
 	if err != nil {
 		return "", err

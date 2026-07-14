@@ -24,8 +24,8 @@ import { FormModal } from '@/components/shared';
 import API from '@/api/api';
 import { bulkPatchEvents } from '@/api/bulkPatchEvents';
 import { toast } from 'sonner';
-import { useAuth } from '@/auth/useAuth';
-import { Room, User, UserRole, ServerResponseMany } from '@/types';
+import { Room, ServerResponseMany } from '@/types';
+import { useInstructors } from '@/hooks/useInstructors';
 import { formatTime12h } from '@/lib/formatters';
 import {
     rescheduleSessionSchema,
@@ -70,7 +70,6 @@ export function RescheduleSessionModal({
     setApplyToFuture,
     futureSessions = []
 }: RescheduleSessionModalProps) {
-    const { user } = useAuth();
     const [startTime, endTime] =
         classTime?.split('-').map((s) => s.trim()) ?? [];
     const form = useForm<RescheduleSessionInput>({
@@ -94,16 +93,7 @@ export function RescheduleSessionModal({
     );
     const rooms = roomsResp?.data ?? [];
 
-    const roleParam =
-        user?.role === UserRole.FacilityAdmin
-            ? 'facility_admin'
-            : 'department_admin';
-    const { data: instructorsResp } = useSWR<ServerResponseMany<User>>(
-        open && user && classFacilityId
-            ? `/api/users?role=${roleParam}&facility_id=${classFacilityId}&per_page=100`
-            : null
-    );
-    const instructors = instructorsResp?.data ?? [];
+    const instructors = useInstructors(classFacilityId, open);
 
     useEffect(() => {
         if (open) {
@@ -141,10 +131,13 @@ export function RescheduleSessionModal({
         }
 
         if (applyToFuture && futureSessions.length > 0) {
-            const hasTimeOrRoom = [newStartTime, newEndTime, newRoom].some(
-                (val) => (val ?? '').length > 0
-            );
-            if (hasTimeOrRoom) {
+            const hasFutureChange = [
+                newStartTime,
+                newEndTime,
+                newRoom,
+                instructor_id
+            ].some((val) => (val ?? '').length > 0);
+            if (hasFutureChange) {
                 const { ok, fail } = await bulkPatchEvents(
                     classId,
                     futureSessions,
@@ -158,6 +151,8 @@ export function RescheduleSessionModal({
                             futureBody.new_start_time = newStartTime;
                         if (newEndTime) futureBody.new_end_time = newEndTime;
                         if (newRoom) futureBody.room_id = Number(newRoom);
+                        if (instructor_id)
+                            futureBody.instructor_id = Number(instructor_id);
                         return futureBody;
                     }
                 );
