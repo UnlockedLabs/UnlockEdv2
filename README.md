@@ -14,6 +14,12 @@ Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Linux.
 
 If you would like to contribute, please have a look at our [contribution guidelines](CONTRIBUTING.md).
 
+> **Working on the AI Tutor (LLM) service?** See [`tutor-integration.md`](tutor-integration.md).
+> The tutor is a separate app in the **sibling** repo `../ai/unlocked-hiset-ai`; compose builds
+> it from that local path, so the two repos must sit side by side. That doc covers the rebuild
+> loop (`docker compose up -d --build tutor-service`), enabling the `ai_tutor` feature flag,
+> role-based access, SuperAdmin impersonation, and seeding demo data.
+
 ### Dependencies (Local)
 
 **Please ensure you have the following installed properly before the further steps**
