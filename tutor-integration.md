@@ -128,10 +128,19 @@ DATABASE_URL=postgres://unlocked:dev@localhost:5432/unlocked AUTH_MODE=standalon
 `npm ci` + `npm test`, then builds the production image (`Dockerfile`, multi-stage Next
 standalone, non-root) and pushes to **GHCR**:
 `ghcr.io/unlockedlabs/unlocked-smart-tutor`. Tags: `:<branch>` + `:sha-<short>` on branch
-pushes; a `vX.Y.Z` git tag publishes `:X.Y.Z`, `:X.Y`, and `:latest`. For a non-local
-deployment (staging/prod), point this compose's `tutor-service` at that image
-(`image: ghcr.io/unlockedlabs/unlocked-smart-tutor:<tag>`) instead of the local `build:` path,
-and set `RUN_MIGRATIONS=true` (or run schema provisioning as a separate step).
+pushes; a `vX.Y.Z` git tag publishes `:X.Y.Z`, `:X.Y`, and `:latest`.
+
+**Build vs. pull.** The `tutor-service` compose block has both `build:` (sibling checkout)
+and `image:` (GHCR), so both modes work from the same file:
+
+- **`make dev`** — builds the tutor from `../ai/unlocked-hiset-ai`. For engineers working ON
+  the tutor; their edits show up on rebuild.
+- **`make dev-registry`** — pulls the published image instead (no tutor checkout needed).
+  Override the tag with `TUTOR_IMAGE_TAG` (default `unlocked-adapter`; use a `vX.Y.Z` tag for
+  a release). Needs `docker login ghcr.io` unless the GHCR package is set to Internal/Public.
+
+For staging/prod, deploy the `image:` with a pinned `vX.Y.Z` tag and `RUN_MIGRATIONS=true`
+(or run schema provisioning as a separate step).
 
 ## Why it's shaped this way (don't "simplify" these away)
 
