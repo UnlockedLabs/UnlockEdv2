@@ -19,7 +19,7 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
+.PHONY: help prod dev dev-registry migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
 
 
 help: ascii_art
@@ -51,6 +51,13 @@ init: ascii_art
 dev: ascii_art
 	./config/zims.sh
 	docker compose up $(BUILD_RECREATE)
+
+# Like `dev`, but pulls the tutor image from GHCR instead of building it from a sibling
+# checkout. Needs `docker login ghcr.io` unless the package is Internal/Public.
+dev-registry: ascii_art
+	./config/zims.sh
+	docker compose pull tutor-service
+	docker compose up --force-recreate
 
 install-dep: ascii_art
 	@if [ -z "$(NAME)" ]; then \
