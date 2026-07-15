@@ -101,9 +101,14 @@ student for QA, and a **Stop impersonating** button to return. No one else sees 
 - `TUTOR_FEATURE_FLAG=ai_tutor`, plus one AI key: `ANTHROPIC_API_KEY` (or `GEMINI_API_KEY` /
   `OPENAI_API_KEY`). Set these in your UnlockEd `.env` — the compose block reads them through.
 
-**Tutor schema + demo data:** the tutor owns only `tutor.*` (8 tables). Create/update it from
-the tutor repo with `npm run db:push` (schema-isolated — safe against the shared DB). To seed
-demo essays/sessions for existing UnlockEd users (writes `tutor.*` only, never host tables):
+**Tutor schema:** the tutor owns only `tutor.*` (8 tables). The compose block sets
+`RUN_MIGRATIONS=true`, so the container **auto-provisions the schema on start** (idempotent
+`CREATE ... IF NOT EXISTS` via `docker/apply-schema.mjs`) — no manual `db:push` for a fresh
+dev. `npm run db:push` from the tutor repo is still the schema source of truth for iterating;
+regenerate `docker/tutor-schema.sql` from it after changes (see that file's header).
+
+**Demo data:** to seed essays/sessions for existing UnlockEd users (writes `tutor.*` only,
+never host tables):
 
 ```bash
 cd ../ai/unlocked-hiset-ai
@@ -118,6 +123,15 @@ DATABASE_URL=postgres://unlocked:dev@localhost:5432/unlocked AUTH_MODE=standalon
 - Enabled the flag but no nav link → you didn't re-login (feature access is per-session).
 - Migration numbering: keep `00072_add_ai_tutor_feature_flag.sql`; renumber only if `main`
   advanced past 72 (goose tracks version *numbers*, not content).
+
+**CI/CD & the published image (tutor repo):** `.github/workflows/ci.yml` runs on every push —
+`npm ci` + `npm test`, then builds the production image (`Dockerfile`, multi-stage Next
+standalone, non-root) and pushes to **GHCR**:
+`ghcr.io/unlockedlabs/unlocked-smart-tutor`. Tags: `:<branch>` + `:sha-<short>` on branch
+pushes; a `vX.Y.Z` git tag publishes `:X.Y.Z`, `:X.Y`, and `:latest`. For a non-local
+deployment (staging/prod), point this compose's `tutor-service` at that image
+(`image: ghcr.io/unlockedlabs/unlocked-smart-tutor:<tag>`) instead of the local `build:` path,
+and set `RUN_MIGRATIONS=true` (or run schema provisioning as a separate step).
 
 ## Why it's shaped this way (don't "simplify" these away)
 
