@@ -108,6 +108,8 @@ services:
       - AUTH_MODE=unlocked
       - DATABASE_URL=postgres://unlocked:dev@postgres:5432/unlocked
       - KRATOS_PUBLIC_URL=http://kratos:4433
+      # Auto-provision the tutor.* schema on start so devs skip a manual db:push.
+      - RUN_MIGRATIONS=true
       - TUTOR_FEATURE_FLAG=ai_tutor
       - AI_PROVIDER=${TUTOR_AI_PROVIDER:-anthropic}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
