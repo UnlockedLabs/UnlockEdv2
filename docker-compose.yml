@@ -100,6 +100,11 @@ services:
 
   # AI tutor sidecar (served under basePath /tutor; see tutor-integration.md)
   tutor-service:
+    # Default: build from the sibling tutor checkout (../ai/unlocked-hiset-ai) — for
+    # engineers working ON the tutor. CI also publishes this exact image to GHCR, so
+    # `make dev-registry` pulls it instead and no tutor checkout is needed. Override the
+    # tag with TUTOR_IMAGE_TAG (branch name, or a vX.Y.Z release tag).
+    image: ghcr.io/unlockedlabs/unlocked-smart-tutor:${TUTOR_IMAGE_TAG:-unlocked-adapter}
     build:
       context: ../ai/unlocked-hiset-ai
     networks:
