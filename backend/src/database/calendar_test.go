@@ -300,3 +300,88 @@ func TestGenerateEventInstances_InvalidRRULE(t *testing.T) {
 	instances := generateEventInstances(event, startDate, endDate)
 	assert.Len(t, instances, 0, "Instances should be nil when an error occurs")
 }
+
+// dedupeClassEventInstances merges instances expanded from multiple event rows (the
+// state left behind by "Apply to all future sessions"). It must keep distinct
+// sessions, collapse true duplicates, and let the newest row win on a collision.
+func TestDedupeClassEventInstances_PrefersNewestRowOnCollision(t *testing.T) {
+	// EventID 1 is the older capped row, EventID 2 is the newer row. Both produce the
+	// same date and start time — the newest row should win.
+	instances := []models.ClassEventInstance{
+		{EventID: 1, Date: "2026-01-05", ClassTime: "10:00-11:00"},
+		{EventID: 2, Date: "2026-01-05", ClassTime: "10:00-11:00"},
+		{EventID: 1, Date: "2026-01-12", ClassTime: "10:00-11:00"},
+	}
+
+	result := dedupeClassEventInstances(instances)
+
+	assert.Len(t, result, 2, "duplicate date+time should collapse to one instance")
+	// Sorted by date descending.
+	assert.Equal(t, "2026-01-12", result[0].Date)
+	assert.Equal(t, "2026-01-05", result[1].Date)
+	assert.Equal(t, uint(2), result[1].EventID, "newest row should win on collision")
+}
+
+func TestDedupeClassEventInstances_KeepsDistinctTimesSameDate(t *testing.T) {
+	instances := []models.ClassEventInstance{
+		{EventID: 1, Date: "2026-01-05", ClassTime: "09:00-10:00"},
+		{EventID: 1, Date: "2026-01-05", ClassTime: "13:00-14:00"},
+	}
+
+	result := dedupeClassEventInstances(instances)
+
+	assert.Len(t, result, 2, "different start times on the same date are distinct sessions")
+}
+
+func TestDedupeClassEventInstances_MergesAcrossRowsWithoutGap(t *testing.T) {
+	// Simulates the bug: an older capped row's past sessions plus a newer row's
+	// future sessions must all survive the merge.
+	pastFromOldRow := []models.ClassEventInstance{
+		{EventID: 1, Date: "2026-01-05", ClassTime: "10:00-11:00"},
+		{EventID: 1, Date: "2026-01-12", ClassTime: "10:00-11:00"},
+	}
+	futureFromNewRow := []models.ClassEventInstance{
+		{EventID: 2, Date: "2026-01-19", ClassTime: "14:00-15:00"},
+		{EventID: 2, Date: "2026-01-26", ClassTime: "14:00-15:00"},
+	}
+
+	result := dedupeClassEventInstances(append(pastFromOldRow, futureFromNewRow...))
+
+	dates := make([]string, len(result))
+	for i, inst := range result {
+		dates[i] = inst.Date
+	}
+	assert.Equal(t, []string{"2026-01-26", "2026-01-19", "2026-01-12", "2026-01-05"}, dates,
+		"all sessions from both rows should be present, sorted by date descending")
+}
+
+func TestDedupeEventDates_PrefersNewestRowOnCollision(t *testing.T) {
+	dates := []models.EventDates{
+		{EventID: 1, Date: "2026-01-05", ClassTime: "10:00-11:00"},
+		{EventID: 2, Date: "2026-01-05", ClassTime: "10:00-11:00"},
+		{EventID: 1, Date: "2026-01-12", ClassTime: "10:00-11:00"},
+	}
+
+	result := dedupeEventDates(dates)
+
+	assert.Len(t, result, 2, "duplicate date+classTime should collapse to one entry")
+	foundCollisionDate := false
+	for _, d := range result {
+		if d.Date == "2026-01-05" {
+			foundCollisionDate = true
+			assert.Equal(t, uint(2), d.EventID, "newest row should win on collision")
+		}
+	}
+	assert.True(t, foundCollisionDate, "expected deduped result to include 2026-01-05")
+}
+
+func TestDedupeEventDates_KeepsDistinctTimesSameDate(t *testing.T) {
+	dates := []models.EventDates{
+		{EventID: 1, Date: "2026-01-05", ClassTime: "09:00-10:00"},
+		{EventID: 1, Date: "2026-01-05", ClassTime: "13:00-14:00"},
+	}
+
+	result := dedupeEventDates(dates)
+
+	assert.Len(t, result, 2, "different class times on the same date are distinct entries")
+}

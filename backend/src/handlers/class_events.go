@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"UnlockEdv2/src/services"
 	"encoding/json"
@@ -492,6 +491,7 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	if err := json.NewDecoder(r.Body).Decode(&eventSeriesRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	// A cancelled series frees the room, so skip the conflict check for cancellations.
 	if eventSeriesRequest.EventSeries.RoomID != nil {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
@@ -500,54 +500,33 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		if _, err := srv.Db.GetRoomByIDForFacility(*eventSeriesRequest.EventSeries.RoomID, class.FacilityID); err != nil {
 			return newDatabaseServiceError(err)
 		}
-		var excludeEventID *uint
-		if eventSeriesRequest.ClosedEventSeries.ID > 0 {
-			closedID := eventSeriesRequest.ClosedEventSeries.ID
-			excludeEventID = &closedID
-		} else if eventSeriesRequest.EventSeries.ID > 0 {
-			excludeEventID = &eventSeriesRequest.EventSeries.ID
-		}
-		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
-			FacilityID:     class.FacilityID,
-			RoomID:         *eventSeriesRequest.EventSeries.RoomID,
-			RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
-			Duration:       eventSeriesRequest.EventSeries.Duration,
-			ExcludeEventID: excludeEventID,
-		})
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		if len(conflicts) > 0 {
-			return writeConflictResponse(w, conflicts)
+		if !eventSeriesRequest.EventSeries.IsCancelled {
+			var excludeEventID *uint
+			if eventSeriesRequest.ClosedEventSeries.ID > 0 {
+				closedID := eventSeriesRequest.ClosedEventSeries.ID
+				excludeEventID = &closedID
+			} else if eventSeriesRequest.EventSeries.ID > 0 {
+				excludeEventID = &eventSeriesRequest.EventSeries.ID
+			}
+			conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+				FacilityID:     class.FacilityID,
+				RoomID:         *eventSeriesRequest.EventSeries.RoomID,
+				RecurrenceRule: eventSeriesRequest.EventSeries.RecurrenceRule,
+				Duration:       eventSeriesRequest.EventSeries.Duration,
+				ExcludeEventID: excludeEventID,
+			})
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			if len(conflicts) > 0 {
+				return writeConflictResponse(w, conflicts)
+			}
 		}
 	}
 	args := srv.getQueryContext(r)
-	args.All = true
-	allEvents, err := srv.Db.GetClassEvents(&args, classID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
 	eventSeriesRequest.EventSeries.ClassID = uint(classID)
 	eventSeriesRequest.ClosedEventSeries.ClassID = uint(classID)
-	var events []models.ProgramClassEvent
-	if eventSeriesRequest.EventSeries.RecurrenceRule != "" {
-		events = append(events, eventSeriesRequest.EventSeries)
-	}
-	events = append(events, eventSeriesRequest.ClosedEventSeries)
-	var maxEvent *models.ProgramClassEvent
-	for i := range allEvents {
-		if maxEvent == nil || allEvents[i].ID > maxEvent.ID {
-			maxEvent = &allEvents[i]
-		}
-	}
-	if maxEvent != nil && maxEvent.ID != eventSeriesRequest.ClosedEventSeries.ID { //making sure of only one active rrule
-		untilDate := src.GetUntilDateFromRule(eventSeriesRequest.ClosedEventSeries.RecurrenceRule)
-		if untilDate != "" {
-			maxEvent.RecurrenceRule = src.ReplaceOrAddUntilDate(maxEvent.RecurrenceRule, untilDate)
-			events = append(events, *maxEvent)
-		}
-	}
-	err = srv.WithUserContext(r).CreateRescheduleEventSeries(&args, events)
+	err = srv.WithUserContext(r).CreateRescheduleEventSeries(&args, uint(classID), eventSeriesRequest.EventSeries, eventSeriesRequest.ClosedEventSeries)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

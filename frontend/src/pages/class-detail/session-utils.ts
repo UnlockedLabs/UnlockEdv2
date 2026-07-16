@@ -221,12 +221,13 @@ export function buildRoomOverrideMap(
 
 export function buildRescheduleMaps(events: ProgramClassEvent[]): {
     fromTo: Map<string, RescheduleLink>;
-    toFrom: Map<string, RescheduleLink>;
+    toFrom: Map<string, RescheduleLink[]>;
     appliedFutureDates: Set<string>;
     intermediateDates: Set<string>;
 } {
     const fromTo = new Map<string, RescheduleLink>();
-    const toFrom = new Map<string, RescheduleLink>();
+    // A date maps to a list of targets: several events can be rescheduled to the same date.
+    const toFrom = new Map<string, RescheduleLink[]>();
     const appliedFutureDates = new Set<string>();
     const intermediateDates = new Set<string>();
 
@@ -291,12 +292,14 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
                         overrideId: target.override.id,
                         eventId: event.id
                     });
-                    toFrom.set(target.date, {
+                    const toTargets = toFrom.get(target.date) ?? [];
+                    toTargets.push({
                         date: cancelled.date,
                         overrideId: target.override.id,
                         eventId: event.id,
                         startTime
                     });
+                    toFrom.set(target.date, toTargets);
                     break;
                 } else if (target.override.reason === 'rescheduled') {
                     // Intermediate in re-reschedule chain (B in A→B→C)
@@ -316,12 +319,14 @@ export function buildRescheduleMaps(events: ProgramClassEvent[]): {
                         overrideId: target.override.id,
                         eventId: event.id
                     });
-                    toFrom.set(target.date, {
+                    const toTargets = toFrom.get(target.date) ?? [];
+                    toTargets.push({
                         date: cancelled.date,
                         overrideId: target.override.id,
                         eventId: event.id,
                         startTime
                     });
+                    toFrom.set(target.date, toTargets);
                     break;
                 }
             }
@@ -354,7 +359,7 @@ export function buildSessionDisplays(
     instances: ClassEventInstance[],
     enrolled: number,
     fromTo: Map<string, RescheduleLink>,
-    toFrom: Map<string, RescheduleLink>,
+    toFrom: Map<string, RescheduleLink[]>,
     appliedFutureDates: Set<string>,
     intermediateDates: Set<string>,
     cancellationReasons?: Map<string, string>
@@ -425,7 +430,19 @@ export function buildSessionDisplays(
             const hasAttendance = (inst.attendance_records?.length ?? 0) > 0;
 
             const rescheduleFrom = fromTo.get(inst.date);
-            const rescheduleTo = toFrom.get(inst.date);
+            // Pick the target matching this instance's override, then fall back to time.
+            const rescheduleToCandidates = toFrom.get(inst.date) ?? [];
+            const rescheduleTo =
+                rescheduleToCandidates.find(
+                    (r) => r.overrideId === inst.override_id
+                ) ??
+                rescheduleToCandidates.find(
+                    (r) =>
+                        !r.startTime || inst.class_time.startsWith(r.startTime)
+                ) ??
+                (rescheduleToCandidates.length === 1
+                    ? rescheduleToCandidates[0]
+                    : undefined);
             let isRescheduledFrom = rescheduleFrom != null && inst.is_cancelled;
             // Fallback: backend sets is_rescheduled=true when reason='rescheduled',
             // regardless of linked_override_event_id chain availability.
@@ -514,13 +531,22 @@ export function buildSessionDisplays(
                 s.rescheduledClassTime = s.instance.class_time;
                 continue;
             }
-            // Different-date reschedule: find the separate target row
-            const target = filtered.find(
-                (t) =>
-                    t.instance.date === s.rescheduledDate &&
-                    t !== s &&
-                    (t.isRescheduledTo || t.isCancelledReschedule)
-            );
+            // Match the target by override id first so multiple reschedules to the same
+            // date each resolve to their own target, then fall back to date.
+            const target =
+                filtered.find(
+                    (t) =>
+                        t !== s &&
+                        s.rescheduleOverrideId != null &&
+                        t.instance.override_id === s.rescheduleOverrideId &&
+                        (t.isRescheduledTo || t.isCancelledReschedule)
+                ) ??
+                filtered.find(
+                    (t) =>
+                        t.instance.date === s.rescheduledDate &&
+                        t !== s &&
+                        (t.isRescheduledTo || t.isCancelledReschedule)
+                );
             if (target) {
                 if (target.instance.class_time !== s.instance.class_time) {
                     s.rescheduledClassTime = target.instance.class_time;

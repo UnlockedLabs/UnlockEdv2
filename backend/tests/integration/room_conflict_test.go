@@ -52,6 +52,12 @@ func TestRoomConflictDetection(t *testing.T) {
 		testHandlerReturns409OnConflict(t, env, facility, facilityAdmin, program, room.ID)
 	})
 
+	t.Run("Cancelling a series bypasses room conflict check", func(t *testing.T) {
+		room := &models.Room{FacilityID: facility.ID, Name: "Cancel Bypass Room"}
+		require.NoError(t, env.DB.Create(room).Error)
+		testCancelSeriesBypassesConflict(t, env, facility, facilityAdmin, program, room.ID)
+	})
+
 	t.Run("Rejects room from different facility", func(t *testing.T) {
 		otherFacility, err := env.CreateTestFacility("Other Facility")
 		require.NoError(t, err)
@@ -236,6 +242,87 @@ func testNoConflictForDifferentTimes(t *testing.T, env *TestEnv, facility *model
 	})
 	require.NoError(t, err)
 	require.Empty(t, conflicts, "Should NOT detect conflicts for non-overlapping times (9-11 AM vs 2-4 PM)")
+}
+
+// testCancelSeriesBypassesConflict verifies that cancelling a series (event_series
+// with is_cancelled=true) is NOT blocked by a room conflict — a cancellation frees
+// the room rather than booking it.
+func testCancelSeriesBypassesConflict(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
+	instructor1, err := env.CreateTestInstructor(facility.ID, "cancelbypassa")
+	require.NoError(t, err)
+	instructor2, err := env.CreateTestInstructor(facility.ID, "cancelbypassb")
+	require.NoError(t, err)
+
+	classStartDate := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	classEndDate := time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC)
+	creditHours := int64(2)
+
+	mkClass := func(name string, instructorID uint) *models.ProgramClass {
+		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), models.ProgramClass{
+			ProgramID:    program.ID,
+			FacilityID:   facility.ID,
+			Capacity:     10,
+			Name:         name,
+			InstructorID: &instructorID,
+			Description:  name,
+			StartDt:      classStartDate,
+			EndDt:        &classEndDate,
+			Status:       models.Scheduled,
+			CreditHours:  &creditHours,
+		}).
+			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+			Do().
+			ExpectStatus(http.StatusCreated)
+		return resp.GetData()
+	}
+
+	// Blocker class occupies the room daily at 10:00-12:00.
+	blocker := mkClass("Room Blocker", instructor1.ID)
+	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", blocker.ID), map[string]interface{}{
+		"duration":        "2h",
+		"room_id":         roomID,
+		"recurrence_rule": "DTSTART:20260601T100000Z\nRRULE:FREQ=DAILY;UNTIL=20260630T000000Z",
+		"instructor_id":   instructor1.ID,
+	}).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
+
+	// Second class with a non-overlapping event (14:00) so creation succeeds.
+	toCancel := mkClass("Class To Cancel", instructor2.ID)
+	NewRequest[any](env.Client, t, http.MethodPost, fmt.Sprintf("/api/program-classes/%d/events", toCancel.ID), map[string]interface{}{
+		"duration":        "2h",
+		"room_id":         roomID,
+		"recurrence_rule": "DTSTART:20260601T140000Z\nRRULE:FREQ=DAILY;UNTIL=20260630T000000Z",
+		"instructor_id":   instructor2.ID,
+	}).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
+
+	var toCancelEvent models.ProgramClassEvent
+	require.NoError(t, env.DB.Where("class_id = ?", toCancel.ID).First(&toCancelEvent).Error)
+
+	// Cancel the series. The cancelled event_series carries the room and a rule that
+	// overlaps the blocker (10:00) — pre-fix this returned 409, now it must succeed.
+	cancelPayload := map[string]interface{}{
+		"event_series": map[string]interface{}{
+			"id":              0,
+			"duration":        "2h",
+			"room_id":         roomID,
+			"instructor_id":   instructor2.ID,
+			"is_cancelled":    true,
+			"recurrence_rule": "DTSTART:20260601T100000Z\nRRULE:FREQ=DAILY;UNTIL=20260630T000000Z",
+		},
+		"closed_event_series": map[string]interface{}{
+			"id":              toCancelEvent.ID,
+			"recurrence_rule": "DTSTART:20260601T140000Z\nRRULE:FREQ=DAILY;UNTIL=20260531T235959Z",
+		},
+	}
+	NewRequest[any](env.Client, t, http.MethodPut, fmt.Sprintf("/api/program-classes/%d/events", toCancel.ID), cancelPayload).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusCreated)
 }
 
 func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User, program *models.Program, roomID uint) {
