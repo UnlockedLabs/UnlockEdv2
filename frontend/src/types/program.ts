@@ -219,7 +219,9 @@ export interface ResidentProgramOverview {
     end_date?: string;
     present_attendance?: number;
     absent_attendance?: number;
-    attendance_percentage?: number;
+    // Preformatted by the backend: either "NN%" or "--" when there is no
+    // attendance data yet (see ResidentProgramClassInfo.CalculateAttendancePercentage).
+    attendance_percentage?: string;
     change_reason?: string;
     schedule?: string;
     is_canvas?: boolean;
