@@ -29,8 +29,7 @@ import {
     ArrowPathIcon,
     QuestionMarkCircleIcon,
     AdjustmentsHorizontalIcon,
-    PencilSquareIcon,
-    CircleStackIcon
+    PencilSquareIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -249,7 +248,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                 />
             )}
 
-            {isAdministrator(user) &&
+            {/* {isAdministrator(user) &&
                 hasFeature(user, FeatureAccess.ProviderAccess) && (
                     <NavLink
                         to="/learning-platforms"
@@ -262,7 +261,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                         collapsed={collapsed}
                         onClick={onNavigate}
                     />
-                )}
+                )} */}
 
             {hasFeature(user, FeatureAccess.OpenContentAccess) && (
                 <CollapsibleSection
