@@ -639,6 +639,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_classes AS total_classes,
 			mr.total_active_classes AS total_active_classes,
 			mr.total_capacity AS total_capacity,
+			mr.total_filled_seats AS total_filled_seats,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -658,6 +659,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_classes AS total_classes,
 			mr.total_active_classes AS total_active_classes,
 			mr.total_capacity AS total_capacity,
+			mr.total_filled_seats AS total_filled_seats,
 			time_filtered_rates.completion_rate AS completion_rate,
 			time_filtered_rates.attendance_rate AS attendance_rate,
 			pt.program_types AS program_types,
@@ -675,6 +677,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					p.id as program_id,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
+					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) AND pc.status = 'Active' THEN pce.id END) AS total_filled_seats,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
 					class_stats.total_capacity
@@ -699,6 +702,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					COUNT(DISTINCT CASE WHEN p.is_active = true AND p.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
 					COUNT(DISTINCT pce.id) AS total_enrollments,
 					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) THEN pce.id END) AS total_active_enrollments,
+					COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' AND pce.enrolled_at IS NOT NULL AND (pce.enrollment_ended_at IS NULL OR pce.enrollment_ended_at > CURRENT_TIMESTAMP) AND pc.status = 'Active' THEN pce.id END) AS total_filled_seats,
 					COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 					COUNT(DISTINCT CASE WHEN pc.status = 'Active' THEN pc.id END) AS total_active_classes,
 					class_stats.total_capacity
