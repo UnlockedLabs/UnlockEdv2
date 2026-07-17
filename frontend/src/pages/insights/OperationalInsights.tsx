@@ -145,12 +145,12 @@ export default function OperationalInsightsPage() {
                         >
                             Overview
                         </TabsTrigger>
-                        <TabsTrigger
+                        {/* <TabsTrigger
                             value="knowledge-center"
                             className={TAB_TRIGGER_CLASS}
                         >
                             Knowledge Center
-                        </TabsTrigger>
+                        </TabsTrigger> */}
                     </TabsList>
                     <TabsContent value="overview" className="mt-0">
                         <OverviewTab
