@@ -12,31 +12,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestProgramOutcomesReport_CreditHoursAggregation(t *testing.T) {
+func TestProgramOutcomesReport_ClassAggregation(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
 	facility := createTestFacility(t, env, "Test Facility")
 	program := createTestProgram(t, env, "Math Program", facility.ID)
 
-	class1 := createTestClass(t, env, program, facility, "Math 101")
-	err := env.SetClassCreditHours(class1.ID, 3)
-	require.NoError(t, err)
-
-	class2 := createTestClass(t, env, program, facility, "Math 102")
-	err = env.SetClassCreditHours(class2.ID, 3)
-	require.NoError(t, err)
-
+	createTestClass(t, env, program, facility, "Math 101")
+	createTestClass(t, env, program, facility, "Math 102")
 	class3 := createTestClass(t, env, program, facility, "Math 103")
-	err = env.SetClassCreditHours(class3.ID, 3)
-	require.NoError(t, err)
 
 	user := createTestUser(t, env, "student", facility.ID)
-	createTestEnrollment(t, env, class1.ID, user.ID, models.Enrolled)
+	createTestEnrollment(t, env, class3.ID, user.ID, models.Enrolled)
 
 	req := &models.ReportGenerateRequest{
 		Type:      models.ProgramOutcomesReport,
-		StartDate: time.Now().AddDate(0, -1, 0),
+		StartDate: time.Now().AddDate(0, -2, 0),
 		EndDate:   time.Now(),
 	}
 
@@ -44,10 +36,12 @@ func TestProgramOutcomesReport_CreditHoursAggregation(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-	assert.Equal(t, float64(9), rows[0].TotalCreditHours, "Credit hours should sum to 9 (3+3+3), not 3 from DISTINCT bug")
+	assert.Equal(t, 3, rows[0].TotalClasses, "Should count all 3 active classes without duplication")
+	assert.Equal(t, 1, rows[0].FacilitiesActive)
+	assert.Equal(t, 1, rows[0].TotalEnrollments)
 }
 
-func TestProgramOutcomesReport_CreditHoursNoDuplication(t *testing.T) {
+func TestProgramOutcomesReport_EnrollmentNoDuplication(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
 
@@ -55,8 +49,6 @@ func TestProgramOutcomesReport_CreditHoursNoDuplication(t *testing.T) {
 	program := createTestProgram(t, env, "English Program", facility.ID)
 
 	class := createTestClass(t, env, program, facility, "English 101")
-	err := env.SetClassCreditHours(class.ID, 3)
-	require.NoError(t, err)
 
 	user1 := createTestUser(t, env, "student1", facility.ID)
 	user2 := createTestUser(t, env, "student2", facility.ID)
@@ -68,7 +60,7 @@ func TestProgramOutcomesReport_CreditHoursNoDuplication(t *testing.T) {
 
 	req := &models.ReportGenerateRequest{
 		Type:      models.ProgramOutcomesReport,
-		StartDate: time.Now().AddDate(0, -1, 0),
+		StartDate: time.Now().AddDate(0, -2, 0),
 		EndDate:   time.Now(),
 	}
 
@@ -76,10 +68,10 @@ func TestProgramOutcomesReport_CreditHoursNoDuplication(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-	assert.Equal(t, float64(3), rows[0].TotalCreditHours, "Credit hours should be 3, not multiplied by number of enrollments")
+	// All-time enrolled counts every status (3); currently enrolled counts
+	// only "Enrolled" (2). Neither should be multiplied by joins.
 	assert.Equal(t, 3, rows[0].TotalEnrollments)
 	assert.Equal(t, 2, rows[0].ActiveEnrollments)
-	assert.Equal(t, 1, rows[0].CompletedEnrollments)
 }
 
 func createTestFacility(t *testing.T, env *TestEnv, name string) *models.Facility {

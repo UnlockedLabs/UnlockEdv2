@@ -215,7 +215,8 @@ func recompileTemplate(templateDir, baseTemplateName string) error {
 
 func GenerateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilterLine, templateName string) ([]byte, error) {
 	type ReportData struct {
-		Rows [][]string `json:"rows"`
+		Rows    [][]string `json:"rows"`
+		SubRows [][]string `json:"subrows"`
 	}
 
 	rows := config.Data
@@ -223,8 +224,14 @@ func GenerateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		rows = [][]string{}
 	}
 
+	subRows := config.SubRows
+	if subRows == nil {
+		subRows = [][]string{}
+	}
+
 	reportData := ReportData{
-		Rows: rows,
+		Rows:    rows,
+		SubRows: subRows,
 	}
 
 	jsonData, err := json.Marshal(reportData)
@@ -258,6 +265,19 @@ func GenerateReportPDF(config models.PDFConfig, filterSummary []models.PDFFilter
 		{Key: "GeneratedDate", Value: time.Now().Format("January 2, 2006 at 3:04 PM")},
 		{Key: "LogoImage", Value: base64.StdEncoding.EncodeToString(src.UnlockedLogoImg)},
 		{Key: "FilterCount", Value: fmt.Sprintf("%d", filterCount)},
+	}
+
+	// Only pass SubRowCount when the report actually has a sub-table. JasperStarter
+	// errors on any parameter a template doesn't declare, and only templates with a
+	// sub-table (e.g. program_outcomes breakdown) declare SubRowCount.
+	if len(config.SubRows) > 0 {
+		params = append(params, jasper.Parameter{Key: "SubRowCount", Value: fmt.Sprintf("%d", len(config.SubRows))})
+	}
+
+	// Report-specific template parameters (e.g. class-roster column visibility
+	// flags). Only set by reports whose template declares them.
+	for k, v := range config.Params {
+		params = append(params, jasper.Parameter{Key: k, Value: v})
 	}
 
 	for i := 0; i < filterCount && i < maxFilters; i++ {

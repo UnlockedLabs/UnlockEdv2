@@ -270,7 +270,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					return nil, hasCookie, err
 				}
 				var user models.User
-				if err := srv.Db.Model(&models.User{}).Preload("Facility").Find(&user, "kratos_id = ?", kratosID).Error; err != nil {
+				if err := srv.Db.Model(&models.User{}).Preload("Facility").First(&user, "kratos_id = ?", kratosID).Error; err != nil {
 					fields["error"] = err.Error()
 					fields["kratos_id"] = kratosID
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")

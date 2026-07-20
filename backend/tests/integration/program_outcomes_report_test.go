@@ -208,7 +208,10 @@ func (suite *ProgramOutcomesReportTestSuite) TestEnrollmentDateFiltering() {
 	results, err := suite.env.DB.GenerateProgramOutcomesReport(suite.env.Context, req)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), results, 1)
-	assert.Equal(suite.T(), 2, results[0].TotalEnrollments, "Should include enrollments before and within range, exclude future")
+	// Windowed: only the enrollment whose enrolled_at falls within
+	// [reportStart, reportEnd] counts. The one before the window and the
+	// future one are both excluded.
+	assert.Equal(suite.T(), 1, results[0].TotalEnrollments, "Only enrollments within the window should count")
 }
 
 func (suite *ProgramOutcomesReportTestSuite) TestEnrollmentStatusCounts() {
@@ -241,10 +244,11 @@ func (suite *ProgramOutcomesReportTestSuite) TestEnrollmentStatusCounts() {
 	results, err := suite.env.DB.GenerateProgramOutcomesReport(suite.env.Context, req)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), results, 1)
-	assert.Equal(suite.T(), 8, results[0].TotalEnrollments, "Total should include all statuses")
-	assert.Equal(suite.T(), 3, results[0].ActiveEnrollments, "Active should only include Enrolled status")
-	assert.Equal(suite.T(), 2, results[0].CompletedEnrollments)
-	assert.Equal(suite.T(), 3, results[0].DroppedEnrollments)
+	// All-time enrolled counts every status; currently enrolled counts only
+	// the "Enrolled" status. Completed/dropped are no longer broken out as
+	// separate columns in this report.
+	assert.Equal(suite.T(), 8, results[0].TotalEnrollments, "All-time enrolled should include all statuses")
+	assert.Equal(suite.T(), 3, results[0].ActiveEnrollments, "Currently enrolled should only include Enrolled status")
 }
 
 func (suite *ProgramOutcomesReportTestSuite) TestAttendanceDoesNotAffectEnrollmentCounts() {
@@ -312,6 +316,110 @@ func (suite *ProgramOutcomesReportTestSuite) TestMultipleClassesInSameProgram() 
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), results, 1)
 	assert.Equal(suite.T(), 9, results[0].TotalEnrollments)
+}
+
+func (suite *ProgramOutcomesReportTestSuite) TestFacilityIDsFilter_MultipleFacilities() {
+	facilityA := suite.createFacility("Facility A")
+	facilityB := suite.createFacility("Facility B")
+	facilityC := suite.createFacility("Facility C")
+
+	programA := suite.createProgram("Program A", facilityA.ID, models.StateGrants)
+	programB := suite.createProgram("Program B", facilityB.ID, models.StateGrants)
+	programC := suite.createProgram("Program C", facilityC.ID, models.StateGrants)
+
+	classA := suite.createClass("Class A", programA.ID, facilityA.ID, models.Active)
+	classB := suite.createClass("Class B", programB.ID, facilityB.ID, models.Active)
+	classC := suite.createClass("Class C", programC.ID, facilityC.ID, models.Active)
+
+	studentA := suite.createStudent("A", "Student", facilityA.ID)
+	studentB := suite.createStudent("B", "Student", facilityB.ID)
+	studentC := suite.createStudent("C", "Student", facilityC.ID)
+
+	now := time.Now()
+	suite.createEnrollment(classA.ID, studentA.ID, now.AddDate(0, -1, 0), models.Enrolled)
+	suite.createEnrollment(classB.ID, studentB.ID, now.AddDate(0, -1, 0), models.Enrolled)
+	suite.createEnrollment(classC.ID, studentC.ID, now.AddDate(0, -1, 0), models.Enrolled)
+
+	req := &models.ReportGenerateRequest{
+		Type:        models.ProgramOutcomesReport,
+		StartDate:   now.AddDate(0, -2, 0),
+		EndDate:     now,
+		FacilityIDs: []uint{facilityA.ID, facilityB.ID},
+	}
+
+	results, err := suite.env.DB.GenerateProgramOutcomesReport(suite.env.Context, req)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), results, 2, "Should include only the two requested facilities' programs")
+	names := []string{results[0].ProgramName, results[1].ProgramName}
+	assert.Contains(suite.T(), names, "Program A")
+	assert.Contains(suite.T(), names, "Program B")
+	assert.NotContains(suite.T(), names, "Program C")
+}
+
+func (suite *ProgramOutcomesReportTestSuite) TestFacilityIDFilter_SingleFacility() {
+	facilityA := suite.createFacility("Facility A")
+	facilityB := suite.createFacility("Facility B")
+
+	programA := suite.createProgram("Program A", facilityA.ID, models.StateGrants)
+	programB := suite.createProgram("Program B", facilityB.ID, models.StateGrants)
+
+	classA := suite.createClass("Class A", programA.ID, facilityA.ID, models.Active)
+	classB := suite.createClass("Class B", programB.ID, facilityB.ID, models.Active)
+
+	studentA := suite.createStudent("A", "Student", facilityA.ID)
+	studentB := suite.createStudent("B", "Student", facilityB.ID)
+
+	now := time.Now()
+	suite.createEnrollment(classA.ID, studentA.ID, now.AddDate(0, -1, 0), models.Enrolled)
+	suite.createEnrollment(classB.ID, studentB.ID, now.AddDate(0, -1, 0), models.Enrolled)
+
+	req := &models.ReportGenerateRequest{
+		Type:       models.ProgramOutcomesReport,
+		StartDate:  now.AddDate(0, -2, 0),
+		EndDate:    now,
+		FacilityID: &facilityA.ID,
+	}
+
+	results, err := suite.env.DB.GenerateProgramOutcomesReport(suite.env.Context, req)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), results, 1, "Single facility_id should scope to one facility")
+	assert.Equal(suite.T(), "Program A", results[0].ProgramName)
+}
+
+func (suite *ProgramOutcomesReportTestSuite) TestProgramIDsFilter_MultiplePrograms() {
+	facility := suite.createFacility("Test Facility")
+
+	programA := suite.createProgram("Program A", facility.ID, models.StateGrants)
+	programB := suite.createProgram("Program B", facility.ID, models.StateGrants)
+	programC := suite.createProgram("Program C", facility.ID, models.StateGrants)
+
+	classA := suite.createClass("Class A", programA.ID, facility.ID, models.Active)
+	classB := suite.createClass("Class B", programB.ID, facility.ID, models.Active)
+	classC := suite.createClass("Class C", programC.ID, facility.ID, models.Active)
+
+	studentA := suite.createStudent("A", "Student", facility.ID)
+	studentB := suite.createStudent("B", "Student", facility.ID)
+	studentC := suite.createStudent("C", "Student", facility.ID)
+
+	now := time.Now()
+	suite.createEnrollment(classA.ID, studentA.ID, now.AddDate(0, -1, 0), models.Enrolled)
+	suite.createEnrollment(classB.ID, studentB.ID, now.AddDate(0, -1, 0), models.Enrolled)
+	suite.createEnrollment(classC.ID, studentC.ID, now.AddDate(0, -1, 0), models.Enrolled)
+
+	req := &models.ReportGenerateRequest{
+		Type:       models.ProgramOutcomesReport,
+		StartDate:  now.AddDate(0, -2, 0),
+		EndDate:    now,
+		ProgramIDs: []uint{programA.ID, programB.ID},
+	}
+
+	results, err := suite.env.DB.GenerateProgramOutcomesReport(suite.env.Context, req)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), results, 2, "Should include only the two requested programs")
+	names := []string{results[0].ProgramName, results[1].ProgramName}
+	assert.Contains(suite.T(), names, "Program A")
+	assert.Contains(suite.T(), names, "Program B")
+	assert.NotContains(suite.T(), names, "Program C")
 }
 
 func (suite *ProgramOutcomesReportTestSuite) createFacility(name string) *models.Facility {
