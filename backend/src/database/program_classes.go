@@ -773,23 +773,15 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		classMap[int(instance.Event.ClassID)].CancelledSessions++
 	}
 
-	classIDs := make([]int, 0, len(classMap))
+	classIDs := make([]uint, 0, len(classMap))
 	for classID := range classMap {
-		classIDs = append(classIDs, classID)
+		classIDs = append(classIDs, uint(classID))
 	}
 
-	type enrollmentCount struct {
-		ClassID int   `gorm:"column:class_id"`
-		Count   int64 `gorm:"column:count"`
-	}
-	var counts []enrollmentCount
-	if err := tx.Table("program_class_enrollments").
-		Select("class_id, COUNT(*) as count").
-		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
-		Group("class_id").
-		Scan(&counts).Error; err != nil {
+	countMap, err := db.GetActiveEnrollmentCountsForClasses(&models.QueryContext{Ctx: ctx}, classIDs)
+	if err != nil {
 		tx.Rollback()
-		return nil, newGetRecordsDBError(err, "enrollments")
+		return nil, err
 	}
 
 	type classInfo struct {
@@ -805,17 +797,13 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		return nil, newGetRecordsDBError(err, "class names")
 	}
 
-	countMap := make(map[int]int64)
-	for _, c := range counts {
-		countMap[c.ClassID] = c.Count
-	}
 	nameMap := make(map[int]string)
 	for _, info := range classInfos {
 		nameMap[info.ID] = info.Name
 	}
 
 	for classID := range classMap {
-		classMap[classID].StudentCount = int(countMap[classID])
+		classMap[classID].StudentCount = countMap[uint(classID)]
 		classMap[classID].ClassName = nameMap[classID]
 	}
 
@@ -891,7 +879,7 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 	}
 
 	for classID := range classMap {
-		classMap[classID].StudentCount = int(countMap[classID])
+		classMap[classID].StudentCount = countMap[uint(classID)]
 		classMap[classID].ClassName = nameMap[classID]
 	}
 

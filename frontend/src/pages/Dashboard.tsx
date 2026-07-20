@@ -376,32 +376,33 @@ function TodaysSchedule({
                                             {item.room || '-'}
                                         </div>
                                     </div>
-                                    {item.enrolled_count === 0 ? (
+                                    {item.has_attendance ? (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onNavigate(item);
+                                            }}
+                                            className="border-gray-300 w-full sm:w-auto"
+                                        >
+                                            Edit Attendance
+                                        </Button>
+                                    ) : item.enrolled_count === 0 ? (
                                         <span className="text-sm italic text-gray-500 dark:text-gray-400 w-full sm:w-auto sm:text-right shrink-0">
                                             No residents enrolled
                                         </span>
                                     ) : (
                                         <Button
                                             size="sm"
-                                            variant={
-                                                item.has_attendance
-                                                    ? 'outline'
-                                                    : 'default'
-                                            }
+                                            variant="default"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 onNavigate(item);
                                             }}
-                                            className={
-                                                item.has_attendance
-                                                    ? 'border-gray-300 w-full sm:w-auto'
-                                                    : 'bg-brand hover:bg-brand-dark text-white w-full sm:w-auto'
-                                            }
+                                            className="bg-brand hover:bg-brand-dark text-white w-full sm:w-auto"
                                         >
-                                            {item.has_attendance
-                                                ? 'Edit'
-                                                : 'Take'}{' '}
-                                            Attendance
+                                            Take Attendance
                                         </Button>
                                     )}
                                 </div>
