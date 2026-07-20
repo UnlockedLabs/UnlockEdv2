@@ -8,6 +8,8 @@ export { ResetPasswordModal } from './ResetPasswordModal';
 export { DataTable } from './DataTable';
 export type { Column } from './DataTable';
 export { InfoTooltip } from './InfoTooltip';
+export { MultiSelectFilter } from './MultiSelectFilter';
+export type { MultiSelectOption } from './MultiSelectFilter';
 export { TonedPanel } from './TonedPanel';
 export type { PanelTone } from './TonedPanel';
 export { useTypeToConfirm } from './useTypeToConfirm';

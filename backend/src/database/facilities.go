@@ -66,6 +66,17 @@ func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {
 	return &facility, nil
 }
 
+func (db *DB) GetFacilityNamesByIDs(ids []uint) ([]string, error) {
+	var names []string
+	if len(ids) == 0 {
+		return names, nil
+	}
+	if err := db.Model(&models.Facility{}).Where("id IN ?", ids).Order("name").Pluck("name", &names).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facilities")
+	}
+	return names, nil
+}
+
 func (db *DB) CreateFacility(facility *models.Facility) error {
 	if err := Validate().Struct(facility); err != nil {
 		log.Error("Validation Error")

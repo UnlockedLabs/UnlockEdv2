@@ -26,6 +26,17 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
+func (db *DB) GetProgramNamesByIDs(ids []uint) ([]string, error) {
+	var names []string
+	if len(ids) == 0 {
+		return names, nil
+	}
+	if err := db.Model(&models.Program{}).Where("id IN ?", ids).Order("name").Pluck("name", &names).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "programs")
+	}
+	return names, nil
+}
+
 func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.ProgramOverviewResponse, error) {
 	var metrics models.ProgramOverviewResponse
 

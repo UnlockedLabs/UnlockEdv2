@@ -51,7 +51,10 @@ func TestAttendanceReportToCSV(t *testing.T) {
 	}
 
 	headerRow := csv[0]
-	expectedHeaders := []string{"Facility", "Program", "Class", "Date", "Last Name", "First Name", "DOC ID", "Status", "Seat Time (min)", "Recorded By", "Absence Reason"}
+	expectedHeaders := []string{"Date", "Program Name", "Class Name", "Facility", "Resident Name", "DOC ID", "Attendance Status", "Note"}
+	if len(headerRow) != len(expectedHeaders) {
+		t.Fatalf("Expected %d header columns, got %d", len(expectedHeaders), len(headerRow))
+	}
 	for i, expected := range expectedHeaders {
 		if headerRow[i] != expected {
 			t.Errorf("Header column %d: expected '%s', got '%s'", i, expected, headerRow[i])
@@ -59,49 +62,48 @@ func TestAttendanceReportToCSV(t *testing.T) {
 	}
 
 	firstDataRow := csv[1]
-	if firstDataRow[0] != "Test Facility" {
-		t.Errorf("Expected facility 'Test Facility', got '%s'", firstDataRow[0])
+	if firstDataRow[0] != "2024-03-15" {
+		t.Errorf("Expected date '2024-03-15', got '%s'", firstDataRow[0])
 	}
-	if firstDataRow[3] != "2024-03-15" {
-		t.Errorf("Expected date '2024-03-15', got '%s'", firstDataRow[3])
+	if firstDataRow[1] != "Math 101" {
+		t.Errorf("Expected program 'Math 101', got '%s'", firstDataRow[1])
 	}
-	if firstDataRow[8] != "90" {
-		t.Errorf("Expected seat time '90', got '%s'", firstDataRow[8])
+	if firstDataRow[2] != "Algebra" {
+		t.Errorf("Expected class 'Algebra', got '%s'", firstDataRow[2])
 	}
-	if firstDataRow[9] != "Jane Admin" {
-		t.Errorf("Expected recorded by 'Jane Admin', got '%s'", firstDataRow[9])
+	if firstDataRow[3] != "Test Facility" {
+		t.Errorf("Expected facility 'Test Facility', got '%s'", firstDataRow[3])
 	}
-	if firstDataRow[10] != "" {
-		t.Errorf("Expected empty absence reason, got '%s'", firstDataRow[10])
+	if firstDataRow[4] != "Doe, John" {
+		t.Errorf("Expected resident 'Doe, John', got '%s'", firstDataRow[4])
+	}
+	if firstDataRow[5] != "12345" {
+		t.Errorf("Expected DOC ID '12345', got '%s'", firstDataRow[5])
+	}
+	if firstDataRow[7] != "" {
+		t.Errorf("Expected empty note, got '%s'", firstDataRow[7])
 	}
 
 	secondDataRow := csv[2]
-	if secondDataRow[8] != "" {
-		t.Errorf("Expected empty seat time, got '%s'", secondDataRow[8])
+	if secondDataRow[4] != "Smith, Jane" {
+		t.Errorf("Expected resident 'Smith, Jane', got '%s'", secondDataRow[4])
 	}
-	if secondDataRow[9] != "" {
-		t.Errorf("Expected empty recorded by, got '%s'", secondDataRow[9])
-	}
-	if secondDataRow[10] != "Medical appointment" {
-		t.Errorf("Expected absence reason 'Medical appointment', got '%s'", secondDataRow[10])
+	if secondDataRow[7] != "Medical appointment" {
+		t.Errorf("Expected note 'Medical appointment', got '%s'", secondDataRow[7])
 	}
 }
 
 func TestProgramOutcomesReportToCSV(t *testing.T) {
 	data := []models.ProgramOutcomesReportRow{
 		{
-			FacilityName:         "Test Facility",
-			ProgramName:          "Math Program",
-			ProgramType:          "Academic",
-			FundingType:          "State",
-			TotalEnrollments:     100,
-			ActiveEnrollments:    60,
-			CompletedEnrollments: 30,
-			DroppedEnrollments:   10,
-			CompletionRate:       30.0,
-			AttendanceRate:       65.5,
-			TotalCreditHours:     450.0,
-			CertificatesEarned:   25,
+			ProgramName:       "Math Program",
+			ProgramType:       "Educational",
+			FacilitiesActive:  3,
+			TotalClasses:      8,
+			ActiveEnrollments: 60,
+			TotalEnrollments:  100,
+			TotalCapacity:     80,
+			Utilization:       75,
 		},
 	}
 
@@ -115,18 +117,20 @@ func TestProgramOutcomesReportToCSV(t *testing.T) {
 		t.Fatalf("Expected 2 rows (header + 1 data), got %d", len(csv))
 	}
 
+	// Columns: Program Name, Program Type, Facilities Active, Total Classes,
+	// Currently Enrolled, All-Time Enrolled, Total Capacity, Utilization %
 	dataRow := csv[1]
-	if dataRow[0] != "Test Facility" {
-		t.Errorf("Expected facility 'Test Facility', got '%s'", dataRow[0])
+	if dataRow[0] != "Math Program" {
+		t.Errorf("Expected program 'Math Program', got '%s'", dataRow[0])
 	}
-	if dataRow[4] != "100" {
-		t.Errorf("Expected total enrollments '100', got '%s'", dataRow[4])
+	if dataRow[4] != "60" {
+		t.Errorf("Expected currently enrolled '60', got '%s'", dataRow[4])
 	}
-	if dataRow[8] != "30.00" {
-		t.Errorf("Expected completion rate '30.00', got '%s'", dataRow[8])
+	if dataRow[5] != "100" {
+		t.Errorf("Expected all-time enrolled '100', got '%s'", dataRow[5])
 	}
-	if dataRow[10] != "450.00" {
-		t.Errorf("Expected credit hours '450.00', got '%s'", dataRow[10])
+	if dataRow[7] != "75" {
+		t.Errorf("Expected utilization '75', got '%s'", dataRow[7])
 	}
 }
 

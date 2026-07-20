@@ -30,7 +30,8 @@ import {
     QuestionMarkCircleIcon,
     AdjustmentsHorizontalIcon,
     PencilSquareIcon,
-    CircleStackIcon
+    CircleStackIcon,
+    ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -212,6 +213,17 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                 collapsed={collapsed}
                 onClick={onNavigate}
             />
+            {isAdministrator(user) &&
+                hasFeature(user, FeatureAccess.ProgramAccess) && (
+                    <NavLink
+                        to="/exports"
+                        icon={ArrowDownTrayIcon}
+                        label="Exports"
+                        active={isActive(['/exports'])}
+                        collapsed={collapsed}
+                        onClick={onNavigate}
+                    />
+                )}
 
             {hasFeature(user, FeatureAccess.ProgramAccess) && (
                 <CollapsibleSection

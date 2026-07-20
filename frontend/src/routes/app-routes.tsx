@@ -25,6 +25,7 @@ import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
 import FeatureControl from '@/pages/admin/FeatureControl';
 import ResidentHome from '@/pages/student/ResidentHome';
+import Exports from '@/pages/admin/Exports';
 import { getStudentLevel1Data } from '@/loaders/routeLoaders';
 
 const systemAdminRoutes = declareAuthenticatedRoutes(
@@ -91,6 +92,12 @@ const adminRoutes = declareAuthenticatedRoutes(
             path: 'schedule',
             element: <Schedule />,
             handle: { title: 'Schedule' }
+        },
+        {
+            path: 'exports',
+            element: <Exports />,
+            errorElement: <Error />,
+            handle: { title: 'Exports' }
         }
     ],
     AdminRoles

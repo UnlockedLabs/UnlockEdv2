@@ -294,6 +294,19 @@ html {
     @apply border border-gray-300 rounded-md px-3 py-2 bg-gray-50;
 }
 
+/* Standard page header. Use .page-title for the main heading and
+ * .page-subtitle for the supporting line beneath it. Adopt across pages
+ * incrementally so headers stay consistent and live in one place. */
+.page-title {
+    @apply text-2xl font-medium text-brand-dark dark:text-white;
+    margin-top: 2px;
+}
+
+.page-subtitle {
+    @apply text-gray-600 dark:text-gray-400;
+    margin-top: 6px;
+}
+
 @layer components {
     .card-block {
         @apply bg-white rounded-lg border border-gray-200;
