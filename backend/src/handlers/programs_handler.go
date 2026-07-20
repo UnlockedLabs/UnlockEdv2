@@ -80,7 +80,7 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	if err != nil {
 		timeFilter = -1
 	}
-	fmt.Println("did this make it here.")
+	fmt.Println("did this make it here. Test")
 	includeArchived := r.URL.Query().Get("include_archived") == "true"
 	filters := make(map[string]string, 11)
 	for key, values := range r.URL.Query() {
