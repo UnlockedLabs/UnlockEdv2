@@ -192,6 +192,23 @@ func (r ProgramOutcomesReportData) rowValues(row ProgramOutcomesReportRow) []str
 	return values
 }
 
+func (r ProgramOutcomesReportData) rowCells(row ProgramOutcomesReportRow) []any {
+	cells := []any{
+		row.ProgramName,
+		humanizeProgramTypes(row.ProgramType),
+		row.FacilitiesActive,
+		row.TotalClasses,
+		row.ActiveEnrollments,
+		row.TotalEnrollments,
+		row.TotalCapacity,
+		row.Utilization,
+	}
+	if r.IncludeStatus {
+		cells = append(cells, programStatusLabel(row.IsActive))
+	}
+	return cells
+}
+
 func (r ProgramOutcomesReportData) ToCSV() ([][]string, error) {
 	csvData := [][]string{r.headers()}
 	for _, row := range r.Data {
@@ -293,7 +310,7 @@ func (r ProgramOutcomesReportData) ToExcel() (*excelize.File, error) {
 
 	for i, row := range r.Data {
 		rowNum := i + 2
-		for j, val := range r.rowValues(row) {
+		for j, val := range r.rowCells(row) {
 			f.SetCellValue(sheetName, fmt.Sprintf("%s%d", excelColumnName(j), rowNum), val)
 		}
 	}
