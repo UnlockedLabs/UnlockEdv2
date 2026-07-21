@@ -63,7 +63,7 @@ function buildRecentSessions(instances: ClassEventInstance[]): SessionItem[] {
         });
     }
 
-    sessions.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    sessions.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
     return sessions;
 }
 
