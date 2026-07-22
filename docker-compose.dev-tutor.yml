@@ -1,0 +1,25 @@
+# Hot-reload override for tutor development.
+#
+# Usage: make dev-tutor
+#
+# The tutor source tree is bind-mounted so Next.js HMR picks up every file
+# save without a container rebuild.  node_modules live in a named volume so
+# the container's installed packages are never clobbered by the host directory.
+#
+# First run is slower (npm ci inside the image build); subsequent runs reuse
+# the named volume and start in seconds.
+
+services:
+  tutor-service:
+    build:
+      context: ../ai/unlocked-hiset-ai
+      dockerfile: docker/Dockerfile.dev
+    command: npm run dev:docker
+    volumes:
+      - ../ai/unlocked-hiset-ai:/app
+      - tutor_dev_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  tutor_dev_modules:
