@@ -53,11 +53,17 @@ type RoomBooking struct {
 type ConflictCheckRequest struct {
 	FacilityID     uint
 	RoomID         uint
+	InstructorID   uint
 	RecurrenceRule string
 	Duration       string
 	ExcludeEventID *uint
 	ExcludeClassID *uint
 }
+
+const (
+	ConflictTypeRoom       = "room"
+	ConflictTypeInstructor = "instructor"
+)
 
 type RoomConflict struct {
 	ConflictingEventID uint      `json:"conflicting_event_id"`
@@ -65,4 +71,5 @@ type RoomConflict struct {
 	ClassName          string    `json:"class_name"`
 	StartTime          time.Time `json:"start_time"`
 	EndTime            time.Time `json:"end_time"`
+	ConflictType       string    `json:"conflict_type"`
 }
