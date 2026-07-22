@@ -19,7 +19,7 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod dev dev-registry migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
+.PHONY: help prod dev dev-registry dev-tutor migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
 
 
 help: ascii_art
@@ -27,6 +27,7 @@ help: ascii_art
 	@echo " Targets:"
 	@echo " ⚡ init                   Install initial development dependencies for the project"
 	@echo "   dev                    Run containers in development mode with hot-reloading for server and frontend only"
+	@echo "   dev-tutor              Like dev, but with live hot-reload for tutor source (requires sibling checkout / symlink)"
 	@echo " 󱗆  kolibri                Run all containers with Kolibri (requires login to UL ECR | team only)"
 	@echo "   migrate                Apply the migrations"
 	@echo "   migrate-fresh          Drop the tables in the main application and to reset the database to a fresh state"
@@ -58,6 +59,12 @@ dev-registry: ascii_art
 	./config/zims.sh
 	docker compose pull tutor-service
 	docker compose up --force-recreate
+
+# Like `dev`, but mounts the sibling tutor checkout as a live volume so Next.js
+# HMR works — no rebuild needed when you edit tutor source files.
+dev-tutor: ascii_art
+	./config/zims.sh
+	docker compose -f docker-compose.yml -f docker-compose.dev-tutor.yml up $(BUILD_RECREATE)
 
 install-dep: ascii_art
 	@if [ -z "$(NAME)" ]; then \
