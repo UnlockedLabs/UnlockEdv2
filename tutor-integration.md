@@ -63,23 +63,30 @@ Work/
   ai/unlocked-hiset-ai/       <- the AI Tutor service (its own git repo, branch unlocked-adapter)
 ```
 
+If your repos aren't in this exact layout, create a symlink so that the `build.context`
+path in `docker-compose.yml` (`../ai/unlocked-hiset-ai`) resolves correctly from this
+repo's root before running `make dev`.
+
 Docker copies the tutor's working tree straight from `../ai/unlocked-hiset-ai` — no git
 remote, no image registry. **Local changes do NOT need to be committed/pushed to appear in
 the container**; the build uses whatever is on disk. (You still commit for history and so
 the *other* engineers' checkouts get your code — their compose builds from *their* local
 copy.)
 
-**Dev loop (tutor changes):**
+**Dev loop (tutor changes — hot-reload mode):**
 
 ```bash
-# 1. edit files in ../ai/unlocked-hiset-ai
-# 2. rebuild + restart just the tutor (from the UnlockEdv2 dir):
-docker compose up -d --build tutor-service
-# 3. refresh the browser at /ai-tutor
+# Start UnlockEd with the tutor running as a live Next.js dev server:
+make dev-tutor
 ```
 
-The UnlockEd **frontend hot-reloads** (Vite dev server). The **tutor does NOT** — it runs a
-production Next.js build inside the container, so every tutor change needs the rebuild above.
+`make dev-tutor` uses `docker-compose.dev-tutor.yml` as an override — it mounts
+`../ai/unlocked-hiset-ai` directly into the container and runs `npm run dev:docker` instead
+of the production build. File saves in the tutor repo are picked up by Next.js HMR
+immediately; no container rebuild needed.
+
+`make dev` (without the override) still runs the production image build — use it when you
+want to verify the production path or aren't actively editing tutor code.
 
 **Turn the feature on:** log in as SuperAdmin → **Feature Control** → toggle **AI Tutor** on
 (toggling via the UI refreshes the server's in-memory feature cache), then **log out and back
@@ -119,7 +126,7 @@ DATABASE_URL=postgres://unlocked:dev@localhost:5432/unlocked AUTH_MODE=standalon
 **Gotchas that will bite:**
 
 - Wrong directory layout → compose build fails (the `../ai/unlocked-hiset-ai` path is literal).
-- Edited the tutor but don't see it → you didn't rebuild `tutor-service` (no hot reload).
+- Edited the tutor but don't see it → use `make dev-tutor` (hot-reload mount); `make dev` runs a production build that requires an explicit `docker compose up -d --build tutor-service` to pick up changes.
 - Enabled the flag but no nav link → you didn't re-login (feature access is per-session).
 - Migration numbering: keep `00072_add_ai_tutor_feature_flag.sql`; renumber only if `main`
   advanced past 72 (goose tracks version *numbers*, not content).
@@ -133,8 +140,11 @@ pushes; a `vX.Y.Z` git tag publishes `:X.Y.Z`, `:X.Y`, and `:latest`.
 **Build vs. pull.** The `tutor-service` compose block has both `build:` (sibling checkout)
 and `image:` (GHCR), so both modes work from the same file:
 
-- **`make dev`** — builds the tutor from `../ai/unlocked-hiset-ai`. For engineers working ON
-  the tutor; their edits show up on rebuild.
+- **`make dev-tutor`** — mounts `../ai/unlocked-hiset-ai` as a live volume and runs the
+  Next.js dev server inside the container. **Use this when actively editing the tutor** —
+  HMR picks up every file save with no rebuild.
+- **`make dev`** — builds the tutor production image from `../ai/unlocked-hiset-ai`. Use
+  when you want to verify the production path or aren't editing tutor code.
 - **`make dev-registry`** — pulls the published image instead (no tutor checkout needed).
   Override the tag with `TUTOR_IMAGE_TAG` (default `unlocked-adapter`; use a `vX.Y.Z` tag for
   a release). Needs `docker login ghcr.io` unless the GHCR package is set to Internal/Public.
