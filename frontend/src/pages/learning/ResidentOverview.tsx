@@ -113,7 +113,11 @@ export default function ResidentOverview() {
                                                 </td>
                                                 <td className="py-3 px-5">
                                                     <StatusBadge
-                                                        status={prog.is_canvas ? ProgClassStatus.ACTIVE : prog.status}
+                                                        status={
+                                                            prog.is_canvas
+                                                                ? ProgClassStatus.ACTIVE
+                                                                : prog.status
+                                                        }
                                                         variant="progClass"
                                                     />
                                                 </td>
@@ -137,9 +141,8 @@ export default function ResidentOverview() {
                                                 <td className="py-3 px-5 text-muted-foreground">
                                                     {prog.is_canvas
                                                         ? '-'
-                                                        : prog.attendance_percentage !== undefined
-                                                          ? `${Math.round(prog.attendance_percentage)}%`
-                                                          : '-'}
+                                                        : (prog.attendance_percentage ??
+                                                          '-')}
                                                 </td>
                                             </tr>
                                         ))}

@@ -219,7 +219,7 @@ export interface ResidentProgramOverview {
     end_date?: string;
     present_attendance?: number;
     absent_attendance?: number;
-    attendance_percentage?: number;
+    attendance_percentage?: string;
     change_reason?: string;
     schedule?: string;
     is_canvas?: boolean;
