@@ -18,8 +18,10 @@ services:
     volumes:
       - ../ai/unlocked-hiset-ai:/app
       - tutor_dev_modules:/app/node_modules
+      - tutor_dev_next:/app/.next
     environment:
       - NODE_ENV=development
 
 volumes:
   tutor_dev_modules:
+  tutor_dev_next:
