@@ -214,12 +214,13 @@ export function RosterTab({
         <div className="space-y-4">
             <div className="card-block">
                 <div className="border-b border-gray-200 px-6 py-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                         <div className="flex items-center gap-4">
                             {!isCanvasClass && (
                                 <Checkbox
                                     checked={
-                                        selectedIds.size === filteredRows.length &&
+                                        selectedIds.size ===
+                                            filteredRows.length &&
                                         filteredRows.length > 0
                                     }
                                     onCheckedChange={toggleAll}
@@ -285,8 +286,8 @@ export function RosterTab({
                                     key={enrollment.id}
                                     className="px-6 py-4 hover:bg-surface-hover/30 transition-colors"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-6 flex-1">
+                                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                                        <div className="flex items-center gap-6 flex-1 min-w-[260px]">
                                             {!isCanvasClass && (
                                                 <Checkbox
                                                     checked={selectedIds.has(
@@ -310,7 +311,7 @@ export function RosterTab({
                                                 </div>
                                             </div>
                                             {!isCanvasClass && (
-                                                <div className="flex-1">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-3 mb-2">
                                                         <span className="text-sm text-gray-600">
                                                             Attendance:
@@ -320,12 +321,13 @@ export function RosterTab({
                                                         </span>
                                                         <span className="text-xs text-gray-500">
                                                             ({stats.attended}/
-                                                            {stats.total} sessions)
+                                                            {stats.total}{' '}
+                                                            sessions)
                                                         </span>
                                                     </div>
                                                     <Progress
                                                         value={stats.rate}
-                                                        className="h-2 w-64"
+                                                        className="h-2 w-full max-w-[16rem]"
                                                         indicatorClassName={
                                                             needsSupport
                                                                 ? 'bg-brand-gold'
@@ -335,7 +337,7 @@ export function RosterTab({
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 flex-wrap justify-end">
                                             <span className="text-sm text-gray-600 inline-flex items-center gap-1">
                                                 Enrolled:{' '}
                                                 {
@@ -465,7 +467,9 @@ export function RosterTab({
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
+                                                            <TooltipTrigger
+                                                                asChild
+                                                            >
                                                                 <div>
                                                                     <DropdownMenuItem
                                                                         variant="destructive"
@@ -485,11 +489,15 @@ export function RosterTab({
                                                                     </DropdownMenuItem>
                                                                 </div>
                                                             </TooltipTrigger>
-                                                            {stats.total > 0 && (
+                                                            {stats.total >
+                                                                0 && (
                                                                 <TooltipContent side="left">
-                                                                    Cannot unenroll
-                                                                    after attendance
-                                                                    has been taken
+                                                                    Cannot
+                                                                    unenroll
+                                                                    after
+                                                                    attendance
+                                                                    has been
+                                                                    taken
                                                                 </TooltipContent>
                                                             )}
                                                         </Tooltip>
