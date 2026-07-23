@@ -91,10 +91,7 @@ function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
                 2,
                 '0'
             );
-            const endM = String(Math.floor(totalMinutes % 60)).padStart(
-                2,
-                '0'
-            );
+            const endM = String(Math.floor(totalMinutes % 60)).padStart(2, '0');
             endTime = `${endH}:${endM}`;
         }
     }
@@ -174,7 +171,8 @@ function getNextClassDate(cls: Class): { date: string; time: string } | null {
 export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const schedule = useMemo(
-        () => cls.is_canvas ? getCanvasClassSchedule(cls) : getClassSchedule(cls),
+        () =>
+            cls.is_canvas ? getCanvasClassSchedule(cls) : getClassSchedule(cls),
         [cls]
     );
     const nextClass = useMemo(() => getNextClassDate(cls), [cls]);
@@ -229,7 +227,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 </p>
             )}
 
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-4">
                 <InfoCard
                     label="Instructor"
                     value={getInstructorName(cls.events) || 'Unassigned'}
@@ -249,7 +247,8 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 <InfoCard
                     label="Duration"
                     value={
-                        cls.start_dt && new Date(cls.start_dt).getFullYear() >= 1900
+                        cls.start_dt &&
+                        new Date(cls.start_dt).getFullYear() >= 1900
                             ? `${formatDate(cls.start_dt)} to ${cls.end_dt ? formatDate(cls.end_dt) : 'Ongoing'}`
                             : 'Not set'
                     }
@@ -293,7 +292,7 @@ export function StatCards({
     const spotsAvailable = cls.capacity - cls.enrolled;
 
     return (
-        <div className={`grid ${isCanvasClass ? 'grid-cols-2' : 'grid-cols-3'} gap-6 mb-6`}>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 mb-6">
             <div className="card-block p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Users className="size-5 text-brand shrink-0" />
@@ -327,7 +326,9 @@ export function StatCards({
                         <Calendar className="size-5 text-brand shrink-0" />
                         <h3 className="text-brand-dark truncate">Attendance</h3>
                     </div>
-                    <div className="text-3xl text-brand-dark mb-2">{avgRate}%</div>
+                    <div className="text-3xl text-brand-dark mb-2">
+                        {avgRate}%
+                    </div>
                     <Progress
                         value={avgRate}
                         className="h-2 mb-3"
