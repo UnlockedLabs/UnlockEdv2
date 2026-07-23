@@ -216,8 +216,9 @@ export function EnrollResidentsModal({
                                                     Already enrolled in &quot;
                                                     {conflict.conflicting_class}
                                                     &quot;
-                                                    {conflict.reason &&
-                                                        ` - ${conflict.reason}`}
+                                                    {conflict.conflict_days
+                                                        ?.length > 0 &&
+                                                        ` on ${conflict.conflict_days.join(', ')}`}
                                                 </span>
                                             </div>
                                         )}

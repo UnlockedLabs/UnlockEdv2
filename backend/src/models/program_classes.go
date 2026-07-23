@@ -318,7 +318,7 @@ type ConflictDetail struct {
 	ConflictingClass string    `json:"conflicting_class"`
 	ConflictStart    time.Time `json:"conflict_start"`
 	ConflictEnd      time.Time `json:"conflict_end"`
-	Reason           string    `json:"reason"`
+	ConflictDays     []string  `json:"conflict_days"`
 }
 
 type BulkCancelSessionsRequest struct {
