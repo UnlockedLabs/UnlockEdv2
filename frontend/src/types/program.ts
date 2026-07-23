@@ -120,6 +120,7 @@ export interface ProgramsOverviewTable {
     total_classes: number;
     total_active_classes: number;
     total_capacity: number;
+    total_filled_seats: number;
     completion_rate: number;
     attendance_rate: number;
     program_types: string;
