@@ -335,6 +335,10 @@ export default function ProgramsPage() {
             (sum, p) => sum + (p.total_capacity ?? 0),
             0
         );
+        const totalFilledSeats = filtered.reduce(
+            (sum, p) => sum + (p.total_filled_seats ?? 0),
+            0
+        );
 
         const completedEnrollmentsSum = filtered.reduce(
             (sum, p) =>
@@ -359,7 +363,7 @@ export default function ProgramsPage() {
 
         const utilization =
             totalCapacity > 0
-                ? Math.round((totalEnrollment / totalCapacity) * 100)
+                ? Math.round((totalFilledSeats / totalCapacity) * 100)
                 : 0;
         return {
             activePrograms: active.length,
@@ -1317,8 +1321,9 @@ function getHistoricalEnrollments(program: ProgramsOverviewTable): number {
 
 function getUtilizationRate(program: ProgramsOverviewTable): number {
     const capacity = program.total_capacity ?? 0;
-    const enrolled = program.total_active_enrollments ?? 0;
-    return capacity > 0 ? Math.round((enrolled / capacity) * 100) : 0;
+
+    const filledSeats = program.total_filled_seats ?? 0;
+    return capacity > 0 ? Math.round((filledSeats / capacity) * 100) : 0;
 }
 
 function getPercentageColorClass(percentage: number): string {
