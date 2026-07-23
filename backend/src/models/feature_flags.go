@@ -50,9 +50,11 @@ var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAcce
 
 // TopLevelFacilityFeatures are the top-level features a department admin can
 // manage per facility, in display order. Mirrors the cards on the global
-// Feature Control page. ProviderAccess (provider_platforms) is intentionally
-// excluded — it is configured per provider platform, not per facility.
-var TopLevelFacilityFeatures = []FeatureAccess{OpenContentAccess, LearningRecordAccess, ProgramAccess}
+// Feature Control page. ProviderAccess (provider_platforms / "Learning
+// Platforms") is included so a facility can turn it off even though provider
+// platforms themselves are configured globally — a disabled facility simply
+// hides the Learning Platforms area for its pinned users.
+var TopLevelFacilityFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, LearningRecordAccess, ProgramAccess}
 
 // FacilityFeatureStatus is one row of the per-facility feature overview list:
 // a facility plus the effective on/off state of each manageable, globally

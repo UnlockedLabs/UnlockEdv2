@@ -50,9 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Self-heal stale sessions. feature_access (and other traits) are resolved
     // server-side on every request, but the client caches the user from the
-    // one-shot fetch at mount. Re-fetch when the tab regains visibility so a
-    // per-facility feature toggle made by an admin re-gates a resident's nav and
-    // routes without a manual reload. The backend already enforces the change
+    // one-shot fetch at mount. Re-fetch when the tab regains visibility or focus
+    // so a per-facility feature toggle made by an admin re-gates a resident's nav
+    // and routes without a manual reload. The backend already enforces the change
     // immediately (401s); this just keeps the UI honest.
     useEffect(() => {
         if (loading || !user) return;
@@ -82,10 +82,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 inFlight = false;
             }
         };
-        const onVisibility = () => void revalidate();
-        document.addEventListener('visibilitychange', onVisibility);
-        return () =>
-            document.removeEventListener('visibilitychange', onVisibility);
+        const onWake = () => void revalidate();
+        document.addEventListener('visibilitychange', onWake);
+        window.addEventListener('focus', onWake);
+        return () => {
+            document.removeEventListener('visibilitychange', onWake);
+            window.removeEventListener('focus', onWake);
+        };
     }, [loading, user]);
 
     if (loading || !user) {

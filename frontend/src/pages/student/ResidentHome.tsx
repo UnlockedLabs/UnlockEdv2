@@ -221,7 +221,15 @@ interface FavoriteGroup {
     items: OpenContentItem[];
 }
 
-function FavoritesAccordion({ items }: { items: OpenContentItem[] }) {
+function FavoritesAccordion({
+    items,
+    linksEnabled,
+    videosEnabled
+}: {
+    items: OpenContentItem[];
+    linksEnabled: boolean;
+    videosEnabled: boolean;
+}) {
     const groups: FavoriteGroup[] = [
         {
             title: 'Libraries',
@@ -231,12 +239,16 @@ function FavoritesAccordion({ items }: { items: OpenContentItem[] }) {
         {
             title: 'Videos',
             icon: Video,
-            items: items.filter((i) => i.content_type === 'video')
+            items: videosEnabled
+                ? items.filter((i) => i.content_type === 'video')
+                : []
         },
         {
             title: 'Helpful Links',
             icon: Link2,
-            items: items.filter((i) => i.content_type === 'helpful_link')
+            items: linksEnabled
+                ? items.filter((i) => i.content_type === 'helpful_link')
+                : []
         }
     ].filter((g) => g.items.length > 0);
 
@@ -353,6 +365,16 @@ function RecentAchievementsPanel({
 export default function ResidentHome() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    // Knowledge Center sub-features may be toggled off per facility while the
+    // parent (open_content) stays on — hide their sections rather than showing
+    // empty/blocked content. Declared here (before the data fetches) so the
+    // gated SWR keys can reference them.
+    const helpfulLinksEnabled = user
+        ? hasFeature(user, FeatureAccess.HelpfulLinksAccess)
+        : false;
+    const videosEnabled = user
+        ? hasFeature(user, FeatureAccess.UploadVideoAccess)
+        : false;
     const [searchParams] = useSearchParams();
     const { topUserContent, topFacilityContent } =
         useLoaderData() as ResidentHomeData;
@@ -383,8 +405,9 @@ export default function ResidentHome() {
     const { data: favorites } = useSWR<ServerResponseMany<OpenContentItem>>(
         '/api/open-content/favorite-groupings'
     );
-    const { data: helpfulLinks } =
-        useSWR<ServerResponseOne<HelpfulLinkAndSort>>('/api/helpful-links');
+    const { data: helpfulLinks } = useSWR<
+        ServerResponseOne<HelpfulLinkAndSort>
+    >(helpfulLinksEnabled ? '/api/helpful-links' : null);
 
     // --- Preview params (design / QA) ---
     const previewLearningState = parsePreviewLearningState(
@@ -721,7 +744,7 @@ export default function ResidentHome() {
                     </section>
 
                     {/* ── Helpful Links ── */}
-                    {links.length > 0 && (
+                    {helpfulLinksEnabled && links.length > 0 && (
                         <section>
                             <h2 className="section-heading">Helpful Links</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -746,7 +769,11 @@ export default function ResidentHome() {
                             </h2>
                         </div>
                         {favoriteItems.length > 0 ? (
-                            <FavoritesAccordion items={favoriteItems} />
+                            <FavoritesAccordion
+                                items={favoriteItems}
+                                linksEnabled={helpfulLinksEnabled}
+                                videosEnabled={videosEnabled}
+                            />
                         ) : (
                             <EmptyState
                                 title="No Favorites Yet"

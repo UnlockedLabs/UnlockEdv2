@@ -109,14 +109,16 @@ func TestFacilityFeatureFlagsOverview(t *testing.T) {
 		require.True(t, ok, "seeded facility should appear in the overview")
 
 		// Universe = globally-enabled TopLevelFacilityFeatures = open_content +
-		// program_management (learning_record is globally off, provider_platforms
-		// is not per-facility manageable).
-		require.Equal(t, 2, status.TotalCount)
-		require.Equal(t, 2, status.EnabledCount, "with no overrides both features inherit on")
+		// provider_platforms + program_management (learning_record is globally off).
+		require.Equal(t, 3, status.TotalCount)
+		require.Equal(t, 3, status.EnabledCount, "with no overrides all features inherit on")
 
 		oc, ok := featureState(status, models.OpenContentAccess)
 		require.True(t, ok)
 		require.True(t, oc)
+		pp, ok := featureState(status, models.ProviderAccess)
+		require.True(t, ok)
+		require.True(t, pp)
 		pm, ok := featureState(status, models.ProgramAccess)
 		require.True(t, ok)
 		require.True(t, pm)
@@ -136,7 +138,7 @@ func TestFacilityFeatureFlagsOverview(t *testing.T) {
 
 		status, ok := findStatus(resp.GetData(), facility.ID)
 		require.True(t, ok)
-		require.Equal(t, 1, status.EnabledCount, "program_management now off")
+		require.Equal(t, 2, status.EnabledCount, "program_management now off")
 
 		pm, _ := featureState(status, models.ProgramAccess)
 		require.False(t, pm)
@@ -709,8 +711,7 @@ func TestApplyFacilityFeaturesToAllIdempotent(t *testing.T) {
 
 // TestApplyFacilityFeaturesToAllWritesExpectedRows inspects the persisted override
 // rows: apply materializes an explicit row for every globally-enabled manageable
-// feature (top-level + page) and skips features that are not manageable
-// per-facility (provider_platforms) or globally disabled (learning_record).
+// feature (top-level + page) and skips globally-disabled features (learning_record).
 func TestApplyFacilityFeaturesToAllWritesExpectedRows(t *testing.T) {
 	env = SetupTestEnv(t)
 	defer env.CleanupTestEnv()
@@ -732,6 +733,7 @@ func TestApplyFacilityFeaturesToAllWritesExpectedRows(t *testing.T) {
 	}
 	expected := map[models.FeatureAccess]bool{
 		models.OpenContentAccess:    true,
+		models.ProviderAccess:       true,
 		models.RequestContentAccess: true,
 		models.HelpfulLinksAccess:   true,
 		models.UploadVideoAccess:    true,
@@ -739,9 +741,7 @@ func TestApplyFacilityFeaturesToAllWritesExpectedRows(t *testing.T) {
 	}
 	require.Equal(t, expected, got, "exactly the globally-enabled manageable features are materialized as on")
 
-	// Never write rows for non-manageable / globally-off features.
-	_, hasProvider := got[models.ProviderAccess]
-	require.False(t, hasProvider, "provider_platforms is not managed per-facility")
+	// Never write rows for globally-off features.
 	_, hasLearningRecord := got[models.LearningRecordAccess]
 	require.False(t, hasLearningRecord, "globally-disabled learning_record is skipped")
 }
