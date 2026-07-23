@@ -149,7 +149,7 @@ export default function ClassDetailPage() {
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
 
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <ClassHeader
                                 cls={cls}
@@ -160,61 +160,66 @@ export default function ClassDetailPage() {
                             />
                         </div>
                         {!isCanvasClass && (
-                        <div className="flex gap-2 ml-6">
-                            <Button
-                                variant="outline"
-                                className="border-gray-300"
-                                onClick={() => {
-                                    editModalVersion.current++;
-                                    setShowEditModal(true);
-                                }}
-                            >
-                                <Edit className="size-4 mr-2" />
-                                Edit Class
-                            </Button>
-                            {cls.status === SelectedClassStatus.Active && (
+                            <div className="flex gap-2 flex-wrap lg:ml-6 shrink-0">
                                 <Button
-                                    onClick={() => setShowAttendanceModal(true)}
-                                    className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark"
+                                    variant="outline"
+                                    className="border-gray-300"
+                                    onClick={() => {
+                                        editModalVersion.current++;
+                                        setShowEditModal(true);
+                                    }}
                                 >
-                                    Take Attendance
+                                    <Edit className="size-4 mr-2" />
+                                    Edit Class
                                 </Button>
-                            )}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-9 w-9 p-0 border border-gray-300">
-                                    <MoreVertical className="size-4" />
-                                    <span className="sr-only">
-                                        More options
-                                    </span>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="z-100"
-                                >
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div>
-                                                <DropdownMenuItem
-                                                    variant="destructive"
-                                                    onClick={() =>
-                                                        setShowDeleteModal(true)
-                                                    }
-                                                    disabled={!canDelete}
-                                                >
-                                                    <Trash2 className="size-4 mr-2" />
-                                                    Delete Class
-                                                </DropdownMenuItem>
-                                            </div>
-                                        </TooltipTrigger>
-                                        {isDeleteCheckReady && !canDelete && (
-                                            <TooltipContent side="left">
-                                                {deleteBlockerReason}
-                                            </TooltipContent>
-                                        )}
-                                    </Tooltip>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
+                                {cls.status === SelectedClassStatus.Active && (
+                                    <Button
+                                        onClick={() =>
+                                            setShowAttendanceModal(true)
+                                        }
+                                        className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark"
+                                    >
+                                        Take Attendance
+                                    </Button>
+                                )}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-9 w-9 p-0 border border-gray-300">
+                                        <MoreVertical className="size-4" />
+                                        <span className="sr-only">
+                                            More options
+                                        </span>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="z-100"
+                                    >
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div>
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() =>
+                                                            setShowDeleteModal(
+                                                                true
+                                                            )
+                                                        }
+                                                        disabled={!canDelete}
+                                                    >
+                                                        <Trash2 className="size-4 mr-2" />
+                                                        Delete Class
+                                                    </DropdownMenuItem>
+                                                </div>
+                                            </TooltipTrigger>
+                                            {isDeleteCheckReady &&
+                                                !canDelete && (
+                                                    <TooltipContent side="left">
+                                                        {deleteBlockerReason}
+                                                    </TooltipContent>
+                                                )}
+                                        </Tooltip>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -229,7 +234,7 @@ export default function ClassDetailPage() {
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1">
+                    <TabsList className="bg-white border border-gray-200 p-1 h-auto gap-1 flex-wrap">
                         <TabsTrigger
                             value="roster"
                             className="tab-trigger-brand"
@@ -303,7 +308,10 @@ export default function ClassDetailPage() {
                         {isCanvasClass ? (
                             <CanvasSessionsTab classId={cls.id} />
                         ) : (
-                            <SessionsTab cls={cls} onClassMutate={() => void mutate()} />
+                            <SessionsTab
+                                cls={cls}
+                                onClassMutate={() => void mutate()}
+                            />
                         )}
                     </TabsContent>
 
@@ -311,18 +319,25 @@ export default function ClassDetailPage() {
                         {isCanvasClass ? (
                             <CanvasScheduleTab classId={cls.id} />
                         ) : (
-                            <ScheduleTab cls={cls} onClassMutate={() => void mutate()} />
+                            <ScheduleTab
+                                cls={cls}
+                                onClassMutate={() => void mutate()}
+                            />
                         )}
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
-                        <SupportTab classId={cls.id} isCanvasClass={isCanvasClass} />
+                        <SupportTab
+                            classId={cls.id}
+                            isCanvasClass={isCanvasClass}
+                        />
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">
                         {isCanvasClass ? (
                             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
-                                Audit history is not available for Canvas classes.
+                                Audit history is not available for Canvas
+                                classes.
                             </div>
                         ) : (
                             <AuditTab classId={cls.id} />
