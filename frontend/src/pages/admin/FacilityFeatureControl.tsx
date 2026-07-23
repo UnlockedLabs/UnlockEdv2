@@ -74,6 +74,13 @@ const FEATURE_CONFIG: FeatureConfigEntry[] = [
         ]
     },
     {
+        key: FeatureAccess.ProviderAccess,
+        label: 'Learning Platforms',
+        pill: 'Learning Platforms',
+        description:
+            'Enables the Learning Platforms area for connecting and managing external provider platforms at this facility'
+    },
+    {
         key: FeatureAccess.ProgramAccess,
         label: 'Program Hub & Tracking',
         pill: 'Programs',

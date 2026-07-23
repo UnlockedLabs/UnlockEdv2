@@ -15,6 +15,15 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog';
 import {
     Tooltip,
     TooltipContent,
@@ -30,10 +39,11 @@ import {
     ServerResponseMany,
     ServerResponseOne,
     OpenContentItem,
-    Option
+    Option,
+    FeatureAccess
 } from '@/types';
 import { formatVideoDuration } from '@/lib/formatters';
-import { isAdministrator, useAuth } from '@/auth/useAuth';
+import { hasFeature, isAdministrator, useAuth } from '@/auth/useAuth';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
@@ -60,6 +70,22 @@ export default function ResidentKnowledgeCenter() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const isAdminPreview = user ? isAdministrator(user) : false;
+    // Sub-feature gating: the Knowledge Center parent (open_content) may be on
+    // while individual sub-features are toggled off per facility. Hide their
+    // tabs/controls rather than surfacing an empty tab. Admins keep the global
+    // set, so this only narrows the view for facility-scoped users.
+    const videosEnabled = user
+        ? hasFeature(user, FeatureAccess.UploadVideoAccess)
+        : false;
+    const linksEnabled = user
+        ? hasFeature(user, FeatureAccess.HelpfulLinksAccess)
+        : false;
+    const requestEnabled = user
+        ? hasFeature(user, FeatureAccess.RequestContentAccess)
+        : false;
+    const [requestOpen, setRequestOpen] = useState(false);
+    const [requestText, setRequestText] = useState('');
+    const [requestSubmitting, setRequestSubmitting] = useState(false);
     const { tourState, setTourState } = useTourContext();
     const [pendingFavorites, setPendingFavorites] = useState<
         Map<string, boolean>
@@ -99,11 +125,15 @@ export default function ResidentKnowledgeCenter() {
     );
 
     const { data: vidData } = useSWR<ServerResponseMany<VideoType>>(
-        `/api/videos?visibility=visible&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+        videosEnabled
+            ? `/api/videos?visibility=visible&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+            : null
     );
 
     const { data: linkData } = useSWR<ServerResponseOne<HelpfulLinkAndSort>>(
-        `/api/helpful-links?visibility=true&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+        linksEnabled
+            ? `/api/helpful-links?visibility=true&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+            : null
     );
 
     const isFavoritesTab = contentTypeFilter === 'favorites';
@@ -118,27 +148,37 @@ export default function ResidentKnowledgeCenter() {
 
     const favoritesContent: ContentItem[] = useMemo(
         () =>
-            (favData?.data ?? []).map((f) => ({
-                id: f.content_id,
-                type:
-                    f.content_type === 'helpful_link'
-                        ? ('link' as const)
-                        : (f.content_type as 'library' | 'video'),
-                title: f.title,
-                description: f.description ?? '',
-                featured: false,
-                favorited: true,
-                openContentProviderId: f.open_content_provider_id,
-                imageUrl:
-                    f.content_type === 'library' ? f.thumbnail_url : undefined,
-                thumbnailUrl:
-                    f.content_type === 'video'
-                        ? `/api/photos/${f.external_id}.jpg`
-                        : undefined,
-                author: f.channel_title,
-                url: f.url
-            })),
-        [favData?.data]
+            (favData?.data ?? [])
+                .map((f) => ({
+                    id: f.content_id,
+                    type:
+                        f.content_type === 'helpful_link'
+                            ? ('link' as const)
+                            : (f.content_type as 'library' | 'video'),
+                    title: f.title,
+                    description: f.description ?? '',
+                    featured: false,
+                    favorited: true,
+                    openContentProviderId: f.open_content_provider_id,
+                    imageUrl:
+                        f.content_type === 'library'
+                            ? f.thumbnail_url
+                            : undefined,
+                    thumbnailUrl:
+                        f.content_type === 'video'
+                            ? `/api/photos/${f.external_id}.jpg`
+                            : undefined,
+                    author: f.channel_title,
+                    url: f.url
+                }))
+                // Drop favorited items whose sub-feature is disabled for this
+                // facility so a previously-favorited video/link doesn't resurface.
+                .filter(
+                    (item) =>
+                        (item.type !== 'video' || videosEnabled) &&
+                        (item.type !== 'link' || linksEnabled)
+                ),
+        [favData?.data, videosEnabled, linksEnabled]
     );
 
     const allContent: ContentItem[] = useMemo(() => {
@@ -472,14 +512,47 @@ export default function ResidentKnowledgeCenter() {
         );
     };
 
+    const submitContentRequest = async () => {
+        const content = requestText.trim();
+        if (!content) return;
+        setRequestSubmitting(true);
+        try {
+            const resp = await API.post<string, { content: string }>(
+                'open-content/request-content',
+                { content }
+            );
+            if (!resp.success) {
+                toast.error(resp.message);
+                return;
+            }
+            toast.success('Content request submitted');
+            setRequestText('');
+            setRequestOpen(false);
+        } finally {
+            setRequestSubmitting(false);
+        }
+    };
+
     return (
         <div id="knowledge-center-landing">
             <div className="max-w-7xl mx-auto px-6 py-8">
-                <div className="mb-8">
-                    <h1 className="text-brand-dark mb-2">Knowledge Center</h1>
-                    <p className="text-gray-600">
-                        Explore libraries, videos, and helpful resources.
-                    </p>
+                <div className="mb-8 flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-brand-dark mb-2">
+                            Knowledge Center
+                        </h1>
+                        <p className="text-gray-600">
+                            Explore libraries, videos, and helpful resources.
+                        </p>
+                    </div>
+                    {requestEnabled && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setRequestOpen(true)}
+                        >
+                            Request Content
+                        </Button>
+                    )}
                 </div>
 
                 <div
@@ -529,34 +602,38 @@ export default function ResidentKnowledgeCenter() {
                         >
                             Libraries ({counts.library})
                         </button>
-                        <button
-                            onClick={() => {
-                                setContentTypeFilter('video');
-                                setCategoryFilter('all');
-                                setCurrentPage(1);
-                            }}
-                            className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                                contentTypeFilter === 'video'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
-                            }`}
-                        >
-                            Videos ({counts.video})
-                        </button>
-                        <button
-                            onClick={() => {
-                                setContentTypeFilter('link');
-                                setCategoryFilter('all');
-                                setCurrentPage(1);
-                            }}
-                            className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                                contentTypeFilter === 'link'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
-                            }`}
-                        >
-                            Helpful Links ({counts.link})
-                        </button>
+                        {videosEnabled && (
+                            <button
+                                onClick={() => {
+                                    setContentTypeFilter('video');
+                                    setCategoryFilter('all');
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                                    contentTypeFilter === 'video'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
+                                }`}
+                            >
+                                Videos ({counts.video})
+                            </button>
+                        )}
+                        {linksEnabled && (
+                            <button
+                                onClick={() => {
+                                    setContentTypeFilter('link');
+                                    setCategoryFilter('all');
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                                    contentTypeFilter === 'link'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
+                                }`}
+                            >
+                                Helpful Links ({counts.link})
+                            </button>
+                        )}
                         <button
                             onClick={() => {
                                 setContentTypeFilter('favorites');
@@ -647,6 +724,48 @@ export default function ResidentKnowledgeCenter() {
                     </>
                 )}
             </div>
+
+            {requestEnabled && (
+                <Dialog
+                    open={requestOpen}
+                    onOpenChange={(open) =>
+                        !requestSubmitting && setRequestOpen(open)
+                    }
+                >
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Request content</DialogTitle>
+                            <DialogDescription>
+                                Tell us what you would like added to the
+                                Knowledge Center.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Textarea
+                            value={requestText}
+                            onChange={(e) => setRequestText(e.target.value)}
+                            placeholder="Describe the content you would like to see..."
+                            rows={5}
+                        />
+                        <div className="flex gap-3 justify-end pt-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setRequestOpen(false)}
+                                disabled={requestSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => void submitContentRequest()}
+                                disabled={
+                                    requestSubmitting || !requestText.trim()
+                                }
+                            >
+                                Submit
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }

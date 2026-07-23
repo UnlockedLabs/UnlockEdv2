@@ -196,13 +196,17 @@ const getAdminLink = (): string => {
 };
 
 const getResidentLink = (user: User): string => {
+    // A resident at a facility with no top-level features enabled has a
+    // null/empty feature_access; fall through to /temp-home rather than
+    // crashing on `.includes` of null.
+    const featureAccess = user.feature_access ?? [];
     if (
-        user.feature_access.includes(FeatureAccess.OpenContentAccess) ||
-        user.feature_access.includes(FeatureAccess.LearningRecordAccess)
+        featureAccess.includes(FeatureAccess.OpenContentAccess) ||
+        featureAccess.includes(FeatureAccess.LearningRecordAccess)
     ) {
         return '/home';
     }
-    if (user.feature_access.includes(FeatureAccess.ProgramAccess)) {
+    if (featureAccess.includes(FeatureAccess.ProgramAccess)) {
         return '/resident-programs';
     }
     return '/temp-home';
