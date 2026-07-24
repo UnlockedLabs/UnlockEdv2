@@ -76,3 +76,10 @@ func newUpdateDBError(err error, table string) DBError {
 func newNotFoundDBError(err error, table string) DBError {
 	return NewDBError(err, fmt.Sprintf("%s not found", table))
 }
+
+// newBadRequestDBError builds a 400 DBError for a business-rule violation on a
+// well-formed request (e.g. a disallowed toggle), rather than letting a plain
+// error fall through NewDBError to a misleading 500.
+func newBadRequestDBError(msg string) DBError {
+	return DBError{Status: http.StatusBadRequest, Message: msg, InternalErr: errors.New(msg)}
+}

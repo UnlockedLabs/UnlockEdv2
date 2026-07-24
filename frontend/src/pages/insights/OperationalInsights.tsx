@@ -10,8 +10,13 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth, canSwitchFacility } from '@/auth/useAuth';
-import { Facility, InsightsRangeKey, ServerResponseMany } from '@/types';
+import { useAuth, canSwitchFacility, hasFeature } from '@/auth/useAuth';
+import {
+    Facility,
+    FeatureAccess,
+    InsightsRangeKey,
+    ServerResponseMany
+} from '@/types';
 import OverviewTab from './OverviewTab';
 import KnowledgeCenterTab from './KnowledgeCenterTab';
 import { RANGE_OPTIONS, RANGE_LABELS, rangeToParams } from './insightsRange';
@@ -22,6 +27,12 @@ const TAB_TRIGGER_CLASS =
 export default function OperationalInsightsPage() {
     const { user } = useAuth();
     const canSwitch = user ? canSwitchFacility(user) : false;
+    // Knowledge Center insights are only relevant when the facility has the
+    // Knowledge Center (open_content) feature enabled. Cross-facility admins
+    // keep the global set, so the tab stays for them by design.
+    const knowledgeCenterEnabled = user
+        ? hasFeature(user, FeatureAccess.OpenContentAccess)
+        : false;
 
     const [activeRange, setActiveRange] = useState<InsightsRangeKey>('30D');
     const [customFrom, setCustomFrom] = useState('');
@@ -145,12 +156,14 @@ export default function OperationalInsightsPage() {
                         >
                             Overview
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="knowledge-center"
-                            className={TAB_TRIGGER_CLASS}
-                        >
-                            Knowledge Center
-                        </TabsTrigger>
+                        {knowledgeCenterEnabled && (
+                            <TabsTrigger
+                                value="knowledge-center"
+                                className={TAB_TRIGGER_CLASS}
+                            >
+                                Knowledge Center
+                            </TabsTrigger>
+                        )}
                     </TabsList>
                     <TabsContent value="overview" className="mt-0">
                         <OverviewTab
@@ -160,13 +173,15 @@ export default function OperationalInsightsPage() {
                             rangeLabel={rangeLabel}
                         />
                     </TabsContent>
-                    <TabsContent value="knowledge-center" className="mt-0">
-                        <KnowledgeCenterTab
-                            dateParams={dateParams}
-                            selectedFacility={selectedFacility}
-                            rangeLabel={rangeLabel}
-                        />
-                    </TabsContent>
+                    {knowledgeCenterEnabled && (
+                        <TabsContent value="knowledge-center" className="mt-0">
+                            <KnowledgeCenterTab
+                                dateParams={dateParams}
+                                selectedFacility={selectedFacility}
+                                rangeLabel={rangeLabel}
+                            />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
         </div>
