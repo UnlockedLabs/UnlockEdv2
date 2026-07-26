@@ -4,7 +4,6 @@ import {
     isAdministrator,
     hasFeature,
     canSwitchFacility,
-    isSysAdmin,
     handleLogout
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
@@ -31,8 +30,7 @@ import {
     AdjustmentsHorizontalIcon,
     PencilSquareIcon,
     CircleStackIcon,
-    ArrowDownTrayIcon,
-    Squares2X2Icon
+    ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -196,22 +194,12 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     />
                 </>
             )}
-            {isSysAdmin(user) && (
+            {canSwitchFacility(user) && (
                 <NavLink
                     to="/feature-control"
                     icon={AdjustmentsHorizontalIcon}
                     label="Feature Control"
                     active={isActive(['/feature-control'])}
-                    collapsed={collapsed}
-                    onClick={onNavigate}
-                />
-            )}
-            {canSwitchFacility(user) && (
-                <NavLink
-                    to="/facility-features"
-                    icon={Squares2X2Icon}
-                    label="Facility Features"
-                    active={isActive(['/facility-features'])}
                     collapsed={collapsed}
                     onClick={onNavigate}
                 />

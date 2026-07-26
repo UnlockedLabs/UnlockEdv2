@@ -3,8 +3,8 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import { AlertCircle, Building2 } from 'lucide-react';
 import API from '@/api/api';
+import { useAuth, fetchUser } from '@/auth/useAuth';
 import { cn } from '@/lib/utils';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { SearchInput } from '@/components/shared/SearchInput';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -105,7 +105,17 @@ interface FeatureFilter {
     enabled: boolean;
 }
 
-export default function FacilityFeatureControl() {
+interface FacilityFeatureSectionProps {
+    // Optional heading shown above the section. The system-admin composite view
+    // passes "Per-Facility Settings" to distinguish it from the statewide
+    // section above; the dept-admin view omits it (the page header suffices).
+    heading?: string;
+}
+
+export default function FacilityFeatureSection({
+    heading
+}: FacilityFeatureSectionProps) {
+    const { user, setUser } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState<FeatureFilter | null>(null);
     const [filterValue, setFilterValue] = useState('all');
@@ -164,6 +174,27 @@ export default function FacilityFeatureControl() {
         });
     }
 
+    // The whole UI gates on the auth user's feature_access, which is cached in
+    // AuthContext and resolved server-side per request. SWR revalidation only
+    // refreshes this section's tables, not the sidebar/routes, so after a toggle
+    // that affects the current user's own facility we must re-fetch the auth
+    // user. Only adopt a response that carries a real identity and whose
+    // feature_access actually changed — mirrors the AuthProvider self-heal so a
+    // transient failure never blanks a live session and unchanged sets (e.g. a
+    // system admin, who stays statewide) don't trigger a needless re-render.
+    async function refreshAuthUser() {
+        const fresh = await fetchUser();
+        if (
+            typeof fresh?.id !== 'number' ||
+            !Array.isArray(fresh.feature_access)
+        ) {
+            return;
+        }
+        if (fresh.feature_access.join() !== user?.feature_access.join()) {
+            setUser(fresh);
+        }
+    }
+
     async function handleToggle(
         featureKey: FeatureAccess,
         label: string,
@@ -180,6 +211,9 @@ export default function FacilityFeatureControl() {
             return;
         }
         await Promise.all([mutateList(), mutateDetail()]);
+        if (selectedFacilityId === user?.facility_id) {
+            await refreshAuthUser();
+        }
         toast.success(`${label} ${newValue ? 'enabled' : 'disabled'}`);
     }
 
@@ -196,6 +230,9 @@ export default function FacilityFeatureControl() {
                 return;
             }
             await Promise.all([mutateList(), mutateDetail()]);
+            // apply-all overwrites every facility (including the acting admin's),
+            // so re-gate the current user's nav/routes as well.
+            await refreshAuthUser();
             toast.success('Settings applied to all facilities');
             setApplyAllOpen(false);
         } finally {
@@ -204,11 +241,12 @@ export default function FacilityFeatureControl() {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <PageHeader
-                title="Facility Features"
-                subtitle="Turn features on or off for each facility"
-            />
+        <div className="space-y-4">
+            {heading && (
+                <h2 className="text-lg font-semibold text-brand-dark dark:text-white">
+                    {heading}
+                </h2>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
                 {/* Left panel — master list */}

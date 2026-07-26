@@ -53,9 +53,10 @@ import {
     ServerResponseMany,
     ServerResponseOne,
     Option,
-    MAX_DOWNLOAD_ATTEMPTS
+    MAX_DOWNLOAD_ATTEMPTS,
+    FeatureAccess
 } from '@/types';
-import { useAuth, canSwitchFacility } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility, hasFeature } from '@/auth/useAuth';
 import { FacilityVisibilitySheet } from '@/components/knowledge-center';
 import { ManagedContent } from '@/components/knowledge-center/FacilityVisibilitySheet';
 import {
@@ -407,6 +408,16 @@ export default function KnowledgeCenterManagement() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const canManageFacilities = !!user && canSwitchFacility(user);
+    // Sub-feature gating: the Knowledge Center parent (open_content) may be on
+    // while individual sub-features are toggled off per facility. Hide the Videos
+    // and Helpful Links management tabs so a facility-scoped admin (dept/facility
+    // admin) can't manage a surface that is off for their facility. System admins
+    // keep the global set, so this only narrows the view for facility-scoped users
+    // — mirrors ResidentKnowledgeCenter's sub-feature gating.
+    const videosEnabled =
+        !!user && hasFeature(user, FeatureAccess.UploadVideoAccess);
+    const linksEnabled =
+        !!user && hasFeature(user, FeatureAccess.HelpfulLinksAccess);
     const [manageContent, setManageContent] = useState<ManagedContent | null>(
         null
     );
@@ -447,6 +458,17 @@ export default function KnowledgeCenterManagement() {
         }
         setCurrentPage(1);
     }, [currentTab, setCurrentPage]);
+
+    // If the active tab's sub-feature was just disabled (e.g. an admin toggled it
+    // off for this facility), fall back to Libraries so we never show a hidden tab.
+    useEffect(() => {
+        if (
+            (currentTab === 'videos' && !videosEnabled) ||
+            (currentTab === 'links' && !linksEnabled)
+        ) {
+            setCurrentTab('libraries');
+        }
+    }, [currentTab, videosEnabled, linksEnabled]);
 
     useEffect(() => {
         if (showAddVideo) {
@@ -802,18 +824,22 @@ export default function KnowledgeCenterManagement() {
                         >
                             Libraries ({libTotal})
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="videos"
-                            className="tab-trigger-brand"
-                        >
-                            Videos ({vidTotal})
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="links"
-                            className="tab-trigger-brand"
-                        >
-                            Helpful Links ({linkTotal})
-                        </TabsTrigger>
+                        {videosEnabled && (
+                            <TabsTrigger
+                                value="videos"
+                                className="tab-trigger-brand"
+                            >
+                                Videos ({vidTotal})
+                            </TabsTrigger>
+                        )}
+                        {linksEnabled && (
+                            <TabsTrigger
+                                value="links"
+                                className="tab-trigger-brand"
+                            >
+                                Helpful Links ({linkTotal})
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     {currentTab === 'libraries' && (
@@ -842,7 +868,7 @@ export default function KnowledgeCenterManagement() {
                             </SelectContent>
                         </Select>
                     )}
-                    {currentTab === 'videos' && (
+                    {currentTab === 'videos' && videosEnabled && (
                         <Button
                             className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddVideo(true)}
@@ -851,7 +877,7 @@ export default function KnowledgeCenterManagement() {
                             Add Video
                         </Button>
                     )}
-                    {currentTab === 'links' && (
+                    {currentTab === 'links' && linksEnabled && (
                         <Button
                             className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddLink(true)}

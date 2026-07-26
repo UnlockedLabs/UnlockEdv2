@@ -54,15 +54,18 @@ func (c *Claims) hasFeature(axx ...models.FeatureAccess) bool {
 	return true
 }
 
-// resolveFeatureAccessFor computes the feature set that gates a user. There is
-// no facility switcher, so cross-facility admins (system/dept) are statewide
-// operators and get the global set — never blocked by a single facility's
-// toggle. Pinned users (facility_admin, residents/students) get their facility's
-// effective set (global ∩ facility overrides). On a DB error it fails open to
-// the global set, since these features gate access and locking users out on a
-// transient error is worse than briefly ignoring a facility override.
+// resolveFeatureAccessFor computes the feature set that gates a user. Only the
+// system admin is a statewide operator that gets the global set — never blocked
+// by a single facility's toggle. Everyone else, including department admins, is
+// gated by their home facility's effective set (global ∩ facility overrides):
+// a department admin is "located at" a facility, so a feature disabled there is
+// hidden for them too. The facility-features admin page/APIs are role-gated, not
+// feature-gated, so a department admin can still re-enable a feature they turned
+// off for their own facility. On a DB error it fails open to the global set,
+// since these features gate access and locking users out on a transient error is
+// worse than briefly ignoring a facility override.
 func (srv *Server) resolveFeatureAccessFor(role models.UserRole, facilityID uint) []models.FeatureAccess {
-	if role == models.SystemAdmin || role == models.DepartmentAdmin {
+	if role == models.SystemAdmin {
 		return srv.features
 	}
 	features, err := srv.Db.GetFacilityFeatureAccess(facilityID)

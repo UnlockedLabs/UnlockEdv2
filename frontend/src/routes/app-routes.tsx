@@ -24,22 +24,9 @@ import OperationalInsights from '@/pages/insights/OperationalInsights';
 import FAQs from '@/pages/FAQs';
 import HelpCenter from '@/pages/HelpCenter';
 import FeatureControl from '@/pages/admin/FeatureControl';
-import FacilityFeatureControl from '@/pages/admin/FacilityFeatureControl';
 import ResidentHome from '@/pages/student/ResidentHome';
 import Exports from '@/pages/admin/Exports';
 import { getStudentLevel1Data } from '@/loaders/routeLoaders';
-
-const systemAdminRoutes = declareAuthenticatedRoutes(
-    [
-        {
-            path: 'feature-control',
-            element: <FeatureControl />,
-            errorElement: <Error />,
-            handle: { title: 'Feature Control' }
-        }
-    ],
-    [UserRole.SystemAdmin]
-);
 
 const deptAdminRoutes = declareAuthenticatedRoutes(
     [
@@ -57,10 +44,15 @@ const deptAdminRoutes = declareAuthenticatedRoutes(
             errorElement: <Error />
         },
         {
-            path: 'facility-features',
-            element: <FacilityFeatureControl />,
+            path: 'feature-control',
+            element: <FeatureControl />,
             errorElement: <Error />,
-            handle: { title: 'Facility Features' }
+            handle: { title: 'Feature Control' }
+        },
+        {
+            // Legacy path — the facility controls now live on /feature-control.
+            path: 'facility-features',
+            element: <Navigate to="/feature-control" replace />
         }
     ],
     [UserRole.SystemAdmin, UserRole.DepartmentAdmin]
@@ -188,7 +180,7 @@ export const globalRoutes = {
 };
 
 export const AdminRoutes = {
-    children: [systemAdminRoutes, deptAdminRoutes, adminRoutes]
+    children: [deptAdminRoutes, adminRoutes]
 };
 
 export const AllUserRoutes = {
