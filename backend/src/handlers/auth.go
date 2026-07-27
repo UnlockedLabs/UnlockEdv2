@@ -125,7 +125,7 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 					// Enforcement now reads Claims.FeatureAccess. Existing tests set
 					// claims without feature_access, so default to all features unless
 					// a test explicitly restricts the set to exercise feature gating.
-					if len(testClaims.FeatureAccess) == 0 {
+					if testClaims.FeatureAccess == nil {
 						testClaims.FeatureAccess = models.AllFeatures
 					}
 					claims = &testClaims

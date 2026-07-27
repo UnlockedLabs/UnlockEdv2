@@ -204,19 +204,23 @@ export default function FacilityFeatureSection({
     ) {
         if (!selectedFacilityId) return;
         const newValue = !currentValue;
-        const resp = await API.put<string, { enabled: boolean }>(
-            `facilities/${selectedFacilityId}/features/${featureKey}`,
-            { enabled: newValue }
-        );
-        if (!resp.success) {
-            toast.error(resp.message);
-            return;
+        try {
+            const resp = await API.put<string, { enabled: boolean }>(
+                `facilities/${selectedFacilityId}/features/${featureKey}`,
+                { enabled: newValue }
+            );
+            if (!resp.success) {
+                toast.error(resp.message);
+                return;
+            }
+            await Promise.all([mutateList(), mutateDetail()]);
+            if (selectedFacilityId === user?.facility_id) {
+                await refreshAuthUser();
+            }
+            toast.success(`${label} ${newValue ? 'enabled' : 'disabled'}`);
+        } catch {
+            toast.error('An error occurred. Please try again.');
         }
-        await Promise.all([mutateList(), mutateDetail()]);
-        if (selectedFacilityId === user?.facility_id) {
-            await refreshAuthUser();
-        }
-        toast.success(`${label} ${newValue ? 'enabled' : 'disabled'}`);
     }
 
     async function handleApplyAll() {
@@ -237,6 +241,8 @@ export default function FacilityFeatureSection({
             await refreshAuthUser();
             toast.success('Settings applied to all facilities');
             setApplyAllOpen(false);
+        } catch {
+            toast.error('An error occurred. Please try again.');
         } finally {
             setApplyLoading(false);
         }

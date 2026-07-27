@@ -789,6 +789,12 @@ func TestApplyFacilityFeaturesToAllRecordsAuditUser(t *testing.T) {
 	target, err := env.CreateTestFacility("Audit Target")
 	require.NoError(t, err)
 
+	// Seed a conflicting override on the target before applying: program_management
+	// is globally enabled and the source has no override for it (inherits enabled),
+	// so apply-all must flip this existing row back to true, exercising the Save
+	// (update) branch of ToggleFacilityFeature's upsert rather than the Create branch.
+	require.NoError(t, env.DB.ToggleFacilityFeature(target.ID, models.ProgramAccess, false))
+
 	const actingUserID = uint(4242)
 	NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
 		map[string]uint{"source_facility_id": source.ID}).
@@ -800,7 +806,19 @@ func TestApplyFacilityFeaturesToAllRecordsAuditUser(t *testing.T) {
 	require.NoError(t, env.DB.Where("facility_id = ?", target.ID).Find(&rows).Error)
 	require.NotEmpty(t, rows, "apply materializes rows on the target")
 	for _, r := range rows {
+		// program_management already existed on the target before apply-all (seeded
+		// above to exercise the update branch below), so its create_user_id predates
+		// the acting user and is checked separately via updatedRow.
+		if r.Feature == models.ProgramAccess {
+			continue
+		}
 		require.NotNil(t, r.CreateUserID, "create_user_id set inside the transaction for %s", r.Feature)
 		require.Equal(t, actingUserID, *r.CreateUserID, "audit user propagated for %s", r.Feature)
 	}
+
+	var updatedRow models.FacilityFeatureFlag
+	require.NoError(t, env.DB.Where("facility_id = ? AND feature = ?", target.ID, models.ProgramAccess).First(&updatedRow).Error)
+	require.True(t, updatedRow.Enabled, "apply re-enabled program_management to match the source")
+	require.NotNil(t, updatedRow.UpdateUserID, "update_user_id set on the pre-existing conflicting row")
+	require.Equal(t, actingUserID, *updatedRow.UpdateUserID, "audit user propagated to update_user_id")
 }

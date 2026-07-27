@@ -19,7 +19,7 @@ import (
 func (db *DB) GetFacilityFeatureAccess(facilityID uint) ([]models.FeatureAccess, error) {
 	var featureFlags []models.FeatureFlags
 	if err := db.Preload("PageFeatures").Model(&models.FeatureFlags{}).Where("enabled = ?", true).Find(&featureFlags).Error; err != nil {
-		return nil, newNotFoundDBError(err, "unable to fetch features")
+		return nil, newGetRecordsDBError(err, "feature_flags")
 	}
 
 	disabled, err := db.facilityDisabledFeatures(facilityID)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 )
 
@@ -29,16 +30,20 @@ func (srv *Server) handleGetFacilitiesFeatureStatus(w http.ResponseWriter, r *ht
 	page, perPage := srv.getPaginationInfo(r)
 	q := r.URL.Query()
 
+	fv, ev := q.Get("feature"), q.Get("enabled")
+	if (fv == "") != (ev == "") {
+		return newBadRequestServiceError(errors.New("feature and enabled must be provided together"), "feature and enabled filters must both be set or both omitted")
+	}
+
 	var filterFeature *models.FeatureAccess
-	if fv := q.Get("feature"); fv != "" {
+	var filterEnabled *bool
+	if fv != "" {
 		fa := models.FeatureAccess(fv)
-		if !models.ValidFeature(fa) {
+		if !slices.Contains(models.TopLevelFacilityFeatures, fa) {
 			return newBadRequestServiceError(errors.New("invalid feature"), "invalid feature filter")
 		}
 		filterFeature = &fa
-	}
-	var filterEnabled *bool
-	if ev := q.Get("enabled"); ev != "" {
+
 		b, err := strconv.ParseBool(ev)
 		if err != nil {
 			return newBadRequestServiceError(err, "invalid enabled filter")
@@ -72,7 +77,7 @@ func (srv *Server) handleGetFacilityFeatureDetail(w http.ResponseWriter, r *http
 }
 
 type toggleFacilityFeatureRequest struct {
-	Enabled bool `json:"enabled"`
+	Enabled *bool `json:"enabled"`
 }
 
 /*
@@ -93,11 +98,14 @@ func (srv *Server) handleToggleFacilityFeature(w http.ResponseWriter, r *http.Re
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	if body.Enabled == nil {
+		return newBadRequestServiceError(errors.New("missing enabled"), "enabled is required")
+	}
 	log.add("facility_id", id)
 	log.add("feature", string(feature))
-	log.add("enabled", body.Enabled)
+	log.add("enabled", *body.Enabled)
 
-	if err := srv.WithUserContext(r).ToggleFacilityFeature(uint(id), feature, body.Enabled); err != nil {
+	if err := srv.WithUserContext(r).ToggleFacilityFeature(uint(id), feature, *body.Enabled); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "facility feature toggled successfully")
