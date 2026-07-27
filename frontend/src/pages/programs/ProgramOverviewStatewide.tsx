@@ -8,6 +8,7 @@ import {
     BookOpen,
     ChevronDown,
     ChevronUp,
+    Edit,
     Loader2,
     MoreVertical,
     Trash2
@@ -38,6 +39,7 @@ import {
     ReactivateDialog,
     DeleteProgramDialog
 } from '@/components/programs/ProgramDialogs';
+import EditProgramDialog from '@/pages/program-detail/EditProgramDialog';
 import {
     Tooltip,
     TooltipContent,
@@ -143,6 +145,7 @@ export default function ProgramOverviewStatewide() {
         useState(false);
     const [showReactivateDialog, setShowReactivateDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showEditDialog, setShowEditDialog] = useState(false);
     const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
     const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<
         string[]
@@ -605,6 +608,16 @@ export default function ProgramOverviewStatewide() {
                             >
                                 Archived
                             </Badge>
+                        )}
+                        {!isCanvasProgram && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowEditDialog(true)}
+                                className="gap-2 border-gray-300 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                            >
+                                <Edit className="size-4" />
+                                Edit Program
+                            </Button>
                         )}
                         {!isCanvasProgram && (
                             <DropdownMenu>
@@ -1197,6 +1210,12 @@ export default function ProgramOverviewStatewide() {
                     onOpenChange={setShowDeleteDialog}
                     programName={program.name}
                     onConfirm={handleDeleteProgram}
+                />
+
+                <EditProgramDialog
+                    open={showEditDialog}
+                    onOpenChange={setShowEditDialog}
+                    program={program}
                 />
             </div>
         </div>
