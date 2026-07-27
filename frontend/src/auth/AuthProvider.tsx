@@ -76,7 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 const changed =
                     fresh.role !== user.role ||
                     fresh.facility_id !== user.facility_id ||
-                    fresh.feature_access.join() !== user.feature_access.join();
+                    fresh.feature_access.join() !==
+                        (user.feature_access ?? []).join();
                 if (changed) setUser(fresh);
             } finally {
                 inFlight = false;

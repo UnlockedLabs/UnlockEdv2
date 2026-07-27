@@ -190,7 +190,9 @@ export default function FacilityFeatureSection({
         ) {
             return;
         }
-        if (fresh.feature_access.join() !== user?.feature_access.join()) {
+        if (
+            fresh.feature_access.join() !== (user?.feature_access ?? []).join()
+        ) {
             setUser(fresh);
         }
     }

@@ -268,6 +268,36 @@ func TestToggleFacilityFeatureRoundTrip(t *testing.T) {
 	require.Contains(t, features, models.ProgramAccess, "re-enable restored the feature")
 }
 
+// A facility with every globally-enabled top-level feature disabled must resolve
+// to a non-nil empty slice, not nil — a nil serializes to JSON `null`, which
+// crashes the frontend's hasFeature gate for a pinned admin at that facility.
+func TestFacilityFeatureAccessAllDisabledReturnsNonNilEmpty(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+	seedGlobalFeatureFlags(t, env)
+
+	facility, err := env.CreateTestFacility("All Disabled Facility")
+	require.NoError(t, err)
+
+	toggleOff := func(feature models.FeatureAccess) {
+		NewRequest[any](env.Client, t, http.MethodPut,
+			fmt.Sprintf("/api/facilities/%d/features/%s", facility.ID, feature),
+			map[string]bool{"enabled": false}).
+			WithTestClaims(deptAdminClaims()).
+			Do().
+			ExpectStatus(http.StatusOK)
+	}
+	// learning_record is already off statewide; disable the other three.
+	toggleOff(models.OpenContentAccess)
+	toggleOff(models.ProviderAccess)
+	toggleOff(models.ProgramAccess)
+
+	features, err := env.DB.GetFacilityFeatureAccess(facility.ID)
+	require.NoError(t, err)
+	require.NotNil(t, features, "empty effective set must be [] (non-nil), never null")
+	require.Empty(t, features, "every top-level feature was disabled")
+}
+
 func TestToggleFacilityFeatureGuards(t *testing.T) {
 	env = SetupTestEnv(t)
 	defer env.CleanupTestEnv()

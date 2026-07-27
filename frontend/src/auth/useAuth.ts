@@ -96,7 +96,11 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
 };
 
 export const hasFeature = (user: User, ...axx: FeatureAccess[]): boolean => {
-    return axx.every((ax) => user.feature_access.includes(ax));
+    // feature_access can be null (a facility with all top-level features off
+    // resolves to an empty set, serialized as JSON null) — coalesce so the
+    // shared gate never crashes on `.includes` of null.
+    const featureAccess = user.feature_access ?? [];
+    return axx.every((ax) => featureAccess.includes(ax));
 };
 
 export const checkDefaultFacility: LoaderFunction = async () => {

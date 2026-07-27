@@ -27,7 +27,9 @@ func (db *DB) GetFacilityFeatureAccess(facilityID uint) ([]models.FeatureAccess,
 		return nil, err
 	}
 
-	var features []models.FeatureAccess
+	// Non-nil so an all-disabled facility serializes as `[]`, not JSON `null`.
+	// The frontend treats feature_access as an array; a null crashes hasFeature.
+	features := []models.FeatureAccess{}
 	for _, flag := range featureFlags {
 		if disabled[flag.Name] {
 			continue // parent disabled at this facility -> skip it and its page features
