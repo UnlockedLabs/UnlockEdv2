@@ -322,6 +322,8 @@ export default function ProgramOverviewFacilityAdmin() {
     const showFacilityContextBanner = Boolean(
         user && canSwitchFacility(user) && facilityId && facilityName
     );
+    // program edits are statewide; sys/dept admins make them from the statewide overview
+    const canEditStatewide = Boolean(user && canSwitchFacility(user));
 
     if (!program) {
         return (
@@ -604,7 +606,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                             )}
                                         </Tooltip>
                                     </div>
-                                    {!isCanvasProgram && (
+                                    {!isCanvasProgram && !canEditStatewide && (
                                         <Button
                                             variant="outline"
                                             className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
