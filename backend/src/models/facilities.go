@@ -11,6 +11,10 @@ type FacilityWithStats struct {
 	ActivePrograms int64     `json:"active_programs"`
 	ActiveClasses  int64     `json:"active_classes"`
 	TotalResidents int64     `json:"total_residents"`
+	// CanDelete mirrors FacilityBlockingChildren.HasAny(): true when the
+	// facility has no association that blocks deletion. Drives the delete
+	// control's enabled state in the UI.
+	CanDelete bool `json:"can_delete"`
 }
 
 type Facility struct {
