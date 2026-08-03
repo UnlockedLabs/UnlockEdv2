@@ -447,7 +447,7 @@ func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.Con
 				return nil, err
 			}
 
-			if hasOverlap, start, end := checkEventsOverlap(targetEvents, existingClassEvents); hasOverlap {
+			if hasOverlap, start, end, days := checkEventsOverlap(targetEvents, existingClassEvents); hasOverlap {
 				var user models.User
 				if err := db.First(&user, userID).Error; err != nil {
 					return nil, err
@@ -459,7 +459,7 @@ func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.Con
 					ConflictingClass: enrollment.Class.Name,
 					ConflictStart:    start,
 					ConflictEnd:      end,
-					Reason:           fmt.Sprintf("Conflict with class: %s", enrollment.Class.Name),
+					ConflictDays:     days,
 				})
 			}
 		}
@@ -468,7 +468,7 @@ func (db *DB) CheckSchedulingConflicts(classID int, userIDs []int) ([]models.Con
 	return conflicts, nil
 }
 
-func checkEventsOverlap(newEvents, existingEvents []models.ProgramClassEvent) (bool, time.Time, time.Time) {
+func checkEventsOverlap(newEvents, existingEvents []models.ProgramClassEvent) (bool, time.Time, time.Time, []string) {
 	startWindow := time.Now().UTC()
 	endWindow := startWindow.AddDate(0, 6, 0)
 
@@ -484,6 +484,8 @@ func checkEventsOverlap(newEvents, existingEvents []models.ProgramClassEvent) (b
 		existingInstances = append(existingInstances, insts...)
 	}
 
+	var firstStart, firstEnd time.Time
+	seenDays := make(map[time.Weekday]bool)
 	for _, newInst := range newInstances {
 		newStart := newInst.StartTime
 		newEnd := newStart.Add(newInst.Duration)
@@ -493,10 +495,23 @@ func checkEventsOverlap(newEvents, existingEvents []models.ProgramClassEvent) (b
 			exEnd := exStart.Add(exInst.Duration)
 
 			if newStart.Before(exEnd) && newEnd.After(exStart) {
-				return true, newStart, newEnd
+				if firstStart.IsZero() {
+					firstStart, firstEnd = newStart, newEnd
+				}
+				seenDays[newStart.Weekday()] = true
 			}
 		}
 	}
 
-	return false, time.Time{}, time.Time{}
+	if len(seenDays) == 0 {
+		return false, time.Time{}, time.Time{}, nil
+	}
+
+	days := make([]string, 0, len(seenDays))
+	for wd := time.Sunday; wd <= time.Saturday; wd++ {
+		if seenDays[wd] {
+			days = append(days, wd.String())
+		}
+	}
+	return true, firstStart, firstEnd, days
 }

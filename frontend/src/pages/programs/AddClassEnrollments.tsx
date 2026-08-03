@@ -425,9 +425,9 @@ export default function AddClassEnrollments() {
                                     {c.conflict_start} - {c.conflict_end}
                                 </div>
                             )}
-                            {c.reason && (
+                            {c.conflict_days?.length > 0 && (
                                 <div className="text-xs text-gray-500 mt-0.5">
-                                    {c.reason}
+                                    on {c.conflict_days.join(', ')}
                                 </div>
                             )}
                         </div>

@@ -250,7 +250,7 @@ export interface ConflictDetail {
     conflicting_class: string;
     conflict_start: string;
     conflict_end: string;
-    reason: string;
+    conflict_days: string[];
 }
 
 export interface OverrideForm {
