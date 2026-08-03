@@ -78,6 +78,19 @@ func TestFacilityFeatureAccess_SubFeatureGuard(t *testing.T) {
 		require.NoError(t, err)
 		require.NotContains(t, effective, models.RequestContentAccess)
 	})
+
+	t.Run("disabling only the parent cascades to an untouched sub-feature", func(t *testing.T) {
+		facility2, err := env.CreateTestFacility("Cascade Facility")
+		require.NoError(t, err)
+
+		require.NoError(t, env.DB.UpsertFacilityFeatureFlag(args, facility2.ID, models.OpenContentAccess, false, statewide))
+
+		effective, err := env.DB.GetFacilityFeatureAccess(facility2.ID, statewide)
+		require.NoError(t, err)
+		require.NotContains(t, effective, models.OpenContentAccess)
+		require.NotContains(t, effective, models.RequestContentAccess,
+			"request_content was never explicitly disabled, but its parent is off, so it must not be effective")
+	})
 }
 
 func TestApplyFacilityFeaturesToAll(t *testing.T) {

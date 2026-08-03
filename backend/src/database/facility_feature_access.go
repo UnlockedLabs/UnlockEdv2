@@ -24,17 +24,27 @@ type FacilityFeatureDetailRow struct {
 // the statewide defaults (passed in by the caller, sourced from the server's
 // cached feature_flags/page_feature_flags state) minus any feature this facility
 // has explicitly disabled. A facility with no override row inherits the
-// statewide value untouched.
+// statewide value untouched. A sub-feature is never effective when its parent
+// isn't — that cascade is enforced here regardless of the sub-feature's own
+// override row, since disabling the parent doesn't retroactively clear it.
 func (db *DB) GetFacilityFeatureAccess(facilityID uint, statewideDefaults []models.FeatureAccess) ([]models.FeatureAccess, error) {
 	disabled, err := db.disabledFeatureSet(facilityID)
 	if err != nil {
 		return nil, err
 	}
+	enabled := make(map[models.FeatureAccess]bool, len(statewideDefaults))
+	for _, f := range statewideDefaults {
+		enabled[f] = !disabled[f]
+	}
 	effective := make([]models.FeatureAccess, 0, len(statewideDefaults))
 	for _, f := range statewideDefaults {
-		if !disabled[f] {
-			effective = append(effective, f)
+		if !enabled[f] {
+			continue
 		}
+		if parent, ok := models.SubFeatureParent[f]; ok && !enabled[parent] {
+			continue
+		}
+		effective = append(effective, f)
 	}
 	return effective, nil
 }
