@@ -4,7 +4,6 @@ import {
     isAdministrator,
     hasFeature,
     canSwitchFacility,
-    isSysAdmin,
     handleLogout
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
@@ -195,7 +194,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     />
                 </>
             )}
-            {isSysAdmin(user) && (
+            {canSwitchFacility(user) && (
                 <NavLink
                     to="/feature-control"
                     icon={AdjustmentsHorizontalIcon}
