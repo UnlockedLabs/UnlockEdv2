@@ -1,0 +1,121 @@
+package handlers
+
+import (
+	"UnlockEdv2/src/models"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+)
+
+func (srv *Server) registerFacilityFeatureAccessRoutes() []routeDef {
+	return []routeDef{
+		newDeptAdminRoute("GET /api/facilities/features", srv.handleGetFacilityFeatureOverview),
+		newDeptAdminRoute("PUT /api/facilities/features/apply-all", srv.handleApplyFacilityFeaturesToAll),
+		newDeptAdminRoute("GET /api/facilities/{id}/features", srv.handleGetFacilityFeatureDetail),
+		newDeptAdminRoute("PUT /api/facilities/{id}/features/{feature}", srv.handleSetFacilityFeature),
+	}
+}
+
+/**
+* GET: /api/facilities/features
+* List-panel data: every facility with the effective on/off state of each
+* top-level feature, optionally filtered by name search and by one feature's
+* on/off state.
+**/
+func (srv *Server) handleGetFacilityFeatureOverview(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+
+	var filterFeature *models.FeatureAccess
+	var filterEnabled *bool
+	if raw := r.URL.Query().Get("feature"); raw != "" {
+		feature := models.FeatureAccess(raw)
+		if !models.ValidFeature(feature) {
+			return newBadRequestServiceError(errors.New("invalid feature"), "invalid feature filter")
+		}
+		filterFeature = &feature
+		if enabledRaw := r.URL.Query().Get("enabled"); enabledRaw != "" {
+			enabled, err := strconv.ParseBool(enabledRaw)
+			if err != nil {
+				return newBadRequestServiceError(err, "invalid enabled filter")
+			}
+			filterEnabled = &enabled
+		}
+	}
+
+	rows, err := srv.Db.GetFacilityFeatureOverview(&args, srv.features, filterFeature, filterEnabled)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, rows)
+}
+
+/**
+* GET: /api/facilities/{id}/features
+* Detail-panel data: every feature (top-level and sub) and its effective state
+* for one facility.
+**/
+func (srv *Server) handleGetFacilityFeatureDetail(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+	log.add("facility_id", id)
+	rows, err := srv.Db.GetFacilityFeatureDetail(uint(id), srv.features)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, rows)
+}
+
+type setFacilityFeatureRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+/**
+* PUT: /api/facilities/{id}/features/{feature}
+**/
+func (srv *Server) handleSetFacilityFeature(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+	feature := models.FeatureAccess(r.PathValue("feature"))
+	log.add("facility_id", id)
+	log.add("feature", feature)
+
+	var req setFacilityFeatureRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+
+	args := srv.getQueryContext(r)
+	if err := srv.Db.UpsertFacilityFeatureFlag(&args, uint(id), feature, req.Enabled, srv.features); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "facility feature updated successfully")
+}
+
+type applyFacilityFeaturesRequest struct {
+	SourceFacilityID uint `json:"source_facility_id"`
+}
+
+/**
+* PUT: /api/facilities/features/apply-all
+**/
+func (srv *Server) handleApplyFacilityFeaturesToAll(w http.ResponseWriter, r *http.Request, log sLog) error {
+	var req applyFacilityFeaturesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	if req.SourceFacilityID == 0 {
+		return newBadRequestServiceError(errors.New("source_facility_id required"), "source_facility_id required")
+	}
+	log.add("source_facility_id", req.SourceFacilityID)
+
+	args := srv.getQueryContext(r)
+	if err := srv.Db.ApplyFacilityFeaturesToAll(&args, req.SourceFacilityID, srv.features); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "settings applied to all facilities successfully")
+}

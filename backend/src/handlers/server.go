@@ -10,7 +10,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -100,6 +99,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerProviderUserRoutes,
 		srv.registerOryRoutes,
 		srv.registerFacilitiesRoutes,
+		srv.registerFacilityFeatureAccessRoutes,
 		srv.registerOpenContentRoutes,
 		srv.registerLibraryRoutes,
 		srv.registerProgramsRoutes,
@@ -108,7 +108,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerProgramClassEnrollmentsRoutes,
 		srv.registerAttendanceRoutes,
 		srv.registerVideoRoutes,
-		srv.registerFeatureFlagRoutes,
+		srv.registerDemoSeedRoutes,
 		srv.registerOpenContentActivityRoutes,
 		srv.registerTagRoutes,
 		srv.registerReportsRoutes,
@@ -312,15 +312,6 @@ func (srv *Server) setupNatsKvBuckets() error {
 	}
 	srv.buckets = buckets
 	return nil
-}
-
-func (srv *Server) hasFeatureAccess(axx ...models.FeatureAccess) bool {
-	for _, a := range axx {
-		if !slices.Contains(srv.features, a) {
-			return false
-		}
-	}
-	return true
 }
 
 func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {
