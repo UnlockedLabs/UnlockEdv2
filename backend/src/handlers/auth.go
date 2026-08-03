@@ -68,6 +68,15 @@ func (claims *Claims) isAdmin() bool {
 	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
+func (claims *Claims) hasFeatureAccess(axx ...models.FeatureAccess) bool {
+	for _, a := range axx {
+		if !slices.Contains(claims.FeatureAccess, a) {
+			return false
+		}
+	}
+	return true
+}
+
 func claimsFromUser(user *models.User) *Claims {
 	return &Claims{
 		Username:   user.Username,
@@ -88,6 +97,13 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 			if testClaimsJSON := r.Header.Get("X-Test-Claims"); testClaimsJSON != "" {
 				var testClaims Claims
 				if err := json.Unmarshal([]byte(testClaimsJSON), &testClaims); err == nil {
+					// Omitted feature_access defaults to full access so existing tests
+					// that don't care about feature gating are unaffected; a test that
+					// wants to assert restricted access must set it explicitly (even to
+					// an empty slice), since nil and [] would otherwise be indistinguishable.
+					if testClaims.FeatureAccess == nil {
+						testClaims.FeatureAccess = models.AllFeatures
+					}
 					claims = &testClaims
 				}
 			}
@@ -291,6 +307,11 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				if !ok {
 					passReset = true
 				}
+				featureAccess, err := srv.Db.GetFacilityFeatureAccess(user.FacilityID, srv.features)
+				if err != nil {
+					log.WithFields(fields).Errorf("Error resolving facility feature access: %v", err)
+					featureAccess = []models.FeatureAccess{}
+				}
 				claims := &Claims{
 					Username:      user.Username,
 					Email:         user.Email,
@@ -300,7 +321,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
-					FeatureAccess: srv.features,
+					FeatureAccess: featureAccess,
 					SessionID:     sessionID,
 					TimeZone:      user.Facility.Timezone,
 				}

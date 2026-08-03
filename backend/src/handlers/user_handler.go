@@ -858,7 +858,17 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 	queryCtx.All = true
 	queryCtx.OrderBy, queryCtx.Order = "start_dt", "DESC"
 
-	pdfBytes, err := jasper.GenerateUsageReportPDF(srv.Db, &queryCtx, srv.hasFeatureAccess(models.ProgramAccess), userID)
+	subject, err := srv.Db.GetUserByID(uint(userID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	subjectFeatures, err := srv.Db.GetFacilityFeatureAccess(subject.FacilityID, srv.features)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	hasProgramAccess := slices.Contains(subjectFeatures, models.ProgramAccess)
+
+	pdfBytes, err := jasper.GenerateUsageReportPDF(srv.Db, &queryCtx, hasProgramAccess, userID)
 	if err != nil {
 		log.errorf("jasper service error: %v", err)
 		return newInternalServerServiceError(err, "failed to generate PDF report")
