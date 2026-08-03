@@ -28,18 +28,6 @@ import ResidentHome from '@/pages/student/ResidentHome';
 import Exports from '@/pages/admin/Exports';
 import { getStudentLevel1Data } from '@/loaders/routeLoaders';
 
-const systemAdminRoutes = declareAuthenticatedRoutes(
-    [
-        {
-            path: 'feature-control',
-            element: <FeatureControl />,
-            errorElement: <Error />,
-            handle: { title: 'Feature Control' }
-        }
-    ],
-    [UserRole.SystemAdmin]
-);
-
 const deptAdminRoutes = declareAuthenticatedRoutes(
     [
         {
@@ -54,6 +42,12 @@ const deptAdminRoutes = declareAuthenticatedRoutes(
             handle: { title: 'Facilities' },
             element: <FacilityManagement />,
             errorElement: <Error />
+        },
+        {
+            path: 'feature-control',
+            element: <FeatureControl />,
+            errorElement: <Error />,
+            handle: { title: 'Feature Control' }
         }
     ],
     [UserRole.SystemAdmin, UserRole.DepartmentAdmin]
@@ -181,7 +175,7 @@ export const globalRoutes = {
 };
 
 export const AdminRoutes = {
-    children: [systemAdminRoutes, deptAdminRoutes, adminRoutes]
+    children: [deptAdminRoutes, adminRoutes]
 };
 
 export const AllUserRoutes = {
