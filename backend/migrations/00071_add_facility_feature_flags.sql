@@ -16,12 +16,14 @@ CREATE INDEX idx_facility_feature_flags_feature ON public.facility_feature_flags
 -- Per-facility control now supersedes the statewide staged-rollout gate that
 -- kept this off by default; flip the floor to enabled so it behaves like the
 -- other three top-level features (on by default, opt out per facility).
-UPDATE public.feature_flags SET enabled = TRUE WHERE name = 'learning_record';
+UPDATE public.feature_flags SET enabled = TRUE
+WHERE name = 'learning_record';
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.facility_feature_flags CASCADE;
 
-UPDATE public.feature_flags SET enabled = FALSE WHERE name = 'learning_record';
+UPDATE public.feature_flags SET enabled = FALSE
+WHERE name = 'learning_record';
 -- +goose StatementEnd

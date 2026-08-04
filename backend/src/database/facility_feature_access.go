@@ -71,7 +71,7 @@ func (db *DB) GetFacilityFeatureOverview(args *models.QueryContext, statewideDef
 	var facilities []models.Facility
 	tx := db.WithContext(args.Ctx).Model(&models.Facility{}).Order("name asc")
 	if args.Search != "" {
-		tx = tx.Where("LOWER(name) LIKE ?", "%"+args.Search+"%")
+		tx = tx.Where("LOWER(name) LIKE LOWER(?)", "%"+args.Search+"%")
 	}
 	if err := tx.Find(&facilities).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "facilities")
