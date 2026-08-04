@@ -4,6 +4,7 @@ import type { TranscriptEntry } from '@/types/digital-transcript';
 import { cn } from '@/lib/utils';
 import { FUNNEL_FIELD_DESCRIPTIONS } from './transcriptReflectionConfig';
 import { learningRecordQuestionHeaderClassName } from './learningRecordButtons';
+import { AchievementLocationField } from './AchievementLocationField';
 
 interface AchievementFormMetadataProps {
     entry: TranscriptEntry;
@@ -70,6 +71,14 @@ export function AchievementFormMetadata({
                     </p>
                 ) : null}
             </div>
+
+            {isFunnel ? (
+                <AchievementLocationField
+                    key={entry.id}
+                    entry={entry}
+                    onChange={onChange}
+                />
+            ) : null}
 
             <div>
                 <div className={learningRecordQuestionHeaderClassName}>

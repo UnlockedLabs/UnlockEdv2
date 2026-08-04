@@ -10,6 +10,7 @@ import (
 func (srv *Server) registerLearningRecordRoutes() []routeDef {
 	axx := models.LearningRecordAccess
 	return []routeDef{
+		featureRoute("GET /api/learning-record/facilities", srv.handleIndexLearningRecordFacilities, axx),
 		featureRoute("GET /api/learning-record/entries", srv.handleIndexLearningRecordEntries, axx),
 		featureRoute("POST /api/learning-record/entries", srv.handleCreateLearningRecordEntry, axx),
 		featureRoute("PUT /api/learning-record/entries/{id}", srv.handleUpdateLearningRecordEntry, axx),
@@ -18,6 +19,25 @@ func (srv *Server) registerLearningRecordRoutes() []routeDef {
 		featureRoute("PUT /api/learning-record/draft", srv.handleUpsertLearningRecordDraft, axx),
 		featureRoute("DELETE /api/learning-record/draft", srv.handleDeleteLearningRecordDraft, axx),
 	}
+}
+
+type learningRecordFacility struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
+// The main facilities routes are admin-only, so residents
+// read the list through here, gated on the learning_record feature.
+func (srv *Server) handleIndexLearningRecordFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilities, err := srv.Db.GetAllFacilitiesOrdered()
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	results := make([]learningRecordFacility, 0, len(facilities))
+	for _, facility := range facilities {
+		results = append(results, learningRecordFacility{ID: facility.ID, Name: facility.Name})
+	}
+	return writeJsonResponse(w, http.StatusOK, results)
 }
 
 func (srv *Server) handleIndexLearningRecordEntries(w http.ResponseWriter, r *http.Request, log sLog) error {
