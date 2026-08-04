@@ -117,6 +117,9 @@ export function normalizeTranscriptEntry(
         id: strField(e.id) || newId(),
         createdAt: strField(e.createdAt) || new Date().toISOString(),
         programName: strField(e.programName),
+        facilityId: typeof e.facilityId === 'number' ? e.facilityId : null,
+        facilityOther: strField(e.facilityOther),
+        facilityName: strField(e.facilityName),
         completionDate: strField(e.completionDate),
         confidence: strField(e.confidence),
         oneSentence: strField(e.oneSentence),
@@ -130,12 +133,22 @@ export function normalizeTranscriptEntry(
     };
 }
 
-export function createEmptyTranscriptEntry(): TranscriptEntry {
+/**
+ * @param defaultFacility Resident's current facility, prefilled as the achievement
+ * location on new rows only — never applied to an existing record, so an older
+ * achievement is not silently reattributed to where the resident lives now.
+ */
+export function createEmptyTranscriptEntry(
+    defaultFacility: { id: number; name: string } | null = null
+): TranscriptEntry {
     const now = new Date().toISOString();
     return {
         id: newId(),
         createdAt: now,
         programName: '',
+        facilityId: defaultFacility?.id ?? null,
+        facilityOther: '',
+        facilityName: defaultFacility?.name ?? '',
         completionDate: '',
         confidence: '',
         oneSentence: '',
@@ -182,6 +195,10 @@ export function sortEntriesNewestFirst(
 export function entryHasExportableContent(entry: TranscriptEntry): boolean {
     return (
         Boolean(entry.programName.trim()) ||
+        // facilityId is deliberately excluded: new rows are prefilled with the
+        // resident's current facility, so counting it would make every blank
+        // row look started and break blank-row reuse.
+        Boolean(entry.facilityOther.trim()) ||
         Boolean(entry.completionDate.trim()) ||
         Boolean(entry.confidence.trim()) ||
         Boolean(entry.topSkills.length) ||
@@ -268,6 +285,10 @@ export function entryPayloadEqual(
 ): boolean {
     return (
         a.programName === b.programName &&
+        // facilityName is derived from facilityId, so comparing it would flag a
+        // renamed facility as unsaved work.
+        a.facilityId === b.facilityId &&
+        a.facilityOther === b.facilityOther &&
         a.completionDate === b.completionDate &&
         a.confidence === b.confidence &&
         a.oneSentence === b.oneSentence &&

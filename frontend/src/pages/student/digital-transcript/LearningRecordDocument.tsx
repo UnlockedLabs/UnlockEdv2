@@ -8,8 +8,11 @@ import {
     LEARNING_RECORD_PREVIEW_LABELS
 } from './transcriptReflectionConfig';
 import {
+    achievementLocationText,
     countAnsweredReflections,
     getLearningRecordPreviewState,
+    isLocationSectionFilled,
+    LOCATION_NOT_SPECIFIED_LABEL,
     hasFilledFunnelReflectionSections,
     hasFilledMetadataSections,
     hasFilledNarrativeSections,
@@ -161,6 +164,12 @@ export function LearningRecordDocument({
     const showCompleted = isFunnel
         ? isCompletedSectionFilled(source)
         : !filledSectionsOnly || isCompletedSectionFilled(source);
+    // Empty locations are omitted from an exported record, matching how the
+    // other optional metadata is handled; the live preview and the saved
+    // achievements table carry the "not specified" fallback instead.
+    const showLocation = filledSectionsOnly
+        ? isLocationSectionFilled(source)
+        : true;
     const showConfidence =
         !isFunnel && (!filledSectionsOnly || isConfidenceSectionFilled(source));
     const showSkills =
@@ -171,6 +180,7 @@ export function LearningRecordDocument({
         isFunnel &&
         (Boolean(residentName.trim()) ||
             showProgram ||
+            showLocation ||
             showCompleted ||
             !filledSectionsOnly);
     const showNarrativeColumn = isFunnel
@@ -197,6 +207,8 @@ export function LearningRecordDocument({
     const readinessPct = Math.round((answered / totalSlots) * 100);
     const seg = confidenceSegments(source.confidence);
     const dateShown = formatCompletedLong(source.completionDate);
+    const locationShown =
+        achievementLocationText(source) || LOCATION_NOT_SPECIFIED_LABEL;
     const headlineFilled = Boolean(source.oneSentence.trim());
     const residentDisplayName = residentName.trim();
     const programDisplayTitle = getEntryDisplayTitleOrNull(source.programName);
@@ -317,6 +329,19 @@ export function LearningRecordDocument({
                                     ) : null}
                                 </div>
                             ) : null}
+                            {showLocation ? (
+                                <div
+                                    className="space-y-1"
+                                    data-slot="funnel-achievement-location"
+                                >
+                                    <SectionLabel id="lr-funnel-location">
+                                        {labels.location}
+                                    </SectionLabel>
+                                    <p className="text-sm text-foreground">
+                                        {locationShown}
+                                    </p>
+                                </div>
+                            ) : null}
                         </header>
                     ) : null}
                     {(showNarrativeColumn || !filledSectionsOnly) && (
@@ -358,6 +383,20 @@ export function LearningRecordDocument({
                                                 }
                                             />
                                         )}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {showLocation ? (
+                                <section
+                                    aria-labelledby="lr-doc-location"
+                                    className="break-inside-avoid space-y-1.5"
+                                >
+                                    <SectionLabel id="lr-doc-location">
+                                        {labels.location}
+                                    </SectionLabel>
+                                    <div className="text-[13px] font-medium text-foreground">
+                                        {locationShown}
                                     </div>
                                 </section>
                             ) : null}

@@ -54,7 +54,9 @@ import {
 } from '@/utils/downloadLearningRecordPdf';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
+    achievementLocationText,
     countAnsweredReflections,
+    LOCATION_NOT_SPECIFIED_LABEL,
     reflectionSlotsTotal
 } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
@@ -100,6 +102,10 @@ const ACHIEVEMENT_LOG_THUMBNAIL_SAMPLE: TranscriptEntry = {
     id: '__home_thumb_sample__',
     createdAt: '',
     programName: 'Your next achievement',
+    facilityId: null,
+    facilityOther: '',
+    // Left empty on purpose: no real facility belongs in decorative sample data.
+    facilityName: '',
     completionDate: '2025-06-01',
     topSkills: ['Study habits', 'Test strategies', 'Time management'],
     whatMadeYouFinish: 'Checking off each milestone kept me going.',
@@ -141,6 +147,11 @@ function formatProgramCompletedDate(entry: TranscriptEntry): string {
             day: 'numeric'
         }
     );
+}
+
+/** Where the achievement happened; older records have no location stored. */
+function formatAchievementLocation(entry: TranscriptEntry): string {
+    return achievementLocationText(entry) || LOCATION_NOT_SPECIFIED_LABEL;
 }
 
 function formatSavedOn(iso: string): string {
@@ -303,6 +314,13 @@ function SavedEntriesSection({
                                         className="w-[min(28%,14rem)] pl-6"
                                     />
                                     <SortableColumnHeader
+                                        label="Location"
+                                        column="location"
+                                        tableSort={tableSort}
+                                        onSortColumn={onSortColumn}
+                                        className="hidden w-[200px] sm:table-cell"
+                                    />
+                                    <SortableColumnHeader
                                         label="Completed"
                                         column="completed"
                                         tableSort={tableSort}
@@ -366,6 +384,11 @@ function SavedEntriesSection({
                                                         entry
                                                     )}
                                                 </p>
+                                                <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
+                                                    {formatAchievementLocation(
+                                                        entry
+                                                    )}
+                                                </p>
                                                 <div className="mt-3 md:hidden">
                                                     <QuestionsAnsweredBadge
                                                         answered={answered}
@@ -378,6 +401,11 @@ function SavedEntriesSection({
                                                         entry.createdAt
                                                     )}
                                                 </p>
+                                            </TableCell>
+                                            <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
+                                                {formatAchievementLocation(
+                                                    entry
+                                                )}
                                             </TableCell>
                                             <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
                                                 {formatProgramCompletedDate(
