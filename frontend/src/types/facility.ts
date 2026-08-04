@@ -40,7 +40,7 @@ export interface FacilityWithStats {
 export interface FacilityFeatureOverviewRow {
     facility_id: number;
     facility_name: string;
-    features: Record<FeatureAccess, boolean>;
+    features: Partial<Record<FeatureAccess, boolean>>;
 }
 
 export interface FacilityFeatureDetailRow {

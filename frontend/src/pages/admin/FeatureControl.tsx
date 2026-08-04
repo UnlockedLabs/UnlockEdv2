@@ -43,13 +43,6 @@ const TOP_LEVEL_FEATURES = [
     FeatureAccess.LearningRecordAccess
 ];
 
-const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> = {
-    [FeatureAccess.OpenContentAccess]: 'Knowledge Center',
-    [FeatureAccess.ProviderAccess]: 'Learning Platforms',
-    [FeatureAccess.ProgramAccess]: 'Programs',
-    [FeatureAccess.LearningRecordAccess]: 'Learning Record'
-};
-
 const FEATURE_CARDS: {
     feature: FeatureAccess;
     title: string;
@@ -80,6 +73,9 @@ const FEATURE_CARDS: {
             'Allows residents to log and track their learning achievements and generate a personal learning record'
     }
 ];
+
+const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> =
+    Object.fromEntries(FEATURE_CARDS.map((c) => [c.feature, c.title]));
 
 const SUB_FEATURES: {
     feature: FeatureAccess;
@@ -139,24 +135,74 @@ function FeaturePill({ feature, on }: { feature: FeatureAccess; on: boolean }) {
     );
 }
 
+function SubFeatureRow({
+    sub,
+    enabled,
+    disabled,
+    onToggle
+}: {
+    sub: (typeof SUB_FEATURES)[number];
+    enabled: boolean;
+    disabled: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <div
+            className={cn(
+                'flex items-start justify-between',
+                disabled && 'opacity-50'
+            )}
+        >
+            <div className="flex-1 pr-4">
+                <h4 className="text-sm font-medium text-brand-dark dark:text-white">
+                    {sub.label}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                    {sub.description}
+                </p>
+            </div>
+            <Switch
+                checked={enabled}
+                disabled={disabled}
+                onCheckedChange={onToggle}
+            />
+        </div>
+    );
+}
+
 export default function FeatureControl() {
     const { user, setUser } = useAuth();
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [filter, setFilter] = useState<FilterValue>('all');
     const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(
         null
     );
     const [confirmApplyAll, setConfirmApplyAll] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [pendingFeature, setPendingFeature] = useState<FeatureAccess | null>(
+        null
+    );
 
-    const { data: overviewResp, mutate: mutateOverview } = useSWR<
-        ServerResponseMany<FacilityFeatureOverviewRow>
-    >(overviewUrl(search, filter));
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    const {
+        data: overviewResp,
+        isLoading: overviewLoading,
+        mutate: mutateOverview
+    } = useSWR<ServerResponseMany<FacilityFeatureOverviewRow>>(
+        overviewUrl(debouncedSearch, filter)
+    );
     const rows = useMemo(() => overviewResp?.data ?? [], [overviewResp]);
 
-    const { data: detailResp, mutate: mutateDetail } = useSWR<
-        ServerResponseMany<FacilityFeatureDetailRow>
-    >(
+    const {
+        data: detailResp,
+        isLoading: detailLoading,
+        mutate: mutateDetail
+    } = useSWR<ServerResponseMany<FacilityFeatureDetailRow>>(
         selectedFacilityId
             ? `/api/facilities/${selectedFacilityId}/features`
             : null
@@ -191,45 +237,55 @@ export default function FeatureControl() {
     }
 
     async function handleToggle(feature: FeatureAccess, currentValue: boolean) {
-        if (!selectedFacilityId) return;
+        if (selectedFacilityId === null || pendingFeature !== null) return;
         const label =
             FEATURE_LABELS[feature] ??
             SUB_FEATURES.find((s) => s.feature === feature)?.label ??
             feature;
-        const resp = await API.put<string, { enabled: boolean }>(
-            `facilities/${selectedFacilityId}/features/${feature}`,
-            { enabled: !currentValue }
-        );
-        if (!resp.success) {
-            toast.error(resp.message || `Failed to update ${label}`);
-            return;
+        setPendingFeature(feature);
+        try {
+            const resp = await API.put<string, { enabled: boolean }>(
+                `facilities/${selectedFacilityId}/features/${feature}`,
+                { enabled: !currentValue }
+            );
+            if (!resp.success) {
+                toast.error(resp.message || `Failed to update ${label}`);
+                return;
+            }
+            toast.success(`${label} ${!currentValue ? 'enabled' : 'disabled'}`);
+            await mutateDetail();
+            await mutateOverview();
+            await refreshOwnClaimsIfAffected(selectedFacilityId);
+        } finally {
+            setPendingFeature(null);
         }
-        toast.success(`${label} ${!currentValue ? 'enabled' : 'disabled'}`);
-        await mutateDetail();
-        await mutateOverview();
-        await refreshOwnClaimsIfAffected(selectedFacilityId);
     }
 
     async function handleApplyAll() {
         if (!selectedFacilityId) return;
         setApplying(true);
-        const resp = await API.put<string, { source_facility_id: number }>(
-            'facilities/features/apply-all',
-            { source_facility_id: selectedFacilityId }
-        );
-        setApplying(false);
-        if (!resp.success) {
-            toast.error(resp.message || 'Failed to apply settings');
-            return;
+        try {
+            const resp = await API.put<string, { source_facility_id: number }>(
+                'facilities/features/apply-all',
+                { source_facility_id: selectedFacilityId }
+            );
+            if (!resp.success) {
+                toast.error(resp.message || 'Failed to apply settings');
+                return;
+            }
+            toast.success(
+                `${selectedFacility?.facility_name ?? 'This facility'}'s settings were applied to all facilities`
+            );
+            setConfirmApplyAll(false);
+            await mutateOverview();
+            await mutateDetail();
+            const updated = await fetchUser();
+            if (updated) setUser(updated);
+        } catch {
+            toast.error('Failed to apply settings');
+        } finally {
+            setApplying(false);
         }
-        toast.success(
-            `${selectedFacility?.facility_name ?? 'This facility'}'s settings were applied to all facilities`
-        );
-        setConfirmApplyAll(false);
-        await mutateOverview();
-        await mutateDetail();
-        const updated = await fetchUser();
-        if (updated) setUser(updated);
     }
 
     return (
@@ -289,7 +345,11 @@ export default function FeatureControl() {
                         </Select>
                     </div>
                     <div className="max-h-[calc(100vh-20rem)] overflow-y-auto p-2">
-                        {rows.length === 0 ? (
+                        {overviewLoading ? (
+                            <p className="px-2 py-3 text-xs text-gray-400">
+                                Loading facilities…
+                            </p>
+                        ) : rows.length === 0 ? (
                             <p className="px-2 py-3 text-xs text-gray-400">
                                 No facilities found
                             </p>
@@ -301,6 +361,7 @@ export default function FeatureControl() {
                                     <button
                                         key={row.facility_id}
                                         type="button"
+                                        aria-pressed={active}
                                         onClick={() =>
                                             setSelectedFacilityId(
                                                 row.facility_id
@@ -378,6 +439,11 @@ export default function FeatureControl() {
                                                 </div>
                                                 <Switch
                                                     checked={enabled}
+                                                    disabled={
+                                                        pendingFeature !==
+                                                            null ||
+                                                        detailLoading
+                                                    }
                                                     onCheckedChange={() =>
                                                         void handleToggle(
                                                             card.feature,
@@ -407,43 +473,29 @@ export default function FeatureControl() {
                                                                         sub.feature
                                                                     );
                                                                 return (
-                                                                    <div
+                                                                    <SubFeatureRow
                                                                         key={
                                                                             sub.feature
                                                                         }
-                                                                        className={cn(
-                                                                            'flex items-start justify-between',
-                                                                            !kcEnabled &&
-                                                                                'opacity-50'
-                                                                        )}
-                                                                    >
-                                                                        <div className="flex-1 pr-4">
-                                                                            <h4 className="text-sm font-medium text-brand-dark dark:text-white">
-                                                                                {
-                                                                                    sub.label
-                                                                                }
-                                                                            </h4>
-                                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                                {
-                                                                                    sub.description
-                                                                                }
-                                                                            </p>
-                                                                        </div>
-                                                                        <Switch
-                                                                            checked={
+                                                                        sub={
+                                                                            sub
+                                                                        }
+                                                                        enabled={
+                                                                            subEnabled
+                                                                        }
+                                                                        disabled={
+                                                                            !kcEnabled ||
+                                                                            pendingFeature !==
+                                                                                null ||
+                                                                            detailLoading
+                                                                        }
+                                                                        onToggle={() =>
+                                                                            void handleToggle(
+                                                                                sub.feature,
                                                                                 subEnabled
-                                                                            }
-                                                                            disabled={
-                                                                                !kcEnabled
-                                                                            }
-                                                                            onCheckedChange={() =>
-                                                                                void handleToggle(
-                                                                                    sub.feature,
-                                                                                    subEnabled
-                                                                                )
-                                                                            }
-                                                                        />
-                                                                    </div>
+                                                                            )
+                                                                        }
+                                                                    />
                                                                 );
                                                             }
                                                         )}
