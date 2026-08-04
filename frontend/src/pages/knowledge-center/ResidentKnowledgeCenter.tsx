@@ -1,12 +1,22 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { toExternalUrl } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTourContext } from '@/contexts/useTourContext';
 import { targetToStepIndexMap } from '@/contexts/tourState';
 import useSWR from 'swr';
-import { Search, Star, BookOpen, Video, Link as LinkIcon } from 'lucide-react';
+import {
+    Search,
+    Star,
+    BookOpen,
+    Video,
+    Link as LinkIcon,
+    MessageSquarePlus
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
@@ -21,6 +31,17 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from '@/components/ui/tooltip';
+import { FormModal } from '@/components/shared';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { requestContentSchema, RequestContentInput } from '@/lib/validation';
 import { Pagination } from '@/components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
 import {
@@ -30,10 +51,11 @@ import {
     ServerResponseMany,
     ServerResponseOne,
     OpenContentItem,
-    Option
+    Option,
+    FeatureAccess
 } from '@/types';
 import { formatVideoDuration } from '@/lib/formatters';
-import { isAdministrator, useAuth } from '@/auth/useAuth';
+import { isAdministrator, useAuth, hasFeature } from '@/auth/useAuth';
 import { toast } from 'sonner';
 import API from '@/api/api';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
@@ -60,10 +82,21 @@ export default function ResidentKnowledgeCenter() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const isAdminPreview = user ? isAdministrator(user) : false;
+    const canViewHelpfulLinks =
+        !!user && hasFeature(user, FeatureAccess.HelpfulLinksAccess);
+    const canViewVideos =
+        !!user && hasFeature(user, FeatureAccess.UploadVideoAccess);
+    const canRequestContent =
+        !!user && hasFeature(user, FeatureAccess.RequestContentAccess);
     const { tourState, setTourState } = useTourContext();
     const [pendingFavorites, setPendingFavorites] = useState<
         Map<string, boolean>
     >(new Map());
+    const [showRequestContent, setShowRequestContent] = useState(false);
+    const requestContentForm = useForm<RequestContentInput>({
+        resolver: zodResolver(requestContentSchema),
+        defaultValues: { content: '' }
+    });
 
     useEffect(() => {
         if (tourState?.tourActive) {
@@ -77,10 +110,25 @@ export default function ResidentKnowledgeCenter() {
         }
     }, [tourState, setTourState]);
 
+    useEffect(() => {
+        if (showRequestContent) {
+            requestContentForm.reset({ content: '' });
+        }
+    }, [showRequestContent, requestContentForm]);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
     const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+    useEffect(() => {
+        if (contentTypeFilter === 'link' && !canViewHelpfulLinks) {
+            setContentTypeFilter('all');
+        }
+        if (contentTypeFilter === 'video' && !canViewVideos) {
+            setContentTypeFilter('all');
+        }
+    }, [contentTypeFilter, canViewHelpfulLinks, canViewVideos]);
     const {
         page: currentPage,
         perPage: itemsPerPage,
@@ -99,11 +147,15 @@ export default function ResidentKnowledgeCenter() {
     );
 
     const { data: vidData } = useSWR<ServerResponseMany<VideoType>>(
-        `/api/videos?visibility=visible&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+        canViewVideos
+            ? `/api/videos?visibility=visible&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+            : null
     );
 
     const { data: linkData } = useSWR<ServerResponseOne<HelpfulLinkAndSort>>(
-        `/api/helpful-links?visibility=true&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+        canViewHelpfulLinks
+            ? `/api/helpful-links?visibility=true&per_page=500&order_by=title&order=asc&search=${searchQuery}`
+            : null
     );
 
     const isFavoritesTab = contentTypeFilter === 'favorites';
@@ -233,6 +285,22 @@ export default function ResidentKnowledgeCenter() {
         }),
         [allContent]
     );
+
+    const handleRequestContent = async (formData: RequestContentInput) => {
+        const resp = await API.post<null, object>(
+            'open-content/request-content',
+            {
+                content: formData.content
+            }
+        );
+        if (resp.success) {
+            toast.success('Your request has been sent');
+            setShowRequestContent(false);
+            requestContentForm.reset({ content: '' });
+        } else {
+            toast.error(resp.message ?? 'Failed to send request');
+        }
+    };
 
     const handleLinkClick = async (link: ContentItem) => {
         const resp = await API.put<{ url: string }, object>(
@@ -475,11 +543,24 @@ export default function ResidentKnowledgeCenter() {
     return (
         <div id="knowledge-center-landing">
             <div className="max-w-7xl mx-auto px-6 py-8">
-                <div className="mb-8">
-                    <h1 className="text-brand-dark mb-2">Knowledge Center</h1>
-                    <p className="text-gray-600">
-                        Explore libraries, videos, and helpful resources.
-                    </p>
+                <div className="mb-8 flex items-start justify-between">
+                    <div>
+                        <h1 className="text-brand-dark mb-2">
+                            Knowledge Center
+                        </h1>
+                        <p className="text-gray-600">
+                            Explore libraries, videos, and helpful resources.
+                        </p>
+                    </div>
+                    {canRequestContent && (
+                        <Button
+                            className="bg-brand hover:bg-brand-dark text-white"
+                            onClick={() => setShowRequestContent(true)}
+                        >
+                            <MessageSquarePlus className="size-4 mr-2" />
+                            Request Content
+                        </Button>
+                    )}
                 </div>
 
                 <div
@@ -529,34 +610,38 @@ export default function ResidentKnowledgeCenter() {
                         >
                             Libraries ({counts.library})
                         </button>
-                        <button
-                            onClick={() => {
-                                setContentTypeFilter('video');
-                                setCategoryFilter('all');
-                                setCurrentPage(1);
-                            }}
-                            className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                                contentTypeFilter === 'video'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
-                            }`}
-                        >
-                            Videos ({counts.video})
-                        </button>
-                        <button
-                            onClick={() => {
-                                setContentTypeFilter('link');
-                                setCategoryFilter('all');
-                                setCurrentPage(1);
-                            }}
-                            className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                                contentTypeFilter === 'link'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
-                            }`}
-                        >
-                            Helpful Links ({counts.link})
-                        </button>
+                        {canViewVideos && (
+                            <button
+                                onClick={() => {
+                                    setContentTypeFilter('video');
+                                    setCategoryFilter('all');
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                                    contentTypeFilter === 'video'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
+                                }`}
+                            >
+                                Videos ({counts.video})
+                            </button>
+                        )}
+                        {canViewHelpfulLinks && (
+                            <button
+                                onClick={() => {
+                                    setContentTypeFilter('link');
+                                    setCategoryFilter('all');
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                                    contentTypeFilter === 'link'
+                                        ? 'bg-brand text-white shadow-sm'
+                                        : 'bg-white text-gray-600 hover:text-brand-dark hover:bg-gray-50 border border-gray-200'
+                                }`}
+                            >
+                                Helpful Links ({counts.link})
+                            </button>
+                        )}
                         <button
                             onClick={() => {
                                 setContentTypeFilter('favorites');
@@ -647,6 +732,66 @@ export default function ResidentKnowledgeCenter() {
                     </>
                 )}
             </div>
+
+            <FormModal
+                open={showRequestContent}
+                onOpenChange={setShowRequestContent}
+                title="Request Content"
+                description="Tell us what you'd like to see added to the Knowledge Center."
+                titleClassName="text-foreground"
+            >
+                <Form {...requestContentForm}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void requestContentForm.handleSubmit(
+                                handleRequestContent
+                            )(e);
+                        }}
+                    >
+                        <div className="space-y-4 pt-4">
+                            <FormField
+                                control={requestContentForm.control}
+                                name="content"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>
+                                            What would you like added?
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Describe the content you'd like to see (a book, video, resource, etc.)"
+                                                rows={4}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowRequestContent(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="brand"
+                                    disabled={
+                                        requestContentForm.formState
+                                            .isSubmitting
+                                    }
+                                >
+                                    Send Request
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Form>
+            </FormModal>
         </div>
     );
 }
