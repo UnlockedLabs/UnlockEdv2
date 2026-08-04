@@ -444,20 +444,29 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	event.ClassID = uint(classID)
-	if event.RoomID != nil {
+	if event.RoomID != nil || event.InstructorID != nil {
 		class, err := srv.Db.GetClassByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
-		}
-		conflicts, err := srv.Db.CheckRRuleConflicts(&models.ConflictCheckRequest{
+		conflictReq := &models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
-			RoomID:         *event.RoomID,
 			RecurrenceRule: event.RecurrenceRule,
 			Duration:       event.Duration,
-		})
+		}
+		if event.RoomID != nil {
+			if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
+				return newDatabaseServiceError(err)
+			}
+			conflictReq.RoomID = *event.RoomID
+		}
+		if event.InstructorID != nil {
+			if name, err := srv.Db.GetInstructorNameByID(*event.InstructorID, class.FacilityID); err != nil || name == "" {
+				return newBadRequestServiceError(err, "invalid instructor for this facility")
+			}
+			conflictReq.InstructorID = *event.InstructorID
+		}
+		conflicts, err := srv.Db.CheckConflicts(conflictReq)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}

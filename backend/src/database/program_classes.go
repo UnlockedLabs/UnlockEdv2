@@ -122,7 +122,7 @@ func (db *DB) CreateProgramClass(content *models.ProgramClass, conflictReq *mode
 		return nil, nil, NewDBError(tx.Error, "unable to start transaction")
 	}
 
-	conflicts, err := LockRoomAndCheckConflicts(tx, conflictReq)
+	conflicts, err := LockAndCheckConflicts(tx, conflictReq)
 	if err != nil {
 		tx.Rollback()
 		return nil, nil, err
@@ -156,7 +156,7 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int, conflictR
 	}
 
 	if conflictReq != nil {
-		conflicts, err := LockRoomAndCheckConflicts(trans, conflictReq)
+		conflicts, err := LockAndCheckConflicts(trans, conflictReq)
 		if err != nil {
 			trans.Rollback()
 			return nil, nil, err

@@ -191,15 +191,23 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	}
 
 	var conflictReq *models.ConflictCheckRequest
-	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
-		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, class.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
+	if len(class.Events) > 0 && class.Events[0].RecurrenceRule != "" && class.Events[0].Duration != "" {
+		event := class.Events[0]
+		if event.RoomID != nil {
+			if _, err := srv.Db.GetRoomByIDForFacility(*event.RoomID, class.FacilityID); err != nil {
+				return newDatabaseServiceError(err)
+			}
 		}
 		conflictReq = &models.ConflictCheckRequest{
 			FacilityID:     class.FacilityID,
-			RoomID:         *class.Events[0].RoomID,
-			RecurrenceRule: class.Events[0].RecurrenceRule,
-			Duration:       class.Events[0].Duration,
+			RecurrenceRule: event.RecurrenceRule,
+			Duration:       event.Duration,
+		}
+		if event.RoomID != nil {
+			conflictReq.RoomID = *event.RoomID
+		}
+		if class.InstructorID != nil {
+			conflictReq.InstructorID = *class.InstructorID
 		}
 	}
 
@@ -271,21 +279,47 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	class.UpdateUserID = models.UintPtr(claims.UserID)
 
 	var conflictReq *models.ConflictCheckRequest
-	if len(class.Events) > 0 && class.Events[0].RoomID != nil {
-		if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, existing.FacilityID); err != nil {
-			return newDatabaseServiceError(err)
+	if len(existing.Events) > 0 {
+		existingEvent := existing.Events[0]
+
+		var roomChanged bool
+		if len(class.Events) > 0 && class.Events[0].RoomID != nil {
+			if _, err := srv.Db.GetRoomByIDForFacility(*class.Events[0].RoomID, existing.FacilityID); err != nil {
+				return newDatabaseServiceError(err)
+			}
+			existingRoomID := uint(0)
+			if existingEvent.RoomID != nil {
+				existingRoomID = *existingEvent.RoomID
+			}
+			if *class.Events[0].RoomID != existingRoomID {
+				roomChanged = true
+			}
 		}
-		existingRoomID := uint(0)
-		if len(existing.Events) > 0 && existing.Events[0].RoomID != nil {
-			existingRoomID = *existing.Events[0].RoomID
+
+		var instructorChanged bool
+		if instructorIDProvided && class.InstructorID != nil {
+			existingInstructorID := uint(0)
+			if existingEvent.InstructorID != nil {
+				existingInstructorID = *existingEvent.InstructorID
+			}
+			if *class.InstructorID != existingInstructorID {
+				instructorChanged = true
+			}
 		}
-		if *class.Events[0].RoomID != existingRoomID {
+
+		if (roomChanged || instructorChanged) && existingEvent.RecurrenceRule != "" && existingEvent.Duration != "" {
 			conflictReq = &models.ConflictCheckRequest{
 				FacilityID:     existing.FacilityID,
-				RoomID:         *class.Events[0].RoomID,
-				RecurrenceRule: existing.Events[0].RecurrenceRule,
-				Duration:       existing.Events[0].Duration,
-				ExcludeEventID: &existing.Events[0].ID,
+				RecurrenceRule: existingEvent.RecurrenceRule,
+				Duration:       existingEvent.Duration,
+				ExcludeEventID: &existingEvent.ID,
+				ExcludeClassID: &existing.ID,
+			}
+			if roomChanged {
+				conflictReq.RoomID = *class.Events[0].RoomID
+			}
+			if instructorChanged {
+				conflictReq.InstructorID = *class.InstructorID
 			}
 		}
 	}

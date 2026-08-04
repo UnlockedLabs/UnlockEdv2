@@ -36,7 +36,11 @@ import {
     ServerResponseOne,
     NewUserResponse
 } from '@/types';
-import { formatRoomConflictRange, getInstructorId } from '@/lib/formatters';
+import {
+    conflictSubjectLabel,
+    formatRoomConflictRange,
+    getInstructorId
+} from '@/lib/formatters';
 
 interface EditClassModalProps {
     open: boolean;
@@ -119,12 +123,15 @@ function parseScheduleFromEvent(
     }
 
     if (duration && startTime) {
-        const durationMatch = /(\d+)h(\d+)m/.exec(duration);
-        if (durationMatch) {
+        const durationMatch = /(?:(\d+)h)?(?:(\d+)m)?/.exec(duration);
+        if (durationMatch && (durationMatch[1] || durationMatch[2])) {
             const [, hours, mins] = durationMatch;
             const [sh, sm] = startTime.split(':').map(Number);
             const totalMin =
-                (sh ?? 0) * 60 + (sm ?? 0) + Number(hours) * 60 + Number(mins);
+                (sh ?? 0) * 60 +
+                (sm ?? 0) +
+                Number(hours ?? 0) * 60 +
+                Number(mins ?? 0);
             const eh = Math.floor(totalMin / 60) % 24;
             const em = totalMin % 60;
             endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
@@ -365,6 +372,10 @@ export function EditClassModal({
             data.end_dt || undefined // eslint-disable-line @typescript-eslint/prefer-nullish-coalescing -- empty string must collapse to undefined
         );
         const newDuration = formatDuration(data.start_time, data.end_time);
+        if (newDuration === '0h0m0s') {
+            toast.error('End time must be after start time');
+            return;
+        }
 
         const payload = {
             id: cls.id,
@@ -1101,7 +1112,8 @@ export function EditClassModal({
                             {conflicts.length > 0 && (
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-red-700">
-                                        Room has {conflicts.length} scheduling{' '}
+                                        {conflictSubjectLabel(conflicts)} has{' '}
+                                        {conflicts.length} scheduling{' '}
                                         {conflicts.length === 1
                                             ? 'conflict'
                                             : 'conflicts'}

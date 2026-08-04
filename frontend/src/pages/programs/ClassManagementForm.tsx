@@ -23,7 +23,11 @@ import {
     ClassManagementFormValues
 } from '@/lib/validation';
 import { isCompletedCancelledOrArchived } from '@/lib/classStatus';
-import { formatRoomConflictRange, getInstructorId } from '@/lib/formatters';
+import {
+    conflictSubjectLabel,
+    formatRoomConflictRange,
+    getInstructorId
+} from '@/lib/formatters';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1752,8 +1756,8 @@ export function ClassManagementFormInner({
             <FormModal
                 open={showConflicts}
                 onOpenChange={setShowConflicts}
-                title="Room Scheduling Conflict"
-                description={`The selected room has ${conflicts.length} conflicts with existing classes.`}
+                title="Scheduling Conflict"
+                description={`${conflictSubjectLabel(conflicts)} has ${conflicts.length} ${conflicts.length === 1 ? 'conflict' : 'conflicts'} with existing classes.`}
             >
                 <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
                     {conflicts.map((c, i) => (

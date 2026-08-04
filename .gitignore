@@ -32,3 +32,4 @@ jar
 /csvs/zims/*.zim
 /.claude
 .worktrees/
+/frontend/node_modules/*
