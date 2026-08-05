@@ -175,6 +175,19 @@ func (db *DB) UpsertFacilityFeatureFlag(args *models.QueryContext, facilityID ui
 // ApplyFacilityFeaturesToAll copies the source facility's effective value for every
 // feature (top-level and sub) to every other facility, in one transaction.
 func (db *DB) ApplyFacilityFeaturesToAll(args *models.QueryContext, sourceFacilityID uint, statewideDefaults []models.FeatureAccess) error {
+	// An unknown source facility has no override rows, so its effective set would
+	// resolve to the untouched statewide defaults, and every real facility would
+	// then match the `id != source` target filter below — silently resetting every
+	// facility in the system. Reject it before anything is written.
+	var sourceExists bool
+	if err := db.WithContext(args.Ctx).Model(&models.Facility{}).
+		Select("count(*) > 0").Where("id = ?", sourceFacilityID).Find(&sourceExists).Error; err != nil {
+		return newGetRecordsDBError(err, "facilities")
+	}
+	if !sourceExists {
+		return newNotFoundDBError(gorm.ErrRecordNotFound, "facilities")
+	}
+
 	effective, err := db.GetFacilityFeatureAccess(sourceFacilityID, statewideDefaults)
 	if err != nil {
 		return err

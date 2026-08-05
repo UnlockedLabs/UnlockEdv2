@@ -68,8 +68,10 @@ func (srv *Server) handleGetFacilityFeatureDetail(w http.ResponseWriter, r *http
 	return writeJsonResponse(w, http.StatusOK, rows)
 }
 
+// Enabled is a pointer so an omitted property is distinguishable from an
+// explicit `false` — otherwise a `{}` body would silently disable the feature.
 type setFacilityFeatureRequest struct {
-	Enabled bool `json:"enabled"`
+	Enabled *bool `json:"enabled"`
 }
 
 /**
@@ -88,9 +90,12 @@ func (srv *Server) handleSetFacilityFeature(w http.ResponseWriter, r *http.Reque
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	if req.Enabled == nil {
+		return newBadRequestServiceError(errors.New("enabled required"), "enabled required")
+	}
 
 	args := srv.getQueryContext(r)
-	if err := srv.Db.UpsertFacilityFeatureFlag(&args, uint(id), feature, req.Enabled, srv.features); err != nil {
+	if err := srv.Db.UpsertFacilityFeatureFlag(&args, uint(id), feature, *req.Enabled, srv.features); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "facility feature updated successfully")

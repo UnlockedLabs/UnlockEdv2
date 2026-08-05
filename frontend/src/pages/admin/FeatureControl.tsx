@@ -162,6 +162,7 @@ function SubFeatureRow({
                 </p>
             </div>
             <Switch
+                aria-label={`Toggle ${sub.label}`}
                 checked={enabled}
                 disabled={disabled}
                 onCheckedChange={onToggle}
@@ -261,8 +262,11 @@ export default function FeatureControl() {
         }
     }
 
+    // Propagating while a toggle is still in flight would copy the source's
+    // pre-toggle state to every other facility, silently leaving the source out
+    // of step with the facilities the admin just "applied" it to.
     async function handleApplyAll() {
-        if (!selectedFacilityId) return;
+        if (!selectedFacilityId || pendingFeature !== null) return;
         setApplying(true);
         try {
             const resp = await API.put<string, { source_facility_id: number }>(
@@ -415,6 +419,7 @@ export default function FeatureControl() {
                                 <Button
                                     variant="outline"
                                     onClick={() => setConfirmApplyAll(true)}
+                                    disabled={pendingFeature !== null}
                                 >
                                     Apply these settings to all facilities
                                 </Button>
@@ -438,6 +443,7 @@ export default function FeatureControl() {
                                                     </p>
                                                 </div>
                                                 <Switch
+                                                    aria-label={`Toggle ${card.title}`}
                                                     checked={enabled}
                                                     disabled={
                                                         pendingFeature !==
@@ -536,7 +542,7 @@ export default function FeatureControl() {
                         </Button>
                         <Button
                             onClick={() => void handleApplyAll()}
-                            disabled={applying}
+                            disabled={applying || pendingFeature !== null}
                             className="bg-brand hover:bg-brand-dark text-white"
                         >
                             {applying ? 'Applying…' : 'Apply to All Facilities'}

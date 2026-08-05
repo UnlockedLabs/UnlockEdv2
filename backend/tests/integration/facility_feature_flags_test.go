@@ -121,6 +121,43 @@ func TestApplyFacilityFeaturesToAll(t *testing.T) {
 	}
 }
 
+// An unknown source facility has no override rows, so its effective set resolves
+// to the untouched statewide defaults — and every real facility matches the
+// `id != source` target filter. Without an existence check that silently resets
+// every per-facility override in the system.
+func TestApplyFacilityFeaturesToAll_UnknownSourceChangesNothing(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	target1, err := env.CreateTestFacility("Unknown Source Target 1")
+	require.NoError(t, err)
+	target2, err := env.CreateTestFacility("Unknown Source Target 2")
+	require.NoError(t, err)
+
+	statewide := models.AllFeatures
+	args := &models.QueryContext{Ctx: env.Context}
+
+	require.NoError(t, env.DB.UpsertFacilityFeatureFlag(args, target1.ID, models.ProgramAccess, false, statewide))
+	require.NoError(t, env.DB.UpsertFacilityFeatureFlag(args, target2.ID, models.UploadVideoAccess, false, statewide))
+
+	before := map[uint][]models.FeatureAccess{}
+	for _, target := range []*models.Facility{target1, target2} {
+		effective, err := env.DB.GetFacilityFeatureAccess(target.ID, statewide)
+		require.NoError(t, err)
+		before[target.ID] = effective
+	}
+
+	err = env.DB.ApplyFacilityFeaturesToAll(args, target2.ID+9999, statewide)
+	require.Error(t, err, "an unknown source facility must be rejected")
+
+	for _, target := range []*models.Facility{target1, target2} {
+		effective, err := env.DB.GetFacilityFeatureAccess(target.ID, statewide)
+		require.NoError(t, err)
+		require.ElementsMatch(t, before[target.ID], effective,
+			"no facility's overrides may change when the source facility doesn't exist")
+	}
+}
+
 func TestFacilityFeatureRoutes_RoleGating(t *testing.T) {
 	env = SetupTestEnv(t)
 	defer env.CleanupTestEnv()
@@ -194,6 +231,52 @@ func TestFacilityFeatureRoutes_ApplyAll(t *testing.T) {
 			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, FacilityID: source.ID}).
 			Do().
 			ExpectStatus(http.StatusUnauthorized)
+	})
+
+	t.Run("a nonexistent source facility is rejected, not treated as statewide defaults", func(t *testing.T) {
+		NewRequest[any](env.Client, t, http.MethodPut, "/api/facilities/features/apply-all",
+			map[string]any{"source_facility_id": source.ID + 9999}).
+			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin}).
+			Do().
+			ExpectStatus(http.StatusBadRequest)
+	})
+}
+
+// An omitted `enabled` property must not decode as `false` and silently disable
+// the feature. An explicit `false` must still be honored.
+func TestFacilityFeatureRoutes_EnabledRequired(t *testing.T) {
+	env = SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facility, err := env.CreateTestFacility("Enabled Required Facility")
+	require.NoError(t, err)
+
+	statewide := models.AllFeatures
+
+	t.Run("a body without enabled is rejected and changes nothing", func(t *testing.T) {
+		NewRequest[any](env.Client, t, http.MethodPut,
+			fmt.Sprintf("/api/facilities/%d/features/%s", facility.ID, models.ProgramAccess),
+			map[string]any{}).
+			WithTestClaims(&handlers.Claims{Role: models.SystemAdmin}).
+			Do().
+			ExpectStatus(http.StatusBadRequest)
+
+		effective, err := env.DB.GetFacilityFeatureAccess(facility.ID, statewide)
+		require.NoError(t, err)
+		require.Contains(t, effective, models.ProgramAccess, "the rejected request must not have written an override")
+	})
+
+	t.Run("an explicit false is still accepted", func(t *testing.T) {
+		NewRequest[any](env.Client, t, http.MethodPut,
+			fmt.Sprintf("/api/facilities/%d/features/%s", facility.ID, models.ProgramAccess),
+			map[string]any{"enabled": false}).
+			WithTestClaims(&handlers.Claims{Role: models.SystemAdmin}).
+			Do().
+			ExpectStatus(http.StatusOK)
+
+		effective, err := env.DB.GetFacilityFeatureAccess(facility.ID, statewide)
+		require.NoError(t, err)
+		require.NotContains(t, effective, models.ProgramAccess)
 	})
 }
 

@@ -121,20 +121,28 @@ export default function ResidentKnowledgeCenter() {
     const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-    useEffect(() => {
-        if (contentTypeFilter === 'link' && !canViewHelpfulLinks) {
-            setContentTypeFilter('all');
-        }
-        if (contentTypeFilter === 'video' && !canViewVideos) {
-            setContentTypeFilter('all');
-        }
-    }, [contentTypeFilter, canViewHelpfulLinks, canViewVideos]);
     const {
         page: currentPage,
         perPage: itemsPerPage,
         setPage: setCurrentPage,
         setPerPage
     } = useUrlPagination(1, ITEMS_PER_PAGE);
+
+    // Falling back to "all" when a sub-feature is revoked mid-session has to
+    // reset the page too, the same as every other filter change below —
+    // otherwise the resident is left on a page past the end of the All list.
+    // `replace` because this is a correction, not navigation the user can go
+    // back to.
+    useEffect(() => {
+        if (contentTypeFilter === 'link' && !canViewHelpfulLinks) {
+            setContentTypeFilter('all');
+            setCurrentPage(1, { replace: true });
+        }
+        if (contentTypeFilter === 'video' && !canViewVideos) {
+            setContentTypeFilter('all');
+            setCurrentPage(1, { replace: true });
+        }
+    }, [contentTypeFilter, canViewHelpfulLinks, canViewVideos, setCurrentPage]);
 
     const { data: tagsData } = useSWR<ServerResponseMany<Option>>('/api/tags');
     const categories = tagsData?.data ?? [];
