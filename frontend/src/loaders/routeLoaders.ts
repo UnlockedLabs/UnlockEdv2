@@ -2,7 +2,6 @@ import { json, LoaderFunction, redirect } from 'react-router-dom';
 import {
     OpenContentItem,
     ServerResponse,
-    HelpfulLinkAndSort,
     Library,
     UserCoursesInfo,
     ActivityMapData,
@@ -19,7 +18,8 @@ import {
     BreadcrumbItem
 } from '@/types';
 import API from '@/api/api';
-import { fetchUser } from '@/auth/useAuth';
+import { fetchUser, hasFeature } from '@/auth/useAuth';
+import { FeatureAccess } from '@/types';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 function buildClassBreadcrumbs(
@@ -41,58 +41,33 @@ function buildClassBreadcrumbs(
     ];
 }
 
-export const getStudentLevel1Data: LoaderFunction = async ({ request }) => {
+// Feeds /home (ResidentHome) only. That page reads just topUserContent and
+// topFacilityContent from here — its featured / favorites / helpful-links panels
+// come from their own feature-gated SWR hooks, and nothing reads libraryOptions.
+// The four extra requests this used to make were fetched, serialized, and
+// discarded on every navigation, and each 401'd once Knowledge Center was turned
+// off for the facility.
+export const getStudentLevel1Data: LoaderFunction = async () => {
     const user = await fetchUser();
     if (!user) return;
-    const [
-        resourcesResp,
-        userContentResp,
-        facilityContentResp,
-        favoritesResp,
-        featuredResp
-    ] = await Promise.all([
-        API.get(`helpful-links?visibility=true&per_page=5`),
+
+    const empty = { topUserContent: [], topFacilityContent: [] };
+    if (!hasFeature(user, FeatureAccess.OpenContentAccess)) {
+        return json(empty);
+    }
+
+    const [userContentResp, facilityContentResp] = await Promise.all([
         API.get(`open-content/activity/${user.id}`),
-        API.get(`open-content/activity`),
-        API.get(`open-content/favorites`),
-        API.get(`libraries?visibility=featured&order_by=created_at&per_page=3`)
+        API.get(`open-content/activity`)
     ]);
 
-    const links = resourcesResp.data as HelpfulLinkAndSort;
-    const helpfulLinks = resourcesResp.success ? links.helpful_links : [];
-    const topUserOpenContent = userContentResp.success
-        ? (userContentResp.data as OpenContentItem[])
-        : [];
-    const topFacilityOpenContent = facilityContentResp.success
-        ? (facilityContentResp.data as OpenContentItem[])
-        : [];
-    const favoriteOpenContent = favoritesResp.success
-        ? (favoritesResp.data as OpenContentItem[])
-        : [];
-    const featuredLibrariesRaw = featuredResp.success
-        ? (featuredResp.data as Library[])
-        : [];
-    const featuredLibraries: OpenContentItem[] = featuredLibrariesRaw.map(
-        (lib) => ({
-            title: lib.title,
-            url: lib.url,
-            external_id: lib.external_id,
-            thumbnail_url: lib.thumbnail_url,
-            description: lib.description ?? undefined,
-            visibility_status: lib.visibility_status,
-            open_content_provider_id: lib.open_content_provider_id,
-            content_id: lib.id,
-            content_type: 'library'
-        })
-    );
-    const libraryOptions = getLibraryOptionsHelper({ request });
     return json({
-        helpfulLinks: helpfulLinks,
-        topUserContent: topUserOpenContent,
-        topFacilityContent: topFacilityOpenContent,
-        favorites: favoriteOpenContent,
-        featuredLibraries,
-        libraryOptions: libraryOptions
+        topUserContent: userContentResp.success
+            ? (userContentResp.data as OpenContentItem[])
+            : [],
+        topFacilityContent: facilityContentResp.success
+            ? (facilityContentResp.data as OpenContentItem[])
+            : []
     });
 };
 

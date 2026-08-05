@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/url"
 	"reflect"
+	"slices"
 	"strconv"
 )
 
@@ -105,6 +106,14 @@ type QueryContext struct {
 	Ctx                context.Context
 	Timezone           string
 	IncludeDeactivated bool
+	// FeatureAccess is the caller's effective (per-facility) feature set, for
+	// queries that return a mix of content types and must drop the ones whose
+	// sub-feature is disabled — a route-level gate can't express that.
+	FeatureAccess []FeatureAccess
+}
+
+func (q *QueryContext) HasFeature(feature FeatureAccess) bool {
+	return slices.Contains(q.FeatureAccess, feature)
 }
 
 func (q *QueryContext) MaybeID(key string) *int {

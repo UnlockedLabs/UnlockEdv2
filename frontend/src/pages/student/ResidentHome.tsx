@@ -60,11 +60,12 @@ import { LEARNING_RECORD_START_CARD_BLURB } from '@/data/learningRecordResidentC
 // Types
 // -----------------------------------------------------------------------------
 
+// Only what getStudentLevel1Data actually returns. Helpful links, favorites and
+// featured libraries are fetched by this page's own feature-gated SWR hooks, not
+// the loader.
 interface ResidentHomeData {
-    helpfulLinks: HelpfulLink[];
     topUserContent: OpenContentItem[];
     topFacilityContent: OpenContentItem[];
-    favorites: OpenContentItem[];
 }
 
 export type ResidentHomeLearningState =
@@ -378,14 +379,26 @@ export default function ResidentHome() {
     );
     const residentName = learningRecordResidentDisplayName(user);
 
+    // Knowledge Center can be off for this facility, in which case these all
+    // 401. Skip the request rather than fetch-and-discard.
+    const openContentEnabled = user
+        ? hasFeature(user, FeatureAccess.OpenContentAccess)
+        : false;
+    const helpfulLinksEnabled = user
+        ? hasFeature(user, FeatureAccess.HelpfulLinksAccess)
+        : false;
+
     const { data: featured } = useSWR<ServerResponseMany<Library>>(
-        '/api/libraries?visibility=featured&order_by=created_at'
+        openContentEnabled
+            ? '/api/libraries?visibility=featured&order_by=created_at'
+            : null
     );
     const { data: favorites } = useSWR<ServerResponseMany<OpenContentItem>>(
-        '/api/open-content/favorite-groupings'
+        openContentEnabled ? '/api/open-content/favorite-groupings' : null
     );
-    const { data: helpfulLinks } =
-        useSWR<ServerResponseOne<HelpfulLinkAndSort>>('/api/helpful-links');
+    const { data: helpfulLinks } = useSWR<
+        ServerResponseOne<HelpfulLinkAndSort>
+    >(helpfulLinksEnabled ? '/api/helpful-links' : null);
 
     // --- Preview params (design / QA) ---
     const previewLearningState = parsePreviewLearningState(
@@ -690,34 +703,40 @@ export default function ResidentHome() {
                     )}
 
                     {/* ── Top Content ── */}
-                    <section>
-                        <h2 className="section-heading">
-                            Pick Up Where You Left Off
-                        </h2>
-                        <div
-                            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-                            id="end-tour"
-                        >
-                            <div id="top-content">
-                                <TopContentList
-                                    heading="Your Top Content"
-                                    items={topUserContent}
-                                    onViewAll={() =>
-                                        navigate('/knowledge-center')
-                                    }
-                                />
+                    {/* Unlike the sections around it, this one has no
+                        `.length > 0` guard of its own — without the feature
+                        check it renders an empty heading, two empty lists, and
+                        "View All" buttons pointing at a gated route. */}
+                    {openContentEnabled && (
+                        <section>
+                            <h2 className="section-heading">
+                                Pick Up Where You Left Off
+                            </h2>
+                            <div
+                                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                                id="end-tour"
+                            >
+                                <div id="top-content">
+                                    <TopContentList
+                                        heading="Your Top Content"
+                                        items={topUserContent}
+                                        onViewAll={() =>
+                                            navigate('/knowledge-center')
+                                        }
+                                    />
+                                </div>
+                                <div id="popular-content">
+                                    <TopContentList
+                                        heading="Popular Content"
+                                        items={topFacilityContent}
+                                        onViewAll={() =>
+                                            navigate('/knowledge-center')
+                                        }
+                                    />
+                                </div>
                             </div>
-                            <div id="popular-content">
-                                <TopContentList
-                                    heading="Popular Content"
-                                    items={topFacilityContent}
-                                    onViewAll={() =>
-                                        navigate('/knowledge-center')
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </section>
+                        </section>
+                    )}
 
                     {/* ── Helpful Links ── */}
                     {links.length > 0 && (
@@ -736,24 +755,29 @@ export default function ResidentHome() {
                 </div>
 
                 {/* ── Favorites sidebar ── */}
-                <aside className="hidden xl:block w-80 shrink-0 space-y-6 sticky top-6 self-start">
-                    <div className="bg-card rounded-lg border border-border p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Star className="size-5 text-brand-gold" />
-                            <h2 className="text-lg font-semibold text-foreground">
-                                Favorites
-                            </h2>
+                {/* Favorites are Knowledge Center content, so with the feature
+                    off this would otherwise sit there reading "No Favorites
+                    Yet" — same empty-shell problem as the section above. */}
+                {openContentEnabled && (
+                    <aside className="hidden xl:block w-80 shrink-0 space-y-6 sticky top-6 self-start">
+                        <div className="bg-card rounded-lg border border-border p-5">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Star className="size-5 text-brand-gold" />
+                                <h2 className="text-lg font-semibold text-foreground">
+                                    Favorites
+                                </h2>
+                            </div>
+                            {favoriteItems.length > 0 ? (
+                                <FavoritesAccordion items={favoriteItems} />
+                            ) : (
+                                <EmptyState
+                                    title="No Favorites Yet"
+                                    description="Content you favorite will appear here for quick access."
+                                />
+                            )}
                         </div>
-                        {favoriteItems.length > 0 ? (
-                            <FavoritesAccordion items={favoriteItems} />
-                        ) : (
-                            <EmptyState
-                                title="No Favorites Yet"
-                                description="Content you favorite will appear here for quick access."
-                            />
-                        )}
-                    </div>
-                </aside>
+                    </aside>
+                )}
             </div>
 
             {learningRecordEnabled ? (
