@@ -54,6 +54,7 @@ import { getLearningRecordFormVariant } from '@/pages/student/digital-transcript
 import { learningRecordResidentDisplayName } from '@/pages/student/digital-transcript/learningRecordResidentName';
 import { ViewAllAchievementsSheet } from '@/pages/student/digital-transcript/ViewAllAchievementsSheet';
 import { PrintShareHelpLink } from '@/components/learning-record/PrintShareHelpLink';
+import { LEARNING_RECORD_START_CARD_BLURB } from '@/data/learningRecordResidentCopy';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -626,11 +627,9 @@ export default function ResidentHome() {
                                                     : 'Log a new achievement'}
                                             </h3>
                                             <p className="max-w-xl text-sm leading-relaxed text-white/80">
-                                                Write down a class, program, or
-                                                skill you finished. Your answers
-                                                are saved here as you go.
-                                                Nothing leaves this app unless
-                                                you choose to print or share it.
+                                                {
+                                                    LEARNING_RECORD_START_CARD_BLURB
+                                                }
                                             </p>
                                             <PrintShareHelpLink variant="onDark" />
                                         </div>
