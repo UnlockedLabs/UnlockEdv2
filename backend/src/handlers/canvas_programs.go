@@ -788,6 +788,10 @@ func (srv *Server) handleShowCanvasProgram(w http.ResponseWriter, r *http.Reques
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", connectionID), "program ID")
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.hasFeatureAccess(models.ProviderAccess) {
+		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", connectionID), "program ID")
+	}
 
 	facilityID := srv.getQueryContext(r).FacilityID
 	cacheKey := fmt.Sprintf("canvas_program_%d_%d", connectionID, facilityID)
@@ -888,6 +892,10 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 	}
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", connectionID), "program ID")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.hasFeatureAccess(models.ProviderAccess) {
+		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", connectionID), "program ID")
 	}
 
 	facilityID := srv.getQueryContext(r).FacilityID
@@ -1405,6 +1413,10 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.hasFeatureAccess(models.ProviderAccess) {
+		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", providerID), "class ID")
+	}
 
 	courseURL := fmt.Sprintf("%s/api/v1/courses/%d", provider.BaseUrl, rawCourseID)
 	req, err := http.NewRequest("GET", courseURL, nil)
@@ -1528,6 +1540,10 @@ func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.R
 	if uint(classID) < models.CanvasClassIDOffset {
 		return newInvalidIdServiceError(fmt.Errorf("class %d is not a canvas class", classID), "class_id")
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.hasFeatureAccess(models.ProviderAccess) {
+		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for class %d", classID), "class_id")
+	}
 	_, providerID, rawCourseID := resolveCanvasClassParts(uint(classID))
 	provider, err := srv.Db.GetProviderPlatformByID(int(providerID))
 	if err != nil {
@@ -1628,6 +1644,10 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.hasFeatureAccess(models.ProviderAccess) {
+		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", providerID), "class ID")
+	}
 
 	canvasUserIDs, enrollmentDates, err := srv.fetchCanvasCourseEnrollmentData(provider, rawCourseID)
 	if err != nil {
@@ -1682,6 +1702,10 @@ func (srv *Server) handleGetCanvasAtRiskStudents(w http.ResponseWriter, r *http.
 	}
 	if !isCanvasProvider(provider) {
 		return newInvalidIdServiceError(fmt.Errorf("provider %d is not a canvas type", providerID), "class ID")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.hasFeatureAccess(models.ProviderAccess) {
+		return newInvalidIdServiceError(fmt.Errorf("provider access disabled for provider %d", providerID), "class ID")
 	}
 
 	summaryURL := fmt.Sprintf("%s/api/v1/courses/%d/analytics/student_summaries", provider.BaseUrl, rawCourseID)
