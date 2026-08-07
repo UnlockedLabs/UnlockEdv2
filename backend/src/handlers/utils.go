@@ -121,6 +121,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 		All:                all,
 		Timezone:           tz,
 		IncludeDeactivated: includeDeactivated,
+		FeatureAccess:      claims.FeatureAccess,
 	}
 }
 

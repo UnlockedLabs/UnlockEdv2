@@ -53,9 +53,10 @@ import {
     ServerResponseMany,
     ServerResponseOne,
     Option,
+    FeatureAccess,
     MAX_DOWNLOAD_ATTEMPTS
 } from '@/types';
-import { useAuth, canSwitchFacility } from '@/auth/useAuth';
+import { useAuth, canSwitchFacility, hasFeature } from '@/auth/useAuth';
 import { FacilityVisibilitySheet } from '@/components/knowledge-center';
 import { ManagedContent } from '@/components/knowledge-center/FacilityVisibilitySheet';
 import {
@@ -407,6 +408,10 @@ export default function KnowledgeCenterManagement() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const canManageFacilities = !!user && canSwitchFacility(user);
+    const canViewHelpfulLinks =
+        !!user && hasFeature(user, FeatureAccess.HelpfulLinksAccess);
+    const canViewVideos =
+        !!user && hasFeature(user, FeatureAccess.UploadVideoAccess);
     const [manageContent, setManageContent] = useState<ManagedContent | null>(
         null
     );
@@ -447,6 +452,15 @@ export default function KnowledgeCenterManagement() {
         }
         setCurrentPage(1);
     }, [currentTab, setCurrentPage]);
+
+    useEffect(() => {
+        if (currentTab === 'links' && !canViewHelpfulLinks) {
+            setCurrentTab('libraries');
+        }
+        if (currentTab === 'videos' && !canViewVideos) {
+            setCurrentTab('libraries');
+        }
+    }, [currentTab, canViewHelpfulLinks, canViewVideos]);
 
     useEffect(() => {
         if (showAddVideo) {
@@ -492,13 +506,17 @@ export default function KnowledgeCenterManagement() {
     const { data: vidData, mutate: mutateVids } = useSWR<
         ServerResponseMany<Video>
     >(
-        `/api/videos?page=1&per_page=500&order_by=title&order=asc${visibilityParam}&search=${searchQuery}`
+        canViewVideos
+            ? `/api/videos?page=1&per_page=500&order_by=title&order=asc${visibilityParam}&search=${searchQuery}`
+            : null
     );
 
     const { data: linkData, mutate: mutateLinks } = useSWR<
         ServerResponseOne<HelpfulLinkAndSort>
     >(
-        `/api/helpful-links?search=${searchQuery}&page=1&per_page=500&order_by=title&order=asc`
+        canViewHelpfulLinks
+            ? `/api/helpful-links?search=${searchQuery}&page=1&per_page=500&order_by=title&order=asc`
+            : null
     );
 
     const libraries = useMemo(() => {
@@ -802,18 +820,22 @@ export default function KnowledgeCenterManagement() {
                         >
                             Libraries ({libTotal})
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="videos"
-                            className="tab-trigger-brand"
-                        >
-                            Videos ({vidTotal})
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="links"
-                            className="tab-trigger-brand"
-                        >
-                            Helpful Links ({linkTotal})
-                        </TabsTrigger>
+                        {canViewVideos && (
+                            <TabsTrigger
+                                value="videos"
+                                className="tab-trigger-brand"
+                            >
+                                Videos ({vidTotal})
+                            </TabsTrigger>
+                        )}
+                        {canViewHelpfulLinks && (
+                            <TabsTrigger
+                                value="links"
+                                className="tab-trigger-brand"
+                            >
+                                Helpful Links ({linkTotal})
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     {currentTab === 'libraries' && (
@@ -842,7 +864,7 @@ export default function KnowledgeCenterManagement() {
                             </SelectContent>
                         </Select>
                     )}
-                    {currentTab === 'videos' && (
+                    {currentTab === 'videos' && canViewVideos && (
                         <Button
                             className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddVideo(true)}
@@ -851,7 +873,7 @@ export default function KnowledgeCenterManagement() {
                             Add Video
                         </Button>
                     )}
-                    {currentTab === 'links' && (
+                    {currentTab === 'links' && canViewHelpfulLinks && (
                         <Button
                             className="bg-brand hover:bg-brand-dark text-white"
                             onClick={() => setShowAddLink(true)}
@@ -899,7 +921,11 @@ export default function KnowledgeCenterManagement() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="videos" className="space-y-4">
+                <TabsContent
+                    value="videos"
+                    className="space-y-4"
+                    hidden={!canViewVideos}
+                >
                     {videos.length === 0 ? (
                         <div className="empty-state">
                             <p className="text-gray-500">No videos found.</p>
@@ -943,7 +969,11 @@ export default function KnowledgeCenterManagement() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="links" className="space-y-4">
+                <TabsContent
+                    value="links"
+                    className="space-y-4"
+                    hidden={!canViewHelpfulLinks}
+                >
                     {helpfulLinks.length === 0 ? (
                         <div className="empty-state">
                             <p className="text-gray-500">

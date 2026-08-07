@@ -51,10 +51,21 @@ func (db *DB) UpdateOpenContentActivityStopTS(activityID int64) {
 	}
 }
 
+// featureBranchGuard returns a SQL fragment that empties one branch of the
+// favorites UNION when the caller's facility has that content type's sub-feature
+// disabled. It is a constant, never user input, so it binds no arguments and
+// leaves the surrounding query's positional argument list untouched.
+func featureBranchGuard(args *models.QueryContext, feature models.FeatureAccess) string {
+	if args.HasFeature(feature) {
+		return ""
+	}
+	return " AND FALSE"
+}
+
 // This method will at most ever return the most recent 30 favorites (10 Libraries, 10 Videos, 10 Helpful Links)
 func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.OpenContentItem, error) {
 	favorites := make([]models.OpenContentItem, 0, 30)
-	favoritesQuery := `WITH ordered_libraries AS (
+	favoritesQuery := fmt.Sprintf(`WITH ordered_libraries AS (
 		SELECT
 			'library' AS content_type,
 			f.content_id,
@@ -105,6 +116,7 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
             and fvs.facility_id = ?
 		WHERE f.user_id = ?
 			AND f.content_id IN (SELECT id FROM videos where availability = 'available')
+			%s
 	),
 	ordered_helpful_links AS (
 		SELECT
@@ -130,8 +142,9 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
 				and fvs.content_id = hl.id
 				and fvs.facility_id = ?
 		WHERE f.user_id = ?
+			%s
 	)
-	SELECT 
+	SELECT
 			content_type,
 			content_id,
 			title,
@@ -149,7 +162,9 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
 		SELECT * FROM ordered_videos WHERE row_num <= 10
 		UNION ALL
 		SELECT * FROM ordered_helpful_links WHERE row_num <= 10
-	)`
+	)`,
+		featureBranchGuard(args, models.UploadVideoAccess),
+		featureBranchGuard(args, models.HelpfulLinksAccess))
 	if err := db.WithContext(args.Ctx).Raw(favoritesQuery, args.FacilityID, args.UserID, args.FacilityID, args.UserID, args.FacilityID, args.UserID).Scan(&favorites).Error; err != nil {
 		return nil, err
 	}
@@ -166,6 +181,15 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 		videoSearchCond = "AND LOWER(videos.title) LIKE ?"
 		hlSearchCond = "AND LOWER(hl.title) LIKE ?"
 	}
+
+	// A favorited video or helpful link must not come back when its sub-feature
+	// is disabled for this facility — the route can only gate on the parent
+	// (open_content), which has to stay on for libraries. Appended as a literal
+	// rather than by dropping the UNION branch: the query binds its arguments
+	// positionally, so changing the branch count would mean re-deriving the
+	// whole arg list.
+	videoSearchCond += featureBranchGuard(args, models.UploadVideoAccess)
+	hlSearchCond += featureBranchGuard(args, models.HelpfulLinksAccess)
 
 	countArgs := []any{args.UserID}
 	if args.Search != "" {

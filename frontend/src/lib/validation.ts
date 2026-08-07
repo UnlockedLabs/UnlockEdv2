@@ -726,6 +726,13 @@ export const addLinkSchema = z.object({
 
 export type AddLinkInput = z.infer<typeof addLinkSchema>;
 
+/** "Request Content" dialog — a resident describes what they'd like added. */
+export const requestContentSchema = z.object({
+    content: requiredString('Request', 2000)
+});
+
+export type RequestContentInput = z.infer<typeof requestContentSchema>;
+
 /* ------------------------------------------------------------------ *
  * Take Attendance grid (per-row validation, not a single RHF form)
  * ------------------------------------------------------------------ */
