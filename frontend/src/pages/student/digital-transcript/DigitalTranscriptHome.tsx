@@ -75,6 +75,7 @@ import { learningRecordResidentDisplayName } from './learningRecordResidentName'
 import { TranscriptResumePreview } from './TranscriptResumePreview';
 import { ViewAllAchievementsSheet } from './ViewAllAchievementsSheet';
 import { PrintShareHelpLink } from '@/components/learning-record/PrintShareHelpLink';
+import { LearningRecordPrivacyNotice } from '@/components/learning-record/LearningRecordPrivacyNotice';
 import {
     countFunnelFieldsAnswered,
     funnelCompletionTier,
@@ -638,7 +639,12 @@ export default function DigitalTranscriptHome() {
                         title="Build your Learning Record"
                         subtitle={FUNNEL_SUBTITLE}
                     />
-                    <PrintShareHelpLink className="mb-8" />
+                    <PrintShareHelpLink className="mb-4" />
+
+                    <LearningRecordPrivacyNotice
+                        variant="short"
+                        className="mb-8"
+                    />
 
                     <SavedEntriesSection
                         entries={entries}
@@ -690,7 +696,12 @@ export default function DigitalTranscriptHome() {
                         title="Learning Record"
                         subtitle="Write down what you finished and the skills you built. Your answers are saved here as you go. Tap Done when one achievement feels complete."
                     />
-                    <PrintShareHelpLink className="mb-8" />
+                    <PrintShareHelpLink className="mb-4" />
+
+                    <LearningRecordPrivacyNotice
+                        variant="short"
+                        className="mb-8"
+                    />
 
                     <Card className="mb-6 overflow-hidden p-0">
                         <div className="flex flex-col md:flex-row">

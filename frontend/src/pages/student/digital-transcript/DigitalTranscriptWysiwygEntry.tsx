@@ -9,6 +9,7 @@ import {
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/shared';
+import { LearningRecordPrivacyNotice } from '@/components/learning-record/LearningRecordPrivacyNotice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -640,6 +641,25 @@ export function DigitalTranscriptWysiwygEntry({
             data-slot="transcript-wysiwyg-outer"
             className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden"
         >
+            {/*
+              Unconditional: the progress card below is funnel-only, so rendering
+              the notice outside that guard gives both variants the disclosure
+              while still sitting directly above the progress bar where one
+              exists. `shrink-0` keeps it out of the panes' scroll areas.
+            */}
+            {/*
+              `w-auto` is required, not cosmetic: `Alert`'s base classes include
+              `w-full`, which combined with `mx-4` makes the notice 32px wider
+              than its container — the right border overflows and is clipped by
+              the parent's `overflow-hidden`. `w-auto` lets the margins shrink
+              the box instead (twMerge drops `w-full` in favour of it). The
+              sibling progress Card gets away with plain `mx-4` because `Card`
+              has no `w-full`.
+            */}
+            <LearningRecordPrivacyNotice
+                variant="full"
+                className="mx-4 mt-4 w-auto shrink-0 print:hidden"
+            />
             {isFunnel && funnelEntry && funnelCompletionBadgeBg ? (
                 <Card
                     data-slot="funnel-form-progress"
