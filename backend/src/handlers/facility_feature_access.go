@@ -34,12 +34,14 @@ func (srv *Server) handleGetFacilityFeatureOverview(w http.ResponseWriter, r *ht
 			return newBadRequestServiceError(errors.New("invalid feature"), "invalid feature filter")
 		}
 		filterFeature = &feature
+		log.add("feature", feature)
 		if enabledRaw := r.URL.Query().Get("enabled"); enabledRaw != "" {
 			enabled, err := strconv.ParseBool(enabledRaw)
 			if err != nil {
 				return newBadRequestServiceError(err, "invalid enabled filter")
 			}
 			filterEnabled = &enabled
+			log.add("enabled", enabled)
 		}
 	}
 
