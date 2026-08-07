@@ -543,9 +543,12 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		userPrograms[i].CalculateAttendancePercentage()
 		userPrograms[i].Schedule = models.FormatScheduleFromRRule(userPrograms[i].RecurrenceRule)
 	}
-	canvasPrograms := srv.fetchCanvasUserPrograms(userId)
-	userPrograms = append(userPrograms, canvasPrograms...)
-	queryCtx.Total += int64(len(canvasPrograms))
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if claims.hasFeatureAccess(models.ProviderAccess) {
+		canvasPrograms := srv.fetchCanvasUserPrograms(userId)
+		userPrograms = append(userPrograms, canvasPrograms...)
+		queryCtx.Total += int64(len(canvasPrograms))
+	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }
 
