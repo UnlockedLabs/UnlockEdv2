@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 
 	logrus "github.com/sirupsen/logrus"
@@ -149,11 +150,38 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 		if canvasErr != nil {
 			logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
 		} else {
+			canvasClasses = srv.filterClassesByProviderAccess(canvasClasses)
 			classes = append(classes, canvasClasses...)
 			args.Total += int64(len(canvasClasses))
 		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
+}
+
+// filterClassesByProviderAccess drops Canvas classes belonging to a facility that has
+// disabled provider_platforms via its per-facility override. The caller-level
+// hasFeatureAccess check only reflects the requesting user's own facility, which isn't
+// sufficient when classes span every facility (facility=all).
+func (srv *Server) filterClassesByProviderAccess(classes []models.ProgramClass) []models.ProgramClass {
+	access := make(map[uint]bool)
+	filtered := make([]models.ProgramClass, 0, len(classes))
+	for _, class := range classes {
+		enabled, resolved := access[class.FacilityID]
+		if !resolved {
+			effective, err := srv.Db.GetFacilityFeatureAccess(class.FacilityID, srv.features)
+			if err != nil {
+				logrus.WithError(err).WithField("facility_id", class.FacilityID).Warn("failed to resolve facility feature access, excluding canvas classes")
+				enabled = false
+			} else {
+				enabled = slices.Contains(effective, models.ProviderAccess)
+			}
+			access[class.FacilityID] = enabled
+		}
+		if enabled {
+			filtered = append(filtered, class)
+		}
+	}
+	return filtered
 }
 
 func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
