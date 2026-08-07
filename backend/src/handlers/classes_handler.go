@@ -138,18 +138,20 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	var canvasClasses []models.ProgramClass
-	var canvasErr error
-	if facilityID == nil {
-		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
-	} else {
-		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProviders(facilityID)
-	}
-	if canvasErr != nil {
-		logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
-	} else {
-		classes = append(classes, canvasClasses...)
-		args.Total += int64(len(canvasClasses))
+	if claims.hasFeatureAccess(models.ProviderAccess) {
+		var canvasClasses []models.ProgramClass
+		var canvasErr error
+		if facilityID == nil {
+			canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
+		} else {
+			canvasClasses, canvasErr = srv.fetchCanvasClassesAllProviders(facilityID)
+		}
+		if canvasErr != nil {
+			logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
+		} else {
+			classes = append(classes, canvasClasses...)
+			args.Total += int64(len(canvasClasses))
+		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }

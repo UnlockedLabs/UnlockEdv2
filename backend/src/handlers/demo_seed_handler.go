@@ -7,7 +7,7 @@ import (
 
 func (srv *Server) registerDemoSeedRoutes() []routeDef {
 	return []routeDef{
-		validatedAdminRoute("POST /api/auth/demo-seed", srv.handleRunDemoSeed, func(db *database.DB, r *http.Request) bool {
+		validatedAdminRoute("POST /api/auth/demo-seed", srv.handleRunDemoSeed, func(_ *database.DB, r *http.Request) bool {
 			return userIsSystemAdmin(r)
 		}),
 	}
