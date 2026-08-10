@@ -116,10 +116,31 @@ services:
       # Auto-provision the tutor.* schema on start so devs skip a manual db:push.
       - RUN_MIGRATIONS=true
       - TUTOR_FEATURE_FLAG=ai_tutor
+      # Bedrock is the production provider. Passed through rather than pinned on:
+      # USE_BEDROCK=true with no AWS credentials fails on the first model call,
+      # which would break the tutor for every engineer who does not have them.
+      # Set USE_BEDROCK and the AWS_* vars in .env to run this stack on Bedrock;
+      # leave them unset and it falls back to AI_PROVIDER below.
+      #
+      # Model ids live in the tutor's lib/ai/client.ts (DEFAULT_MODELS.bedrock)
+      # and are cross-region inference profiles — the bare in-region form is not
+      # a valid id. Override per role with AI_MODEL_TUTOR / _FAST / _REASONING.
+      - USE_BEDROCK=${USE_BEDROCK:-}
+      - AWS_REGION=${AWS_REGION:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+      - AI_MODEL_TUTOR=${AI_MODEL_TUTOR:-}
+      - AI_MODEL_FAST=${AI_MODEL_FAST:-}
+      - AI_MODEL_REASONING=${AI_MODEL_REASONING:-}
+      # Fallback provider, used only when USE_BEDROCK is unset.
       - AI_PROVIDER=${TUTOR_AI_PROVIDER:-anthropic}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Layer-2 guardrail classifier. 'model' keeps learner text inside the
+      # deployment's own provider boundary, which is what a DOC install needs.
+      - GUARDRAIL_LLM=${GUARDRAIL_LLM:-model}
     depends_on:
       postgres:
         condition: service_healthy
