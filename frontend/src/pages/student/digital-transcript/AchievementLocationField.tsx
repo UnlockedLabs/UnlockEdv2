@@ -33,7 +33,7 @@ export function AchievementLocationField({
     entry,
     onChange
 }: AchievementLocationFieldProps) {
-    const { facilities, loaded } = useLearningRecordFacilities();
+    const { facilities, loaded, failed } = useLearningRecordFacilities();
     const [otherSelected, setOtherSelected] = useState(
         entry.facilityOther.trim() !== ''
     );
@@ -104,6 +104,12 @@ export function AchievementLocationField({
                     </SelectItem>
                 </SelectContent>
             </Select>
+            {failed ? (
+                <p className="mt-2 text-sm text-destructive" role="alert">
+                    Couldn&apos;t load the list of locations. You can still
+                    enter one under &quot;Other (not listed)&quot;.
+                </p>
+            ) : null}
             {showOther ? (
                 <div className="mt-3">
                     <Label
