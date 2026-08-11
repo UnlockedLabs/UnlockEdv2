@@ -28,6 +28,7 @@ help: ascii_art
 	@echo " ⚡ init                   Install initial development dependencies for the project"
 	@echo "   dev                    Run containers in development mode with hot-reloading for server and frontend only"
 	@echo "   dev-tutor              Like dev, but with live hot-reload for tutor source (requires sibling checkout / symlink)"
+	@echo "   dev-registry           Like dev, but pulls the tutor image from GHCR instead of building it (no sibling checkout needed)"
 	@echo " 󱗆  kolibri                Run all containers with Kolibri (requires login to UL ECR | team only)"
 	@echo "   migrate                Apply the migrations"
 	@echo "   migrate-fresh          Drop the tables in the main application and to reset the database to a fresh state"
