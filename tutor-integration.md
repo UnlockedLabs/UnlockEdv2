@@ -273,11 +273,12 @@ location /tutor {
 }
 ```
 
-3. Tutor tables in the shared DB: from the tutor repo, once, run
-   `DATABASE_URL=postgres://unlocked:dev@localhost:5432/unlocked npm run db:push`. Safe —
-   all tutor objects live in the `tutor.*` schema and drizzle-kit is scoped to it via
-   `schemaFilter`, so UnlockEd's `public` objects are invisible to it. (A migrate-on-start
-   entrypoint is deferred; tracked in the tutor repo TODO.)
+3. **Historical — superseded by "Local development" above.** This plan predates the
+   `RUN_MIGRATIONS=true` auto-provisioning entrypoint: it originally called for a one-time
+   `DATABASE_URL=postgres://unlocked:dev@localhost:5432/unlocked npm run db:push` from the
+   tutor repo, with migrate-on-start "deferred." That entrypoint now exists, so no manual
+   `db:push` is needed for a fresh dev environment — `npm run db:push` is still the schema
+   source of truth when iterating (see "Tutor schema" above).
 
 **Verify:** `make dev`, then `curl -sI http://localhost/tutor` → a 200/307 from Next (not
 an nginx 502) with `X-Frame-Options: SAMEORIGIN`.
