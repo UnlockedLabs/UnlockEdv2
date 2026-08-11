@@ -511,6 +511,41 @@ export default function FeatureControl() {
                                         </div>
                                     );
                                 })}
+                                <div className="bg-background border border-border rounded-lg p-6">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-semibold text-brand-dark dark:text-white">
+                                                AI Tutor
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Provides an AI-powered HiSET
+                                                tutor and writing assistant for
+                                                residents
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            aria-label="Toggle AI Tutor"
+                                            checked={isEnabled(
+                                                FeatureAccess.AiTutorAccess
+                                            )}
+                                            disabled={
+                                                pendingFeature !== null ||
+                                                detailLoading
+                                            }
+                                            onCheckedChange={() =>
+                                                void handleToggle(
+                                                    FeatureAccess.AiTutorAccess,
+                                                    isEnabled(
+                                                        FeatureAccess.AiTutorAccess
+                                                    )
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                    <p className="text-sm text-muted-foreground italic">
+                                        No additional configuration options
+                                    </p>
+                                </div>
                             </div>
                         </>
                     ) : (
@@ -518,37 +553,6 @@ export default function FeatureControl() {
                             Select a facility to manage its features.
                         </p>
                     )}
-                </div>
-
-                {/* AI Tutor */}
-                <div className="bg-background border border-border rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-brand-dark dark:text-white">
-                                AI Tutor
-                            </h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                Provides an AI-powered HiSET tutor and writing
-                                assistant for residents
-                            </p>
-                        </div>
-                        <Switch
-                            checked={isEnabled(FeatureAccess.AiTutorAccess)}
-                            onCheckedChange={() =>
-                                requestToggle(
-                                    {
-                                        type: 'feature',
-                                        key: FeatureAccess.AiTutorAccess
-                                    },
-                                    'AI Tutor',
-                                    isEnabled(FeatureAccess.AiTutorAccess)
-                                )
-                            }
-                        />
-                    </div>
-                    <p className="text-sm text-muted-foreground italic">
-                        No additional configuration options
-                    </p>
                 </div>
             </div>
 
