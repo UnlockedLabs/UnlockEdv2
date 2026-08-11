@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,23 +27,24 @@ import (
 )
 
 type Server struct {
-	sesClient      *sesv2.Client
-	port           string
-	Db             *database.DB
-	Mux            *http.ServeMux
-	OryClient      *ory.APIClient
-	Client         *http.Client
-	nats           *nats.Conn
-	dev            bool
-	buckets        map[string]nats.KeyValue
-	features       []models.FeatureAccess
-	testingMode    bool
-	s3             *s3.Client
-	presigner      *s3.PresignClient
-	s3Bucket       string
-	wsClient       *ClientManager
-	scheduler      *tasks.Scheduler
-	canvasInflight sync.Map
+	sesClient             *sesv2.Client
+	port                  string
+	Db                    *database.DB
+	Mux                   *http.ServeMux
+	OryClient             *ory.APIClient
+	Client                *http.Client
+	nats                  *nats.Conn
+	dev                   bool
+	buckets               map[string]nats.KeyValue
+	features              []models.FeatureAccess
+	testingMode           bool
+	s3                    *s3.Client
+	presigner             *s3.PresignClient
+	s3Bucket              string
+	wsClient              *ClientManager
+	scheduler             *tasks.Scheduler
+	canvasInflight        sync.Map
+	canvasClassesInflight sync.Map
 }
 
 type routeDef struct {
@@ -276,6 +278,7 @@ const (
 	LoginMetrics   string = "login_metrics"
 	AdminLayer2    string = "admin_layer_2"
 	CanvasPrograms string = "canvas_programs"
+	CanvasClasses  string = "canvas_classes"
 )
 
 func (srv *Server) setupNatsKvBuckets() error {
@@ -285,7 +288,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms} {
+	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms, CanvasClasses} {
 		kv, err := js.KeyValue(bucket)
 		if err != nil {
 			cfg := &nats.KeyValueConfig{
@@ -299,6 +302,8 @@ func (srv *Server) setupNatsKvBuckets() error {
 				cfg.TTL = time.Minute * 10
 			case CanvasPrograms:
 				cfg.TTL = time.Minute * 5
+			case CanvasClasses:
+				cfg.TTL = time.Hour * 1
 			default:
 				cfg.TTL = time.Hour * 24
 			}
@@ -312,6 +317,15 @@ func (srv *Server) setupNatsKvBuckets() error {
 	}
 	srv.buckets = buckets
 	return nil
+}
+
+func (srv *Server) hasFeatureAccess(axx ...models.FeatureAccess) bool {
+	for _, a := range axx {
+		if !slices.Contains(srv.features, a) {
+			return false
+		}
+	}
+	return true
 }
 
 func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { useCanvasLoadingPoll } from '@/hooks/useCanvasLoadingPoll';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -40,7 +41,8 @@ import {
     Filter,
     MapPin,
     Users,
-    RefreshCw
+    RefreshCw,
+    Loader2
 } from 'lucide-react';
 
 const CANVAS_CLASS_ID_OFFSET = 100_000_000;
@@ -110,6 +112,13 @@ export default function ClassesPage() {
         : '/api/program-classes?per_page=100';
     const { data: classesResp, mutate: mutateClasses } =
         useSWR<ServerResponseMany<Class>>(classesUrl);
+    // Canvas classes are served from a background-refreshed cache, so the first
+    // load can come back with only the local classes. Poll until Canvas is in.
+    const canvasSyncing = classesResp?.meta?.canvas_loading ?? false;
+    const { exhausted: canvasPollExhausted } = useCanvasLoadingPoll(
+        canvasSyncing,
+        mutateClasses
+    );
     const programsUrl =
         showCreateModal || showFacilityModal
             ? `/api/programs?per_page=100${programSearch ? `&search=${encodeURIComponent(programSearch)}` : ''}${selectedFacilityForClass ? `&facility_id=${selectedFacilityForClass}` : ''}`
@@ -128,7 +137,9 @@ export default function ClassesPage() {
     const facilityClasses = useMemo(() => {
         if (crossFacility || !user) return allClasses;
         return allClasses.filter(
-            (c) => c.id >= CANVAS_CLASS_ID_OFFSET || c.facility_id === user.facility.id
+            (c) =>
+                c.id >= CANVAS_CLASS_ID_OFFSET ||
+                c.facility_id === user.facility.id
         );
     }, [allClasses, crossFacility, user]);
 
@@ -383,12 +394,31 @@ export default function ClassesPage() {
                     </div>
                 </div>
 
-                <div className="mb-4 text-sm text-gray-600">
-                    Showing {filteredClasses.length}{' '}
-                    {filteredClasses.length === 1 ? 'class' : 'classes'}
-                    {todayOnly &&
-                        ` scheduled for today (${new Date().toLocaleDateString('en-US', { weekday: 'long' })})`}
-                    {attendanceConcerns && ' with attendance concerns'}
+                <div className="mb-4 flex items-center gap-3 text-sm text-gray-600">
+                    <span>
+                        Showing {filteredClasses.length}{' '}
+                        {filteredClasses.length === 1 ? 'class' : 'classes'}
+                        {todayOnly &&
+                            ` scheduled for today (${new Date().toLocaleDateString('en-US', { weekday: 'long' })})`}
+                        {attendanceConcerns && ' with attendance concerns'}
+                    </span>
+                    {canvasSyncing &&
+                        (canvasPollExhausted ? (
+                            <span className="text-xs text-amber-600">
+                                Canvas classes are taking longer than expected —{' '}
+                                <button
+                                    className="underline"
+                                    onClick={() => void mutateClasses()}
+                                >
+                                    retry
+                                </button>
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1.5 text-xs text-blue-600">
+                                <Loader2 className="size-3 animate-spin text-blue-500" />
+                                Syncing classes from Canvas…
+                            </span>
+                        ))}
                 </div>
 
                 <div className="card-block overflow-hidden">
@@ -438,7 +468,11 @@ export default function ClassesPage() {
                                         key={cls.id}
                                         cls={cls}
                                         showFacility={crossFacility}
-                                        onClick={() => navigate(`/program-classes/${cls.id}/detail`)}
+                                        onClick={() =>
+                                            navigate(
+                                                `/program-classes/${cls.id}/detail`
+                                            )
+                                        }
                                         onAttendance={() =>
                                             setAttendanceClass(cls)
                                         }
@@ -641,7 +675,9 @@ function ClassRow({
             onClick={onClick}
             className={cn(
                 'transition-colors',
-                onClick ? 'hover:bg-surface-hover/50 cursor-pointer' : 'cursor-default'
+                onClick
+                    ? 'hover:bg-surface-hover/50 cursor-pointer'
+                    : 'cursor-default'
             )}
         >
             <td className="px-6 py-4">
@@ -733,7 +769,10 @@ function ClassRow({
             </td>
             <td className="px-6 py-4">
                 {isCanvas && (
-                    <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50 gap-1 whitespace-nowrap">
+                    <Badge
+                        variant="outline"
+                        className="text-blue-700 border-blue-300 bg-blue-50 gap-1 whitespace-nowrap"
+                    >
                         <RefreshCw className="size-3" />
                         Canvas
                     </Badge>

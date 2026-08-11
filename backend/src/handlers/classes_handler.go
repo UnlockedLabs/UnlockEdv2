@@ -139,23 +139,24 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	var canvasLoading bool
+	var canvasClasses []models.ProgramClass
+	var canvasErr error
 	if claims.hasFeatureAccess(models.ProviderAccess) {
-		var canvasClasses []models.ProgramClass
-		var canvasErr error
-		if facilityID == nil {
-			canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
-		} else {
-			canvasClasses, canvasErr = srv.fetchCanvasClassesAllProviders(facilityID)
-		}
+		// Canvas classes come from a background-refreshed cache so this request never
+		// waits on the Canvas API. canvasLoading tells the client to poll for the rest.
+		canvasClasses, canvasLoading, canvasErr = srv.getCanvasClasses(facilityID)
 		if canvasErr != nil {
 			logrus.WithError(canvasErr).Warn("failed to fetch canvas classes, returning DB classes only")
+			canvasLoading = false
 		} else {
-			canvasClasses = srv.filterClassesByProviderAccess(canvasClasses)
 			classes = append(classes, canvasClasses...)
 			args.Total += int64(len(canvasClasses))
 		}
 	}
-	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
+	meta := args.IntoMeta()
+	meta.CanvasLoading = canvasLoading
+	return writePaginatedResponse(w, http.StatusOK, classes, meta)
 }
 
 // filterClassesByProviderAccess drops Canvas classes belonging to a facility that has
