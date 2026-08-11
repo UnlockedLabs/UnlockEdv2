@@ -74,8 +74,10 @@ const FEATURE_CARDS: {
     }
 ];
 
-const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> =
-    Object.fromEntries(FEATURE_CARDS.map((c) => [c.feature, c.title]));
+const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> = {
+    ...Object.fromEntries(FEATURE_CARDS.map((c) => [c.feature, c.title])),
+    [FeatureAccess.AiTutorAccess]: 'AI Tutor'
+};
 
 const SUB_FEATURES: {
     feature: FeatureAccess;
@@ -511,6 +513,41 @@ export default function FeatureControl() {
                                         </div>
                                     );
                                 })}
+                                <div className="bg-background border border-border rounded-lg p-6">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-semibold text-brand-dark dark:text-white">
+                                                AI Tutor
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Provides an AI-powered HiSET
+                                                tutor and writing assistant for
+                                                residents
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            aria-label="Toggle AI Tutor"
+                                            checked={isEnabled(
+                                                FeatureAccess.AiTutorAccess
+                                            )}
+                                            disabled={
+                                                pendingFeature !== null ||
+                                                detailLoading
+                                            }
+                                            onCheckedChange={() =>
+                                                void handleToggle(
+                                                    FeatureAccess.AiTutorAccess,
+                                                    isEnabled(
+                                                        FeatureAccess.AiTutorAccess
+                                                    )
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                    <p className="text-sm text-muted-foreground italic">
+                                        No additional configuration options
+                                    </p>
+                                </div>
                             </div>
                         </>
                     ) : (
