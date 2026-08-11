@@ -23,7 +23,8 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
 		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
-		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms,
+			AllResolvers(resolver, ResidentFeatureResolver(models.ResidentProgramsAccess))),
 		validatedRoute("GET /api/users/{id}/attendance-trend", srv.handleGetUserAttendanceTrend, resolver),
 		validatedRoute("GET /api/users/{id}/notes", srv.handleGetUserNotes, resolver),
 		validatedAdminRoute("POST /api/users/{id}/notes", srv.handleCreateUserNote, FacilityAdminResolver("users", "id")),

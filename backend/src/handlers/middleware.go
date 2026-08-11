@@ -302,3 +302,28 @@ func UserRoleResolver(routeId string) RouteResolver {
 		return err == nil && user.FacilityID == claims.FacilityID
 	}
 }
+
+func ResidentFeatureResolver(feature models.FeatureAccess) RouteResolver {
+	return func(tx *database.DB, r *http.Request) bool {
+		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		if !ok {
+			return false
+		}
+		if slices.Contains(models.AdminRoles, claims.Role) {
+			return true
+		}
+		return claims.hasFeatureAccess(feature)
+	}
+}
+
+// AllResolvers passes only when every resolver passes, for routes that need more than one check.
+func AllResolvers(resolvers ...RouteResolver) RouteResolver {
+	return func(tx *database.DB, r *http.Request) bool {
+		for _, resolve := range resolvers {
+			if !resolve(tx, r) {
+				return false
+			}
+		}
+		return true
+	}
+}

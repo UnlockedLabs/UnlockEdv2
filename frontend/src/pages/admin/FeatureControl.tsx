@@ -77,30 +77,59 @@ const FEATURE_CARDS: {
 const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> =
     Object.fromEntries(FEATURE_CARDS.map((c) => [c.feature, c.title]));
 
-const SUB_FEATURES: {
+interface SubFeature {
     feature: FeatureAccess;
     label: string;
     description: string;
-}[] = [
-    {
-        feature: FeatureAccess.RequestContentAccess,
-        label: 'Request Content Button',
-        description:
-            'Allows residents to submit requests for new content to be added to the Knowledge Center'
+}
+
+// Sub-features nested under the top-level feature that gates them. `note` is the
+// line above the group explaining when the group applies — for Programs it also
+// explains why the default is on, so admins read turning it off as a deliberate
+// setup step rather than a suggested one. A group whose parent is off stays
+// visible but disabled, so admins can see which sub-features exist.
+const SUB_FEATURE_GROUPS: Partial<
+    Record<FeatureAccess, { note: string; features: SubFeature[] }>
+> = {
+    [FeatureAccess.OpenContentAccess]: {
+        note: 'Sub-features (only available when Knowledge Center is enabled)',
+        features: [
+            {
+                feature: FeatureAccess.RequestContentAccess,
+                label: 'Request Content Button',
+                description:
+                    'Allows residents to submit requests for new content to be added to the Knowledge Center'
+            },
+            {
+                feature: FeatureAccess.HelpfulLinksAccess,
+                label: 'Helpful Links',
+                description:
+                    'Enables the Helpful Links tab for residents and allows admins to add/manage helpful resources'
+            },
+            {
+                feature: FeatureAccess.UploadVideoAccess,
+                label: 'Videos',
+                description:
+                    'Enables video content viewing for residents and allows admins to upload/manage videos'
+            }
+        ]
     },
-    {
-        feature: FeatureAccess.HelpfulLinksAccess,
-        label: 'Helpful Links',
-        description:
-            'Enables the Helpful Links tab for residents and allows admins to add/manage helpful resources'
-    },
-    {
-        feature: FeatureAccess.UploadVideoAccess,
-        label: 'Videos',
-        description:
-            'Enables video content viewing for residents and allows admins to upload/manage videos'
+    [FeatureAccess.ProgramAccess]: {
+        note: 'Residents can see their own program information by default (only available when Program Hub & Tracking is enabled).',
+        features: [
+            {
+                feature: FeatureAccess.ResidentProgramsAccess,
+                label: 'Programs Page for Residents',
+                description:
+                    'Shows the Programs page and its nav item in the resident portal. Program tracking, data, and admin views are unaffected either way.'
+            }
+        ]
     }
-];
+};
+
+const ALL_SUB_FEATURES: SubFeature[] = Object.values(
+    SUB_FEATURE_GROUPS
+).flatMap((group) => group.features);
 
 type FilterValue = 'all' | `${FeatureAccess}:true` | `${FeatureAccess}:false`;
 
@@ -141,7 +170,7 @@ function SubFeatureRow({
     disabled,
     onToggle
 }: {
-    sub: (typeof SUB_FEATURES)[number];
+    sub: SubFeature;
     enabled: boolean;
     disabled: boolean;
     onToggle: () => void;
@@ -228,8 +257,6 @@ export default function FeatureControl() {
 
     if (!user) return null;
 
-    const kcEnabled = isEnabled(FeatureAccess.OpenContentAccess);
-
     async function refreshOwnClaimsIfAffected(facilityId: number) {
         if (user?.facility_id === facilityId) {
             const updated = await fetchUser();
@@ -241,7 +268,7 @@ export default function FeatureControl() {
         if (selectedFacilityId === null || pendingFeature !== null) return;
         const label =
             FEATURE_LABELS[feature] ??
-            SUB_FEATURES.find((s) => s.feature === feature)?.label ??
+            ALL_SUB_FEATURES.find((s) => s.feature === feature)?.label ??
             feature;
         setPendingFeature(feature);
         try {
@@ -428,6 +455,8 @@ export default function FeatureControl() {
                             <div className="space-y-4">
                                 {FEATURE_CARDS.map((card) => {
                                     const enabled = isEnabled(card.feature);
+                                    const subGroup =
+                                        SUB_FEATURE_GROUPS[card.feature];
                                     return (
                                         <div
                                             key={card.feature}
@@ -459,20 +488,16 @@ export default function FeatureControl() {
                                                 />
                                             </div>
 
-                                            {card.feature ===
-                                                FeatureAccess.OpenContentAccess && (
+                                            {subGroup && (
                                                 <div className="mt-4 bg-surface-hover rounded-md p-4">
                                                     <div className="flex items-start gap-2 mb-4 text-sm text-muted-foreground">
                                                         <AlertCircle className="size-4 shrink-0" />
                                                         <span>
-                                                            Sub-features (only
-                                                            available when
-                                                            Knowledge Center is
-                                                            enabled)
+                                                            {subGroup.note}
                                                         </span>
                                                     </div>
                                                     <div className="space-y-4">
-                                                        {SUB_FEATURES.map(
+                                                        {subGroup.features.map(
                                                             (sub) => {
                                                                 const subEnabled =
                                                                     isEnabled(
@@ -490,7 +515,7 @@ export default function FeatureControl() {
                                                                             subEnabled
                                                                         }
                                                                         disabled={
-                                                                            !kcEnabled ||
+                                                                            !enabled ||
                                                                             pendingFeature !==
                                                                                 null ||
                                                                             detailLoading
