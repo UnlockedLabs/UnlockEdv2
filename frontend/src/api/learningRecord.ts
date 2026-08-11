@@ -145,19 +145,12 @@ function extractArray(
 }
 
 /**
- * Facilities for the achievement location dropdown. Served by a
- * learning-record route because the main facilities endpoints are admin-only.
+ * Facilities for the achievement location dropdown are served by a
+ * learning-record route (`GET /api/learning-record/facilities`) because the main
+ * facilities endpoints are admin-only. Fetched via SWR in
+ * `useLearningRecordFacilities` so a failed load is never cached as an empty
+ * list — see that hook for why that distinction matters.
  */
-export async function apiGetLearningRecordFacilities(): Promise<
-    LearningRecordFacility[]
-> {
-    const resp = await API.get<LearningRecordFacility>(
-        'learning-record/facilities'
-    );
-    if (!resp.success) return [];
-    if (resp.type === 'many') return resp.data;
-    return Array.isArray(resp.data) ? resp.data : [];
-}
 
 export async function apiGetEntries(): Promise<{
     entries: TranscriptEntry[];
