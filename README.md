@@ -16,9 +16,11 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 > **Working on the AI Tutor (LLM) service?** See [`tutor-integration.md`](tutor-integration.md).
 > The tutor is a separate app in the **sibling** repo `../ai/unlocked-hiset-ai`; compose builds
-> it from that local path, so the two repos must sit side by side. That doc covers the rebuild
-> loop (`docker compose up -d --build tutor-service`), enabling the `ai_tutor` feature flag,
-> role-based access, SuperAdmin impersonation, and seeding demo data.
+> it from that local path for `make dev` / `make dev-tutor`, so the two repos must sit side by
+> side for those targets. `make dev-registry` pulls the tutor image from GHCR instead and needs
+> no sibling checkout. That doc covers the rebuild loop (`docker compose up -d --build
+> tutor-service`), enabling the `ai_tutor` feature flag, role-based access, SuperAdmin
+> impersonation, and seeding demo data.
 
 ### Dependencies (Local)
 

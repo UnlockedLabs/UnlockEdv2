@@ -74,8 +74,10 @@ const FEATURE_CARDS: {
     }
 ];
 
-const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> =
-    Object.fromEntries(FEATURE_CARDS.map((c) => [c.feature, c.title]));
+const FEATURE_LABELS: Partial<Record<FeatureAccess, string>> = {
+    ...Object.fromEntries(FEATURE_CARDS.map((c) => [c.feature, c.title])),
+    [FeatureAccess.AiTutorAccess]: 'AI Tutor'
+};
 
 const SUB_FEATURES: {
     feature: FeatureAccess;
