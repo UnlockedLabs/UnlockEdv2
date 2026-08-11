@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 	"unicode"
@@ -83,10 +84,22 @@ func InitDB(isTesting bool) *DB {
 		if err := goose.Up(db, migrationDir); err != nil {
 			logrus.Fatalf("Migration failed: %v", err)
 		}
+		slowThreshold := 200 * time.Millisecond
+		if ms := os.Getenv("GORM_SLOW_THRESHOLD_MS"); ms != "" {
+			if parsed, err := strconv.Atoi(ms); err == nil && parsed > 0 {
+				slowThreshold = time.Duration(parsed) * time.Millisecond
+			}
+		}
+		// Configure GORM to log only errors and slow queries; threshold from GORM_SLOW_THRESHOLD_MS.
 		gormDb, err = gorm.Open(postgres.New(postgres.Config{
 			Conn: db,
 		}), &gorm.Config{
-			Logger: logger.New(logrus.New(), logger.Config{LogLevel: logger.Error}),
+			Logger: newLogrusGormLogger(logger.Config{
+				LogLevel:                  logger.Warn,
+				SlowThreshold:             slowThreshold,
+				IgnoreRecordNotFoundError: true,
+				ParameterizedQueries:      true,
+			}),
 		})
 		if err != nil {
 			logrus.Fatalf("Failed to connect to PostgreSQL database using GORM: %v", err)
