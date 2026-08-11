@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/auth/useAuth';
 import { ConfirmDialog } from '@/components/shared';
 import { LearningRecordPrivacyNotice } from '@/components/learning-record/LearningRecordPrivacyNotice';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,9 @@ function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
     }
 }
 
+/** Resident's current facility, prefilled as the location on new rows only. */
+type DefaultFacility = { id: number; name: string } | null;
+
 /** Newest uncommitted row with no answers yet — safe to reopen instead of duplicating. */
 function findReusableBlankDraftRow(
     rows: TranscriptEntry[],
@@ -98,7 +102,8 @@ function findReusableBlankDraftRow(
 
 function ensureDraftEditorOpen(
     session: TranscriptEntrySession,
-    committed: TranscriptEntry[]
+    committed: TranscriptEntry[],
+    defaultFacility: DefaultFacility
 ): TranscriptEntrySession {
     const committedIds = new Set(committed.map((e) => e.id));
     const reusable = findReusableBlankDraftRow(session.rows, committedIds);
@@ -109,7 +114,7 @@ function ensureDraftEditorOpen(
             lastPreviewId: reusable.id
         };
     }
-    const row = createEmptyTranscriptEntry();
+    const row = createEmptyTranscriptEntry(defaultFacility);
     return {
         ...session,
         rows: [row, ...session.rows],
@@ -122,10 +127,18 @@ function ensureDraftEditorOpen(
 function toFunnelSingleRowSession(
     session: TranscriptEntrySession,
     committed: TranscriptEntry[],
-    options: { intent?: boolean; edit?: string | null }
+    options: {
+        intent?: boolean;
+        edit?: string | null;
+        defaultFacility: DefaultFacility;
+    }
 ): TranscriptEntrySession {
     if (options.intent) {
-        const opened = ensureDraftEditorOpen(session, committed);
+        const opened = ensureDraftEditorOpen(
+            session,
+            committed,
+            options.defaultFacility
+        );
         const rowId = opened.expandedId ?? opened.rows[0]?.id;
         const row =
             opened.rows.find((r) => r.id === rowId) ??
@@ -133,7 +146,7 @@ function toFunnelSingleRowSession(
                 opened.rows,
                 new Set(committed.map((e) => e.id))
             ) ??
-            createEmptyTranscriptEntry();
+            createEmptyTranscriptEntry(options.defaultFacility);
         const cloned = cloneTranscriptEntry(row);
         return {
             ...opened,
@@ -159,11 +172,15 @@ function toFunnelSingleRowSession(
     }
 
     if (session.rows.length === 0) {
-        const opened = ensureDraftEditorOpen(session, committed);
+        const opened = ensureDraftEditorOpen(
+            session,
+            committed,
+            options.defaultFacility
+        );
         const row =
             opened.rows.find((r) => r.id === opened.expandedId) ??
             opened.rows[0] ??
-            createEmptyTranscriptEntry();
+            createEmptyTranscriptEntry(options.defaultFacility);
         const cloned = cloneTranscriptEntry(row);
         return {
             ...opened,
@@ -234,6 +251,14 @@ export function DigitalTranscriptWysiwygEntry({
     funnelDownload
 }: DigitalTranscriptWysiwygEntryProps) {
     const isFunnel = formVariant === 'funnel';
+    const { user } = useAuth();
+    const defaultFacility = useMemo<DefaultFacility>(
+        () =>
+            user?.facility_id
+                ? { id: user.facility_id, name: user.facility?.name ?? '' }
+                : null,
+        [user?.facility_id, user?.facility?.name]
+    );
     const [searchParams, setSearchParams] = useSearchParams();
     const [session, setSession] = useState<TranscriptEntrySession | null>(null);
     const [saveErrorRowId, setSaveErrorRowId] = useState<string | null>(null);
@@ -279,14 +304,15 @@ export function DigitalTranscriptWysiwygEntry({
         if (isFunnel) {
             s = toFunnelSingleRowSession(s, committed, {
                 intent: intent || undefined,
-                edit: edit ?? null
+                edit: edit ?? null,
+                defaultFacility
             });
         } else if (intent) {
-            s = ensureDraftEditorOpen(s, committed);
+            s = ensureDraftEditorOpen(s, committed, defaultFacility);
         } else if (edit && s.rows.some((r) => r.id === edit)) {
             s = { ...s, expandedId: edit, lastPreviewId: edit };
         } else if (s.rows.length === 0) {
-            s = ensureDraftEditorOpen(s, committed);
+            s = ensureDraftEditorOpen(s, committed, defaultFacility);
         }
 
         if (edit || intent) {
@@ -333,7 +359,8 @@ export function DigitalTranscriptWysiwygEntry({
         setSearchParams,
         captureBaseline,
         isFunnel,
-        onFunnelAutoSaveStatusChange
+        onFunnelAutoSaveStatusChange,
+        defaultFacility
     ]);
 
     const reportAutoSaveStatus = useCallback(
@@ -521,7 +548,7 @@ export function DigitalTranscriptWysiwygEntry({
     }, []);
 
     const handleAdd = useCallback(() => {
-        const row = createEmptyTranscriptEntry();
+        const row = createEmptyTranscriptEntry(defaultFacility);
         setSession((prev) => {
             if (!prev) return prev;
             return {
@@ -532,7 +559,7 @@ export function DigitalTranscriptWysiwygEntry({
             };
         });
         setSaveErrorRowId(null);
-    }, []);
+    }, [defaultFacility]);
 
     const isCommittedEntryId = useCallback(
         (id: string) => {

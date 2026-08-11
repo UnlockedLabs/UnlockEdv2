@@ -8,9 +8,10 @@ import type {
  * `LearningRecordDocumentSource` (which omits `id`/`createdAt`). Funnel field
  * readers only touch these fields, so they accept either shape.
  */
+/** Location is achievement metadata, not a reflection answer, so it is excluded. */
 export type TranscriptReflectionFields = Omit<
     TranscriptEntry,
-    'id' | 'createdAt'
+    'id' | 'createdAt' | 'facilityId' | 'facilityOther' | 'facilityName'
 >;
 
 export const TOP_SKILLS_MAX = 5;
@@ -113,6 +114,7 @@ export const REFLECTION_TEXT_NUDGES: Record<
 /** Live document preview — section labels (layout order is handled in the preview component). */
 export const DOCUMENT_PREVIEW_LABELS = {
     program: 'Program',
+    location: 'Location',
     completed: 'Completed',
     confidence: 'Confidence in future',
     skills: 'Skills gained',
@@ -127,6 +129,7 @@ export const DOCUMENT_PREVIEW_LABELS = {
 /** Achievements record preview — matches finalized Learning Record document. */
 export const LEARNING_RECORD_PREVIEW_LABELS = {
     program: 'Program',
+    location: 'Location',
     completed: 'Completed',
     confidence: 'Confidence in future',
     skills: 'Top skills',
@@ -330,6 +333,8 @@ export type FunnelPreviewFieldKey = keyof typeof FUNNEL_PREVIEW_LABELS;
 export const FUNNEL_FIELD_DESCRIPTIONS = {
     programName:
         'Write the name of the program, course, or skill you completed. If your achievement is something else — like a personal milestone or goal — describe it briefly here.',
+    location:
+        'Choose the facility where you completed this — it may not be where you are now. If it is not on the list, choose "Other" and type it in.',
     completionDate:
         "A completion date may not apply for every achievement - it's okay to skip to the next question.",
     whatMadeYouFinish:

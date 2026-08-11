@@ -38,6 +38,9 @@ type LearningRecordEntry struct {
 	UiPhase             string      `                         json:"ui_phase"`
 	EditingEntryID      *uint       `                         json:"editing_entry_id"`
 	ProgramName         string      `                         json:"program_name"`
+	FacilityID          *uint       `                 json:"facility_id"`
+	FacilityOther       string      `                 json:"facility_other"`
+	FacilityName        string      `gorm:"->;-:migration" json:"facility_name"`
 	CompletionDate      string      `                         json:"completion_date"`
 	Confidence          string      `                         json:"confidence"`
 	Summary             string      `                         json:"summary"`

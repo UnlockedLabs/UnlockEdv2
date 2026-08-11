@@ -125,6 +125,19 @@ export type TranscriptUiPhase = 'survey' | 'preview';
 /** Funnel Q4 — standout moment or person toggle. */
 export type TranscriptQ4Toggle = 'yes' | 'notReally';
 
+/**
+ * Where the achievement took place — often not the resident's current facility.
+ * `facilityId` is set when the location is one of this deployment's facilities;
+ * `facilityOther` holds free text for anywhere else, and a non-empty value there
+ * means the resident chose "Other". The two are mutually exclusive.
+ * `facilityName` is a display-only cache, never sent to the API.
+ */
+export interface TranscriptFacilityFields {
+    facilityId: number | null;
+    facilityOther: string;
+    facilityName: string;
+}
+
 /** Shared funnel reflection fields (Q4–Q9). */
 export interface TranscriptFunnelReflectionFields {
     q4Toggle: TranscriptQ4Toggle | null;
@@ -138,7 +151,7 @@ export interface TranscriptFunnelReflectionFields {
 }
 
 /** In-progress survey + preview gate; persisted for autosave / resume */
-export interface TranscriptDraft {
+export interface TranscriptDraft extends TranscriptFacilityFields {
     id: string;
     updatedAt: string;
     stepIndex: number;
@@ -168,7 +181,7 @@ export interface TranscriptDraft {
 }
 
 /** Committed achievement shown on HOME */
-export interface TranscriptEntry {
+export interface TranscriptEntry extends TranscriptFacilityFields {
     id: string;
     createdAt: string;
     programName: string;
