@@ -52,6 +52,7 @@ import {
     FUNNEL_FORM_STEPS,
     TOP_SKILLS_MAX
 } from './transcriptReflectionConfig';
+import { LearningRecordTracker } from './learningRecordAnalytics';
 
 /** Maps a TranscriptEntry patch key to its corresponding preview field id. */
 function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
@@ -250,6 +251,13 @@ export function DigitalTranscriptWysiwygEntry({
     const achievementListRef = useRef<HTMLDivElement>(null);
     const sessionRef = useRef<TranscriptEntrySession | null>(null);
     sessionRef.current = session;
+    // ID-806 question-level behavior tracking. Driven from patchRow /
+    // handleActiveStepChange / validateFinishRequirements so it does not depend
+    // on the form's markup. Counts and enums only — never answer content.
+    const analyticsRef = useRef<LearningRecordTracker | null>(null);
+    analyticsRef.current ??= new LearningRecordTracker();
+    const analyticsStartedForRef = useRef<string | null>(null);
+    const entriesCommittedThisSessionRef = useRef(0);
 
     const committedIds = useMemo(
         () => new Set(entries.map((e) => e.id)),
@@ -401,6 +409,11 @@ export function DigitalTranscriptWysiwygEntry({
         }
 
         setSaveErrorRowId(null);
+        // Success path only, mirroring the attendance/program convention: the
+        // row is complete and the resident is finishing. The row itself was
+        // already persisted by the autosave in persistActiveRow.
+        entriesCommittedThisSessionRef.current += 1;
+        analyticsRef.current?.entryCompleted(row);
         return true;
     }, []);
 
@@ -408,6 +421,19 @@ export function DigitalTranscriptWysiwygEntry({
         if (!isFunnel || !onRegisterFunnelFinish) return;
         onRegisterFunnelFinish({ validateFinishRequirements });
     }, [isFunnel, onRegisterFunnelFinish, validateFinishRequirements]);
+
+    // ID-806: one lr_entry_started per entry actually opened for editing.
+    // Gated on hydrated + an expanded row so loading and empty renders are not
+    // counted, the same guard the attendance page uses.
+    const analyticsExpandedId = session?.expandedId ?? null;
+    useEffect(() => {
+        if (!isFunnel || !hydrated || !analyticsExpandedId) return;
+        if (analyticsStartedForRef.current === analyticsExpandedId) return;
+        analyticsStartedForRef.current = analyticsExpandedId;
+        analyticsRef.current?.entryStarted(
+            entriesCommittedThisSessionRef.current + 1
+        );
+    }, [isFunnel, hydrated, analyticsExpandedId]);
 
     useEffect(() => {
         if (!isFunnel || !session?.expandedId || !onFunnelAutoSaveStatusChange)
@@ -473,7 +499,14 @@ export function DigitalTranscriptWysiwygEntry({
     }, [session, onExportRowsChange]);
 
     const handleActiveStepChange = useCallback((step: number) => {
-        setActiveStep(step);
+        setActiveStep((prevStep) => {
+            const current = sessionRef.current;
+            const row = current?.rows.find((r) => r.id === current.expandedId);
+            if (row && step !== prevStep) {
+                analyticsRef.current?.stepChanged(row, prevStep, step);
+            }
+            return step;
+        });
         setActivePreviewField(null);
         achievementListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
@@ -491,6 +524,11 @@ export function DigitalTranscriptWysiwygEntry({
                         previewField !== activePreviewFieldRef.current
                     ) {
                         setActivePreviewField(previewField);
+                    }
+                    const current = sessionRef.current;
+                    const editedRow = current?.rows.find((r) => r.id === id);
+                    if (editedRow) {
+                        analyticsRef.current?.noteEdit(editedRow, patchedKey);
                     }
                 }
             }

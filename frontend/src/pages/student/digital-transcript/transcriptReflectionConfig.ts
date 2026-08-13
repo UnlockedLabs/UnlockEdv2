@@ -490,7 +490,37 @@ function funnelCompletionFieldAnswered(
     }
 }
 
-function funnelStepFieldAnswered(
+/** Shape of a funnel step field, for analytics segmentation (ID-806). */
+export type FunnelFieldKind =
+    | 'text'
+    | 'tags'
+    | 'confidence'
+    | 'toggle'
+    | 'date';
+
+/**
+ * Which input shape a step field uses. Lets question-level analytics separate
+ * "chip/multi-select" questions from free-text ones without the analytics layer
+ * needing to know the form's markup.
+ */
+export function funnelStepFieldKind(field: FunnelStepField): FunnelFieldKind {
+    switch (field) {
+        case 'completionDate':
+            return 'date';
+        case 'confidence':
+            return 'confidence';
+        case 'q4':
+            return 'toggle';
+        case 'q5':
+        case 'q8Selections':
+        case 'q9Selections':
+            return 'tags';
+        default:
+            return 'text';
+    }
+}
+
+export function funnelStepFieldAnswered(
     entry: TranscriptReflectionFields,
     field: FunnelStepField
 ): boolean {
