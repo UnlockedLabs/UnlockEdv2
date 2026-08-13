@@ -3,7 +3,7 @@ import {
     ServerResponseOne,
     ServerResponseMany
 } from '@/types/server';
-import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
+import { ANALYTICS_EVENTS, analyticsUrl, captureEvent } from '@/lib/events';
 
 class API {
     private static getCSRFToken(): string {
@@ -118,7 +118,7 @@ class API {
             captureEvent(ANALYTICS_EVENTS.ApiError, {
                 status: errCode ?? 0,
                 method,
-                url,
+                ...analyticsUrl(url),
                 message: error.message || 'An error occurred'
             });
             return {
