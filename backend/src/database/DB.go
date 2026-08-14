@@ -91,8 +91,12 @@ func InitDB(isTesting bool) *DB {
 		}
 		slowThreshold := 200 * time.Millisecond
 		if ms := os.Getenv("GORM_SLOW_THRESHOLD_MS"); ms != "" {
+			const maxDurationMilliseconds = int64(1<<63-1) / int64(time.Millisecond)
 			if parsed, err := strconv.Atoi(ms); err == nil && parsed > 0 {
-				slowThreshold = time.Duration(parsed) * time.Millisecond
+				if parsed, err := strconv.ParseInt(ms, 10, 64); err == nil &&
+				parsed > 0 && parsed <= maxDurationMilliseconds {
+					slowThreshold = time.Duration(parsed) * time.Millisecond
+				}
 			}
 		}
 		// Configure GORM to log only errors and slow queries; threshold from GORM_SLOW_THRESHOLD_MS.
