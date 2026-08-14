@@ -32,10 +32,12 @@ func callerFileLine() string {
 	return ""
 }
 
+// compactSQLLog normalizes SQL log output onto a single line.
 func compactSQLLog(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
+// formatSQLTrace builds the final SQL trace message with caller, timing, row count, and query text.
 func formatSQLTrace(prefix string, elapsed time.Duration, rows int64, sql string) string {
 	rowVal := any(rows)
 	if rows == -1 {
@@ -58,34 +60,40 @@ type logrusGormLogger struct {
 	gormlogger.Config
 }
 
+// newLogrusGormLogger creates a GORM logger implementation backed by logrus.
 func newLogrusGormLogger(cfg gormlogger.Config) gormlogger.Interface {
 	return &logrusGormLogger{Config: cfg}
 }
 
+// LogMode returns a copy of the logger configured with the requested log level.
 func (l *logrusGormLogger) LogMode(level gormlogger.LogLevel) gormlogger.Interface {
 	copied := *l
 	copied.LogLevel = level
 	return &copied
 }
 
+// Info writes an informational GORM log message through logrus when enabled.
 func (l *logrusGormLogger) Info(_ context.Context, msg string, data ...interface{}) {
 	if l.LogLevel >= gormlogger.Info {
 		logrus.Infof("%s %s", callerFileLine(), fmt.Sprintf(msg, data...))
 	}
 }
 
+// Warn writes a warning GORM log message through logrus when enabled.
 func (l *logrusGormLogger) Warn(_ context.Context, msg string, data ...interface{}) {
 	if l.LogLevel >= gormlogger.Warn {
 		logrus.Warnf("%s %s", callerFileLine(), fmt.Sprintf(msg, data...))
 	}
 }
 
+// Error writes an error GORM log message through logrus when enabled.
 func (l *logrusGormLogger) Error(_ context.Context, msg string, data ...interface{}) {
 	if l.LogLevel >= gormlogger.Error {
 		logrus.Errorf("%s %s", callerFileLine(), fmt.Sprintf(msg, data...))
 	}
 }
 
+// Trace logs failed, slow, or informational SQL traces according to the configured log level.
 func (l *logrusGormLogger) Trace(_ context.Context, begin time.Time, fc func() (string, int64), err error) {
 	if l.LogLevel <= gormlogger.Silent {
 		return
@@ -105,7 +113,7 @@ func (l *logrusGormLogger) Trace(_ context.Context, begin time.Time, fc func() (
 	}
 }
 
-// ParamsFilter enables ParameterizedQueries so bind values are not logged.
+// ParamsFilter removes bound parameter values from SQL logs when parameterized queries are enabled.
 func (l *logrusGormLogger) ParamsFilter(_ context.Context, sql string, params ...interface{}) (string, []interface{}) {
 	if l.ParameterizedQueries {
 		return sql, nil

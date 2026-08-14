@@ -21,6 +21,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// DB wraps a GORM database connection for application database operations.
 type DB struct{ *gorm.DB }
 
 var (
@@ -28,10 +29,12 @@ var (
 		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
 )
 
+// NewDB creates a DB wrapper around an existing GORM database connection.
 func NewDB(db *gorm.DB) *DB {
 	return &DB{db}
 }
 
+// ValidateAlphaNumSpace reports whether a field contains only letters, digits, spaces, or hyphens.
 func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	for _, char := range fl.Field().String() {
 		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) && char != '-' {
@@ -41,6 +44,7 @@ func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	return true
 }
 
+// Validate provides a shared validator instance with custom application validations registered.
 var Validate = sync.OnceValue(func() *validator.Validate {
 	Ins := validator.New(validator.WithRequiredStructEnabled())
 	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
@@ -50,6 +54,7 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
+// InitDB initializes the database connection, runs migrations, and seeds default data.
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
@@ -112,6 +117,7 @@ func InitDB(isTesting bool) *DB {
 	return DB
 }
 
+// MigrateTesting migrates the in-memory SQLite schema used during tests.
 func MigrateTesting(db *gorm.DB) {
 	var TableList = []any{
 		&models.Role{},
@@ -168,6 +174,7 @@ func MigrateTesting(db *gorm.DB) {
 
 }
 
+// SeedDefaultData creates the default administrative user, facility, links, and content providers.
 func (db *DB) SeedDefaultData(isTesting bool) {
 	var count int64
 	if err := db.Model(models.User{}).Where("id = ?", 1).Count(&count).Error; err != nil {
