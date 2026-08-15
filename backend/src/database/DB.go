@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 	"unicode"
@@ -20,6 +21,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// DB wraps a GORM database connection for application database operations.
 type DB struct{ *gorm.DB }
 
 var (
@@ -27,10 +29,12 @@ var (
 		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
 )
 
+// NewDB creates a DB wrapper around an existing GORM database connection.
 func NewDB(db *gorm.DB) *DB {
 	return &DB{db}
 }
 
+// ValidateAlphaNumSpace reports whether a field contains only letters, digits, spaces, or hyphens.
 func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	for _, char := range fl.Field().String() {
 		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) && char != '-' {
@@ -40,6 +44,7 @@ func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	return true
 }
 
+// Validate provides a shared validator instance with custom application validations registered.
 var Validate = sync.OnceValue(func() *validator.Validate {
 	Ins := validator.New(validator.WithRequiredStructEnabled())
 	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
@@ -49,6 +54,7 @@ var Validate = sync.OnceValue(func() *validator.Validate {
 	return Ins
 })
 
+// InitDB initializes the database connection, runs migrations, and seeds default data.
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
@@ -83,10 +89,26 @@ func InitDB(isTesting bool) *DB {
 		if err := goose.Up(db, migrationDir); err != nil {
 			logrus.Fatalf("Migration failed: %v", err)
 		}
+		slowThreshold := 200 * time.Millisecond
+		if ms := os.Getenv("GORM_SLOW_THRESHOLD_MS"); ms != "" {
+			const maxDurationMilliseconds = int64(1<<63-1) / int64(time.Millisecond)
+			if parsed, err := strconv.Atoi(ms); err == nil && parsed > 0 {
+				if parsed, err := strconv.ParseInt(ms, 10, 64); err == nil &&
+					parsed > 0 && parsed <= maxDurationMilliseconds {
+					slowThreshold = time.Duration(parsed) * time.Millisecond
+				}
+			}
+		}
+		// Configure GORM to log only errors and slow queries; threshold from GORM_SLOW_THRESHOLD_MS.
 		gormDb, err = gorm.Open(postgres.New(postgres.Config{
 			Conn: db,
 		}), &gorm.Config{
-			Logger: logger.New(logrus.New(), logger.Config{LogLevel: logger.Error}),
+			Logger: newLogrusGormLogger(logger.Config{
+				LogLevel:                  logger.Warn,
+				SlowThreshold:             slowThreshold,
+				IgnoreRecordNotFoundError: true,
+				ParameterizedQueries:      true,
+			}),
 		})
 		if err != nil {
 			logrus.Fatalf("Failed to connect to PostgreSQL database using GORM: %v", err)
@@ -99,6 +121,7 @@ func InitDB(isTesting bool) *DB {
 	return DB
 }
 
+// MigrateTesting migrates the in-memory SQLite schema used during tests.
 func MigrateTesting(db *gorm.DB) {
 	var TableList = []any{
 		&models.Role{},
@@ -155,6 +178,7 @@ func MigrateTesting(db *gorm.DB) {
 
 }
 
+// SeedDefaultData creates the default administrative user, facility, links, and content providers.
 func (db *DB) SeedDefaultData(isTesting bool) {
 	var count int64
 	if err := db.Model(models.User{}).Where("id = ?", 1).Count(&count).Error; err != nil {
