@@ -198,7 +198,7 @@ export default function DigitalTranscriptEntryPage() {
     return (
         <div
             className={cn(
-                'flex h-[calc(100dvh-4rem)] min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                'h-below-app-header flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
                 dtPageSurface
             )}
         >
