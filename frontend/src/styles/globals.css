@@ -258,6 +258,28 @@ html {
     @apply min-h-[calc(100vh-4rem)] bg-surface-hover flex items-center justify-center;
 }
 
+:root {
+    --app-header-h: 4rem;
+}
+
+.app-header-mobile-only {
+    --app-header-h: 4rem;
+}
+
+@media (min-width: 48rem) {
+    .app-header-mobile-only {
+        --app-header-h: 0rem;
+    }
+}
+
+.h-below-app-header {
+    height: calc(100dvh - var(--app-header-h));
+}
+
+.min-h-below-app-header {
+    min-height: calc(100dvh - var(--app-header-h));
+}
+
 .scroll-panel {
     @apply max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-4 space-y-1;
 }
