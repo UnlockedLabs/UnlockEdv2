@@ -1,6 +1,6 @@
 module seeder
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/go-faker/faker/v4 v4.6.0
