@@ -586,18 +586,18 @@ func (srv *Server) fetchCanvasCalendarEvents(
 			CanvasTimezone: canvasTimezone,
 		}
 		ev.ID = id
-		ev.ClassID = classID
+		ev.CohortID = classID
 		events = append(events, ev)
 	}
 	return events, nil
 }
 
-// fetchCanvasClassesAllProviders returns a ProgramClass for every Canvas course
+// fetchCanvasClassesAllProviders returns a ProgramClassCohort for every Canvas course
 // across all active Canvas provider platforms. Failures per-provider are logged
 // and skipped so a single unreachable provider doesn't break the response.
 // facilityID must be non-nil and non-zero; for the statewide (all-facilities) case
 // use fetchCanvasClassesAllProvidersAllFacilities instead.
-func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.ProgramClass, error) {
+func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.ProgramClassCohort, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		return nil, err
@@ -609,7 +609,7 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 			facility = f
 		}
 	}
-	var result []models.ProgramClass
+	var result []models.ProgramClassCohort
 	for _, provider := range providers {
 		if !isCanvasProvider(&provider) {
 			continue
@@ -650,18 +650,21 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 		}
 		wg.Wait()
 		for i, entry := range entries {
-			result = append(result, models.ProgramClass{
+			result = append(result, models.ProgramClassCohort{
 				DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(*facilityID, provider.ID, entry.rawID)},
 				ProgramID:      programID,
 				FacilityID:     *facilityID,
 				Facility:       facility,
-				Name:           entry.name,
-				Description:    entry.description,
-				StartDt:        entry.startDt,
-				EndDt:          entry.endDt,
-				Status:         entry.status,
-				Enrolled:       counts[i],
-				IsCanvas:       true,
+				// Canvas courses have no row in the class tier, so nothing joins
+				// class_name for them. Set it from the course title so the field is
+				// populated for every cohort the API returns, Canvas or not.
+				ClassName:   entry.name,
+				Description: entry.description,
+				StartDt:     entry.startDt,
+				EndDt:       entry.endDt,
+				Status:      entry.status,
+				Enrolled:    counts[i],
+				IsCanvas:    true,
 				Program: &models.Program{
 					DatabaseFields: models.DatabaseFields{ID: programID},
 					Name:           "College - " + provider.Name,
@@ -672,11 +675,11 @@ func (srv *Server) fetchCanvasClassesAllProviders(facilityID *uint) ([]models.Pr
 	return result, nil
 }
 
-// fetchCanvasClassesAllProvidersAllFacilities returns one ProgramClass per
+// fetchCanvasClassesAllProvidersAllFacilities returns one ProgramClassCohort per
 // (facility × Canvas course) with facility-scoped IDs. Used by the statewide
 // classes index when facility=all so every returned class has a navigable,
 // facility-scoped ID.
-func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.ProgramClass, error) {
+func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.ProgramClassCohort, error) {
 	providers, err := srv.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		return nil, err
@@ -686,7 +689,7 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 		return nil, err
 	}
 	now := time.Now()
-	var result []models.ProgramClass
+	var result []models.ProgramClassCohort
 	for _, provider := range providers {
 		if !isCanvasProvider(&provider) {
 			continue
@@ -734,12 +737,12 @@ func (srv *Server) fetchCanvasClassesAllProvidersAllFacilities() ([]models.Progr
 				if facilityCounts[i] != nil {
 					enrolled = facilityCounts[i][facility.ID]
 				}
-				result = append(result, models.ProgramClass{
+				result = append(result, models.ProgramClassCohort{
 					DatabaseFields: models.DatabaseFields{ID: encodeFacilityCanvasClassID(facility.ID, provider.ID, entry.rawID)},
 					ProgramID:      programID,
 					FacilityID:     facility.ID,
 					Facility:       &facilityPtr,
-					Name:           entry.name,
+					ClassName:      entry.name, // see fetchCanvasClassesAllProviders
 					Description:    entry.description,
 					StartDt:        entry.startDt,
 					EndDt:          entry.endDt,
@@ -911,11 +914,11 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 			continue
 		}
 		classes = append(classes, models.ProgramClassDetail{
-			ProgramClass: models.ProgramClass{
+			ProgramClassCohort: models.ProgramClassCohort{
 				DatabaseFields: models.DatabaseFields{ID: entry.encodedID},
 				ProgramID:      programID,
 				FacilityID:     0,
-				Name:           entry.name,
+				ClassName:      entry.name, // see fetchCanvasClassesAllProviders
 				Description:    entry.description,
 				StartDt:        entry.startDt,
 				EndDt:          entry.endDt,
@@ -949,7 +952,7 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 
 	for i := range classes {
 		n := counts[classes[i].ID]
-		classes[i].ProgramClass.Enrolled = n
+		classes[i].ProgramClassCohort.Enrolled = n
 		classes[i].Enrolled = int(n)
 	}
 
@@ -983,7 +986,7 @@ func (srv *Server) handleGetCanvasClasses(w http.ResponseWriter, r *http.Request
 			classes[i].ID = newID
 			classes[i].FacilityID = facilityID
 			for j := range classes[i].Events {
-				classes[i].Events[j].ClassID = newID
+				classes[i].Events[j].CohortID = newID
 			}
 		}
 	}
@@ -1059,7 +1062,7 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 			var sched string
 			var evSlice []models.ProgramClassEvent
 			if ev, ok := scheduleEvents[entry.rawID]; ok {
-				ev.ClassID = scopedID
+				ev.CohortID = scopedID
 				evSlice = []models.ProgramClassEvent{ev}
 				tz := courseTimezones[entry.rawID]
 				if tz == "" {
@@ -1068,11 +1071,11 @@ func (srv *Server) handleGetCanvasClassesByFacility(w http.ResponseWriter, r *ht
 				sched, _ = services.FormatClassScheduleAndRoom(evSlice, tz)
 			}
 			classes = append(classes, models.ProgramClassDetail{
-				ProgramClass: models.ProgramClass{
+				ProgramClassCohort: models.ProgramClassCohort{
 					DatabaseFields: models.DatabaseFields{ID: scopedID},
 					ProgramID:      programID,
 					FacilityID:     facility.ID,
-					Name:           entry.name,
+					ClassName:      entry.name, // see fetchCanvasClassesAllProviders
 					Description:    entry.description,
 					StartDt:        entry.startDt,
 					EndDt:          entry.endDt,
@@ -1462,12 +1465,12 @@ func (srv *Server) handleGetCanvasClassDetail(w http.ResponseWriter, r *http.Req
 		events = []models.ProgramClassEvent{}
 	}
 
-	cls := models.ProgramClass{
+	cls := models.ProgramClassCohort{
 		DatabaseFields: models.DatabaseFields{ID: classID},
 		ProgramID:      programID,
 		FacilityID:     facilityID,
 		Facility:       facility,
-		Name:           entry.name,
+		ClassName:      entry.name, // see fetchCanvasClassesAllProviders
 		Description:    entry.description,
 		StartDt:        entry.startDt,
 		EndDt:          entry.endDt,
@@ -1521,7 +1524,7 @@ type canvasScheduleEvent struct {
 }
 
 func (srv *Server) handleGetCanvasClassSchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
@@ -1652,7 +1655,7 @@ func (srv *Server) handleGetCanvasClassEnrollments(w http.ResponseWriter, r *htt
 		rows = append(rows, canvasEnrollmentRow{
 			ProgramClassEnrollment: models.ProgramClassEnrollment{
 				DatabaseFields:   models.DatabaseFields{ID: uint(i + 1)},
-				ClassID:          classID,
+				CohortID:         classID,
 				UserID:           info.UserID,
 				EnrollmentStatus: models.Enrolled,
 				EnrolledAt:       enrollmentDates[externalID],

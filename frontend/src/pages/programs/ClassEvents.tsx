@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { ChevronLeft, ChevronRight, Eye, ClipboardList } from 'lucide-react';
 import {
-    Class,
+    Cohort,
     SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
@@ -44,7 +44,7 @@ function formatClassTime(dateStr: string, timeRange: string): string {
 }
 
 function getEventStatus(
-    cls: Class | undefined,
+    cls: Cohort | undefined,
     event: ClassEventInstance
 ): string {
     const eventDate = toLocalMidnight(event.date).getTime();
@@ -96,13 +96,13 @@ export default function ClassEvents() {
     );
     const historicalData = historicalResponse?.data;
 
-    const { data: classResp } = useSWR<ServerResponseOne<Class>>(
+    const { data: classResp } = useSWR<ServerResponseOne<Cohort>>(
         `/api/program-classes/${class_id}`
     );
     const thisClass = classResp?.data;
 
     const blockEdits = isCompletedCancelledOrArchived(
-        thisClass ?? ({} as Class)
+        thisClass ?? ({} as Cohort)
     );
 
     const hasEarlier =

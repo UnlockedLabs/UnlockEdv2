@@ -11,7 +11,7 @@ import {
     ProviderPlatform,
     Program,
     RouteTitleHandler,
-    Class,
+    Cohort,
     ServerResponseOne,
     ClassLoaderData,
     ProgramOverview,
@@ -23,7 +23,7 @@ import { fetchUser } from '@/auth/useAuth';
 import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 function buildClassBreadcrumbs(
-    cls: Class,
+    cls: Cohort,
     currentTab: string
 ): BreadcrumbItem[] {
     return [
@@ -34,7 +34,7 @@ function buildClassBreadcrumbs(
             href: `/programs/${cls.program.id}`
         },
         {
-            label: cls.name,
+            label: cls.class_name,
             href: `/program-classes/${cls.id}/detail`
         },
         { label: currentTab }
@@ -209,7 +209,7 @@ export const getProgramTitle: LoaderFunction = async ({
     request
 }): Promise<ClassLoaderData | Response> => {
     const { id, class_id } = params;
-    let cls: Class | undefined;
+    let cls: Cohort | undefined;
     let programName = 'Class Details';
     let rooms: Room[] = [];
     let breadcrumbs: BreadcrumbItem[] | undefined;
@@ -225,7 +225,7 @@ export const getProgramTitle: LoaderFunction = async ({
     if (class_id && class_id != 'new') {
         const classResp = (await API.get(
             `program-classes/${class_id}`
-        )) as ServerResponseOne<Class>;
+        )) as ServerResponseOne<Cohort>;
         if (classResp.success) {
             cls = classResp.data;
         } else {
@@ -247,7 +247,10 @@ export const getProgramTitle: LoaderFunction = async ({
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Programs', href: '/programs' },
             { label: cls.program.name, href: `/programs/${cls.program.id}` },
-            { label: cls.name, href: `/program-classes/${cls.id}/detail` },
+            {
+                label: cls.class_name,
+                href: `/program-classes/${cls.id}/detail`
+            },
             {
                 label: 'Enrollment',
                 href: `/program-classes/${cls.id}/enrollments`
@@ -277,7 +280,7 @@ export const getClassTitle: LoaderFunction = async ({
     const { class_id, date } = params;
     const classResp = (await API.get(
         `program-classes/${class_id}`
-    )) as ServerResponseOne<Class>;
+    )) as ServerResponseOne<Cohort>;
     if (classResp.success) {
         const cls = classResp.data;
         const url = new URL(request.url);
@@ -295,7 +298,7 @@ export const getClassTitle: LoaderFunction = async ({
                     href: `/programs/${cls.program.id}`
                 },
                 {
-                    label: cls.name,
+                    label: cls.class_name,
                     href: `/program-classes/${cls.id}/detail`
                 },
                 { label: 'Take Attendance' }
@@ -307,7 +310,7 @@ export const getClassTitle: LoaderFunction = async ({
         }
 
         return {
-            title: cls.name,
+            title: cls.class_name,
             class: cls,
             breadcrumbs
         };

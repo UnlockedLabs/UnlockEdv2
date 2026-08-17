@@ -79,7 +79,7 @@ func (srv *Server) handleGenerateReport(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	if req.Type == models.ClassRosterReport && req.ClassID == nil {
+	if req.Type == models.ClassRosterReport && req.CohortID == nil {
 		return newBadRequestServiceError(errors.New("missing class_id"),
 			"class_id is required for class roster reports")
 	}
@@ -430,9 +430,9 @@ func (srv *Server) buildFilterSummary(req *models.ReportGenerateRequest, facilit
 	if req.Type == models.AttendanceReport {
 		var filters []models.PDFFilterLine
 		classValue := "All classes"
-		if req.ClassID != nil {
-			if class, err := srv.Db.GetClassByID(int(*req.ClassID)); err == nil && class != nil {
-				classValue = class.Name
+		if req.CohortID != nil {
+			if class, err := srv.Db.GetCohortByID(int(*req.CohortID)); err == nil && class != nil {
+				classValue = class.ClassName
 			}
 		}
 		filters = append(filters, models.PDFFilterLine{Label: "Class", Value: classValue})
@@ -453,9 +453,9 @@ func (srv *Server) buildFilterSummary(req *models.ReportGenerateRequest, facilit
 
 	if req.Type == models.ClassRosterReport {
 		var filters []models.PDFFilterLine
-		if req.ClassID != nil {
-			if class, err := srv.Db.GetClassByID(int(*req.ClassID)); err == nil && class != nil {
-				filters = append(filters, models.PDFFilterLine{Label: "Class", Value: class.Name})
+		if req.CohortID != nil {
+			if class, err := srv.Db.GetCohortByID(int(*req.CohortID)); err == nil && class != nil {
+				filters = append(filters, models.PDFFilterLine{Label: "Class", Value: class.ClassName})
 			}
 		}
 		filters = append(filters, models.PDFFilterLine{

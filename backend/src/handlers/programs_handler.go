@@ -151,6 +151,19 @@ type ProgramForm struct {
 	IsActive     bool                       `json:"is_active"`
 	ProgramTypes []models.ProgramType       `json:"program_types"`
 	Facilities   []int                      `json:"facilities"`
+	// See models.Program.HasProgramCompletion.
+	//
+	// A POINTER so that "absent" is distinguishable from "false", and the distinction is
+	// load-bearing on UPDATE: not every client sends this field (the program-detail Edit
+	// Program dialog does not), and because the column is in UpdateProgram's Select list a
+	// plain bool would decode to false and SILENTLY CLEAR the flag on every such edit.
+	//
+	//	nil   -> leave whatever is stored alone
+	//	false -> explicitly turn it off
+	//	true  -> explicitly turn it on
+	//
+	// On CREATE nil simply means false, which is pre-id751 behaviour.
+	HasProgramCompletion *bool `json:"has_program_completion"`
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -165,12 +178,13 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	}
 
 	newProg := models.Program{
-		Name:               program.Name,
-		Description:        program.Description,
-		FundingType:        program.FundingType,
-		IsActive:           program.IsActive,
-		ProgramTypes:       program.ProgramTypes,
-		ProgramCreditTypes: program.CreditTypes,
+		Name:                 program.Name,
+		Description:          program.Description,
+		FundingType:          program.FundingType,
+		IsActive:             program.IsActive,
+		ProgramTypes:         program.ProgramTypes,
+		ProgramCreditTypes:   program.CreditTypes,
+		HasProgramCompletion: program.HasProgramCompletion != nil && *program.HasProgramCompletion,
 	}
 
 	err = srv.WithUserContext(r).CreateProgram(&newProg)
@@ -213,6 +227,22 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 		IsActive:           programForm.IsActive,
 		ProgramTypes:       programForm.ProgramTypes,
 		ProgramCreditTypes: programForm.CreditTypes,
+	}
+
+	// The column is in UpdateProgram's Select list, so it is always written. When the
+	// caller did not send the field, carry the stored value forward rather than letting it
+	// decode to false and clear the flag.
+	if programForm.HasProgramCompletion != nil {
+		theProg.HasProgramCompletion = *programForm.HasProgramCompletion
+	} else {
+		var stored bool
+		if err := srv.Db.Model(&models.Program{}).
+			Select("has_program_completion").
+			Where("id = ?", programID).
+			Scan(&stored).Error; err != nil {
+			return newDatabaseServiceError(err)
+		}
+		theProg.HasProgramCompletion = stored
 	}
 
 	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities)
@@ -366,14 +396,14 @@ func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta mod
 	}
 	if (args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && numOfHistoryEvents < args.PerPage)) && (len(categories) == 0 || slices.Contains(categories, "info")) { //add get class created by here
 		switch tableName {
-		case "programs":
+		case models.TableNamePrograms:
 			createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, args)
 			if err != nil {
 				return pageMeta, createdByDetails, newDatabaseServiceError(err)
 			}
 			prog := "program"
 			createdByDetails.FieldName = &prog
-		case "program_classes":
+		case models.TableNameCohort:
 			createdByDetails, err = srv.Db.GetClassCreatedAtAndBy(id, args)
 			if err != nil {
 				return pageMeta, createdByDetails, newDatabaseServiceError(err)

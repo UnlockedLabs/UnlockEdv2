@@ -142,14 +142,15 @@ func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transfer
 					and fp.facility_id = ?
 			where p.is_active = true
 		)
-		select pc.name as class_name, p.name as program_name from program_class_enrollments pce
+		select cl.name as class_name, p.name as program_name from program_class_enrollments pce
 		inner join users u on u.id = pce.user_id
 			and u.id = ?
-		inner join program_classes pc on pc.id = pce.class_id
+		inner join program_class_cohorts pc on pc.id = pce.cohort_id
 			and pc.facility_id = u.facility_id
+		inner join program_classes cl on cl.id = pc.class_id
 		inner join programs p on p.id = pc.program_id
 		where enrollment_status = 'Enrolled'
-			and pc.name not in (select name from transfer_facility_programs)`
+			and cl.name not in (select name from transfer_facility_programs)`
 	if err := db.WithContext(ctx).Raw(query, transferFacilityId, id).Scan(&programNames).Error; err != nil {
 		return nil, err
 	}
@@ -162,8 +163,8 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 		return nil, NewDBError(trans.Error, "unable to start DB transaction")
 	}
 	updateQuery := `UPDATE program_class_enrollments AS pce SET enrollment_status = ?
-		FROM program_classes pc
-		WHERE pce.class_id = pc.id
+		FROM program_class_cohorts pc
+		WHERE pce.cohort_id = pc.id
 			AND pce.user_id = ?
 			AND pc.facility_id = ?
 			AND pce.enrollment_status = 'Enrolled'`
@@ -183,9 +184,9 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 
 func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
-		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
+		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.cohort_id = ?", classId).
 		Joins("JOIN facilities_programs fp ON users.facility_id = fp.facility_id").
-		Joins("JOIN program_classes c ON c.program_id = fp.program_id AND c.id = ?", classId).
+		Joins("JOIN program_class_cohorts c ON c.program_id = fp.program_id AND c.id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
 		Where("users.role = 'student'").
 		Where("users.facility_id = c.facility_id").
@@ -210,7 +211,7 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 
 func (db *DB) GetEnrolledResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
-		Joins("JOIN program_class_enrollments pce ON users.id = pce.user_id AND pce.class_id = ?", classId).
+		Joins("JOIN program_class_enrollments pce ON users.id = pce.user_id AND pce.cohort_id = ?", classId).
 		Where("pce.enrollment_status = 'Enrolled'").
 		Where("users.role = 'student'")
 
@@ -819,11 +820,11 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pce.enrollment_status   AS enrollment_status,
             p.name                   AS program_name,
             p.id                     AS program_id,
-            pc.name                  AS class_name,
+            cl.name                  AS class_name,
             pc.status                AS status,
 			pc.start_dt AS start_date,
 			pc.end_dt AS end_date,
-            pc.id                    AS class_id,
+            pc.id                    AS cohort_id,
 			pce.updated_at,
 			pce.created_at,
 			(SELECT ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ')
@@ -846,9 +847,9 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             ), 0)  AS absent_attendance, pce.change_reason,
 			STRING_AGG(DISTINCT e.recurrence_rule, '|') AS recurrence_rule
         `).
-		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
+		Joins("INNER JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
-		Joins("INNER JOIN program_class_events e ON e.class_id = pc.id").
+		Joins("INNER JOIN program_class_events e ON e.cohort_id = pc.id").
 		Joins(
 			`LEFT JOIN program_class_event_attendance pcea
             ON pcea.event_id = e.id
@@ -1098,15 +1099,16 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 	query := `
 		SELECT
 			p.name AS program_name,
-			pc.name AS class_name,
+			cl.name AS class_name,
 			pcea.date AS session_date,
 			pcea.attendance_status,
 			COALESCE(pcea.note, '') AS note
 		FROM program_class_event_attendance pcea
 		JOIN program_class_events pce ON pce.id = pcea.event_id
-		JOIN program_classes pc ON pc.id = pce.class_id
+		JOIN program_class_cohorts pc ON pc.id = pce.cohort_id
+		JOIN program_classes cl ON cl.id = pc.class_id
 		JOIN programs p ON p.id = pc.program_id
-		JOIN program_class_enrollments e ON e.class_id = pc.id AND e.user_id = pcea.user_id
+		JOIN program_class_enrollments e ON e.cohort_id = pc.id AND e.user_id = pcea.user_id
 		JOIN users u ON u.id = pcea.user_id
 		WHERE pcea.user_id = ?
 			AND pcea.deleted_at IS NULL
@@ -1126,7 +1128,7 @@ func (db *DB) GetResidentAttendanceCSVData(ctx context.Context, userID uint, fac
 		args = append(args, *classID)
 	}
 
-	query += " ORDER BY p.name ASC, pc.name ASC, pcea.date ASC"
+	query += " ORDER BY p.name ASC, cl.name ASC, pcea.date ASC"
 
 	if err := db.WithContext(ctx).Raw(query, args...).Scan(&csvData).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "resident attendance CSV data")

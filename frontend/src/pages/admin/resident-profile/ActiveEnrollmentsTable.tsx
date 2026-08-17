@@ -116,7 +116,7 @@ export function ActiveEnrollmentsTable({
 
                         return (
                             <TableRow
-                                key={`${enrollment.program_id}-${enrollment.class_id}`}
+                                key={`${enrollment.program_id}-${enrollment.cohort_id}`}
                             >
                                 <TableCell>
                                     <div className="flex items-center gap-2">

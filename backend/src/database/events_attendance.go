@@ -134,7 +134,7 @@ func (db *DB) DeleteAttendance(eventId, userId int, date string, ctx context.Con
 func (db *DB) GetEnrolledUserIDsForClass(classID uint, userIDs []uint) ([]uint, error) {
 	var enrolledIDs []uint
 	tx := db.Model(&models.ProgramClassEnrollment{}).
-		Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled)
+		Where("cohort_id = ? AND enrollment_status = ?", classID, models.Enrolled)
 	if len(userIDs) > 0 {
 		tx = tx.Where("user_id IN ?", userIDs)
 	}
@@ -150,7 +150,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
         JOIN users AS u ON u.id = e.user_id
         LEFT JOIN program_class_event_attendance AS a
             ON a.user_id = e.user_id AND a.event_id = ? AND a.date = ? AND a.deleted_at IS NULL
-        WHERE e.class_id = ?
+        WHERE e.cohort_id = ?
         `
 
 	if includeCurrentlyEnrolled {
@@ -183,7 +183,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	selectClause := `
 		SELECT
 			e.id AS enrollment_id,
-			e.class_id AS class_id,
+			e.cohort_id AS cohort_id,
 			e.enrollment_status AS enrollment_status,
 			u.id AS user_id,
 			u.username AS username,
@@ -235,7 +235,7 @@ func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classI
 		) * 100.0 /
 		nullif(
 			(select count(*) from program_class_enrollments e
-			 where e.class_id = ?
+			 where e.cohort_id = ?
 			   and e.enrolled_at <= ?
 			   and (e.enrollment_ended_at IS NULL OR e.enrollment_ended_at >= ?)),
 			0
@@ -254,7 +254,7 @@ func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classI
 func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext) ([]models.AttendanceFlag, error) {
 	flags := make([]models.AttendanceFlag, 0, args.PerPage)
 	attendanceCoreSQL := `from program_class_enrollments e
-		inner join program_classes c on c.id = e.class_id
+		inner join program_class_cohorts c on c.id = e.cohort_id
 		inner join users u on u.id = e.user_id
 		where c.id = ?
 		and e.enrollment_status = 'Enrolled'
@@ -262,29 +262,29 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		and u.deleted_at is null
 		and exists (select 1 from program_class_events evt
 				inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-				where evt.class_id = c.id
+				where evt.cohort_id = c.id
 						and att.attendance_status is not null
 		)`
 	noAttendanceSQL := `and exists (select 1 from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-			where evt.class_id = c.id
+			where evt.cohort_id = c.id
 					and att.user_id = e.user_id
 		)
 		and not exists (select 1 from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-			where evt.class_id = c.id
+			where evt.cohort_id = c.id
 					and att.user_id = e.user_id
 					and att.attendance_status in ('present','partial')
 		)`
 	multiAbsencesSQL := `and exists (select 1 from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-			where evt.class_id = c.id
+			where evt.cohort_id = c.id
 					and att.user_id = e.user_id
 					and att.attendance_status in ('present','partial')
 		)
 		and (select count(*) from program_class_events evt
 				inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-				where evt.class_id = c.id
+				where evt.cohort_id = c.id
 						and att.user_id = e.user_id
 						and att.attendance_status = 'absent_unexcused'
 		) >= 3`
@@ -293,11 +293,11 @@ func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext)
 		e.user_id,
 		(select count(*) from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-			where evt.class_id = c.id and att.user_id = e.user_id
+			where evt.cohort_id = c.id and att.user_id = e.user_id
 		) as total_sessions,
 		(select count(*) from program_class_events evt
 			inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-			where evt.class_id = c.id and att.user_id = e.user_id
+			where evt.cohort_id = c.id and att.user_id = e.user_id
 				and att.attendance_status in ('present','partial')
 		) as attended_sessions`
 
@@ -356,7 +356,7 @@ func (db *DB) computeConsecutiveAbsences(classID int, flags []models.AttendanceF
 		SELECT att.user_id, att.date, att.attendance_status
 		FROM program_class_event_attendance att
 		INNER JOIN program_class_events evt ON evt.id = att.event_id
-		WHERE evt.class_id = ? AND att.user_id IN ? AND att.deleted_at IS NULL
+		WHERE evt.cohort_id = ? AND att.user_id IN ? AND att.deleted_at IS NULL
 		ORDER BY att.user_id, att.date DESC`,
 		classID, userIDs,
 	).Scan(&records).Error; err != nil {
@@ -393,20 +393,20 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 	var events []models.ProgramClassEvent
 	err := db.WithContext(args.Ctx).
 		Preload("Class").
-		Where("class_id = ?", classID).
+		Where("cohort_id = ?", classID).
 		Find(&events).Error
 	if err != nil {
 		return 0, newNotFoundDBError(err, "program_class_events")
 	}
 	allEventDates := make([]models.EventInstance, 0, 20)
 	if len(events) == 1 {
-		allEventDates = generateEventInstances(events[0], events[0].Class.StartDt, time.Now().AddDate(0, 0, 1)) // adds one day to today so today is included
+		allEventDates = generateEventInstances(events[0], events[0].Cohort.StartDt, time.Now().AddDate(0, 0, 1)) // adds one day to today so today is included
 	} else {
 		for _, event := range events {
-			startDate := event.Class.StartDt
-			endDate := time.Now().AddDate(0, 0, 1)                                // adds one day to today so today is included
-			if event.Class.EndDt != nil && event.Class.EndDt.Before(time.Now()) { //if it has an end date that is before today, then use that
-				endDate = *event.Class.EndDt
+			startDate := event.Cohort.StartDt
+			endDate := time.Now().AddDate(0, 0, 1)                                  // adds one day to today so today is included
+			if event.Cohort.EndDt != nil && event.Cohort.EndDt.Before(time.Now()) { //if it has an end date that is before today, then use that
+				endDate = *event.Cohort.EndDt
 			}
 			eventInstances := generateEventInstances(event, startDate, endDate)
 			allEventDates = append(allEventDates, eventInstances...)
@@ -416,7 +416,7 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 
 	var students []models.ProgramClassEnrollment
 	err = db.WithContext(args.Ctx).
-		Where("class_id = ?", classID).
+		Where("cohort_id = ?", classID).
 		Find(&students).Error
 	if err != nil {
 		return 0, newGetRecordsDBError(err, "program_class_enrollments")
@@ -484,8 +484,9 @@ func (db *DB) GetMissingAttendance(classID int, args *models.QueryContext) (int,
 func (db *DB) GetActiveClassesForMissingAttendance(args *models.QueryContext, facilityID *uint) ([]models.MissingAttendanceClass, error) {
 	var missClasses []models.MissingAttendanceClass
 	classQuery := db.WithContext(args.Ctx).
-		Table("program_classes c").
-		Select("c.id, c.name, f.name as facility_name, c.facility_id").
+		Table("program_class_cohorts c").
+		Select("c.id, cl.name as name, f.name as facility_name, c.facility_id").
+		Joins("JOIN program_classes cl ON cl.id = c.class_id").
 		Joins("JOIN facilities f ON f.id = c.facility_id").
 		Where("c.status = ?", models.Active).
 		Where("c.archived_at IS NULL")
@@ -493,26 +494,31 @@ func (db *DB) GetActiveClassesForMissingAttendance(args *models.QueryContext, fa
 		classQuery = classQuery.Where("c.facility_id = ?", *facilityID)
 	}
 	if err := classQuery.Find(&missClasses).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_classes")
+		return nil, newGetRecordsDBError(err, "program class cohort")
 	}
 	return missClasses, nil
 }
 
-func (db *DB) GetActiveClassesWithEvents(args *models.QueryContext, facilityID *uint) ([]models.ProgramClass, error) {
-	var classes []models.ProgramClass
+func (db *DB) GetActiveClassesWithEvents(args *models.QueryContext, facilityID *uint) ([]models.ProgramClassCohort, error) {
+	var classes []models.ProgramClassCohort
+	// The join supplies class_name, which is the only name a cohort has. Both tables
+	// carry status/archived_at/facility_id, so EVERY predicate below is table-qualified:
+	// unqualified, Postgres errors "ambiguous" while SQLite silently picks one.
 	classQuery := db.WithContext(args.Ctx).
-		Model(&models.ProgramClass{}).
+		Model(&models.ProgramClassCohort{}).
+		Select("program_class_cohorts.*, pc.name AS class_name").
+		Joins("JOIN program_classes pc ON pc.id = program_class_cohorts.class_id").
 		Preload("Events.Overrides").
 		Preload("Events.RoomRef").
 		Preload("Events.Instructor").
 		Preload("Facility").
-		Where("status = ?", models.Active).
-		Where("archived_at IS NULL")
+		Where("program_class_cohorts.status = ?", models.Active).
+		Where("program_class_cohorts.archived_at IS NULL")
 	if facilityID != nil {
-		classQuery = classQuery.Where("facility_id = ?", *facilityID)
+		classQuery = classQuery.Where("program_class_cohorts.facility_id = ?", *facilityID)
 	}
 	if err := classQuery.Find(&classes).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_classes")
+		return nil, newGetRecordsDBError(err, "program class cohort")
 	}
 	return classes, nil
 }
@@ -523,7 +529,7 @@ func (db *DB) GetClassEventsWithOverrides(args *models.QueryContext, classIDs []
 		Model(&models.ProgramClassEvent{}).
 		Preload("Overrides").
 		Preload("RoomRef").
-		Where("class_id IN ?", classIDs).
+		Where("cohort_id IN ?", classIDs).
 		Find(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -550,8 +556,8 @@ func (db *DB) GetAttendanceCountsForEvents(args *models.QueryContext, eventIDs [
 }
 
 type ClassEnrollmentCount struct {
-	ClassID uint  `json:"class_id"`
-	Count   int64 `json:"count"`
+	CohortID uint  `json:"cohort_id"`
+	Count    int64 `json:"count"`
 }
 
 // GetActiveEnrollmentCountsForClasses returns the number of currently-enrolled
@@ -561,15 +567,15 @@ func (db *DB) GetActiveEnrollmentCountsForClasses(args *models.QueryContext, cla
 	var rows []ClassEnrollmentCount
 	if err := db.WithContext(args.Ctx).
 		Model(&models.ProgramClassEnrollment{}).
-		Select("class_id, COUNT(*) as count").
-		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
-		Group("class_id").
+		Select("cohort_id, COUNT(*) as count").
+		Where("cohort_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
+		Group("cohort_id").
 		Scan(&rows).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
 	counts := make(map[uint]int, len(rows))
 	for _, row := range rows {
-		counts[row.ClassID] = int(row.Count)
+		counts[row.CohortID] = int(row.Count)
 	}
 	return counts, nil
 }
@@ -578,8 +584,8 @@ func (db *DB) GetActiveEnrollmentsForClasses(args *models.QueryContext, classIDs
 	var enrollments []models.ProgramClassEnrollment
 	if err := db.WithContext(args.Ctx).
 		Model(&models.ProgramClassEnrollment{}).
-		Select("class_id, enrolled_at, enrollment_ended_at").
-		Where("class_id IN ?", classIDs).
+		Select("cohort_id, enrolled_at, enrollment_ended_at").
+		Where("cohort_id IN ?", classIDs).
 		Where("enrollment_status = ?", models.Enrolled).
 		Find(&enrollments).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
@@ -624,7 +630,7 @@ func (db *DB) GetCumulativeAttendanceRateForClass(ctx context.Context, classID i
 			END as credit
 		FROM program_class_event_attendance pcea
 		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
-		WHERE pce.class_id = ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
+		WHERE pce.cohort_id = ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
 	)
 	SELECT COALESCE(
 		(SELECT SUM(credit) FROM attendance_credits) * 100.0 /
@@ -646,7 +652,7 @@ func (db *DB) GetCumulativeAttendanceRatesForClasses(ctx context.Context, classI
 	sql := `
 	WITH attendance_credits AS (
 		SELECT
-			pce.class_id,
+			pce.cohort_id,
 			CASE
 				WHEN pcea.attendance_status = 'present' THEN 1.0
 				WHEN pcea.attendance_status = 'partial' THEN LEAST(
@@ -658,18 +664,18 @@ func (db *DB) GetCumulativeAttendanceRatesForClasses(ctx context.Context, classI
 			END as credit
 		FROM program_class_event_attendance pcea
 		INNER JOIN program_class_events pce ON pce.id = pcea.event_id
-		WHERE pce.class_id IN ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
+		WHERE pce.cohort_id IN ? AND pcea.date <= ? AND pcea.deleted_at IS NULL
 	)
-	SELECT class_id,
+	SELECT cohort_id,
 		COALESCE(
 			SUM(credit) * 100.0 / NULLIF(COUNT(*), 0),
 			0
 		) as attendance_percentage
 	FROM attendance_credits
-	GROUP BY class_id`
+	GROUP BY cohort_id`
 
 	type row struct {
-		ClassID        uint    `gorm:"column:class_id"`
+		ClassID        uint    `gorm:"column:cohort_id"`
 		AttendanceRate float64 `gorm:"column:attendance_percentage"`
 	}
 	rows := []row{}

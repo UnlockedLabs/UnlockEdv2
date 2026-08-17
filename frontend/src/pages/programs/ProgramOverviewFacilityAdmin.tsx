@@ -25,7 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import API from '@/api/api';
 import {
-    Class,
+    Cohort,
     Facility,
     ProgramOverview,
     ProgClassStatus,
@@ -110,7 +110,7 @@ export default function ProgramOverviewFacilityAdmin() {
         setPerPage: setHistoryPerPage
     } = useUrlPagination(1, 20, 'history');
     const [statusModalOpen, setStatusModalOpen] = useState(false);
-    const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+    const [selectedClass, setSelectedClass] = useState<Cohort | null>(null);
     const [selectedStatus, setSelectedStatus] = useState('');
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
@@ -171,7 +171,7 @@ export default function ProgramOverviewFacilityAdmin() {
         data: classesResp,
         isLoading: classesLoading,
         mutate: mutateClasses
-    } = useSWR<ServerResponseMany<Class>>(
+    } = useSWR<ServerResponseMany<Cohort>>(
         `/api/programs/${program_id}/classes?per_page=100&order_by=ps.start_dt asc${facilityQuery}`
     );
     const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
@@ -299,7 +299,7 @@ export default function ProgramOverviewFacilityAdmin() {
         }
     }
 
-    async function handleClassStatusChange(cls: Class, newStatus: string) {
+    async function handleClassStatusChange(cls: Cohort, newStatus: string) {
         const resp = await API.patch(`program-classes?id=${cls.id}`, {
             status: newStatus
         });
@@ -406,7 +406,7 @@ export default function ProgramOverviewFacilityAdmin() {
               { label: program.name }
           ];
 
-    function handleOpenStatusModal(cls: Class) {
+    function handleOpenStatusModal(cls: Cohort) {
         setSelectedClass(cls);
         setSelectedStatus(cls.status);
         setStatusModalOpen(true);
@@ -783,7 +783,7 @@ export default function ProgramOverviewFacilityAdmin() {
                 open={statusModalOpen}
                 onOpenChange={handleCloseStatusModal}
                 title="Change Class Status"
-                description={`Update the status for ${selectedClass?.name ?? ''}.`}
+                description={`Update the status for ${selectedClass ? selectedClass.class_name : ''}.`}
                 titleClassName="text-foreground"
             >
                 <div className="space-y-0">
@@ -898,13 +898,13 @@ function ClassesTab({
     onOpenStatusModal,
     onCreated
 }: {
-    classes: Class[];
+    classes: Cohort[];
     loading: boolean;
     programId: string;
     facilityId?: number;
     canAddClass: boolean;
     isCanvasProgram?: boolean;
-    onOpenStatusModal: (cls: Class) => void;
+    onOpenStatusModal: (cls: Cohort) => void;
     onCreated?: () => void;
 }) {
     const navigate = useNavigate();
@@ -1097,8 +1097,8 @@ function ClassRow({
     showEnrollment,
     isCanvas
 }: {
-    cls: Class;
-    onOpenStatusModal: (cls: Class) => void;
+    cls: Cohort;
+    onOpenStatusModal: (cls: Cohort) => void;
     onClick?: () => void;
     className?: string;
     editableStatus?: boolean;
@@ -1154,7 +1154,7 @@ function ClassRow({
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                         <h4 className="text-brand-dark hover:text-brand transition-colors">
-                            {cls.name}
+                            {cls.class_name}
                         </h4>
                         {editableStatus ? (
                             <Badge

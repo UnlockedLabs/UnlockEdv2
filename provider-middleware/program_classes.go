@@ -15,7 +15,7 @@ import (
 // `tasks.activate_scheduled_classes` job. It flips any class whose scheduled
 // start date has is the current day of the job run (in its facility's local timezone) from Scheduled to
 // Active. The status update goes through the same map-based update the user interface uses
-// so that ProgramClass.AfterUpdate fires and backfills enrolled_at on the
+// so that ProgramClassCohort.AfterUpdate fires and backfills enrolled_at on the
 // class's enrollments.
 func (sh *ServiceHandler) handleActivateScheduledClasses(ctx context.Context, msg *nats.Msg) {
 	var body map[string]any
@@ -41,7 +41,7 @@ func (sh *ServiceHandler) activateScheduledClasses(ctx context.Context) error {
 
 	var classIDs []int
 	if err := sh.db.WithContext(ctx).
-		Model(&models.ProgramClass{}).
+		Model(&models.ProgramClassCohort{}).
 		Joins("JOIN facilities f ON f.id = program_classes.facility_id").
 		Where("program_classes.status = ?", models.Scheduled).
 		Where("program_classes.archived_at IS NULL").
@@ -61,7 +61,7 @@ func (sh *ServiceHandler) activateScheduledClasses(ctx context.Context) error {
 	enrolledAt := time.Now().UTC()
 	if err := sh.db.WithContext(batchCtx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.
-			Model(&models.ProgramClass{}).
+			Model(&models.ProgramClassCohort{}).
 			Where("id IN ?", classIDs).
 			Set("class_ids", classIDs).
 			Updates(map[string]any{"status": models.Active}).Error; err != nil {

@@ -22,7 +22,7 @@ func (db *DB) getInstructorBookingsInRange(facilityID, instructorID uint, rangeS
 	var events []models.ProgramClassEvent
 	if err := db.Table("program_class_events e").
 		Select("DISTINCT e.*").
-		Joins("JOIN program_classes c ON c.id = e.class_id").
+		Joins("JOIN program_class_cohorts c ON c.id = e.cohort_id").
 		Joins("LEFT JOIN program_class_event_overrides o ON o.event_id = e.id AND o.deleted_at IS NULL").
 		Where("c.facility_id = ? AND e.deleted_at IS NULL AND (e.instructor_id = ? OR o.instructor_id = ?)", facilityID, instructorID, instructorID).
 		Preload("Overrides").
@@ -85,7 +85,7 @@ func expandEventToInstructorBookings(event models.ProgramClassEvent, rangeStart,
 				StartTime: occ,
 				EndTime:   occ.Add(duration),
 				EventID:   event.ID,
-				ClassID:   event.ClassID,
+				ClassID:   event.CohortID,
 			})
 		}
 	}
@@ -115,7 +115,7 @@ func expandEventToInstructorBookings(event models.ProgramClassEvent, rangeStart,
 				StartTime:  occ,
 				EndTime:    occ.Add(overrideDuration),
 				EventID:    event.ID,
-				ClassID:    event.ClassID,
+				ClassID:    event.CohortID,
 				IsOverride: true,
 			})
 		}

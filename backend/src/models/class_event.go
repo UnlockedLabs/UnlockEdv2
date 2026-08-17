@@ -67,7 +67,10 @@ func FormatScheduleFromRRule(rruleStr string) string {
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
-	ClassID        uint    `json:"class_id" gorm:"not null" validate:"required"`
+	// CohortID keeps the JSON key "class_id" -- the pre-id751 name. Column and field are
+	// cohort_id/CohortID; the wire rename is a scheduled follow-up PR. An event belongs to
+	// one COHORT: it is a specific time and place, which is a property of a run.
+	CohortID       uint    `json:"cohort_id" gorm:"column:cohort_id;not null" validate:"required"`
 	Duration       string  `json:"duration" gorm:"not null" validate:"required"`
 	RecurrenceRule string  `json:"recurrence_rule" gorm:"not null" validate:"required"`
 	RoomID         *uint   `json:"room_id" gorm:"not null"`
@@ -76,7 +79,7 @@ type ProgramClassEvent struct {
 	IsCancelled    bool    `json:"is_cancelled"`
 
 	/* Foreign keys */
-	Class      *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
+	Cohort     *ProgramClassCohort           `json:"class" gorm:"foreignKey:CohortID;references:ID"`
 	RoomRef    *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
 	Instructor *User                         `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
 	Attendees  []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
@@ -162,10 +165,12 @@ func (event *ProgramClassEvent) RRuleUntil() (time.Time, error) {
 /** Overrides are used to cancel or reschedule events **/
 type ProgramClassEventOverride struct {
 	DatabaseFields
-	EventID               uint   `json:"event_id" gorm:"not null"`
-	Duration              string `json:"duration" gorm:"not null"`
-	OverrideRrule         string `json:"override_rrule" gorm:"not null"`
-	ClassID               uint   `json:"class_id" gorm:"->" `
+	EventID       uint   `json:"event_id" gorm:"not null"`
+	Duration      string `json:"duration" gorm:"not null"`
+	OverrideRrule string `json:"override_rrule" gorm:"not null"`
+	// NOT a column -- a read-only query-time alias for the parent COHORT. Queries must
+	// supply it explicitly as `cohort_id AS cohort_id`. Do not add a gorm column tag.
+	CohortID              uint   `json:"cohort_id" gorm:"->" `
 	IsCancelled           bool   `json:"is_cancelled"`
 	RoomID                *uint  `json:"room_id"`
 	Reason                string `json:"reason"`
@@ -273,7 +278,7 @@ type ClassEventInstance struct {
 
 type EnrollmentAttendance struct {
 	EnrollmentID     uint    `json:"enrollment_id"`
-	ClassID          uint    `json:"class_id"`
+	CohortID         uint    `json:"cohort_id"`
 	EnrollmentStatus string  `json:"enrollment_status"`
 	UserID           uint    `json:"user_id"`
 	NameFirst        string  `json:"name_first"`
@@ -312,7 +317,7 @@ type AttendanceFlag struct {
 }
 
 type MissingAttendanceItem struct {
-	ClassID      uint   `json:"class_id"`
+	CohortID     uint   `json:"cohort_id"`
 	ClassName    string `json:"class_name"`
 	FacilityName string `json:"facility_name,omitempty"`
 	EventID      uint   `json:"event_id"`

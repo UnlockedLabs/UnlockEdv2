@@ -4,6 +4,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+// The CLASS tier (id751). Aliased so it cannot be confused with this file's Cohort,
+// which the codebase still refers to as a "class" in places.
+import type { Class as ProgramClassSummary } from '@/types/program';
 import API from '@/api/api';
 import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
 import { useFlowTimer } from '@/lib/useFlowTimer';
@@ -144,6 +147,42 @@ export function ClassManagementFormInner({
         ? isCompletedCancelledOrArchived(existingClass)
         : false;
 
+    /*
+     * id751 -- which CLASS does this cohort belong to?
+     *
+     * The dropdown lists classes that already exist for this program at this facility,
+     * with "Other" as the escape hatch. Ordering matters: making reuse the default is
+     * what stops a facility ending up with "Anger Management (9am-10am)" and
+     * "(11am-12pm)" as two separate certificates -- exactly the mess the id751 migration
+     * had to merge back together.
+     */
+    const NEW_CLASS = '__other__';
+    const [selectedClassId, setSelectedClassId] = useState<string>('');
+    const [newClassName, setNewClassName] = useState('');
+
+    // Declared before the fetch below, which scopes on it.
+    const resolvedFacilityId = facilityIdProp ?? user?.facility.id;
+
+    /*
+     * MUST be scoped by facility, not just program. A class belongs to exactly one
+     * facility, and program_class_cohorts_class_parent_fkey is composite on
+     * (class_id, program_id, facility_id) -- so a class from another facility is never
+     * a legal parent. Unscoped, a statewide admin sees the same class name once per
+     * facility (13x for "Adult Basic Education"), and picking the wrong one fails the
+     * FK at insert time rather than being rejected in the form.
+     */
+    const { data: classListResp } = useSWR<
+        ServerResponseMany<ProgramClassSummary>,
+        Error
+    >(
+        isNewClass && programId
+            ? `/api/classes?program_id=${programId}&per_page=100${
+                  resolvedFacilityId ? `&facility_id=${resolvedFacilityId}` : ''
+              }`
+            : null
+    );
+    const existingClasses = classListResp?.data ?? [];
+
     const [rooms, setRooms] = useState<Room[]>(loaderData?.rooms ?? []);
     const [conflicts, setConflicts] = useState<RoomConflict[]>([]);
     const [showConflicts, setShowConflicts] = useState(false);
@@ -164,8 +203,6 @@ export function ClassManagementFormInner({
     const startMsRef = useFlowTimer(
         isNewClass ? ANALYTICS_EVENTS.ClassCreationStarted : null
     );
-
-    const resolvedFacilityId = facilityIdProp ?? user?.facility.id;
 
     useEffect(() => {
         if (!resolvedFacilityId) return;
@@ -193,7 +230,6 @@ export function ClassManagementFormInner({
     const form = useForm<ClassFormValues, unknown, ClassFormData>({
         resolver: zodResolver(buildClassManagementSchema(isNewClass)),
         defaultValues: {
-            name: '',
             description: '',
             instructor_id: null,
             capacity: 20,
@@ -288,7 +324,6 @@ export function ClassManagementFormInner({
             }
 
             reset({
-                name: existingClass.name,
                 description: existingClass.description,
                 instructor_id: getInstructorId(existingClass.events) ?? null,
                 capacity: existingClass.capacity,
@@ -447,7 +482,6 @@ export function ClassManagementFormInner({
 
         const payload = {
             ...(classId && classId !== 'new' && { id: Number(classId) }),
-            name: data.name,
             description: data.description,
             instructor_id: data.instructor_id
                 ? Number(data.instructor_id)
@@ -471,7 +505,7 @@ export function ClassManagementFormInner({
                 : [
                       {
                           id: existingClass!.events[0].id,
-                          class_id: existingClass!.events[0].class_id,
+                          cohort_id: existingClass!.events[0].cohort_id,
                           duration: existingClass!.events[0].duration,
                           recurrence_rule:
                               existingClass!.events[0].recurrence_rule,
@@ -482,6 +516,55 @@ export function ClassManagementFormInner({
                       ...existingClass!.events.slice(1)
                   ]
         };
+
+        // Resolve the parent class before creating the cohort. Picking "Other" creates
+        // the class first so the cohort attaches to a real id -- rather than relying on
+        // the backend's auto-parent hook, which would name the class after the COHORT.
+        let parentClassId: number | null = null;
+        if (isNewClass) {
+            if (selectedClassId === NEW_CLASS) {
+                const trimmed = newClassName.trim();
+                if (!trimmed) {
+                    toast.error('Enter a name for the new class');
+                    return;
+                }
+                // facility_id must ride on the query string, and must be the SAME
+                // facility the cohort below is created with. The backend reads it via
+                // requireFacilityID -> getQueryContext, which yields 0 (not the
+                // caller's own facility) for an admin who can switch facilities --
+                // so omitting it 400s with "facility selection is required", and
+                // sending a different one builds a class the cohort's composite FK
+                // will reject.
+                const created = await API.post<{ id: number }, unknown>(
+                    resolvedFacilityId
+                        ? `classes?facility_id=${resolvedFacilityId}`
+                        : 'classes',
+                    {
+                        program_id: Number(programId),
+                        name: trimmed,
+                        description: data.description,
+                        credit_hours:
+                            Number(data.credit_hours) > 0
+                                ? Number(data.credit_hours)
+                                : null
+                    }
+                );
+                if (!created.success) {
+                    toast.error(
+                        created.message || 'Failed to create the class'
+                    );
+                    return;
+                }
+                parentClassId = (created.data as { id: number }).id;
+            } else if (selectedClassId) {
+                parentClassId = Number(selectedClassId);
+            } else {
+                toast.error('Choose a class');
+                return;
+            }
+            (payload as Record<string, unknown>).program_class_id =
+                parentClassId;
+        }
 
         const createUrl = resolvedFacilityId
             ? `programs/${programId}/classes?facility_id=${resolvedFacilityId}`
@@ -564,26 +647,73 @@ export function ClassManagementFormInner({
                                 <h4 className="text-sm text-gray-700 mb-3">
                                     Basic Information
                                 </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    Class Name *
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="e.g., GED Prep - Morning Section"
-                                                        className={focusRing}
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
+                                {isNewClass && (
+                                    <div className="mb-4 space-y-3">
+                                        <div>
+                                            <label
+                                                htmlFor="parent-class"
+                                                className="text-sm font-medium"
+                                            >
+                                                Class *
+                                            </label>
+                                            <select
+                                                id="parent-class"
+                                                className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${focusRing}`}
+                                                value={selectedClassId}
+                                                onChange={(e) => {
+                                                    const value =
+                                                        e.target.value;
+                                                    setSelectedClassId(value);
+                                                }}
+                                            >
+                                                <option value="">
+                                                    Select a class…
+                                                </option>
+                                                {existingClasses.map((c) => (
+                                                    <option
+                                                        key={c.id}
+                                                        value={String(c.id)}
+                                                    >
+                                                        {c.name}
+                                                    </option>
+                                                ))}
+                                                <option value={NEW_CLASS}>
+                                                    Other — add a new class
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        {selectedClassId === NEW_CLASS && (
+                                            <div>
+                                                <label
+                                                    htmlFor="new-class-name"
+                                                    className="text-sm font-medium"
+                                                >
+                                                    New class name *
+                                                </label>
+                                                <Input
+                                                    id="new-class-name"
+                                                    className={`mt-1 ${focusRing}`}
+                                                    placeholder="e.g., Anger Management"
+                                                    value={newClassName}
+                                                    onChange={(e) =>
+                                                        setNewClassName(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Name the class itself, not
+                                                    the schedule — leave times
+                                                    like &quot;(9am-10am)&quot;
+                                                    out of it.
+                                                </p>
+                                            </div>
                                         )}
-                                    />
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 items-start gap-4">
                                     <FormField
                                         control={control}
                                         name="instructor_id"
@@ -1344,20 +1474,6 @@ export function ClassManagementFormInner({
                                 <h2 className="text-lg font-semibold text-foreground">
                                     Class Information
                                 </h2>
-
-                                <FormField
-                                    control={control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem className="space-y-2">
-                                            <FormLabel>Name</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
 
                                 <FormField
                                     control={control}

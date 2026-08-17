@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import useSWR, { KeyedMutator } from 'swr';
 import API from '@/api/api';
 import { useAuth } from '@/auth/useAuth';
-import { CancelEventReason, Class, ServerResponseMany } from '@/types';
+import { CancelEventReason, Cohort, ServerResponseMany } from '@/types';
 import {
     Instructor,
     InstructorClassData,
@@ -47,7 +47,7 @@ import { FormModal, TonedPanel } from '@/components/shared';
 interface BulkCancelClassesModalProps {
     open: boolean;
     onClose: () => void;
-    mutate: KeyedMutator<ServerResponseMany<Class>>;
+    mutate: KeyedMutator<ServerResponseMany<Cohort>>;
 }
 
 interface PreviewData {

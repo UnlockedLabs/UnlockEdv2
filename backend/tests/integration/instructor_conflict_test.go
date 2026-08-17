@@ -47,13 +47,12 @@ func TestInstructorConflictDetection(t *testing.T) {
 }
 
 // helper: create a class with an instructor and a single daily event in the given window.
-func createClassWithEvent(t *testing.T, env *TestEnv, facility *models.Facility, admin *models.User, program *models.Program, name string, instructorID, roomID uint, recurrenceRule, duration string, start time.Time, end time.Time) *models.ProgramClass {
+func createClassWithEvent(t *testing.T, env *TestEnv, facility *models.Facility, admin *models.User, program *models.Program, name string, instructorID, roomID uint, recurrenceRule, duration string, start time.Time, end time.Time) *models.ProgramClassCohort {
 	creditHours := int64(2)
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         name,
 		InstructorID: &instructorID,
 		Description:  name,
 		StartDt:      start,
@@ -61,11 +60,13 @@ func createClassWithEvent(t *testing.T, env *TestEnv, facility *models.Facility,
 		Status:       models.Scheduled,
 		CreditHours:  &creditHours,
 	}
-	resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: admin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 	created := resp.GetData()
+	// `name` now belongs to the CLASS tier -- that is what conflicts display.
+	require.NoError(t, env.NameCohortClass(created.ID, name))
 
 	eventPayload := map[string]interface{}{
 		"duration":        duration,

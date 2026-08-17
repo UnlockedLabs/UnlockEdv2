@@ -107,6 +107,18 @@ type Program struct {
 	IsFavorited bool        `json:"is_favorited" gorm:"-"`
 	ArchivedAt  *time.Time  `json:"archived_at"`
 
+	// HasProgramCompletion marks a program as completable in its own right, separately
+	// from the classes under it (id751 Phase 5, migration 00073). false -- the default and
+	// every pre-existing row -- is exactly pre-id751 behaviour: the CLASS tier carries the
+	// certificate and the program is only a grouping.
+	//
+	// ⚠️  Nothing reads this yet. It is stored so programs can be marked while the rule
+	//     that SATISFIES a program completion is still undecided (every class the resident
+	//     is enrolled in, versus at least one). Do not infer a rule from its presence.
+	//     Per program, global across facilities -- toggling it affects every facility
+	//     offering the program.
+	HasProgramCompletion bool `json:"has_program_completion" gorm:"not null;default:false"`
+
 	ProgramTypes       []ProgramType        `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	ProgramCreditTypes []ProgramCreditType  `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Facilities         []Facility           `json:"facilities" gorm:"-"`                         //preserve original json key

@@ -191,6 +191,8 @@ func (env *TestEnv) CleanupDatabase() error {
 		"program_credit_types",
 		"facilities_programs",
 		"program_classes",
+		"program_class_credit_types",
+		"program_class_cohorts",
 	}
 
 	for _, table := range tables {
@@ -203,15 +205,14 @@ func (env *TestEnv) CleanupDatabase() error {
 	return nil
 }
 
-func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Facility, status models.ClassStatus, instructorID *uint) (*models.ProgramClass, error) {
+func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Facility, status models.ClassStatus, instructorID *uint) (*models.ProgramClassCohort, error) {
 	endDt := time.Now().Add(time.Hour * 24)
 	creditHours := int64(2)
 
-	class := &models.ProgramClass{
+	class := &models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Test Class",
 		InstructorID: instructorID,
 		Description:  "This is a test class created for integration testing purposes.",
 		StartDt:      time.Now(),
@@ -227,9 +228,28 @@ func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Fa
 	return class, nil
 }
 
+// NameCohortClass renames a cohort's parent class.
+//
+// A cohort has no name of its own (id751), so every displayed "class name" comes from
+// the class tier. A fixture that creates a cohort without a ClassID gets a class
+// auto-named after its PROGRAM; any test asserting on a specific displayed name has to
+// set that name here.
+func (env *TestEnv) NameCohortClass(cohortID uint, name string) error {
+	var classID uint
+	if err := env.DB.Model(&models.ProgramClassCohort{}).
+		Select("class_id").
+		Where("id = ?", cohortID).
+		Scan(&classID).Error; err != nil {
+		return err
+	}
+	return env.DB.Model(&models.ProgramClass{}).
+		Where("id = ?", classID).
+		Update("name", name).Error
+}
+
 func (env *TestEnv) CreateTestEnrollment(classID, userID uint, status models.ProgramEnrollmentStatus) (*models.ProgramClassEnrollment, error) {
 	enrollment := &models.ProgramClassEnrollment{
-		ClassID:          classID,
+		CohortID:         classID,
 		UserID:           userID,
 		EnrollmentStatus: status,
 	}
@@ -260,7 +280,7 @@ func (env *TestEnv) CreateTestEvent(classID uint, rrule string, instructorID uin
 		return nil, err
 	}
 	event := &models.ProgramClassEvent{
-		ClassID:        classID,
+		CohortID:       classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
 		RoomID:         &roomID,
@@ -288,7 +308,7 @@ func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string, i
 		return nil, err
 	}
 	event := &models.ProgramClassEvent{
-		ClassID:        classID,
+		CohortID:       classID,
 		Duration:       "2h",
 		RecurrenceRule: customRRule,
 		RoomID:         &roomID,
@@ -340,12 +360,12 @@ func (env *TestEnv) CreateTestAttendance(eventID, userID uint, date time.Time, s
 }
 
 func (env *TestEnv) SetClassCreditHours(classID uint, creditHours int64) error {
-	return env.DB.Model(&models.ProgramClass{}).Where("id = ?", classID).Update("credit_hours", creditHours).Error
+	return env.DB.Model(&models.ProgramClassCohort{}).Where("id = ?", classID).Update("credit_hours", creditHours).Error
 }
 
 func (env *TestEnv) CreateTestEnrollmentWithDates(classID, userID uint, status models.ProgramEnrollmentStatus, enrolledAt time.Time, endedAt *time.Time) (*models.ProgramClassEnrollment, error) {
 	enrollment := &models.ProgramClassEnrollment{
-		ClassID:           classID,
+		CohortID:          classID,
 		UserID:            userID,
 		EnrollmentStatus:  status,
 		EnrolledAt:        &enrolledAt,
@@ -360,7 +380,7 @@ func (env *TestEnv) CreateTestEnrollmentWithDates(classID, userID uint, status m
 }
 
 func (env *TestEnv) getOrCreateInstructorForClass(classID uint) (uint, error) {
-	var class models.ProgramClass
+	var class models.ProgramClassCohort
 	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
 		return 0, err
 	}
@@ -378,7 +398,7 @@ func (env *TestEnv) getOrCreateInstructorForClass(classID uint) (uint, error) {
 }
 
 func (env *TestEnv) getOrCreateTestRoom(classID uint) (uint, error) {
-	var class models.ProgramClass
+	var class models.ProgramClassCohort
 	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
 		return 0, err
 	}

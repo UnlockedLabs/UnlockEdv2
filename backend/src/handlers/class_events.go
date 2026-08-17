@@ -14,21 +14,21 @@ import (
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolver := FacilityAdminResolver("program_classes", "class_id")
+	resolver := FacilityAdminResolver(models.TableNameCohort, "cohort_id")
 	return []routeDef{
 		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
-		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
-		adminFeatureRoute("GET /api/program-classes/{class_id}/canvas-schedule", srv.handleGetCanvasClassSchedule, axx),
+		featureRoute("GET /api/program-classes/{cohort_id}/events", srv.handleGetProgramClassEvents, axx),
+		adminFeatureRoute("GET /api/program-classes/{cohort_id}/canvas-schedule", srv.handleGetCanvasClassSchedule, axx),
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
 		adminFeatureRoute("GET /api/program-classes/todays-schedule", srv.handleGetTodaysSchedule, axx),
-		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
-		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/events/{event_id}", srv.handlePatchEventOverride, axx, resolver),
-		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
-		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_override_id}/uncancel", srv.handleUncancelOverride, axx, resolver),
-		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/uncancel-series", srv.handleUncancelSeries, axx, resolver),
-		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
-		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
+		adminValidatedFeatureRoute("PUT /api/program-classes/{cohort_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{cohort_id}/events/{event_id}", srv.handlePatchEventOverride, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{cohort_id}/events/{event_override_id}", srv.handleDeleteEventOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{cohort_id}/events/{event_override_id}/uncancel", srv.handleUncancelOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{cohort_id}/events/{event_id}/uncancel-series", srv.handleUncancelSeries, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{cohort_id}/events", srv.handleCreateEvent, axx, resolver),
+		adminValidatedFeatureRoute("PUT /api/program-classes/{cohort_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
 	}
 }
 
@@ -39,7 +39,7 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	}
 	args := srv.facilityScopedQueryContext(r)
 
-	id := r.URL.Query().Get("class_id")
+	id := r.URL.Query().Get("cohort_id")
 	var classID int
 	if id != "" {
 		classID, err = strconv.Atoi(id)
@@ -116,7 +116,7 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newInvalidIdServiceError(err, "event_id")
 	}
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -133,13 +133,36 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 	}
 	for i, j := 0, len(overrides); i < j; i++ {
 		overrides[i].EventID = uint(eventId)
-		overrides[i].ClassID = uint(classID)
+		overrides[i].CohortID = uint(classID)
 	}
-	var class *models.ProgramClass
+	// The room is only worth re-checking when it actually changes. The schedule's
+	// single-session editor always sends the CURRENT room_id alongside whatever field is
+	// being edited (useChangeEventField.ts: `room_id: event.room_id ?? null, ...fieldPatch`),
+	// so changing only the INSTRUCTOR used to run a room-only conflict check
+	// (CheckRRuleConflicts ignores InstructorID entirely) and report a room clash for an
+	// edit that never touched the room.
+	// Deliberately NOT fatal: this lookup is an optimisation, and the handler never needed
+	// the event row before. If it cannot be read we fall back to the old behaviour and run
+	// the check -- erring toward checking too much, never toward skipping a real conflict.
+	var currentRoomID *uint
+	if currentEvent, err := srv.Db.GetEventById(eventId); err == nil {
+		currentRoomID = currentEvent.RoomID
+	}
+	roomChanged := func(override *models.ProgramClassEventOverride) bool {
+		if override.IsCancelled || override.RoomID == nil {
+			return false
+		}
+		if currentRoomID == nil {
+			return true
+		}
+		return *override.RoomID != *currentRoomID
+	}
+
+	var class *models.ProgramClassCohort
 	for _, override := range overrides {
-		if !override.IsCancelled && override.RoomID != nil {
+		if roomChanged(override) {
 			var err error
-			class, err = srv.Db.GetClassByID(classID)
+			class, err = srv.Db.GetCohortByID(classID)
 			if err != nil {
 				return newDatabaseServiceError(err)
 			}
@@ -147,7 +170,7 @@ func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 	for _, override := range overrides {
-		if override.IsCancelled || override.RoomID == nil {
+		if !roomChanged(override) {
 			continue
 		}
 		if _, err := srv.Db.GetRoomByIDForFacility(*override.RoomID, class.FacilityID); err != nil {
@@ -194,7 +217,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newInvalidIdServiceError(err, "event_id")
 	}
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -216,7 +239,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		return newBadRequestServiceError(errors.New("reason exceeds maximum length of 255 characters"), "reason exceeds maximum length of 255 characters")
 	}
 	if req.InstructorID != nil {
-		class, err := srv.Db.GetClassByID(classID)
+		class, err := srv.Db.GetCohortByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -307,7 +330,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 		overrides := []*models.ProgramClassEventOverride{
 			{
 				EventID:       uint(eventId),
-				ClassID:       uint(classID),
+				CohortID:      uint(classID),
 				Duration:      event.Duration,
 				OverrideRrule: originalRRule,
 				IsCancelled:   true,
@@ -315,7 +338,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 			},
 			{
 				EventID:       uint(eventId),
-				ClassID:       uint(classID),
+				CohortID:      uint(classID),
 				Duration:      newDuration,
 				OverrideRrule: newRRule,
 				IsCancelled:   false,
@@ -353,7 +376,7 @@ func (srv *Server) handlePatchEventOverride(w http.ResponseWriter, r *http.Reque
 	}
 	override := &models.ProgramClassEventOverride{
 		EventID:       uint(eventId),
-		ClassID:       uint(classID),
+		CohortID:      uint(classID),
 		Duration:      overrideDuration,
 		OverrideRrule: overrideRRule,
 		IsCancelled:   req.IsCancelled,
@@ -372,7 +395,7 @@ func (srv *Server) handleDeleteEventOverride(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return newInvalidIdServiceError(err, "event override ID")
 	}
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -428,7 +451,7 @@ func (srv *Server) handleUncancelOverride(w http.ResponseWriter, r *http.Request
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
@@ -443,9 +466,9 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	event.ClassID = uint(classID)
+	event.CohortID = uint(classID)
 	if event.RoomID != nil || event.InstructorID != nil {
-		class, err := srv.Db.GetClassByID(classID)
+		class, err := srv.Db.GetCohortByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -482,7 +505,7 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
@@ -502,7 +525,7 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	}
 	// A cancelled series frees the room, so skip the conflict check for cancellations.
 	if eventSeriesRequest.EventSeries.RoomID != nil {
-		class, err := srv.Db.GetClassByID(classID)
+		class, err := srv.Db.GetCohortByID(classID)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -533,8 +556,8 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 		}
 	}
 	args := srv.getQueryContext(r)
-	eventSeriesRequest.EventSeries.ClassID = uint(classID)
-	eventSeriesRequest.ClosedEventSeries.ClassID = uint(classID)
+	eventSeriesRequest.EventSeries.CohortID = uint(classID)
+	eventSeriesRequest.ClosedEventSeries.CohortID = uint(classID)
 	err = srv.WithUserContext(r).CreateRescheduleEventSeries(&args, uint(classID), eventSeriesRequest.EventSeries, eventSeriesRequest.ClosedEventSeries)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -543,7 +566,7 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) cannotUpdateEvent(classID int) (bool, error) {
-	class, err := srv.Db.GetClassByID(classID)
+	class, err := srv.Db.GetCohortByID(classID)
 	if err != nil {
 		return false, newDatabaseServiceError(err)
 	}
@@ -551,7 +574,7 @@ func (srv *Server) cannotUpdateEvent(classID int) (bool, error) {
 }
 
 func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}

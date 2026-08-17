@@ -3,7 +3,7 @@ import { Users, Calendar, AlertCircle, Edit, MapPin } from 'lucide-react';
 import { RRule, Weekday } from 'rrule';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Class } from '@/types/program';
+import { Cohort } from '@/types/program';
 import { SelectedClassStatus } from '@/types/attendance';
 import {
     getClassSchedule,
@@ -38,7 +38,7 @@ function parseGoDuration(duration: string): number {
     );
 }
 
-function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
+function getCanvasClassSchedule(cls: Cohort): ClassScheduleInfo {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return { days: [], startTime: '', endTime: '', room: '' };
 
@@ -100,18 +100,18 @@ function getCanvasClassSchedule(cls: Class): ClassScheduleInfo {
 }
 
 interface ClassHeaderProps {
-    cls: Class;
+    cls: Cohort;
     onMutate: () => void;
 }
 
 interface StatCardsProps {
-    cls: Class;
+    cls: Cohort;
     attendanceRate: number;
     atRiskCount: number;
     isCanvasClass?: boolean;
 }
 
-function getNextClassDate(cls: Class): { date: string; time: string } | null {
+function getNextClassDate(cls: Cohort): { date: string; time: string } | null {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return null;
     const tz =
@@ -186,7 +186,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     return (
         <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-brand-dark">{cls.name}</h1>
+                <h1 className="text-brand-dark">{cls.class_name}</h1>
                 {isReadOnly ? (
                     <Badge
                         variant="outline"
@@ -271,7 +271,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 onClose={() => setShowStatusModal(false)}
                 classId={cls.id}
                 programId={cls.program_id}
-                className={cls.name}
+                className={cls.class_name}
                 currentStatus={cls.status}
                 capacity={cls.capacity}
                 onStatusChanged={onMutate}

@@ -20,7 +20,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		if claims.canSwitchFacility() {
 			return true
 		}
-		id, err := strconv.ParseUint(r.PathValue("class_id"), 10, 64)
+		id, err := strconv.ParseUint(r.PathValue("cohort_id"), 10, 64)
 		if err != nil {
 			return false
 		}
@@ -34,7 +34,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 			return true
 		}
 		var facID uint
-		return tx.Table("program_classes").
+		return tx.Table("program_class_cohorts").
 			Select("facility_id").
 			Where("id = ?", id).
 			Limit(1).Scan(&facID).Error == nil && claims.FacilityID == facID
@@ -66,17 +66,17 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 			srv.handleGetClassesByInstructor, axx, FacilityAdminResolver("users", "id")),
 		adminFeatureRoute("POST /api/program-classes/bulk-cancel",
 			srv.handleBulkCancelSessions, axx),
-		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
+		validatedFeatureRoute("GET /api/program-classes/{cohort_id}", srv.handleGetClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminFeatureRoute("GET /api/program-classes/missing-attendance", srv.handleGetMissingAttendanceForFacility, axx),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/missing-attendance", srv.handleGetMissingAttendance, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-rate", srv.handleGetCumulativeAttendanceRate, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/missing-attendance", srv.handleGetMissingAttendance, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/attendance-rate", srv.handleGetCumulativeAttendanceRate, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
-			var programClass models.ProgramClass
+			var programClass models.ProgramClassCohort
 			err := tx.WithContext(r.Context()).
-				Table("program_classes").
+				Table("program_class_cohorts").
 				Select("facility_id").
 				Where("id IN (?)", r.URL.Query()["id"]).
 				Where("facility_id = ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
@@ -84,9 +84,9 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 
 			return err == nil
 		}),
-		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
-		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}", srv.handleDeleteClass, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/delete-check", srv.handleGetClassDeleteCheck, axx, resolver),
+		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{cohort_id}", srv.handleUpdateClass, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{cohort_id}", srv.handleDeleteClass, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/delete-check", srv.handleGetClassDeleteCheck, axx, resolver),
 	}
 }
 
@@ -109,14 +109,14 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 }
 
 func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	if uint(id) >= models.CanvasClassIDOffset {
 		return srv.handleGetCanvasClassDetail(w, r, log, uint(id))
 	}
-	class, err := srv.Db.GetClassByID(id)
+	class, err := srv.Db.GetCohortByID(id)
 	if err != nil {
 		log.add("class_id", id)
 		return newDatabaseServiceError(err)
@@ -138,7 +138,7 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	var canvasClasses []models.ProgramClass
+	var canvasClasses []models.ProgramClassCohort
 	var canvasErr error
 	if facilityID == nil {
 		canvasClasses, canvasErr = srv.fetchCanvasClassesAllProvidersAllFacilities()
@@ -165,7 +165,7 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 
-	var class models.ProgramClass
+	var class models.ProgramClassCohort
 	err = json.Unmarshal(bodyBytes, &class)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -224,7 +224,7 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -234,7 +234,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 
-	class := models.ProgramClass{}
+	class := models.ProgramClassCohort{}
 	err = json.Unmarshal(bodyBytes, &class)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -250,7 +250,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		}
 	}
 
-	existing, err := srv.Db.GetClassByID(id)
+	existing, err := srv.Db.GetCohortByID(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -353,7 +353,7 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	classMap["update_user_id"] = claims.UserID
 
-	if err := srv.WithUserContext(r).UpdateProgramClasses(classIDs, classMap); err != nil {
+	if err := srv.WithUserContext(r).UpdateProgramCohorts(classIDs, classMap); err != nil {
 		return newDatabaseServiceError(err)
 	}
 
@@ -361,7 +361,7 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -373,11 +373,11 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 	}
 	args := srv.getQueryContext(r)
 	categories := r.URL.Query()["categories"]
-	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "program_classes", id, categories)
+	historyEvents, err := srv.Db.GetChangeLogEntries(&args, models.TableNameCohort, id, categories)
 	if err != nil {
 		return err
 	}
-	pageMeta, createdByDetails, err := srv.getCreatedByForHistory(id, "program_classes", args.IntoMeta(), &args, len(historyEvents), categories)
+	pageMeta, createdByDetails, err := srv.getCreatedByForHistory(id, models.TableNameCohort, args.IntoMeta(), &args, len(historyEvents), categories)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -388,7 +388,7 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 }
 
 func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -417,7 +417,7 @@ func (srv *Server) handleGetProgramClassOutcomes(w http.ResponseWriter, r *http.
 }
 
 func (srv *Server) handleGetMissingAttendance(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -473,7 +473,7 @@ func (srv *Server) handleGetMissingAttendanceForFacility(w http.ResponseWriter, 
 }
 
 func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -523,7 +523,7 @@ func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Reque
 
 	var count int64
 	err := srv.Db.WithContext(r.Context()).
-		Table("program_classes").
+		Table("program_class_cohorts").
 		Where("instructor_id = ? AND facility_id = ?",
 			req.InstructorID, claims.FacilityID).
 		Count(&count).Error
@@ -568,7 +568,7 @@ func (c *BulkCancelClaimsAdapter) GetTimezone() string {
 }
 
 func (srv *Server) handleGetClassDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -598,7 +598,7 @@ func (srv *Server) handleGetClassDeleteCheck(w http.ResponseWriter, r *http.Requ
 }
 
 func (srv *Server) handleDeleteClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}

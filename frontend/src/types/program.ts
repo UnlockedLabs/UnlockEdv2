@@ -78,6 +78,16 @@ export interface Program {
     funding_type: FundingType;
     program_types: PgmType[];
     is_active: boolean;
+    /**
+     * True when the program is completable in its own right, separately from the
+     * classes under it (id751, migration 00073). false -- the default and every
+     * pre-existing program -- is pre-id751 behaviour: the class carries the
+     * certificate and the program is only a grouping.
+     *
+     * Nothing reads this yet; the rule that satisfies a program completion is still
+     * an open product decision. Per program, GLOBAL across facilities.
+     */
+    has_program_completion: boolean;
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
@@ -136,14 +146,81 @@ export interface ProgramsOverview {
     programs_table: ProgramsOverviewTable[];
 }
 
+/**
+ * A Class is the certificate-bearing tier: Program -> Class -> Cohort (ticket id751).
+ * A resident completes a Cohort, and that grants the CLASS completion.
+ *
+ * Deliberately small. No `status` -- a class isn't "Scheduled", its cohorts are -- and
+ * no capacity or dates, which describe a run rather than the class itself.
+ *
+ * ⚠️  Do NOT widen this to match Cohort. TypeScript is structural, so a Class that is a
+ *     subset of Cohort means a Cohort is assignable wherever a Class is expected and
+ *     `tsc` will not flag a single mixed-up call site. Keeping this type strictly
+ *     narrower than Cohort is the ONLY check there is: class ids start at 1 and overlap
+ *     cohort ids (owner's call, 2026-08-17), so a mixed-up id no longer 404s -- it
+ *     resolves to a real row of the wrong tier.
+ */
 export interface Class {
     id: number;
+    program_id: number;
+    facility_id: number;
+    name: string;
+    description: string;
+    credit_hours: number | null;
+    archived_at: string | null;
+    created_at?: string;
+    updated_at?: string;
+
+    /** Rolled up across this class's cohorts by the API; never stored. */
+    cohort_count: number;
+    /**
+     * Per-status cohort counts. The program page grouped cohorts by status before the
+     * class tier existed; these keep that information on the class row.
+     */
+    active_cohorts: number;
+    scheduled_cohorts: number;
+    completed_cohorts: number;
+    enrolled: number;
+    capacity: number;
+    completed: number;
+
+    cohorts?: Cohort[];
+    /**
+     * An EMPTY array from a raw read means "inherit from the program". The detail
+     * endpoint resolves inheritance for you, so what arrives here is what applies.
+     */
+    credit_types?: ClassCreditType[];
+    program?: Program;
+    facility?: Facility;
+}
+
+export interface ClassCreditType {
+    program_class_id: number;
+    credit_type: string;
+}
+
+export interface Cohort {
+    id: number;
+    /**
+     * Parent class id. Note the key: on the wire `class_id` still means the COHORT
+     * (the pre-id751 name, kept until the wire-rename follow-up PR), so the class tier
+     * had to take `program_class_id`.
+     */
+    program_class_id: number;
     program_id: number;
     facility_id: number;
     facility_name: string;
     facility?: Facility;
     instructor?: User | null;
-    name: string;
+    /**
+     * The parent CLASS's name ("General Education Diploma (GED)") -- what the UI shows
+     * wherever a class name is displayed. Required, not optional: every endpoint that
+     * returns a cohort populates it, either by joining program_classes or, for Canvas
+     * courses (which have no class-tier row), by setting it from the course title in
+     * canvas_programs.go. An endpoint that forgets renders a BLANK name, so if you add
+     * one, join it.
+     */
+    class_name: string;
     description: string;
     start_dt: string;
     end_dt: string;
@@ -166,7 +243,7 @@ export interface Class {
 }
 
 export interface MissingAttendanceItem {
-    class_id: number;
+    cohort_id: number;
     class_name: string;
     facility_name?: string;
     event_id: number;
@@ -175,7 +252,7 @@ export interface MissingAttendanceItem {
 }
 
 export interface TodaysScheduleItem {
-    class_id: number;
+    cohort_id: number;
     class_name: string;
     instructor_name: string;
     facility_id: number;
@@ -212,7 +289,7 @@ export interface ResidentProgramOverview {
     status: ProgClassStatus;
     credit_types: string;
     program_id: number;
-    class_id: number;
+    cohort_id: number;
     enrollment_id: number;
     updated_at: string;
     enrollment_status?: EnrollmentStatus;

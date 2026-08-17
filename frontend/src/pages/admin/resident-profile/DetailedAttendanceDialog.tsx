@@ -79,7 +79,7 @@ export function DetailedAttendanceDialog({
         ServerResponseMany<AttendanceRecord>
     >(
         open && enrollment
-            ? `/api/programs/${enrollment.program_id}/classes/${enrollment.class_id}/enrollments/${enrollment.enrollment_id}/attendance?per_page=500`
+            ? `/api/programs/${enrollment.program_id}/classes/${enrollment.cohort_id}/enrollments/${enrollment.enrollment_id}/attendance?per_page=500`
             : null
     );
     const records = attendanceResp?.data ?? [];
@@ -94,7 +94,7 @@ export function DetailedAttendanceDialog({
     const handleExport = async () => {
         try {
             const { blob, headers } = await API.downloadFile(
-                `users/${residentId}/attendance-export?class_id=${enrollment.class_id}`
+                `users/${residentId}/attendance-export?cohort_id=${enrollment.cohort_id}`
             );
             const disposition = headers.get('Content-Disposition');
             const filename =

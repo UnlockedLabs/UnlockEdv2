@@ -21,11 +21,11 @@ var rosterStatusFilterMap = map[string]string{
 
 const sessionsAttendedSubquery = `(SELECT COUNT(*) FROM program_class_event_attendance pcea
 		JOIN program_class_events pcev ON pcev.id = pcea.event_id
-		WHERE pcev.class_id = pce.class_id AND pcea.user_id = pce.user_id
+		WHERE pcev.cohort_id = pce.cohort_id AND pcea.user_id = pce.user_id
 		  AND pcea.attendance_status IN ('present', 'partial')) AS sessions_attended`
 const sessionsTotalSubquery = `(SELECT COUNT(*) FROM program_class_event_attendance pcea
 		JOIN program_class_events pcev ON pcev.id = pcea.event_id
-		WHERE pcev.class_id = pce.class_id AND pcea.user_id = pce.user_id
+		WHERE pcev.cohort_id = pce.cohort_id AND pcea.user_id = pce.user_id
 		  AND pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '') AS total_sessions`
 
 func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGenerateRequest) ([]models.AttendanceReportRow, error) {
@@ -35,7 +35,7 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 		Select(`
 			f.name AS facility_name,
 			p.name AS program_name,
-			pc.name AS class_name,
+			cl.name AS class_name,
 			DATE(pcea.date) AS date,
 			u.name_last AS student_last_name,
 			u.name_first AS student_first_name,
@@ -49,7 +49,7 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 				WHERE uah.user_id = pcea.user_id
 				  AND uah.action = 'attendance_recorded'
 				  AND uah.session_date = DATE(pcea.date)
-				  AND uah.class_name = pc.name
+				  AND uah.class_name = cl.name
 				  AND uah.attendance_status = pcea.attendance_status
 				ORDER BY uah.created_at DESC
 				LIMIT 1
@@ -57,13 +57,14 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 			pcea.note AS absence_reason
 		`).
 		Joins("JOIN program_class_events pce ON pce.id = pcea.event_id").
-		Joins("JOIN program_classes pc ON pc.id = pce.class_id").
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		Joins("JOIN program_classes cl ON cl.id = pc.class_id").
 		Joins("JOIN programs p ON p.id = pc.program_id").
 		Joins("JOIN users u ON u.id = pcea.user_id").
 		Joins("JOIN facilities f ON f.id = u.facility_id").
 		Where("DATE(pcea.date) >= ? AND DATE(pcea.date) <= ?", req.StartDate, req.EndDate).
 		Where("pcea.deleted_at IS NULL").
-		Order("f.name, p.name, pc.name, pcea.date, u.name_last")
+		Order("f.name, p.name, cl.name, pcea.date, u.name_last")
 
 	if req.FacilityID != nil {
 		tx = tx.Where("f.id = ?", *req.FacilityID)
@@ -73,8 +74,8 @@ func (db *DB) GenerateAttendanceReport(ctx context.Context, req *models.ReportGe
 		tx = tx.Where("p.id = ?", *req.ProgramID)
 	}
 
-	if req.ClassID != nil {
-		tx = tx.Where("pc.id = ?", *req.ClassID)
+	if req.CohortID != nil {
+		tx = tx.Where("pc.id = ?", *req.CohortID)
 	}
 
 	if req.UserID != nil {
@@ -144,18 +145,18 @@ func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.Rep
 	}
 
 	query := fmt.Sprintf(`WITH active_classes AS (
-			SELECT pc.id AS class_id, pc.program_id, pc.facility_id, pc.capacity
-			FROM program_classes pc
+			SELECT pc.id AS cohort_id, pc.program_id, pc.facility_id, pc.capacity
+			FROM program_class_cohorts pc
 			%s
 		),
 		enrollment_stats AS (
-			SELECT pce.class_id,
+			SELECT pce.cohort_id,
 				-- "Enrolled in Range": enrollments whose enrolled_at falls in the window.
 				COUNT(CASE WHEN pce.enrolled_at BETWEEN ? AND ? THEN 1 END) AS total_enrollments,
 				-- "Currently Enrolled": live snapshot of active enrollments, not date-scoped.
 				COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) AS active_enrollments
 			FROM program_class_enrollments pce
-			GROUP BY pce.class_id
+			GROUP BY pce.cohort_id
 		),
 		program_types_agg AS (
 			SELECT program_id, COALESCE(%s, 'N/A') AS program_type
@@ -167,14 +168,14 @@ func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.Rep
 			p.is_active AS is_active,
 			COALESCE(pta.program_type, 'N/A') AS program_type,
 			COUNT(DISTINCT fp.facility_id) AS facilities_active,
-			COUNT(DISTINCT ac.class_id) AS total_classes,
+			COUNT(DISTINCT ac.cohort_id) AS total_classes,
 			COALESCE(SUM(es.active_enrollments), 0) AS active_enrollments,
 			COALESCE(SUM(es.total_enrollments), 0) AS total_enrollments,
 			COALESCE(SUM(ac.capacity), 0) AS total_capacity
 		FROM programs p
 		JOIN facilities_programs fp ON fp.program_id = p.id
 		LEFT JOIN active_classes ac ON ac.program_id = fp.program_id AND ac.facility_id = fp.facility_id
-		LEFT JOIN enrollment_stats es ON es.class_id = ac.class_id
+		LEFT JOIN enrollment_stats es ON es.cohort_id = ac.cohort_id
 		LEFT JOIN program_types_agg pta ON pta.program_id = p.id
 		%s
 		GROUP BY p.id, p.name, pta.program_type
@@ -198,16 +199,17 @@ func (db *DB) GenerateProgramOutcomesReport(ctx context.Context, req *models.Rep
 func (db *DB) GenerateProgramClassBreakdown(ctx context.Context, req *models.ReportGenerateRequest, programID, facilityID uint) ([]models.ProgramClassBreakdownRow, error) {
 	var rows []models.ProgramClassBreakdownRow
 
-	tx := db.WithContext(ctx).Table("program_classes pc").
+	tx := db.WithContext(ctx).Table("program_class_cohorts pc").
 		Select(`
-			pc.name AS class_name,
+			cl.name AS class_name,
 			pc.status AS status,
 			pc.credit_hours AS credit_hours,
 			pc.capacity AS capacity,
 			COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) AS active_enrollments,
 			COUNT(CASE WHEN pce.enrolled_at BETWEEN ? AND ? THEN 1 END) AS range_enrollments
 		`, req.StartDate, req.EndDate).
-		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id AND pce.deleted_at IS NULL").
+		Joins("JOIN program_classes cl ON cl.id = pc.class_id").
+		Joins("LEFT JOIN program_class_enrollments pce ON pce.cohort_id = pc.id AND pce.deleted_at IS NULL").
 		Where("pc.program_id = ? AND pc.facility_id = ?", programID, facilityID)
 
 	switch {
@@ -218,8 +220,8 @@ func (db *DB) GenerateProgramClassBreakdown(ctx context.Context, req *models.Rep
 		tx = tx.Where("pc.status = ?", "Active")
 	}
 
-	tx = tx.Group("pc.id, pc.name, pc.status, pc.credit_hours, pc.capacity").
-		Order("pc.name")
+	tx = tx.Group("pc.id, cl.name, pc.status, pc.credit_hours, pc.capacity").
+		Order("cl.name")
 
 	if err := tx.Scan(&rows).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program class breakdown")
@@ -258,15 +260,15 @@ func (db *DB) GenerateFacilityComparisonReport(ctx context.Context, req *models.
 				 ORDER BY COUNT(*) DESC
 				 LIMIT 1),
 				'N/A') AS top_program_type,
-			COALESCE((SELECT SUM(credit_hours) FROM program_classes WHERE facility_id = f.id), 0) AS total_credit_hours,
+			COALESCE((SELECT SUM(credit_hours) FROM program_class_cohorts WHERE facility_id = f.id), 0) AS total_credit_hours,
 			0 AS certificates_earned,
 			MAX(pcea.created_at) AS last_activity_date
 		`).
 		Joins("LEFT JOIN facilities_programs fp ON fp.facility_id = f.id").
 		Joins("LEFT JOIN programs p ON p.id = fp.program_id").
-		Joins("LEFT JOIN program_classes pc ON pc.program_id = p.id AND pc.facility_id = f.id").
-		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id AND pce.enrolled_at <= ?", req.EndDate).
-		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
+		Joins("LEFT JOIN program_class_cohorts pc ON pc.program_id = p.id AND pc.facility_id = f.id").
+		Joins("LEFT JOIN program_class_enrollments pce ON pce.cohort_id = pc.id AND pce.enrolled_at <= ?", req.EndDate).
+		Joins("LEFT JOIN program_class_events pcev ON pcev.cohort_id = pc.id").
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id AND pcea.user_id = pce.user_id AND pcea.deleted_at IS NULL AND DATE(pcea.date) BETWEEN ? AND ?", req.StartDate, req.EndDate).
 		Where("f.id IN ?", facilityIDs)
 
@@ -315,8 +317,8 @@ func (db *DB) GenerateClassRosterReport(ctx context.Context, req *models.ReportG
 			`+sessionsTotalSubquery+`
 		`).
 		Joins("JOIN users u ON u.id = pce.user_id").
-		Joins("JOIN program_classes pc ON pc.id = pce.class_id").
-		Where("pce.class_id = ?", *req.ClassID).
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		Where("pce.cohort_id = ?", *req.CohortID).
 		Where("pce.deleted_at IS NULL").
 		Order("u.name_last, u.name_first")
 
@@ -345,7 +347,7 @@ func (db *DB) GenerateResidentProfileReport(ctx context.Context, req *models.Rep
 			u.doc_id,
 			f.name AS facility_name,
 			p.name AS program_name,
-			pc.name AS class_name,
+			cl.name AS class_name,
 			pce.enrollment_status,
 			pce.enrolled_at,
 			pce.enrollment_ended_at AS ended_at,
@@ -353,7 +355,8 @@ func (db *DB) GenerateResidentProfileReport(ctx context.Context, req *models.Rep
 			`+sessionsTotalSubquery+`
 		`).
 		Joins("JOIN users u ON u.id = pce.user_id").
-		Joins("JOIN program_classes pc ON pc.id = pce.class_id").
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		Joins("JOIN program_classes cl ON cl.id = pc.class_id").
 		Joins("JOIN programs p ON p.id = pc.program_id").
 		Joins("JOIN facilities f ON f.id = pc.facility_id").
 		Where("pce.user_id = ?", *req.UserID).

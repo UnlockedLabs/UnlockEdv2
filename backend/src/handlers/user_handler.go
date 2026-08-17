@@ -65,7 +65,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 
 	case slices.Contains(include, "only_unenrolled"):
-		classID, err := strconv.Atoi(r.URL.Query().Get("class_id"))
+		classID, err := strconv.Atoi(r.URL.Query().Get("cohort_id"))
 		if err != nil {
 			return newInvalidIdServiceError(err, "class ID")
 		}
@@ -76,7 +76,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			return newDatabaseServiceError(err)
 		}
 	case slices.Contains(include, "only_enrolled"):
-		classID, err := strconv.Atoi(r.URL.Query().Get("class_id"))
+		classID, err := strconv.Atoi(r.URL.Query().Get("cohort_id"))
 		if err != nil {
 			return newInvalidIdServiceError(err, "class ID")
 		}
@@ -892,7 +892,7 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 
 	allFacilities := claims.canSwitchFacility() || queryCtx.All
 	var classID *uint
-	if cid := r.URL.Query().Get("class_id"); cid != "" {
+	if cid := r.URL.Query().Get("cohort_id"); cid != "" {
 		parsed, err := strconv.Atoi(cid)
 		if err != nil {
 			return newInvalidIdServiceError(err, "class_id")
