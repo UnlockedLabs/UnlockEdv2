@@ -14,6 +14,27 @@ func withFacilityName(db *DB) *gorm.DB {
 		Joins("LEFT JOIN facilities ON facilities.id = learning_record_entries.facility_id")
 }
 
+/*
+GetLearningRecordLocationFacility resolves a facility id used as an achievement
+location, returning the facility's name and whether it exists at all. The lookup
+is unscoped on purpose: an achievement can point at a facility that has since
+been soft-deleted, and the foreign key still holds, so rejecting those would
+block edits to older records. ok is false only for an id that is not a facility.
+*/
+func (db *DB) GetLearningRecordLocationFacility(id uint) (string, bool, error) {
+	var names []string
+	if err := db.Unscoped().Model(&models.Facility{}).
+		Where("id = ?", id).
+		Limit(1).
+		Pluck("name", &names).Error; err != nil {
+		return "", false, newGetRecordsDBError(err, "facilities")
+	}
+	if len(names) == 0 {
+		return "", false, nil
+	}
+	return names[0], true, nil
+}
+
 func (db *DB) GetLearningRecordEntries(userID uint) ([]models.LearningRecordEntry, error) {
 	entries := make([]models.LearningRecordEntry, 0)
 	if err := withFacilityName(db).
@@ -35,7 +56,7 @@ func (db *DB) CreateLearningRecordEntry(entry *models.LearningRecordEntry) error
 func (db *DB) UpdateLearningRecordEntry(entry *models.LearningRecordEntry) error {
 	result := db.Model(entry).
 		Where("id = ? AND user_id = ?", entry.ID, entry.UserID).
-		Updates(learningRecordColumns(entry))
+		Updates(learningRecordEntryColumns(entry))
 	if result.Error != nil {
 		return newUpdateDBError(result.Error, "learning_record_entries")
 	}
@@ -111,11 +132,13 @@ func (db *DB) DeleteLearningRecordDraft(userID uint, clientID string) error {
 	return nil
 }
 
-func learningRecordColumns(e *models.LearningRecordEntry) map[string]any {
+// learningRecordEntryColumns holds the achievement fields shared by drafts and
+// committed entries. The draft-only wizard state (step_index, ui_phase,
+// editing_entry_id) is excluded so editing a committed entry cannot reset it.
+func learningRecordEntryColumns(e *models.LearningRecordEntry) map[string]any {
 	return map[string]any{
-		"step_index": e.StepIndex, "ui_phase": e.UiPhase,
-		"editing_entry_id": e.EditingEntryID, "program_name": e.ProgramName,
-		"facility_id": e.FacilityID, "facility_other": e.FacilityOther,
+		"program_name": e.ProgramName,
+		"facility_id":  e.FacilityID, "facility_other": e.FacilityOther,
 		"completion_date": e.CompletionDate, "confidence": e.Confidence,
 		"summary": e.Summary, "top_skills": e.TopSkills,
 		"barrier_to_completion": e.BarrierToCompletion, "goal_connection": e.GoalConnection,
@@ -126,4 +149,14 @@ func learningRecordColumns(e *models.LearningRecordEntry) map[string]any {
 		"growth_reflection": e.GrowthReflection, "support_selections": e.SupportSelections,
 		"next_step_selections": e.NextStepSelections,
 	}
+}
+
+// learningRecordColumns adds the draft-only wizard state to the shared
+// achievement fields; use it for draft upserts only.
+func learningRecordColumns(e *models.LearningRecordEntry) map[string]any {
+	columns := learningRecordEntryColumns(e)
+	columns["step_index"] = e.StepIndex
+	columns["ui_phase"] = e.UiPhase
+	columns["editing_entry_id"] = e.EditingEntryID
+	return columns
 }
