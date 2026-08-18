@@ -31,7 +31,7 @@ jobs:
           BASE="${{ github.event.before }}"
           echo "$BASE"
           git fetch origin "$BASE"
-          paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
+          paths=("frontend/" "backend/" "provider-middleware/")
           changes=""
           for path in "${paths[@]}"; do
             count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
@@ -146,11 +146,6 @@ jobs:
                   echo "Building middleware image"
                   docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
                   deployments+=("provider-service")
-                  ;;
-                "backend/tasks")
-                  echo "Building scheduler image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:${IMAGE_VERSION} --push -f backend/tasks/Dockerfile .
-                  deployments+=("cron-tasks")
                   ;;
               esac
             fi
