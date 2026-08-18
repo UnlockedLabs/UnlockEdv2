@@ -127,8 +127,6 @@ jobs:
                     VITE_STATE=mocode
                   elif [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
                     # Public demo runs on seeded fake data — noise, not signal.
-                    POSTHOG_KEY=placeholder_for_other_deployments
-                    POSTHOG_HOST=placeholder_for_other_deployments
                     VITE_DEPLOYMENT=development
                     VITE_STATE=demo
                   else
