@@ -174,12 +174,6 @@ func userIsSystemAdmin(r *http.Request) bool {
 	return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
 }
 
-// userCanManageFacilities reports whether the requester may create, update, or
-// delete facilities (system and department admins).
-func userCanManageFacilities(r *http.Request) bool {
-	return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
-}
-
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)

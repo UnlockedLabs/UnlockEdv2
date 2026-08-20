@@ -91,9 +91,6 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 * when it is not, what is blocking the delete.
  */
 func (srv *Server) handleGetFacilityDeleteCheck(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if !userCanManageFacilities(r) {
-		return newUnauthorizedServiceError()
-	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
@@ -119,9 +116,6 @@ func (srv *Server) handleGetFacilityDeleteCheck(w http.ResponseWriter, r *http.R
 * re-checked here (not only in the preflight) so a stale UI cannot force a delete.
  */
 func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if !userCanManageFacilities(r) {
-		return newUnauthorizedServiceError()
-	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
