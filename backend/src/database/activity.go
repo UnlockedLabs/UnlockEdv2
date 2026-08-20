@@ -15,7 +15,7 @@ func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate 
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "activities")
 	}
-	// Combine activities based on date
+	// Combine activities based on dat  asdfae
 	dailyActivities := make(map[time.Time]models.DailyActivity, days)
 	for _, activity := range activities {
 		date := activity.CreatedAt.Truncate(24 * time.Hour)

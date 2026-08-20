@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/auth/useAuth';
+// import { useAuth } from '@/auth/useAuth';
 import { ConfirmDialog } from '@/components/shared';
 import { LearningRecordPrivacyNotice } from '@/components/learning-record/LearningRecordPrivacyNotice';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +54,7 @@ import {
     TOP_SKILLS_MAX
 } from './transcriptReflectionConfig';
 import { LearningRecordTracker } from './learningRecordAnalytics';
+import { PILOT_DEFAULT_FACILITY } from './useLearningRecordFacilities';
 
 /** Maps a TranscriptEntry patch key to its corresponding preview field id. */
 function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
@@ -252,14 +253,22 @@ export function DigitalTranscriptWysiwygEntry({
     funnelDownload
 }: DigitalTranscriptWysiwygEntryProps) {
     const isFunnel = formVariant === 'funnel';
-    const { user } = useAuth();
-    const defaultFacility = useMemo<DefaultFacility>(
-        () =>
-            user?.facility_id
-                ? { id: user.facility_id, name: user.facility?.name ?? '' }
-                : null,
-        [user?.facility_id, user?.facility?.name]
-    );
+    /*
+     * TEMPORARY (pilot): new achievements default to SMWRC, because the pilot
+     * runs there and the location dropdown lists only the Maine women's
+     * facilities. Restore the resident's-own-facility derivation (and the
+     * `useAuth` import) once the list is filtered server-side:
+     *
+     * const { user } = useAuth();
+     * const defaultFacility = useMemo<DefaultFacility>(
+     *     () =>
+     *         user?.facility_id
+     *             ? { id: user.facility_id, name: user.facility?.name ?? '' }
+     *             : null,
+     *     [user?.facility_id, user?.facility?.name]
+     * );
+     */
+    const defaultFacility: DefaultFacility = PILOT_DEFAULT_FACILITY;
     const [searchParams, setSearchParams] = useSearchParams();
     const [session, setSession] = useState<TranscriptEntrySession | null>(null);
     const [saveErrorRowId, setSaveErrorRowId] = useState<string | null>(null);
