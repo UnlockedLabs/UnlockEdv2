@@ -137,10 +137,22 @@ export default function DigitalTranscriptEntryPage() {
         navigate(base);
     }, [navigate, base]);
 
-    const handleFinish = useCallback(() => {
-        const ok =
-            funnelFinishRef.current?.validateFinishRequirements() ?? false;
-        if (ok) navigateHome();
+    // Finishing now awaits a save, which leaves a window where a second click
+    // could run the whole flow again. The tracker refuses a duplicate
+    // completion event, but nothing else stops a double navigation.
+    const finishInFlightRef = useRef(false);
+
+    const handleFinish = useCallback(async () => {
+        if (finishInFlightRef.current) return;
+        finishInFlightRef.current = true;
+        try {
+            const ok =
+                (await funnelFinishRef.current?.validateFinishRequirements()) ??
+                false;
+            if (ok) navigateHome();
+        } finally {
+            finishInFlightRef.current = false;
+        }
     }, [navigateHome]);
 
     const handleDownload = useCallback(async () => {
@@ -286,7 +298,9 @@ export default function DigitalTranscriptEntryPage() {
                         upsertCommittedEntry={upsertCommittedEntry}
                         deleteCommittedEntry={deleteCommittedEntry}
                         onExportRowsChange={handleExportRowsChange}
-                        funnelOnFinish={isFunnel ? handleFinish : undefined}
+                        funnelOnFinish={
+                            isFunnel ? () => void handleFinish() : undefined
+                        }
                         onRegisterFunnelFinish={
                             isFunnel ? handleRegisterFunnelFinish : undefined
                         }

@@ -28,6 +28,9 @@ export const ANALYTICS_EVENTS = {
     LrQuestionLeft: 'lr_question_left',
     LrStepCompleted: 'lr_step_completed',
     LrEntryCompleted: 'lr_entry_completed',
+    // Emitted when the resident leaves the form. The only measure of total time
+    // in the tool that also counts residents who never saved an entry.
+    LrSessionEnded: 'lr_session_ended',
     // Errors & friction
     ApiError: 'api_error'
 } as const;
@@ -70,6 +73,19 @@ function stateTag(): string {
  */
 function analyticsDistinctId(userId: number): string {
     return `${stateTag()}:${userId}`;
+}
+
+/**
+ * Namespace a facility to its deployment (ID-827).
+ *
+ * `facilities.id` is a per-database SERIAL, exactly like `users.id`, so a bare
+ * id names a different facility in every state — breaking any insight down by
+ * `facility_id` merges maine's facility 1 with stlouis's into one row. This is
+ * the key to filter and break down on; it survives facility renames, which
+ * `facility_name` does not.
+ */
+function facilityTag(facilityId: number): string {
+    return `${stateTag()}:${facilityId}`;
 }
 
 /**
@@ -162,20 +178,34 @@ export function captureEvent(
  * The identity is deployment-namespaced — see `analyticsDistinctId`.
  */
 export function identifyUser(
-    user: Pick<User, 'id' | 'role' | 'facility_id' | 'feature_access'>
+    user: Pick<
+        User,
+        'id' | 'role' | 'facility_id' | 'feature_access' | 'facility'
+    >
 ): void {
     try {
+        // Built once and spread into both calls so the person and event copies
+        // cannot drift. `facility` is the stable breakdown key (ID-827);
+        // `facility_name` labels it for readers; `facility_id` is kept because
+        // the existing pilot dashboard filter is built on it.
+        const facilityProps = user.facility_id
+            ? {
+                  facility_id: user.facility_id,
+                  facility: facilityTag(user.facility_id),
+                  facility_name: user.facility?.name ?? ''
+              }
+            : {};
         posthog.identify(analyticsDistinctId(user.id), {
             role: user.role,
-            facility_id: user.facility_id,
-            features: [...(user.feature_access ?? [])].sort().join(',')
+            features: [...(user.feature_access ?? [])].sort().join(','),
+            ...facilityProps
         });
-        // Also register facility as a super property. As a person property alone
-        // it is invisible to event-property filters (the pilot dashboard's
-        // facility filter silently matches nothing) and it is last-write-wins,
+        // Also register facility as super properties. As person properties alone
+        // they are invisible to event-property filters (the pilot dashboard's
+        // facility filter silently matches nothing) and they are last-write-wins,
         // so an admin switching facilities retroactively re-attributes their
-        // whole history. On the event, it records where the action happened.
-        posthog.register({ facility_id: user.facility_id });
+        // whole history. On the event, they record where the action happened.
+        posthog.register(facilityProps);
     } catch {
         /* noop */
     }

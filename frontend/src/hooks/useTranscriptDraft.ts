@@ -105,6 +105,19 @@ export function useTranscriptDraft() {
         return fresh;
     }, []);
 
+    /**
+     * Commit an entry to the server, creating or updating based on whether this
+     * client_id has a backend id yet.
+     *
+     * Rejects when the write fails. `API.fetchWithHandling` resolves
+     * `{ success: false }` rather than throwing, so `apiCreateEntry` returns null
+     * and `apiUpdateEntry` returns false on a 500, a timeout, or offline — which
+     * left this function resolving normally on a failed write. Callers read that as
+     * success: the resident saw "Saved", `lr_entry_completed` fired, and Finish
+     * navigated home with the entry never persisted. This is the only place that
+     * can turn a failed write back into a signal, so it throws and lets callers
+     * decide.
+     */
     const upsertCommittedEntry = useCallback(async (entry: TranscriptEntry) => {
         const trimmedEntry = {
             ...entry,
@@ -112,32 +125,46 @@ export function useTranscriptDraft() {
         };
         const backendId = entryBackendIds.current.get(entry.id);
         if (backendId !== undefined) {
-            await apiUpdateEntry(backendId, trimmedEntry);
+            if (!(await apiUpdateEntry(backendId, trimmedEntry))) {
+                throw new Error('failed to update learning record entry');
+            }
             setEntries((prev) =>
                 prev.map((e) => (e.id === entry.id ? trimmedEntry : e))
             );
         } else {
             const result = await apiCreateEntry(trimmedEntry);
-            if (result) {
-                entryBackendIds.current.set(entry.id, result.backendId);
-                setEntries((prev) => {
-                    const idx = prev.findIndex((e) => e.id === entry.id);
-                    if (idx >= 0) {
-                        const next = [...prev];
-                        next[idx] = result.entry;
-                        return next;
-                    }
-                    return [...prev, result.entry];
-                });
+            if (!result) {
+                throw new Error('failed to create learning record entry');
             }
+            entryBackendIds.current.set(entry.id, result.backendId);
+            setEntries((prev) => {
+                const idx = prev.findIndex((e) => e.id === entry.id);
+                if (idx >= 0) {
+                    const next = [...prev];
+                    next[idx] = result.entry;
+                    return next;
+                }
+                return [...prev, result.entry];
+            });
         }
         dispatchEntrySessionUpdated();
     }, []);
 
+    /**
+     * Remove an entry, server-side first.
+     *
+     * Rejects when the delete fails, for the same reason `upsertCommittedEntry`
+     * does — `apiDeleteEntry` returns false rather than throwing. Previously the
+     * local removal ran unconditionally, so a failed delete made the row disappear
+     * while it still existed on the server, and it reappeared on the next hydrate.
+     * Dropping local state only after the server confirms keeps the two in step.
+     */
     const deleteCommittedEntry = useCallback(async (id: string) => {
         const backendId = entryBackendIds.current.get(id);
         if (backendId !== undefined) {
-            await apiDeleteEntry(backendId);
+            if (!(await apiDeleteEntry(backendId))) {
+                throw new Error('failed to delete learning record entry');
+            }
             entryBackendIds.current.delete(id);
         }
         setEntries((prev) => prev.filter((e) => e.id !== id));

@@ -585,10 +585,17 @@ export default function DigitalTranscriptHome() {
         if (!deleteTarget || isDeleting) return;
 
         setIsDeleting(true);
-        void deleteCommittedEntry(deleteTarget.id).finally(() => {
-            setIsDeleting(false);
-            setDeleteTarget(null);
-        });
+        // deleteCommittedEntry rejects on a failed delete and leaves the entry in
+        // place, so the resident has to be told rather than watching the row
+        // silently survive.
+        void deleteCommittedEntry(deleteTarget.id)
+            .catch(() => {
+                toast.error('Could not delete that entry. Please try again.');
+            })
+            .finally(() => {
+                setIsDeleting(false);
+                setDeleteTarget(null);
+            });
     }, [deleteCommittedEntry, deleteTarget, isDeleting]);
 
     const handleStartNewClick = useCallback(() => {

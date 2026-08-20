@@ -43,5 +43,18 @@ export const swrFetcher = async (url: string): Promise<unknown> => {
         });
         throw new Error(res.statusText);
     }
-    return res.json() as Promise<unknown>;
+    try {
+        return (await res.json()) as unknown;
+    } catch (err) {
+        // An OK response with an empty or malformed body still fails the page.
+        // Without this the request looks successful to analytics while SWR
+        // surfaces an error to the user.
+        captureEvent(ANALYTICS_EVENTS.ApiError, {
+            status: res.status,
+            method: 'GET',
+            ...analyticsUrl(url),
+            message: err instanceof Error ? err.message : 'Invalid JSON'
+        });
+        throw err;
+    }
 };
