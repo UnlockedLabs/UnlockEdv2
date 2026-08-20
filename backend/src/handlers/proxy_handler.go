@@ -62,17 +62,17 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		scheme = "http"
 	}
 	proxy := httputil.ReverseProxy{
-		Director: func(req *http.Request) {
-			req.URL.Scheme = scheme
-			req.URL.Host = parsedURL.Host
-			req.Host = parsedURL.Host
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.Out.URL.Scheme = scheme
+			pr.Out.URL.Host = parsedURL.Host
+			pr.Out.Host = parsedURL.Host
 			decodedPath, _ := url.QueryUnescape(finalEncodedPath)
-			req.URL.Path = decodedPath
-			req.URL.RawPath = finalEncodedPath
-			req.URL.RawQuery = r.URL.RawQuery
-			req.Header.Set("X-Real-IP", r.RemoteAddr)
-			req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-			req.Header.Set("X-Forwarded-Proto", scheme)
+			pr.Out.URL.Path = decodedPath
+			pr.Out.URL.RawPath = finalEncodedPath
+			pr.Out.URL.RawQuery = r.URL.RawQuery
+			pr.Out.Header.Set("X-Real-IP", r.RemoteAddr)
+			pr.Out.Header.Set("X-Forwarded-For", r.RemoteAddr)
+			pr.Out.Header.Set("X-Forwarded-Proto", scheme)
 		},
 		Transport: &http.Transport{
 			Proxy:           http.ProxyFromEnvironment,
