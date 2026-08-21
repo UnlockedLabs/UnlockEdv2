@@ -146,6 +146,9 @@ func MigrateTesting(db *gorm.DB) {
 		&models.UserAccountHistory{},
 		&models.Tag{},
 		&models.OpenContentTag{},
+		&models.FeatureFlags{},
+		&models.PageFeatureFlags{},
+		&models.FacilityFeatureFlag{},
 	}
 	logrus.Println("Running up migrations...")
 	for _, table := range TableList {

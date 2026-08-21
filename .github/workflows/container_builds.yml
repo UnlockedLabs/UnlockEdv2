@@ -31,7 +31,7 @@ jobs:
           BASE="${{ github.event.before }}"
           echo "$BASE"
           git fetch origin "$BASE"
-          paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
+          paths=("frontend/" "backend/" "provider-middleware/")
           changes=""
           for path in "${paths[@]}"; do
             count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
@@ -109,10 +109,14 @@ jobs:
               case $path in
                 "frontend/")
                   echo "Building frontend image"
-                  POSTHOG_KEY=placeholder_for_other_deployments
-                  POSTHOG_HOST=placeholder_for_other_deployments
+                  # Deployments that report to PostHog get the real key; every
+                  # event is tagged with VITE_DEPLOYMENT + VITE_STATE so the
+                  # facilities can be told apart from staging. Builds that should
+                  # not report get a placeholder key, which the frontend rejects
+                  # because it is not phc_-prefixed.
+                  POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
+                  POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
                   VITE_DEPLOYMENT=production
-                  # Set environment-specific secrets
                   if [[ "${GITHUB_REF}" == "refs/heads/stlouis" ]]; then
                     VITE_STATE=stlouis
                   elif [[ "${GITHUB_REF}" == "refs/heads/maine" ]]; then
@@ -122,11 +126,10 @@ jobs:
                   elif [[ "${GITHUB_REF}" == "refs/heads/mocode" ]]; then
                     VITE_STATE=mocode
                   elif [[ "${GITHUB_REF}" == "refs/heads/demov2" ]]; then
+                    # Public demo runs on seeded fake data — noise, not signal.
                     VITE_DEPLOYMENT=development
                     VITE_STATE=demo
                   else
-                    POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
-                    POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
                     VITE_DEPLOYMENT=development
                     VITE_STATE=staging
                   fi
@@ -143,11 +146,6 @@ jobs:
                   echo "Building middleware image"
                   docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
                   deployments+=("provider-service")
-                  ;;
-                "backend/tasks")
-                  echo "Building scheduler image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:${IMAGE_VERSION} --push -f backend/tasks/Dockerfile .
-                  deployments+=("cron-tasks")
                   ;;
               esac
             fi

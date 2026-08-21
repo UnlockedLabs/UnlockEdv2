@@ -76,3 +76,7 @@ func newUpdateDBError(err error, table string) DBError {
 func newNotFoundDBError(err error, table string) DBError {
 	return NewDBError(err, fmt.Sprintf("%s not found", table))
 }
+
+func newBadRequestDBError(err error, msg string) DBError {
+	return DBError{Status: http.StatusBadRequest, Message: msg, InternalErr: err}
+}

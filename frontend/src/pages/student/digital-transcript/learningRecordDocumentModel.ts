@@ -11,6 +11,8 @@ import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 export type LearningRecordDocumentSource = Pick<
     TranscriptDraft,
     | 'programName'
+    | 'facilityName'
+    | 'facilityOther'
     | 'completionDate'
     | 'confidence'
     | 'topSkills'
@@ -56,6 +58,25 @@ export function isCompletedSectionFilled(
     source: LearningRecordDocumentSource
 ): boolean {
     return slotText(source.completionDate);
+}
+
+/** Fallback for records saved before the location field existed. */
+export const LOCATION_NOT_SPECIFIED_LABEL = 'Location not specified';
+
+/**
+ * Where the achievement took place, preferring the joined facility name and
+ * falling back to the resident's free text for an unlisted location.
+ */
+export function achievementLocationText(
+    source: LearningRecordDocumentSource
+): string {
+    return source.facilityName.trim() || source.facilityOther.trim();
+}
+
+export function isLocationSectionFilled(
+    source: LearningRecordDocumentSource
+): boolean {
+    return Boolean(achievementLocationText(source));
 }
 
 export function isConfidenceSectionFilled(
@@ -143,17 +164,22 @@ export function hasFilledMetadataSections(
 ): boolean {
     return (
         isProgramSectionFilled(source) ||
+        isLocationSectionFilled(source) ||
         isCompletedSectionFilled(source) ||
         isConfidenceSectionFilled(source) ||
         isSkillsSectionFilled(source)
     );
 }
 
-/** Funnel preview — left column is program and completion date only. */
+/** Funnel preview — left column is program, location, and completion date only. */
 export function hasFilledFunnelMetadataSections(
     source: LearningRecordDocumentSource
 ): boolean {
-    return isProgramSectionFilled(source) || isCompletedSectionFilled(source);
+    return (
+        isProgramSectionFilled(source) ||
+        isLocationSectionFilled(source) ||
+        isCompletedSectionFilled(source)
+    );
 }
 
 /** How many of the 8 reflection prompts have a meaningful answer (per-achievement readiness). */

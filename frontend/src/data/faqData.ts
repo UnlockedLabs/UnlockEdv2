@@ -104,7 +104,7 @@ export const FAQ_CATEGORIES: Record<string, FAQEntry[]> = {
         },
         {
             question: 'Is my activity on UnlockEd private?',
-            answer: 'The UnlockEd team and authorized facility staff can see this information.'
+            answer: "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
         }
     ],
     'Getting Help and Troubleshooting': [

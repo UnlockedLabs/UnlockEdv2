@@ -10,7 +10,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -100,6 +99,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerProviderUserRoutes,
 		srv.registerOryRoutes,
 		srv.registerFacilitiesRoutes,
+		srv.registerFacilityFeatureAccessRoutes,
 		srv.registerOpenContentRoutes,
 		srv.registerLibraryRoutes,
 		srv.registerProgramsRoutes,
@@ -109,7 +109,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerProgramClassEnrollmentsRoutes,
 		srv.registerAttendanceRoutes,
 		srv.registerVideoRoutes,
-		srv.registerFeatureFlagRoutes,
+		srv.registerDemoSeedRoutes,
 		srv.registerOpenContentActivityRoutes,
 		srv.registerTagRoutes,
 		srv.registerReportsRoutes,
@@ -313,15 +313,6 @@ func (srv *Server) setupNatsKvBuckets() error {
 	}
 	srv.buckets = buckets
 	return nil
-}
-
-func (srv *Server) hasFeatureAccess(axx ...models.FeatureAccess) bool {
-	for _, a := range axx {
-		if !slices.Contains(srv.features, a) {
-			return false
-		}
-	}
-	return true
 }
 
 func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {
@@ -618,6 +609,19 @@ func writeDeleteConflictResponse(w http.ResponseWriter, message string, blockers
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusConflict)
 	resp := models.Resource[models.DeleteBlockingChildren]{
+		Message: message,
+		Data:    blockers,
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return newResponseServiceError(err)
+	}
+	return nil
+}
+
+func writeFacilityDeleteConflictResponse(w http.ResponseWriter, message string, blockers models.FacilityBlockingChildren) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+	resp := models.Resource[models.FacilityBlockingChildren]{
 		Message: message,
 		Data:    blockers,
 	}

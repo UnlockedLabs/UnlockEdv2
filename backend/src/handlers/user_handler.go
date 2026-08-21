@@ -23,7 +23,8 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	resolver := UserRoleResolver("id")
 	return []routeDef{
 		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
-		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms,
+			AllResolvers(resolver, ResidentFeatureResolver(models.ResidentProgramsAccess))),
 		validatedRoute("GET /api/users/{id}/attendance-trend", srv.handleGetUserAttendanceTrend, resolver),
 		validatedRoute("GET /api/users/{id}/notes", srv.handleGetUserNotes, resolver),
 		validatedAdminRoute("POST /api/users/{id}/notes", srv.handleCreateUserNote, FacilityAdminResolver("users", "id")),
@@ -543,9 +544,12 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		userPrograms[i].CalculateAttendancePercentage()
 		userPrograms[i].Schedule = models.FormatScheduleFromRRule(userPrograms[i].RecurrenceRule)
 	}
-	canvasPrograms := srv.fetchCanvasUserPrograms(userId)
-	userPrograms = append(userPrograms, canvasPrograms...)
-	queryCtx.Total += int64(len(canvasPrograms))
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if claims.hasFeatureAccess(models.ProviderAccess) {
+		canvasPrograms := srv.fetchCanvasUserPrograms(userId)
+		userPrograms = append(userPrograms, canvasPrograms...)
+		queryCtx.Total += int64(len(canvasPrograms))
+	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }
 
@@ -858,7 +862,17 @@ func (srv *Server) handleGenerateUsageReportPDF(w http.ResponseWriter, r *http.R
 	queryCtx.All = true
 	queryCtx.OrderBy, queryCtx.Order = "start_dt", "DESC"
 
-	pdfBytes, err := jasper.GenerateUsageReportPDF(srv.Db, &queryCtx, srv.hasFeatureAccess(models.ProgramAccess), userID)
+	subject, err := srv.Db.GetUserByID(uint(userID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	subjectFeatures, err := srv.Db.GetFacilityFeatureAccess(subject.FacilityID, srv.features)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	hasProgramAccess := slices.Contains(subjectFeatures, models.ProgramAccess)
+
+	pdfBytes, err := jasper.GenerateUsageReportPDF(srv.Db, &queryCtx, hasProgramAccess, userID)
 	if err != nil {
 		log.errorf("jasper service error: %v", err)
 		return newInternalServerServiceError(err, "failed to generate PDF report")

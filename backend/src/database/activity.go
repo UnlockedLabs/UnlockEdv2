@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// REMOVE ME
 func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]models.DailyActivity, error) {
 	days := int(math.Ceil(endDate.Sub(startDate).Hours() / 24))
 	activities := make([]models.Activity, 0, days)

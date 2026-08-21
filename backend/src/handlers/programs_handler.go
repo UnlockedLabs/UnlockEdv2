@@ -75,7 +75,8 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 
 func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
-	adminRole := r.Context().Value(ClaimsKey).(*Claims).Role
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	adminRole := claims.Role
 	timeFilter, err := strconv.Atoi(r.URL.Query().Get("days"))
 	if err != nil {
 		timeFilter = -1
@@ -94,11 +95,13 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	for i := range programs {
 		programs[i].Source = "unlocked"
 	}
-	if canvasPrograms, canvasErr := srv.getCanvasProviderPrograms(args.FacilityID, adminRole); canvasErr != nil {
-		log.errorf("failed to fetch canvas provider programs: %v", canvasErr)
-	} else {
-		programs = append(programs, canvasPrograms...)
-		args.Total += int64(len(canvasPrograms))
+	if claims.hasFeatureAccess(models.ProviderAccess) {
+		if canvasPrograms, canvasErr := srv.getCanvasProviderPrograms(args.FacilityID, adminRole); canvasErr != nil {
+			log.errorf("failed to fetch canvas provider programs: %v", canvasErr)
+		} else {
+			programs = append(programs, canvasPrograms...)
+			args.Total += int64(len(canvasPrograms))
+		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, programs, args.IntoMeta())
 }

@@ -8,9 +8,10 @@ import type {
  * `LearningRecordDocumentSource` (which omits `id`/`createdAt`). Funnel field
  * readers only touch these fields, so they accept either shape.
  */
+/** Location is achievement metadata, not a reflection answer, so it is excluded. */
 export type TranscriptReflectionFields = Omit<
     TranscriptEntry,
-    'id' | 'createdAt'
+    'id' | 'createdAt' | 'facilityId' | 'facilityOther' | 'facilityName'
 >;
 
 export const TOP_SKILLS_MAX = 5;
@@ -113,6 +114,7 @@ export const REFLECTION_TEXT_NUDGES: Record<
 /** Live document preview — section labels (layout order is handled in the preview component). */
 export const DOCUMENT_PREVIEW_LABELS = {
     program: 'Program',
+    location: 'Location',
     completed: 'Completed',
     confidence: 'Confidence in future',
     skills: 'Skills gained',
@@ -127,6 +129,7 @@ export const DOCUMENT_PREVIEW_LABELS = {
 /** Achievements record preview — matches finalized Learning Record document. */
 export const LEARNING_RECORD_PREVIEW_LABELS = {
     program: 'Program',
+    location: 'Location',
     completed: 'Completed',
     confidence: 'Confidence in future',
     skills: 'Top skills',
@@ -330,6 +333,8 @@ export type FunnelPreviewFieldKey = keyof typeof FUNNEL_PREVIEW_LABELS;
 export const FUNNEL_FIELD_DESCRIPTIONS = {
     programName:
         'Write the name of the program, course, or skill you completed. If your achievement is something else — like a personal milestone or goal — describe it briefly here.',
+    location:
+        'Choose the facility where you completed this — it may not be where you are now. If it is not on the list, choose "Other" and type it in.',
     completionDate:
         "A completion date may not apply for every achievement - it's okay to skip to the next question.",
     whatMadeYouFinish:
@@ -490,7 +495,37 @@ function funnelCompletionFieldAnswered(
     }
 }
 
-function funnelStepFieldAnswered(
+/** Shape of a funnel step field, for analytics segmentation (ID-806). */
+export type FunnelFieldKind =
+    | 'text'
+    | 'tags'
+    | 'confidence'
+    | 'toggle'
+    | 'date';
+
+/**
+ * Which input shape a step field uses. Lets question-level analytics separate
+ * "chip/multi-select" questions from free-text ones without the analytics layer
+ * needing to know the form's markup.
+ */
+export function funnelStepFieldKind(field: FunnelStepField): FunnelFieldKind {
+    switch (field) {
+        case 'completionDate':
+            return 'date';
+        case 'confidence':
+            return 'confidence';
+        case 'q4':
+            return 'toggle';
+        case 'q5':
+        case 'q8Selections':
+        case 'q9Selections':
+            return 'tags';
+        default:
+            return 'text';
+    }
+}
+
+export function funnelStepFieldAnswered(
     entry: TranscriptReflectionFields,
     field: FunnelStepField
 ): boolean {

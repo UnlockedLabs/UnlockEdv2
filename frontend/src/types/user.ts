@@ -22,7 +22,8 @@ export enum FeatureAccess {
     LearningRecordAccess = 'learning_record',
     RequestContentAccess = 'request_content',
     HelpfulLinksAccess = 'helpful_links',
-    UploadVideoAccess = 'upload_video'
+    UploadVideoAccess = 'upload_video',
+    ResidentProgramsAccess = 'resident_programs'
 }
 
 export interface User {

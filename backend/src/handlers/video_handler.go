@@ -38,12 +38,12 @@ func validateVideoURL(urlStr string) error {
 }
 
 func (srv *Server) registerVideoRoutes() []routeDef {
-	axx := models.OpenContentAccess
+	axx := models.UploadVideoAccess
 	return []routeDef{
 		featureRoute("GET /api/videos", srv.handleGetVideos, axx),
 		featureRoute("GET /api/videos/{id}", srv.handleGetVideoById, axx),
 		featureRoute("PUT /api/videos/{id}/favorite", srv.handleFavoriteVideo, axx),
-		adminFeatureRoute("POST /api/videos", srv.handlePostVideos, axx, models.UploadVideoAccess),
+		adminFeatureRoute("POST /api/videos", srv.handlePostVideos, axx),
 		adminFeatureRoute("PUT /api/videos/{id}/{action}", srv.handleVideoAction, axx),
 		deptAdminFeatureRoute("GET /api/videos/{id}/facilities", srv.handleGetVideoFacilityVisibility, axx),
 		deptAdminFeatureRoute("PUT /api/videos/{id}/facilities", srv.handleSetVideoFacilityVisibility, axx),

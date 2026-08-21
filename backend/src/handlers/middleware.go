@@ -64,7 +64,7 @@ func (srv *Server) applyStandardMiddleware(next http.Handler, resolver RouteReso
 func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(ClaimsKey).(*Claims)
-		if !srv.hasFeatureAccess(models.OpenContentAccess) {
+		if !user.hasFeatureAccess(models.OpenContentAccess) {
 			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
 			return
 		}
@@ -96,7 +96,7 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(ClaimsKey).(*Claims)
-		if !srv.hasFeatureAccess(models.OpenContentAccess) {
+		if !user.hasFeatureAccess(models.OpenContentAccess) {
 			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
 			return
 		}
@@ -186,7 +186,8 @@ func isOriginAllowed(origin string) bool {
 
 func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel ...models.FeatureAccess) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !srv.hasFeatureAccess(accessLevel...) {
+		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		if !ok || !claims.hasFeatureAccess(accessLevel...) {
 			srv.errorResponse(w, http.StatusUnauthorized, "Feature not enabled")
 			return
 		}
@@ -299,5 +300,30 @@ func UserRoleResolver(routeId string) RouteResolver {
 		user, err := tx.GetUserByID(uint(id))
 		// facility admin, needs to be from the facility of the referenced user
 		return err == nil && user.FacilityID == claims.FacilityID
+	}
+}
+
+func ResidentFeatureResolver(feature models.FeatureAccess) RouteResolver {
+	return func(tx *database.DB, r *http.Request) bool {
+		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		if !ok {
+			return false
+		}
+		if slices.Contains(models.AdminRoles, claims.Role) {
+			return true
+		}
+		return claims.hasFeatureAccess(feature)
+	}
+}
+
+// AllResolvers passes only when every resolver passes, for routes that need more than one check.
+func AllResolvers(resolvers ...RouteResolver) RouteResolver {
+	return func(tx *database.DB, r *http.Request) bool {
+		for _, resolve := range resolvers {
+			if !resolve(tx, r) {
+				return false
+			}
+		}
+		return true
 	}
 }

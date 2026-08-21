@@ -53,7 +53,8 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 		return newDatabaseServiceError(err)
 	}
 	// Merge Canvas calendar events when not filtered to a single class
-	if classID == 0 {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if classID == 0 && claims.hasFeatureAccess(models.ProviderAccess) {
 		canvasEvents, canvasErr := srv.appendCanvasEventsForFacility(dtRng)
 		if canvasErr != nil {
 			log.warnf("failed to fetch canvas calendar events: %v", canvasErr)

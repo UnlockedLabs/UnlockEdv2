@@ -4,7 +4,6 @@ import {
     isAdministrator,
     hasFeature,
     canSwitchFacility,
-    isSysAdmin,
     handleLogout
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
@@ -195,7 +194,7 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     />
                 </>
             )}
-            {isSysAdmin(user) && (
+            {canSwitchFacility(user) && (
                 <NavLink
                     to="/feature-control"
                     icon={AdjustmentsHorizontalIcon}
@@ -312,7 +311,13 @@ function StudentNav({
         user,
         FeatureAccess.LearningRecordAccess
     );
-    const hasProgram = hasFeature(user, FeatureAccess.ProgramAccess);
+    // Residents only see Programs when program tracking is on *and* the
+    // resident-facing sub-feature hasn't been turned off for their facility.
+    const hasProgram = hasFeature(
+        user,
+        FeatureAccess.ProgramAccess,
+        FeatureAccess.ResidentProgramsAccess
+    );
     const hasHome = hasOpen || hasLearningRecord;
 
     const tourHighlight = (target: string) =>

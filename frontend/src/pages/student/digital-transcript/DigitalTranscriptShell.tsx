@@ -7,8 +7,8 @@ import { LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 /** Page canvas — shadcn `muted` surface */
 export const dtPageSurface = 'bg-muted';
 
-/** Viewport below TopNav (`h-16`) — fills visible main area on Learning Record routes */
-export const dtShellMinHeight = 'min-h-[calc(100dvh-4rem)]';
+/** Viewport below the app header — fills visible main area on Learning Record routes */
+export const dtShellMinHeight = 'min-h-below-app-header';
 
 interface ShellProps {
     children: ReactNode;

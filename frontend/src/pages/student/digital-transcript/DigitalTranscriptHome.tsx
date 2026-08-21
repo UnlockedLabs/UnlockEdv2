@@ -54,7 +54,9 @@ import {
 } from '@/utils/downloadLearningRecordPdf';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
+    achievementLocationText,
     countAnsweredReflections,
+    LOCATION_NOT_SPECIFIED_LABEL,
     reflectionSlotsTotal
 } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
@@ -75,6 +77,7 @@ import { learningRecordResidentDisplayName } from './learningRecordResidentName'
 import { TranscriptResumePreview } from './TranscriptResumePreview';
 import { ViewAllAchievementsSheet } from './ViewAllAchievementsSheet';
 import { PrintShareHelpLink } from '@/components/learning-record/PrintShareHelpLink';
+import { LearningRecordPrivacyNotice } from '@/components/learning-record/LearningRecordPrivacyNotice';
 import {
     countFunnelFieldsAnswered,
     funnelCompletionTier,
@@ -100,6 +103,10 @@ const ACHIEVEMENT_LOG_THUMBNAIL_SAMPLE: TranscriptEntry = {
     id: '__home_thumb_sample__',
     createdAt: '',
     programName: 'Your next achievement',
+    facilityId: null,
+    facilityOther: '',
+    // Left empty on purpose: no real facility belongs in decorative sample data.
+    facilityName: '',
     completionDate: '2025-06-01',
     topSkills: ['Study habits', 'Test strategies', 'Time management'],
     whatMadeYouFinish: 'Checking off each milestone kept me going.',
@@ -141,6 +148,11 @@ function formatProgramCompletedDate(entry: TranscriptEntry): string {
             day: 'numeric'
         }
     );
+}
+
+/** Where the achievement happened; older records have no location stored. */
+function formatAchievementLocation(entry: TranscriptEntry): string {
+    return achievementLocationText(entry) || LOCATION_NOT_SPECIFIED_LABEL;
 }
 
 function formatSavedOn(iso: string): string {
@@ -303,6 +315,13 @@ function SavedEntriesSection({
                                         className="w-[min(28%,14rem)] pl-6"
                                     />
                                     <SortableColumnHeader
+                                        label="Location"
+                                        column="location"
+                                        tableSort={tableSort}
+                                        onSortColumn={onSortColumn}
+                                        className="hidden w-[200px] sm:table-cell"
+                                    />
+                                    <SortableColumnHeader
                                         label="Completed"
                                         column="completed"
                                         tableSort={tableSort}
@@ -366,6 +385,11 @@ function SavedEntriesSection({
                                                         entry
                                                     )}
                                                 </p>
+                                                <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
+                                                    {formatAchievementLocation(
+                                                        entry
+                                                    )}
+                                                </p>
                                                 <div className="mt-3 md:hidden">
                                                     <QuestionsAnsweredBadge
                                                         answered={answered}
@@ -378,6 +402,11 @@ function SavedEntriesSection({
                                                         entry.createdAt
                                                     )}
                                                 </p>
+                                            </TableCell>
+                                            <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
+                                                {formatAchievementLocation(
+                                                    entry
+                                                )}
                                             </TableCell>
                                             <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
                                                 {formatProgramCompletedDate(
@@ -556,10 +585,17 @@ export default function DigitalTranscriptHome() {
         if (!deleteTarget || isDeleting) return;
 
         setIsDeleting(true);
-        void deleteCommittedEntry(deleteTarget.id).finally(() => {
-            setIsDeleting(false);
-            setDeleteTarget(null);
-        });
+        // deleteCommittedEntry rejects on a failed delete and leaves the entry in
+        // place, so the resident has to be told rather than watching the row
+        // silently survive.
+        void deleteCommittedEntry(deleteTarget.id)
+            .catch(() => {
+                toast.error('Could not delete that entry. Please try again.');
+            })
+            .finally(() => {
+                setIsDeleting(false);
+                setDeleteTarget(null);
+            });
     }, [deleteCommittedEntry, deleteTarget, isDeleting]);
 
     const handleStartNewClick = useCallback(() => {
@@ -638,7 +674,12 @@ export default function DigitalTranscriptHome() {
                         title="Build your Learning Record"
                         subtitle={FUNNEL_SUBTITLE}
                     />
-                    <PrintShareHelpLink className="mb-8" />
+                    <PrintShareHelpLink className="mb-4" />
+
+                    <LearningRecordPrivacyNotice
+                        variant="short"
+                        className="mb-8"
+                    />
 
                     <SavedEntriesSection
                         entries={entries}
@@ -690,7 +731,12 @@ export default function DigitalTranscriptHome() {
                         title="Learning Record"
                         subtitle="Write down what you finished and the skills you built. Your answers are saved here as you go. Tap Done when one achievement feels complete."
                     />
-                    <PrintShareHelpLink className="mb-8" />
+                    <PrintShareHelpLink className="mb-4" />
+
+                    <LearningRecordPrivacyNotice
+                        variant="short"
+                        className="mb-8"
+                    />
 
                     <Card className="mb-6 overflow-hidden p-0">
                         <div className="flex flex-col md:flex-row">

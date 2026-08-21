@@ -1,3 +1,5 @@
+import type { FeatureAccess } from './user';
+
 export interface Facility {
     [key: string]: string | number;
     id: number;
@@ -33,6 +35,19 @@ export interface FacilityWithStats {
     active_programs: number;
     active_classes: number;
     total_residents: number;
+    /** True when the facility has no records that block deletion. */
+    can_delete: boolean;
+}
+
+export interface FacilityFeatureOverviewRow {
+    facility_id: number;
+    facility_name: string;
+    features: Partial<Record<FeatureAccess, boolean>>;
+}
+
+export interface FacilityFeatureDetailRow {
+    feature: FeatureAccess;
+    enabled: boolean;
 }
 
 export enum Timezones {
