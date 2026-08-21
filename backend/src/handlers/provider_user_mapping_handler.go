@@ -83,7 +83,7 @@ func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *htt
 		log.add("userId", mapping.UserID)
 		return newDatabaseServiceError(err)
 	}
-	srv.invalidateCanvasProgramCache(mapping.ProviderPlatformID, int(mapping.UserID))
+	srv.invalidateCanvasCachesForUser(mapping.ProviderPlatformID, int(mapping.UserID))
 	return writeJsonResponse(w, http.StatusCreated, mapping)
 }
 
@@ -103,6 +103,6 @@ func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *htt
 		log.add("providerId", providerId)
 		return newDatabaseServiceError(err)
 	}
-	srv.invalidateCanvasProgramCache(uint(providerId), userId)
+	srv.invalidateCanvasCachesForUser(uint(providerId), userId)
 	return writeJsonResponse(w, http.StatusNoContent, "Mapping deleted successfully")
 }

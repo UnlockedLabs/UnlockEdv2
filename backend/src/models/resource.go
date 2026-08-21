@@ -32,6 +32,7 @@ type PaginationMeta struct {
 	LastPage    int   `json:"last_page"`
 	PerPage     int   `json:"per_page"`
 	Total       int64 `json:"total"`
+	CanvasLoading bool `json:"canvas_loading,omitempty"`
 }
 
 func NewPaginationInfo(currentPage, perPage int, total int64) PaginationMeta {
