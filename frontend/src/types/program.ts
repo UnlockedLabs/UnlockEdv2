@@ -78,15 +78,6 @@ export interface Program {
     funding_type: FundingType;
     program_types: PgmType[];
     is_active: boolean;
-    /**
-     * True when the program is completable in its own right, separately from the
-     * classes under it (id751, migration 00073). false -- the default and every
-     * pre-existing program -- is pre-id751 behaviour: the class carries the
-     * certificate and the program is only a grouping.
-     *
-     * Nothing reads this yet; the rule that satisfies a program completion is still
-     * an open product decision. Per program, GLOBAL across facilities.
-     */
     has_program_completion: boolean;
     tags: ProgramTag[];
     is_favorited: boolean;
@@ -146,20 +137,6 @@ export interface ProgramsOverview {
     programs_table: ProgramsOverviewTable[];
 }
 
-/**
- * A Class is the certificate-bearing tier: Program -> Class -> Cohort (ticket id751).
- * A resident completes a Cohort, and that grants the CLASS completion.
- *
- * Deliberately small. No `status` -- a class isn't "Scheduled", its cohorts are -- and
- * no capacity or dates, which describe a run rather than the class itself.
- *
- * ⚠️  Do NOT widen this to match Cohort. TypeScript is structural, so a Class that is a
- *     subset of Cohort means a Cohort is assignable wherever a Class is expected and
- *     `tsc` will not flag a single mixed-up call site. Keeping this type strictly
- *     narrower than Cohort is the ONLY check there is: class ids start at 1 and overlap
- *     cohort ids (owner's call, 2026-08-17), so a mixed-up id no longer 404s -- it
- *     resolves to a real row of the wrong tier.
- */
 export interface Class {
     id: number;
     program_id: number;
@@ -201,11 +178,6 @@ export interface ClassCreditType {
 
 export interface Cohort {
     id: number;
-    /**
-     * Parent class id. Note the key: on the wire `class_id` still means the COHORT
-     * (the pre-id751 name, kept until the wire-rename follow-up PR), so the class tier
-     * had to take `program_class_id`.
-     */
     program_class_id: number;
     program_id: number;
     facility_id: number;

@@ -1073,22 +1073,6 @@ func deleteClassIfLastCohort(tx *gorm.DB, classID uint) error {
 	return nil
 }
 
-/*
-===============================================================================
-id751 -- CLASS-LEVEL queries and rollups.
-
-Everything above this line operates on COHORTS (the table formerly called
-program_classes). Everything below operates on the CLASS tier, and its whole
-reason for existing is the ticket's user story: "cohort enrollment rolled up to
-the class level for reporting."
-
-The rollups aggregate ACROSS a class's cohorts. Reading them per-cohort and
-summing in Go would be wrong the moment a resident appears in two cohorts of one
-class -- which the merge makes possible -- so the counts here are deliberately
-DISTINCT on user where a person is being counted, and plain sums where seats are.
-===============================================================================
-*/
-
 // GetClassesForProgram returns the CLASS tier under a program, each with its
 // cohorts rolled up. Facility scoping matches the cohort query: an explicit
 // facility_id param, or the caller's own facility when they cannot switch.

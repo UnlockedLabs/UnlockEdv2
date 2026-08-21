@@ -67,9 +67,6 @@ func FormatScheduleFromRRule(rruleStr string) string {
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
-	// CohortID keeps the JSON key "class_id" -- the pre-id751 name. Column and field are
-	// cohort_id/CohortID; the wire rename is a scheduled follow-up PR. An event belongs to
-	// one COHORT: it is a specific time and place, which is a property of a run.
 	CohortID       uint    `json:"cohort_id" gorm:"column:cohort_id;not null" validate:"required"`
 	Duration       string  `json:"duration" gorm:"not null" validate:"required"`
 	RecurrenceRule string  `json:"recurrence_rule" gorm:"not null" validate:"required"`

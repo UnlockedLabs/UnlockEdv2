@@ -283,9 +283,6 @@ export const programCreateSchema = z.object({
     creditTypes: nonEmptyArray(z.enum(CreditType), 'credit type'),
     fundingTypes: nonEmptyArray(z.enum(FundingType), 'funding type'),
     status: z.enum(ProgramEffectiveStatus),
-    // id751 program completion flag. camelCase to match this form's convention; mapped to
-    // the wire key has_program_completion in the submit handler. Plain z.boolean() -- a
-    // zod .default() would make the input type optional and break zodResolver.
     hasProgramCompletion: z.boolean(),
     facilities: z.array(z.number())
 });
@@ -302,11 +299,6 @@ export const programFormSchema = z.object({
         message: VMSG.required('Funding type')
     }),
     is_active: z.boolean(),
-    // Program completion flag (id751). Plain z.boolean(), NOT .default(false): a zod
-    // default makes the schema's input type optional while its output stays required, and
-    // zodResolver then no longer matches useForm<ProgramFormInput>. Both callers set an
-    // explicit value (`program.has_program_completion ?? false` when editing, `false` when
-    // creating), so there is nothing for a default to do.
     has_program_completion: z.boolean(),
     facility_ids: z.array(z.number())
 });
@@ -381,8 +373,6 @@ function endTimeIsAfterStart(startTime: string, endTime: string): boolean {
 export const buildClassManagementSchema = (isNewClass: boolean) =>
     z
         .object({
-            // No `name`: a cohort has none (id751). The class is chosen from the
-            // selector, or named through the "add a new class" field.
             description: requiredString('Description'),
             instructor_id: z
                 .number({ message: VMSG.required('Instructor') })
@@ -462,10 +452,6 @@ export type ClassManagementFormValues = z.input<
  * reused when blank); the day selection lives in component state.
  */
 export const editClassSchema = z.object({
-    // The cohort has no name of its own (id751) -- this is the parent CLASS's name, and
-    // saving it is a separate class-tier call (PATCH /api/classes/{program_class_id}),
-    // not part of the cohort payload. Renaming is GLOBAL: every cohort under that class
-    // shows the new name.
     class_name: requiredString('Class name'),
     description: requiredString('Description'),
     instructor_id: z.number().nullable(),

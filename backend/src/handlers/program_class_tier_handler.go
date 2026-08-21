@@ -14,28 +14,6 @@ var (
 	errCohortFieldOnClass = errors.New("status, capacity and dates belong to a cohort, not a class -- update the cohort instead")
 )
 
-/*
-id751 -- the CLASS tier: Program -> Class -> Cohort.
-
-⚠️  Route naming. The two tiers are one URL segment apart, so read carefully.
-
-	/api/classes/*         -> the CLASS tier (this file). Path param {id}.
-	/api/program-classes/* -> COHORTS. Path param {cohort_id}.
-	/api/programs/{id}/classes/* -> COHORTS under a program. Path param {cohort_id}.
-
-	The API *paths* deliberately keep their original names: they are a published
-	contract, and "cohort" is a backend-only word that must never surface to users.
-	Only the path PARAMS were renamed to {cohort_id}, which is invisible to callers
-	and makes the tier unambiguous at every handler that reads one.
-
-	So: a path segment says "classes"; the param inside it says which tier it means.
-
-	⚠️  There is NO id-based backstop. Class ids start at 1 and OVERLAP cohort ids in every
-	environment (owner's call, 2026-08-17 -- migration §2.2 explains why). An earlier
-	revision offset class ids to 1,000,000 so a cohort id passed as a class id would 404;
-	that tripwire is gone, so a mixed-up id now resolves to a real row of the WRONG TIER.
-	Read the param name and be sure which tier you are holding.
-*/
 func (srv *Server) registerProgramClassTierRoutes() []routeDef {
 	axx := models.ProgramAccess
 	classResolver := FacilityAdminResolver(models.TableNameClass, "id")

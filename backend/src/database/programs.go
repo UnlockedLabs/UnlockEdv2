@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
@@ -162,16 +163,58 @@ func (db *DB) CreateProgram(content *models.Program) error {
 	return nil
 }
 
-func (db *DB) UpdateProgram(program *models.Program, facilityIds []int) (*models.Program, error) {
-	var allChanges []models.ChangeLogEntry
-	updatePrg, err := db.GetProgramByID(int(program.ID))
-	if err != nil {
-		return nil, err
+// UpdateProgram applies a partial update to a program.
+//
+// hasProgramCompletion carries the tri-state the wire needs: nil means the caller did not
+// send the field and the stored value must survive, non-nil is an explicit set. It cannot
+// be read off program.HasProgramCompletion because models.UpdateStruct ALWAYS copies
+// bools, so an omitted field is indistinguishable from an explicit false by then.
+//
+// ⚠️  The read is inside the transaction and takes a row lock, and that is load-bearing.
+//
+//	This function is a read-modify-write: it reads the program, merges the caller's
+//	non-zero fields over it, and writes the merged row back. With the read outside the
+//	transaction, two overlapping updates each read the old row and the slower writer
+//	silently reverses the faster one -- a lost update, for EVERY field, not just the
+//	completion flag. Locking the row makes the second update wait for the first.
+//
+// getProgramByIDForUpdate is GetProgramByID scoped to a transaction and holding a row
+// lock, so a read-modify-write cannot interleave with another writer. Preloads run as
+// their own SELECTs and are deliberately not locked -- only the programs row needs it.
+func getProgramByIDForUpdate(tx *gorm.DB, id int) (*models.Program, error) {
+	content := &models.Program{}
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Preload("ProgramTypes").Preload("ProgramCreditTypes").Preload("FacilitiesPrograms.Facility").
+		First(content, id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "programs")
 	}
+	for _, fp := range content.FacilitiesPrograms {
+		if fp.Facility != nil {
+			content.Facilities = append(content.Facilities, *fp.Facility)
+		}
+	}
+	return content, nil
+}
+
+func (db *DB) UpdateProgram(program *models.Program, facilityIds []int, hasProgramCompletion *bool) (*models.Program, error) {
+	var allChanges []models.ChangeLogEntry
 	//begin the transaction
 	trans := db.Begin() //only need to pass context here, it will be used/shared within the transaction
 	if trans.Error != nil {
 		return nil, NewDBError(trans.Error, "unable to start the database transaction")
+	}
+	updatePrg, err := getProgramByIDForUpdate(trans, int(program.ID))
+	if err != nil {
+		trans.Rollback()
+		return nil, err
+	}
+	// Resolve the flag against the LOCKED row, and do it before the change log is
+	// generated -- otherwise an omitted field is diffed as true -> false and logged as a
+	// change that never happens.
+	if hasProgramCompletion != nil {
+		program.HasProgramCompletion = *hasProgramCompletion
+	} else {
+		program.HasProgramCompletion = updatePrg.HasProgramCompletion
 	}
 	ignoredFieldNames := []string{"create_user_id", "update_user_id", "program_types", "credit_types", "facilities", "archived_at"}
 	programLogEntries := models.GenerateChangeLogEntries(updatePrg, program, "programs", updatePrg.ID, models.DerefUint(program.UpdateUserID), ignoredFieldNames)
@@ -401,11 +444,6 @@ func (db *DB) DeleteProgram(id int) error {
 			Delete(&models.ProgramClassEvent{}).Error; err != nil {
 			return newDeleteDBError(err, "program_class_events")
 		}
-		// Audit cascade. Post-id751 there are THREE discriminators under a program, not
-		// two: 'programs', 'program_class_cohorts' (every pre-id751 'program_classes' row
-		// was relabelled to this) and 'program_classes' (the new class tier). Miss one and
-		// the cascade silently stops cascading -- no error, just orphaned audit rows
-		// pointing at ids that get reused.
 		if err := tx.Exec(`DELETE FROM change_log_entries
 			WHERE (table_name = ? AND parent_ref_id = ?)
 			   OR (table_name = ?

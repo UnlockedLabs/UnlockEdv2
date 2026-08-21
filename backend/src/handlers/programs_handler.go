@@ -147,26 +147,14 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 }
 
 type ProgramForm struct {
-	Name         string                     `json:"name"`
-	Description  string                     `json:"description"`
-	FundingType  models.FundingType         `json:"funding_type"`
-	CreditTypes  []models.ProgramCreditType `json:"credit_types"`
-	IsActive     bool                       `json:"is_active"`
-	ProgramTypes []models.ProgramType       `json:"program_types"`
-	Facilities   []int                      `json:"facilities"`
-	// See models.Program.HasProgramCompletion.
-	//
-	// A POINTER so that "absent" is distinguishable from "false", and the distinction is
-	// load-bearing on UPDATE: not every client sends this field (the program-detail Edit
-	// Program dialog does not), and because the column is in UpdateProgram's Select list a
-	// plain bool would decode to false and SILENTLY CLEAR the flag on every such edit.
-	//
-	//	nil   -> leave whatever is stored alone
-	//	false -> explicitly turn it off
-	//	true  -> explicitly turn it on
-	//
-	// On CREATE nil simply means false, which is pre-id751 behaviour.
-	HasProgramCompletion *bool `json:"has_program_completion"`
+	Name                 string                     `json:"name"`
+	Description          string                     `json:"description"`
+	FundingType          models.FundingType         `json:"funding_type"`
+	CreditTypes          []models.ProgramCreditType `json:"credit_types"`
+	IsActive             bool                       `json:"is_active"`
+	ProgramTypes         []models.ProgramType       `json:"program_types"`
+	Facilities           []int                      `json:"facilities"`
+	HasProgramCompletion *bool                      `json:"has_program_completion"`
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -232,23 +220,12 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 		ProgramCreditTypes: programForm.CreditTypes,
 	}
 
-	// The column is in UpdateProgram's Select list, so it is always written. When the
-	// caller did not send the field, carry the stored value forward rather than letting it
-	// decode to false and clear the flag.
-	if programForm.HasProgramCompletion != nil {
-		theProg.HasProgramCompletion = *programForm.HasProgramCompletion
-	} else {
-		var stored bool
-		if err := srv.Db.Model(&models.Program{}).
-			Select("has_program_completion").
-			Where("id = ?", programID).
-			Scan(&stored).Error; err != nil {
-			return newDatabaseServiceError(err)
-		}
-		theProg.HasProgramCompletion = stored
-	}
-
-	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities)
+	// HasProgramCompletion is passed as the raw *bool rather than resolved here: the
+	// column IS in UpdateProgram's Select list, so it is always written, and an omitted
+	// field would otherwise decode to false and silently clear the flag. Resolving it
+	// against a row this handler read separately would reintroduce a lost update, so
+	// UpdateProgram resolves it against the row it has locked.
+	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities, programForm.HasProgramCompletion)
 	if updateErr != nil {
 		return newDatabaseServiceError(updateErr)
 	}

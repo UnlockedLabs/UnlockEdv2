@@ -42,7 +42,7 @@ func TestGenerateEventInstances_SimpleRecurrence_NoOverrides(t *testing.T) {
 
 	for i, instance := range instances {
 		assert.Equal(t, event.ID, instance.EventID, "EventID should match")
-		assert.Equal(t, event.CohortID, instance.CohortID, "ClassID should match")
+		assert.Equal(t, event.CohortID, instance.CohortID, "CohortID should match")
 		assert.Equal(t, expectedDates[i], instance.StartTime, "StartTime should match")
 		assert.Equal(t, event.Duration, instance.Duration.String(), "Duration should match")
 		assert.False(t, instance.IsCancelled, "IsCancelled should be false")

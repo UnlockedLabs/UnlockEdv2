@@ -19,34 +19,9 @@ const (
 	Paused    ClassStatus = "Paused"
 )
 
-/*
-A ProgramClassCohort is one RUN of a ProgramClass: a scheduled group of residents
-meeting at a particular time, at a particular Facility, with its own Events.
-
-This is the table that was called program_classes before id751. Its rows always were
-cohorts -- sites encoded the meeting time in the name ("Anger Management (9am-10am)") --
-so id751 renamed the tier to what it had always been and added the real ProgramClass
-above it. A cohort never earns a certificate; completing a cohort grants the CLASS
-completion.
-
-ProgramID and FacilityID are deliberate immutable denormalizations of
-Class.ProgramID / Class.FacilityID. They are what let existing facility- and
-program-scoped queries survive id751 as a table rename and nothing more, and the
-composite FK program_class_cohorts_class_parent_fkey makes them impossible to drift.
-Do not "normalize away".
-*/
 type ProgramClassCohort struct {
 	DatabaseFields
-	ClassID uint `json:"program_class_id" gorm:"not null"`
-	// The parent CLASS's name -- the ONLY name a cohort has. A cohort has no name column
-	// of its own (dropped in migration 00071 §5): it is a run of a class, told apart by
-	// instructor, schedule, dates and status.
-	//
-	// NOT a column: a read-only query-time alias, same pattern as
-	// ProgramClassEventOverride.ClassID. Every query that displays a cohort MUST join
-	// program_classes and select `pc.name AS class_name` -- a plain Find leaves it empty
-	// and the screen renders a blank name.
-	// Do not add a gorm column tag.
+	ClassID          uint        `json:"program_class_id" gorm:"not null"`
 	ClassName        string      `json:"class_name" gorm:"->"`
 	ProgramID        uint        `json:"program_id" gorm:"not null"`
 	FacilityID       uint        `json:"facility_id" gorm:"not null"`
@@ -74,17 +49,6 @@ type ProgramClassCohort struct {
 
 func (ProgramClassCohort) TableName() string { return "program_class_cohorts" }
 
-/*
-A ProgramClass is the certificate-bearing tier: Program -> Class -> Cohort. Added by
-id751. A resident completes a Cohort, and that grants the Class completion.
-
-Deliberately small. It gets NO class_status -- a class isn't "Scheduled", its cohorts
-are -- and no capacity or dates, which belong to a run rather than to the class itself.
-Archival matches how Program already works.
-
-CreditHours here is the DEFAULT. A cohort may override it; resolve with
-CreditHoursOrDefault, never by reading either field alone.
-*/
 type ProgramClass struct {
 	DatabaseFields
 	ProgramID   uint       `json:"program_id" gorm:"not null"`
@@ -111,13 +75,6 @@ type ProgramClass struct {
 
 func (ProgramClass) TableName() string { return "program_classes" }
 
-/*
-ProgramClassCreditType is a class-level override of the program's credit types.
-
-An EMPTY set for a class means INHERIT from program_credit_types. That is the default,
-it is what the table ships as, and it is exactly pre-id751 behaviour -- so never treat
-"no rows" as "no credit types". Use CreditTypesOrInherited.
-*/
 type ProgramClassCreditType struct {
 	ClassID    uint       `json:"program_class_id" gorm:"primaryKey;not null"`
 	CreditType CreditType `json:"credit_type" gorm:"primaryKey;type:credit_type;not null"`
@@ -279,22 +236,6 @@ func (c *ProgramClassCohort) AfterUpdate(tx *gorm.DB) (err error) {
 	return result.Error
 }
 
-/*
-A ProgramClassEnrollment is a User's enrollment in one COHORT at their facility: they
-attend that cohort's Events, tracked by ClassEventAttendance.
-
-⚠️  CohortID carries the JSON key "class_id" -- the pre-id751 name -- on purpose. The
-
-	column and Go field are cohort_id/CohortID, but renaming ~192 JSON touchpoints is a
-	scheduled follow-up PR, not this one. So on the wire, "class_id" means the COHORT
-	and "program_class_id" means the class.
-
-ClassID is an immutable denormalization of Cohort.ClassID. An enrollment never changes
-cohort -- a transfer terminates one enrollment and creates another, which is what
-EnrollmentEndedAt is for -- so it cannot drift. It exists so "roll cohort enrollment up
-to the class level" is a single-table group-by, and so the DB can block a resident being
-actively enrolled in two cohorts of one class.
-*/
 type ProgramClassEnrollment struct {
 	DatabaseFields
 	CohortID          uint                    `json:"cohort_id" gorm:"column:cohort_id;not null"`
@@ -453,35 +394,17 @@ const (
 	EnrollmentIncompleteSegregated       ProgramEnrollmentStatus = "Incomplete: Segregated"
 )
 
-/*
-A ClassCompletion is the certificate: one per (user, class). Renamed from
-ClassCompletion by id751, which only ever held class completions -- it was keyed by a
-single class id and the name was simply wrong. The freed name now belongs to the
-Scenario 2 program-level grant, so no name means two things across the boundary.
-
-The denormalized FacilityName / CreditType / ProgramOwner / ProgramName / CohortName
-snapshot exists so a certificate survives renames and deletions upstream. That is why
-every FK here is ON DELETE SET NULL rather than CASCADE, and why CohortID and ProgramID
-are pointers: deleting a retired cohort must not erase a certificate a resident earned.
-
-⚠️  Do NOT add gorm:"not null" to CohortID or ProgramID. The pre-id751 model claimed
-
-	not-null on a nullable column; id751 made the nullability deliberate.
-*/
 type ClassCompletion struct {
 	DatabaseFields
-	UserID       uint   `json:"user_id" gorm:"not null"`
-	CohortID     *uint  `json:"cohort_id" gorm:"column:cohort_id"`
-	ClassID      *uint  `json:"program_class_id"`
-	FacilityName string `json:"facility_name" gorm:"not null"`
-	CreditType   string `json:"credit_type" gorm:"not null"`
-	AdminEmail   string `json:"admin_email" gorm:"not null"`
-	ProgramOwner string `json:"program_owner" gorm:"not null"`
-	ProgramName  string `json:"program_name" gorm:"not null"`
-	ProgramID    *uint  `json:"program_id"`
-	// The CLASS's name, snapshotted. Renamed from cohort_name in 00071 §5 along with the
-	// drop of program_class_cohorts.name -- a cohort has no name to snapshot any more, and
-	// the certificate was always meant to name the class. The JSON key never changed.
+	UserID        uint      `json:"user_id" gorm:"not null"`
+	CohortID      *uint     `json:"cohort_id" gorm:"column:cohort_id"`
+	ClassID       *uint     `json:"program_class_id"`
+	FacilityName  string    `json:"facility_name" gorm:"not null"`
+	CreditType    string    `json:"credit_type" gorm:"not null"`
+	AdminEmail    string    `json:"admin_email" gorm:"not null"`
+	ProgramOwner  string    `json:"program_owner" gorm:"not null"`
+	ProgramName   string    `json:"program_name" gorm:"not null"`
+	ProgramID     *uint     `json:"program_id"`
 	ClassName     string    `json:"class_name" gorm:"column:class_name"`
 	CohortStartDt time.Time `json:"class_start_dt" gorm:"column:cohort_start_dt"`
 	EnrolledOnDt  time.Time `json:"enrolled_on_dt"`
@@ -504,19 +427,6 @@ type ProgramClassesHistory struct {
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
 
-/*
-Audit discriminators for program_classes_history.table_name and
-change_log_entries.table_name.
-
-⚠️  These are DATA, not identifiers the compiler resolves. A wrong or stale value FAILS
-
-	OPEN -- a delete guard silently stops guarding, or a cascade silently stops
-	cascading, with no error anywhere. That is exactly what happened across id751:
-	every pre-existing 'program_classes' row described what is now a COHORT, so the
-	migration relabelled them and TableNameClass now means the new class tier only.
-
-Always use these constants. Never write the literal.
-*/
 const (
 	TableNamePrograms = "programs"
 	TableNameClass    = "program_classes"

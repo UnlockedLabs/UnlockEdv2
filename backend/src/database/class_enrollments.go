@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,13 +21,6 @@ func completionPreloads(tx *gorm.DB) *gorm.DB {
 		Preload("Cohort.Class.CreditTypes")
 }
 
-// newClassCompletion builds the certificate for one completed enrollment.
-//
-// The denormalized snapshot is the point of this record: it must survive the cohort,
-// class, or program being renamed or deleted later. So everything is copied by value
-// here, and every dereference is nil-guarded -- a missing association must not panic
-// mid-graduation. (Pre-id751, GraduateEnrollments raw-dereferenced FacilityProg and
-// would panic where the other completion path used the nil-safe accessor.)
 func newClassCompletion(e models.ProgramClassEnrollment, adminEmail string) models.ClassCompletion {
 	completion := models.ClassCompletion{
 		UserID:       e.UserID,
@@ -283,6 +277,25 @@ func (db *DB) UpdateProgramClassEnrollmentDate(enrollmentId int, enrolledDate ti
 	return nil
 }
 
+// changeLogValue renders a JSON-decoded update value for the audit log. The map comes from
+// json.Decode into map[string]any, so numbers arrive as float64 and an explicit null as nil
+// -- a bare value.(string) assertion PANICS on either and aborts the whole update. nil maps
+// to a nil pointer, which the change log reads as "cleared".
+func changeLogValue(value any) *string {
+	switch v := value.(type) {
+	case nil:
+		return nil
+	case string:
+		return models.StringPtr(v)
+	case float64:
+		return models.StringPtr(strconv.FormatFloat(v, 'f', -1, 64))
+	case bool:
+		return models.StringPtr(strconv.FormatBool(v))
+	default:
+		return models.StringPtr(fmt.Sprintf("%v", v))
+	}
+}
+
 // UpdateProgramCohorts updates COHORT rows (status, dates, capacity) and cascades the
 // consequences: terminating enrollments, issuing certificates, and writing the audit log.
 // cohortIDs are cohort ids -- status is a cohort-level concept, a class has none.
@@ -370,6 +383,17 @@ func (db *DB) UpdateProgramCohorts(cohortIDs []int, cohortMap map[string]any) er
 		}
 
 	}
+	// cohortMap is decoded straight from the request JSON, so update_user_id is resolved
+	// once here rather than re-asserted inside the loop.
+	rawLogUID, ok := cohortMap["update_user_id"]
+	if !ok {
+		return newUpdateDBError(fmt.Errorf("missing update_user_id in cohortMap"), "program classes")
+	}
+	logUserID, ok := rawLogUID.(uint)
+	if !ok {
+		return newUpdateDBError(fmt.Errorf("update_user_id must be of type uint"), "program classes")
+	}
+
 	var (
 		allChanges []models.ChangeLogEntry
 		logEntry   models.ChangeLogEntry
@@ -379,7 +403,7 @@ func (db *DB) UpdateProgramCohorts(cohortIDs []int, cohortMap map[string]any) er
 			if fieldName == "update_user_id" {
 				continue
 			}
-			logEntry = *models.NewChangeLogEntry(models.TableNameCohort, fieldName, nil, models.StringPtr(value.(string)), uint(cohortID), cohortMap["update_user_id"].(uint))
+			logEntry = *models.NewChangeLogEntry(models.TableNameCohort, fieldName, nil, changeLogValue(value), uint(cohortID), logUserID)
 			allChanges = append(allChanges, logEntry)
 		}
 	}

@@ -11,14 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// has_program_completion marks a program as completable in its own right, separately from
-// its classes (id751, migration 00073). Nothing reads it yet -- these tests only pin down
-// that it round-trips through create and update.
-//
-// The update case is the one that matters. UpdateProgram persists through a HAND-MAINTAINED
-// Select list (database/programs.go: Select("IsActive", "Name", ...)), which fails OPEN: a
-// field missing from that list is silently not written, the request still returns 200, and
-// the value is simply dropped. Nothing else in the stack catches that.
 func TestProgramCompletionFlag(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
@@ -71,7 +63,7 @@ func TestProgramCompletionFlag(t *testing.T) {
 			GetData()
 
 		require.False(t, p.HasProgramCompletion,
-			"omitting the field must mean pre-id751 behaviour, never true")
+			"omitting the field must mean this is pre has completion behaviour, never true")
 	})
 
 	t.Run("can be turned off again through update", func(t *testing.T) {

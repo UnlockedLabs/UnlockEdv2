@@ -80,8 +80,8 @@ func (srv *Server) handleGenerateReport(w http.ResponseWriter, r *http.Request, 
 	}
 
 	if req.Type == models.ClassRosterReport && req.CohortID == nil {
-		return newBadRequestServiceError(errors.New("missing class_id"),
-			"class_id is required for class roster reports")
+		return newBadRequestServiceError(errors.New("missing cohort_id"),
+			"cohort_id is required for class roster reports")
 	}
 
 	if req.Type == models.ResidentProfileReport && req.UserID == nil {

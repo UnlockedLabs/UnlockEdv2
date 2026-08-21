@@ -228,12 +228,6 @@ func (env *TestEnv) CreateTestClass(program *models.Program, facility *models.Fa
 	return class, nil
 }
 
-// NameCohortClass renames a cohort's parent class.
-//
-// A cohort has no name of its own (id751), so every displayed "class name" comes from
-// the class tier. A fixture that creates a cohort without a ClassID gets a class
-// auto-named after its PROGRAM; any test asserting on a specific displayed name has to
-// set that name here.
 func (env *TestEnv) NameCohortClass(cohortID uint, name string) error {
 	var classID uint
 	if err := env.DB.Model(&models.ProgramClassCohort{}).

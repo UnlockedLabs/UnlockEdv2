@@ -4,8 +4,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-// The CLASS tier (id751). Aliased so it cannot be confused with this file's Cohort,
-// which the codebase still refers to as a "class" in places.
 import type { Class as ProgramClassSummary } from '@/types/program';
 import API from '@/api/api';
 import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
@@ -147,15 +145,6 @@ export function ClassManagementFormInner({
         ? isCompletedCancelledOrArchived(existingClass)
         : false;
 
-    /*
-     * id751 -- which CLASS does this cohort belong to?
-     *
-     * The dropdown lists classes that already exist for this program at this facility,
-     * with "Other" as the escape hatch. Ordering matters: making reuse the default is
-     * what stops a facility ending up with "Anger Management (9am-10am)" and
-     * "(11am-12pm)" as two separate certificates -- exactly the mess the id751 migration
-     * had to merge back together.
-     */
     const NEW_CLASS = '__other__';
     const [selectedClassId, setSelectedClassId] = useState<string>('');
     const [newClassName, setNewClassName] = useState('');
@@ -623,6 +612,59 @@ export function ClassManagementFormInner({
           }
         : ProgClassStatus;
 
+    // The parent-class selector is shared by BOTH create layouts -- the embedded form on
+    // the program page AND the standalone route programs/:id/classes/:class_id?. It has to
+    // be: onSubmit refuses to create a cohort without a resolved parent ("Choose a class"),
+    // so a create layout that cannot set selectedClassId cannot create anything at all.
+    const parentClassSelector = (
+        <div className="mb-4 space-y-3">
+            <div>
+                <label htmlFor="parent-class" className="text-sm font-medium">
+                    Class *
+                </label>
+                <select
+                    id="parent-class"
+                    className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${focusRing}`}
+                    value={selectedClassId}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setSelectedClassId(value);
+                    }}
+                >
+                    <option value="">Select a class…</option>
+                    {existingClasses.map((c) => (
+                        <option key={c.id} value={String(c.id)}>
+                            {c.name}
+                        </option>
+                    ))}
+                    <option value={NEW_CLASS}>Other — add a new class</option>
+                </select>
+            </div>
+
+            {selectedClassId === NEW_CLASS && (
+                <div>
+                    <label
+                        htmlFor="new-class-name"
+                        className="text-sm font-medium"
+                    >
+                        New class name *
+                    </label>
+                    <Input
+                        id="new-class-name"
+                        className={`mt-1 ${focusRing}`}
+                        placeholder="e.g., Anger Management"
+                        value={newClassName}
+                        onChange={(e) => setNewClassName(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Name the class itself, not the schedule — leave times
+                        like &quot;(9am-10am)&quot; out of it.
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="space-y-6">
             {!embedded && (
@@ -647,71 +689,7 @@ export function ClassManagementFormInner({
                                 <h4 className="text-sm text-gray-700 mb-3">
                                     Basic Information
                                 </h4>
-                                {isNewClass && (
-                                    <div className="mb-4 space-y-3">
-                                        <div>
-                                            <label
-                                                htmlFor="parent-class"
-                                                className="text-sm font-medium"
-                                            >
-                                                Class *
-                                            </label>
-                                            <select
-                                                id="parent-class"
-                                                className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${focusRing}`}
-                                                value={selectedClassId}
-                                                onChange={(e) => {
-                                                    const value =
-                                                        e.target.value;
-                                                    setSelectedClassId(value);
-                                                }}
-                                            >
-                                                <option value="">
-                                                    Select a class…
-                                                </option>
-                                                {existingClasses.map((c) => (
-                                                    <option
-                                                        key={c.id}
-                                                        value={String(c.id)}
-                                                    >
-                                                        {c.name}
-                                                    </option>
-                                                ))}
-                                                <option value={NEW_CLASS}>
-                                                    Other — add a new class
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        {selectedClassId === NEW_CLASS && (
-                                            <div>
-                                                <label
-                                                    htmlFor="new-class-name"
-                                                    className="text-sm font-medium"
-                                                >
-                                                    New class name *
-                                                </label>
-                                                <Input
-                                                    id="new-class-name"
-                                                    className={`mt-1 ${focusRing}`}
-                                                    placeholder="e.g., Anger Management"
-                                                    value={newClassName}
-                                                    onChange={(e) =>
-                                                        setNewClassName(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Name the class itself, not
-                                                    the schedule — leave times
-                                                    like &quot;(9am-10am)&quot;
-                                                    out of it.
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                {isNewClass && parentClassSelector}
 
                                 <div className="grid grid-cols-2 items-start gap-4">
                                     <FormField
@@ -1474,6 +1452,8 @@ export function ClassManagementFormInner({
                                 <h2 className="text-lg font-semibold text-foreground">
                                     Class Information
                                 </h2>
+
+                                {isNewClass && parentClassSelector}
 
                                 <FormField
                                     control={control}

@@ -848,6 +848,9 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 			STRING_AGG(DISTINCT e.recurrence_rule, '|') AS recurrence_rule
         `).
 		Joins("INNER JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		// A cohort has no name; every displayed class name comes from the class tier, so
+		// this join is required for cl.name in the SELECT -- not optional enrichment.
+		Joins("INNER JOIN program_classes cl ON cl.id = pc.class_id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
 		Joins("INNER JOIN program_class_events e ON e.cohort_id = pc.id").
 		Joins(
@@ -861,7 +864,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		Group(`
             pce.id, pce.enrollment_status,
             p.name, p.id,
-            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at,
+            cl.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at,
 			pce.created_at, pce.change_reason`).Order(args.OrderClause("pce.created_at desc"))
 
 	if !args.All {
