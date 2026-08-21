@@ -111,7 +111,7 @@ func createTestProgram(t *testing.T, env *TestEnv, name string, facilityID uint)
 	return program
 }
 
-func createTestClass(t *testing.T, env *TestEnv, program *models.Program, facility *models.Facility, name string) *models.ProgramClass {
+func createTestClass(t *testing.T, env *TestEnv, program *models.Program, facility *models.Facility, name string) *models.ProgramClassCohort {
 	// Create unique instructor prefix from class name (remove spaces and special chars for alphanumunicode validation)
 	instructorPrefix := strings.ToLower(strings.ReplaceAll(name, " ", ""))
 	// Remove any non-alphanumeric characters to comply with validation
@@ -131,9 +131,13 @@ func createTestClass(t *testing.T, env *TestEnv, program *models.Program, facili
 
 	class, err := env.CreateTestClass(program, facility, models.Active, &instructor.ID)
 	require.NoError(t, err)
-	class.Name = name
-	err = env.DB.Save(class).Error
+	// The displayed name lives on the parent CLASS now -- the cohort has none. Reports
+	// select it through a join, so renaming the class is what the assertions observe.
+	err = env.DB.Model(&models.ProgramClass{}).
+		Where("id = ?", class.ClassID).
+		Update("name", name).Error
 	require.NoError(t, err)
+	class.ClassName = name
 	return class
 }
 

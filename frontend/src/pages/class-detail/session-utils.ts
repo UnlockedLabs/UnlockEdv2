@@ -582,7 +582,7 @@ export function buildFacilityEvent(
     end.setHours(eh, em, 0, 0);
     return {
         id: eventId,
-        class_id: classId,
+        cohort_id: classId,
         duration: backingEvent?.duration ?? '',
         room_id: activeOverride?.room_id ?? backingEvent?.room_id ?? 0,
         recurrence_rule: backingEvent?.recurrence_rule ?? '',

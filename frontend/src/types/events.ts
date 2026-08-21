@@ -32,7 +32,7 @@ export interface ProgramClassEventAttendance {
 
 export interface ProgramClassEvent {
     id: number;
-    class_id: number;
+    cohort_id: number;
     duration: string;
     room_id: number;
     room_ref?: Room;

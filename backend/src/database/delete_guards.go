@@ -13,18 +13,18 @@ func (db *DB) ClassBlockingChildren(classID int) (models.DeleteBlockingChildren,
 	row := db.Raw(`
 SELECT
   (SELECT COUNT(*) FROM program_class_enrollments
-     WHERE class_id = ? AND deleted_at IS NULL) AS enrollments,
+     WHERE cohort_id = ? AND deleted_at IS NULL) AS enrollments,
   (SELECT COUNT(*) FROM program_class_events
-     WHERE class_id = ? AND deleted_at IS NULL) AS events,
-  (SELECT COUNT(*) FROM program_completions
-     WHERE program_class_id = ? AND deleted_at IS NULL) AS completions,
+     WHERE cohort_id = ? AND deleted_at IS NULL) AS events,
+  (SELECT COUNT(*) FROM class_completions
+     WHERE cohort_id = ? AND deleted_at IS NULL) AS completions,
   (SELECT COUNT(*) FROM program_class_event_attendance pcea
      JOIN program_class_events e ON e.id = pcea.event_id
-     WHERE e.class_id = ? AND pcea.deleted_at IS NULL) AS attendance_flags,
+     WHERE e.cohort_id = ? AND pcea.deleted_at IS NULL) AS attendance_flags,
   ((SELECT COUNT(*) FROM change_log_entries
-       WHERE table_name = 'program_classes' AND parent_ref_id = ?)
+       WHERE table_name = 'program_class_cohorts' AND parent_ref_id = ?)
    + (SELECT COUNT(*) FROM program_classes_history
-       WHERE table_name = 'program_classes' AND parent_ref_id = ?)
+       WHERE table_name = 'program_class_cohorts' AND parent_ref_id = ?)
   ) AS history
 `, classID, classID, classID, classID, classID, classID).Row()
 
@@ -33,7 +33,7 @@ SELECT
 	}
 
 	var status models.ClassStatus
-	if err := db.Model(&models.ProgramClass{}).
+	if err := db.Model(&models.ProgramClassCohort{}).
 		Where("id = ?", classID).
 		Select("status").
 		Limit(1).
@@ -54,24 +54,24 @@ func (db *DB) ProgramBlockingChildren(programID int) (models.DeleteBlockingChild
 	var b models.DeleteBlockingChildren
 	row := db.Raw(`
 WITH cls AS (
-  SELECT id FROM program_classes
+  SELECT id FROM program_class_cohorts
    WHERE program_id = ? AND deleted_at IS NULL
 )
 SELECT
   (SELECT COUNT(*) FROM cls) AS classes,
   (SELECT COUNT(*) FROM program_class_enrollments
-     WHERE class_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS enrollments,
+     WHERE cohort_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS enrollments,
   (SELECT COUNT(*) FROM program_class_events
-     WHERE class_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS events,
-  (SELECT COUNT(*) FROM program_completions
-     WHERE program_class_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS completions,
+     WHERE cohort_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS events,
+  (SELECT COUNT(*) FROM class_completions
+     WHERE cohort_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS completions,
   (SELECT COUNT(*) FROM program_class_event_attendance pcea
      JOIN program_class_events e ON e.id = pcea.event_id
-     WHERE e.class_id IN (SELECT id FROM cls) AND pcea.deleted_at IS NULL) AS attendance_flags,
+     WHERE e.cohort_id IN (SELECT id FROM cls) AND pcea.deleted_at IS NULL) AS attendance_flags,
   ((SELECT COUNT(*) FROM change_log_entries
-       WHERE table_name = 'program_classes' AND parent_ref_id IN (SELECT id FROM cls))
+       WHERE table_name = 'program_class_cohorts' AND parent_ref_id IN (SELECT id FROM cls))
    + (SELECT COUNT(*) FROM program_classes_history
-       WHERE table_name = 'program_classes' AND parent_ref_id IN (SELECT id FROM cls))
+       WHERE table_name = 'program_class_cohorts' AND parent_ref_id IN (SELECT id FROM cls))
    + (SELECT COUNT(*) FROM change_log_entries
        WHERE table_name = 'programs' AND parent_ref_id = ?)
   ) AS history

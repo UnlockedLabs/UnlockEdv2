@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Plus, Search, GraduationCap } from 'lucide-react';
 import API from '@/api/api';
 import {
-    Class,
+    Cohort,
     ClassLoaderData,
     ClassEnrollment,
     EnrollmentStatus,
@@ -82,7 +82,9 @@ export default function ClassEnrollmentDetails() {
     const navigate = useNavigate();
     const loaderData = useLoaderData() as ClassLoaderData;
     const clsInfo = loaderData?.class;
-    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
+    const blockEdits = isCompletedCancelledOrArchived(
+        clsInfo ?? ({} as Cohort)
+    );
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(

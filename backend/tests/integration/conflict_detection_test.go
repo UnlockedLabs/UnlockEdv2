@@ -46,7 +46,7 @@ func TestSchedulingConflictDetection(t *testing.T) {
 
 	// Update Class A event to be specific
 	eventA := models.ProgramClassEvent{
-		ClassID:        classA.ID,
+		CohortID:       classA.ID,
 		Duration:       "1h",
 		RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR;DTSTART=20240101T100000Z", // UTC
 		RoomID:         &room.ID,
@@ -57,7 +57,7 @@ func TestSchedulingConflictDetection(t *testing.T) {
 
 	// Update Class B event to overlap
 	eventB := models.ProgramClassEvent{
-		ClassID:        classB.ID,
+		CohortID:       classB.ID,
 		Duration:       "1h",
 		RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR;DTSTART=20240101T103000Z", // UTC, overlaps by 30 mins
 		RoomID:         &room.ID,

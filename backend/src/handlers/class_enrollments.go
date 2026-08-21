@@ -12,15 +12,15 @@ import (
 
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolve := FacilityAdminResolver("program_classes", "class_id")
+	resolve := FacilityAdminResolver(models.TableNameCohort, "cohort_id")
 	return []routeDef{
-		adminFeatureRoute("GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, axx),
-		adminFeatureRoute("POST /api/program-classes/{class_id}/enrollment-conflicts", srv.handleCheckEnrollmentConflicts, axx),
-		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, axx, resolve),
-		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, axx, resolve),
-		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments/{enrollment_id}/date", srv.handleUpdateEnrollmentDate, axx, resolve),
-		adminValidatedFeatureRoute("DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, axx, resolve),
-		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, axx, resolve),
+		adminFeatureRoute("GET /api/program-classes/{cohort_id}/enrollments", srv.handleGetEnrollmentsForProgram, axx),
+		adminFeatureRoute("POST /api/program-classes/{cohort_id}/enrollment-conflicts", srv.handleCheckEnrollmentConflicts, axx),
+		adminValidatedFeatureRoute("POST /api/program-classes/{cohort_id}/enrollments", srv.handleEnrollUsersInClass, axx, resolve),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{cohort_id}/enrollments", srv.handleUpdateProgramClassEnrollments, axx, resolve),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{cohort_id}/enrollments/{enrollment_id}/date", srv.handleUpdateEnrollmentDate, axx, resolve),
+		adminValidatedFeatureRoute("DELETE /api/programs/{id}/classes/{cohort_id}/enrollments", srv.handleDeleteProgramClassEnrollments, axx, resolve),
+		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/{cohort_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, axx, resolve),
 		validatedFeatureRoute("GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, axx, UserRoleResolver("id")),
 	}
 }
@@ -32,7 +32,7 @@ func (srv *Server) handleGetUserProgramCompletions(w http.ResponseWriter, r *htt
 	}
 	args := srv.getQueryContext(r)
 	classID := args.MaybeID("class_id")
-	enrollemnt, err := srv.Db.GetProgramCompletionsForUser(&args, userId, classID)
+	enrollemnt, err := srv.Db.GetClassCompletionsForUser(&args, userId, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -40,7 +40,7 @@ func (srv *Server) handleGetUserProgramCompletions(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	classId, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "Class ID")
 	}
@@ -61,7 +61,7 @@ func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http
 }
 
 func (srv *Server) handleCheckEnrollmentConflicts(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -82,12 +82,12 @@ func (srv *Server) handleCheckEnrollmentConflicts(w http.ResponseWriter, r *http
 }
 
 func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
-	class, err := srv.Db.GetClassByID(classID)
+	class, err := srv.Db.GetCohortByID(classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -136,7 +136,7 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 }
 
 func (srv *Server) handleDeleteProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("class_id"))
+	id, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program class enrollment ID")
 	}
@@ -152,7 +152,7 @@ func (srv *Server) handleDeleteProgramClassEnrollments(w http.ResponseWriter, r 
 func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	adminEmail := claims.Email
-	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	classId, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}
@@ -167,7 +167,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	if enrollment.EnrollmentStatus == "" {
 		return newInvalidIdServiceError(errors.New("enrollment status is required"), "enrollment status")
 	}
-	class, err := srv.Db.GetClassByID(classId)
+	class, err := srv.Db.GetCohortByID(classId)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -187,7 +187,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 }
 
 func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	classId, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -208,7 +208,7 @@ func (srv *Server) handleUpdateEnrollmentDate(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return newBadRequestServiceError(err, "invalid date format")
 	}
-	class, err := srv.Db.GetClassByID(classId)
+	class, err := srv.Db.GetCohortByID(classId)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

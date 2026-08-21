@@ -30,7 +30,7 @@ func (db *DB) GetClassDashboardMetrics(ctx *models.QueryContext, facilityID *uin
 func (db *DB) GetActiveClassCount(ctx *models.QueryContext, facilityID *uint) (int64, error) {
 	var count int64
 	query := db.WithContext(ctx.Ctx).
-		Model(&models.ProgramClass{}).
+		Model(&models.ProgramClassCohort{}).
 		Where("status = ?", models.Active).
 		Where("archived_at IS NULL")
 	if facilityID != nil {
@@ -45,7 +45,7 @@ func (db *DB) GetActiveClassCount(ctx *models.QueryContext, facilityID *uint) (i
 func (db *DB) GetTotalSeatCount(ctx *models.QueryContext, facilityID *uint) (int64, error) {
 	var totalSeats int64
 	query := db.WithContext(ctx.Ctx).
-		Model(&models.ProgramClass{}).
+		Model(&models.ProgramClassCohort{}).
 		Where("status = ?", models.Active).
 		Where("archived_at IS NULL")
 	if facilityID != nil {
@@ -60,7 +60,7 @@ func (db *DB) GetTotalSeatCount(ctx *models.QueryContext, facilityID *uint) (int
 func (db *DB) GetScheduledClassCount(ctx *models.QueryContext, facilityID *uint) (int64, error) {
 	var count int64
 	query := db.WithContext(ctx.Ctx).
-		Model(&models.ProgramClass{}).
+		Model(&models.ProgramClassCohort{}).
 		Where("status = ?", models.Scheduled).
 		Where("archived_at IS NULL")
 	if facilityID != nil {
@@ -77,7 +77,7 @@ func (db *DB) GetTotalEnrollmentsCount(ctx *models.QueryContext, facilityID *uin
 	query := db.WithContext(ctx.Ctx).
 		Table("program_class_enrollments e").
 		Select("COUNT(*)").
-		Joins("JOIN program_classes c ON c.id = e.class_id").
+		Joins("JOIN program_class_cohorts c ON c.id = e.cohort_id").
 		Where("e.enrollment_status = ?", models.Enrolled).
 		Where("c.status = ?", models.Active).
 		Where("c.archived_at IS NULL")
@@ -92,8 +92,8 @@ func (db *DB) GetTotalEnrollmentsCount(ctx *models.QueryContext, facilityID *uin
 
 func (db *DB) GetAttendanceConcernsCount(ctx *models.QueryContext, facilityID *uint) (int64, error) {
 	attendanceSQL := `SELECT COUNT(DISTINCT c.id)
-		FROM program_classes c
-		JOIN program_class_enrollments e ON e.class_id = c.id
+		FROM program_class_cohorts c
+		JOIN program_class_enrollments e ON e.cohort_id = c.id
 		WHERE c.status = ?
 			AND c.archived_at IS NULL
 			AND e.enrollment_status = ? `
@@ -106,7 +106,7 @@ func (db *DB) GetAttendanceConcernsCount(ctx *models.QueryContext, facilityID *u
 	select count(*)
 	from program_class_events evt
 	inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-	where evt.class_id = c.id
+	where evt.cohort_id = c.id
 		and att.user_id = e.user_id
 		and att.attendance_status = 'absent_unexcused'
 	) >= 3 `
@@ -139,12 +139,12 @@ func (db *DB) GetFacilityHealthSummaries(ctx *models.QueryContext, facilityID *u
 			AND p.is_active = true
 			AND p.deleted_at IS NULL
 			AND p.archived_at IS NULL
-		LEFT JOIN program_classes pc
+		LEFT JOIN program_class_cohorts pc
 			ON pc.facility_id = f.id
 			AND pc.status = ?
 			AND pc.archived_at IS NULL
 		LEFT JOIN program_class_enrollments pce
-			ON pce.class_id = pc.id
+			ON pce.cohort_id = pc.id
 			AND pce.enrollment_status = ?
 		WHERE f.deleted_at IS NULL `
 	args := []any{models.Active, models.Enrolled}
@@ -162,8 +162,8 @@ func (db *DB) GetFacilityHealthSummaries(ctx *models.QueryContext, facilityID *u
 
 func (db *DB) GetFacilityAttendanceConcerns(ctx *models.QueryContext, facilityID *uint) (map[uint]int64, error) {
 	attendanceSQL := `SELECT c.facility_id as facility_id, COUNT(DISTINCT c.id) as count
-		FROM program_classes c
-		JOIN program_class_enrollments e ON e.class_id = c.id
+		FROM program_class_cohorts c
+		JOIN program_class_enrollments e ON e.cohort_id = c.id
 		WHERE c.status = ?
 		AND c.archived_at IS NULL
 		AND e.enrollment_status = ? `
@@ -176,7 +176,7 @@ func (db *DB) GetFacilityAttendanceConcerns(ctx *models.QueryContext, facilityID
 	select count(*)
 	from program_class_events evt
 	inner join program_class_event_attendance att on att.event_id = evt.id and att.deleted_at is null
-	where evt.class_id = c.id
+	where evt.cohort_id = c.id
 		and att.user_id = e.user_id
 		and att.attendance_status = 'absent_unexcused'
 	) >= 3

@@ -166,14 +166,26 @@ func seedTestData(db *gorm.DB) {
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
 
-	classes := []models.ProgramClass{}
-	classes, err = createFacilityPrograms(db)
+	cohorts := []models.ProgramClassCohort{}
+	cohorts, err = createFacilityPrograms(db)
 	if err != nil {
 		log.Printf("Failed to create facility programs: %v", err)
 	}
 	events := []models.ProgramClassEvent{}
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
+	}
+	// class_completions.admin_email is NOT NULL and every certificate screen shows it, so
+	// resolve a real granting admin once. generateFakeUsers only makes students, so this
+	// comes from the accounts created during initial setup.
+	adminEmail := "admin@unlocked.test"
+	var seededAdminEmail string
+	if err := db.Model(&models.User{}).
+		Where("role IN ?", models.AdminRoles).
+		Order("id").
+		Limit(1).
+		Pluck("email", &seededAdminEmail).Error; err == nil && seededAdminEmail != "" {
+		adminEmail = seededAdminEmail
 	}
 	for _, user := range users {
 		for _, prog := range courses {
@@ -244,36 +256,53 @@ func seedTestData(db *gorm.DB) {
 		}
 
 		numEnrollments := rand.Intn(3) + 1
-		available := []models.ProgramClass{}
-		for i := range classes {
-			if classes[i].FacilityID == user.FacilityID {
-				available = append(available, classes[i])
+		availableCohorts := []models.ProgramClassCohort{}
+		for i := range cohorts {
+			if cohorts[i].FacilityID == user.FacilityID {
+				availableCohorts = append(availableCohorts, cohorts[i])
 			}
 		}
-		rand.Shuffle(len(available), func(i, j int) { available[i], available[j] = available[j], available[i] })
-		for _, cls := range available[:min(numEnrollments, len(available))] {
+		rand.Shuffle(len(availableCohorts), func(i, j int) {
+			availableCohorts[i], availableCohorts[j] = availableCohorts[j], availableCohorts[i]
+		})
+		for _, cohort := range availableCohorts[:min(numEnrollments, len(availableCohorts))] {
 			status := models.Enrolled
 			if rand.Intn(100)%2 == 0 {
 				status = statuses[rand.Intn(len(statuses))]
 			}
+			// CohortID is what a resident enrolls in; the BeforeCreate hook denormalizes
+			// the parent ClassID from it. Setting ClassID here would store a COHORT id
+			// in the class column -- it compiles, and it corrupts the class rollups.
 			enrollment := models.ProgramClassEnrollment{
 				UserID:           user.ID,
-				ClassID:          cls.ID,
+				CohortID:         cohort.ID,
 				EnrollmentStatus: status,
 			}
 			if err := db.Create(&enrollment).Error; err != nil {
 				log.Printf("Failed to create enrollment: %v", err)
 			}
 			if status == models.EnrollmentCompleted {
-				completion := models.ProgramCompletion{
-					UserID:              user.ID,
-					ProgramClassID:      cls.ID,
-					ProgramID:           cls.ProgramID,
-					ProgramName:         faker.Sentence(options.WithRandomStringLength(16)),
-					FacilityName:        facilities[user.FacilityID-1].Name,
-					ProgramOwner:        faker.Name(),
-					ProgramClassName:    cls.Name,
-					ProgramClassStartDt: cls.StartDt,
+				cohortID, classID, programID := cohort.ID, cohort.ClassID, cohort.ProgramID
+				// The enrollment hook only sets enrolled_at for an Active cohort; seeded
+				// cohorts are Scheduled, so fall back to the cohort's start date rather
+				// than leaving the zero time (which renders as year 0001).
+				enrolledOn := cohort.StartDt
+				if enrollment.EnrolledAt != nil {
+					enrolledOn = *enrollment.EnrolledAt
+				}
+				completion := models.ClassCompletion{
+					UserID:        user.ID,
+					CohortID:      &cohortID,
+					ClassID:       &classID,
+					ProgramID:     &programID,
+					ProgramName:   faker.Sentence(options.WithRandomStringLength(16)),
+					FacilityName:  facilities[user.FacilityID-1].Name,
+					ProgramOwner:  faker.Name(),
+					ClassName:     cohort.ClassName,
+					CreditType:    string(resolveCreditType(db, classID, programID)),
+					AdminEmail:    adminEmail,
+					CohortStartDt: cohort.StartDt,
+					EnrolledOnDt:  enrolledOn,
 				}
 				if err := db.Create(&completion).Error; err != nil {
 					log.Printf("Failed to create completion")
@@ -311,7 +340,7 @@ func seedTestData(db *gorm.DB) {
 				} else if result.RowsAffected == 0 {
 					log.Printf("Attendance already exists for user %d on %s for event %d. Skipping.", user.ID, attendanceDate, event.ID)
 				} else {
-					log.Printf("Created attendance for user %s at event: %d on %s", user.Username, event.ClassID, attendanceDate)
+					log.Printf("Created attendance for user %s at event: %d on %s", user.Username, event.ID, attendanceDate)
 				}
 			}
 		}
@@ -540,7 +569,7 @@ func generateFakeVideos(providerID uint, count int) []models.Video {
 	}
 	return videos
 }
-func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
+func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClassCohort, error) {
 	facilities := []models.Facility{}
 	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
 	creditTypes := [4]models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
@@ -600,7 +629,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 		facilityRooms[facility.ID] = rooms
 		log.Printf("Created %d rooms for facility %s", len(rooms), facility.Name)
 	}
-	toReturn := make([]models.ProgramClass, 0)
+	toReturn := make([]models.ProgramClassCohort, 0)
 	programs := make([]models.Program, 0, 7)
 	for range 7 {
 		programs = append(programs, models.Program{
@@ -640,51 +669,111 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 				if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
 					log.Printf("Failed to create program credit type: %v", err)
 				}
-				class := models.ProgramClass{
-					Capacity:    capacities[rand.Intn(len(capacities))],
+				// One CLASS, then 1-3 COHORTS under it. The multi-cohort shape is the
+				// point: a 1:1 seed never exercises a single class-level rollup.
+				programClass := models.ProgramClass{
 					Name:        programs[i].Name,
 					Description: programClassDescriptions[programs[i].Name],
-					Status:         models.Scheduled, //this will change during new class development
-					StartDt:        time.Now().Add(14 * 24 * time.Hour),
-					EndDt:          &endDates[rand.Intn(len(endDates))],
-					FacilityID:     facilities[idx].ID,
-					ProgramID:      programs[i].ID,
+					CreditHours: &creditHourOptions[rand.Intn(len(creditHourOptions))],
+					FacilityID:  facilities[idx].ID,
+					ProgramID:   programs[i].ID,
 				}
-				if err := db.Create(&class).Error; err != nil {
+				if err := db.Create(&programClass).Error; err != nil {
 					log.Printf("Failed to create program class: %v", err)
+					continue
 				}
-				log.Println("Creating program class ", class.ID)
-				toReturn = append(toReturn, class)
 
-				randDays := []rrule.Weekday{}
-				days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
-				for range rand.Intn(3) {
-					randDays = append(randDays, days[rand.Intn(len(days))])
+				// Sometimes give the class its own credit type, so the
+				// empty-means-inherit branch and the override branch both get hit.
+				if rand.Intn(3) == 0 {
+					if err := db.Create(&models.ProgramClassCreditType{
+						ClassID:    programClass.ID,
+						CreditType: creditTypes[rand.Intn(len(creditTypes))],
+					}).Error; err != nil {
+						log.Printf("Failed to create class credit type: %v", err)
+					}
 				}
-				rule, err := rrule.NewRRule(rrule.ROption{
-					Freq:      rrule.WEEKLY,
-					Dtstart:   class.StartDt,
-					Until:     *class.EndDt,
-					Byweekday: randDays,
-				})
-				if err != nil {
-					log.Printf("Failed to create rrule: %v", err)
-				}
-				rooms := facilityRooms[facilities[idx].ID]
-				roomID := rooms[rand.Intn(len(rooms))].ID
-				event := models.ProgramClassEvent{
-					ClassID:        class.ID,
-					RecurrenceRule: rule.String(),
-					RoomID:         &roomID,
-					Duration:       "1h0m0s",
-				}
-				if err := db.Create(&event).Error; err != nil {
-					log.Printf("Failed to create event: %v", err)
+
+				cohortsForClass := rand.Intn(3) + 1
+				for c := range cohortsForClass {
+					cohort := models.ProgramClassCohort{
+						ClassID: programClass.ID,
+						// Read-only alias, so this is never written -- it just carries the
+						// name in memory for the completion records built further down.
+						ClassName:   programClass.Name,
+						Capacity:    capacities[rand.Intn(len(capacities))],
+						Description: programClassDescriptions[programs[i].Name],
+						Status:      models.Scheduled, //this will change during new class development
+						StartDt:     time.Now().Add(time.Duration(14+7*c) * 24 * time.Hour),
+						EndDt:       &endDates[rand.Intn(len(endDates))],
+						FacilityID:  facilities[idx].ID,
+						ProgramID:   programs[i].ID,
+					}
+					if err := db.Create(&cohort).Error; err != nil {
+						log.Printf("Failed to create program class cohort: %v", err)
+						continue
+					}
+					log.Println("Creating program class cohort ", cohort.ID)
+					toReturn = append(toReturn, cohort)
+					seedCohortEvents(db, cohort, facilityRooms[facilities[idx].ID])
 				}
 			}
 		}
 	}
 	return toReturn, nil
+}
+
+var creditHourOptions = []int64{5, 10, 15, 20}
+
+// resolveCreditType mirrors the production rule in newClassCompletion: the class's own
+// credit types override the program's, and an EMPTY class-level set means inherit. The
+// seeder gives only some classes their own credit type, so both branches get exercised.
+func resolveCreditType(db *gorm.DB, classID, programID uint) models.CreditType {
+	var creditType models.CreditType
+	if err := db.Model(&models.ProgramClassCreditType{}).
+		Where("class_id = ?", classID).
+		Limit(1).
+		Pluck("credit_type", &creditType).Error; err == nil && creditType != "" {
+		return creditType
+	}
+	if err := db.Model(&models.ProgramCreditType{}).
+		Where("program_id = ?", programID).
+		Limit(1).
+		Pluck("credit_type", &creditType).Error; err == nil && creditType != "" {
+		return creditType
+	}
+	return models.Completion
+}
+
+func seedCohortEvents(db *gorm.DB, cohort models.ProgramClassCohort, rooms []models.Room) {
+	if len(rooms) == 0 || cohort.EndDt == nil {
+		return
+	}
+	days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
+	// Sample WITHOUT replacement: a duplicate weekday in Byweekday makes the rule
+	// generate the same occurrence twice, which then seeds duplicate attendance.
+	rand.Shuffle(len(days), func(i, j int) { days[i], days[j] = days[j], days[i] })
+	randDays := days[:rand.Intn(3)+1]
+	rule, err := rrule.NewRRule(rrule.ROption{
+		Freq:      rrule.WEEKLY,
+		Dtstart:   cohort.StartDt,
+		Until:     *cohort.EndDt,
+		Byweekday: randDays,
+	})
+	if err != nil {
+		log.Printf("Failed to create rrule: %v", err)
+		return
+	}
+	roomID := rooms[rand.Intn(len(rooms))].ID
+	event := models.ProgramClassEvent{
+		CohortID:       cohort.ID,
+		RecurrenceRule: rule.String(),
+		RoomID:         &roomID,
+		Duration:       "1h0m0s",
+	}
+	if err := db.Create(&event).Error; err != nil {
+		log.Printf("Failed to create event: %v", err)
+	}
 }
 
 func generateFakeUsers(facilities []models.Facility) []models.User {

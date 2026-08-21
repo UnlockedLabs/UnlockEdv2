@@ -78,6 +78,7 @@ export interface Program {
     funding_type: FundingType;
     program_types: PgmType[];
     is_active: boolean;
+    has_program_completion: boolean;
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
@@ -140,10 +141,58 @@ export interface Class {
     id: number;
     program_id: number;
     facility_id: number;
+    name: string;
+    description: string;
+    credit_hours: number | null;
+    archived_at: string | null;
+    created_at?: string;
+    updated_at?: string;
+
+    /** Rolled up across this class's cohorts by the API; never stored. */
+    cohort_count: number;
+    /**
+     * Per-status cohort counts. The program page grouped cohorts by status before the
+     * class tier existed; these keep that information on the class row.
+     */
+    active_cohorts: number;
+    scheduled_cohorts: number;
+    completed_cohorts: number;
+    enrolled: number;
+    capacity: number;
+    completed: number;
+
+    cohorts?: Cohort[];
+    /**
+     * An EMPTY array from a raw read means "inherit from the program". The detail
+     * endpoint resolves inheritance for you, so what arrives here is what applies.
+     */
+    credit_types?: ClassCreditType[];
+    program?: Program;
+    facility?: Facility;
+}
+
+export interface ClassCreditType {
+    program_class_id: number;
+    credit_type: string;
+}
+
+export interface Cohort {
+    id: number;
+    program_class_id: number;
+    program_id: number;
+    facility_id: number;
     facility_name: string;
     facility?: Facility;
     instructor?: User | null;
-    name: string;
+    /**
+     * The parent CLASS's name ("General Education Diploma (GED)") -- what the UI shows
+     * wherever a class name is displayed. Required, not optional: every endpoint that
+     * returns a cohort populates it, either by joining program_classes or, for Canvas
+     * courses (which have no class-tier row), by setting it from the course title in
+     * canvas_programs.go. An endpoint that forgets renders a BLANK name, so if you add
+     * one, join it.
+     */
+    class_name: string;
     description: string;
     start_dt: string;
     end_dt: string;
@@ -166,7 +215,7 @@ export interface Class {
 }
 
 export interface MissingAttendanceItem {
-    class_id: number;
+    cohort_id: number;
     class_name: string;
     facility_name?: string;
     event_id: number;
@@ -175,7 +224,7 @@ export interface MissingAttendanceItem {
 }
 
 export interface TodaysScheduleItem {
-    class_id: number;
+    cohort_id: number;
     class_name: string;
     instructor_name: string;
     facility_id: number;
@@ -212,7 +261,7 @@ export interface ResidentProgramOverview {
     status: ProgClassStatus;
     credit_types: string;
     program_id: number;
-    class_id: number;
+    cohort_id: number;
     enrollment_id: number;
     updated_at: string;
     enrollment_status?: EnrollmentStatus;

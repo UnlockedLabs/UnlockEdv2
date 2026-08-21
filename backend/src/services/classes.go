@@ -37,14 +37,14 @@ func (svc *ClassesService) GetFacilityHealthSummaries(args *models.QueryContext,
 
 	missingByFacilityClasses := make(map[uint]map[uint]struct{})
 	for _, item := range items {
-		classInfo, ok := classByID[item.ClassID]
+		classInfo, ok := classByID[item.CohortID]
 		if !ok {
 			continue
 		}
 		if _, exists := missingByFacilityClasses[classInfo.FacilityID]; !exists {
 			missingByFacilityClasses[classInfo.FacilityID] = make(map[uint]struct{})
 		}
-		missingByFacilityClasses[classInfo.FacilityID][item.ClassID] = struct{}{}
+		missingByFacilityClasses[classInfo.FacilityID][item.CohortID] = struct{}{}
 	}
 	missingByFacility := make(map[uint]int64, len(missingByFacilityClasses))
 	for facilityRef, classIDs := range missingByFacilityClasses {
@@ -200,7 +200,7 @@ func (svc *ClassesService) getMissingAttendanceForFacilityData(args *models.Quer
 	items := make([]models.MissingAttendanceItem, 0)
 	for _, inst := range instances {
 		enrolledCountOnDate := 0
-		for _, enrollment := range enrollmentsByClass[inst.ClassID] {
+		for _, enrollment := range enrollmentsByClass[inst.CohortID] {
 			if enrollment.EnrolledAt == nil {
 				continue
 			}
@@ -217,9 +217,9 @@ func (svc *ClassesService) getMissingAttendanceForFacilityData(args *models.Quer
 		if int(attendanceCount) == enrolledCountOnDate {
 			continue
 		}
-		classInfo := classByID[inst.ClassID]
+		classInfo := classByID[inst.CohortID]
 		items = append(items, models.MissingAttendanceItem{
-			ClassID:      inst.ClassID,
+			CohortID:     inst.CohortID,
 			ClassName:    classInfo.Name,
 			FacilityName: classInfo.FacilityName,
 			EventID:      inst.EventID,
@@ -322,8 +322,8 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 				}
 				_, instructorName := models.GetInstructorFromEvents(class.Events)
 				items = append(items, models.TodaysScheduleItem{
-					ClassID:        class.ID,
-					ClassName:      class.Name,
+					CohortID:       class.ID,
+					ClassName:      class.ClassName,
 					InstructorName: instructorName,
 					FacilityID:     class.FacilityID,
 					FacilityName:   facilityName,
@@ -356,7 +356,7 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 
 		classIDSet := make(map[uint]struct{}, len(items))
 		for _, item := range items {
-			classIDSet[item.ClassID] = struct{}{}
+			classIDSet[item.CohortID] = struct{}{}
 		}
 		classIDs := make([]uint, 0, len(classIDSet))
 		for id := range classIDSet {
@@ -365,7 +365,7 @@ func (svc *ClassesService) GetTodaysSchedule(args *models.QueryContext, facility
 		enrollmentCounts, err := svc.db.GetActiveEnrollmentCountsForClasses(args, classIDs)
 		if err == nil {
 			for i := range items {
-				items[i].EnrolledCount = enrollmentCounts[items[i].ClassID]
+				items[i].EnrolledCount = enrollmentCounts[items[i].CohortID]
 			}
 		}
 	}
