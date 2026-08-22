@@ -1,4 +1,9 @@
-import { useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+    Link,
+    useLoaderData,
+    useNavigate,
+    useSearchParams
+} from 'react-router-dom';
 import useSWR from 'swr';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -582,11 +587,11 @@ export default function ResidentHome() {
                                             learningRecordOutlineButtonClassName
                                         }
                                     >
-                                        <a
-                                            href={`${DIGITAL_TRANSCRIPT_ENTRY_PATH}?intent=new`}
+                                        <Link
+                                            to={`${DIGITAL_TRANSCRIPT_ENTRY_PATH}?intent=new`}
                                         >
                                             Log achievements
-                                        </a>
+                                        </Link>
                                     </Button>
                                     <Button
                                         type="button"
@@ -654,8 +659,8 @@ export default function ResidentHome() {
                                                 }
                                                 className="gap-1.5 bg-white px-4 text-[#556830] hover:bg-white/90"
                                             >
-                                                <a
-                                                    href={`${DIGITAL_TRANSCRIPT_ENTRY_PATH}?intent=new`}
+                                                <Link
+                                                    to={`${DIGITAL_TRANSCRIPT_ENTRY_PATH}?intent=new`}
                                                 >
                                                     {!heroIsFirstTime ? (
                                                         <Plus
@@ -664,7 +669,7 @@ export default function ResidentHome() {
                                                         />
                                                     ) : null}
                                                     {heroCtaLabel}
-                                                </a>
+                                                </Link>
                                             </Button>
                                         </div>
                                     </CardContent>

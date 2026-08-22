@@ -1,4 +1,134 @@
 import { ANALYTICS_EVENTS, captureEvent, flowTimerSeconds } from '@/lib/events';
+import { getDigitalTranscriptStorageKeys } from '@/types/digital-transcript';
+import {
+    noteEntryCompleted,
+    noteEntryStarted,
+    sessionStartMs
+} from './learningRecordSession';
+
+/**
+ * Row ids already counted as a completed achievement.
+ *
+ * `this.completed` guards only one `entryStarted` -> `entryCompleted` pass, and
+ * the tracker is rebuilt whenever the editor remounts — so re-opening a saved
+ * achievement and pressing Finish again emitted a second `lr_entry_completed`
+ * with nothing on the payload to tell the two apart. "Do residents stop at one
+ * or add more" then reads an edit as a new achievement, which can invert the
+ * finding the tile exists to produce.
+ *
+ * Deduping here rather than putting the row id on the event keeps the payload to
+ * counts, booleans and enums: the ids never leave the browser. `localStorage` is
+ * right for this one (unlike the sitting record) because a resident editing an
+ * old achievement in another tab must not be counted twice either.
+ */
+const COUNTED_ENTRIES_CAP = 500;
+
+function readCountedEntries(): string[] {
+    if (typeof localStorage === 'undefined') return [];
+    try {
+        const raw = localStorage.getItem(
+            getDigitalTranscriptStorageKeys().countedEntries
+        );
+        if (!raw) return [];
+        const parsed: unknown = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((v): v is string => typeof v === 'string');
+    } catch {
+        return [];
+    }
+}
+
+function entryAlreadyCounted(rowId: string): boolean {
+    return readCountedEntries().includes(rowId);
+}
+
+/**
+ * Editing time banked against an achievement that is not finished yet, in ms.
+ *
+ * `entryStarted` re-bases `entryStartMs`, and it fires again when the resident
+ * returns to the same achievement after a route change — so
+ * `lr_entry_completed.duration_seconds` reports only the *final* visit and
+ * systematically understates how long an entry actually took. That is the number
+ * the facilitator cross-reference leans on, so the total is banked here per row
+ * and emitted as `cumulative_seconds` alongside it. `duration_seconds` keeps its
+ * meaning, so nothing already flowing is redefined.
+ */
+const ENTRY_TIMING_CAP = 200;
+
+function readEntryTiming(): Record<string, number> {
+    if (typeof localStorage === 'undefined') return {};
+    try {
+        const raw = localStorage.getItem(
+            getDigitalTranscriptStorageKeys().entryTiming
+        );
+        if (!raw) return {};
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed !== 'object' || parsed === null) return {};
+        const out: Record<string, number> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+            if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+                out[k] = v;
+            }
+        }
+        return out;
+    } catch {
+        return {};
+    }
+}
+
+function writeEntryTiming(next: Record<string, number>): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+        const keys = Object.keys(next);
+        const trimmed =
+            keys.length > ENTRY_TIMING_CAP
+                ? Object.fromEntries(
+                      keys.slice(-ENTRY_TIMING_CAP).map((k) => [k, next[k]])
+                  )
+                : next;
+        localStorage.setItem(
+            getDigitalTranscriptStorageKeys().entryTiming,
+            JSON.stringify(trimmed)
+        );
+    } catch {
+        // Quota or private mode: `cumulative_seconds` falls back to this visit
+        // only, which is what `duration_seconds` already reports.
+    }
+}
+
+function bankEntryActiveMs(rowId: string, ms: number): void {
+    if (ms <= 0) return;
+    const all = readEntryTiming();
+    all[rowId] = (all[rowId] ?? 0) + ms;
+    writeEntryTiming(all);
+}
+
+/** Read and clear — a finished achievement has no more time to accumulate. */
+function takeEntryActiveMs(rowId: string): number {
+    const all = readEntryTiming();
+    const banked = all[rowId] ?? 0;
+    if (rowId in all) {
+        delete all[rowId];
+        writeEntryTiming(all);
+    }
+    return banked;
+}
+
+function markEntryCounted(rowId: string): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+        const next = [...readCountedEntries(), rowId].slice(
+            -COUNTED_ENTRIES_CAP
+        );
+        localStorage.setItem(
+            getDigitalTranscriptStorageKeys().countedEntries,
+            JSON.stringify(next)
+        );
+    } catch {
+        // Quota or private mode. Falls back to the per-pass `completed` guard,
+        // which still stops a double Finish inside one visit.
+    }
+}
 import {
     FUNNEL_FORM_FIELD_TOTAL,
     FUNNEL_FORM_STEPS,
@@ -95,6 +225,19 @@ interface QuestionTiming {
     lastEditMs: number;
     /** Sum of every closed editing run for this question, in ms. */
     totalMs: number;
+    /**
+     * Quiet time between the resident's previous keystroke anywhere in this step
+     * — or the step opening, for the first question they engage — and their first
+     * keystroke here.
+     *
+     * `duration_seconds` is a typing span, so a question someone stared at for
+     * three minutes and answered in ten seconds reports ten. That makes the
+     * criterion's "surface which questions take unusually long" blind to exactly
+     * the questions it is asking about, because hesitation is where confusion
+     * shows. This is the hesitation, measured from data already collected: no
+     * focus handlers, no coupling to the form's markup.
+     */
+    beforeFirstEditMs: number;
 }
 
 /**
@@ -108,13 +251,6 @@ interface QuestionTiming {
  */
 export class LearningRecordTracker {
     private entryStartMs = Date.now();
-    /**
-     * Start of the current visit to the form, re-based by `beginSession` — so
-     * `seconds_since_session_start` measures from when the resident opened the
-     * form, not from when they opened the first entry. Never reset by
-     * `entryStarted`, so it stays comparable across entries in one sitting.
-     */
-    private sessionStartMs = Date.now();
     private entryIndex = 0;
     /** Accumulated editing time per question, for the entry in progress. */
     private timings = new Map<FunnelStepField, QuestionTiming>();
@@ -131,57 +267,32 @@ export class LearningRecordTracker {
      */
     private currentStepIndex = 0;
     private stepStartMs = Date.now();
+    /**
+     * The resident's most recent keystroke on any question in the current step,
+     * or null before they have typed anything in it. The reference point for the
+     * next question's `beforeFirstEditMs`.
+     */
+    private lastAnyEditMs: number | null = null;
+    /** The achievement being edited, so partial time can be banked against it. */
+    private entryRowId: string | null = null;
     /** Set by `entryCompleted`, so a second Finish cannot emit a duplicate. */
     private completed = false;
-    /** Entries actually saved this session, reported by `endSession`. */
-    private entriesCompleted = 0;
-    /** One-shot guard for `endSession`, re-armed by `beginSession`. */
-    private sessionEndSent = false;
 
     /**
-     * Opens a session window. Called when the form's session effect mounts — which
-     * React StrictMode does twice in development, discarding the first cycle;
-     * without re-arming the one-shot, that throwaway cleanup would latch the guard
-     * and suppress the real session-end event.
+     * Called once when the form becomes interactive.
      *
-     * Re-bases everything `endSession` reports, not just the one-shot. Its cleanup
-     * always emits, so by the time this runs any earlier window has already been
-     * reported — carrying that window's start time or entry count forward would
-     * double count it into the next event. StrictMode walks exactly that path
-     * (mount → cleanup emits → mount), and so would `isFunnel` flipping while the
-     * component stays mounted. Per-entry state is deliberately left alone; that
-     * belongs to `entryStarted`.
+     * The index comes from `learningRecordSession`, not from the caller: it used
+     * to be derived from a ref in the form, which was rebuilt on every mount, so
+     * a resident returning from the list to add a second achievement reported
+     * index 1 again. It now counts across the whole sitting.
      */
-    beginSession(): void {
-        this.sessionEndSent = false;
-        this.sessionStartMs = Date.now();
-        this.entriesCompleted = 0;
-    }
-
-    /**
-     * Called once when the resident leaves the form, by either route: in-app
-     * navigation or `pagehide`.
-     *
-     * This is the only measure of total time in the tool that includes residents
-     * who never saved an entry — `seconds_since_session_start` rides on
-     * `lr_entry_completed`, so an abandoned session is invisible to it, and that
-     * is exactly the friction signal the pilot is looking for.
-     */
-    endSession(): void {
-        if (this.sessionEndSent) return;
-        this.sessionEndSent = true;
-        captureEvent(ANALYTICS_EVENTS.LrSessionEnded, {
-            duration_seconds: flowTimerSeconds(this.sessionStartMs),
-            entries_completed: this.entriesCompleted
-        });
-    }
-
-    /** Called once when the form becomes interactive. */
-    entryStarted(entryIndexInSession: number): void {
-        this.entryIndex = entryIndexInSession;
+    entryStarted(rowId?: string): void {
+        this.entryRowId = rowId ?? null;
+        this.entryIndex = noteEntryStarted();
         this.entryStartMs = Date.now();
         this.stepStartMs = Date.now();
         this.timings.clear();
+        this.lastAnyEditMs = null;
         this.currentField = null;
         this.touched.clear();
         this.reportedSteps.clear();
@@ -189,7 +300,7 @@ export class LearningRecordTracker {
         this.currentStepIndex = 0;
         this.completed = false;
         captureEvent(ANALYTICS_EVENTS.LrEntryStarted, {
-            entry_index_in_session: entryIndexInSession
+            entry_index_in_session: this.entryIndex
         });
     }
 
@@ -219,12 +330,20 @@ export class LearningRecordTracker {
             timing.openMs ??= now;
             timing.lastEditMs = now;
         } else {
+            // First keystroke on this question. Measured before `lastAnyEditMs`
+            // is advanced below, so the reference is still the previous
+            // question's last edit.
             this.timings.set(field, {
                 openMs: now,
                 lastEditMs: now,
-                totalMs: 0
+                totalMs: 0,
+                beforeFirstEditMs: Math.max(
+                    0,
+                    now - (this.lastAnyEditMs ?? this.stepStartMs)
+                )
             });
         }
+        this.lastAnyEditMs = now;
         this.currentField = field;
     }
 
@@ -260,6 +379,7 @@ export class LearningRecordTracker {
             flowTimerSeconds(this.stepStartMs)
         );
         this.stepStartMs = Date.now();
+        this.lastAnyEditMs = null;
         this.currentStepIndex = toStepIndex;
     }
 
@@ -272,7 +392,8 @@ export class LearningRecordTracker {
     private reportStep(
         entry: TranscriptReflectionFields,
         stepIndex: number,
-        durationSeconds: number
+        durationSeconds: number,
+        abandoned = false
     ): void {
         const step = FUNNEL_FORM_STEPS[stepIndex];
         if (!step || this.reportedSteps.has(stepIndex)) return;
@@ -281,13 +402,14 @@ export class LearningRecordTracker {
         let answered = 0;
         for (const field of step.fields) {
             if (funnelStepFieldAnswered(entry, field)) answered += 1;
-            this.emitQuestion(entry, field);
+            this.emitQuestion(entry, field, abandoned);
         }
         captureEvent(ANALYTICS_EVENTS.LrStepCompleted, {
             step_id: step.id,
             step_index: stepIndex,
             duration_seconds: durationSeconds,
-            answered_count: answered
+            answered_count: answered,
+            abandoned
         });
     }
 
@@ -299,10 +421,15 @@ export class LearningRecordTracker {
      * Returns false without emitting if this entry was already completed, so a
      * second Finish click cannot produce a duplicate.
      */
-    entryCompleted(entry: TranscriptReflectionFields): boolean {
+    entryCompleted(entry: TranscriptReflectionFields, rowId?: string): boolean {
         if (this.completed) return false;
+        // Already counted in an earlier visit or another tab: this Finish is an
+        // edit to an existing achievement, not a new one. Returning before the
+        // flush also keeps its questions and steps from being reported twice.
+        if (rowId && entryAlreadyCounted(rowId)) return false;
         this.completed = true;
-        this.entriesCompleted += 1;
+        if (rowId) markEntryCounted(rowId);
+        noteEntryCompleted();
 
         if (this.currentField) this.closeRun(this.currentField);
         this.currentField = null;
@@ -336,13 +463,61 @@ export class LearningRecordTracker {
         // capping any completion-rate insight built on the pair at 90%.
         captureEvent(ANALYTICS_EVENTS.LrEntryCompleted, {
             duration_seconds: flowTimerSeconds(this.entryStartMs),
+            cumulative_seconds: Math.round(
+                ((rowId ? takeEntryActiveMs(rowId) : 0) +
+                    Math.max(0, Date.now() - this.entryStartMs)) /
+                    1000
+            ),
             answered_count: countFunnelFieldsAnswered(entry),
             total_fields: FUNNEL_FORM_FIELD_TOTAL,
             entry_index_in_session: this.entryIndex,
-            seconds_since_session_start: flowTimerSeconds(this.sessionStartMs),
+            seconds_since_session_start: flowTimerSeconds(sessionStartMs()),
             submitted_at: new Date().toISOString()
         });
         return true;
+    }
+
+    /**
+     * Report the step the resident was standing on when they left without
+     * finishing.
+     *
+     * `stepChanged` reports a step only when it is left *for another one*, and
+     * `entryCompleted` flushes everything at the end — so abandoning on the step
+     * in front of you was the one case that emitted nothing. That is both the
+     * sharpest friction signal in the form and the population criterion 3 needs
+     * for its "left it blank" denominator, so it cannot be the case that goes
+     * unreported.
+     *
+     * Only the current step is flushed. Steps never visited are left alone: they
+     * would arrive as rows of zeros and invent a denominator the resident never
+     * actually saw.
+     *
+     * Rows emitted here carry `abandoned: true`. A resident who leaves and comes
+     * back re-opens the entry, which clears `reportedSteps`, so the same step can
+     * be reported again later — once here and once at finish. The flag is what
+     * lets a timing tile exclude the partial row while an answer-rate tile keeps
+     * it, instead of the duplication being silent.
+     */
+    abandonedCurrentStep(entry: TranscriptReflectionFields): void {
+        // No entry was ever opened for editing, so there is no step the resident
+        // can be said to have abandoned. Also keeps React StrictMode's discarded
+        // first mount from emitting anything.
+        if (this.entryIndex === 0 || this.completed) return;
+        // Unfinished: bank this visit so a later Finish can report the total.
+        if (this.entryRowId) {
+            bankEntryActiveMs(
+                this.entryRowId,
+                Math.max(0, Date.now() - this.entryStartMs)
+            );
+        }
+        if (this.currentField) this.closeRun(this.currentField);
+        this.currentField = null;
+        this.reportStep(
+            entry,
+            this.currentStepIndex,
+            flowTimerSeconds(this.stepStartMs),
+            true
+        );
     }
 
     /**
@@ -352,7 +527,8 @@ export class LearningRecordTracker {
      */
     private emitQuestion(
         entry: TranscriptReflectionFields,
-        field: FunnelStepField
+        field: FunnelStepField,
+        abandoned = false
     ): void {
         this.closeRun(field);
         const timing = this.timings.get(field);
@@ -361,13 +537,19 @@ export class LearningRecordTracker {
         const duration = timing ? Math.round(timing.totalMs / 1000) : 0;
         captureEvent(ANALYTICS_EVENTS.LrQuestionLeft, {
             question_key: field,
+            // null, not 0, when the question was never typed in: there is no
+            // hesitation to report, and 0 would read as "answered instantly".
+            seconds_before_first_edit: timing
+                ? Math.round(timing.beforeFirstEditMs / 1000)
+                : null,
             step_id: stepIdForField(field),
             kind: funnelStepFieldKind(field),
             duration_seconds: duration,
             touched: this.touched.has(field),
             answered: funnelStepFieldAnswered(entry, field),
             selection_count: selectionCount(entry, field),
-            char_count: charCount(entry, field)
+            char_count: charCount(entry, field),
+            abandoned
         });
     }
 }

@@ -3,7 +3,8 @@ import { INIT_KRATOS_LOGIN_FLOW, User } from '@/types';
 import { AuthContext, fetchUser, handleLogout } from '@/auth/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { tabSessionManager } from '@/session/tabSession';
-import { identifyUser } from '@/lib/events';
+import { analyticsDistinctId, identifyUser } from '@/lib/events';
+import { setDigitalTranscriptStorageOwner } from '@/types/digital-transcript';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children
@@ -26,6 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                     await handleLogout();
                     return;
                 }
+                // Before anything reads Learning Record storage: discard it if
+                // it belongs to a different resident. Facility workstations are
+                // shared, the keys are per-origin, and logging out clears none of
+                // them — so without this the next person to sign in inherits the
+                // previous one's unfinished achievement and their sitting.
+                setDigitalTranscriptStorageOwner(
+                    analyticsDistinctId(authUser.id)
+                );
                 identifyUser(authUser);
                 setUser(authUser);
             }

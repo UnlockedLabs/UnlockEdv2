@@ -28,8 +28,12 @@ export const ANALYTICS_EVENTS = {
     LrQuestionLeft: 'lr_question_left',
     LrStepCompleted: 'lr_step_completed',
     LrEntryCompleted: 'lr_entry_completed',
-    // Emitted when the resident leaves the form. The only measure of total time
-    // in the tool that also counts residents who never saved an entry.
+    // Emitted once per sitting, not per form visit: the session survives the trip
+    // out to the list page and ends on pagehide, on a lapsed 30-minute resume
+    // window, or when a later visit recovers one a reload interrupted. Owned by
+    // learningRecordSession.ts, not by the tracker, because the tracker dies with
+    // the editor component. Still the only measure of time in the tool that also
+    // counts residents who never saved an entry.
     LrSessionEnded: 'lr_session_ended',
     // Errors & friction
     ApiError: 'api_error'
@@ -71,7 +75,7 @@ function stateTag(): string {
  * last-write-wins between facilities, and would undercount weekly-active-users —
  * the pilot's headline metric — by collapsing distinct people into one.
  */
-function analyticsDistinctId(userId: number): string {
+export function analyticsDistinctId(userId: number): string {
     return `${stateTag()}:${userId}`;
 }
 
