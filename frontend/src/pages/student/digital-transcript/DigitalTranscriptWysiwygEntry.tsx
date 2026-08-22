@@ -584,7 +584,25 @@ export function DigitalTranscriptWysiwygEntry({
     useEffect(() => {
         if (!isFunnel) return;
         enterForm();
+        // A bfcache restore starts a new sitting without this component
+        // unmounting, so the analytics tracker below never gets recreated and
+        // never re-runs entryStarted for whatever entry is already open. This
+        // renumbers it against the new sitting instead.
+        const handleSessionRestarted = () => {
+            const current = sessionRef.current;
+            analyticsRef.current?.reattachToSession(
+                current?.expandedId ?? null
+            );
+        };
+        window.addEventListener(
+            'learning-record-session-restarted',
+            handleSessionRestarted
+        );
         return () => {
+            window.removeEventListener(
+                'learning-record-session-restarted',
+                handleSessionRestarted
+            );
             // Report the step the resident was standing on before the session
             // window closes — otherwise abandoning mid-form is the one path that
             // emits nothing for the question in front of them. Read through

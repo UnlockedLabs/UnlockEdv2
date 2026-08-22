@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 // shared, the keys are per-origin, and logging out clears none of
                 // them — so without this the next person to sign in inherits the
                 // previous one's unfinished achievement and their sitting.
-                setDigitalTranscriptStorageOwner(
+                await setDigitalTranscriptStorageOwner(
                     analyticsDistinctId(authUser.id)
                 );
                 identifyUser(authUser);
