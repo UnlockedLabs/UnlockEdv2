@@ -55,6 +55,7 @@ import {
     TOP_SKILLS_MAX
 } from './transcriptReflectionConfig';
 import { LearningRecordTracker } from './learningRecordAnalytics';
+import { enterForm, leaveForm, noteActivity } from './learningRecordSession';
 
 /** Maps a TranscriptEntry patch key to its corresponding preview field id. */
 function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
@@ -296,7 +297,6 @@ export function DigitalTranscriptWysiwygEntry({
     const analyticsRef = useRef<LearningRecordTracker | null>(null);
     analyticsRef.current ??= new LearningRecordTracker();
     const analyticsStartedForRef = useRef<string | null>(null);
-    const entriesCommittedThisSessionRef = useRef(0);
 
     const committedIds = useMemo(
         () => new Set(entries.map((e) => e.id)),
@@ -557,11 +557,10 @@ export function DigitalTranscriptWysiwygEntry({
             setSaveErrorRowId(null);
             // Success path only, mirroring the attendance/program convention: the
             // row is complete, saved, and the resident is finishing. The tracker
-            // refuses a second completion for the same entry, so the session count
-            // only advances when an event was actually emitted.
-            if (analyticsRef.current?.entryCompleted(row)) {
-                entriesCommittedThisSessionRef.current += 1;
-            }
+            // refuses a second completion for the same entry and reports the
+            // accepted one to the session itself, so the sitting's count advances
+            // only when an event was actually emitted.
+            analyticsRef.current?.entryCompleted(row, id);
             return true;
         }, [
             persistActiveRow,
@@ -575,20 +574,26 @@ export function DigitalTranscriptWysiwygEntry({
         onRegisterFunnelFinish({ validateFinishRequirements });
     }, [isFunnel, onRegisterFunnelFinish, validateFinishRequirements]);
 
-    // ID-830: one lr_session_ended per visit to the form, covering both ways to
-    // leave — pagehide for tab/browser close and bfcache, the cleanup for in-app
-    // navigation, which is how Finish leaves. beforeunload/unload are deliberately
-    // not used: they are unreliable and break bfcache. The tracker's one-shot
-    // makes the overlap harmless.
+    // ID-830: mark this mount as a visit to the form. The session itself lives in
+    // learningRecordSession, not here, because this component unmounts on every
+    // list <-> entry navigation — one sitting used to emit several partial
+    // lr_session_ended events. leaveForm deliberately does not emit; it stops
+    // active time accruing and lets the module's resume window decide when the
+    // sitting is over. pagehide is registered by the module for the same reason:
+    // registered here it would be gone the moment this unmounts.
     useEffect(() => {
         if (!isFunnel) return;
-        const tracker = analyticsRef.current;
-        tracker?.beginSession();
-        const end = () => tracker?.endSession();
-        window.addEventListener('pagehide', end);
+        enterForm();
         return () => {
-            window.removeEventListener('pagehide', end);
-            end();
+            // Report the step the resident was standing on before the session
+            // window closes — otherwise abandoning mid-form is the one path that
+            // emits nothing for the question in front of them. Read through
+            // sessionRef so the cleanup sees the row as it is now, not as it was
+            // when this effect ran.
+            const current = sessionRef.current;
+            const row = current?.rows.find((r) => r.id === current.expandedId);
+            if (row) analyticsRef.current?.abandonedCurrentStep(row);
+            leaveForm();
         };
     }, [isFunnel]);
 
@@ -600,9 +605,7 @@ export function DigitalTranscriptWysiwygEntry({
         if (!isFunnel || !hydrated || !analyticsExpandedId) return;
         if (analyticsStartedForRef.current === analyticsExpandedId) return;
         analyticsStartedForRef.current = analyticsExpandedId;
-        analyticsRef.current?.entryStarted(
-            entriesCommittedThisSessionRef.current + 1
-        );
+        analyticsRef.current?.entryStarted(analyticsExpandedId);
     }, [isFunnel, hydrated, analyticsExpandedId]);
 
     useEffect(() => {
@@ -708,6 +711,7 @@ export function DigitalTranscriptWysiwygEntry({
                         setActivePreviewField(previewField);
                     }
                     analyticsRef.current?.noteEdit(patchedKey);
+                    noteActivity();
                 }
             }
             setSession((prev) => {
