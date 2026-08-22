@@ -110,8 +110,23 @@ function numField(source: Record<string, unknown>, key: string): number {
  * recovering a sitting after a browser crash into a *fresh* tab — an acceptable
  * trade against silently double counting.
  */
+/**
+ * Resolved once, when the sitting opens, and held for its whole lifetime — see
+ * `storageKey()`.
+ *
+ * `getDigitalTranscriptStorageKeys()` resolves against the *current* prototype
+ * route, which is a mutable global (`setDigitalTranscriptStorageContext`) that
+ * changes on navigation. `state` is a module-scoped singleton that survives
+ * navigation by design, so re-resolving on every call let a mid-sitting switch
+ * between prototypes silently retarget persist/clear at a different key than
+ * the one the sitting was actually written under — orphaning the original
+ * record, which a later visit to that route could then recover and report a
+ * second time.
+ */
+let pinnedStorageKey: string | null = null;
+
 function storageKey(): string {
-    return getDigitalTranscriptStorageKeys().session;
+    return pinnedStorageKey ?? getDigitalTranscriptStorageKeys().session;
 }
 
 function persistNow(): void {
@@ -250,11 +265,22 @@ function handlePageHide(): void {
  */
 function handlePageShow(): void {
     if (mountCount === 0 || state) return;
+    pinnedStorageKey = getDigitalTranscriptStorageKeys().session;
     state = freshState();
     state.formVisits = 1;
     openActiveRun();
     attachListeners();
     persistSoon();
+    // The editor component never unmounted across the freeze, so its analytics
+    // tracker is still numbered against the sitting that just ended. Tell it a
+    // new one just started so it can renumber the entry already open, the same
+    // way `transcriptEntrySessionStorage.ts` notifies a mounted component of a
+    // module-state change with no remount to hook into.
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+            new CustomEvent('learning-record-session-restarted')
+        );
+    }
 }
 
 /**
@@ -315,6 +341,7 @@ function freshState(): SessionState {
  * with its own stored close time rather than with now.
  */
 function resumeOrStart(): void {
+    pinnedStorageKey = getDigitalTranscriptStorageKeys().session;
     const stored = readPersisted();
     if (!stored) {
         state = freshState();
@@ -329,6 +356,9 @@ function resumeOrStart(): void {
     // than dropping it, then begin a genuinely new session.
     state = stored;
     endSession('recovered');
+    // endSession() just cleared the pin for the session it ended — the fresh
+    // one below is a new sitting and needs its own.
+    pinnedStorageKey = getDigitalTranscriptStorageKeys().session;
     state = freshState();
 }
 
@@ -396,10 +426,10 @@ export function sessionStartMs(): number {
  * the count no longer restarts when the resident goes back to the list.
  */
 export function noteEntryStarted(): number {
-    if (!state) return 1;
+    if (!state) return 0;
     state.entriesStarted += 1;
     persistSoon();
-    return state.entriesCompleted + 1;
+    return state.entriesStarted;
 }
 
 /** An entry was saved. */
@@ -430,6 +460,9 @@ export function endSession(reason: EndedReason): void {
     clearPersistTimer();
     detachListeners();
     clearPersisted();
+    // The next sitting must re-resolve against whatever route is active then,
+    // not inherit this one's key.
+    pinnedStorageKey = null;
     captureEvent(ANALYTICS_EVENTS.LrSessionEnded, {
         duration_seconds: spanSeconds(finished.startedMs, closedMs),
         active_seconds: Math.round(finished.activeMs / 1000),

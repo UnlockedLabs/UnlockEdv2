@@ -74,34 +74,64 @@ const CATEGORIES_STORAGE_KEYS = {
  * resident's own draft and dedupe list intact, which clearing on logout would
  * throw away.
  *
- * The stamp is the deployment-namespaced analytics id, never a name or username.
+ * The stamp is a SHA-256 digest of the deployment-namespaced analytics id, never
+ * the id itself or a name/username — the check only needs equality, not the
+ * original value, so nothing readable is left in `localStorage` once a resident
+ * signs out.
  */
 const TRANSCRIPT_STORAGE_OWNER_KEY = 'unlockEd_digital_transcript_owner_v1';
 
-/** Every key both prototypes can write, so a purge cannot miss one. */
+/** Digest an owner id so the stamp on disk can't be read back to a resident. */
+async function digestOwnerId(ownerId: string): Promise<string> {
+    const bytes = new TextEncoder().encode(ownerId);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+/** Every key any current or former Learning Record storage layout has written. */
 function allDigitalTranscriptStorageKeys() {
     return [
         ...Object.values(FUNNEL_STORAGE_KEYS),
-        ...Object.values(CATEGORIES_STORAGE_KEYS)
+        ...Object.values(CATEGORIES_STORAGE_KEYS),
+        ...Object.values(DIGITAL_TRANSCRIPT_LEGACY_STORAGE),
+        ...Object.values(DIGITAL_TRANSCRIPT_B_STORAGE),
+        ...STALE_TRANSCRIPT_A_STORAGE_KEYS
     ];
 }
 
 /**
- * Drop every Learning Record record on this browser.
+ * Drop every Learning Record record on this browser — current, both prototype
+ * namespaces, and every retired layout (`DIGITAL_TRANSCRIPT_LEGACY_STORAGE`,
+ * `DIGITAL_TRANSCRIPT_B_STORAGE`, `STALE_TRANSCRIPT_A_STORAGE_KEYS`).
  *
  * Both prototype namespaces are cleared explicitly rather than through
  * `getDigitalTranscriptStorageKeys()`, because that resolves against the *current
  * route* — at sign-in the resident is on `/home`, so it would only ever return the
- * funnel keys and would quietly leave the categories ones behind.
+ * funnel keys and would quietly leave the categories ones behind. The retired
+ * layouts have to be swept explicitly for the same reason: nothing else clears
+ * them once `migrateDigitalTranscriptLegacyStorage()` (the only other code that
+ * reads them) stops running against them, and old drafts in an origin-scoped key
+ * are exactly what this purge exists to keep from outliving the resident who
+ * wrote them.
  */
 function purgeDigitalTranscriptStorage(): void {
     for (const key of allDigitalTranscriptStorageKeys()) {
+        // Separate try/catch per store: a throw removing from one must not skip
+        // the other for the same key. `session` — the previous resident's
+        // sitting — lives in sessionStorage, so a localStorage failure must
+        // never be the reason it survives an owner change.
         try {
             if (typeof localStorage !== 'undefined') {
                 localStorage.removeItem(key);
             }
-            // `session` is the one key held in sessionStorage; removing a missing
-            // key is a no-op, so both stores are swept without special-casing.
+        } catch {
+            /* storage unavailable — nothing to purge */
+        }
+        try {
+            // Removing a missing key is a no-op, so both stores are swept
+            // without special-casing which keys actually live in which one.
             if (typeof sessionStorage !== 'undefined') {
                 sessionStorage.removeItem(key);
             }
@@ -124,13 +154,16 @@ function purgeDigitalTranscriptStorage(): void {
  * bounded: a resident mid-entry when this ships loses only text not yet saved to
  * the server.
  */
-export function setDigitalTranscriptStorageOwner(ownerId: string): void {
+export async function setDigitalTranscriptStorageOwner(
+    ownerId: string
+): Promise<void> {
     if (typeof localStorage === 'undefined') return;
     try {
+        const digest = await digestOwnerId(ownerId);
         const previous = localStorage.getItem(TRANSCRIPT_STORAGE_OWNER_KEY);
-        if (previous === ownerId) return;
+        if (previous === digest) return;
         purgeDigitalTranscriptStorage();
-        localStorage.setItem(TRANSCRIPT_STORAGE_OWNER_KEY, ownerId);
+        localStorage.setItem(TRANSCRIPT_STORAGE_OWNER_KEY, digest);
     } catch {
         // Quota or private mode. The stamp cannot be written, so the records are
         // purged on every load rather than shared — the safe direction to fail.

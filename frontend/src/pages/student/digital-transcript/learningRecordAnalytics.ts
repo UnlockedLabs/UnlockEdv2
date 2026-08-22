@@ -55,6 +55,14 @@ function entryAlreadyCounted(rowId: string): boolean {
  */
 const ENTRY_TIMING_CAP = 200;
 
+/**
+ * Same cutoff and rationale as `learningRecordSession.ts`'s `ACTIVE_IDLE_MS`,
+ * applied per visit: an achievement left open on an unattended screen stops
+ * accruing `cumulative_seconds` this long after the resident's last keystroke,
+ * rather than counting all the way to `Date.now()`.
+ */
+const ENTRY_ACTIVE_IDLE_MS = 5 * 60 * 1000;
+
 function readEntryTiming(): Record<string, number> {
     if (typeof localStorage === 'undefined') return {};
     try {
@@ -273,6 +281,8 @@ export class LearningRecordTracker {
      * next question's `beforeFirstEditMs`.
      */
     private lastAnyEditMs: number | null = null;
+    /** Reference point for `cappedElapsedMs`'s idle cutoff. */
+    private lastActivityMs = Date.now();
     /** The achievement being edited, so partial time can be banked against it. */
     private entryRowId: string | null = null;
     /** Set by `entryCompleted`, so a second Finish cannot emit a duplicate. */
@@ -288,17 +298,47 @@ export class LearningRecordTracker {
      */
     entryStarted(rowId?: string): void {
         this.entryRowId = rowId ?? null;
-        this.entryIndex = noteEntryStarted();
         this.entryStartMs = Date.now();
         this.stepStartMs = Date.now();
         this.timings.clear();
         this.lastAnyEditMs = null;
+        this.lastActivityMs = this.entryStartMs;
         this.currentField = null;
         this.touched.clear();
         this.reportedSteps.clear();
         // Matches the form's `activeStep` state, which is always 0 on a fresh entry.
         this.currentStepIndex = 0;
         this.completed = false;
+
+        // Already saved in an earlier visit: this open is an edit, not a new
+        // achievement. Skipping the counter bump as well as the emit — not just
+        // the emit — keeps `entries_started` and `entries_completed` on
+        // `lr_session_ended` counting the same population; otherwise a resident
+        // who reopens one saved achievement twice reports 3 started against 1
+        // completed.
+        if (rowId && entryAlreadyCounted(rowId)) return;
+
+        this.entryIndex = noteEntryStarted();
+        captureEvent(ANALYTICS_EVENTS.LrEntryStarted, {
+            entry_index_in_session: this.entryIndex
+        });
+    }
+
+    /**
+     * Called when a bfcache restore silently starts a new sitting
+     * (`learning-record-session-restarted`) while this component — and this
+     * tracker — never unmounted. `entryStarted` never re-ran for the row
+     * already open, so `entryIndex` is still numbered against the sitting
+     * that just ended. Re-numbers it against the new one and reports the
+     * corresponding `lr_entry_started`, mirroring what a genuine remount
+     * would have produced. Question/step timing already accumulated is left
+     * untouched — the resident's editing was never actually interrupted,
+     * only the sitting's own bookkeeping was.
+     */
+    reattachToSession(rowId: string | null): void {
+        if (this.completed) return;
+        if (!rowId || rowId !== this.entryRowId) return;
+        this.entryIndex = noteEntryStarted();
         captureEvent(ANALYTICS_EVENTS.LrEntryStarted, {
             entry_index_in_session: this.entryIndex
         });
@@ -344,6 +384,7 @@ export class LearningRecordTracker {
             });
         }
         this.lastAnyEditMs = now;
+        this.lastActivityMs = now;
         this.currentField = field;
     }
 
@@ -357,6 +398,20 @@ export class LearningRecordTracker {
         if (timing?.openMs == null) return;
         timing.totalMs += Math.max(0, timing.lastEditMs - timing.openMs);
         timing.openMs = null;
+    }
+
+    /**
+     * Elapsed time for the current visit, capped the same way
+     * `learningRecordSession.ts` caps `active_seconds`: an unattended tab stops
+     * accruing `ENTRY_ACTIVE_IDLE_MS` after the resident's last keystroke instead
+     * of counting all the way to now.
+     */
+    private cappedElapsedMs(): number {
+        const end = Math.min(
+            Date.now(),
+            this.lastActivityMs + ENTRY_ACTIVE_IDLE_MS
+        );
+        return Math.max(0, end - this.entryStartMs);
     }
 
     /**
@@ -426,7 +481,13 @@ export class LearningRecordTracker {
         // Already counted in an earlier visit or another tab: this Finish is an
         // edit to an existing achievement, not a new one. Returning before the
         // flush also keeps its questions and steps from being reported twice.
-        if (rowId && entryAlreadyCounted(rowId)) return false;
+        // No `lr_entry_completed` will ever fire for this row again, so any time
+        // `abandonedCurrentStep` banked against it on a later re-open must be
+        // discarded here — otherwise it sits in `entryTiming` forever, unread.
+        if (rowId && entryAlreadyCounted(rowId)) {
+            takeEntryActiveMs(rowId);
+            return false;
+        }
         this.completed = true;
         if (rowId) markEntryCounted(rowId);
         noteEntryCompleted();
@@ -465,7 +526,7 @@ export class LearningRecordTracker {
             duration_seconds: flowTimerSeconds(this.entryStartMs),
             cumulative_seconds: Math.round(
                 ((rowId ? takeEntryActiveMs(rowId) : 0) +
-                    Math.max(0, Date.now() - this.entryStartMs)) /
+                    this.cappedElapsedMs()) /
                     1000
             ),
             answered_count: countFunnelFieldsAnswered(entry),
@@ -505,10 +566,7 @@ export class LearningRecordTracker {
         if (this.entryIndex === 0 || this.completed) return;
         // Unfinished: bank this visit so a later Finish can report the total.
         if (this.entryRowId) {
-            bankEntryActiveMs(
-                this.entryRowId,
-                Math.max(0, Date.now() - this.entryStartMs)
-            );
+            bankEntryActiveMs(this.entryRowId, this.cappedElapsedMs());
         }
         if (this.currentField) this.closeRun(this.currentField);
         this.currentField = null;
