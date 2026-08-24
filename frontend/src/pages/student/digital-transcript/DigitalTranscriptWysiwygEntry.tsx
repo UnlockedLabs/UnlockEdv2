@@ -475,6 +475,34 @@ export function DigitalTranscriptWysiwygEntry({
             await upsertCommittedEntry(saved);
             setSession((prev) => {
                 if (!prev) return prev;
+
+                // `saved` was snapshotted before the await above, so it is stale
+                // the moment the resident types during the request — and on a slow
+                // connection that window is wide. syncSessionRowsAfterUpsert
+                // replaces the row wholesale, which silently reverted everything
+                // typed while the save was in flight.
+                //
+                // patchRow always rebuilds the edited row, so an identity change
+                // is exactly "the resident typed since we sent this". In that case
+                // keep what is on screen and adopt only createdAt, which is the one
+                // field the save establishes; buildSavedEntry preserves row.id, so
+                // nothing else here comes back from the server.
+                const liveIdx = prev.rows.findIndex((r) => r.id === id);
+                const live = liveIdx >= 0 ? prev.rows[liveIdx] : null;
+                if (live && live !== row) {
+                    const rows = [...prev.rows];
+                    rows[liveIdx] = {
+                        ...live,
+                        createdAt: saved.createdAt
+                    };
+                    return {
+                        ...prev,
+                        rows,
+                        expandedId: saved.id,
+                        lastPreviewId: saved.id
+                    };
+                }
+
                 const next = syncSessionRowsAfterUpsert(prev, saved);
                 return {
                     ...next,

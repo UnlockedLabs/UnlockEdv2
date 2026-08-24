@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
@@ -47,99 +47,105 @@ export interface LearningRecordExportContentProps {
     documentVariant?: LearningRecordDocumentVariant;
 }
 
-export const LearningRecordExportContent = forwardRef<
-    HTMLDivElement,
-    LearningRecordExportContentProps
->(function LearningRecordExportContent(
-    {
-        rows,
-        residentName,
-        anchorId = null,
-        className,
-        filledSectionsOnly = false,
-        hidePreviewHeader = false,
-        embeddedLivePreview = false,
-        documentVariant = 'default'
-    },
-    ref
-) {
-    const isFunnel = documentVariant === 'funnel';
-    const highlightAnchor = Boolean(anchorId) && !filledSectionsOnly;
-    const showPreviewHeader = !hidePreviewHeader;
-    const shellClassName = embeddedLivePreview
-        ? 'learning-record-pdf-export bg-transparent'
-        : 'learning-record-pdf-export learning-record-print-root bg-background px-4 py-5 sm:px-5';
+export const LearningRecordExportContent = memo(
+    forwardRef<HTMLDivElement, LearningRecordExportContentProps>(
+        function LearningRecordExportContent(
+            {
+                rows,
+                residentName,
+                anchorId = null,
+                className,
+                filledSectionsOnly = false,
+                hidePreviewHeader = false,
+                embeddedLivePreview = false,
+                documentVariant = 'default'
+            },
+            ref
+        ) {
+            const isFunnel = documentVariant === 'funnel';
+            const highlightAnchor = Boolean(anchorId) && !filledSectionsOnly;
+            const showPreviewHeader = !hidePreviewHeader;
+            const shellClassName = embeddedLivePreview
+                ? 'learning-record-pdf-export bg-transparent'
+                : 'learning-record-pdf-export learning-record-print-root bg-background px-4 py-5 sm:px-5';
 
-    if (rows.length === 0) {
-        return (
-            <div
-                ref={ref}
-                className={cn(
-                    shellClassName,
-                    !embeddedLivePreview && 'px-5 py-6',
-                    className
-                )}
-            >
-                {showPreviewHeader ? (
-                    <LearningRecordPreviewHeader
-                        residentName={residentName}
-                        programCount={0}
-                    />
-                ) : null}
-                <p className="text-sm italic text-muted-foreground">
-                    Add an achievement on the left to see your record here.
-                </p>
-            </div>
-        );
-    }
-
-    return (
-        <div
-            ref={ref}
-            data-slot="learning-record-export-content"
-            className={cn(shellClassName, className)}
-        >
-            {showPreviewHeader ? (
-                <LearningRecordPreviewHeader
-                    residentName={residentName}
-                    programCount={rows.length}
-                />
-            ) : null}
-            <div
-                className={cn(
-                    'flex flex-col',
-                    embeddedLivePreview ? 'pb-0' : 'pb-4',
-                    isFunnel ? 'gap-3' : 'gap-5'
-                )}
-            >
-                {rows.map((entry) => (
-                    <article
-                        key={entry.id}
-                        data-achievement-block
-                        data-achievement-id={entry.id}
+            if (rows.length === 0) {
+                return (
+                    <div
+                        ref={ref}
                         className={cn(
-                            'break-inside-avoid rounded-lg border border-border/80 bg-card shadow-none',
-                            isFunnel ? 'overflow-hidden p-0' : 'p-5 sm:p-6',
-                            highlightAnchor &&
-                                entry.id !== anchorId &&
-                                'opacity-[0.35] transition-opacity duration-300 ease-out'
+                            shellClassName,
+                            !embeddedLivePreview && 'px-5 py-6',
+                            className
                         )}
                     >
-                        <LearningRecordDocument
-                            source={entry}
+                        {showPreviewHeader ? (
+                            <LearningRecordPreviewHeader
+                                residentName={residentName}
+                                programCount={0}
+                            />
+                        ) : null}
+                        <p className="text-sm italic text-muted-foreground">
+                            Add an achievement on the left to see your record
+                            here.
+                        </p>
+                    </div>
+                );
+            }
+
+            return (
+                <div
+                    ref={ref}
+                    data-slot="learning-record-export-content"
+                    className={cn(shellClassName, className)}
+                >
+                    {showPreviewHeader ? (
+                        <LearningRecordPreviewHeader
                             residentName={residentName}
-                            layout="record"
-                            documentVariant={documentVariant}
-                            showReadiness={false}
-                            emptyPreviewVariant={
-                                filledSectionsOnly ? 'placeholder' : 'skeleton'
-                            }
-                            filledSectionsOnly={filledSectionsOnly}
-                            className="min-h-0"
+                            programCount={rows.length}
                         />
-                    </article>
-                ))}
-            </div>
-        </div>
-    );
-});
+                    ) : null}
+                    <div
+                        className={cn(
+                            'flex flex-col',
+                            embeddedLivePreview ? 'pb-0' : 'pb-4',
+                            isFunnel ? 'gap-3' : 'gap-5'
+                        )}
+                    >
+                        {rows.map((entry) => (
+                            <article
+                                key={entry.id}
+                                data-achievement-block
+                                data-achievement-id={entry.id}
+                                className={cn(
+                                    'break-inside-avoid rounded-lg border border-border/80 bg-card shadow-none',
+                                    isFunnel
+                                        ? 'overflow-hidden p-0'
+                                        : 'p-5 sm:p-6',
+                                    highlightAnchor &&
+                                        entry.id !== anchorId &&
+                                        'opacity-[0.35] transition-opacity duration-300 ease-out'
+                                )}
+                            >
+                                <LearningRecordDocument
+                                    source={entry}
+                                    residentName={residentName}
+                                    layout="record"
+                                    documentVariant={documentVariant}
+                                    showReadiness={false}
+                                    emptyPreviewVariant={
+                                        filledSectionsOnly
+                                            ? 'placeholder'
+                                            : 'skeleton'
+                                    }
+                                    filledSectionsOnly={filledSectionsOnly}
+                                    className="min-h-0"
+                                />
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+    )
+);
