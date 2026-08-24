@@ -301,10 +301,10 @@ function SavedEntriesSection({
             ) : (
                 <Card
                     data-slot="transcript-saved-entries-table"
-                    className="overflow-hidden p-0 shadow-sm"
+                    className="@container/entries overflow-hidden p-0 shadow-sm"
                 >
                     <CardContent className="p-0">
-                        <Table className="table-fixed">
+                        <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
                                     <SortableColumnHeader
@@ -312,37 +312,37 @@ function SavedEntriesSection({
                                         column="program"
                                         tableSort={tableSort}
                                         onSortColumn={onSortColumn}
-                                        className="w-[min(28%,14rem)] pl-6"
+                                        className="min-w-[10rem] pl-6"
                                     />
                                     <SortableColumnHeader
                                         label="Location"
                                         column="location"
                                         tableSort={tableSort}
                                         onSortColumn={onSortColumn}
-                                        className="hidden w-[200px] sm:table-cell"
+                                        className="hidden w-[10rem] @min-[42rem]/entries:table-cell"
                                     />
                                     <SortableColumnHeader
                                         label="Completed"
                                         column="completed"
                                         tableSort={tableSort}
                                         onSortColumn={onSortColumn}
-                                        className="hidden w-[200px] sm:table-cell"
+                                        className="hidden w-[8.5rem] @min-[42rem]/entries:table-cell"
                                     />
                                     <SortableColumnHeader
                                         label="Steps done"
                                         column="questions"
                                         tableSort={tableSort}
                                         onSortColumn={onSortColumn}
-                                        className="hidden w-[200px] md:table-cell"
+                                        className="hidden w-[7.5rem] @min-[50rem]/entries:table-cell"
                                     />
                                     <SortableColumnHeader
                                         label="Added on"
                                         column="addedOn"
                                         tableSort={tableSort}
                                         onSortColumn={onSortColumn}
-                                        className="hidden w-[200px] lg:table-cell"
+                                        className="hidden w-[8.5rem] @min-[58rem]/entries:table-cell"
                                     />
-                                    <TableHead className="min-w-[9.5rem] pr-6 text-right font-semibold text-foreground">
+                                    <TableHead className="w-[13rem] pr-6 text-right font-semibold text-foreground">
                                         <span className="sr-only">Actions</span>
                                     </TableHead>
                                 </TableRow>
@@ -364,7 +364,7 @@ function SavedEntriesSection({
                                             data-slot="transcript-saved-entry-row"
                                             className="group relative cursor-pointer hover:bg-muted/30"
                                         >
-                                            <TableCell className="max-w-[14rem] align-middle pl-6 font-medium text-foreground">
+                                            <TableCell className="min-w-[10rem] align-middle pl-6 font-medium text-foreground whitespace-normal break-words">
                                                 <Link
                                                     to={editHref}
                                                     aria-label={getEntryDisplayTitle(
@@ -379,50 +379,50 @@ function SavedEntriesSection({
                                                         EMPTY_FIELD_LABEL
                                                     )}
                                                 </span>
-                                                <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
+                                                <p className="mt-1 text-xs font-normal text-muted-foreground @min-[42rem]/entries:hidden">
                                                     Completed{' '}
                                                     {formatProgramCompletedDate(
                                                         entry
                                                     )}
                                                 </p>
-                                                <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
+                                                <p className="mt-1 text-xs font-normal text-muted-foreground @min-[42rem]/entries:hidden">
                                                     {formatAchievementLocation(
                                                         entry
                                                     )}
                                                 </p>
-                                                <div className="mt-3 md:hidden">
+                                                <div className="mt-3 @min-[50rem]/entries:hidden">
                                                     <QuestionsAnsweredBadge
                                                         answered={answered}
                                                         total={total}
                                                     />
                                                 </div>
-                                                <p className="mt-2 text-xs text-muted-foreground lg:hidden">
+                                                <p className="mt-2 text-xs text-muted-foreground @min-[58rem]/entries:hidden">
                                                     Added on{' '}
                                                     {formatSavedOn(
                                                         entry.createdAt
                                                     )}
                                                 </p>
                                             </TableCell>
-                                            <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
+                                            <TableCell className="hidden w-[10rem] align-middle text-foreground whitespace-normal break-words @min-[42rem]/entries:table-cell">
                                                 {formatAchievementLocation(
                                                     entry
                                                 )}
                                             </TableCell>
-                                            <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
+                                            <TableCell className="hidden w-[8.5rem] align-middle text-foreground @min-[42rem]/entries:table-cell">
                                                 {formatProgramCompletedDate(
                                                     entry
                                                 )}
                                             </TableCell>
-                                            <TableCell className="hidden w-[200px] align-middle md:table-cell">
+                                            <TableCell className="hidden w-[7.5rem] align-middle @min-[50rem]/entries:table-cell">
                                                 <QuestionsAnsweredBadge
                                                     answered={answered}
                                                     total={total}
                                                 />
                                             </TableCell>
-                                            <TableCell className="hidden w-[200px] align-middle text-foreground lg:table-cell">
+                                            <TableCell className="hidden w-[8.5rem] align-middle text-foreground @min-[58rem]/entries:table-cell">
                                                 {formatSavedOn(entry.createdAt)}
                                             </TableCell>
-                                            <TableCell className="relative z-10 align-middle pr-6">
+                                            <TableCell className="relative z-10 w-[13rem] align-middle pr-6">
                                                 <div
                                                     className="flex items-center justify-end gap-1"
                                                     onClick={(e) => {
