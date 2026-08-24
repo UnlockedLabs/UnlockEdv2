@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -193,6 +193,20 @@ export default function DigitalTranscriptEntryPage() {
         }
     }, [isExporting, residentName, entries]);
 
+    // Stable identity: this object is a prop on the memoized live preview, so a
+    // fresh literal each render would defeat the memo on every keystroke.
+    const funnelDownload = useMemo(
+        () =>
+            isFunnel
+                ? {
+                      onDownload: () => void handleDownload(),
+                      canDownload,
+                      isExporting
+                  }
+                : undefined,
+        [isFunnel, handleDownload, canDownload, isExporting]
+    );
+
     if (!hydrated) {
         return (
             <DigitalTranscriptShell variant="narrow">
@@ -309,15 +323,7 @@ export default function DigitalTranscriptEntryPage() {
                                 ? handleFunnelAutoSaveStatusChange
                                 : undefined
                         }
-                        funnelDownload={
-                            isFunnel
-                                ? {
-                                      onDownload: () => void handleDownload(),
-                                      canDownload,
-                                      isExporting
-                                  }
-                                : undefined
-                        }
+                        funnelDownload={funnelDownload}
                     />
                 </div>
             </div>

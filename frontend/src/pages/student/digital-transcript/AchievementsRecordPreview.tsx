@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useDeferredValue, useEffect, useMemo, useRef } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ interface AchievementsRecordPreviewProps {
     activePreviewField?: string | null;
 }
 
-export function AchievementsRecordPreview({
+function AchievementsRecordPreviewImpl({
     rows,
     anchorId,
     variant = 'default',
@@ -38,10 +38,17 @@ export function AchievementsRecordPreview({
 }: AchievementsRecordPreviewProps) {
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
-    const docRows = useMemo(() => sortEntriesNewestFirst(rows), [rows]);
+    // The document below is expensive to render and sits in the same commit as
+    // the form inputs. Deferring it lets React keep typing responsive and drop
+    // superseded preview renders instead of blocking the keystroke that follows.
+    const deferredRows = useDeferredValue(rows);
+    const docRows = useMemo(
+        () => sortEntriesNewestFirst(deferredRows),
+        [deferredRows]
+    );
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         if (!anchorId || !scrollRef.current) return;
         const block = scrollRef.current.querySelector<HTMLElement>(
             `[data-achievement-id="${anchorId}"]`
@@ -50,7 +57,7 @@ export function AchievementsRecordPreview({
     }, [anchorId, docRows.length]);
 
     // Tab switch: scroll to the section's header pill so the section starts at the top.
-    useLayoutEffect(() => {
+    useEffect(() => {
         if (variant !== 'funnel' || activeStep == null || !scrollRef.current)
             return;
 
@@ -79,15 +86,29 @@ export function AchievementsRecordPreview({
     // Field edit: when the user interacts with a specific form field, snap the
     // preview to that field's corresponding element. activePreviewField is reset to
     // null on every tab switch so the first edit on any step always triggers a scroll.
-    useLayoutEffect(() => {
-        if (variant !== 'funnel' || !activePreviewField || !scrollRef.current)
+    //
+    // Depends on docRows because a field's preview element only exists once that
+    // field has content, and the preview lags a render behind the form (see
+    // deferredRows). On the first keystroke into an empty field the target is not
+    // in the DOM yet, so this re-runs as deferred renders land and scrolls when it
+    // appears. scrolledForFieldRef keeps that to one scroll per activation instead
+    // of re-snapping on every keystroke.
+    const scrolledForFieldRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (variant !== 'funnel' || !activePreviewField || !scrollRef.current) {
+            if (!activePreviewField) scrolledForFieldRef.current = null;
             return;
+        }
+        if (scrolledForFieldRef.current === activePreviewField) return;
 
         const el = scrollRef.current.querySelector<HTMLElement>(
             `[data-funnel-preview-field="${activePreviewField}"]`
         );
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, [activePreviewField, variant]);
+        if (!el) return;
+
+        scrolledForFieldRef.current = activePreviewField;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [activePreviewField, variant, docRows]);
 
     const isFunnel = variant === 'funnel';
 
@@ -161,3 +182,10 @@ export function AchievementsRecordPreview({
         </div>
     );
 }
+
+/**
+ * Memoized so re-renders of the entry page that do not touch the record itself
+ * skip the preview entirely. `funnelDownload` is memoized by the caller to keep
+ * this effective.
+ */
+export const AchievementsRecordPreview = memo(AchievementsRecordPreviewImpl);

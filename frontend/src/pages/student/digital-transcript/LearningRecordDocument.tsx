@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getEntryDisplayTitleOrNull } from './entryTitleDisplay';
@@ -135,7 +135,7 @@ interface LearningRecordDocumentProps {
     filledSectionsOnly?: boolean;
 }
 
-export function LearningRecordDocument({
+function LearningRecordDocumentImpl({
     source,
     residentName = '',
     showReadiness = true,
@@ -526,3 +526,10 @@ export function LearningRecordDocument({
         </article>
     );
 }
+
+/**
+ * Memoized: the funnel live preview re-renders on every keystroke, and `source`
+ * keeps its identity for rows the edit did not touch. Without this, typing into
+ * one achievement re-rendered the full document for every saved achievement.
+ */
+export const LearningRecordDocument = memo(LearningRecordDocumentImpl);
