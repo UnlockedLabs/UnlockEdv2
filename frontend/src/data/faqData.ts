@@ -10,7 +10,7 @@ interface FAQEntry {
     extra?: string;
 }
 
-export const FAQ_CATEGORIES: Record<string, FAQEntry[]> = {
+const KNOWLEDGE_CENTER_CATEGORIES: Record<string, FAQEntry[]> = {
     Overview: [
         {
             question: "What is UnlockEd's Knowledge Center?",
@@ -80,53 +80,63 @@ export const FAQ_CATEGORIES: Record<string, FAQEntry[]> = {
             question: 'How can I request new content for UnlockEd?',
             answer: "Let the staff know! We can't promise everything, but we're always looking for useful additions."
         }
-    ],
-    'Managing My Account': [
-        {
-            question: LEARNING_RECORD_PRINT_SHARE_FAQ.question,
-            answer: LEARNING_RECORD_PRINT_SHARE_FAQ.answer
-        },
-        {
-            question: LEARNING_RECORD_SAVED_HERE_FAQ.question,
-            answer: LEARNING_RECORD_SAVED_HERE_FAQ.answer
-        },
-        {
-            question: 'Can I change my name or username?',
-            answer: 'Talk to the staff and they can help you.'
-        },
-        {
-            question: 'How do I reset my password?',
-            answer: 'Talk to the staff and they can help you.'
-        },
-        {
-            question: 'Does UnlockEd have a way to track my progress?',
-            answer: "Right now, UnlockEd is a library of resources you can explore freely. Some of these resources may have more of a learning path built into them, but the tool doesn't guide you along or track your progress like some other courses do. We're considering ways to help users track their learning in the future. We're always eager to hear what you'd find useful, so please let us know!"
-        },
-        {
-            question: 'Is my activity on UnlockEd private?',
-            answer: "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
-        }
-    ],
-    'Getting Help and Troubleshooting': [
-        {
-            question: 'Can I use UnlockEd more often?',
-            answer: "We're excited you'd want to use it even more! Please share this request and positive feedback with the staff. They're collecting all of it as input for the future plans."
-        },
-        {
-            question: 'If I need more help, what do I do?',
-            answer: "Ask the staff. If they can't help, they'll reach out to the UnlockEd team."
-        },
-        {
-            question: "What should I do if something isn't working?",
-            answer: "Let the staff know, and they'll report the issue!"
-        },
-        {
-            question: 'How can I share ideas to improve UnlockEd?',
-            answer: "We want to hear from you! If you have ideas, suggestions, or things you'd like to change, please share them with the staff, and they'll get passed along to the UnlockEd team."
-        },
-        {
-            question: "What's next for UnlockEd?",
-            answer: "We're always improving what we offer based on what people find helpful. For the Knowledge Center, we will continue to add valuable content and make it easy to find and use those resources. We're also exploring other offerings that would help residents access courses and track the programs they've completed. We would love to know what's valuable to you!"
-        }
     ]
 };
+
+export function getFaqCategories(
+    hasKnowledgeCenter: boolean
+): Record<string, FAQEntry[]> {
+    return {
+        ...(hasKnowledgeCenter ? KNOWLEDGE_CENTER_CATEGORIES : {}),
+        'Managing My Account': [
+            {
+                question: LEARNING_RECORD_PRINT_SHARE_FAQ.question,
+                answer: LEARNING_RECORD_PRINT_SHARE_FAQ.answer
+            },
+            {
+                question: LEARNING_RECORD_SAVED_HERE_FAQ.question,
+                answer: LEARNING_RECORD_SAVED_HERE_FAQ.answer
+            },
+            {
+                question: 'Can I change my name or username?',
+                answer: 'Talk to the staff and they can help you.'
+            },
+            {
+                question: 'How do I reset my password?',
+                answer: 'Talk to the staff and they can help you.'
+            },
+            {
+                question: 'Does UnlockEd have a way to track my progress?',
+                answer: "Right now, UnlockEd is a library of resources you can explore freely. Some of these resources may have more of a learning path built into them, but the tool doesn't guide you along or track your progress like some other courses do. We're considering ways to help users track their learning in the future. We're always eager to hear what you'd find useful, so please let us know!"
+            },
+            {
+                question: 'Is my activity on UnlockEd private?',
+                answer: "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
+            }
+        ],
+        'Getting Help and Troubleshooting': [
+            {
+                question: 'Can I use UnlockEd more often?',
+                answer: "We're excited you'd want to use it even more! Please share this request and positive feedback with the staff. They're collecting all of it as input for the future plans."
+            },
+            {
+                question: 'If I need more help, what do I do?',
+                answer: "Ask the staff. If they can't help, they'll reach out to the UnlockEd team."
+            },
+            {
+                question: "What should I do if something isn't working?",
+                answer: "Let the staff know, and they'll report the issue!"
+            },
+            {
+                question: 'How can I share ideas to improve UnlockEd?',
+                answer: "We want to hear from you! If you have ideas, suggestions, or things you'd like to change, please share them with the staff, and they'll get passed along to the UnlockEd team."
+            },
+            {
+                question: "What's next for UnlockEd?",
+                answer: hasKnowledgeCenter
+                    ? "We're always improving what we offer based on what people find helpful. For the Knowledge Center, we will continue to add valuable content and make it easy to find and use those resources. We're also exploring other offerings that would help residents access courses and track the programs they've completed. We would love to know what's valuable to you!"
+                    : "We're always improving what we offer based on what people find helpful. We're also exploring other offerings that would help residents access courses and track the programs they've completed. We would love to know what's valuable to you!"
+            }
+        ]
+    };
+}
