@@ -806,9 +806,10 @@ func (db *DB) BulkCancelSessions(req *models.BulkCancelSessionsRequest, facility
 		Name string `gorm:"column:name"`
 	}
 	var classInfos []classInfo
-	if err := tx.Table("program_class_cohorts").
-		Select("id, name").
-		Where("id IN ?", classIDs).
+	if err := tx.Table("program_class_cohorts c").
+		Joins("JOIN program_classes pc ON pc.id = c.class_id").
+		Select("c.id AS id, pc.name AS name").
+		Where("c.id IN ?", classIDs).
 		Scan(&classInfos).Error; err != nil {
 		tx.Rollback()
 		return nil, newGetRecordsDBError(err, "class names")

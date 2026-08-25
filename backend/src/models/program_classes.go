@@ -461,7 +461,7 @@ type ConflictDetail struct {
 }
 
 type BulkCancelSessionsRequest struct {
-	InstructorID int    `json:"instructorId" validate:"required,min=0"`
+	InstructorID int    `json:"instructorId" validate:"gte=0"`
 	StartDate    string `json:"startDate" validate:"required"`
 	EndDate      string `json:"endDate" validate:"required"`
 	Reason       string `json:"reason" validate:"required,min=10,max=255"`

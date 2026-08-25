@@ -551,18 +551,26 @@ func (srv *Server) handleBulkCancelSessions(w http.ResponseWriter, r *http.Reque
 
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 
-	var count int64
-	err := srv.Db.WithContext(r.Context()).
-		Table("program_class_cohorts").
-		Where("instructor_id = ? AND facility_id = ?",
-			req.InstructorID, claims.FacilityID).
-		Count(&count).Error
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	if count == 0 {
-		return newBadRequestServiceError(nil,
-			"instructor not found or does not belong to your facility")
+	// Instructors live on program_class_events, not on the cohort (id751 moved the
+	// column), so validate against the same source the instructor picker draws from:
+	// facility users with an instructor role. InstructorID 0 is the picker's
+	// "Unassigned" option, which BulkCancelSessions handles as "events with no
+	// instructor" -- there is no user row to check for it.
+	if req.InstructorID != 0 {
+		var count int64
+		err := srv.Db.WithContext(r.Context()).
+			Table("users").
+			Where("id = ? AND facility_id = ? AND role IN ? AND deactivated_at IS NULL AND deleted_at IS NULL",
+				req.InstructorID, claims.FacilityID,
+				[]models.UserRole{models.FacilityAdmin, models.DepartmentAdmin}).
+			Count(&count).Error
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		if count == 0 {
+			return newBadRequestServiceError(nil,
+				"instructor not found or does not belong to your facility")
+		}
 	}
 
 	claimsAdapter := &BulkCancelClaimsAdapter{Claims: claims}
