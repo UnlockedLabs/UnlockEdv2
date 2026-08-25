@@ -339,8 +339,7 @@ export const FUNNEL_FIELD_DESCRIPTIONS = {
         'Think about what drove you to keep going, even when it was hard.',
     q4: 'Was there a standout moment or person from this program?',
     q5: 'Choose up to 2 tags from each group.',
-    adviceToPeer:
-        'Your honest take could help someone else decide to take this step.',
+    adviceToPeer: 'How would you describe what mattered most to someone else?',
     confidence:
         'Choose on a scale of 1 to 5, where 5 means you feel most confident.',
     q8Selections: 'Select all that apply.',
