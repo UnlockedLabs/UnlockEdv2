@@ -1,9 +1,7 @@
 import type { TranscriptDraft } from '@/types/digital-transcript';
 import {
     countFunnelFieldsAnswered,
-    FUNNEL_FORM_FIELD_TOTAL,
-    FUNNEL_FORM_STEP_COUNT,
-    isFunnelStepComplete
+    FUNNEL_FORM_FIELD_TOTAL
 } from './transcriptReflectionConfig';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 
@@ -243,16 +241,6 @@ export function entryIsComplete(
         return countFunnelFieldsAnswered(source) === FUNNEL_FORM_FIELD_TOTAL;
     }
     return countEditorFormSlots(source) === editorFormSlotsTotal();
-}
-
-/** First funnel step index with unanswered required fields, or 0 if all complete. */
-export function firstIncompleteFunnelStep(
-    source: LearningRecordDocumentSource
-): number {
-    for (let i = 0; i < FUNNEL_FORM_STEP_COUNT; i++) {
-        if (!isFunnelStepComplete(i, source)) return i;
-    }
-    return 0;
 }
 
 /**

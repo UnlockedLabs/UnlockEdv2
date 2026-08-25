@@ -39,10 +39,7 @@ import {
 } from './AchievementsRecordPreview';
 import { AchievementRow } from './AchievementRow';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
-import {
-    entryIsComplete,
-    firstIncompleteFunnelStep
-} from './learningRecordDocumentModel';
+import { entryIsComplete } from './learningRecordDocumentModel';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
 import { LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import {
@@ -217,11 +214,14 @@ export interface FunnelAutoSaveState {
 
 export interface FunnelFinishHandlers {
     /**
-     * Async because finishing flushes the debounced autosave before it resolves:
-     * navigating away cancels a pending save, so a last-second edit would
-     * otherwise be lost.
+     * Flush the debounced autosave so the entry page can navigate home.
+     *
+     * Async because navigating away cancels a pending save, so a last-second
+     * edit would otherwise be lost. Resolves false only when the write itself
+     * failed — an unanswered question is not a failure, since every funnel
+     * question is optional.
      */
-    validateFinishRequirements: () => Promise<boolean>;
+    saveBeforeFinish: () => Promise<boolean>;
 }
 
 const COMMITTED_AUTOSAVE_MS = 500;
@@ -544,63 +544,66 @@ export function DigitalTranscriptWysiwygEntry({
         return attempt;
     }, [writeActiveRow]);
 
-    const validateFinishRequirements =
-        useCallback(async (): Promise<boolean> => {
-            const current = sessionRef.current;
-            const id = current?.expandedId;
-            if (!id) return false;
-            const row = current.rows.find((r) => r.id === id);
-            if (!row) return false;
+    // ID-837: Finish is not a submit gate. Every funnel question is optional, so
+    // this used to refuse to finish an entry with a blank answer and jump the
+    // resident back to the first incomplete step — with no message on eight of
+    // the nine fields, which read as "you must answer all nine". Partial rows are
+    // already autosaved and the API accepts them, so finishing a partial entry is
+    // just finishing: save what is there and let the caller navigate home.
+    const saveBeforeFinish = useCallback(async (): Promise<boolean> => {
+        const current = sessionRef.current;
+        const id = current?.expandedId;
+        // Nothing open, so nothing to flush. True, not false: the caller reads
+        // this as "safe to leave", and there is no work left to lose.
+        if (!id) return true;
+        const row = current.rows.find((r) => r.id === id);
+        if (!row) return true;
 
-            if (!entryIsComplete(row, 'funnel')) {
-                setSaveErrorRowId(id);
-                setActiveStep(firstIncompleteFunnelStep(row));
-                setActivePreviewField(null);
-                return false;
-            }
+        // Flush the debounced autosave before finishing. Finishing navigates
+        // away, which unmounts this component and cancels any pending save, so
+        // an edit made within COMMITTED_AUTOSAVE_MS of the click would never
+        // reach the server. persistActiveRow reads the live session and no-ops
+        // when the row already matches what is committed.
+        //
+        // Cancel the pending debounce first: this flush writes the same live
+        // row that timer would have written, so letting it fire afterwards is
+        // pure duplicate traffic. That is a cancellation, not the race fix — a
+        // timer that has already fired is mid-request and cannot be called
+        // back, which is what persistActiveRow's queue is for.
+        cancelPendingAutoSave();
+        nextSaveTicket();
+        reportAutoSaveStatus('saving');
+        if (!(await persistActiveRow())) {
+            setSaveErrorRowId(id);
+            reportAutoSaveStatus('error');
+            return false;
+        }
+        reportAutoSaveStatus('saved', new Date());
 
-            // Flush the debounced autosave before finishing. Finishing navigates
-            // away, which unmounts this component and cancels any pending save, so
-            // an edit made within COMMITTED_AUTOSAVE_MS of the click would never
-            // reach the server. persistActiveRow reads the live session and no-ops
-            // when the row already matches what is committed.
-            //
-            // Cancel the pending debounce first: this flush writes the same live
-            // row that timer would have written, so letting it fire afterwards is
-            // pure duplicate traffic. That is a cancellation, not the race fix — a
-            // timer that has already fired is mid-request and cannot be called
-            // back, which is what persistActiveRow's queue is for. Deliberately
-            // after the completeness check above, so an incomplete row keeps its
-            // pending autosave and partial answers still reach the server.
-            cancelPendingAutoSave();
-            nextSaveTicket();
-            reportAutoSaveStatus('saving');
-            if (!(await persistActiveRow())) {
-                setSaveErrorRowId(id);
-                reportAutoSaveStatus('error');
-                return false;
-            }
-            reportAutoSaveStatus('saved', new Date());
-
-            setSaveErrorRowId(null);
-            // Success path only, mirroring the attendance/program convention: the
-            // row is complete, saved, and the resident is finishing. The tracker
-            // refuses a second completion for the same entry and reports the
-            // accepted one to the session itself, so the sitting's count advances
-            // only when an event was actually emitted.
+        setSaveErrorRowId(null);
+        // Still gated on completeness, unlike the navigation above: an
+        // `lr_entry_completed` for a half-answered entry would overstate the
+        // funnel. A partial finish is reported instead by the unmount cleanup's
+        // `abandonedCurrentStep`, which banks the time so a later Finish on the
+        // same row can report the cumulative total. The tracker refuses a second
+        // completion for the same entry and reports the accepted one to the
+        // session itself, so the sitting's count advances only when an event was
+        // actually emitted.
+        if (entryIsComplete(row, 'funnel')) {
             analyticsRef.current?.entryCompleted(row, id);
-            return true;
-        }, [
-            persistActiveRow,
-            reportAutoSaveStatus,
-            cancelPendingAutoSave,
-            nextSaveTicket
-        ]);
+        }
+        return true;
+    }, [
+        persistActiveRow,
+        reportAutoSaveStatus,
+        cancelPendingAutoSave,
+        nextSaveTicket
+    ]);
 
     useEffect(() => {
         if (!isFunnel || !onRegisterFunnelFinish) return;
-        onRegisterFunnelFinish({ validateFinishRequirements });
-    }, [isFunnel, onRegisterFunnelFinish, validateFinishRequirements]);
+        onRegisterFunnelFinish({ saveBeforeFinish });
+    }, [isFunnel, onRegisterFunnelFinish, saveBeforeFinish]);
 
     // ID-830: mark this mount as a visit to the form. The session itself lives in
     // learningRecordSession, not here, because this component unmounts on every

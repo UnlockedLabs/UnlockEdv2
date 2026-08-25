@@ -577,18 +577,6 @@ export function funnelPreviewFieldAnswered(
     }
 }
 
-/** True when every countable field in the funnel step has a non-empty answer. */
-export function isFunnelStepComplete(
-    stepIndex: number,
-    entry: TranscriptReflectionFields
-): boolean {
-    const step = FUNNEL_FORM_STEPS[stepIndex];
-    if (!step) return false;
-    return step.fields
-        .filter((field) => field !== 'completionDate')
-        .every((field) => funnelStepFieldAnswered(entry, field));
-}
-
 export function countFunnelStepFieldsAnswered(
     stepIndex: number,
     entry: TranscriptReflectionFields

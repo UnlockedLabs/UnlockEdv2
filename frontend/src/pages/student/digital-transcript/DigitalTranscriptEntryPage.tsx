@@ -142,14 +142,15 @@ export default function DigitalTranscriptEntryPage() {
     // completion event, but nothing else stops a double navigation.
     const finishInFlightRef = useRef(false);
 
+    // Unanswered questions no longer hold the resident here (ID-837) — only a
+    // failed write does, and the toolbar's "Failed to save" is what explains it.
     const handleFinish = useCallback(async () => {
         if (finishInFlightRef.current) return;
         finishInFlightRef.current = true;
         try {
-            const ok =
-                (await funnelFinishRef.current?.validateFinishRequirements()) ??
-                false;
-            if (ok) navigateHome();
+            const saved =
+                (await funnelFinishRef.current?.saveBeforeFinish()) ?? true;
+            if (saved) navigateHome();
         } finally {
             finishInFlightRef.current = false;
         }
