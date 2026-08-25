@@ -147,9 +147,13 @@ function extractArray(
 /**
  * Facilities for the achievement location dropdown are served by a
  * learning-record route (`GET /api/learning-record/facilities`) because the main
- * facilities endpoints are admin-only. Fetched via SWR in
- * `useLearningRecordFacilities` so a failed load is never cached as an empty
- * list — see that hook for why that distinction matters.
+ * facilities endpoints are admin-only.
+ *
+ * RTS---FIXME TEMPORARY (pilot): that route is not called right now —
+ * `useLearningRecordFacilities` returns a hardcoded list of the Maine women's
+ * facilities, since the pilot is SMWRC-only and the tool can't yet tell men's
+ * facilities from women's. The route stays in place; see that hook to restore
+ * the fetch.
  */
 
 export async function apiGetEntries(): Promise<{
