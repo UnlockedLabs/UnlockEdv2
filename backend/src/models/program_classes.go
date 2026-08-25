@@ -247,7 +247,7 @@ type ProgramClassEnrollment struct {
 	EnrollmentEndedAt *time.Time              `json:"enrollment_ended_at"`
 
 	User   *User               `json:"user" gorm:"foreignKey:UserID;references:ID"`
-	Cohort *ProgramClassCohort `json:"class" gorm:"foreignKey:CohortID;references:ID"`
+	Cohort *ProgramClassCohort `json:"cohort" gorm:"foreignKey:CohortID;references:ID"`
 	Class  *ProgramClass       `json:"program_class" gorm:"foreignKey:ClassID;references:ID"`
 }
 

@@ -1158,7 +1158,32 @@ func (db *DB) GetClassByID(id int, args *models.QueryContext) (*models.ProgramCl
 		class.Enrolled = r.Enrolled
 		class.Completed = r.Completed
 	}
+	if err := db.resolveInheritedCreditTypes(args, &class); err != nil {
+		return nil, err
+	}
 	return &class, nil
+}
+
+// resolveInheritedCreditTypes fills in a class's credit types from its program when the
+// class defines no override of its own, so callers do not have to know the
+// empty-means-inherit rule to render a class correctly.
+func (db *DB) resolveInheritedCreditTypes(args *models.QueryContext, class *models.ProgramClass) error {
+	if len(class.CreditTypes) > 0 {
+		return nil
+	}
+	var programTypes []models.ProgramCreditType
+	if err := db.WithContext(args.Ctx).
+		Where("program_id = ?", class.ProgramID).
+		Find(&programTypes).Error; err != nil {
+		return newGetRecordsDBError(err, "program_credit_types")
+	}
+	inherited := make([]models.ProgramClassCreditType, 0, len(programTypes))
+	for _, pt := range programTypes {
+		inherited = append(inherited, models.ProgramClassCreditType{
+			ClassID: class.ID, CreditType: pt.CreditType})
+	}
+	class.CreditTypes = inherited
+	return nil
 }
 
 type classRollup struct {

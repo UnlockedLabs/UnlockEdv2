@@ -76,7 +76,7 @@ type ProgramClassEvent struct {
 	IsCancelled    bool    `json:"is_cancelled"`
 
 	/* Foreign keys */
-	Cohort     *ProgramClassCohort           `json:"class" gorm:"foreignKey:CohortID;references:ID"`
+	Cohort     *ProgramClassCohort           `json:"cohort" gorm:"foreignKey:CohortID;references:ID"`
 	RoomRef    *Room                         `json:"room_ref,omitempty" gorm:"foreignKey:RoomID;references:ID"`
 	Instructor *User                         `json:"instructor_ref,omitempty" gorm:"foreignKey:InstructorID;references:ID"`
 	Attendees  []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`

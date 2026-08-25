@@ -62,7 +62,7 @@ func (srv *Server) handleGetProgramClass(w http.ResponseWriter, r *http.Request,
 		log.add("class_id", id)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, srv.withResolvedCreditTypes(class, &args))
+	return writeJsonResponse(w, http.StatusOK, class)
 }
 
 // programClassRequest is the wire shape for create/update.
@@ -164,25 +164,4 @@ func (srv *Server) handleUpdateProgramClass(w http.ResponseWriter, r *http.Reque
 	}
 	log.add("class_id", id)
 	return writeJsonResponse(w, http.StatusOK, class)
-}
-
-// withResolvedCreditTypes fills in the inherited credit types for display, so callers do
-// not have to know the empty-means-inherit rule to render a class correctly.
-func (srv *Server) withResolvedCreditTypes(class *models.ProgramClass, args *models.QueryContext) *models.ProgramClass {
-	if len(class.CreditTypes) > 0 {
-		return class
-	}
-	var programTypes []models.ProgramCreditType
-	if err := srv.Db.WithContext(args.Ctx).
-		Where("program_id = ?", class.ProgramID).
-		Find(&programTypes).Error; err != nil {
-		return class
-	}
-	inherited := make([]models.ProgramClassCreditType, 0, len(programTypes))
-	for _, pt := range programTypes {
-		inherited = append(inherited, models.ProgramClassCreditType{
-			ClassID: class.ID, CreditType: pt.CreditType})
-	}
-	class.CreditTypes = inherited
-	return class
 }
