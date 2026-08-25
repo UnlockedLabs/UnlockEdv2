@@ -226,6 +226,14 @@ export interface FunnelFinishHandlers {
 
 const COMMITTED_AUTOSAVE_MS = 500;
 
+/**
+ * How many times Finish will re-flush a row the resident is still editing before
+ * giving up and letting the debounce handle the rest. Two would cover the realistic
+ * case (one edit landing during the first write); three leaves a pass spare without
+ * making a pathological typist expensive.
+ */
+const FINISH_FLUSH_MAX_ATTEMPTS = 3;
+
 interface DigitalTranscriptWysiwygEntryProps {
     formVariant: LearningRecordFormVariant;
     hydrated: boolean;
@@ -292,7 +300,7 @@ export function DigitalTranscriptWysiwygEntry({
     const sessionRef = useRef<TranscriptEntrySession | null>(null);
     sessionRef.current = session;
     // ID-806 question-level behavior tracking. Driven from patchRow /
-    // handleActiveStepChange / validateFinishRequirements so it does not depend
+    // handleActiveStepChange / saveBeforeFinish so it does not depend
     // on the form's markup. Counts and enums only — never answer content.
     const analyticsRef = useRef<LearningRecordTracker | null>(null);
     analyticsRef.current ??= new LearningRecordTracker();
@@ -564,23 +572,61 @@ export function DigitalTranscriptWysiwygEntry({
         // an edit made within COMMITTED_AUTOSAVE_MS of the click would never
         // reach the server. persistActiveRow reads the live session and no-ops
         // when the row already matches what is committed.
-        //
-        // Cancel the pending debounce first: this flush writes the same live
-        // row that timer would have written, so letting it fire afterwards is
-        // pure duplicate traffic. That is a cancellation, not the race fix — a
-        // timer that has already fired is mid-request and cannot be called
-        // back, which is what persistActiveRow's queue is for.
-        cancelPendingAutoSave();
-        nextSaveTicket();
         reportAutoSaveStatus('saving');
-        if (!(await persistActiveRow())) {
-            setSaveErrorRowId(id);
-            reportAutoSaveStatus('error');
-            return false;
+
+        // One flush is not enough. persistActiveRow snapshots the row when its
+        // turn in the queue comes up, so anything typed while that write is on
+        // the wire is not in the payload — writeActiveRow notices (`live !== row`)
+        // and keeps it on screen, but the only thing that would re-send it is the
+        // debounce the edit scheduled, and navigating home cancels exactly that.
+        // On a slow connection the window is wide enough to lose a whole answer.
+        //
+        // So compare the live row before and after each write and go again while
+        // it is still moving. Bounded because a resident who never stops typing
+        // must not be able to hold Finish hostage; on exhaustion the remaining
+        // edit is left to the debounce, which is the pre-existing behavior.
+        let liveRow: TranscriptEntry = row;
+        for (let attempt = 0; attempt < FINISH_FLUSH_MAX_ATTEMPTS; attempt++) {
+            // Cancel before each pass: this flush writes the same live row the
+            // pending timer would have, so letting it fire afterwards is pure
+            // duplicate traffic. That is a cancellation, not the race fix — a
+            // timer that has already fired is mid-request and cannot be called
+            // back, which is what persistActiveRow's queue is for. On a repeat
+            // pass the timer being cancelled is the one the resident's own edit
+            // just scheduled, so reclaim the label ticket from it too.
+            cancelPendingAutoSave();
+            nextSaveTicket();
+
+            const before = liveRow;
+            if (!(await persistActiveRow())) {
+                setSaveErrorRowId(id);
+                reportAutoSaveStatus('error');
+                return false;
+            }
+
+            // Yield a task before reading the session back. sessionRef is
+            // assigned during render, and both the resident's keystroke and
+            // writeActiveRow's own setSession are auto-batched by React outside
+            // an event handler — so the microtask this continuation runs on can
+            // still see the pre-edit session and conclude, wrongly, that nothing
+            // moved. One tick lets React's scheduler commit first.
+            await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+
+            const after = sessionRef.current?.rows.find((r) => r.id === id);
+            // The row went away mid-save (deleted, or the session reset). Nothing
+            // left to flush, and `before` is the last state that was written.
+            if (!after) break;
+            liveRow = after;
+            if (entryPayloadEqual(before, after)) break;
         }
         reportAutoSaveStatus('saved', new Date());
 
         setSaveErrorRowId(null);
+        // Read from `liveRow`, not the snapshot taken before the first write: an
+        // answer typed during the flush is part of the entry the resident is
+        // finishing, and judging completeness on the stale copy would report a
+        // finished entry as partial.
+        //
         // Still gated on completeness, unlike the navigation above: an
         // `lr_entry_completed` for a half-answered entry would overstate the
         // funnel. A partial finish is reported instead by the unmount cleanup's
@@ -589,8 +635,8 @@ export function DigitalTranscriptWysiwygEntry({
         // completion for the same entry and reports the accepted one to the
         // session itself, so the sitting's count advances only when an event was
         // actually emitted.
-        if (entryIsComplete(row, 'funnel')) {
-            analyticsRef.current?.entryCompleted(row, id);
+        if (entryIsComplete(liveRow, 'funnel')) {
+            analyticsRef.current?.entryCompleted(liveRow, id);
         }
         return true;
     }, [
