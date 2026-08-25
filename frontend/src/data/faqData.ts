@@ -84,19 +84,24 @@ const KNOWLEDGE_CENTER_CATEGORIES: Record<string, FAQEntry[]> = {
 };
 
 export function getFaqCategories(
-    hasKnowledgeCenter: boolean
+    hasKnowledgeCenter: boolean,
+    hasLearningRecord: boolean
 ): Record<string, FAQEntry[]> {
     return {
         ...(hasKnowledgeCenter ? KNOWLEDGE_CENTER_CATEGORIES : {}),
         'Managing My Account': [
-            {
-                question: LEARNING_RECORD_PRINT_SHARE_FAQ.question,
-                answer: LEARNING_RECORD_PRINT_SHARE_FAQ.answer
-            },
-            {
-                question: LEARNING_RECORD_SAVED_HERE_FAQ.question,
-                answer: LEARNING_RECORD_SAVED_HERE_FAQ.answer
-            },
+            ...(hasLearningRecord
+                ? [
+                      {
+                          question: LEARNING_RECORD_PRINT_SHARE_FAQ.question,
+                          answer: LEARNING_RECORD_PRINT_SHARE_FAQ.answer
+                      },
+                      {
+                          question: LEARNING_RECORD_SAVED_HERE_FAQ.question,
+                          answer: LEARNING_RECORD_SAVED_HERE_FAQ.answer
+                      }
+                  ]
+                : []),
             {
                 question: 'Can I change my name or username?',
                 answer: 'Talk to the staff and they can help you.'
@@ -105,13 +110,20 @@ export function getFaqCategories(
                 question: 'How do I reset my password?',
                 answer: 'Talk to the staff and they can help you.'
             },
-            {
-                question: 'Does UnlockEd have a way to track my progress?',
-                answer: "Right now, UnlockEd is a library of resources you can explore freely. Some of these resources may have more of a learning path built into them, but the tool doesn't guide you along or track your progress like some other courses do. We're considering ways to help users track their learning in the future. We're always eager to hear what you'd find useful, so please let us know!"
-            },
+            ...(hasKnowledgeCenter
+                ? [
+                      {
+                          question:
+                              'Does UnlockEd have a way to track my progress?',
+                          answer: "Right now, UnlockEd is a library of resources you can explore freely. Some of these resources may have more of a learning path built into them, but the tool doesn't guide you along or track your progress like some other courses do. We're considering ways to help users track their learning in the future. We're always eager to hear what you'd find useful, so please let us know!"
+                      }
+                  ]
+                : []),
             {
                 question: 'Is my activity on UnlockEd private?',
-                answer: "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
+                answer: hasLearningRecord
+                    ? "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
+                    : 'The UnlockEd team and authorized facility staff can see your library and course activity.'
             }
         ],
         'Getting Help and Troubleshooting': [
