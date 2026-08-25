@@ -39,37 +39,37 @@ func (sh *ServiceHandler) activateScheduledClasses(ctx context.Context) error {
 		return err
 	}
 
-	var classIDs []int
+	var cohortIDs []int
 	if err := sh.db.WithContext(ctx).
 		Model(&models.ProgramClassCohort{}).
-		Joins("JOIN facilities f ON f.id = program_classes.facility_id").
-		Where("program_classes.status = ?", models.Scheduled).
-		Where("program_classes.archived_at IS NULL").
-		Where("program_classes.start_dt <= (now() AT TIME ZONE f.timezone)::date").
-		Pluck("program_classes.id", &classIDs).Error; err != nil {
+		Joins("JOIN facilities f ON f.id = program_class_cohorts.facility_id").
+		Where("program_class_cohorts.status = ?", models.Scheduled).
+		Where("program_class_cohorts.archived_at IS NULL").
+		Where("program_class_cohorts.start_dt <= (now() AT TIME ZONE f.timezone)::date").
+		Pluck("program_class_cohorts.id", &cohortIDs).Error; err != nil {
 		logger().Errorf("failed to query scheduled classes to activate: %v", err)
 		return err
 	}
 
-	if len(classIDs) == 0 {
+	if len(cohortIDs) == 0 {
 		logger().Infoln("no scheduled classes are due for activation")
 		return nil
 	}
-	logger().Infof("activating %d scheduled class(es): %v", len(classIDs), classIDs)
+	logger().Infof("activating %d scheduled class(es): %v", len(cohortIDs), cohortIDs)
 
 	batchCtx := context.WithValue(ctx, models.UserIDKey, batchUserID)
 	enrolledAt := time.Now().UTC()
 	if err := sh.db.WithContext(batchCtx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.
 			Model(&models.ProgramClassCohort{}).
-			Where("id IN ?", classIDs).
-			Set("class_ids", classIDs).
+			Where("id IN ?", cohortIDs).
+			Set("cohort_ids", cohortIDs).
 			Updates(map[string]any{"status": models.Active}).Error; err != nil {
 			return err
 		}
 		return tx.
 			Model(&models.ProgramClassEnrollment{}).
-			Where("class_id IN ?", classIDs).
+			Where("cohort_id IN ?", cohortIDs).
 			Where("enrollment_status = ?", models.Enrolled).
 			Where("enrolled_at IS NULL").
 			Updates(map[string]any{
@@ -77,7 +77,7 @@ func (sh *ServiceHandler) activateScheduledClasses(ctx context.Context) error {
 				"update_user_id": batchUserID,
 			}).Error
 	}); err != nil {
-		logger().Errorf("failed to activate scheduled classes %v: %v", classIDs, err)
+		logger().Errorf("failed to activate scheduled classes %v: %v", cohortIDs, err)
 		return err
 	}
 	return nil
