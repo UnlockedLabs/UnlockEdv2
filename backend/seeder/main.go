@@ -265,7 +265,19 @@ func seedTestData(db *gorm.DB) {
 		rand.Shuffle(len(availableCohorts), func(i, j int) {
 			availableCohorts[i], availableCohorts[j] = availableCohorts[j], availableCohorts[i]
 		})
-		for _, cohort := range availableCohorts[:min(numEnrollments, len(availableCohorts))] {
+		seenClasses := make(map[uint]bool, len(availableCohorts))
+		sampled := make([]models.ProgramClassCohort, 0, numEnrollments)
+		for _, cohort := range availableCohorts {
+			if seenClasses[cohort.ClassID] {
+				continue
+			}
+			seenClasses[cohort.ClassID] = true
+			sampled = append(sampled, cohort)
+			if len(sampled) == numEnrollments {
+				break
+			}
+		}
+		for _, cohort := range sampled {
 			status := models.Enrolled
 			if rand.Intn(100)%2 == 0 {
 				status = statuses[rand.Intn(len(statuses))]
