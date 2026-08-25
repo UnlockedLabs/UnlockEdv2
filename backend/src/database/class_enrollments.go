@@ -518,11 +518,11 @@ func (db *DB) CheckSchedulingConflicts(cohortID int, userIDs []int) ([]models.Co
 		}
 
 		for _, enrollment := range existingEnrollments {
-			if int(enrollment.ClassID) == cohortID {
+			if int(enrollment.CohortID) == cohortID {
 				continue
 			}
 
-			existingClassEvents, err := db.GetClassEvents(allEventsQuery, int(enrollment.ClassID))
+			existingClassEvents, err := db.GetClassEvents(allEventsQuery, int(enrollment.CohortID))
 			if err != nil {
 				return nil, err
 			}
