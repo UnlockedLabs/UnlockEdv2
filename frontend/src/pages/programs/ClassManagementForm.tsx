@@ -160,7 +160,7 @@ export function ClassManagementFormInner({
      * facility (13x for "Adult Basic Education"), and picking the wrong one fails the
      * FK at insert time rather than being rejected in the form.
      */
-    const { data: classListResp } = useSWR<
+    const { data: classListResp, mutate: mutateClassList } = useSWR<
         ServerResponseMany<ProgramClassSummary>,
         Error
     >(
@@ -545,6 +545,15 @@ export function ClassManagementFormInner({
                     return;
                 }
                 parentClassId = (created.data as { id: number }).id;
+                // Pin the form to the class we just created. The cohort POST below can
+                // still fail -- a 409 room/instructor conflict is ordinary flow -- and
+                // that request is NOT in the same transaction as this one, so the class
+                // already exists. Without this, resubmitting after fixing the conflict
+                // re-enters this branch and creates a SECOND class with the same name,
+                // orphaning the first and showing a duplicate in the dropdown.
+                setSelectedClassId(String(parentClassId));
+                setNewClassName('');
+                await mutateClassList();
             } else if (selectedClassId) {
                 parentClassId = Number(selectedClassId);
             } else {
@@ -632,11 +641,13 @@ export function ClassManagementFormInner({
                     }}
                 >
                     <option value="">Select a class…</option>
-                    {existingClasses.map((c) => (
-                        <option key={c.id} value={String(c.id)}>
-                            {c.name}
-                        </option>
-                    ))}
+                    {existingClasses
+                        .filter((c) => !c.archived_at)
+                        .map((c) => (
+                            <option key={c.id} value={String(c.id)}>
+                                {c.name}
+                            </option>
+                        ))}
                     <option value={NEW_CLASS}>Other — add a new class</option>
                 </select>
             </div>

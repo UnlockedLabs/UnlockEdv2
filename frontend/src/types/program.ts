@@ -284,8 +284,8 @@ export interface ProgramCompletion {
     program_owner?: string;
     program_name: string;
     program_id: number;
-    program_class_name: string;
-    program_class_start_dt: string;
+    class_name: string;
+    class_start_dt: string;
     created_at: string;
     updated_at: string;
     deleted_at: string;

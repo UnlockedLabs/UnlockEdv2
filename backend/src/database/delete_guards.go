@@ -55,10 +55,15 @@ func (db *DB) ProgramBlockingChildren(programID int) (models.DeleteBlockingChild
 	row := db.Raw(`
 WITH cls AS (
   SELECT id FROM program_class_cohorts
-   WHERE program_id = ? AND deleted_at IS NULL
+   WHERE program_id = @pid AND deleted_at IS NULL
 )
 SELECT
-  (SELECT COUNT(*) FROM cls) AS classes,
+  -- Counted off the CLASS tier, not off cls. A class with no cohorts under it must
+  -- still block: DeleteProgram removes neither program_classes nor program_class_cohorts
+  -- rows, and there is no DELETE route for the class tier at all -- so a class this
+  -- guard misses outlives its program with nothing able to reach it again.
+  (SELECT COUNT(*) FROM program_classes
+     WHERE program_id = @pid AND deleted_at IS NULL) AS classes,
   (SELECT COUNT(*) FROM program_class_enrollments
      WHERE cohort_id IN (SELECT id FROM cls) AND deleted_at IS NULL) AS enrollments,
   (SELECT COUNT(*) FROM program_class_events
@@ -73,9 +78,9 @@ SELECT
    + (SELECT COUNT(*) FROM program_classes_history
        WHERE table_name = 'program_class_cohorts' AND parent_ref_id IN (SELECT id FROM cls))
    + (SELECT COUNT(*) FROM change_log_entries
-       WHERE table_name = 'programs' AND parent_ref_id = ?)
+       WHERE table_name = 'programs' AND parent_ref_id = @pid)
   ) AS history
-`, programID, programID).Row()
+`, sql.Named("pid", programID)).Row()
 
 	if err := row.Scan(&b.Classes, &b.Enrollments, &b.Events, &b.Completions, &b.AttendanceFlags, &b.History); err != nil {
 		return b, newGetRecordsDBError(err, "delete_guard_program_counts")

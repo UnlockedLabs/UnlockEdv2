@@ -150,7 +150,7 @@ func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transfer
 		inner join program_classes cl on cl.id = pc.class_id
 		inner join programs p on p.id = pc.program_id
 		where enrollment_status = 'Enrolled'
-			and cl.name not in (select name from transfer_facility_programs)`
+			and p.name not in (select name from transfer_facility_programs)`
 	if err := db.WithContext(ctx).Raw(query, transferFacilityId, id).Scan(&programNames).Error; err != nil {
 		return nil, err
 	}
