@@ -453,12 +453,17 @@ export default function ResidentHome() {
     }, []);
 
     useEffect(() => {
-        if (tourState.tourActive && tourState.target === '#navigate-homepage') {
+        if (!tourState.tourActive || !user) return;
+        if (!openContentEnabled) {
+            setTourState({ tourActive: false, run: false });
+            return;
+        }
+        if (tourState.target === '#navigate-homepage') {
             setTourState({
                 stepIndex: targetToStepIndexMap['#popular-content'],
                 target: '#popular-content'
             });
-        } else if (tourState.tourActive && tourState.stepIndex !== 1) {
+        } else if (tourState.stepIndex !== 1) {
             setTourState({
                 run: true,
                 stepIndex: 0,
@@ -466,7 +471,7 @@ export default function ResidentHome() {
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tourState.tourActive]);
+    }, [tourState.tourActive, openContentEnabled, user]);
 
     const dismissReflectNudge = useCallback(() => {
         setReflectNudgeDismissed(true);

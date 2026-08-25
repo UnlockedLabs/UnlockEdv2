@@ -5,7 +5,9 @@ import {
     AccordionItem,
     AccordionTrigger
 } from '@/components/ui/accordion';
-import { FAQ_CATEGORIES } from '@/data/faqData';
+import { getFaqCategories } from '@/data/faqData';
+import { useAuth, hasFeature } from '@/auth/useAuth';
+import { FeatureAccess } from '@/types';
 
 function logQuestionClick(question: string) {
     void API.post('analytics/faq-click', { question }).catch(() => {
@@ -14,6 +16,10 @@ function logQuestionClick(question: string) {
 }
 
 export function FAQContent({ compact = false }: { compact?: boolean }) {
+    const { user } = useAuth();
+    const hasKnowledgeCenter =
+        !!user && hasFeature(user, FeatureAccess.OpenContentAccess);
+
     return (
         <div className={compact ? 'space-y-4' : 'space-y-6'}>
             {!compact && (
@@ -21,51 +27,55 @@ export function FAQContent({ compact = false }: { compact?: boolean }) {
                     Frequently Asked Questions
                 </h2>
             )}
-            {Object.entries(FAQ_CATEGORIES).map(([category, questions]) => (
-                <div key={category}>
-                    <h3
-                        className={
-                            compact
-                                ? 'text-base font-semibold text-foreground mb-2'
-                                : 'text-lg font-semibold text-foreground mb-2'
-                        }
-                    >
-                        {category}
-                    </h3>
-                    <div className="bg-card rounded-lg border border-border">
-                        <Accordion type="single" collapsible>
-                            {questions.map((faq, index) => (
-                                <AccordionItem
-                                    key={`${category}-${index}`}
-                                    value={`${category}-${index}`}
-                                >
-                                    <AccordionTrigger
-                                        onClick={() =>
-                                            logQuestionClick(faq.question)
-                                        }
-                                        className="px-4 text-foreground hover:no-underline hover:text-brand"
+            {Object.entries(getFaqCategories(hasKnowledgeCenter)).map(
+                ([category, questions]) => (
+                    <div key={category}>
+                        <h3
+                            className={
+                                compact
+                                    ? 'text-base font-semibold text-foreground mb-2'
+                                    : 'text-lg font-semibold text-foreground mb-2'
+                            }
+                        >
+                            {category}
+                        </h3>
+                        <div className="bg-card rounded-lg border border-border">
+                            <Accordion type="single" collapsible>
+                                {questions.map((faq, index) => (
+                                    <AccordionItem
+                                        key={`${category}-${index}`}
+                                        value={`${category}-${index}`}
                                     >
-                                        {faq.question}
-                                    </AccordionTrigger>
-                                    <AccordionContent className="px-4 text-muted-foreground">
-                                        <p>{faq.answer}</p>
-                                        {faq.list && (
-                                            <ul className="list-disc list-outside pl-6 mt-2 space-y-1">
-                                                {faq.list.map((item, i) => (
-                                                    <li key={i}>{item}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                        {faq.extra && (
-                                            <p className="mt-2">{faq.extra}</p>
-                                        )}
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
+                                        <AccordionTrigger
+                                            onClick={() =>
+                                                logQuestionClick(faq.question)
+                                            }
+                                            className="px-4 text-foreground hover:no-underline hover:text-brand"
+                                        >
+                                            {faq.question}
+                                        </AccordionTrigger>
+                                        <AccordionContent className="px-4 text-muted-foreground">
+                                            <p>{faq.answer}</p>
+                                            {faq.list && (
+                                                <ul className="list-disc list-outside pl-6 mt-2 space-y-1">
+                                                    {faq.list.map((item, i) => (
+                                                        <li key={i}>{item}</li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                            {faq.extra && (
+                                                <p className="mt-2">
+                                                    {faq.extra}
+                                                </p>
+                                            )}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        </div>
                     </div>
-                </div>
-            ))}
+                )
+            )}
         </div>
     );
 }
