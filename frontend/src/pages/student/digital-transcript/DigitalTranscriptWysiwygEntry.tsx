@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useAuth } from '@/auth/useAuth';
 import { ConfirmDialog } from '@/components/shared';
 import { LearningRecordPrivacyNotice } from '@/components/learning-record/LearningRecordPrivacyNotice';
 import { Badge } from '@/components/ui/badge';
@@ -37,10 +39,7 @@ import {
 } from './AchievementsRecordPreview';
 import { AchievementRow } from './AchievementRow';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
-import {
-    entryIsComplete,
-    firstIncompleteFunnelStep
-} from './learningRecordDocumentModel';
+import { entryIsComplete } from './learningRecordDocumentModel';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
 import { LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
 import {
@@ -52,6 +51,8 @@ import {
     FUNNEL_FORM_STEPS,
     TOP_SKILLS_MAX
 } from './transcriptReflectionConfig';
+import { LearningRecordTracker } from './learningRecordAnalytics';
+import { enterForm, leaveForm, noteActivity } from './learningRecordSession';
 
 /** Maps a TranscriptEntry patch key to its corresponding preview field id. */
 function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
@@ -84,6 +85,9 @@ function patchKeyToPreviewField(key: keyof TranscriptEntry): string | null {
     }
 }
 
+/** Resident's current facility, prefilled as the location on new rows only. */
+type DefaultFacility = { id: number; name: string } | null;
+
 /** Newest uncommitted row with no answers yet — safe to reopen instead of duplicating. */
 function findReusableBlankDraftRow(
     rows: TranscriptEntry[],
@@ -98,7 +102,8 @@ function findReusableBlankDraftRow(
 
 function ensureDraftEditorOpen(
     session: TranscriptEntrySession,
-    committed: TranscriptEntry[]
+    committed: TranscriptEntry[],
+    defaultFacility: DefaultFacility
 ): TranscriptEntrySession {
     const committedIds = new Set(committed.map((e) => e.id));
     const reusable = findReusableBlankDraftRow(session.rows, committedIds);
@@ -109,7 +114,7 @@ function ensureDraftEditorOpen(
             lastPreviewId: reusable.id
         };
     }
-    const row = createEmptyTranscriptEntry();
+    const row = createEmptyTranscriptEntry(defaultFacility);
     return {
         ...session,
         rows: [row, ...session.rows],
@@ -122,10 +127,18 @@ function ensureDraftEditorOpen(
 function toFunnelSingleRowSession(
     session: TranscriptEntrySession,
     committed: TranscriptEntry[],
-    options: { intent?: boolean; edit?: string | null }
+    options: {
+        intent?: boolean;
+        edit?: string | null;
+        defaultFacility: DefaultFacility;
+    }
 ): TranscriptEntrySession {
     if (options.intent) {
-        const opened = ensureDraftEditorOpen(session, committed);
+        const opened = ensureDraftEditorOpen(
+            session,
+            committed,
+            options.defaultFacility
+        );
         const rowId = opened.expandedId ?? opened.rows[0]?.id;
         const row =
             opened.rows.find((r) => r.id === rowId) ??
@@ -133,7 +146,7 @@ function toFunnelSingleRowSession(
                 opened.rows,
                 new Set(committed.map((e) => e.id))
             ) ??
-            createEmptyTranscriptEntry();
+            createEmptyTranscriptEntry(options.defaultFacility);
         const cloned = cloneTranscriptEntry(row);
         return {
             ...opened,
@@ -159,11 +172,15 @@ function toFunnelSingleRowSession(
     }
 
     if (session.rows.length === 0) {
-        const opened = ensureDraftEditorOpen(session, committed);
+        const opened = ensureDraftEditorOpen(
+            session,
+            committed,
+            options.defaultFacility
+        );
         const row =
             opened.rows.find((r) => r.id === opened.expandedId) ??
             opened.rows[0] ??
-            createEmptyTranscriptEntry();
+            createEmptyTranscriptEntry(options.defaultFacility);
         const cloned = cloneTranscriptEntry(row);
         return {
             ...opened,
@@ -196,10 +213,26 @@ export interface FunnelAutoSaveState {
 }
 
 export interface FunnelFinishHandlers {
-    validateFinishRequirements: () => boolean;
+    /**
+     * Flush the debounced autosave so the entry page can navigate home.
+     *
+     * Async because navigating away cancels a pending save, so a last-second
+     * edit would otherwise be lost. Resolves false only when the write itself
+     * failed — an unanswered question is not a failure, since every funnel
+     * question is optional.
+     */
+    saveBeforeFinish: () => Promise<boolean>;
 }
 
 const COMMITTED_AUTOSAVE_MS = 500;
+
+/**
+ * How many times Finish will re-flush a row the resident is still editing before
+ * giving up and letting the debounce handle the rest. Two would cover the realistic
+ * case (one edit landing during the first write); three leaves a pass spare without
+ * making a pathological typist expensive.
+ */
+const FINISH_FLUSH_MAX_ATTEMPTS = 3;
 
 interface DigitalTranscriptWysiwygEntryProps {
     formVariant: LearningRecordFormVariant;
@@ -234,6 +267,14 @@ export function DigitalTranscriptWysiwygEntry({
     funnelDownload
 }: DigitalTranscriptWysiwygEntryProps) {
     const isFunnel = formVariant === 'funnel';
+    const { user } = useAuth();
+    const defaultFacility = useMemo<DefaultFacility>(
+        () =>
+            user?.facility_id
+                ? { id: user.facility_id, name: user.facility?.name ?? '' }
+                : null,
+        [user?.facility_id, user?.facility?.name]
+    );
     const [searchParams, setSearchParams] = useSearchParams();
     const [session, setSession] = useState<TranscriptEntrySession | null>(null);
     const [saveErrorRowId, setSaveErrorRowId] = useState<string | null>(null);
@@ -244,12 +285,26 @@ export function DigitalTranscriptWysiwygEntry({
     const [deleteConfirmFor, setDeleteConfirmFor] =
         useState<TranscriptEntry | null>(null);
     const baselinesRef = useRef<Record<string, TranscriptEntry>>({});
+    /**
+     * Last payload this component successfully wrote, per row id. Distinct from
+     * `baselinesRef`, which tracks the local editing baseline and is also written
+     * from session rows that were never sent anywhere — this one is only ever set
+     * on a confirmed write, so it is a true record of what the server holds. Used
+     * by `writeActiveRow` to skip a write the server already has.
+     */
+    const lastWrittenRef = useRef<Record<string, TranscriptEntry>>({});
     const prevExpandedIdRef = useRef<string | null>(null);
     const activePreviewFieldRef = useRef<string | null>(null);
     activePreviewFieldRef.current = activePreviewField;
     const achievementListRef = useRef<HTMLDivElement>(null);
     const sessionRef = useRef<TranscriptEntrySession | null>(null);
     sessionRef.current = session;
+    // ID-806 question-level behavior tracking. Driven from patchRow /
+    // handleActiveStepChange / saveBeforeFinish so it does not depend
+    // on the form's markup. Counts and enums only — never answer content.
+    const analyticsRef = useRef<LearningRecordTracker | null>(null);
+    analyticsRef.current ??= new LearningRecordTracker();
+    const analyticsStartedForRef = useRef<string | null>(null);
 
     const committedIds = useMemo(
         () => new Set(entries.map((e) => e.id)),
@@ -279,14 +334,15 @@ export function DigitalTranscriptWysiwygEntry({
         if (isFunnel) {
             s = toFunnelSingleRowSession(s, committed, {
                 intent: intent || undefined,
-                edit: edit ?? null
+                edit: edit ?? null,
+                defaultFacility
             });
         } else if (intent) {
-            s = ensureDraftEditorOpen(s, committed);
+            s = ensureDraftEditorOpen(s, committed, defaultFacility);
         } else if (edit && s.rows.some((r) => r.id === edit)) {
             s = { ...s, expandedId: edit, lastPreviewId: edit };
         } else if (s.rows.length === 0) {
-            s = ensureDraftEditorOpen(s, committed);
+            s = ensureDraftEditorOpen(s, committed, defaultFacility);
         }
 
         if (edit || intent) {
@@ -333,7 +389,8 @@ export function DigitalTranscriptWysiwygEntry({
         setSearchParams,
         captureBaseline,
         isFunnel,
-        onFunnelAutoSaveStatusChange
+        onFunnelAutoSaveStatusChange,
+        defaultFacility
     ]);
 
     const reportAutoSaveStatus = useCallback(
@@ -341,6 +398,43 @@ export function DigitalTranscriptWysiwygEntry({
             onFunnelAutoSaveStatusChange?.({ status, lastSavedAt });
         },
         [onFunnelAutoSaveStatusChange]
+    );
+
+    /**
+     * The debounce timer id lives in a ref, not only in the effect closure, so the
+     * Finish flush can cancel a still-pending autosave before it awaits — the
+     * effect's own cleanup runs on re-render or unmount, which is far too late to
+     * be a cancellation. Safe to share: React runs an effect's cleanup before the
+     * next setup, so cleanup can never clear a newer run's timer, and the null
+     * check makes a double cancel a no-op.
+     */
+    const autosaveTimerRef = useRef<number | null>(null);
+    const cancelPendingAutoSave = useCallback(() => {
+        if (autosaveTimerRef.current === null) return;
+        window.clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+    }, []);
+
+    /**
+     * Ownership of the autosave label. Every save intent — a scheduled debounce,
+     * the Finish flush — takes the next ticket, and a save only reports its
+     * outcome while it still holds the latest one.
+     *
+     * Two orderings need this. Serializing writes makes it possible for a
+     * superseded save to resolve after a newer one has already started and repaint
+     * 'saved' over its 'saving'. And even before serialization, an in-flight save
+     * could resolve 'saved' over the 'pending' of an edit made while it was on the
+     * wire — claiming the ticket at schedule time rather than at fire time closes
+     * both.
+     */
+    const saveTicketRef = useRef(0);
+    const nextSaveTicket = useCallback(() => {
+        saveTicketRef.current += 1;
+        return saveTicketRef.current;
+    }, []);
+    const isLatestSaveTicket = useCallback(
+        (ticket: number) => ticket === saveTicketRef.current,
+        []
     );
 
     const buildSavedEntry = useCallback(
@@ -355,7 +449,13 @@ export function DigitalTranscriptWysiwygEntry({
         [entries]
     );
 
-    const persistActiveRow = useCallback(async (): Promise<boolean> => {
+    /**
+     * The actual write. Never call this directly — go through `persistActiveRow`,
+     * which serializes attempts. Reads the live session through `sessionRef`, so a
+     * caller that waited in the queue writes what the resident has typed by then,
+     * not what was on screen when it was enqueued.
+     */
+    const writeActiveRow = useCallback(async (): Promise<boolean> => {
         const current = sessionRef.current;
         const id = current?.expandedId;
         if (!id) return false;
@@ -363,8 +463,19 @@ export function DigitalTranscriptWysiwygEntry({
         if (!row) return false;
 
         const saved = buildSavedEntry(row);
+        // Two independent answers to "does the server already have this". `entries`
+        // is the committed state from the hook, but it only refreshes on re-render:
+        // a queued attempt resumes on the microtask queue, ahead of the re-render
+        // carrying the previous attempt's setEntries, so on its own it would always
+        // read stale and issue a redundant PUT. `lastWrittenRef` is set
+        // synchronously on the success path below, so it closes that window without
+        // depending on render timing.
         const existing = entries.find((e) => e.id === id);
-        if (existing && entryPayloadEqual(saved, existing)) {
+        const lastWritten = lastWrittenRef.current[id];
+        if (
+            (existing && entryPayloadEqual(saved, existing)) ||
+            (lastWritten && entryPayloadEqual(saved, lastWritten))
+        ) {
             return true;
         }
 
@@ -372,6 +483,34 @@ export function DigitalTranscriptWysiwygEntry({
             await upsertCommittedEntry(saved);
             setSession((prev) => {
                 if (!prev) return prev;
+
+                // `saved` was snapshotted before the await above, so it is stale
+                // the moment the resident types during the request — and on a slow
+                // connection that window is wide. syncSessionRowsAfterUpsert
+                // replaces the row wholesale, which silently reverted everything
+                // typed while the save was in flight.
+                //
+                // patchRow always rebuilds the edited row, so an identity change
+                // is exactly "the resident typed since we sent this". In that case
+                // keep what is on screen and adopt only createdAt, which is the one
+                // field the save establishes; buildSavedEntry preserves row.id, so
+                // nothing else here comes back from the server.
+                const liveIdx = prev.rows.findIndex((r) => r.id === id);
+                const live = liveIdx >= 0 ? prev.rows[liveIdx] : null;
+                if (live && live !== row) {
+                    const rows = [...prev.rows];
+                    rows[liveIdx] = {
+                        ...live,
+                        createdAt: saved.createdAt
+                    };
+                    return {
+                        ...prev,
+                        rows,
+                        expandedId: saved.id,
+                        lastPreviewId: saved.id
+                    };
+                }
+
                 const next = syncSessionRowsAfterUpsert(prev, saved);
                 return {
                     ...next,
@@ -380,34 +519,189 @@ export function DigitalTranscriptWysiwygEntry({
                 };
             });
             baselinesRef.current[id] = cloneTranscriptEntry(saved);
+            lastWrittenRef.current[id] = cloneTranscriptEntry(saved);
             return true;
         } catch {
             return false;
         }
     }, [buildSavedEntry, upsertCommittedEntry, entries]);
 
-    const validateFinishRequirements = useCallback((): boolean => {
+    /**
+     * Serializes writes so two callers can never have an upsert in flight for the
+     * same row at once. The debounced autosave and the Finish flush overlap by
+     * design — the timer's save can still be awaiting the server when Finish fires
+     * — and running them concurrently is worse than a wasted request:
+     * `upsertCommittedEntry` chooses POST vs PUT from a client_id → backend id map
+     * written only *after* the create resolves, so two racing calls for a row with
+     * no id yet both POST, and the unique index on (user_id, client_id) rejects the
+     * loser. That surfaced as "Saved" while the losing call's newer answers were
+     * dropped.
+     *
+     * Each caller gets the promise for its own attempt, so it still sees its own
+     * boolean. The queue link carries both handlers deliberately: a failed or
+     * throwing attempt must not stall the chain or reject an unrelated caller.
+     */
+    const persistQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+    const persistActiveRow = useCallback((): Promise<boolean> => {
+        const attempt = persistQueueRef.current.then(() => writeActiveRow());
+        persistQueueRef.current = attempt.then(
+            () => undefined,
+            () => undefined
+        );
+        return attempt;
+    }, [writeActiveRow]);
+
+    // ID-837: Finish is not a submit gate. Every funnel question is optional, so
+    // this used to refuse to finish an entry with a blank answer and jump the
+    // resident back to the first incomplete step — with no message on eight of
+    // the nine fields, which read as "you must answer all nine". Partial rows are
+    // already autosaved and the API accepts them, so finishing a partial entry is
+    // just finishing: save what is there and let the caller navigate home.
+    const saveBeforeFinish = useCallback(async (): Promise<boolean> => {
         const current = sessionRef.current;
         const id = current?.expandedId;
-        if (!id) return false;
+        // Nothing open, so nothing to flush. True, not false: the caller reads
+        // this as "safe to leave", and there is no work left to lose.
+        if (!id) return true;
         const row = current.rows.find((r) => r.id === id);
-        if (!row) return false;
+        if (!row) return true;
 
-        if (!entryIsComplete(row, 'funnel')) {
-            setSaveErrorRowId(id);
-            setActiveStep(firstIncompleteFunnelStep(row));
-            setActivePreviewField(null);
-            return false;
+        // Flush the debounced autosave before finishing. Finishing navigates
+        // away, which unmounts this component and cancels any pending save, so
+        // an edit made within COMMITTED_AUTOSAVE_MS of the click would never
+        // reach the server. persistActiveRow reads the live session and no-ops
+        // when the row already matches what is committed.
+        reportAutoSaveStatus('saving');
+
+        // One flush is not enough. persistActiveRow snapshots the row when its
+        // turn in the queue comes up, so anything typed while that write is on
+        // the wire is not in the payload — writeActiveRow notices (`live !== row`)
+        // and keeps it on screen, but the only thing that would re-send it is the
+        // debounce the edit scheduled, and navigating home cancels exactly that.
+        // On a slow connection the window is wide enough to lose a whole answer.
+        //
+        // So compare the live row before and after each write and go again while
+        // it is still moving. Bounded because a resident who never stops typing
+        // must not be able to hold Finish hostage; on exhaustion the remaining
+        // edit is left to the debounce, which is the pre-existing behavior.
+        let liveRow: TranscriptEntry = row;
+        for (let attempt = 0; attempt < FINISH_FLUSH_MAX_ATTEMPTS; attempt++) {
+            // Cancel before each pass: this flush writes the same live row the
+            // pending timer would have, so letting it fire afterwards is pure
+            // duplicate traffic. That is a cancellation, not the race fix — a
+            // timer that has already fired is mid-request and cannot be called
+            // back, which is what persistActiveRow's queue is for. On a repeat
+            // pass the timer being cancelled is the one the resident's own edit
+            // just scheduled, so reclaim the label ticket from it too.
+            cancelPendingAutoSave();
+            nextSaveTicket();
+
+            const before = liveRow;
+            if (!(await persistActiveRow())) {
+                setSaveErrorRowId(id);
+                reportAutoSaveStatus('error');
+                return false;
+            }
+
+            // Yield a task before reading the session back. sessionRef is
+            // assigned during render, and both the resident's keystroke and
+            // writeActiveRow's own setSession are auto-batched by React outside
+            // an event handler — so the microtask this continuation runs on can
+            // still see the pre-edit session and conclude, wrongly, that nothing
+            // moved. One tick lets React's scheduler commit first.
+            await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+
+            const after = sessionRef.current?.rows.find((r) => r.id === id);
+            // The row went away mid-save (deleted, or the session reset). Nothing
+            // left to flush, and `before` is the last state that was written.
+            if (!after) break;
+            liveRow = after;
+            if (entryPayloadEqual(before, after)) break;
         }
+        reportAutoSaveStatus('saved', new Date());
 
         setSaveErrorRowId(null);
+        // Read from `liveRow`, not the snapshot taken before the first write: an
+        // answer typed during the flush is part of the entry the resident is
+        // finishing, and judging completeness on the stale copy would report a
+        // finished entry as partial.
+        //
+        // Still gated on completeness, unlike the navigation above: an
+        // `lr_entry_completed` for a half-answered entry would overstate the
+        // funnel. A partial finish is reported instead by the unmount cleanup's
+        // `abandonedCurrentStep`, which banks the time so a later Finish on the
+        // same row can report the cumulative total. The tracker refuses a second
+        // completion for the same entry and reports the accepted one to the
+        // session itself, so the sitting's count advances only when an event was
+        // actually emitted.
+        if (entryIsComplete(liveRow, 'funnel')) {
+            analyticsRef.current?.entryCompleted(liveRow, id);
+        }
         return true;
-    }, []);
+    }, [
+        persistActiveRow,
+        reportAutoSaveStatus,
+        cancelPendingAutoSave,
+        nextSaveTicket
+    ]);
 
     useEffect(() => {
         if (!isFunnel || !onRegisterFunnelFinish) return;
-        onRegisterFunnelFinish({ validateFinishRequirements });
-    }, [isFunnel, onRegisterFunnelFinish, validateFinishRequirements]);
+        onRegisterFunnelFinish({ saveBeforeFinish });
+    }, [isFunnel, onRegisterFunnelFinish, saveBeforeFinish]);
+
+    // ID-830: mark this mount as a visit to the form. The session itself lives in
+    // learningRecordSession, not here, because this component unmounts on every
+    // list <-> entry navigation — one sitting used to emit several partial
+    // lr_session_ended events. leaveForm deliberately does not emit; it stops
+    // active time accruing and lets the module's resume window decide when the
+    // sitting is over. pagehide is registered by the module for the same reason:
+    // registered here it would be gone the moment this unmounts.
+    useEffect(() => {
+        if (!isFunnel) return;
+        enterForm();
+        // A bfcache restore starts a new sitting without this component
+        // unmounting, so the analytics tracker below never gets recreated and
+        // never re-runs entryStarted for whatever entry is already open. This
+        // renumbers it against the new sitting instead.
+        const handleSessionRestarted = () => {
+            const current = sessionRef.current;
+            analyticsRef.current?.reattachToSession(
+                current?.expandedId ?? null
+            );
+        };
+        window.addEventListener(
+            'learning-record-session-restarted',
+            handleSessionRestarted
+        );
+        return () => {
+            window.removeEventListener(
+                'learning-record-session-restarted',
+                handleSessionRestarted
+            );
+            // Report the step the resident was standing on before the session
+            // window closes — otherwise abandoning mid-form is the one path that
+            // emits nothing for the question in front of them. Read through
+            // sessionRef so the cleanup sees the row as it is now, not as it was
+            // when this effect ran.
+            const current = sessionRef.current;
+            const row = current?.rows.find((r) => r.id === current.expandedId);
+            if (row) analyticsRef.current?.abandonedCurrentStep(row);
+            leaveForm();
+        };
+    }, [isFunnel]);
+
+    // ID-806: one lr_entry_started per entry actually opened for editing.
+    // Gated on hydrated + an expanded row so loading and empty renders are not
+    // counted, the same guard the attendance page uses.
+    const analyticsExpandedId = session?.expandedId ?? null;
+    useEffect(() => {
+        if (!isFunnel || !hydrated || !analyticsExpandedId) return;
+        if (analyticsStartedForRef.current === analyticsExpandedId) return;
+        analyticsStartedForRef.current = analyticsExpandedId;
+        analyticsRef.current?.entryStarted(analyticsExpandedId);
+    }, [isFunnel, hydrated, analyticsExpandedId]);
 
     useEffect(() => {
         if (!isFunnel || !session?.expandedId || !onFunnelAutoSaveStatusChange)
@@ -424,10 +718,19 @@ export function DigitalTranscriptWysiwygEntry({
 
         reportAutoSaveStatus('pending');
 
-        const t = window.setTimeout(() => {
+        // Claim the label before scheduling. Any save already in flight now holds a
+        // stale ticket, so it cannot resolve and paint 'saved' over this newer dirty
+        // state. A still-pending timer always holds the latest ticket — every later
+        // intent cancels it first — which is why 'saving' below needs no guard while
+        // the outcome does.
+        const ticket = nextSaveTicket();
+
+        autosaveTimerRef.current = window.setTimeout(() => {
+            autosaveTimerRef.current = null;
             void (async () => {
                 reportAutoSaveStatus('saving');
                 const ok = await persistActiveRow();
+                if (!isLatestSaveTicket(ticket)) return;
                 if (ok) {
                     reportAutoSaveStatus('saved', new Date());
                 } else {
@@ -436,7 +739,7 @@ export function DigitalTranscriptWysiwygEntry({
             })();
         }, COMMITTED_AUTOSAVE_MS);
 
-        return () => window.clearTimeout(t);
+        return cancelPendingAutoSave;
     }, [
         isFunnel,
         session,
@@ -444,6 +747,9 @@ export function DigitalTranscriptWysiwygEntry({
         buildSavedEntry,
         persistActiveRow,
         reportAutoSaveStatus,
+        cancelPendingAutoSave,
+        nextSaveTicket,
+        isLatestSaveTicket,
         onFunnelAutoSaveStatusChange
     ]);
 
@@ -473,7 +779,14 @@ export function DigitalTranscriptWysiwygEntry({
     }, [session, onExportRowsChange]);
 
     const handleActiveStepChange = useCallback((step: number) => {
-        setActiveStep(step);
+        setActiveStep((prevStep) => {
+            const current = sessionRef.current;
+            const row = current?.rows.find((r) => r.id === current.expandedId);
+            if (row && step !== prevStep) {
+                analyticsRef.current?.stepChanged(row, prevStep, step);
+            }
+            return step;
+        });
         setActivePreviewField(null);
         achievementListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
@@ -492,6 +805,8 @@ export function DigitalTranscriptWysiwygEntry({
                     ) {
                         setActivePreviewField(previewField);
                     }
+                    analyticsRef.current?.noteEdit(patchedKey);
+                    noteActivity();
                 }
             }
             setSession((prev) => {
@@ -521,7 +836,7 @@ export function DigitalTranscriptWysiwygEntry({
     }, []);
 
     const handleAdd = useCallback(() => {
-        const row = createEmptyTranscriptEntry();
+        const row = createEmptyTranscriptEntry(defaultFacility);
         setSession((prev) => {
             if (!prev) return prev;
             return {
@@ -532,7 +847,7 @@ export function DigitalTranscriptWysiwygEntry({
             };
         });
         setSaveErrorRowId(null);
-    }, []);
+    }, [defaultFacility]);
 
     const isCommittedEntryId = useCallback(
         (id: string) => {
@@ -585,7 +900,12 @@ export function DigitalTranscriptWysiwygEntry({
                 ...row,
                 topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
             };
-            void upsertCommittedEntry(saved);
+            // Fire-and-forget, but upsertCommittedEntry now rejects on a failed
+            // write, so the rejection has to be handled here or it surfaces as an
+            // unhandled promise rejection. The categories variant has no autosave
+            // label, so the row's save-error state is the only channel available —
+            // the same one the incomplete-row check above uses.
+            void upsertCommittedEntry(saved).catch(() => setSaveErrorRowId(id));
             setSession((prev) => {
                 if (!prev) return prev;
                 const next = syncSessionRowsAfterUpsert(prev, saved);
@@ -595,6 +915,51 @@ export function DigitalTranscriptWysiwygEntry({
         },
         [formVariant, upsertCommittedEntry]
     );
+
+    const handleConfirmDeleteEntry = useCallback(() => {
+        const target = deleteConfirmFor;
+        setDeleteConfirmFor(null);
+        if (!target) return;
+        // Drop local state only once the server confirms. deleteCommittedEntry now
+        // rejects on a failed delete and keeps the entry, so removing the row up
+        // front would hide a record that still exists — it would come back on the
+        // next hydrate, which reads as data loss in reverse.
+        void deleteCommittedEntry(target.id)
+            .then(() => {
+                delete baselinesRef.current[target.id];
+                delete lastWrittenRef.current[target.id];
+                setSession((prev) => {
+                    if (!prev) return null;
+                    const rows = prev.rows.filter((r) => r.id !== target.id);
+                    // Deleting the last row must not null the session: bootstrapped
+                    // is already true, so nothing reinitializes it and the editor
+                    // would sit on its loading state until a reload. Reopen a blank
+                    // draft, the same way bootstrap recovers from an empty session.
+                    if (rows.length === 0) {
+                        return ensureDraftEditorOpen(
+                            {
+                                ...prev,
+                                rows,
+                                expandedId: null,
+                                lastPreviewId: null
+                            },
+                            entries,
+                            defaultFacility
+                        );
+                    }
+                    const expandedId =
+                        prev.expandedId === target.id ? null : prev.expandedId;
+                    const lastPreviewId =
+                        prev.lastPreviewId === target.id
+                            ? (rows[rows.length - 1]?.id ?? null)
+                            : prev.lastPreviewId;
+                    return { ...prev, rows, expandedId, lastPreviewId };
+                });
+            })
+            .catch(() => {
+                toast.error('Could not delete that entry. Please try again.');
+            });
+    }, [deleteConfirmFor, deleteCommittedEntry, entries, defaultFacility]);
 
     const displayRows = useMemo(
         () => (session ? sortEntriesNewestFirst(session.rows) : []),
@@ -893,29 +1258,7 @@ export function DigitalTranscriptWysiwygEntry({
                 cancelLabel="Cancel"
                 variant="destructive"
                 buttonClassName="h-10"
-                onConfirm={() => {
-                    const target = deleteConfirmFor;
-                    setDeleteConfirmFor(null);
-                    if (!target) return;
-                    delete baselinesRef.current[target.id];
-                    void deleteCommittedEntry(target.id);
-                    setSession((prev) => {
-                        if (!prev) return null;
-                        const rows = prev.rows.filter(
-                            (r) => r.id !== target.id
-                        );
-                        if (rows.length === 0) return null;
-                        const expandedId =
-                            prev.expandedId === target.id
-                                ? null
-                                : prev.expandedId;
-                        const lastPreviewId =
-                            prev.lastPreviewId === target.id
-                                ? (rows[rows.length - 1]?.id ?? null)
-                                : prev.lastPreviewId;
-                        return { ...prev, rows, expandedId, lastPreviewId };
-                    });
-                }}
+                onConfirm={handleConfirmDeleteEntry}
             />
         </div>
     );

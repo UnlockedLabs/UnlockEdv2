@@ -4,6 +4,7 @@ import type { TranscriptEntry } from '@/types/digital-transcript';
 import { cn } from '@/lib/utils';
 import { FUNNEL_FIELD_DESCRIPTIONS } from './transcriptReflectionConfig';
 import { learningRecordQuestionHeaderClassName } from './learningRecordButtons';
+import { AchievementLocationField } from './AchievementLocationField';
 
 interface AchievementFormMetadataProps {
     entry: TranscriptEntry;
@@ -59,10 +60,17 @@ export function AchievementFormMetadata({
                     data-slot="transcript-program-name"
                     value={entry.programName}
                     onChange={(e) => onChange({ programName: e.target.value })}
-                    aria-invalid={showErrors && !programOk}
+                    aria-invalid={!isFunnel && showErrors && !programOk}
                     className="h-10 border-border/80 bg-muted/40"
                 />
-                {showErrors && !programOk ? (
+                {/*
+                  Funnel-gated for the same reason the completion date below is:
+                  no funnel question is required (ID-837), so the only thing that
+                  can set showSaveErrors there is a failed write — and a blank
+                  name is not why it failed. The funnel reports write failures
+                  through the toolbar's autosave label instead.
+                */}
+                {!isFunnel && showErrors && !programOk ? (
                     <p className="mt-2 text-sm text-destructive" role="alert">
                         {showSaveErrors
                             ? 'Please enter an achievement name to save your record.'
@@ -70,6 +78,14 @@ export function AchievementFormMetadata({
                     </p>
                 ) : null}
             </div>
+
+            {isFunnel ? (
+                <AchievementLocationField
+                    key={entry.id}
+                    entry={entry}
+                    onChange={onChange}
+                />
+            ) : null}
 
             <div>
                 <div className={learningRecordQuestionHeaderClassName}>

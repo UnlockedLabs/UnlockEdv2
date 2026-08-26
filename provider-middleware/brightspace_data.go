@@ -18,6 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// REMOVE ME
 type DataSetPlugin struct {
 	PluginId     string  `json:"PluginId"`
 	Name         string  `json:"Name"`

@@ -44,6 +44,8 @@ export function TranscriptResumePreview({
     const isPaper = variant === 'paper';
     const doc: PreviewSource = {
         programName: source.programName,
+        facilityName: source.facilityName ?? '',
+        facilityOther: source.facilityOther ?? '',
         completionDate: source.completionDate,
         confidence: source.confidence,
         oneSentence: source.oneSentence,

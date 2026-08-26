@@ -160,7 +160,12 @@ export default function AuthenticatedLayout() {
         isKnowledgeCenter ||
         isOperationalInsights ||
         (isProgramDetail && canSwitchFacility(user));
-    const rootClass = 'h-screen bg-background flex overflow-hidden';
+    // Residents get no header bar at `md`+ (see the MobileNav branch below), so
+    // pages that size to the viewport must not reserve 4rem for it there
+    const headerOffsetClass = isAdministrator(user)
+        ? ''
+        : 'app-header-mobile-only';
+    const rootClass = `h-screen bg-background flex overflow-hidden ${headerOffsetClass}`;
     const contentClass = `flex-1 min-h-full ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : 'bg-[#E2E7EA]'}`;
 
     return (

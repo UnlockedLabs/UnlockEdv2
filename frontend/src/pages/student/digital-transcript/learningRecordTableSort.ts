@@ -1,11 +1,19 @@
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import { countAnsweredReflections } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
+import {
+    achievementLocationText,
+    countAnsweredReflections
+} from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 import { countFunnelFieldsAnswered } from './transcriptReflectionConfig';
 
 export const LR_TABLE_SORT_STORAGE_KEY = 'lr_table_sort';
 
-export type SortColumn = 'program' | 'completed' | 'questions' | 'addedOn';
+export type SortColumn =
+    | 'program'
+    | 'location'
+    | 'completed'
+    | 'questions'
+    | 'addedOn';
 export type SortDirection = 'asc' | 'desc';
 
 export interface TableSort {
@@ -20,6 +28,7 @@ export const DEFAULT_TABLE_SORT: TableSort = {
 
 const SORT_COLUMNS: SortColumn[] = [
     'program',
+    'location',
     'completed',
     'questions',
     'addedOn'
@@ -153,6 +162,12 @@ export function sortTranscriptEntries(
                 return compareStrings(
                     a.programName.trim(),
                     b.programName.trim(),
+                    direction
+                );
+            case 'location':
+                return compareStrings(
+                    achievementLocationText(a),
+                    achievementLocationText(b),
                     direction
                 );
             case 'completed':

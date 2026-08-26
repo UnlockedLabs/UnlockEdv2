@@ -43,13 +43,30 @@ func TestFacilityFeatureAccess_EffectiveMatrix(t *testing.T) {
 		require.Contains(t, effective, models.ProgramAccess)
 	})
 
-	t.Run("a feature disabled statewide can never be enabled for a single facility", func(t *testing.T) {
-		err := env.DB.UpsertFacilityFeatureFlag(args, facility.ID, models.LearningRecordAccess, true, statewide) // not in statewide slice
-		require.Error(t, err)
+	t.Run("a feature disabled statewide can be enabled for a single facility", func(t *testing.T) {
+		// The statewide value is only the default for facilities with no row of
+		// their own; an explicit override wins in both directions.
+		require.NoError(t, env.DB.UpsertFacilityFeatureFlag(args, facility.ID, models.LearningRecordAccess, true, statewide)) // not in statewide slice
+
+		effective, err := env.DB.GetFacilityFeatureAccess(facility.ID, statewide)
+		require.NoError(t, err)
+		require.Contains(t, effective, models.LearningRecordAccess)
+	})
+
+	t.Run("that override can be turned back off without affecting other facilities", func(t *testing.T) {
+		other, err := env.CreateTestFacility("Feature Matrix Facility 2")
+		require.NoError(t, err)
+
+		require.NoError(t, env.DB.UpsertFacilityFeatureFlag(args, facility.ID, models.LearningRecordAccess, false, statewide))
 
 		effective, err := env.DB.GetFacilityFeatureAccess(facility.ID, statewide)
 		require.NoError(t, err)
 		require.NotContains(t, effective, models.LearningRecordAccess)
+
+		otherEffective, err := env.DB.GetFacilityFeatureAccess(other.ID, statewide)
+		require.NoError(t, err)
+		require.ElementsMatch(t, statewide, otherEffective,
+			"a facility with no rows of its own still inherits the statewide defaults")
 	})
 }
 

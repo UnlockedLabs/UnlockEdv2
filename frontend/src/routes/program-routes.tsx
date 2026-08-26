@@ -36,7 +36,10 @@ export const ProgramRoutes = declareAuthenticatedRoutes(
         }
     ],
     [UserRole.Student],
-    [FeatureAccess.ProgramAccess]
+    // ResidentProgramsAccess is the resident-facing visibility sub-feature; when an
+    // admin turns it off (or program tracking itself is off) the route falls through
+    // to the auth callback rather than rendering.
+    [FeatureAccess.ProgramAccess, FeatureAccess.ResidentProgramsAccess]
 );
 
 export const DeptAdminProgramRoutes = declareAuthenticatedRoutes(

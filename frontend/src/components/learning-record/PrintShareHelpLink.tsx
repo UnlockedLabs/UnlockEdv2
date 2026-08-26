@@ -30,7 +30,7 @@ export function PrintShareHelpLink({
                 type="button"
                 onClick={() => setOpen(true)}
                 className={cn(
-                    'inline-flex w-fit items-center text-left text-sm underline underline-offset-2 transition-opacity hover:opacity-80',
+                    'inline-flex w-fit cursor-pointer items-center text-left text-sm underline underline-offset-2 transition-opacity hover:opacity-80',
                     variant === 'onDark'
                         ? 'text-white/90'
                         : 'text-[#556830] dark:text-primary',

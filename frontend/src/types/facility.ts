@@ -35,6 +35,8 @@ export interface FacilityWithStats {
     active_programs: number;
     active_classes: number;
     total_residents: number;
+    /** True when the facility has no records that block deletion. */
+    can_delete: boolean;
 }
 
 export interface FacilityFeatureOverviewRow {

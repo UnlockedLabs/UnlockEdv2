@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getEntryDisplayTitleOrNull } from './entryTitleDisplay';
@@ -8,8 +8,11 @@ import {
     LEARNING_RECORD_PREVIEW_LABELS
 } from './transcriptReflectionConfig';
 import {
+    achievementLocationText,
     countAnsweredReflections,
     getLearningRecordPreviewState,
+    isLocationSectionFilled,
+    LOCATION_NOT_SPECIFIED_LABEL,
     hasFilledFunnelReflectionSections,
     hasFilledMetadataSections,
     hasFilledNarrativeSections,
@@ -132,7 +135,7 @@ interface LearningRecordDocumentProps {
     filledSectionsOnly?: boolean;
 }
 
-export function LearningRecordDocument({
+function LearningRecordDocumentImpl({
     source,
     residentName = '',
     showReadiness = true,
@@ -161,6 +164,12 @@ export function LearningRecordDocument({
     const showCompleted = isFunnel
         ? isCompletedSectionFilled(source)
         : !filledSectionsOnly || isCompletedSectionFilled(source);
+    // Empty locations are omitted from an exported record, matching how the
+    // other optional metadata is handled; the live preview and the saved
+    // achievements table carry the "not specified" fallback instead.
+    const showLocation = filledSectionsOnly
+        ? isLocationSectionFilled(source)
+        : true;
     const showConfidence =
         !isFunnel && (!filledSectionsOnly || isConfidenceSectionFilled(source));
     const showSkills =
@@ -171,6 +180,7 @@ export function LearningRecordDocument({
         isFunnel &&
         (Boolean(residentName.trim()) ||
             showProgram ||
+            showLocation ||
             showCompleted ||
             !filledSectionsOnly);
     const showNarrativeColumn = isFunnel
@@ -197,6 +207,8 @@ export function LearningRecordDocument({
     const readinessPct = Math.round((answered / totalSlots) * 100);
     const seg = confidenceSegments(source.confidence);
     const dateShown = formatCompletedLong(source.completionDate);
+    const locationShown =
+        achievementLocationText(source) || LOCATION_NOT_SPECIFIED_LABEL;
     const headlineFilled = Boolean(source.oneSentence.trim());
     const residentDisplayName = residentName.trim();
     const programDisplayTitle = getEntryDisplayTitleOrNull(source.programName);
@@ -317,6 +329,19 @@ export function LearningRecordDocument({
                                     ) : null}
                                 </div>
                             ) : null}
+                            {showLocation ? (
+                                <div
+                                    className="space-y-1"
+                                    data-slot="funnel-achievement-location"
+                                >
+                                    <SectionLabel id="lr-funnel-location">
+                                        {labels.location}
+                                    </SectionLabel>
+                                    <p className="text-sm text-foreground">
+                                        {locationShown}
+                                    </p>
+                                </div>
+                            ) : null}
                         </header>
                     ) : null}
                     {(showNarrativeColumn || !filledSectionsOnly) && (
@@ -358,6 +383,20 @@ export function LearningRecordDocument({
                                                 }
                                             />
                                         )}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {showLocation ? (
+                                <section
+                                    aria-labelledby="lr-doc-location"
+                                    className="break-inside-avoid space-y-1.5"
+                                >
+                                    <SectionLabel id="lr-doc-location">
+                                        {labels.location}
+                                    </SectionLabel>
+                                    <div className="text-[13px] font-medium text-foreground">
+                                        {locationShown}
                                     </div>
                                 </section>
                             ) : null}
@@ -487,3 +526,10 @@ export function LearningRecordDocument({
         </article>
     );
 }
+
+/**
+ * Memoized: the funnel live preview re-renders on every keystroke, and `source`
+ * keeps its identity for rows the edit did not touch. Without this, typing into
+ * one achievement re-rendered the full document for every saved achievement.
+ */
+export const LearningRecordDocument = memo(LearningRecordDocumentImpl);

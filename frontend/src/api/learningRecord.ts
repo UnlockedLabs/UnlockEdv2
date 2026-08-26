@@ -5,10 +5,19 @@ import type {
     TranscriptQ4Toggle
 } from '@/types/digital-transcript';
 
+export interface LearningRecordFacility {
+    id: number;
+    name: string;
+}
+
 interface BackendEntry {
     id: number;
     client_id: string;
     program_name: string;
+    facility_id: number | null;
+    facility_other: string;
+    /** Joined server-side for display; not written back. */
+    facility_name: string;
     completion_date: string;
     confidence: string;
     summary: string;
@@ -35,11 +44,21 @@ function arr(v: unknown): string[] {
         : [];
 }
 
+/** Location fields, tolerating rows saved before the column existed. */
+function facilityFields(b: BackendEntry) {
+    return {
+        facilityId: typeof b.facility_id === 'number' ? b.facility_id : null,
+        facilityOther: b.facility_other ?? '',
+        facilityName: b.facility_name ?? ''
+    };
+}
+
 function toFrontend(b: BackendEntry): TranscriptEntry {
     return {
         id: b.client_id,
         createdAt: b.created_at,
         programName: b.program_name,
+        ...facilityFields(b),
         completionDate: b.completion_date,
         confidence: b.confidence,
         oneSentence: b.summary,
@@ -67,6 +86,7 @@ function toDraftFrontend(b: BackendEntry, updatedAt: string): TranscriptDraft {
         stepIndex: 0,
         uiPhase: 'survey',
         programName: b.program_name,
+        ...facilityFields(b),
         completionDate: b.completion_date,
         confidence: b.confidence,
         oneSentence: b.summary,
@@ -92,6 +112,9 @@ function toBackend(clientId: string, e: TranscriptEntry | TranscriptDraft) {
     return {
         client_id: clientId,
         program_name: e.programName,
+        // facility_name is derived server-side, so it is deliberately not sent.
+        facility_id: e.facilityId,
+        facility_other: e.facilityOther,
         completion_date: e.completionDate,
         confidence: e.confidence,
         summary: e.oneSentence,
@@ -121,6 +144,14 @@ function extractArray(
     return [];
 }
 
+/**
+ * Facilities for the achievement location dropdown are served by a
+ * learning-record route (`GET /api/learning-record/facilities`) because the main
+ * facilities endpoints are admin-only. Fetched via SWR in
+ * `useLearningRecordFacilities` so a failed load is never cached as an empty
+ * list — see that hook for why that distinction matters.
+ */
+
 export async function apiGetEntries(): Promise<{
     entries: TranscriptEntry[];
     backendIds: Map<string, number>;
@@ -145,7 +176,17 @@ export async function apiCreateEntry(
     );
     if (!resp.success || resp.type !== 'one' || !resp.data) return null;
     const b = resp.data;
-    return { entry: toFrontend(b), backendId: b.id };
+    const created = toFrontend(b);
+    return {
+        entry: {
+            ...created,
+            // The create response is the row as written, so it carries no joined
+            // facility_name. Keep the name we already have rather than blanking
+            // the location until the next read.
+            facilityName: created.facilityName || entry.facilityName
+        },
+        backendId: b.id
+    };
 }
 
 export async function apiUpdateEntry(

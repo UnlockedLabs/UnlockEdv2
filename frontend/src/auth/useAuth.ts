@@ -202,7 +202,10 @@ const getResidentLink = (user: User): string => {
     ) {
         return '/home';
     }
-    if (user.feature_access.includes(FeatureAccess.ProgramAccess)) {
+    if (
+        user.feature_access.includes(FeatureAccess.ProgramAccess) &&
+        user.feature_access.includes(FeatureAccess.ResidentProgramsAccess)
+    ) {
         return '/resident-programs';
     }
     return '/temp-home';

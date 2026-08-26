@@ -16,7 +16,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := models.ProgramAccess
 	resolver := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
-		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
+		validatedFeatureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx, ResidentFeatureResolver(models.ResidentProgramsAccess)),
 		featureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx),
 		adminFeatureRoute("GET /api/program-classes/{class_id}/canvas-schedule", srv.handleGetCanvasClassSchedule, axx),
 		/* admin */

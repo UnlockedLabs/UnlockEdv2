@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -137,10 +137,23 @@ export default function DigitalTranscriptEntryPage() {
         navigate(base);
     }, [navigate, base]);
 
-    const handleFinish = useCallback(() => {
-        const ok =
-            funnelFinishRef.current?.validateFinishRequirements() ?? false;
-        if (ok) navigateHome();
+    // Finishing now awaits a save, which leaves a window where a second click
+    // could run the whole flow again. The tracker refuses a duplicate
+    // completion event, but nothing else stops a double navigation.
+    const finishInFlightRef = useRef(false);
+
+    // Unanswered questions no longer hold the resident here (ID-837) — only a
+    // failed write does, and the toolbar's "Failed to save" is what explains it.
+    const handleFinish = useCallback(async () => {
+        if (finishInFlightRef.current) return;
+        finishInFlightRef.current = true;
+        try {
+            const saved =
+                (await funnelFinishRef.current?.saveBeforeFinish()) ?? true;
+            if (saved) navigateHome();
+        } finally {
+            finishInFlightRef.current = false;
+        }
     }, [navigateHome]);
 
     const handleDownload = useCallback(async () => {
@@ -181,6 +194,20 @@ export default function DigitalTranscriptEntryPage() {
         }
     }, [isExporting, residentName, entries]);
 
+    // Stable identity: this object is a prop on the memoized live preview, so a
+    // fresh literal each render would defeat the memo on every keystroke.
+    const funnelDownload = useMemo(
+        () =>
+            isFunnel
+                ? {
+                      onDownload: () => void handleDownload(),
+                      canDownload,
+                      isExporting
+                  }
+                : undefined,
+        [isFunnel, handleDownload, canDownload, isExporting]
+    );
+
     if (!hydrated) {
         return (
             <DigitalTranscriptShell variant="narrow">
@@ -198,7 +225,7 @@ export default function DigitalTranscriptEntryPage() {
     return (
         <div
             className={cn(
-                'flex h-[calc(100dvh-4rem)] min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                'h-below-app-header flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
                 dtPageSurface
             )}
         >
@@ -286,7 +313,9 @@ export default function DigitalTranscriptEntryPage() {
                         upsertCommittedEntry={upsertCommittedEntry}
                         deleteCommittedEntry={deleteCommittedEntry}
                         onExportRowsChange={handleExportRowsChange}
-                        funnelOnFinish={isFunnel ? handleFinish : undefined}
+                        funnelOnFinish={
+                            isFunnel ? () => void handleFinish() : undefined
+                        }
                         onRegisterFunnelFinish={
                             isFunnel ? handleRegisterFunnelFinish : undefined
                         }
@@ -295,15 +324,7 @@ export default function DigitalTranscriptEntryPage() {
                                 ? handleFunnelAutoSaveStatusChange
                                 : undefined
                         }
-                        funnelDownload={
-                            isFunnel
-                                ? {
-                                      onDownload: () => void handleDownload(),
-                                      canDownload,
-                                      isExporting
-                                  }
-                                : undefined
-                        }
+                        funnelDownload={funnelDownload}
                     />
                 </div>
             </div>

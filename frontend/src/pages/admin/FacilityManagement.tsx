@@ -4,10 +4,33 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { Search, Plus, Edit, ArrowUpDown, Building2 } from 'lucide-react';
+import {
+    Search,
+    Plus,
+    Edit,
+    Trash2,
+    ArrowUpDown,
+    Building2
+} from 'lucide-react';
 import API from '@/api/api';
+import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import type { ServerResponseMany } from '../../types/server';
 import { Button } from '@/components/ui/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import {
     Table,
     TableBody,
@@ -66,16 +89,25 @@ function getTimezoneLabel(tz: string): string {
 
 const DEFAULT_TIMEZONE = 'America/New_York';
 
+/** Shown on the disabled delete control and on a 409 from the delete endpoint. */
+const DELETE_BLOCKED_MESSAGE = 'Cannot delete facility with existing records';
+
 export default function FacilityManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<SortColumn>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
     const { page, perPage, setPage, setPerPage } = useUrlPagination();
 
+    const { user } = useAuth();
+    const canDeleteFacilities = user ? canSwitchFacility(user) : false;
+
     const [showAddFacility, setShowAddFacility] = useState(false);
     const [showEditFacility, setShowEditFacility] = useState(false);
     const [selectedFacility, setSelectedFacility] =
         useState<FacilityWithStats | null>(null);
+    const [facilityToDelete, setFacilityToDelete] =
+        useState<FacilityWithStats | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const addForm = useForm<FacilityInput>({
         resolver: zodResolver(facilitySchema),
@@ -173,6 +205,30 @@ export default function FacilityManagement() {
             timezone: facility.timezone
         });
         setShowEditFacility(true);
+    }
+
+    async function handleDeleteFacility() {
+        if (!facilityToDelete) return;
+        setIsDeleting(true);
+        const resp = await API.delete(`facilities/${facilityToDelete.id}`);
+        setIsDeleting(false);
+        if (resp.success) {
+            toast.success(
+                `Facility "${facilityToDelete.name}" has been deleted`
+            );
+            setFacilityToDelete(null);
+            void mutate();
+            return;
+        }
+        // 409 means records were tied to the facility (possibly ones the row
+        // heuristic can't see); refresh so the list reflects reality.
+        toast.error(
+            resp.status === 409
+                ? DELETE_BLOCKED_MESSAGE
+                : resp.message || 'Failed to delete facility'
+        );
+        setFacilityToDelete(null);
+        if (resp.status === 409) void mutate();
     }
 
     return (
@@ -327,17 +383,62 @@ export default function FacilityManagement() {
                                             {facility.total_residents}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openEdit(facility);
-                                                }}
-                                                className="h-8 w-8 p-0"
-                                            >
-                                                <Edit className="size-4" />
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openEdit(facility);
+                                                    }}
+                                                    className="h-8 w-8 p-0"
+                                                    aria-label={`Edit ${facility.name}`}
+                                                >
+                                                    <Edit className="size-4" />
+                                                </Button>
+                                                {canDeleteFacilities &&
+                                                    (() => {
+                                                        const blocked =
+                                                            !facility.can_delete;
+                                                        return (
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    {/* span keeps the tooltip working while the button is disabled */}
+                                                                    <span className="inline-flex">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={(
+                                                                                e
+                                                                            ) => {
+                                                                                e.stopPropagation();
+                                                                                setFacilityToDelete(
+                                                                                    facility
+                                                                                );
+                                                                            }}
+                                                                            disabled={
+                                                                                blocked
+                                                                            }
+                                                                            className="h-8 w-8 p-0 text-red-600 disabled:pointer-events-none disabled:text-gray-300"
+                                                                            aria-label={`Delete ${facility.name}`}
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </Button>
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                {blocked && (
+                                                                    <TooltipContent side="left">
+                                                                        {
+                                                                            DELETE_BLOCKED_MESSAGE
+                                                                        }
+                                                                    </TooltipContent>
+                                                                )}
+                                                            </Tooltip>
+                                                        );
+                                                    })()}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -523,6 +624,44 @@ export default function FacilityManagement() {
                         </form>
                     </Form>
                 </FormModal>
+
+                {/* Delete Facility confirmation */}
+                <AlertDialog
+                    open={!!facilityToDelete}
+                    onOpenChange={(open) => {
+                        if (!open && !isDeleting) setFacilityToDelete(null);
+                    }}
+                >
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                Delete facility?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently remove{' '}
+                                <span className="font-semibold">
+                                    {facilityToDelete?.name}
+                                </span>
+                                . This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isDeleting}>
+                                Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    void handleDeleteFacility();
+                                }}
+                                disabled={isDeleting}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete Facility'}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );

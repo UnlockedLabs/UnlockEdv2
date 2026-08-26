@@ -3,14 +3,14 @@ import {
     ServerResponseOne,
     ServerResponseMany
 } from '@/types/server';
-import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
+import { ANALYTICS_EVENTS, analyticsUrl, captureEvent } from '@/lib/events';
 
 class API {
     private static getCSRFToken(): string {
         const match = /csrf_token=([^;]+)/.exec(document.cookie);
         return match ? match[1] : '';
     }
-
+    //REMOVE ME
     private static async fetchWithHandling<T>(
         method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
         url: string,
@@ -118,7 +118,7 @@ class API {
             captureEvent(ANALYTICS_EVENTS.ApiError, {
                 status: errCode ?? 0,
                 method,
-                url,
+                ...analyticsUrl(url),
                 message: error.message || 'An error occurred'
             });
             return {

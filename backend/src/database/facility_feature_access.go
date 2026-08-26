@@ -20,24 +20,22 @@ type FacilityFeatureDetailRow struct {
 	Enabled bool                 `json:"enabled"`
 }
 
-// GetFacilityFeatureAccess resolves the effective feature set for one facility:
-// the statewide defaults (passed in by the caller, sourced from the server's
-// cached feature_flags/page_feature_flags state) minus any feature this facility
-// has explicitly disabled. A facility with no override row inherits the
-// statewide value untouched. A sub-feature is never effective when its parent
-// isn't — that cascade is enforced here regardless of the sub-feature's own
-// override row, since disabling the parent doesn't retroactively clear it.
+// GetFacilityFeatureAccess resolves the effective feature set for one facility.
+// A facility's own override row wins in both directions: it may enable a feature
+// that is off statewide, or disable one that is on. The statewide defaults
+// (passed in by the caller, sourced from the server's cached feature_flags/
+// page_feature_flags state) apply only to features the facility has no row for.
+// A sub-feature is never effective when its parent isn't — that cascade is
+// enforced here regardless of the sub-feature's own override row, since
+// disabling the parent doesn't retroactively clear it.
 func (db *DB) GetFacilityFeatureAccess(facilityID uint, statewideDefaults []models.FeatureAccess) ([]models.FeatureAccess, error) {
-	disabled, err := db.disabledFeatureSet(facilityID)
+	overrides, err := db.facilityOverrides(facilityID)
 	if err != nil {
 		return nil, err
 	}
-	enabled := make(map[models.FeatureAccess]bool, len(statewideDefaults))
-	for _, f := range statewideDefaults {
-		enabled[f] = !disabled[f]
-	}
-	effective := make([]models.FeatureAccess, 0, len(statewideDefaults))
-	for _, f := range statewideDefaults {
+	enabled := resolveFeatures(statewideDefaults, overrides)
+	effective := make([]models.FeatureAccess, 0, len(models.AllFeatures))
+	for _, f := range models.AllFeatures {
 		if !enabled[f] {
 			continue
 		}
@@ -49,18 +47,36 @@ func (db *DB) GetFacilityFeatureAccess(facilityID uint, statewideDefaults []mode
 	return effective, nil
 }
 
-func (db *DB) disabledFeatureSet(facilityID uint) (map[models.FeatureAccess]bool, error) {
+// resolveFeatures gives every known feature its pre-cascade state: the facility's
+// override where one exists, otherwise the statewide default.
+func resolveFeatures(statewideDefaults []models.FeatureAccess, overrides map[models.FeatureAccess]bool) map[models.FeatureAccess]bool {
+	statewideSet := make(map[models.FeatureAccess]bool, len(statewideDefaults))
+	for _, f := range statewideDefaults {
+		statewideSet[f] = true
+	}
+	states := make(map[models.FeatureAccess]bool, len(models.AllFeatures))
+	for _, f := range models.AllFeatures {
+		if override, ok := overrides[f]; ok {
+			states[f] = override
+		} else {
+			states[f] = statewideSet[f]
+		}
+	}
+	return states
+}
+
+// facilityOverrides returns one facility's explicit settings. Presence of a key
+// means the facility has been explicitly set; the value is that setting.
+func (db *DB) facilityOverrides(facilityID uint) (map[models.FeatureAccess]bool, error) {
 	var overrides []models.FacilityFeatureFlag
 	if err := db.Model(&models.FacilityFeatureFlag{}).Where("facility_id = ?", facilityID).Find(&overrides).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "facility_feature_flags")
 	}
-	disabled := make(map[models.FeatureAccess]bool, len(overrides))
+	set := make(map[models.FeatureAccess]bool, len(overrides))
 	for _, o := range overrides {
-		if !o.Enabled {
-			disabled[o.Feature] = true
-		}
+		set[o.Feature] = o.Enabled
 	}
-	return disabled, nil
+	return set, nil
 }
 
 // GetFacilityFeatureOverview returns, for every facility (optionally filtered by
@@ -81,33 +97,26 @@ func (db *DB) GetFacilityFeatureOverview(args *models.QueryContext, statewideDef
 	for i, f := range facilities {
 		facilityIDs[i] = f.ID
 	}
-	disabledByFacility := map[uint]map[models.FeatureAccess]bool{}
+	overridesByFacility := map[uint]map[models.FeatureAccess]bool{}
 	if len(facilityIDs) > 0 {
 		var overrides []models.FacilityFeatureFlag
 		if err := db.Model(&models.FacilityFeatureFlag{}).Where("facility_id IN ?", facilityIDs).Find(&overrides).Error; err != nil {
 			return nil, newGetRecordsDBError(err, "facility_feature_flags")
 		}
 		for _, o := range overrides {
-			if o.Enabled {
-				continue
+			if overridesByFacility[o.FacilityID] == nil {
+				overridesByFacility[o.FacilityID] = map[models.FeatureAccess]bool{}
 			}
-			if disabledByFacility[o.FacilityID] == nil {
-				disabledByFacility[o.FacilityID] = map[models.FeatureAccess]bool{}
-			}
-			disabledByFacility[o.FacilityID][o.Feature] = true
+			overridesByFacility[o.FacilityID][o.Feature] = o.Enabled
 		}
-	}
-
-	statewideSet := make(map[models.FeatureAccess]bool, len(statewideDefaults))
-	for _, f := range statewideDefaults {
-		statewideSet[f] = true
 	}
 
 	rows := make([]FacilityFeatureOverviewRow, 0, len(facilities))
 	for _, f := range facilities {
+		enabled := resolveFeatures(statewideDefaults, overridesByFacility[f.ID])
 		features := make(map[models.FeatureAccess]bool, len(models.TopLevelFeatures))
 		for _, feat := range models.TopLevelFeatures {
-			features[feat] = statewideSet[feat] && !disabledByFacility[f.ID][feat]
+			features[feat] = enabled[feat]
 		}
 		if filterFeature != nil {
 			want := true
@@ -137,17 +146,15 @@ func (db *DB) GetFacilityFeatureDetail(facilityID uint, statewideDefaults []mode
 	return rows, nil
 }
 
-// UpsertFacilityFeatureFlag sets one facility's override for one feature. Enabling
-// a feature that's disabled statewide, or a sub-feature whose parent is disabled
-// at this facility, is rejected — that state can never be represented in the UI.
+// UpsertFacilityFeatureFlag sets one facility's override for one feature. Any
+// feature may be enabled or disabled per facility regardless of its statewide
+// default; only enabling a sub-feature whose parent is disabled at this facility
+// is rejected, since that state can never be represented in the UI.
 func (db *DB) UpsertFacilityFeatureFlag(args *models.QueryContext, facilityID uint, feature models.FeatureAccess, enabled bool, statewideDefaults []models.FeatureAccess) error {
 	if !models.ValidFeature(feature) {
 		return newBadRequestDBError(errors.New("invalid feature"), "invalid feature")
 	}
 	if enabled {
-		if !slices.Contains(statewideDefaults, feature) {
-			return newBadRequestDBError(errors.New("feature disabled statewide"), "this feature is disabled statewide and cannot be enabled for a single facility")
-		}
 		if parent, ok := models.SubFeatureParent[feature]; ok {
 			effective, err := db.GetFacilityFeatureAccess(facilityID, statewideDefaults)
 			if err != nil {
@@ -215,11 +222,6 @@ func (db *DB) ApplyFacilityFeaturesToAll(args *models.QueryContext, sourceFacili
 	rows := make([]models.FacilityFeatureFlag, 0, len(facilityIDs)*len(models.AllFeatures))
 	for _, fid := range facilityIDs {
 		for _, feature := range models.AllFeatures {
-			// Statewide-disabled features are never representable per-facility;
-			// skip rather than writing a row that would immediately be a no-op.
-			if _, isSub := models.SubFeatureParent[feature]; !isSub && !slices.Contains(statewideDefaults, feature) {
-				continue
-			}
 			rows = append(rows, models.FacilityFeatureFlag{
 				FacilityID:   fid,
 				Feature:      feature,
