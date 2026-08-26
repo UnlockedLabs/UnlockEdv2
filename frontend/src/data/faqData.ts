@@ -119,12 +119,16 @@ export function getFaqCategories(
                       }
                   ]
                 : []),
-            {
-                question: 'Is my activity on UnlockEd private?',
-                answer: hasLearningRecord
-                    ? "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
-                    : 'The UnlockEd team and authorized facility staff can see your library and course activity.'
-            }
+            ...(hasKnowledgeCenter
+                ? [
+                      {
+                          question: 'Is my activity on UnlockEd private?',
+                          answer: hasLearningRecord
+                              ? "The UnlockEd team and authorized facility staff can see your library and course activity. Your Learning Record entries are separate — staff don't see your individual entries there."
+                              : 'The UnlockEd team and authorized facility staff can see your library and course activity.'
+                      }
+                  ]
+                : [])
         ],
         'Getting Help and Troubleshooting': [
             {
