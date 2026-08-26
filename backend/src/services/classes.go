@@ -189,9 +189,9 @@ func (svc *ClassesService) getMissingAttendanceForFacilityData(args *models.Quer
 	if err != nil {
 		return nil, nil, err
 	}
-	enrollmentsByClass := make(map[uint][]enrollmentWindow, len(classIDs))
+	enrollmentsByCohort := make(map[uint][]enrollmentWindow, len(classIDs))
 	for _, enrollment := range enrollments {
-		enrollmentsByClass[enrollment.ClassID] = append(enrollmentsByClass[enrollment.ClassID], enrollmentWindow{
+		enrollmentsByCohort[enrollment.CohortID] = append(enrollmentsByCohort[enrollment.CohortID], enrollmentWindow{
 			EnrolledAt:        enrollment.EnrolledAt,
 			EnrollmentEndedAt: enrollment.EnrollmentEndedAt,
 		})
@@ -200,7 +200,7 @@ func (svc *ClassesService) getMissingAttendanceForFacilityData(args *models.Quer
 	items := make([]models.MissingAttendanceItem, 0)
 	for _, inst := range instances {
 		enrolledCountOnDate := 0
-		for _, enrollment := range enrollmentsByClass[inst.CohortID] {
+		for _, enrollment := range enrollmentsByCohort[inst.CohortID] {
 			if enrollment.EnrolledAt == nil {
 				continue
 			}

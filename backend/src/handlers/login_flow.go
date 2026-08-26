@@ -95,11 +95,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	setLoginCookies(resp, w)
 	redirect, err := getKratosRedirect(resp)
 	if err != nil {
-		err := s.Db.UpdateFailedLogin(user.ID)
+		updateErr := s.Db.UpdateFailedLogin(user.ID)
 		log.infof("Failed login attempt for %d at %s", user.ID, time.Now())
-		if err != nil {
-			log.error("error updating failed login attempts", err)
-			return newDatabaseServiceError(err)
+		if updateErr != nil {
+			log.error("error updating failed login attempts", updateErr)
+			return newDatabaseServiceError(updateErr)
 		}
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
