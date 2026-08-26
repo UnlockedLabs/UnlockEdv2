@@ -349,10 +349,23 @@ func (db *DB) UpdateProgramCohorts(cohortIDs []int, cohortMap map[string]any) er
 	if err := tx.
 		Model(&models.ProgramClassCohort{}).
 		Where("id IN ?", cohortIDs).
-		Set("cohort_ids", cohortIDs).
 		Updates(cohortMap).
 		Error; err != nil {
 		return newUpdateDBError(err, "program classes")
+	}
+
+	if status, ok := cohortMap["status"]; ok && status == string(models.Active) {
+		activation := map[string]any{"enrolled_at": time.Now().UTC()}
+		if uid, ok := cohortMap["update_user_id"]; ok {
+			activation["update_user_id"] = uid
+		}
+		if err := tx.
+			Model(&models.ProgramClassEnrollment{}).
+			Where("cohort_id IN ? AND enrollment_status = ? AND enrolled_at IS NULL", cohortIDs, models.Enrolled).
+			Updates(activation).
+			Error; err != nil {
+			return newUpdateDBError(err, "backfilling enrolled_at on activation")
+		}
 	}
 
 	if len(toBeCompletedEnrollments) > 0 {

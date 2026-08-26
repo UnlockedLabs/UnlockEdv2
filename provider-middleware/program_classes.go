@@ -63,7 +63,6 @@ func (sh *ServiceHandler) activateScheduledClasses(ctx context.Context) error {
 		if err := tx.
 			Model(&models.ProgramClassCohort{}).
 			Where("id IN ?", cohortIDs).
-			Set("cohort_ids", cohortIDs).
 			Updates(map[string]any{"status": models.Active}).Error; err != nil {
 			return err
 		}

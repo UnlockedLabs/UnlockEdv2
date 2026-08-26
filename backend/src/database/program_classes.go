@@ -273,6 +273,17 @@ func (db *DB) UpdateProgramClass(content *models.ProgramClassCohort, id int, con
 	}
 
 	newStatus := existing.Status
+	if newStatus == models.Active && originalStatus != models.Active {
+		if err := trans.Model(&models.ProgramClassEnrollment{}).
+			Where("cohort_id = ? AND enrollment_status = ? AND enrolled_at IS NULL", id, models.Enrolled).
+			Updates(map[string]any{
+				"enrolled_at":    time.Now().UTC(),
+				"update_user_id": content.UpdateUserID,
+			}).Error; err != nil {
+			trans.Rollback()
+			return nil, nil, newUpdateDBError(err, "backfilling enrolled_at on activation")
+		}
+	}
 	if newStatus != originalStatus && (newStatus == models.Completed || newStatus == models.Cancelled) {
 		completionTime := time.Now().UTC()
 		if err := db.UpdateClassEventRRuleUntilDate(trans, []int{id}, completionTime); err != nil {

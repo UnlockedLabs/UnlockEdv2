@@ -203,7 +203,7 @@ func (db *DB) GenerateProgramClassBreakdown(ctx context.Context, req *models.Rep
 		Select(`
 			cl.name AS class_name,
 			pc.status AS status,
-			pc.credit_hours AS credit_hours,
+			COALESCE(pc.credit_hours, cl.credit_hours) AS credit_hours,
 			pc.capacity AS capacity,
 			COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) AS active_enrollments,
 			COUNT(CASE WHEN pce.enrolled_at BETWEEN ? AND ? THEN 1 END) AS range_enrollments
@@ -220,7 +220,7 @@ func (db *DB) GenerateProgramClassBreakdown(ctx context.Context, req *models.Rep
 		tx = tx.Where("pc.status = ?", "Active")
 	}
 
-	tx = tx.Group("pc.id, cl.name, pc.status, pc.credit_hours, pc.capacity").
+	tx = tx.Group("pc.id, cl.name, cl.credit_hours, pc.status, pc.credit_hours, pc.capacity").
 		Order("cl.name")
 
 	if err := tx.Scan(&rows).Error; err != nil {

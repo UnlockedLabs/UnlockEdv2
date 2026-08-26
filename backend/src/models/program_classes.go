@@ -175,67 +175,6 @@ func (c *ProgramClassCohort) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// AfterUpdate hook that runs when switching COHORT status to Active, to verify existing
-// enrollments have enrolled_at set. This hook belongs to the cohort, not the class: it
-// gates on `status` and updates enrollments, and both of those are cohort-level.
-//
-// ⚠️  The 'cohort_ids' transaction key is a runtime contract the compiler cannot see --
-//
-//	this hook hard-errors when it is missing. Every caller that updates cohort status
-//	must Set("cohort_ids", ...). See withCohortIDs in database/class_enrollments.go.
-func (c *ProgramClassCohort) AfterUpdate(tx *gorm.DB) (err error) {
-
-	// We're only worried about updating enrollment IF status changes
-	if !tx.Statement.Changed("status") {
-		return nil
-	}
-
-	m, ok := tx.Statement.Dest.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("expected tx.Statement.Dest to be a map, got %T", tx.Statement.Dest)
-	}
-
-	rawStatus := m["status"]
-
-	var newClassStatus ClassStatus
-	switch val := rawStatus.(type) {
-	case string:
-		newClassStatus = ClassStatus(val)
-	case ClassStatus:
-		newClassStatus = val
-	default:
-		return fmt.Errorf("unexpected type for 'status': %T", val)
-	}
-
-	// Detect Scheduled -> Active
-	if newClassStatus != Active {
-		return nil
-	}
-
-	rawIDs, ok := tx.Get("cohort_ids")
-	if !ok {
-		return fmt.Errorf("missing 'cohort_ids' in transaction context")
-	}
-
-	cohortIDs, ok := rawIDs.([]int)
-	if !ok {
-		return fmt.Errorf("expected 'cohort_ids' to be a []int, got %T", rawIDs)
-	}
-	if len(cohortIDs) == 0 {
-		return nil
-	}
-
-	now := time.Now().UTC()
-
-	result := tx.Model(&ProgramClassEnrollment{}).
-		Where("cohort_id IN ?", cohortIDs).
-		Where("enrollment_status = ?", Enrolled).
-		Where("enrolled_at IS NULL").
-		Update("enrolled_at", now)
-
-	return result.Error
-}
-
 type ProgramClassEnrollment struct {
 	DatabaseFields
 	CohortID          uint                    `json:"cohort_id" gorm:"column:cohort_id;not null"`
