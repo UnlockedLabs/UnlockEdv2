@@ -91,7 +91,13 @@ export default function ChangePasswordForm() {
             data
         )) as ServerResponseOne<AuthResponse>;
         if (response.success) {
-            navigate(response.data.redirect_to);
+            // This form renders outside AuthProvider (reset-password is a
+            // public route), so there's no context user to update here — a
+            // client-side navigate() would carry the stale pre-reset user
+            // (password_reset:true, possibly incomplete feature_access) into
+            // the authenticated shell. A hard navigation remounts AuthProvider
+            // and fetches the current user fresh.
+            window.location.href = response.data.redirect_to;
         } else {
             setErrorMessage(
                 'Your passwords did not pass validation, please check that they match and are 8 or more characters with at least 1 number.'
