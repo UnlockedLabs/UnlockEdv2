@@ -256,24 +256,129 @@ function pickCanvasScale(element: HTMLElement): number {
     return scale;
 }
 
-function addCanvasToPdf(
-    pdf: jsPDF,
+/** Any channel below this counts as ink rather than page background. */
+const BLANK_ROW_THRESHOLD = 245;
+
+/**
+ * Walks back from `idealCutPx` for the first fully-blank pixel row, so a page
+ * break lands between lines instead of slicing through one. Returns
+ * `idealCutPx` when the canvas cannot be read (a cross-origin image taints it)
+ * or when nothing blank is close enough to be worth backing off to.
+ */
+function findBlankCutPx(
     canvas: HTMLCanvasElement,
-    imgData: string
-) {
-    const imgWidth = CONTENT_WIDTH_IN;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let offsetY = MARGIN_IN;
+    idealCutPx: number,
+    lookBackPx: number,
+    minCutPx: number
+): number {
+    const ideal = Math.floor(idealCutPx);
+    const lowest = Math.max(
+        Math.ceil(minCutPx),
+        ideal - Math.floor(lookBackPx)
+    );
+    if (lowest >= ideal) return ideal;
 
-    pdf.addImage(imgData, 'JPEG', MARGIN_IN, offsetY, imgWidth, imgHeight);
-    heightLeft -= CONTENT_HEIGHT_IN;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return ideal;
 
-    while (heightLeft > 0) {
-        offsetY = MARGIN_IN - (imgHeight - heightLeft);
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', MARGIN_IN, offsetY, imgWidth, imgHeight);
-        heightLeft -= CONTENT_HEIGHT_IN;
+    let block: ImageData;
+    try {
+        // One read for the whole look-back window: a row-at-a-time scan here is
+        // thousands of getImageData calls on a full-page capture.
+        block = ctx.getImageData(0, lowest, canvas.width, ideal - lowest + 1);
+    } catch {
+        return ideal;
+    }
+
+    const { data, width } = block;
+    for (let y = block.height - 1; y >= 0; y--) {
+        let blank = true;
+        const rowStart = y * width * 4;
+        for (let x = 0; x < width; x++) {
+            const i = rowStart + x * 4;
+            if (
+                data[i] < BLANK_ROW_THRESHOLD ||
+                data[i + 1] < BLANK_ROW_THRESHOLD ||
+                data[i + 2] < BLANK_ROW_THRESHOLD
+            ) {
+                blank = false;
+                break;
+            }
+        }
+        if (blank) return lowest + y;
+    }
+
+    return ideal;
+}
+
+/**
+ * Cuts the capture into one image per page.
+ *
+ * The previous approach drew the full-height image on every page at a negative
+ * offset and let the page edge crop it. That crops at the paper edge, not at the
+ * content box, so each page showed PAGE_HEIGHT_IN of image while the loop only
+ * advanced by CONTENT_HEIGHT_IN — content ran into the margins and the extra
+ * 2 * MARGIN_IN reappeared at the top of the next page. Slicing the source canvas
+ * makes the advance and the visible region the same by construction.
+ */
+function addCanvasToPdf(pdf: jsPDF, canvas: HTMLCanvasElement) {
+    const pxPerIn = canvas.width / CONTENT_WIDTH_IN;
+    const pageSlicePx = CONTENT_HEIGHT_IN * pxPerIn;
+    // Never back off so far that a page is mostly empty.
+    const minSlicePx = pageSlicePx * 0.5;
+    const lookBackPx = pxPerIn;
+
+    const slice = document.createElement('canvas');
+    const sliceCtx = slice.getContext('2d');
+
+    let srcY = 0;
+    let isFirstPage = true;
+
+    while (srcY < canvas.height) {
+        let sliceHeightPx = Math.min(pageSlicePx, canvas.height - srcY);
+
+        if (srcY + sliceHeightPx < canvas.height) {
+            const cut = findBlankCutPx(
+                canvas,
+                srcY + sliceHeightPx,
+                lookBackPx,
+                srcY + minSlicePx
+            );
+            if (cut > srcY) sliceHeightPx = cut - srcY;
+        }
+
+        slice.width = canvas.width;
+        slice.height = Math.max(1, Math.ceil(sliceHeightPx));
+
+        if (!sliceCtx) {
+            throw new Error('PDF paging could not create a slice context');
+        }
+        sliceCtx.fillStyle = '#ffffff';
+        sliceCtx.fillRect(0, 0, slice.width, slice.height);
+        sliceCtx.drawImage(
+            canvas,
+            0,
+            srcY,
+            canvas.width,
+            sliceHeightPx,
+            0,
+            0,
+            canvas.width,
+            sliceHeightPx
+        );
+
+        if (!isFirstPage) pdf.addPage();
+        pdf.addImage(
+            slice.toDataURL('image/jpeg', 0.92),
+            'JPEG',
+            MARGIN_IN,
+            MARGIN_IN,
+            CONTENT_WIDTH_IN,
+            sliceHeightPx / pxPerIn
+        );
+
+        isFirstPage = false;
+        srcY += sliceHeightPx;
     }
 }
 
@@ -364,7 +469,7 @@ export async function downloadLearningRecordPdf(
     root: HTMLElement,
     filename: string
 ): Promise<void> {
-    const { canvas, imgData } = await captureLearningRecordCanvas(root);
+    const { canvas } = await captureLearningRecordCanvas(root);
     const pdf = new jsPDF({
         unit: 'in',
         format: 'letter',
@@ -372,7 +477,7 @@ export async function downloadLearningRecordPdf(
         compress: true
     });
 
-    addCanvasToPdf(pdf, canvas, imgData);
+    addCanvasToPdf(pdf, canvas);
     pdf.save(filename);
 }
 

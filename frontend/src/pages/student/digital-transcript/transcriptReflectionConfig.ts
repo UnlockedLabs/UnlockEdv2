@@ -194,10 +194,8 @@ export const REFLECTION_STEPS: readonly ReflectionStep[] = [
     {
         key: 'adviceToPeer',
         kind: 'text',
-        editorLabel:
-            "What's one thing you'd tell another resident about this program?",
-        previewLabel:
-            "What's one thing you'd tell another resident about this program?"
+        editorLabel: 'What was valuable about this achievement?',
+        previewLabel: 'What was valuable about this achievement?'
     },
     {
         key: 'oneSentence',
@@ -341,8 +339,7 @@ export const FUNNEL_FIELD_DESCRIPTIONS = {
         'Think about what drove you to keep going, even when it was hard.',
     q4: 'Was there a standout moment or person from this program?',
     q5: 'Choose up to 2 tags from each group.',
-    adviceToPeer:
-        'Your honest take could help someone else decide to take this step.',
+    adviceToPeer: 'How would you describe what mattered most to someone else?',
     confidence:
         'Choose on a scale of 1 to 5, where 5 means you feel most confident.',
     q8Selections: 'Select all that apply.',
@@ -425,7 +422,7 @@ export function funnelStepFieldLabel(field: FunnelStepField): string {
         case 'q5':
             return 'How has completing this changed how you feel about yourself or how you show up for others?';
         case 'adviceToPeer':
-            return "What's one thing you'd tell another resident about this program?";
+            return 'What was valuable about this achievement?';
         case 'confidence':
             return 'How confident do you feel about your future since completing this program?';
         case 'q8Selections':
@@ -575,18 +572,6 @@ export function funnelPreviewFieldAnswered(
         default:
             return false;
     }
-}
-
-/** True when every countable field in the funnel step has a non-empty answer. */
-export function isFunnelStepComplete(
-    stepIndex: number,
-    entry: TranscriptReflectionFields
-): boolean {
-    const step = FUNNEL_FORM_STEPS[stepIndex];
-    if (!step) return false;
-    return step.fields
-        .filter((field) => field !== 'completionDate')
-        .every((field) => funnelStepFieldAnswered(entry, field));
 }
 
 export function countFunnelStepFieldsAnswered(
