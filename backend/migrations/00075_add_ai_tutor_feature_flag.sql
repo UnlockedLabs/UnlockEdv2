@@ -7,7 +7,6 @@ VALUES ('ai_tutor', FALSE)
 ON CONFLICT (name) DO NOTHING;
 
 -- +goose Down
--- +goose NO TRANSACTION
 DELETE FROM public.facility_feature_flags WHERE feature = 'ai_tutor';
 DELETE FROM public.feature_flags WHERE name = 'ai_tutor';
 

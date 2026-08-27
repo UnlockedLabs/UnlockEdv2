@@ -56,6 +56,12 @@ services:
     depends_on:
       kratos-migrate:
         condition: service_completed_successfully
+      # nginx resolves the tutor-service upstream hostname once at startup and
+      # refuses to start if it can't ("host not found in upstream") — without
+      # this, a slow tutor-service build/start (e.g. the first run after the
+      # sibling checkout appears) races rev_proxy and can fail the whole stack.
+      tutor-service:
+        condition: service_started
 
   # backend API
   server:
