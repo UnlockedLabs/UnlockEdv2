@@ -2,6 +2,34 @@ DOCKER_COMPOSE=docker-compose.yml
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
 MIGRATE_MAIN=backend/migrations/main.go -dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
+AI_DIR=../ai/unlocked-hiset-ai
+
+# tutor-service only builds from the sibling ../ai/unlocked-hiset-ai checkout when
+# it's present; otherwise its published image is pulled instead. Building it
+# separately (not as part of one big `docker compose up --build`) matters: a
+# `docker compose up --build` builds every service before starting any of
+# them, so a broken tutor-service build previously aborted the whole command
+# and took the ENTIRE stack down with it — falling back to the published image
+# on a build failure keeps that from happening. $(1) is extra `docker compose`
+# flags (e.g. `-f some-file.yml`).
+define run_dev_compose
+	@USE_LOCAL_TUTOR_BUILD=0; \
+	if [ -d $(AI_DIR) ]; then \
+		export TUTOR_GIT_COMMIT=$$(git -C $(AI_DIR) rev-parse --short HEAD 2>/dev/null || echo unknown); \
+		export TUTOR_GIT_BRANCH=$$(git -C $(AI_DIR) rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown); \
+		echo "Building tutor-service from $(AI_DIR) @ $$TUTOR_GIT_BRANCH ($$TUTOR_GIT_COMMIT)"; \
+		if docker compose $(1) build tutor-service; then \
+			USE_LOCAL_TUTOR_BUILD=1; \
+		else \
+			echo "tutor-service failed to build — pulling the published image instead so the rest of the stack still starts."; \
+		fi; \
+	else \
+		echo "No sibling $(AI_DIR) checkout found — pulling the tutor image instead of building it."; \
+	fi; \
+	docker compose $(1) build $$(docker compose $(1) config --services | grep -v '^tutor-service$$'); \
+	if [ "$$USE_LOCAL_TUTOR_BUILD" = "0" ]; then docker compose $(1) pull tutor-service; fi; \
+	docker compose $(1) up --force-recreate
+endef
 SEED_MAIN=backend/seeder/main.go
 BINARY_NAME=server
 MIDDLEWARE=provider-middleware
@@ -49,19 +77,9 @@ init: ascii_art
 	@echo 'Dependencies installed successfully.'
 	$(MAKE) dev
 
-# tutor-service only builds from the sibling ../ai/unlocked-hiset-ai checkout when
-# it's present; otherwise its published image is pulled instead, so dev/init work
-# without that checkout.
 dev: ascii_art
 	./config/zims.sh
-	@if [ -d ../ai/unlocked-hiset-ai ]; then \
-		docker compose up $(BUILD_RECREATE); \
-	else \
-		echo "No sibling ../ai/unlocked-hiset-ai checkout found — pulling the tutor image instead of building it."; \
-		docker compose build $$(docker compose config --services | grep -v '^tutor-service$$'); \
-		docker compose pull tutor-service; \
-		docker compose up --force-recreate; \
-	fi
+	$(call run_dev_compose,)
 
 # Like `dev`, but pulls the tutor image from GHCR instead of building it from a sibling
 # checkout. Needs `docker login ghcr.io` unless the package is Internal/Public.
@@ -81,7 +99,8 @@ install-dep: ascii_art
 		echo "Error: NAME is not set, please provide package name (make install-dep NAME=some_pkg)"; \
 		exit 1; \
 	fi
-	docker compose down && docker volume rm -f unlockedv2_node_modules && cd frontend && yarn add $(NAME) && cd .. && docker compose up $(BUILD_RECREATE)
+	docker compose down && docker volume rm -f unlockedv2_node_modules && cd frontend && yarn add $(NAME) && cd ..
+	$(call run_dev_compose,)
 migrate-fresh: ascii_art
 	go run $(MIGRATE_MAIN) --fresh
 
@@ -89,7 +108,7 @@ migrate: ascii_art
 	go run $(MIGRATE_MAIN)
 
 kolibri: ascii_art
-	docker compose -f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE) up $(BUILD_RECREATE)
+	$(call run_dev_compose,-f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE))
 
 seed: ascii_art
 	go run $(SEED_MAIN)
