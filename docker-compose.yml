@@ -56,12 +56,10 @@ services:
     depends_on:
       kratos-migrate:
         condition: service_completed_successfully
-      # nginx resolves the tutor-service upstream hostname once at startup and
-      # refuses to start if it can't ("host not found in upstream") — without
-      # this, a slow tutor-service build/start (e.g. the first run after the
-      # sibling checkout appears) races rev_proxy and can fail the whole stack.
-      tutor-service:
-        condition: service_started
+      # tutor-service is intentionally NOT a dependency here: nginx resolves it
+      # lazily per-request (see the `resolver` directive in dev.nginx.conf), so
+      # rev_proxy comes up fine even if tutor-service is slow, missing, or its
+      # image can't be pulled (e.g. a fork without registry access).
 
   # backend API
   server:
@@ -115,6 +113,13 @@ services:
     image: ghcr.io/unlockedlabs/unlocked-smart-tutor:${TUTOR_IMAGE_TAG:-unlocked-adapter}
     build:
       context: ../ai/unlocked-hiset-ai
+      # Bakes the sibling checkout's actual git state into the image so
+      # `curl 127.0.0.1/tutor/api/version` answers "which build is this"
+      # instead of relying on memory of which branch was checked out when
+      # `make dev` built it. Set by the Makefile; "unknown" outside `make`.
+      args:
+        GIT_COMMIT: ${TUTOR_GIT_COMMIT:-unknown}
+        GIT_BRANCH: ${TUTOR_GIT_BRANCH:-unknown}
     networks:
       - intranet
     environment:
