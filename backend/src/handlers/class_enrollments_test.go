@@ -52,7 +52,7 @@ func TestHandleEnrollUsersInClass_Validation(t *testing.T) {
 		isArchived     bool
 		targetUsers    []models.User
 		capacity       int64
-		setupClass     func(*models.ProgramClass) // Optional extra setup
+		setupClass     func(*models.ProgramClassCohort) // Optional extra setup
 		expectedStatus int
 		expectedMsg    string
 	}{
@@ -110,7 +110,7 @@ func TestHandleEnrollUsersInClass_Validation(t *testing.T) {
 			classStatus: models.Active,
 			targetUsers: []models.User{activeUser, activeUser2},
 			capacity:    1, // Capacity 1, trying to enroll 2 users
-			setupClass: func(c *models.ProgramClass) {
+			setupClass: func(c *models.ProgramClassCohort) {
 			},
 			expectedStatus: http.StatusCreated,
 			expectedMsg:    "1 users were enrolled, 1 were not added because capacity is full.",
@@ -119,8 +119,7 @@ func TestHandleEnrollUsersInClass_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			class := models.ProgramClass{
-				Name:        "Test Class",
+			class := models.ProgramClassCohort{
 				ProgramID:   program.ID,
 				FacilityID:  facility.ID,
 				Status:      tt.classStatus,
@@ -152,7 +151,7 @@ func TestHandleEnrollUsersInClass_Validation(t *testing.T) {
 			body, _ := json.Marshal(enrollmentReq)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/program-classes/"+strconv.Itoa(int(class.ID))+"/enrollments", bytes.NewReader(body))
-			req.SetPathValue("class_id", strconv.Itoa(int(class.ID)))
+			req.SetPathValue("cohort_id", strconv.Itoa(int(class.ID)))
 
 			w := httptest.NewRecorder()
 			log := sLog{f: make(map[string]interface{})}

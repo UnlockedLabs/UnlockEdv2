@@ -1,4 +1,4 @@
-import { Class } from '@/types/program';
+import { Cohort } from '@/types/program';
 import { RescheduleSessionModal } from './RescheduleSessionModal';
 import { CancelEventModal } from '@/components/schedule/CancelEventModal';
 import {
@@ -19,7 +19,7 @@ import {
 import { getInstructorName } from '@/lib/formatters';
 
 interface SessionsTabModalsProps {
-    cls: Class;
+    cls: Cohort;
     allSessions: SessionDisplay[];
     roomOverrides: Map<string, string>;
 
@@ -173,7 +173,7 @@ export function SessionsTabModals({
             <SessionDetailSheet
                 session={selectedSession}
                 onClose={onCloseDetailSheet}
-                className={cls.name}
+                className={cls.class_name}
                 facilityId={String(cls.facility_id)}
                 classEvents={cls.events ?? []}
                 classTime={

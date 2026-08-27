@@ -131,6 +131,7 @@ export default function ProgramsPage() {
         creditTypes: [],
         fundingTypes: [],
         status: ProgramEffectiveStatus.Available,
+        hasProgramCompletion: false,
         facilities: []
     };
     const programForm = useForm<ProgramCreateInput>({
@@ -154,6 +155,7 @@ export default function ProgramsPage() {
                 ),
                 funding_type: data.fundingTypes[0],
                 is_active: data.status === ProgramEffectiveStatus.Available,
+                has_program_completion: data.hasProgramCompletion,
                 facilities: data.facilities
             };
 
@@ -903,6 +905,54 @@ export default function ProgramsPage() {
                                                         paused. Archived
                                                         programs are no longer
                                                         offered.
+                                                    </p>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={programForm.control}
+                                            name="hasProgramCompletion"
+                                            render={({ field }) => (
+                                                <FormItem className="col-span-2">
+                                                    <FormLabel className="text-black">
+                                                        Program Completion
+                                                    </FormLabel>
+                                                    <div className="flex items-start gap-2">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                id="hasProgramCompletion"
+                                                                checked={
+                                                                    field.value
+                                                                }
+                                                                onCheckedChange={(
+                                                                    checked
+                                                                ) =>
+                                                                    field.onChange(
+                                                                        checked ===
+                                                                            true
+                                                                    )
+                                                                }
+                                                                className="mt-0.5"
+                                                            />
+                                                        </FormControl>
+                                                        <label
+                                                            htmlFor="hasProgramCompletion"
+                                                            className="text-sm leading-snug"
+                                                        >
+                                                            Residents must
+                                                            complete all classes
+                                                            to complete this
+                                                            program
+                                                        </label>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Leave unchecked when
+                                                        each class stands on its
+                                                        own. Applies to every
+                                                        facility offering this
+                                                        program.
                                                     </p>
                                                     <FormMessage />
                                                 </FormItem>

@@ -61,7 +61,7 @@ export function EnrollResidentsModal({
     const encodedSearch = encodeURIComponent(searchQuery);
     const { data: usersResp } = useSWR<ServerResponseMany<User>>(
         open
-            ? `/api/users?search=${encodedSearch}&per_page=50&order_by=name_last&order=asc&class_id=${classId}&facility_id=${classFacilityId}&include=only_unenrolled`
+            ? `/api/users?search=${encodedSearch}&per_page=50&order_by=name_last&order=asc&cohort_id=${classId}&facility_id=${classFacilityId}&include=only_unenrolled`
             : null
     );
     const users = useMemo(() => usersResp?.data ?? [], [usersResp?.data]);

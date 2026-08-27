@@ -126,10 +126,11 @@ func (suite *FacilityDeleteGuardTestSuite) TestDelete_BlockedByClass() {
 	program := &models.Program{Name: "Prog " + ts, IsActive: true}
 	suite.env.DB.Create(program)
 	suite.env.DB.Create(&models.FacilitiesPrograms{FacilityID: facility.ID, ProgramID: program.ID})
+	// Status and Capacity are COHORT-level now -- the class tier has neither, and the
+	// facility guard counts program_classes (the class tier), so a bare class is enough.
 	suite.env.DB.Create(&models.ProgramClass{
 		ProgramID: program.ID, FacilityID: facility.ID,
-		Status: models.Scheduled, Name: "Class " + ts,
-		Capacity: 10, Description: "x",
+		Name: "Class " + ts, Description: "x",
 	})
 
 	resp := NewRequest[models.FacilityBlockingChildren](suite.env.Client, suite.T(), http.MethodDelete,

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Plus, BookOpen } from 'lucide-react';
-import { Class, SelectedClassStatus } from '@/types';
+import { Cohort, SelectedClassStatus } from '@/types';
 import {
     getClassSchedule,
     getInstructorName,
@@ -15,7 +15,7 @@ function ClassRow({
     onClick,
     className
 }: {
-    cls: Class;
+    cls: Cohort;
     onClick: () => void;
     className?: string;
 }) {
@@ -42,7 +42,7 @@ function ClassRow({
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                         <h4 className="text-brand-dark hover:text-brand transition-colors">
-                            {cls.name}
+                            {cls.class_name}
                         </h4>
                         <Badge
                             variant="outline"
@@ -92,7 +92,7 @@ export default function ClassesTab({
     navigate
 }: {
     programId: string;
-    programClasses: Class[];
+    programClasses: Cohort[];
     navigate: ReturnType<typeof useNavigate>;
 }) {
     const activeScheduledClasses = programClasses.filter(

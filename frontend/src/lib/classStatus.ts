@@ -1,6 +1,6 @@
-import { Class, SelectedClassStatus } from '@/types';
+import { Cohort, SelectedClassStatus } from '@/types';
 
-export function isCompletedCancelledOrArchived(cls: Class): boolean {
+export function isCompletedCancelledOrArchived(cls: Cohort): boolean {
     return (
         cls.status === SelectedClassStatus.Completed ||
         cls.status === SelectedClassStatus.Cancelled ||

@@ -87,11 +87,10 @@ func testDetectsOverlappingBookings(t *testing.T, env *TestEnv, facility *models
 	classEndDate := time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class1 := models.ProgramClass{
+	class1 := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "First Class",
 		InstructorID: &instructor.ID,
 		Description:  "First class to book the room",
 		StartDt:      classStartDate,
@@ -100,12 +99,13 @@ func testDetectsOverlappingBookings(t *testing.T, env *TestEnv, facility *models
 		CreditHours:  &creditHours,
 	}
 
-	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
+	class1Resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 
 	createdClass1 := class1Resp.GetData()
+	require.NoError(t, env.NameCohortClass(createdClass1.ID, "First Class"))
 
 	event1Payload := map[string]interface{}{
 		"duration":        "2h",
@@ -138,11 +138,10 @@ func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facilit
 	classEndDate := time.Date(2026, 4, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Self Update Class",
 		InstructorID: &instructor.ID,
 		Description:  "Class for testing self-exclusion",
 		StartDt:      classStartDate,
@@ -151,7 +150,7 @@ func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facilit
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -171,7 +170,7 @@ func testExcludesOwnEventID(t *testing.T, env *TestEnv, facility *models.Facilit
 		ExpectStatus(http.StatusCreated)
 
 	var event models.ProgramClassEvent
-	err = env.DB.Where("class_id = ?", createdClass.ID).First(&event).Error
+	err = env.DB.Where("cohort_id = ?", createdClass.ID).First(&event).Error
 	require.NoError(t, err)
 
 	conflictsWithoutExclusion, err := env.DB.CheckRRuleConflicts(&models.ConflictCheckRequest{
@@ -202,11 +201,10 @@ func testNoConflictForDifferentTimes(t *testing.T, env *TestEnv, facility *model
 	classEndDate := time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Morning Class",
 		InstructorID: &instructor.ID,
 		Description:  "Morning class",
 		StartDt:      classStartDate,
@@ -215,7 +213,7 @@ func testNoConflictForDifferentTimes(t *testing.T, env *TestEnv, facility *model
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -257,12 +255,11 @@ func testCancelSeriesBypassesConflict(t *testing.T, env *TestEnv, facility *mode
 	classEndDate := time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	mkClass := func(name string, instructorID uint) *models.ProgramClass {
-		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), models.ProgramClass{
+	mkClass := func(name string, instructorID uint) *models.ProgramClassCohort {
+		resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), models.ProgramClassCohort{
 			ProgramID:    program.ID,
 			FacilityID:   facility.ID,
 			Capacity:     10,
-			Name:         name,
 			InstructorID: &instructorID,
 			Description:  name,
 			StartDt:      classStartDate,
@@ -301,7 +298,7 @@ func testCancelSeriesBypassesConflict(t *testing.T, env *TestEnv, facility *mode
 		ExpectStatus(http.StatusCreated)
 
 	var toCancelEvent models.ProgramClassEvent
-	require.NoError(t, env.DB.Where("class_id = ?", toCancel.ID).First(&toCancelEvent).Error)
+	require.NoError(t, env.DB.Where("cohort_id = ?", toCancel.ID).First(&toCancelEvent).Error)
 
 	// Cancel the series. The cancelled event_series carries the room and a rule that
 	// overlaps the blocker (10:00) — pre-fix this returned 409, now it must succeed.
@@ -336,11 +333,10 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 	classEndDate := time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class1 := models.ProgramClass{
+	class1 := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Existing Class",
 		InstructorID: &instructor1.ID,
 		Description:  "Class that already has the room",
 		StartDt:      classStartDate,
@@ -349,7 +345,7 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 		CreditHours:  &creditHours,
 	}
 
-	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
+	class1Resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -368,11 +364,10 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 		Do().
 		ExpectStatus(http.StatusCreated)
 
-	class2 := models.ProgramClass{
+	class2 := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Conflicting Class",
 		InstructorID: &instructor2.ID,
 		Description:  "Class that tries to book the same room",
 		StartDt:      classStartDate,
@@ -381,7 +376,7 @@ func testHandlerReturns409OnConflict(t *testing.T, env *TestEnv, facility *model
 		CreditHours:  &creditHours,
 	}
 
-	class2Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class2).
+	class2Resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class2).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -409,11 +404,10 @@ func testRejectsRoomFromDifferentFacility(t *testing.T, env *TestEnv, facility *
 	classEndDate := time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Security Test Class",
 		InstructorID: &instructor.ID,
 		Description:  "Class trying to use room from different facility",
 		StartDt:      classStartDate,
@@ -422,7 +416,7 @@ func testRejectsRoomFromDifferentFacility(t *testing.T, env *TestEnv, facility *
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -458,11 +452,10 @@ func testDetectsConflictsWithTimezoneAwareRRules(t *testing.T, env *TestEnv, fac
 	classStartDate := time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class1 := models.ProgramClass{
+	class1 := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Summer Class",
 		InstructorID: &instructor.ID,
 		Description:  "Class created in summer at 10 AM",
 		StartDt:      classStartDate,
@@ -470,12 +463,13 @@ func testDetectsConflictsWithTimezoneAwareRRules(t *testing.T, env *TestEnv, fac
 		CreditHours:  &creditHours,
 	}
 
-	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
+	class1Resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 
 	createdClass1 := class1Resp.GetData()
+	require.NoError(t, env.NameCohortClass(createdClass1.ID, "Summer Class"))
 
 	// Timezone-aware RRULE: 10 AM in America/New_York, every Thursday
 	event1Payload := map[string]interface{}{
@@ -526,11 +520,10 @@ func testBackwardsCompatibleUTCRules(t *testing.T, env *TestEnv, facility *model
 	classStartDate := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class1 := models.ProgramClass{
+	class1 := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Legacy UTC Class",
 		InstructorID: &instructor.ID,
 		Description:  "Class using old UTC-based RRULE format",
 		StartDt:      classStartDate,
@@ -538,7 +531,7 @@ func testBackwardsCompatibleUTCRules(t *testing.T, env *TestEnv, facility *model
 		CreditHours:  &creditHours,
 	}
 
-	class1Resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
+	class1Resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class1).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)

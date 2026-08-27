@@ -46,7 +46,7 @@ func (db *DB) GetAllFacilitiesWithStats(args *models.QueryContext) ([]models.Fac
 			AND fp.deleted_at IS NULL
 		LEFT JOIN programs p ON p.id = fp.program_id
 			AND p.deleted_at IS NULL
-		LEFT JOIN program_classes pc ON pc.facility_id = f.id
+		LEFT JOIN program_class_cohorts pc ON pc.facility_id = f.id
 			AND pc.deleted_at IS NULL
 		LEFT JOIN users u ON u.facility_id = f.id
 		WHERE f.deleted_at IS NULL

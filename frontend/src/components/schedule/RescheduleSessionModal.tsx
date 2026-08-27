@@ -98,7 +98,7 @@ export function RescheduleSessionModal({
         const newDt = `${formData.date.replace(/-/g, '')}T${effectiveStart.replace(':', '')}00`;
 
         const resp = await API.put(
-            `program-classes/${event.class_id}/events/${event.id}`,
+            `program-classes/${event.cohort_id}/events/${event.id}`,
             [
                 {
                     event_id: event.id,

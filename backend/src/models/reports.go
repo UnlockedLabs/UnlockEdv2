@@ -38,7 +38,7 @@ type ReportGenerateRequest struct {
 	FacilityIDs  []uint        `json:"facility_ids" validate:"omitempty,dive,min=1"`
 	ProgramID    *uint         `json:"program_id"`
 	ProgramIDs   []uint        `json:"program_ids" validate:"omitempty,dive,min=1"`
-	ClassID      *uint         `json:"class_id"`
+	CohortID     *uint         `json:"cohort_id"`
 	UserID       *uint         `json:"user_id"`
 	ClassStatus  *string       `json:"class_status"`
 	ProgramTypes []ProgType    `json:"program_types"`

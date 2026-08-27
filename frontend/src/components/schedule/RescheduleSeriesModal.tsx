@@ -176,27 +176,30 @@ export function RescheduleSeriesModal({
         const closeDate = dayBefore(newStartDateStr);
 
         setSubmitting(true);
-        const resp = await API.put(`program-classes/${event.class_id}/events`, {
-            event_series: {
-                class_id: event.class_id,
-                recurrence_rule: result.rule,
-                duration: result.duration,
-                room_id: roomId ? Number(roomId) : event.room_id,
-                instructor_id: instructorId
-                    ? Number(instructorId)
-                    : (event.instructor_id ?? null)
-            },
-            closed_event_series: {
-                id: event.id,
-                class_id: event.class_id,
-                recurrence_rule: closedSeriesRRule(
-                    event.recurrence_rule,
-                    closeDate
-                ),
-                duration: event.duration,
-                room_id: event.room_id
+        const resp = await API.put(
+            `program-classes/${event.cohort_id}/events`,
+            {
+                event_series: {
+                    cohort_id: event.cohort_id,
+                    recurrence_rule: result.rule,
+                    duration: result.duration,
+                    room_id: roomId ? Number(roomId) : event.room_id,
+                    instructor_id: instructorId
+                        ? Number(instructorId)
+                        : (event.instructor_id ?? null)
+                },
+                closed_event_series: {
+                    id: event.id,
+                    cohort_id: event.cohort_id,
+                    recurrence_rule: closedSeriesRRule(
+                        event.recurrence_rule,
+                        closeDate
+                    ),
+                    duration: event.duration,
+                    room_id: event.room_id
+                }
             }
-        });
+        );
         setSubmitting(false);
 
         if (resp.status === 409 && Array.isArray(resp.data)) {

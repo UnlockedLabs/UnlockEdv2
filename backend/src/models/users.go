@@ -202,7 +202,7 @@ type ResidentProgramClassInfo struct {
 	StartDate            string                  `json:"start_date"`
 	EndDate              string                  `json:"end_date"`
 	AttendancePercentage string                  `json:"attendance_percentage"`
-	ClassID              uint                    `json:"class_id"`
+	CohortID             uint                    `json:"cohort_id"`
 	ProgramID            uint                    `json:"program_id"`
 	EnrollmentID         uint                    `json:"enrollment_id"`
 	PresentAttendance    int                     `json:"present_attendance"`

@@ -49,6 +49,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 
 	class1, err := env.CreateTestClass(program, facility1, models.Active, &instructor1.ID)
 	require.NoError(t, err)
+	require.NoError(t, env.NameCohortClass(class1.ID, "Math Class"))
 
 	event1, err := env.CreateTestEvent(class1.ID, "", instructor1.ID)
 	require.NoError(t, err)
@@ -59,7 +60,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 
 	enrollmentDate := time.Now().AddDate(0, 0, -10)
 	enrollment := models.ProgramClassEnrollment{
-		ClassID:          class1.ID,
+		CohortID:         class1.ID,
 		UserID:           student1.ID,
 		EnrollmentStatus: models.Enrolled,
 		EnrolledAt:       &enrollmentDate,
@@ -229,7 +230,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		endDate := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -2)
 
 		enrollment2 := models.ProgramClassEnrollment{
-			ClassID:           class2.ID,
+			CohortID:          class2.ID,
 			UserID:            studentEnrollmentDates.ID,
 			EnrollmentStatus:  models.Enrolled,
 			EnrolledAt:        &enrollDate,
@@ -318,7 +319,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 
 		enrollDate := time.Now().AddDate(0, 0, -10)
 		enrollment3 := models.ProgramClassEnrollment{
-			ClassID:          class3.ID,
+			CohortID:         class3.ID,
 			UserID:           studentSorting.ID,
 			EnrollmentStatus: models.Enrolled,
 			EnrolledAt:       &enrollDate,
@@ -326,7 +327,7 @@ func TestExportResidentAttendanceCSV(t *testing.T) {
 		require.NoError(t, env.DB.Create(&enrollment3).Error)
 
 		enrollment4 := models.ProgramClassEnrollment{
-			ClassID:          class4.ID,
+			CohortID:         class4.ID,
 			UserID:           studentSorting.ID,
 			EnrollmentStatus: models.Enrolled,
 			EnrolledAt:       &enrollDate,

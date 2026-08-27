@@ -40,11 +40,11 @@ export function RestoreEventModal({
         const restoreDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const resp = isSeries
             ? await API.post(
-                  `program-classes/${event.class_id}/events/${event.id}/uncancel-series`,
+                  `program-classes/${event.cohort_id}/events/${event.id}/uncancel-series`,
                   { restore_date: restoreDate }
               )
             : await API.delete(
-                  `program-classes/${event.class_id}/events/${event.override_id}`
+                  `program-classes/${event.cohort_id}/events/${event.override_id}`
               );
         setSubmitting(false);
         if (resp.success) {

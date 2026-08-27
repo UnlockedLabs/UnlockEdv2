@@ -10,7 +10,7 @@ class API {
         const match = /csrf_token=([^;]+)/.exec(document.cookie);
         return match ? match[1] : '';
     }
-    //REMOVE ME
+
     private static async fetchWithHandling<T>(
         method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
         url: string,

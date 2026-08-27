@@ -28,9 +28,11 @@ func (suite *ProgramDeleteGuardTestSuite) SetupTest() {
 	suite.env.DB.Exec("DELETE FROM program_class_event_attendance")
 	suite.env.DB.Exec("DELETE FROM program_class_events")
 	suite.env.DB.Exec("DELETE FROM program_class_enrollments")
-	suite.env.DB.Exec("DELETE FROM program_completions")
+	suite.env.DB.Exec("DELETE FROM class_completions")
 	suite.env.DB.Exec("DELETE FROM change_log_entries")
 	suite.env.DB.Exec("DELETE FROM program_classes_history")
+	suite.env.DB.Exec("DELETE FROM program_class_cohorts")
+	suite.env.DB.Exec("DELETE FROM program_class_credit_types")
 	suite.env.DB.Exec("DELETE FROM program_classes")
 	suite.env.DB.Exec("DELETE FROM facilities_programs")
 	suite.env.DB.Exec("DELETE FROM programs")
@@ -66,9 +68,9 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_EmptyProgram_Succeeds() {
 
 func (suite *ProgramDeleteGuardTestSuite) TestDelete_ProgramWithAnyClass_Blocked() {
 	admin, program, facility := suite.seedEmptyProgram()
-	class := &models.ProgramClass{
+	class := &models.ProgramClassCohort{
 		ProgramID: program.ID, FacilityID: facility.ID,
-		Status: models.Scheduled, Name: "Empty", Capacity: 10, Description: "x",
+		Status: models.Scheduled, Capacity: 10, Description: "x",
 	}
 	suite.env.DB.Create(class)
 
@@ -88,9 +90,9 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_ProgramWithAnyClass_Blocked
 
 func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedByClassWithEnrollment() {
 	admin, program, facility := suite.seedEmptyProgram()
-	class := &models.ProgramClass{
+	class := &models.ProgramClassCohort{
 		ProgramID: program.ID, FacilityID: facility.ID,
-		Status: models.Active, Name: "C", Capacity: 10, Description: "x",
+		Status: models.Active, Capacity: 10, Description: "x",
 	}
 	suite.env.DB.Create(class)
 	student := &models.User{
@@ -101,7 +103,7 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedByClassWithEnrollmen
 	}
 	suite.env.DB.Create(student)
 	suite.env.DB.Create(&models.ProgramClassEnrollment{
-		ClassID: class.ID, UserID: student.ID, EnrollmentStatus: models.Enrolled,
+		CohortID: class.ID, UserID: student.ID, EnrollmentStatus: models.Enrolled,
 	})
 
 	resp := NewRequest[models.DeleteBlockingChildren](suite.env.Client, suite.T(), http.MethodDelete,
@@ -121,13 +123,13 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedByClassWithEnrollmen
 
 func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedAcrossMultipleClasses() {
 	admin, program, facility := suite.seedEmptyProgram()
-	c1 := &models.ProgramClass{
+	c1 := &models.ProgramClassCohort{
 		ProgramID: program.ID, FacilityID: facility.ID,
-		Status: models.Active, Name: "C1", Capacity: 5, Description: "x",
+		Status: models.Active, Capacity: 5, Description: "x",
 	}
-	c2 := &models.ProgramClass{
+	c2 := &models.ProgramClassCohort{
 		ProgramID: program.ID, FacilityID: facility.ID,
-		Status: models.Scheduled, Name: "C2", Capacity: 5, Description: "x",
+		Status: models.Scheduled, Capacity: 5, Description: "x",
 	}
 	suite.env.DB.Create(c1)
 	suite.env.DB.Create(c2)
@@ -140,7 +142,7 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedAcrossMultipleClasse
 	}
 	suite.env.DB.Create(student)
 	suite.env.DB.Create(&models.ProgramClassEnrollment{
-		ClassID: c1.ID, UserID: student.ID, EnrollmentStatus: models.Enrolled,
+		CohortID: c1.ID, UserID: student.ID, EnrollmentStatus: models.Enrolled,
 	})
 
 	room := &models.Room{FacilityID: facility.ID, Name: "101"}
@@ -153,7 +155,7 @@ func (suite *ProgramDeleteGuardTestSuite) TestDelete_BlockedAcrossMultipleClasse
 	}
 	suite.env.DB.Create(instructor)
 	suite.env.DB.Create(&models.ProgramClassEvent{
-		ClassID:        c2.ID,
+		CohortID:       c2.ID,
 		Duration:       "1h0m0s",
 		RecurrenceRule: "DTSTART:20260302T093000Z\nRRULE:FREQ=WEEKLY;COUNT=1",
 		RoomID:         &room.ID,

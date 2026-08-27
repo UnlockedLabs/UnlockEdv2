@@ -1,5 +1,5 @@
 import { Video } from '@/types/content';
-import { Class } from '@/types/program';
+import { Cohort } from '@/types/program';
 import { ProgramClassEvent } from '@/types/events';
 import { RoomConflict } from '@/types/facility';
 import { RRule, Weekday } from 'rrule';
@@ -301,7 +301,7 @@ export function getInstructorId(events: ProgramClassEvent[]): number | null {
     return null;
 }
 
-export function getClassSchedule(cls: Class): ClassScheduleInfo {
+export function getClassSchedule(cls: Cohort): ClassScheduleInfo {
     const event = cls.events?.find((e) => !e.is_cancelled);
     if (!event) return { days: [], startTime: '', endTime: '', room: '' };
 
@@ -348,7 +348,7 @@ export function getClassSchedule(cls: Class): ClassScheduleInfo {
     return { days, startTime, endTime, room };
 }
 
-export function isClassToday(cls: Class): boolean {
+export function isClassToday(cls: Cohort): boolean {
     const schedule = getClassSchedule(cls);
     const now = new Date();
     const todayName = now.toLocaleDateString('en-US', { weekday: 'long' });

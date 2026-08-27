@@ -16,7 +16,7 @@ import {
     TooltipTrigger
 } from '@/components/ui/tooltip';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
-import { Class } from '@/types/program';
+import { Cohort } from '@/types/program';
 import { SelectedClassStatus, AttendanceFlag } from '@/types/attendance';
 import { ServerResponseOne, ServerResponseMany } from '@/types/server';
 import { BreadcrumbItem } from '@/types';
@@ -67,7 +67,7 @@ export default function ClassDetailPage() {
         data: classResp,
         isLoading,
         mutate
-    } = useSWR<ServerResponseOne<Class>>(
+    } = useSWR<ServerResponseOne<Cohort>>(
         class_id ? `/api/program-classes/${class_id}` : null
     );
 
@@ -122,7 +122,7 @@ export default function ClassDetailPage() {
                 label: cls.program?.name ?? 'Program',
                 href: `/programs/${cls.program_id}`
             },
-            { label: cls.name }
+            { label: cls.class_name }
         ];
     }, [cls]);
 
@@ -279,7 +279,7 @@ export default function ClassDetailPage() {
                             classFacilityId={cls.facility_id}
                             classStatus={cls.status}
                             classStartDt={cls.start_dt}
-                            className={cls.name}
+                            className={cls.class_name}
                             capacity={cls.capacity}
                             enrolled={cls.enrolled}
                             flaggedUserIds={flaggedUserIds}
@@ -350,14 +350,14 @@ export default function ClassDetailPage() {
                 open={showAttendanceModal}
                 onOpenChange={setShowAttendanceModal}
                 classId={cls.id}
-                className={cls.name}
+                className={cls.class_name}
             />
 
             <DeleteClassModal
                 open={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 classId={cls.id}
-                className={cls.name}
+                className={cls.class_name}
                 onDeleted={() => navigate(`/programs/${cls.program_id}`)}
             />
 

@@ -1,5 +1,5 @@
 import { Room } from './facility';
-import { Class } from './program';
+import { Cohort } from './program';
 import { BreadcrumbItem } from './ui';
 
 export interface RouteLabel {
@@ -20,7 +20,7 @@ export interface DynamicTitleHandler<T> {
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
 
 export interface ClassLoaderData extends TitleHandler {
-    class?: Class;
+    class?: Cohort;
     redirect?: string;
     rooms?: Room[];
     breadcrumbs?: BreadcrumbItem[];

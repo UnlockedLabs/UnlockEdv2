@@ -147,13 +147,14 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 }
 
 type ProgramForm struct {
-	Name         string                     `json:"name"`
-	Description  string                     `json:"description"`
-	FundingType  models.FundingType         `json:"funding_type"`
-	CreditTypes  []models.ProgramCreditType `json:"credit_types"`
-	IsActive     bool                       `json:"is_active"`
-	ProgramTypes []models.ProgramType       `json:"program_types"`
-	Facilities   []int                      `json:"facilities"`
+	Name                 string                     `json:"name"`
+	Description          string                     `json:"description"`
+	FundingType          models.FundingType         `json:"funding_type"`
+	CreditTypes          []models.ProgramCreditType `json:"credit_types"`
+	IsActive             bool                       `json:"is_active"`
+	ProgramTypes         []models.ProgramType       `json:"program_types"`
+	Facilities           []int                      `json:"facilities"`
+	HasProgramCompletion *bool                      `json:"has_program_completion"`
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -168,12 +169,13 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	}
 
 	newProg := models.Program{
-		Name:               program.Name,
-		Description:        program.Description,
-		FundingType:        program.FundingType,
-		IsActive:           program.IsActive,
-		ProgramTypes:       program.ProgramTypes,
-		ProgramCreditTypes: program.CreditTypes,
+		Name:                 program.Name,
+		Description:          program.Description,
+		FundingType:          program.FundingType,
+		IsActive:             program.IsActive,
+		ProgramTypes:         program.ProgramTypes,
+		ProgramCreditTypes:   program.CreditTypes,
+		HasProgramCompletion: program.HasProgramCompletion != nil && *program.HasProgramCompletion,
 	}
 
 	err = srv.WithUserContext(r).CreateProgram(&newProg)
@@ -218,7 +220,12 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 		ProgramCreditTypes: programForm.CreditTypes,
 	}
 
-	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities)
+	// HasProgramCompletion is passed as the raw *bool rather than resolved here: the
+	// column IS in UpdateProgram's Select list, so it is always written, and an omitted
+	// field would otherwise decode to false and silently clear the flag. Resolving it
+	// against a row this handler read separately would reintroduce a lost update, so
+	// UpdateProgram resolves it against the row it has locked.
+	updated, updateErr := srv.WithUserContext(r).UpdateProgram(&theProg, programForm.Facilities, programForm.HasProgramCompletion)
 	if updateErr != nil {
 		return newDatabaseServiceError(updateErr)
 	}
@@ -369,14 +376,14 @@ func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta mod
 	}
 	if (args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && numOfHistoryEvents < args.PerPage)) && (len(categories) == 0 || slices.Contains(categories, "info")) { //add get class created by here
 		switch tableName {
-		case "programs":
+		case models.TableNamePrograms:
 			createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, args)
 			if err != nil {
 				return pageMeta, createdByDetails, newDatabaseServiceError(err)
 			}
 			prog := "program"
 			createdByDetails.FieldName = &prog
-		case "program_classes":
+		case models.TableNameCohort:
 			createdByDetails, err = srv.Db.GetClassCreatedAtAndBy(id, args)
 			if err != nil {
 				return pageMeta, createdByDetails, newDatabaseServiceError(err)

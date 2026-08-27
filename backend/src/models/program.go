@@ -107,6 +107,8 @@ type Program struct {
 	IsFavorited bool        `json:"is_favorited" gorm:"-"`
 	ArchivedAt  *time.Time  `json:"archived_at"`
 
+	HasProgramCompletion bool `json:"has_program_completion" gorm:"not null;default:false"`
+
 	ProgramTypes       []ProgramType        `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	ProgramCreditTypes []ProgramCreditType  `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Facilities         []Facility           `json:"facilities" gorm:"-"`                         //preserve original json key

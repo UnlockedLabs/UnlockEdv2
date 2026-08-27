@@ -3,7 +3,7 @@ import useSWR from 'swr';
 import { Calendar, Clock } from 'lucide-react';
 import API from '@/api/api';
 import { toast } from 'sonner';
-import { Class } from '@/types/program';
+import { Cohort } from '@/types/program';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
 import {
@@ -26,7 +26,7 @@ import {
 import { getInstructorName } from '@/lib/formatters';
 
 interface ScheduleTabProps {
-    cls: Class;
+    cls: Cohort;
     onClassMutate: () => void;
 }
 
@@ -46,7 +46,7 @@ function generateCalendarGrid(
     year: number,
     month: number,
     schedule: ClassScheduleInfo,
-    cls: Class,
+    cls: Cohort,
     instancesByDate: Map<string, ClassEventInstance>
 ): CalendarDay[][] {
     const today = new Date();
@@ -256,7 +256,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
         dateObj.setHours(0, 0, 0, 0);
         const instance = instancesByDate.get(day.dateStr) ?? {
             id: day.eventId ?? 0,
-            class_id: cls.id,
+            cohort_id: cls.id,
             duration: '',
             room_id: 0,
             recurrence_rule: '',
@@ -494,7 +494,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                     <SessionDetailSheet
                         session={selectedSession}
                         onClose={() => setSelectedSession(null)}
-                        className={cls.name}
+                        className={cls.class_name}
                         facilityId={String(cls.facility_id)}
                         classEvents={cls.events ?? []}
                         classTime={

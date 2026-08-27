@@ -104,6 +104,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerLibraryRoutes,
 		srv.registerProgramsRoutes,
 		srv.registerClassesRoutes,
+		srv.registerProgramClassTierRoutes,
 		srv.registerClassEventsRoutes,
 		srv.registerProgramClassEnrollmentsRoutes,
 		srv.registerAttendanceRoutes,

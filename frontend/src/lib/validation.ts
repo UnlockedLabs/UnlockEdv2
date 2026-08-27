@@ -283,6 +283,7 @@ export const programCreateSchema = z.object({
     creditTypes: nonEmptyArray(z.enum(CreditType), 'credit type'),
     fundingTypes: nonEmptyArray(z.enum(FundingType), 'funding type'),
     status: z.enum(ProgramEffectiveStatus),
+    hasProgramCompletion: z.boolean(),
     facilities: z.array(z.number())
 });
 
@@ -298,6 +299,7 @@ export const programFormSchema = z.object({
         message: VMSG.required('Funding type')
     }),
     is_active: z.boolean(),
+    has_program_completion: z.boolean(),
     facility_ids: z.array(z.number())
 });
 
@@ -371,7 +373,6 @@ function endTimeIsAfterStart(startTime: string, endTime: string): boolean {
 export const buildClassManagementSchema = (isNewClass: boolean) =>
     z
         .object({
-            name: requiredString('Class name'),
             description: requiredString('Description'),
             instructor_id: z
                 .number({ message: VMSG.required('Instructor') })
@@ -451,7 +452,7 @@ export type ClassManagementFormValues = z.input<
  * reused when blank); the day selection lives in component state.
  */
 export const editClassSchema = z.object({
-    name: requiredString('Class name'),
+    class_name: requiredString('Class name'),
     description: requiredString('Description'),
     instructor_id: z.number().nullable(),
     capacity: z

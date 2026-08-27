@@ -23,7 +23,7 @@ export interface ReportGenerateRequest {
     facility_ids?: number[];
     program_id?: number;
     program_ids?: number[];
-    class_id?: number;
+    cohort_id?: number;
     user_id?: number;
     class_status?: string;
     program_types?: ProgramType[];

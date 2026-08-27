@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// - POST /api/program-classes/{class_id}/events/{event_id}/attendance
-// - DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}
+// - POST /api/program-classes/{cohort_id}/events/{event_id}/attendance
+// - DELETE /api/program-classes/{cohort_id}/events/{event_id}/attendance/{user_id}
 func TestAttendanceValidation(t *testing.T) {
 	env := SetupTestEnv(t)
 	defer env.CleanupTestEnv()
@@ -62,7 +62,7 @@ func TestAttendanceValidation(t *testing.T) {
 	})
 }
 
-func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User, class *models.ProgramClass, event *models.ProgramClassEvent, enrolledStudent, unenrolledStudent *models.User, cancelledDate string) {
+func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User, class *models.ProgramClassCohort, event *models.ProgramClassEvent, enrolledStudent, unenrolledStudent *models.User, cancelledDate string) {
 	validDate := time.Now().AddDate(0, 0, -2).Format("2006-01-02") // day before yesterday
 
 	t.Run("Reject attendance for cancelled date", func(t *testing.T) {
@@ -160,7 +160,7 @@ func testPOSTAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User
 	})
 }
 
-func testDELETEAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User, class *models.ProgramClass, event *models.ProgramClassEvent, enrolledStudent, unenrolledStudent *models.User, cancelledDate string) {
+func testDELETEAttendanceValidation(t *testing.T, env *TestEnv, admin *models.User, class *models.ProgramClassCohort, event *models.ProgramClassEvent, enrolledStudent, unenrolledStudent *models.User, cancelledDate string) {
 	validDate := time.Now().AddDate(0, 0, -2).Format("2006-01-02") // day before yesterday
 
 	attendanceData := []models.ProgramClassEventAttendance{
@@ -172,7 +172,7 @@ func testDELETEAttendanceValidation(t *testing.T, env *TestEnv, admin *models.Us
 			Note:             "To be deleted",
 		},
 	}
-	err := env.DB.LogUserAttendance(attendanceData, context.Background(), &admin.ID, class.Name)
+	err := env.DB.LogUserAttendance(attendanceData, context.Background(), &admin.ID, class.ClassName)
 	require.NoError(t, err)
 
 	t.Run("Reject delete attendance for cancelled date", func(t *testing.T) {

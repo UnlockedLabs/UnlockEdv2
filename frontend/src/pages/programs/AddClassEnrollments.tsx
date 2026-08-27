@@ -99,7 +99,7 @@ export default function AddClassEnrollments() {
     const encodedSearch = encodeURIComponent(searchQuery);
 
     const { data, isLoading } = useSWR<ServerResponseMany<User>>(
-        `/api/users?search=${encodedSearch}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
+        `/api/users?search=${encodedSearch}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&role=student&cohort_id=${class_id}&include=only_unenrolled`
     );
 
     const users = data?.data ?? [];
@@ -189,13 +189,13 @@ export default function AddClassEnrollments() {
         <div className="space-y-6">
             <PageHeader
                 title="Add Residents"
-                subtitle={`Add residents to ${classInfo?.name ?? 'class'}`}
+                subtitle={`Add residents to ${classInfo?.class_name ?? 'class'}`}
             />
 
             <Card className="bg-card">
                 <CardContent className="p-4">
                     <h2 className="text-lg font-semibold text-foreground mb-3">
-                        {classInfo?.name}
+                        {classInfo?.class_name}
                     </h2>
                     <div className="grid grid-cols-3 gap-6">
                         <StatItem

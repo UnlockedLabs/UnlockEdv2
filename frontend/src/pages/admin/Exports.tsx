@@ -16,7 +16,7 @@ import {
     ReportType
 } from '@/types/reports';
 import {
-    Class,
+    Cohort,
     Facility,
     ProgramsOverviewTable,
     ProgramType,
@@ -631,7 +631,7 @@ function useClasses() {
     // facility=all lets switch-capable admins (system/dept) see every facility's
     // classes; facility_admins are transparently scoped to their own facility.
     // all=true returns the full list (no pagination cap) for the dropdown.
-    const { data } = useSWR<ServerResponseMany<Class>>(
+    const { data } = useSWR<ServerResponseMany<Cohort>>(
         '/api/program-classes?all=true&facility=all'
     );
     return data?.data ?? [];
@@ -679,7 +679,7 @@ function ClassRosterForm() {
             // Roster has no date UI; send an all-time range so the backend
             // always receives start/end dates.
             ...buildDates('all-time', '', ''),
-            class_id: Number(selectedClass),
+            cohort_id: Number(selectedClass),
             enrollment_statuses:
                 selectedStatuses.length > 0 ? selectedStatuses : undefined,
             include_incomplete_reason: showIncompleteReason || undefined,
@@ -708,7 +708,7 @@ function ClassRosterForm() {
                         <SelectContent>
                             {classes.map((c) => (
                                 <SelectItem key={c.id} value={String(c.id)}>
-                                    {c.name}
+                                    {c.class_name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -825,7 +825,7 @@ function AttendanceRecordsForm() {
             type: ReportType.ATTENDANCE,
             format: FORMAT_TO_API[format],
             ...buildDates(effectiveRange, from, to),
-            class_id:
+            cohort_id:
                 selectedClass !== 'all' ? Number(selectedClass) : undefined,
             user_id: resident ? resident.id : undefined
         };
@@ -852,7 +852,7 @@ function AttendanceRecordsForm() {
                             <SelectItem value="all">All classes</SelectItem>
                             {classes.map((c) => (
                                 <SelectItem key={c.id} value={String(c.id)}>
-                                    {c.name}
+                                    {c.class_name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
