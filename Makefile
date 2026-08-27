@@ -47,12 +47,21 @@ init: ascii_art
 	@echo 'Installing dependencies...'
 	go install github.com/pressly/goose/v3/cmd/goose@latest && go install github.com/air-verse/air@latest && cd frontend && yarn install && cd ..
 	@echo 'Dependencies installed successfully.'
-	./config/zims.sh
-	docker compose up $(BUILD_RECREATE)
+	$(MAKE) dev
 
+# tutor-service only builds from the sibling ../ai/unlocked-hiset-ai checkout when
+# it's present; otherwise its published image is pulled instead, so dev/init work
+# without that checkout.
 dev: ascii_art
 	./config/zims.sh
-	docker compose up $(BUILD_RECREATE)
+	@if [ -d ../ai/unlocked-hiset-ai ]; then \
+		docker compose up $(BUILD_RECREATE); \
+	else \
+		echo "No sibling ../ai/unlocked-hiset-ai checkout found — pulling the tutor image instead of building it."; \
+		docker compose build $$(docker compose config --services | grep -v '^tutor-service$$'); \
+		docker compose pull tutor-service; \
+		docker compose up --force-recreate; \
+	fi
 
 # Like `dev`, but pulls the tutor image from GHCR instead of building it from a sibling
 # checkout. Needs `docker login ghcr.io` unless the package is Internal/Public.

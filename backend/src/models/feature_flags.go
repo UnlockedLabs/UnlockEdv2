@@ -53,7 +53,7 @@ var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAcce
 
 // TopLevelFeatures are the features shown as their own card/pill on the Feature Control
 // page. Page-level (sub-)features are nested under their parent below.
-var TopLevelFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess}
+var TopLevelFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess}
 
 // SubFeatureParent maps a page-level feature to the top-level feature that gates it:
 // a sub-feature can never be enabled at a facility where its parent is disabled.
