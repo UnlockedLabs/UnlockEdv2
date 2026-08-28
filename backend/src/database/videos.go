@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"strings"
 
 	"gorm.io/gorm/clause"
 )
@@ -88,11 +89,16 @@ func (db *DB) GetAllVideos(args *models.QueryContext, visibility string) ([]Vide
         and fvs.content_id = videos.id
         and fvs.facility_id = ?`, args.FacilityID)
 
-	switch visibility {
+	switch strings.ToLower(visibility) {
 	case "visible":
-		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", true)
+		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", true).
+			Where("videos.availability = ?", models.VideoAvailable)
 	case "hidden":
 		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", false)
+	case "all":
+	default: // unrecognized values fall back to what a resident can watch
+		tx = tx.Where("COALESCE(fvs.visibility_status, false) = ?", true).
+			Where("videos.availability = ?", models.VideoAvailable)
 	}
 	if args.Search != "" {
 		args.Search = "%" + args.Search + "%"

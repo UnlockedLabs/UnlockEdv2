@@ -1,21 +1,15 @@
+import { useEffect } from 'react';
 import useSWR from 'swr';
-import {
-    Video,
-    ServerResponseMany,
-    UserRole,
-    videoIsAvailable,
-    ViewType
-} from '../common';
+import { Video, ServerResponseMany, UserRole, ViewType } from '../common';
 import Pagination from '../Components/Pagination';
 import VideoCard from '@/Components/VideoCard';
-import { isAdministrator, useAuth } from '@/useAuth';
-import { useLocation, useOutletContext } from 'react-router-dom';
+import { useAuth } from '@/useAuth';
+import { useOutletContext } from 'react-router-dom';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import LoadingSpinner from '@/Components/LoadingSpinner';
 
 export default function VideoContent() {
     const { user } = useAuth();
-    const route = useLocation();
     const { activeView, searchQuery, sortQuery } = useOutletContext<{
         activeView: ViewType;
         searchQuery: string;
@@ -28,22 +22,20 @@ export default function VideoContent() {
         setPerPage
     } = useUrlPagination(1, 20);
 
-    const adminWithStudentView = (): boolean => {
-        return !route.pathname.includes('management') && isAdministrator(user);
-    };
-
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
         Error
     >(
-        `/api/videos?search=${searchQuery}&page=${pageQuery}&per_page=${perPage}&${sortQuery}&visibility=${adminWithStudentView() ? UserRole.Student : user?.role}`
+        `/api/videos?search=${searchQuery}&page=${pageQuery}&per_page=${perPage}&${sortQuery}&visibility=visible`
     );
 
-    const videoData =
-        data?.data.filter(
-            (vid) => videoIsAvailable(vid) && vid.visibility_status
-        ) ?? [];
+    const videoData = data?.data ?? [];
     const meta = data?.meta;
+
+    useEffect(() => {
+        setPageQuery(1, { replace: true });
+    }, [searchQuery, sortQuery]);
+
     if (!user) {
         return null;
     }
@@ -67,7 +59,7 @@ export default function VideoContent() {
                     ))}
                 </div>
             )}
-            {!isLoading && !error && meta && videoData.length > 0 && (
+            {!isLoading && !error && meta && (
                 <div className="flex justify-center">
                     <Pagination
                         meta={meta}

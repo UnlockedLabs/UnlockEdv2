@@ -47,16 +47,11 @@ export default function VideoManagement() {
         sortQuery: string;
         filterVisibilityAdmin: VideoAdminVisibility;
     }>();
-    const visibilitySuffix =
-        filterVisibilityAdmin === VideoAdminVisibility['All Videos']
-            ? ''
-            : `&visibility=${filterVisibilityAdmin}`;
-
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
         Error
     >(
-        `/api/videos?page=${pageQuery}&per_page=${perPage}&${sortQuery}${visibilitySuffix}`
+        `/api/videos?page=${pageQuery}&per_page=${perPage}&${sortQuery}&visibility=${filterVisibilityAdmin}`
     );
 
     const videoData = data?.data ?? [];
