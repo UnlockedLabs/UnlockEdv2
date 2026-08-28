@@ -13,7 +13,8 @@ AI_DIR=../ai/unlocked-hiset-ai
 # on a build failure keeps that from happening. $(1) is extra `docker compose`
 # flags (e.g. `-f some-file.yml`).
 define run_dev_compose
-	@TUTOR_READY=0; \
+	@set -e; \
+	TUTOR_READY=0; \
 	if [ -d $(AI_DIR) ]; then \
 		export TUTOR_GIT_COMMIT=$$(git -C $(AI_DIR) rev-parse --short HEAD 2>/dev/null || echo unknown); \
 		export TUTOR_GIT_BRANCH=$$(git -C $(AI_DIR) rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown); \
