@@ -149,6 +149,28 @@ interface NavSectionProps {
     onToggleHelpCenter?: () => void;
 }
 
+// Identical for both audiences — admin and resident get the same link, unlike
+// e.g. ProgramAccess where each nav renders a genuinely different UI.
+function AiTutorNavItem({
+    collapsed,
+    isActive,
+    onNavigate
+}: Pick<NavSectionProps, 'collapsed' | 'isActive' | 'onNavigate'>) {
+    const { user } = useAuth();
+    if (!user || !hasFeature(user, FeatureAccess.AiTutorAccess)) return null;
+
+    return (
+        <NavLink
+            to="/ai-tutor"
+            icon={AcademicCapIcon}
+            label="AI Tutor"
+            active={isActive(['/ai-tutor'])}
+            collapsed={collapsed}
+            onClick={onNavigate}
+        />
+    );
+}
+
 function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
     const { user } = useAuth();
     if (!user) return null;
@@ -294,16 +316,11 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                 />
             )}
 
-            {hasFeature(user, FeatureAccess.AiTutorAccess) && (
-                <NavLink
-                    to="/ai-tutor"
-                    icon={AcademicCapIcon}
-                    label="AI Tutor"
-                    active={isActive(['/ai-tutor'])}
-                    collapsed={collapsed}
-                    onClick={onNavigate}
-                />
-            )}
+            <AiTutorNavItem
+                collapsed={collapsed}
+                isActive={isActive}
+                onNavigate={onNavigate}
+            />
         </>
     );
 }
@@ -396,16 +413,11 @@ function StudentNav({
                     onClick={onNavigate}
                 />
             )}
-            {hasFeature(user, FeatureAccess.AiTutorAccess) && (
-                <NavLink
-                    to="/ai-tutor"
-                    icon={AcademicCapIcon}
-                    label="AI Tutor"
-                    active={isActive(['/ai-tutor'])}
-                    collapsed={collapsed}
-                    onClick={onNavigate}
-                />
-            )}
+            <AiTutorNavItem
+                collapsed={collapsed}
+                isActive={isActive}
+                onNavigate={onNavigate}
+            />
             <SectionHeader label="Help" collapsed={collapsed} />
             <NavButton
                 icon={QuestionMarkCircleIcon}

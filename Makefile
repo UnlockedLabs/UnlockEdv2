@@ -13,22 +13,32 @@ AI_DIR=../ai/unlocked-hiset-ai
 # on a build failure keeps that from happening. $(1) is extra `docker compose`
 # flags (e.g. `-f some-file.yml`).
 define run_dev_compose
-	@USE_LOCAL_TUTOR_BUILD=0; \
+	@TUTOR_READY=0; \
 	if [ -d $(AI_DIR) ]; then \
 		export TUTOR_GIT_COMMIT=$$(git -C $(AI_DIR) rev-parse --short HEAD 2>/dev/null || echo unknown); \
 		export TUTOR_GIT_BRANCH=$$(git -C $(AI_DIR) rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown); \
 		echo "Building tutor-service from $(AI_DIR) @ $$TUTOR_GIT_BRANCH ($$TUTOR_GIT_COMMIT)"; \
 		if docker compose $(1) build tutor-service; then \
-			USE_LOCAL_TUTOR_BUILD=1; \
+			TUTOR_READY=1; \
 		else \
-			echo "tutor-service failed to build — pulling the published image instead so the rest of the stack still starts."; \
+			echo "tutor-service failed to build — trying to pull the published image instead."; \
 		fi; \
 	else \
 		echo "No sibling $(AI_DIR) checkout found — pulling the tutor image instead of building it."; \
 	fi; \
+	if [ "$$TUTOR_READY" = "0" ]; then \
+		if docker compose $(1) pull tutor-service; then \
+			TUTOR_READY=1; \
+		else \
+			echo "Could not pull tutor-service either (no local build, no registry access) — starting the rest of the app without it."; \
+		fi; \
+	fi; \
 	docker compose $(1) build $$(docker compose $(1) config --services | grep -v '^tutor-service$$'); \
-	if [ "$$USE_LOCAL_TUTOR_BUILD" = "0" ]; then docker compose $(1) pull tutor-service; fi; \
-	docker compose $(1) up --force-recreate
+	if [ "$$TUTOR_READY" = "1" ]; then \
+			docker compose $(1) up --force-recreate; \
+		else \
+			docker compose $(1) up --force-recreate $$(docker compose $(1) config --services | grep -v '^tutor-service$$'); \
+	fi 
 endef
 SEED_MAIN=backend/seeder/main.go
 BINARY_NAME=server
