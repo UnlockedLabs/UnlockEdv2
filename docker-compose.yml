@@ -110,9 +110,9 @@ services:
     # engineers working ON the tutor. CI also publishes this exact image to GHCR, so
     # `make dev-registry` pulls it instead and no tutor checkout is needed. Override the
     # tag with TUTOR_IMAGE_TAG (branch name, or a vX.Y.Z release tag).
-    image: ghcr.io/unlockedlabs/unlocked-smart-tutor:${TUTOR_IMAGE_TAG:-unlocked-adapter}
+    image: ghcr.io/unlockedlabs/unlocked-smart-tutor:${TUTOR_IMAGE_TAG:-main}
     build:
-      context: ../ai/unlocked-hiset-ai
+      context: ${TUTOR_DIR:-../ai/unlocked-hiset-ai}
       # Bakes the sibling checkout's actual git state into the image so
       # `curl 127.0.0.1/tutor/api/version` answers "which build is this"
       # instead of relying on memory of which branch was checked out when
