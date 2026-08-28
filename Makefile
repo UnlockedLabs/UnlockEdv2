@@ -1,8 +1,18 @@
+# pipefail so a failed `docker compose build` is not masked by the `tee` that
+# keeps its output in logs/ — a silently swallowed tutor build was exactly how
+# `make dev` used to come up without the tutor and say nothing useful.
+SHELL := /bin/bash
+.SHELLFLAGS := -o pipefail -c
+
 DOCKER_COMPOSE=docker-compose.yml
+TUTOR_BUILD_LOG=logs/tutor-build.log
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
 MIGRATE_MAIN=backend/migrations/main.go -dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
-AI_DIR=../ai/unlocked-hiset-ai
+# Set TUTOR_DIR in .env (or the environment) if your tutor checkout lives
+# somewhere other than a sibling ../ai/ directory. Docker Compose reads the
+# same variable from .env for the tutor build context, so the two never drift.
+DEFAULT_AI_DIR=../ai/unlocked-hiset-ai
 
 # tutor-service only builds from the sibling ../ai/unlocked-hiset-ai checkout when
 # it's present; otherwise its published image is pulled instead. Building it
@@ -14,24 +24,37 @@ AI_DIR=../ai/unlocked-hiset-ai
 # flags (e.g. `-f some-file.yml`).
 define run_dev_compose
 	@set -e; \
-	TUTOR_READY=0; \
-	if [ -d $(AI_DIR) ]; then \
-		export TUTOR_GIT_COMMIT=$$(git -C $(AI_DIR) rev-parse --short HEAD 2>/dev/null || echo unknown); \
-		export TUTOR_GIT_BRANCH=$$(git -C $(AI_DIR) rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown); \
-		echo "Building tutor-service from $(AI_DIR) @ $$TUTOR_GIT_BRANCH ($$TUTOR_GIT_COMMIT)"; \
-		if docker compose $(1) build tutor-service; then \
+	AI_DIR=$${TUTOR_DIR:-$$(sed -n 's/^TUTOR_DIR=//p' .env 2>/dev/null | tail -1)}; \
+	AI_DIR=$${AI_DIR:-$(DEFAULT_AI_DIR)}; \
+	TUTOR_READY=0; TUTOR_WHY=; \
+	if [ -d "$$AI_DIR" ]; then \
+		export TUTOR_GIT_COMMIT=$$(git -C "$$AI_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown); \
+		export TUTOR_GIT_BRANCH=$$(git -C "$$AI_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown); \
+		echo "Building tutor-service from $$AI_DIR @ $$TUTOR_GIT_BRANCH ($$TUTOR_GIT_COMMIT)"; \
+		mkdir -p $(dir $(TUTOR_BUILD_LOG)); \
+		if docker compose $(1) build tutor-service 2>&1 | tee $(TUTOR_BUILD_LOG); then \
 			TUTOR_READY=1; \
 		else \
+			TUTOR_WHY="the build from $$AI_DIR failed — full output in $(TUTOR_BUILD_LOG)"; \
 			echo "tutor-service failed to build — trying to pull the published image instead."; \
 		fi; \
 	else \
-		echo "No sibling $(AI_DIR) checkout found — pulling the tutor image instead of building it."; \
+		TUTOR_WHY="no checkout at $$AI_DIR (set TUTOR_DIR in .env to point at it)"; \
+		echo "No tutor checkout at $$AI_DIR — set TUTOR_DIR to its path, or pulling the published image instead."; \
 	fi; \
 	if [ "$$TUTOR_READY" = "0" ]; then \
 		if docker compose $(1) pull tutor-service; then \
 			TUTOR_READY=1; \
 		else \
-			echo "Could not pull tutor-service either (no local build, no registry access) — starting the rest of the app without it."; \
+			echo; \
+			echo "=============================================================="; \
+			echo " THE APP IS STARTING WITHOUT THE AI TUTOR."; \
+			echo " Reason: $$TUTOR_WHY"; \
+			echo " The GHCR fallback also failed: the package is private, so the"; \
+			echo " pull needs 'docker login ghcr.io -u <github-user>' with a PAT"; \
+			echo " that has read:packages."; \
+			echo "=============================================================="; \
+			echo; \
 		fi; \
 	fi; \
 	docker compose $(1) build $$(docker compose $(1) config --services | grep -v '^tutor-service$$'); \

@@ -12,11 +12,11 @@
 services:
   tutor-service:
     build:
-      context: ../ai/unlocked-hiset-ai
+      context: ${TUTOR_DIR:-../ai/unlocked-hiset-ai}
       dockerfile: docker/Dockerfile.dev
     command: npm run dev:docker
     volumes:
-      - ../ai/unlocked-hiset-ai:/app
+      - ${TUTOR_DIR:-../ai/unlocked-hiset-ai}:/app
       - tutor_dev_modules:/app/node_modules
       - tutor_dev_next:/app/.next
     environment:
