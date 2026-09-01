@@ -13,16 +13,12 @@ FROM public.feature_flags WHERE name = 'program_management'
 ON CONFLICT (page_feature) DO NOTHING;
 
 -- +goose Down
--- +goose NO TRANSACTION
+-- goose's NO TRANSACTION under Up applies to the whole file, not just that
+-- block, so this runs unwrapped regardless of the line below — a multi-statement
+-- enum rename/recreate/cast/drop here would leave two enum types and
+-- partially-migrated columns if any statement failed partway through, with no
+-- rollback and no way to just rerun. An unused 'resident_programs' label left
+-- in the enum is harmless (nothing selects it), so we don't recreate the type
+-- to remove it.
 DELETE FROM public.facility_feature_flags WHERE feature = 'resident_programs';
 DELETE FROM public.page_feature_flags WHERE page_feature = 'resident_programs';
-
-ALTER TYPE feature RENAME TO feature_old;
-
-CREATE TYPE feature AS ENUM ('open_content', 'provider_platforms', 'program_management', 'request_content', 'helpful_links', 'upload_video', 'learning_record');
-
-ALTER TABLE public.feature_flags ALTER COLUMN name TYPE feature USING name::text::feature;
-ALTER TABLE public.page_feature_flags ALTER COLUMN page_feature TYPE feature USING page_feature::text::feature;
-ALTER TABLE public.facility_feature_flags ALTER COLUMN feature TYPE feature USING feature::text::feature;
-
-DROP TYPE feature_old;
