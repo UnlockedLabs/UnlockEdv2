@@ -507,7 +507,8 @@ CREATE TABLE public.id751_restructure_log (
 
 COMMENT ON TABLE public.id751_restructure_log IS
     'What the id751 restructure decided, per row. kind is one of: merge_group, '
-    'singleton_group, completion_soft_deleted, enrollment_terminated, summary. '
+    'singleton_group, completion_soft_deleted, enrollment_terminated, '
+    'audit_user_ref_dropped, summary. '
     'Read by the merge tool (sub-ticket H) and by this migration''s down path. '
     'Safe to drop once sub-ticket H has shipped.';
 
@@ -567,10 +568,35 @@ ALTER TABLE public.program_classes ADD COLUMN source_group_key TEXT;
 --     cohorts each become their own class instead of all collapsing into one. See the
 --     STRICT warning in §2.4.
 ----------------------------------------------------------------------------------
+-- The audit refs §3.3 cannot carry across, one row per cohort. See the note below.
+INSERT INTO public.id751_restructure_log (kind, detail)
+SELECT 'audit_user_ref_dropped',
+       jsonb_build_object('cohort_id',      c.id,
+                          'create_user_id', c.create_user_id,
+                          'update_user_id', c.update_user_id)
+  FROM public.program_class_cohorts c
+ WHERE (c.create_user_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM public.users u WHERE u.id = c.create_user_id))
+    OR (c.update_user_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM public.users u WHERE u.id = c.update_user_id));
+
 WITH keyed AS (
     SELECT c.*,
+           -- 00045 gave this table create_user_id/update_user_id with NO foreign key, and
+           -- 00062 -- which added exactly those FKs to 23 other tables -- skipped it. So the
+           -- columns can hold ids of users the table no longer has. §2.1 gives the class tier
+           -- REAL FKs, so resolve through users here and let anything unresolvable become
+           -- NULL, which is what ON DELETE SET NULL would have left behind had the FK existed
+           -- all along. Found on staging: fk_program_classes_update_user_id, SQLSTATE 23503.
+           --
+           -- No deleted_at filter on the join, deliberately: it has to match what the FK
+           -- itself can see, and a soft-deleted user is still a row.
+           cu.id AS ok_create_user_id,
+           uu.id AS ok_update_user_id,
            coalesce(nullif(public.class_group_key(c.name), ''), 'cohort:' || c.id::text) AS gkey
       FROM public.program_class_cohorts c
+      LEFT JOIN public.users cu ON cu.id = c.create_user_id
+      LEFT JOIN public.users uu ON uu.id = c.update_user_id
 ),
 grouped AS (
     SELECT program_id,
@@ -588,10 +614,10 @@ grouped AS (
                 THEN max(deleted_at) END                                           AS rep_deleted_at,
            min(created_at)                                                         AS rep_created_at,
            max(updated_at)                                                         AS rep_updated_at,
-           (array_agg(create_user_id ORDER BY created_at NULLS LAST, id)
-              FILTER (WHERE create_user_id IS NOT NULL))[1]                        AS rep_create_user_id,
-           (array_agg(update_user_id ORDER BY updated_at DESC NULLS LAST, id)
-              FILTER (WHERE update_user_id IS NOT NULL))[1]                        AS rep_update_user_id
+           (array_agg(ok_create_user_id ORDER BY created_at NULLS LAST, id)
+              FILTER (WHERE ok_create_user_id IS NOT NULL))[1]                     AS rep_create_user_id,
+           (array_agg(ok_update_user_id ORDER BY updated_at DESC NULLS LAST, id)
+              FILTER (WHERE ok_update_user_id IS NOT NULL))[1]                     AS rep_update_user_id
       FROM keyed
      GROUP BY program_id, facility_id, gkey
 )
