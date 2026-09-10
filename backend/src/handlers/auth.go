@@ -132,6 +132,28 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 		}
 
 		if claims.PasswordReset && !isAuthRoute(r) {
+			// Logged because this gate was completely silent, and it is not a
+			// benign one. Every endpoint the reset page itself calls is exempt
+			// via isAuthRoute, so reaching here means something else asked for a
+			// route it cannot have yet -- including /api/client-errors, which is
+			// not exempt: a crash reported by a resident who still carries
+			// password_reset never reaches the log, because the reporter gets
+			// this response instead of the handler (client_error_handler.go).
+			//
+			// Note the status: http.Redirect with StatusOK sends 200 plus a
+			// Location header, which no XHR treats as a redirect, so every API
+			// call made while this flag is set reads as a successful request with
+			// an HTML body. Fixing that is a separate change -- it needs the
+			// client to distinguish document navigations from API calls -- but at
+			// least the occurrence is now visible.
+			log.WithFields(log.Fields{
+				"handler":     "authMiddleware",
+				"method":      r.Method,
+				"path":        r.URL.Path,
+				"user_id":     claims.UserID,
+				"facility_id": claims.FacilityID,
+				"role":        claims.Role,
+			}).Warn("password reset required, request redirected to /reset-password")
 			http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 			return
 		}
