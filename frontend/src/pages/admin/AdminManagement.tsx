@@ -172,6 +172,7 @@ export default function AdminManagement() {
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [tempPassword, setTempPassword] = useState('');
+    const [kratosRegistered, setKratosRegistered] = useState(true);
     const [passwordModalContext, setPasswordModalContext] = useState<
         'create' | 'reset'
     >('reset');
@@ -364,6 +365,7 @@ export default function AdminManagement() {
             );
             setShowAddAdmin(false);
             setTempPassword(response.data.temp_password);
+            setKratosRegistered(response.data.kratos_registered);
             setPasswordModalContext('create');
             setShowResetPassword(true);
             setSelectedAdmin(response.data.user);
@@ -1087,6 +1089,7 @@ export default function AdminManagement() {
                     if (!open) {
                         setTempPassword('');
                         setSelectedAdmin(null);
+                        setKratosRegistered(true);
                     }
                 }}
                 name={`${selectedAdmin?.name_first ?? ''} ${selectedAdmin?.name_last ?? ''}`}
@@ -1103,6 +1106,11 @@ export default function AdminManagement() {
                     passwordModalContext === 'create'
                         ? 'New Password'
                         : 'Password Reset'
+                }
+                warning={
+                    passwordModalContext === 'create' && !kratosRegistered
+                        ? "This administrator's login could not be registered. Use Reset Password before sharing this with them."
+                        : undefined
                 }
             />
 

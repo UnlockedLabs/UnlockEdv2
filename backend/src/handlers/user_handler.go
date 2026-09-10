@@ -241,11 +241,13 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newInternalServerServiceError(err, "Error creating temporary password")
 	}
 	response := struct {
-		TempPassword string      `json:"temp_password"`
-		User         models.User `json:"user"`
+		TempPassword     string      `json:"temp_password"`
+		User             models.User `json:"user"`
+		KratosRegistered bool        `json:"kratos_registered"`
 	}{
-		User:         reqForm.User,
-		TempPassword: tempPw,
+		User:             reqForm.User,
+		TempPassword:     tempPw,
+		KratosRegistered: true,
 	}
 	if reqForm.User.Role == models.Student {
 		accountCreation := models.NewUserAccountHistory(reqForm.User.ID, models.AccountCreation, &claims.UserID, nil, nil)
@@ -261,6 +263,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		// register the user as an Identity with Kratos + Kolibri
 		if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
 			log.infof("Error creating user in kratos: %v", err)
+			response.KratosRegistered = false
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
 		if err != nil {

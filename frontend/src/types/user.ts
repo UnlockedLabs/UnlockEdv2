@@ -70,6 +70,7 @@ export interface LoginMetrics {
 export interface NewUserResponse {
     user: User;
     temp_password: string;
+    kratos_registered: boolean;
 }
 
 export interface ResetPasswordResponse {

@@ -58,6 +58,7 @@ export function AddResidentDialog({
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [tempPassword, setTempPassword] = useState('');
     const [createdUserName, setCreatedUserName] = useState('');
+    const [kratosRegistered, setKratosRegistered] = useState(true);
 
     useEffect(() => {
         if (open) {
@@ -101,6 +102,7 @@ export function AddResidentDialog({
                     `${formData.name_first} ${formData.name_last}`
                 );
                 setTempPassword(response.data.temp_password);
+                setKratosRegistered(response.data.kratos_registered);
                 setShowPasswordModal(true);
                 onSuccess(response.data.user);
             } else {
@@ -255,12 +257,18 @@ export function AddResidentDialog({
                     if (!isOpen) {
                         setTempPassword('');
                         setCreatedUserName('');
+                        setKratosRegistered(true);
                     }
                 }}
                 name={createdUserName}
                 subject="resident"
                 presetPassword={tempPassword}
                 resultTitle="New Password"
+                warning={
+                    kratosRegistered
+                        ? undefined
+                        : "This resident's login could not be registered. Use Reset Password before sharing this with the resident."
+                }
             />
         </>
     );
