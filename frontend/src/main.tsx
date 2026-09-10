@@ -10,9 +10,14 @@ import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
 import { initAnalytics } from '@/lib/events';
 import { swrFetcher } from '@/api/swrFetcher';
+import { installGlobalErrorReporting } from '@/api/reportClientError';
 
 // Gated + tagged in lib/events.ts; a no-op when analytics is disabled.
 initAnalytics();
+
+// Catches throws and un-caught promise rejections that never reach a route's
+// errorElement — installed before render so nothing during boot is missed.
+installGlobalErrorReporting();
 
 ReactDOM.createRoot(document.querySelector('#root')!).render(
     <React.StrictMode>

@@ -8,6 +8,8 @@ import {
     apiUpdateEntry,
     apiUpsertDraft
 } from '@/api/learningRecord';
+import { reportClientError } from '@/api/reportClientError';
+import { newUuid } from '@/lib/uuid';
 import { TOP_SKILLS_MAX } from '@/pages/student/digital-transcript/transcriptReflectionConfig';
 import { dispatchEntrySessionUpdated } from '@/pages/student/digital-transcript/transcriptEntrySessionStorage';
 import type {
@@ -17,7 +19,7 @@ import type {
 
 export function createEmptyDraft(): TranscriptDraft {
     return {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         updatedAt: new Date().toISOString(),
         stepIndex: 0,
         uiPhase: 'survey',
@@ -61,12 +63,22 @@ export function useTranscriptDraft() {
     useEffect(() => {
         let cancelled = false;
         void (async () => {
-            const [{ entries: fetched, backendIds }, fetchedDraft] =
-                await Promise.all([apiGetEntries(), apiGetDraft()]);
-            if (cancelled) return;
-            entryBackendIds.current = backendIds;
-            setEntries(fetched);
-            setDraft(fetchedDraft);
+            try {
+                const [{ entries: fetched, backendIds }, fetchedDraft] =
+                    await Promise.all([apiGetEntries(), apiGetDraft()]);
+                if (cancelled) return;
+                entryBackendIds.current = backendIds;
+                setEntries(fetched);
+                setDraft(fetchedDraft);
+            } catch (err) {
+                // These calls resolve rather than throw on any HTTP status, so
+                // reaching here means something unexpected. Without the catch it
+                // became an unhandled rejection with `hydrated` stuck false, which
+                // strands the entry page on "Loading your editor…" and reports
+                // nothing. Hydrate empty instead, and say so in the logs.
+                if (cancelled) return;
+                reportClientError(err, 'useTranscriptDraft.hydrate');
+            }
             setHydrated(true);
         })();
         return () => {
