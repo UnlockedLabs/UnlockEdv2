@@ -203,11 +203,19 @@ export function ResetPasswordModal({
                                 </Button>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-600 mt-4">
-                            Share this password securely with the {subject}.
-                            They will be prompted to change it on their next
-                            login.
-                        </p>
+                        {warning ? (
+                            <p className="text-sm text-gray-600 mt-4">
+                                Do not share this password yet. Reset the{' '}
+                                {subject}&apos;s password first, then share the
+                                password that reset gives you.
+                            </p>
+                        ) : (
+                            <p className="text-sm text-gray-600 mt-4">
+                                Share this password securely with the {subject}.
+                                They will be prompted to change it on their next
+                                login.
+                            </p>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button
