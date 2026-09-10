@@ -139,6 +139,13 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 		// Call to named or custom resolver by routedef
 		if resolver != nil {
 			if !resolver(s.Db, r.WithContext(ctx)) {
+				log.WithFields(log.Fields{
+					"handler":     "authMiddleware",
+					"method":      r.Method,
+					"path":        r.URL.Path,
+					"user_id":     claims.UserID,
+					"facility_id": claims.FacilityID,
+				}).Warn("route resolver denied access to resource")
 				http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
 				return
 			}

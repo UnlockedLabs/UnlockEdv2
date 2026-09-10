@@ -167,3 +167,27 @@ export const initialTourState: TourState = {
     tourActive: false,
     target: ''
 };
+
+/**
+ * The routes this tour's steps live on — every target in `initialTourState` is on
+ * the resident homepage, the Knowledge Center, or a library viewer page.
+ *
+ * Off these routes the tour must not render at all (ID-846). react-joyride 2.9.3
+ * mounts its floater's Popper against the current step's target inside a layout
+ * effect and dereferences it with no null check
+ * (Popper -> getReferenceOffsets -> getBoundingClientRect), so a running tour on a
+ * page that has no such element throws
+ * `TypeError: Cannot read properties of null (reading 'nodeName')` from
+ * `componentDidMount`. React hands that to the nearest error boundary — the
+ * router's root `errorElement` — so the entire shell is replaced by the generic
+ * error page. That is what a resident hit by clicking the Learning Record CTA while
+ * the first-login tour was still live, and why refreshing (which clears the
+ * above-the-router tour state) made the next attempt work.
+ */
+export const TOUR_ROUTE_PREFIXES = ['/home', '/knowledge-center', '/viewer/'];
+
+export function isTourRoute(pathname: string): boolean {
+    return TOUR_ROUTE_PREFIXES.some(
+        (prefix) => pathname === prefix || pathname.startsWith(prefix)
+    );
+}

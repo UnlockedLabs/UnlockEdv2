@@ -1,3 +1,4 @@
+import { newUuid } from '@/lib/uuid';
 import { TOP_SKILLS_MAX } from '@/pages/student/digital-transcript/transcriptReflectionConfig';
 import { entryIsComplete } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import type { LearningRecordFormVariant } from '@/pages/student/digital-transcript/learningRecordPrototypes';
@@ -10,7 +11,7 @@ import {
 } from '@/types/digital-transcript';
 
 function newId() {
-    return crypto.randomUUID();
+    return newUuid();
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
