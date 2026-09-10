@@ -6,6 +6,8 @@ import { ResetPasswordResponse, ServerResponseOne } from '@/types';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FormModal } from './FormModal';
+import { TonedPanel } from './TonedPanel';
+import { AlertTriangle } from 'lucide-react';
 
 type Phase = 'confirm' | 'result';
 
@@ -35,6 +37,12 @@ interface ResetPasswordModalProps {
     presetPassword?: string;
     /** Title for the result phase. Defaults to 'Password Reset'. */
     resultTitle?: string;
+    /**
+     * Optional warning shown alongside the password in the result phase (e.g.
+     * when the identity provider registration failed and this password may
+     * not work until the account is reset).
+     */
+    warning?: string;
     /** Optional callback fired after a reset successfully completes. */
     onResetComplete?: () => void;
 }
@@ -47,6 +55,7 @@ export function ResetPasswordModal({
     userId,
     presetPassword,
     resultTitle = 'Password Reset',
+    warning,
     onResetComplete
 }: ResetPasswordModalProps) {
     const resultOnly = presetPassword !== undefined;
@@ -159,6 +168,14 @@ export function ResetPasswordModal({
             ) : (
                 <>
                     <div className="py-4">
+                        {warning && (
+                            <TonedPanel tone="amber" className="mb-4">
+                                <div className="flex items-start gap-2 text-sm text-amber-900">
+                                    <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+                                    <span>{warning}</span>
+                                </div>
+                            </TonedPanel>
+                        )}
                         <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                             <div className="text-sm text-gray-600 mb-2">
                                 Temporary Password
