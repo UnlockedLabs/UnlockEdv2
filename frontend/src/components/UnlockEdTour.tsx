@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import {
     initialTourState,
+    isTargetOnRoute,
     isTourRoute,
     targetToStepIndexMap
 } from '@/contexts/tourState';
@@ -20,6 +21,9 @@ export default function UnlockEdTour() {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const onTourRoute = isTourRoute(pathname);
+    // `stepIndex`, not `target`: Joyride renders `steps[stepIndex]`, so that is the
+    // step whose overlay would be left behind.
+    const stepFitsRoute = isTargetOnRoute(steps[stepIndex]?.target, pathname);
 
     // Leaving the tour's own flow ends the tour. Safe to depend on an unstable
     // setTourState: after the first reset both flags are false, so the condition
@@ -152,9 +156,16 @@ export default function UnlockEdTour() {
         }
     };
 
-    // Never mount Joyride off the tour's own routes — see TOUR_ROUTE_PREFIXES
-    // in tourState.ts.
-    if (!onTourRoute) {
+    // Never mount Joyride off the tour's own routes — see TOUR_ROUTE_PREFIXES in
+    // tourState.ts — nor on a tour route that does not have the current step's
+    // target, which strands an overlay no one can dismiss (see TARGET_ROUTES).
+    //
+    // Hides rather than resetting. The tour drives its own cross-route hops, and a
+    // commit where the pathname has landed but the step has not would end the tour
+    // mid-flow if a mismatch reset it. Hiding costs that one frame and nothing else:
+    // the tour reappears as soon as the step catches up, or when the resident
+    // returns to the page that step belongs to.
+    if (!onTourRoute || !stepFitsRoute) {
         return null;
     }
 

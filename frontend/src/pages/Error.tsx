@@ -24,13 +24,19 @@ export default function Error({
     // Safe for the prop-driven uses too: every <Error /> in this app is a route
     // element inside the data router, and this returns undefined when the route is
     // not currently an error boundary.
+    //
+    // `undefined` is therefore the only value that means "no error". Everything
+    // below compares against it rather than testing truthiness, because a loader or
+    // render can throw any value at all — `throw null` and `throw ''` are still
+    // crashes, and a truthiness test would drop them on the floor, which is the
+    // exact failure this page was changed to stop doing.
     const routeError: unknown = useRouteError();
     // An errorElement can re-render; the report itself is also deduped, but this
     // keeps the effect honest about firing once per mount.
     const reportedRef = useRef(false);
 
     useEffect(() => {
-        if (!routeError || reportedRef.current) return;
+        if (routeError === undefined || reportedRef.current) return;
         reportedRef.current = true;
         reportClientError(routeError, 'errorElement');
     }, [routeError]);
@@ -55,9 +61,10 @@ export default function Error({
     const { title, description } = getMessage();
     // Shown only for a real crash, and only enough for staff to match the page a
     // resident saw to a log line. The message itself stays out of the UI.
-    const reference = routeError
-        ? new Date().toISOString().replace(/\.\d+Z$/, 'Z')
-        : null;
+    const reference =
+        routeError !== undefined
+            ? new Date().toISOString().replace(/\.\d+Z$/, 'Z')
+            : null;
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -71,7 +78,7 @@ export default function Error({
                     Reference: {reference}
                 </p>
             ) : null}
-            {import.meta.env.DEV && routeError ? (
+            {import.meta.env.DEV && routeError !== undefined ? (
                 <pre className="max-w-2xl overflow-x-auto whitespace-pre-wrap text-xs text-destructive">
                     {describeError(routeError).name}:{' '}
                     {describeError(routeError).message}
