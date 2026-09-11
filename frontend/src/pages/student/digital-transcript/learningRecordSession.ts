@@ -1,5 +1,10 @@
 import { ANALYTICS_EVENTS, captureEvent } from '@/lib/events';
 import {
+    getSessionItem,
+    removeSessionItem,
+    setSessionItem
+} from '@/lib/safeSessionStorage';
+import {
     LEARNING_RECORD_SESSION_VERSION,
     getDigitalTranscriptStorageKeys
 } from '@/types/digital-transcript';
@@ -130,19 +135,17 @@ function storageKey(): string {
 }
 
 function persistNow(): void {
-    if (!state || typeof sessionStorage === 'undefined') return;
-    try {
-        sessionStorage.setItem(
-            storageKey(),
-            JSON.stringify({
-                version: LEARNING_RECORD_SESSION_VERSION,
-                ...state
-            })
-        );
-    } catch {
-        // Quota, or private-mode Safari. The session degrades to in-memory only:
-        // it still emits, it just cannot survive a reload.
-    }
+    if (!state) return;
+    // Was `typeof sessionStorage === 'undefined'` guarding a try/catch from the
+    // outside — but `typeof` invokes the getter, so the guard threw before the
+    // try could catch anything. safeSessionStorage swallows it instead.
+    setSessionItem(
+        storageKey(),
+        JSON.stringify({
+            version: LEARNING_RECORD_SESSION_VERSION,
+            ...state
+        })
+    );
 }
 
 function persistSoon(): void {
@@ -161,19 +164,13 @@ function clearPersistTimer(): void {
 }
 
 function clearPersisted(): void {
-    if (typeof sessionStorage === 'undefined') return;
-    try {
-        sessionStorage.removeItem(storageKey());
-    } catch {
-        /* noop */
-    }
+    removeSessionItem(storageKey());
 }
 
 /** Version-gated, field-coerced read — same discipline as the entry session. */
 function readPersisted(): SessionState | null {
-    if (typeof sessionStorage === 'undefined') return null;
     try {
-        const raw = sessionStorage.getItem(storageKey());
+        const raw = getSessionItem(storageKey());
         if (!raw) return null;
         const parsed: unknown = JSON.parse(raw);
         if (!isRecord(parsed)) return null;
