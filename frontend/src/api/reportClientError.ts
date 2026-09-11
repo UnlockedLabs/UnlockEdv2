@@ -24,9 +24,21 @@ interface ClientErrorReport {
     user_agent: string;
 }
 
-/** The server caps again; this only keeps the request small. */
+/**
+ * These only keep the request small — the server caps again, at
+ * clientErrorStackMax (2048) and clientErrorFieldMax (512) in
+ * client_error_handler.go.
+ *
+ * Both MUST stay above their server counterpart, so the server is the single
+ * place that truncates and the only place that marks it. When FIELD_MAX was 500
+ * — below the server's 512 — `clamp` silently cut a long message here with no
+ * marker and the server's `…(truncated)` never fired, so a truncated message was
+ * indistinguishable from a complete one in the log. Marking in both places
+ * instead would double-mark, which is why the caps are ordered rather than the
+ * marker duplicated.
+ */
 const STACK_MAX = 4000;
-const FIELD_MAX = 500;
+const FIELD_MAX = 1024;
 
 /**
  * One report per distinct error per page session. Without this a boundary that
