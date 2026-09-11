@@ -184,10 +184,19 @@ export const initialTourState: TourState = {
  * the first-login tour was still live, and why refreshing (which clears the
  * above-the-router tour state) made the next attempt work.
  */
-export const TOUR_ROUTE_PREFIXES = ['/home', '/knowledge-center', '/viewer/'];
+export const TOUR_ROUTE_PREFIXES = ['/home', '/knowledge-center', '/viewer'];
 
+/**
+ * Matches on path segments, not raw string prefixes. A bare `startsWith` also
+ * matched `/knowledge-center-management` — an AdminRoles route
+ * (routes/knowledge-routes.tsx) — and `UnlockEdTour` is mounted in
+ * `AuthenticatedLayout`, which wraps admin routes too. The visible cost was an
+ * admin's first login consuming `first_login_tour_pending` on a page that has
+ * none of the tour's targets; the latent one was permitting Joyride to mount
+ * there at all, which is the same shape as the bug this file exists to fix.
+ */
 export function isTourRoute(pathname: string): boolean {
     return TOUR_ROUTE_PREFIXES.some(
-        (prefix) => pathname === prefix || pathname.startsWith(prefix)
+        (prefix) => pathname === prefix || pathname.startsWith(prefix + '/')
     );
 }
