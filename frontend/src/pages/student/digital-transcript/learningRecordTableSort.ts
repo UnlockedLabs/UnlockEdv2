@@ -5,6 +5,7 @@ import {
 } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 import { countFunnelFieldsAnswered } from './transcriptReflectionConfig';
+import { getSessionItem, setSessionItem } from '@/lib/safeSessionStorage';
 
 export const LR_TABLE_SORT_STORAGE_KEY = 'lr_table_sort';
 
@@ -107,7 +108,7 @@ export function readTableSortFromSession(): TableSort {
         return DEFAULT_TABLE_SORT;
     }
 
-    const raw = sessionStorage.getItem(LR_TABLE_SORT_STORAGE_KEY);
+    const raw = getSessionItem(LR_TABLE_SORT_STORAGE_KEY);
     if (!raw) {
         return DEFAULT_TABLE_SORT;
     }
@@ -133,7 +134,7 @@ export function readTableSortFromSession(): TableSort {
 
 export function writeTableSortToSession(sort: TableSort): void {
     if (typeof window === 'undefined') return;
-    sessionStorage.setItem(LR_TABLE_SORT_STORAGE_KEY, JSON.stringify(sort));
+    setSessionItem(LR_TABLE_SORT_STORAGE_KEY, JSON.stringify(sort));
 }
 
 export function toggleTableSort(
