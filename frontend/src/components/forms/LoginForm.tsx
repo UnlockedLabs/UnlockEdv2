@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate } from 'react-router-dom';
+import { useLoaderData } from 'react-router-dom';
 import { AuthFlow, AuthResponse, ServerResponseOne } from '@/types';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,7 @@ import {
     FormMessage
 } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { useTourContext } from '@/contexts/useTourContext';
+import { markFirstLoginTourPending } from '@/contexts/firstLoginTour';
 
 function formatCountdown(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -30,9 +30,7 @@ function formatCountdown(seconds: number): string {
 }
 
 export default function LoginForm() {
-    const navigate = useNavigate();
     const loaderData = useLoaderData() as AuthFlow;
-    const { setTourState } = useTourContext();
     const [processing, setProcessing] = useState(false);
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
@@ -83,13 +81,16 @@ export default function LoginForm() {
         if (resp.success) {
             tabSessionManager.onLogin();
             if (resp.data.first_login) {
-                setTourState({ tourActive: true });
+                // Not setTourState: the hard navigation below drops it. The flag
+                // crosses the hop and TourProvider picks it up on the far side.
+                markFirstLoginTourPending();
             }
-            if (resp.data.redirect_to.startsWith('/')) {
-                navigate(resp.data.redirect_to);
-            } else {
-                window.location.href = resp.data.redirect_to;
-            }
+            // A hard navigation for every destination, matching the reasoning
+            // already recorded in ChangePasswordForm. navigate() kept this public
+            // page's above-the-router state — the tour state, the SWR cache —
+            // alive inside the authenticated shell, where nothing but a browser
+            // reload could clear it (ID-846).
+            window.location.href = resp.data.redirect_to;
             return;
         } else if (resp.status && resp.status === 429) {
             const retryAfterHeader = resp.headers?.['retry-after'];

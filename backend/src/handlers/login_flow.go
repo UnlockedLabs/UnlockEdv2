@@ -41,6 +41,43 @@ type LoginRequest struct {
 	CsrfToken string `json:"csrf_token"`
 }
 
+/*
+MarshalJSON keeps the password and CSRF token out of anything that serializes
+this struct, which in practice means the logs.
+
+handleLogin logs the whole form (see below), so every login attempt wrote the
+submitted password to the deployment log in cleartext -- twice on a failure,
+since both the "Failed login attempt" line and the error line carry the same
+fields. Maine's logs contain months of real resident and admin passwords as a
+result.
+
+Redacting at the type level rather than at the call site is deliberate: it
+cannot be undone by someone later logging the form again. The Kratos request
+body is built field-by-field in buildKratosLoginForm and never marshals this
+struct, so authentication is unaffected.
+*/
+func (form LoginRequest) MarshalJSON() ([]byte, error) {
+	type redacted struct {
+		Username  string `json:"identifier"`
+		Password  string `json:"password"`
+		FlowID    string `json:"flow_id"`
+		Challenge string `json:"challenge"`
+		CsrfToken string `json:"csrf_token"`
+	}
+	safe := redacted{
+		Username:  form.Username,
+		FlowID:    form.FlowID,
+		Challenge: form.Challenge,
+	}
+	if form.Password != "" {
+		safe.Password = "[REDACTED]"
+	}
+	if form.CsrfToken != "" {
+		safe.CsrfToken = "[REDACTED]"
+	}
+	return json.Marshal(safe)
+}
+
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, log sLog) error {
 	return writeJsonResponse(w, http.StatusOK, map[string]string{"redirect_to": LogoutEndpoint})
 }
@@ -71,6 +108,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 		s.errorResponse(w, int(http.StatusTooManyRequests), msg)
 		return nil
 	}
+	// Safe to log whole: LoginRequest.MarshalJSON redacts the password and CSRF
+	// token. Keep it that way -- these lines go to the deployment logs.
 	log.add("form", form)
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
