@@ -149,8 +149,10 @@ interface NavSectionProps {
     onToggleHelpCenter?: () => void;
 }
 
-// Identical for both audiences — admin and resident get the same link, unlike
-// e.g. ProgramAccess where each nav renders a genuinely different UI.
+// Resident nav only. The AI Tutor MVP (ID-868) ships the resident-facing side
+// alone — there is no staff experience behind this link — so admins get no
+// entry point, and tutor-routes.tsx narrows the route to match. Admins still
+// enable the feature itself from Feature Control.
 function AiTutorNavItem({
     collapsed,
     isActive,
@@ -315,12 +317,6 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     ]}
                 />
             )}
-
-            <AiTutorNavItem
-                collapsed={collapsed}
-                isActive={isActive}
-                onNavigate={onNavigate}
-            />
         </>
     );
 }
