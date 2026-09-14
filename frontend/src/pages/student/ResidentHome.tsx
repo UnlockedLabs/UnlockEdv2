@@ -494,8 +494,8 @@ export default function ResidentHome() {
         : false;
 
     const incompleteEntry = useMemo(() => {
-        // entrySessionTick re-triggers this when session storage changes;
-        // findIncompleteAchievementEntry reads sessionStorage internally.
+        // entrySessionTick re-triggers this when the entry session changes;
+        // findIncompleteAchievementEntry reads localStorage internally.
         void entrySessionTick;
         return findIncompleteAchievementEntry(
             entries,

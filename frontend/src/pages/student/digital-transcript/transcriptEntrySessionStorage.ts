@@ -367,14 +367,16 @@ export function readEntrySessionFromStorage(): TranscriptEntrySession | null {
 }
 
 export function writeEntrySessionToStorage(session: TranscriptEntrySession) {
-    localStorage.setItem(
-        getDigitalTranscriptStorageKeys().entrySession,
-        JSON.stringify(session)
-    );
-}
-
-export function removeEntrySessionFromStorage() {
-    localStorage.removeItem(getDigitalTranscriptStorageKeys().entrySession);
+    try {
+        localStorage.setItem(
+            getDigitalTranscriptStorageKeys().entrySession,
+            JSON.stringify(session)
+        );
+    } catch {
+        // Blocked site data makes this throw. It runs in the entry page's mount effect,
+        // so the throw took out the whole editor via the router's errorElement. Dropping
+        // the write costs only reload-persistence of the UI session.
+    }
 }
 
 export function dispatchEntrySessionUpdated() {

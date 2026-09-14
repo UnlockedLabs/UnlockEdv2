@@ -138,6 +138,23 @@ const primaryCtaClassName = cn(
     'sm:min-w-[11rem]'
 );
 
+/**
+ * Row label for the Program column.
+ *
+ * "Not added yet" is reserved for a genuinely empty field. `getEntryDisplayTitle`
+ * also rejects names it reads as placeholder keystrokes — anything whose non-space
+ * characters are all the same, so `a` and `aa` qualify — and passing
+ * EMPTY_FIELD_LABEL as its fallback told the resident they had added nothing while
+ * the Steps done cell beside it counted the field as answered
+ * (`funnelCompletionFieldAnswered` uses a bare `programName.trim()`). Reported on
+ * PR #1220. Filtered-but-present names fall through to "Untitled achievement"
+ * instead, which is true of both.
+ */
+function formatProgramLabel(entry: TranscriptEntry): string {
+    if (!entry.programName.trim()) return EMPTY_FIELD_LABEL;
+    return getEntryDisplayTitle(entry.programName);
+}
+
 function formatProgramCompletedDate(entry: TranscriptEntry): string {
     if (!entry.completionDate.trim()) return EMPTY_FIELD_LABEL;
     return new Date(entry.completionDate + 'T12:00:00').toLocaleDateString(
@@ -367,17 +384,13 @@ function SavedEntriesSection({
                                             <TableCell className="min-w-[10rem] align-middle pl-6 font-medium text-foreground whitespace-normal break-words">
                                                 <Link
                                                     to={editHref}
-                                                    aria-label={getEntryDisplayTitle(
-                                                        entry.programName,
-                                                        EMPTY_FIELD_LABEL
+                                                    aria-label={formatProgramLabel(
+                                                        entry
                                                     )}
                                                     className="absolute inset-0 z-0 rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                 />
                                                 <span className="font-medium group-hover:underline">
-                                                    {getEntryDisplayTitle(
-                                                        entry.programName,
-                                                        EMPTY_FIELD_LABEL
-                                                    )}
+                                                    {formatProgramLabel(entry)}
                                                 </span>
                                                 <p className="mt-1 text-xs font-normal text-muted-foreground @min-[42rem]/entries:hidden">
                                                     Completed{' '}
