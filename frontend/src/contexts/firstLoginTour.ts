@@ -3,7 +3,9 @@
  *
  * `tourActive` lives in `TourProvider`, mounted *above* `RouterProvider` in
  * `main.tsx`. That means it survives every client-side navigation and only a page
- * load clears it — the carrier behind ID-846. Both first-login hops are hard
+ * load clears it. (That was once thought to be ID-846's mechanism; it was not — see
+ * the retraction in tourState.ts — but the stale-state class it creates is real.)
+ * Both first-login hops are hard
  * navigations now (`ChangePasswordForm` since 8faf7977, `LoginForm` as of this
  * change), which retires that whole class of stale state.
  *
