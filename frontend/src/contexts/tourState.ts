@@ -172,17 +172,22 @@ export const initialTourState: TourState = {
  * The routes this tour's steps live on — every target in `initialTourState` is on
  * the resident homepage, the Knowledge Center, or a library viewer page.
  *
- * Off these routes the tour must not render at all (ID-846). react-joyride 2.9.3
- * mounts its floater's Popper against the current step's target inside a layout
- * effect and dereferences it with no null check
- * (Popper -> getReferenceOffsets -> getBoundingClientRect), so a running tour on a
- * page that has no such element throws
- * `TypeError: Cannot read properties of null (reading 'nodeName')` from
- * `componentDidMount`. React hands that to the nearest error boundary — the
- * router's root `errorElement` — so the entire shell is replaced by the generic
- * error page. That is what a resident hit by clicking the Learning Record CTA while
- * the first-login tour was still live, and why refreshing (which clears the
- * above-the-router tour state) made the next attempt work.
+ * Off these routes the tour must not render at all.
+ *
+ * This was originally written as the cause of ID-846 — a running tour dereferencing
+ * a missing target and throwing to the router's `errorElement`. **That was wrong**,
+ * and the claim is retracted rather than deleted so nobody re-derives it: in
+ * react-joyride 2.9.3 `JoyrideStep.render` bails out when the target does not
+ * resolve. It warns; it does not throw. ID-846's crash was an unguarded
+ * `localStorage` write in the Learning Record entry page's bootstrap effect
+ * (transcriptEntrySessionStorage.ts), and the tour was not even running at the
+ * reporting facility, which had Open Content off.
+ *
+ * What remains true is the reason this guard is worth keeping: a tour holding a step
+ * whose target is not on the current page renders an overlay with no tooltip under
+ * it (see `TARGET_ROUTES` below), and mounting Joyride on routes that hold none of
+ * its targets — admin routes included, since `AuthenticatedLayout` wraps them — has
+ * no upside.
  */
 export const TOUR_ROUTE_PREFIXES = ['/home', '/knowledge-center', '/viewer'];
 
@@ -212,7 +217,8 @@ export function isTourRoute(pathname: string): boolean {
  * survives one. A running tour holding a step whose target is not on the current page
  * therefore paints a full-screen scrim with no tooltip under it, and every step past
  * the first sets `disableOverlayClose` — nothing to click, and only a refresh clears
- * it. That is the ID-846 symptom one route short of ID-846.
+ * it. A stuck page, arrived at by a different route than ID-846's crash and worth
+ * closing on its own merits.
  *
  * Defense in depth, not a fixed repro. Today each tour page re-seats the step when it
  * mounts, which covers the obvious ways in: ResidentHome resets to step 0 for any
