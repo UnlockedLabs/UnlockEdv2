@@ -30,6 +30,26 @@ func (sh *ServiceHandler) lookupUserMapping(params map[string]any) ([]map[string
 	return users, nil
 }
 
+// dbUint reads a numeric column out of a map scanned from the database. gorm types map
+// values off the model schema when the column name matches a field (so a uint column
+// arrives as uint) and falls back to the driver's int64 when it does not, which is what
+// an aliased column like "id as course_id" gets. Both shapes reach these services, so
+// assert against neither.
+func dbUint(row map[string]any, key string) (uint, bool) {
+	switch n := row[key].(type) {
+	case uint:
+		return n, true
+	case int64:
+		return uint(n), true
+	case int:
+		return uint(n), true
+	case float64:
+		return uint(n), true
+	default:
+		return 0, false
+	}
+}
+
 func (sh *ServiceHandler) lookupCoursesMapping(provId int) ([]map[string]any, error) {
 	courses := make([]map[string]any, 0, 10)
 	if err := sh.db.Model(models.Course{}).Select("id as course_id, external_id as external_course_id").

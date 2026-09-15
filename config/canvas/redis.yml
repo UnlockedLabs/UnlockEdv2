@@ -1,0 +1,4 @@
+# Canvas LMS redis config (local development only).
+production:
+  servers:
+    - redis://canvas-redis:6379

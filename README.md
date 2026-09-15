@@ -92,6 +92,38 @@ If this does not work because your directory is named something different, you c
   the `config/docker-compose.kolibri.yml` file. After you set this value, run `docker restart unlockedv2-kolibri-1`
   and you should be able to access the provider at `localhost:8000`
 
+- _Canvas_:
+  If you wish to run + develop against `Canvas` locally:
+
+  - Run `make canvas`. That is the only command. It runs all the normal containers plus Canvas
+    LMS, which gets its own postgres and redis so it never touches the unlocked database. Canvas
+    will be available at `localhost:3001` (its postgres is published on `5433` to avoid clashing
+    with ours on `5432`). On Apple Silicon this runs under emulation, because the `canvas-lms`
+    image is only published for amd64. It works, but give it a few minutes to boot the first time.
+  - **On the first run only**, `make canvas` also creates the Canvas database and seeds it with
+    sample users, courses, enrollments, assignments and quizzes. This adds roughly 6-7 minutes,
+    almost all of it Canvas migrations. Every run after that detects the existing database and
+    skips straight to starting the containers. The Canvas admin it creates is
+    `superadmin@unlocked.local` / `ChangeMe!` -- set `CANVAS_ADMIN_EMAIL` and
+    `CANVAS_ADMIN_PASSWORD` if you want something else. Every seeded Canvas user has the password
+    `password123`.
+  - `make canvas-init` and `make canvas-seed` are still available for doing either step by hand --
+    re-seeding, or re-creating the database after `docker compose ... down --volumes`.
+
+  To connect UnlockEd to it, log in to Canvas at `localhost:3001` as that admin,
+  go to Account -> Settings -> New Access Token, and copy the token. Then in
+  UnlockEd, enable the `provider_platforms` feature flag for your facility (every Canvas call is
+  gated on it) and edit the seeded `Canvas` provider platform, pasting the token you just copied
+  into `access_key`.
+
+  That is the only field you need to fill in. `make seed` already points the platform at the local
+  Canvas (`base_url` `http://canvas`, `account_id` `1`) and leaves it enabled; the access key is
+  the one value that can't be seeded, since you mint it per machine.
+
+  **Note** the base url is `http://canvas`, not `localhost:3001`. UnlockEd calls the Canvas API
+  from inside the `server` and `provider-service` containers, so it needs the compose service
+  name. `localhost:3001` only works from your browser.
+
  - **Videos**:
    Videos can be hosted locally for development, in which case they are simply downloaded and moved into the `frontend/public/videos` directory,
    If you wish to use `s3` and test out hosting videos between multiple instances, you need to set the following environment variables in either

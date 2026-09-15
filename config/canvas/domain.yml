@@ -1,0 +1,5 @@
+# Canvas LMS domain config (local development only).
+# ssl: false lets Canvas serve over plain http on localhost.
+production:
+  domain: "localhost:3001"
+  ssl: false

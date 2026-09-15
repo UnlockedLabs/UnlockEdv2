@@ -7,12 +7,19 @@ SHELL := /bin/bash
 DOCKER_COMPOSE=docker-compose.yml
 TUTOR_BUILD_LOG=logs/tutor-build.log
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
+CANVAS_COMPOSE=config/docker-compose.canvas.yml
 MIGRATE_MAIN=backend/migrations/main.go -dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
 # Set TUTOR_DIR in .env (or the environment) if your tutor checkout lives
 # somewhere other than a sibling ../ai/ directory. Docker Compose reads the
 # same variable from .env for the tutor build context, so the two never drift.
 DEFAULT_AI_DIR=../ai/unlocked-hiset-ai
+# Canvas admin created on first `make canvas`. Override in the environment if
+# you want different credentials. These are also what you log into Canvas with
+# at localhost:3001 to mint the API token.
+CANVAS_ADMIN_EMAIL ?= superadmin@unlocked.local
+CANVAS_ADMIN_PASSWORD ?= ChangeMe!
+CANVAS_ACCOUNT_NAME ?= UnlockEd Dev
 
 # tutor-service only builds from the sibling ../ai/unlocked-hiset-ai checkout when
 # it's present; otherwise its published image is pulled instead. Building it
@@ -64,6 +71,49 @@ define run_dev_compose
 			docker compose $(1) up --force-recreate $$(docker compose $(1) config --services | grep -v '^tutor-service$$'); \
 	fi 
 endef
+
+# First-run setup for Canvas: create its database and seed sample data. Does
+# nothing on every subsequent run, so `make canvas` stays a single command you
+# can re-run freely. Detection is one query -- to_regclass returns NULL (empty
+# output) when the schema was never created. $(1) is the same extra
+# `docker compose` flags run_dev_compose takes.
+#
+# Note there is no restart of `canvas`/`canvas-jobs` here even though they boot
+# against an empty schema and cache nils: run_dev_compose finishes with
+# `up --force-recreate`, which recreates them after this has run.
+define canvas_bootstrap
+	@set -e; \
+	docker compose $(1) up -d canvas-postgres; \
+	echo "Waiting for canvas-postgres..."; \
+	until docker compose $(1) exec -T canvas-postgres pg_isready -U canvas >/dev/null 2>&1; do sleep 2; done; \
+	if [ -z "$$(docker compose $(1) exec -T canvas-postgres psql -U canvas -d canvas -tAc "SELECT to_regclass('public.accounts')" 2>/dev/null | tr -d '[:space:]')" ]; then \
+		echo "First run: creating the Canvas database. This takes several minutes."; \
+		docker compose $(1) run --rm \
+			-e CANVAS_LMS_ADMIN_EMAIL='$(CANVAS_ADMIN_EMAIL)' \
+			-e CANVAS_LMS_ADMIN_PASSWORD='$(CANVAS_ADMIN_PASSWORD)' \
+			-e CANVAS_LMS_ACCOUNT_NAME='$(CANVAS_ACCOUNT_NAME)' \
+			-e CANVAS_LMS_STATS_COLLECTION=opt_out \
+			canvas bundle exec rake db:create db:initial_setup; \
+		echo "Seeding sample courses, users and assignments into Canvas..."; \
+		docker compose $(1) run --rm canvas bundle exec rails runner /usr/src/app/canvas_seed.rb; \
+		echo; \
+		echo "=============================================================="; \
+		echo " Canvas is set up."; \
+		echo " Admin:  $(CANVAS_ADMIN_EMAIL) / $(CANVAS_ADMIN_PASSWORD)"; \
+		echo " Seeded users all use the password: password123"; \
+		echo; \
+		echo " Still to do once, by hand:"; \
+		echo "  1. log in at localhost:3001, Account -> Settings -> New Access Token"; \
+		echo "  2. edit the seeded Canvas provider platform in UnlockEd:"; \
+		echo "       base_url   http://canvas   (NOT localhost:3001)"; \
+		echo "       account_id 1"; \
+		echo "       access_key the token from step 1"; \
+		echo "=============================================================="; \
+		echo; \
+	else \
+		echo "Canvas database already set up, skipping init."; \
+	fi
+endef
 SEED_MAIN=backend/seeder/main.go
 BINARY_NAME=server
 MIDDLEWARE=provider-middleware
@@ -81,7 +131,7 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod dev dev-registry dev-tutor migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
+.PHONY: help prod dev dev-registry dev-tutor migrate-fresh seed build-binaries init kolibri canvas canvas-init canvas-seed migrate reset migration install-dep
 
 
 help: ascii_art
@@ -92,6 +142,10 @@ help: ascii_art
 	@echo "   dev-tutor              Like dev, but with live hot-reload for tutor source (requires sibling checkout / symlink)"
 	@echo "   dev-registry           Like dev, but pulls the tutor image from GHCR instead of building it (no sibling checkout needed)"
 	@echo " 󱗆  kolibri                Run all containers with Kolibri (requires login to UL ECR | team only)"
+	@echo " 󰂺  canvas                 Run all containers alongside Canvas LMS (Canvas at localhost:3001)"
+	@echo "                           First run also creates + seeds the Canvas DB; later runs skip it"
+	@echo " 󰂺  canvas-init            Create the Canvas DB by hand (only needed after 'down --volumes')"
+	@echo " 󰂺  canvas-seed            Re-seed sample users/courses/assignments into Canvas (idempotent)"
 	@echo "   migrate                Apply the migrations"
 	@echo "   migrate-fresh          Drop the tables in the main application and to reset the database to a fresh state"
 	@echo "   migration NAME=x       Create a new migration with the provided name"
@@ -143,6 +197,30 @@ migrate: ascii_art
 
 kolibri: ascii_art
 	$(call run_dev_compose,-f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE))
+
+# Run the normal stack PLUS Canvas LMS. The Canvas images are only pulled and
+# started here, never during `make init` / `make dev`. Canvas gets its own
+# postgres + redis (see config/docker-compose.canvas.yml) so it never touches
+# the unlocked database. The first run also creates and seeds the Canvas
+# database; later runs skip straight to starting the containers.
+canvas: ascii_art
+	$(call canvas_bootstrap,-f $(DOCKER_COMPOSE) -f $(CANVAS_COMPOSE))
+	$(call run_dev_compose,-f $(DOCKER_COMPOSE) -f $(CANVAS_COMPOSE))
+
+# Canvas database creation + initial setup. `make canvas` does this for you on
+# the first run -- this target is here for doing it by hand, e.g. to re-create
+# the database after `down --volumes`. Prompts interactively for the admin email
+# and password (`make canvas` passes them non-interactively instead).
+canvas-init: ascii_art
+	docker compose -f $(DOCKER_COMPOSE) -f $(CANVAS_COMPOSE) run --rm canvas \
+		bundle exec rake db:create db:initial_setup
+
+# Seed sample data (users / courses / enrollments / assignments) into Canvas.
+# Also run by `make canvas` on the first run. Idempotent -- safe to re-run by
+# hand to top the data back up. All seeded users have password: password123
+canvas-seed: ascii_art
+	docker compose -f $(DOCKER_COMPOSE) -f $(CANVAS_COMPOSE) run --rm canvas \
+		bundle exec rails runner /usr/src/app/canvas_seed.rb
 
 seed: ascii_art
 	go run $(SEED_MAIN)

@@ -1,0 +1,8 @@
+# Canvas LMS delayed_jobs (background worker) config (local development only).
+default: &default
+  workers:
+    - workers: 1
+      queue: canvas_queue
+
+production:
+  <<: *default

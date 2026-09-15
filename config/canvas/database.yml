@@ -1,0 +1,13 @@
+# Canvas LMS database config (local development only).
+# Points Canvas at its OWN postgres container (canvas-postgres), completely
+# separate from the unlocked app database. Inside the docker network this is
+# port 5432; on the host it is published as 5433 (see docker-compose.canvas.yml).
+production:
+  adapter: postgresql
+  encoding: utf8
+  database: canvas
+  host: canvas-postgres
+  port: 5432
+  username: canvas
+  password: canvas
+  timeout: 5000

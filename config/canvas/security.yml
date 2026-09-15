@@ -1,0 +1,5 @@
+# Canvas LMS security config (local development only).
+# encryption_key must be at least 20 characters. This is a throwaway dev key —
+# do NOT reuse it anywhere real.
+production:
+  encryption_key: dev-only-canvas-encryption-key-change-me-0123456789abcdef

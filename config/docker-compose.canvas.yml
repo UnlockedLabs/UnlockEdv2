@@ -1,0 +1,80 @@
+# Canvas LMS overlay (local development only).
+#
+# This file is NOT part of the default stack. It is started on demand via
+# `make canvas`, which overlays it on top of the base docker-compose.yml.
+# Nothing here is pulled or run during `make init` / `make dev`.
+#
+# Canvas runs against its OWN postgres + redis, isolated from the unlocked app:
+#   - canvas-postgres : published on host port 5433 (container 5432) to avoid
+#                       clashing with the unlocked postgres on 5432.
+#   - canvas-redis    : internal only.
+#   - canvas          : web app, published on host port 3001.
+#   - canvas-jobs     : delayed_job background worker (Canvas requires it).
+#
+# First-time setup (run once, after `make canvas` is up): `make canvas-init`.
+
+x-canvas-common: &canvas-common
+  image: instructure/canvas-lms:stable
+  # The canvas-lms image is published for amd64 ONLY -- there is no arm64
+  # manifest. Without this, `make canvas` dies on Apple Silicon with
+  # "no matching manifest for linux/arm64". Pinning the platform runs it under
+  # emulation instead (slow to boot, but it works). No-op on amd64 Linux/WSL.
+  platform: linux/amd64
+  environment:
+    - RAILS_ENV=production
+  volumes:
+    - ./config/canvas/database.yml:/usr/src/app/config/database.yml
+    - ./config/canvas/redis.yml:/usr/src/app/config/redis.yml
+    - ./config/canvas/security.yml:/usr/src/app/config/security.yml
+    - ./config/canvas/domain.yml:/usr/src/app/config/domain.yml
+    - ./config/canvas/outgoing_mail.yml:/usr/src/app/config/outgoing_mail.yml
+    - ./config/canvas/delayed_jobs.yml:/usr/src/app/config/delayed_jobs.yml
+    - ./config/canvas/seed.rb:/usr/src/app/canvas_seed.rb
+  networks:
+    - intranet
+  depends_on:
+    canvas-postgres:
+      condition: service_healthy
+    canvas-redis:
+      condition: service_started
+
+services:
+  canvas-postgres:
+    # PG 12 on purpose: the (old) canvas-lms:stable image ships a libpq that
+    # can't do scram-sha-256 auth. PG 14+ defaults to SCRAM password storage,
+    # which breaks that client. PG 13 and earlier default to md5 -> works.
+    image: postgres:12
+    environment:
+      POSTGRES_DB: canvas
+      POSTGRES_USER: canvas
+      POSTGRES_PASSWORD: canvas
+    ports:
+      - "5433:5432" # host 5433 -> avoids clash with unlocked postgres (5432)
+    volumes:
+      - canvas_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canvas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - intranet
+
+  canvas-redis:
+    image: redis:alpine
+    networks:
+      - intranet
+
+  canvas:
+    <<: *canvas-common
+    ports:
+      - "3001:80" # Canvas web UI at http://localhost:3001
+    restart: unless-stopped
+
+  canvas-jobs:
+    <<: *canvas-common
+    command: bundle exec script/delayed_job run
+    restart: unless-stopped
+
+volumes:
+  canvas_postgres_data:
