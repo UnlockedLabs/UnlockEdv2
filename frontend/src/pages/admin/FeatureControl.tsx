@@ -34,13 +34,14 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
-// The 4 features shown as their own card/pill. Order drives both the list-panel
+// The 5 features shown as their own card/pill. Order drives both the list-panel
 // pills and the detail-panel cards.
 const TOP_LEVEL_FEATURES = [
     FeatureAccess.OpenContentAccess,
     FeatureAccess.ProviderAccess,
     FeatureAccess.ProgramAccess,
-    FeatureAccess.LearningRecordAccess
+    FeatureAccess.LearningRecordAccess,
+    FeatureAccess.AiTutorAccess
 ];
 
 const FEATURE_CARDS: {
@@ -71,6 +72,12 @@ const FEATURE_CARDS: {
         title: 'Learning Record',
         description:
             'Allows residents to log and track their learning achievements and generate a personal learning record'
+    },
+    {
+        feature: FeatureAccess.AiTutorAccess,
+        title: 'AI Tutor',
+        description:
+            'Provides an AI-powered HiSET tutor and writing assistant for residents'
     }
 ];
 
@@ -265,7 +272,8 @@ export default function FeatureControl() {
     }
 
     async function handleToggle(feature: FeatureAccess, currentValue: boolean) {
-        if (selectedFacilityId === null || pendingFeature !== null) return;
+        if (selectedFacilityId === null || pendingFeature !== null || applying)
+            return;
         const label =
             FEATURE_LABELS[feature] ??
             ALL_SUB_FEATURES.find((s) => s.feature === feature)?.label ??
@@ -446,7 +454,9 @@ export default function FeatureControl() {
                                 <Button
                                     variant="outline"
                                     onClick={() => setConfirmApplyAll(true)}
-                                    disabled={pendingFeature !== null}
+                                    disabled={
+                                        pendingFeature !== null || applying
+                                    }
                                 >
                                     Apply these settings to all facilities
                                 </Button>
@@ -477,7 +487,8 @@ export default function FeatureControl() {
                                                     disabled={
                                                         pendingFeature !==
                                                             null ||
-                                                        detailLoading
+                                                        detailLoading ||
+                                                        applying
                                                     }
                                                     onCheckedChange={() =>
                                                         void handleToggle(
@@ -518,7 +529,8 @@ export default function FeatureControl() {
                                                                             !enabled ||
                                                                             pendingFeature !==
                                                                                 null ||
-                                                                            detailLoading
+                                                                            detailLoading ||
+                                                                            applying
                                                                         }
                                                                         onToggle={() =>
                                                                             void handleToggle(

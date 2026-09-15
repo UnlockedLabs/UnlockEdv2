@@ -41,7 +41,7 @@ export enum EnrollmentStatus {
 
 export interface EnrollmentAttendance {
     enrollment_id: number;
-    class_id: number;
+    cohort_id: number;
     user_id: number;
     enrollment_status: string;
     doc_id: string;
@@ -63,7 +63,7 @@ export interface ClassEnrollment {
     id: number;
     created_at: string;
     updated_at: string;
-    class_id: number;
+    cohort_id: number;
     user_id: number;
     enrollment_status: EnrollmentStatus;
     change_reason?: string;

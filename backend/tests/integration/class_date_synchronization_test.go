@@ -75,11 +75,10 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 	initialEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC) // November 30, 2025
 	creditHours := int64(3)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     15,
-		Name:         "Override Extension Test Class",
 		InstructorID: &instructor.ID,
 		Description:  "Testing that override creation extends end date",
 		StartDt:      classStartDate,
@@ -88,7 +87,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -108,7 +107,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		Do()
 
 	var createdEvent models.ProgramClassEvent
-	err = env.DB.Where("class_id = ?", createdClass.ID).First(&createdEvent).Error
+	err = env.DB.Where("cohort_id = ?", createdClass.ID).First(&createdEvent).Error
 	if err == nil {
 		t.Logf("Event successfully created in DB with ID: %d", createdEvent.ID)
 	} else {
@@ -131,7 +130,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20251127T180000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "2h",
 			"room_id":        roomID,
@@ -140,7 +139,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		},
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20251202T180000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "2h",
 			"room_id":        roomID,
@@ -154,7 +153,7 @@ func runTestOverrideCreationExtendsEndDate(t *testing.T, env *TestEnv, facility 
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	updatedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
+	updatedClassResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -172,11 +171,10 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 	classEndDate := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(4)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     20,
-		Name:         "Multi-Month Extension Test",
 		InstructorID: &instructor.ID,
 		Description:  "Testing multi-month extension via rescheduling",
 		StartDt:      classStartDate,
@@ -185,7 +183,7 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -228,7 +226,7 @@ func runTestEventReschedulingExtendsMultipleMonths(t *testing.T, env *TestEnv, f
 		Do().
 		ExpectStatus(http.StatusCreated)
 
-	extendedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
+	extendedClassResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -245,11 +243,10 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 	classEndDate := time.Date(2025, 12, 20, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(3)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     15,
-		Name:         "Multiple Overrides Test Class",
 		InstructorID: &instructor.ID,
 		Description:  "Testing multiple overrides extend end date",
 		StartDt:      classStartDate,
@@ -258,7 +255,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -282,7 +279,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20260106T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h",
 			"room_id":        roomID,
@@ -291,7 +288,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 		},
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20260203T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h",
 			"room_id":        roomID,
@@ -300,7 +297,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 		},
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20260303T140000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h",
 			"room_id":        roomID,
@@ -314,7 +311,7 @@ func runTestMultipleOverridesExtendEndDate(t *testing.T, env *TestEnv, facility 
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	extendedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
+	extendedClassResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -399,11 +396,10 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Start Date Update Test Class",
 		InstructorID: &instructor.ID,
 		Description:  "Testing that start date updates when event moved earlier",
 		StartDt:      classStartDate,
@@ -412,7 +408,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -437,7 +433,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20251210T180000Z\nRRULE:FREQ=DAILY;COUNT=1",
 			"duration":       "1h30m",
 			"room_id":        roomID,
@@ -451,7 +447,7 @@ func runTestStartDateUpdatesWhenEventMovedEarlier(t *testing.T, env *TestEnv, fa
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	updatedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
+	updatedClassResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)
@@ -468,11 +464,10 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 	classEndDate := time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)
 	creditHours := int64(2)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     12,
-		Name:         "Cancellation Boundary Test Class",
 		InstructorID: &instructor.ID,
 		Description:  "Testing that event cancellation affects boundaries",
 		StartDt:      classStartDate,
@@ -481,7 +476,7 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 		CreditHours:  &creditHours,
 	}
 
-	classResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	classResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusCreated)
@@ -505,7 +500,7 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 	overridePayload := []map[string]interface{}{
 		{
 			"event_id":       event.ID,
-			"class_id":       createdClass.ID,
+			"cohort_id":      createdClass.ID,
 			"override_rrule": "DTSTART:20260201T180000Z\nRRULE:FREQ=DAILY;COUNT=8",
 			"duration":       "1h",
 			"room_id":        roomID,
@@ -519,7 +514,7 @@ func runTestEventCancellationAffectsBoundaries(t *testing.T, env *TestEnv, facil
 		Do().
 		ExpectStatus(http.StatusOK)
 
-	updatedClassResp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
+	updatedClassResp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d", createdClass.ID), nil).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusOK)

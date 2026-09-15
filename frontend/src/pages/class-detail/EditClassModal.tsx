@@ -28,7 +28,7 @@ import {
 import { editClassSchema, EditClassInput } from '@/lib/validation';
 import { SelectedClassStatus } from '@/types/attendance';
 import {
-    Class,
+    Cohort,
     Room,
     RoomConflict,
     User,
@@ -45,7 +45,7 @@ import {
 interface EditClassModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    cls: Class;
+    cls: Cohort;
     onUpdated: () => void;
 }
 
@@ -264,7 +264,7 @@ export function EditClassModal({
     const form = useForm<EditClassFormData>({
         resolver: zodResolver(editClassSchema),
         values: {
-            name: cls.name,
+            class_name: cls.class_name,
             description: cls.description,
             instructor_id: getInstructorId(cls.events) ?? null,
             capacity: cls.capacity,
@@ -379,7 +379,6 @@ export function EditClassModal({
 
         const payload = {
             id: cls.id,
-            name: data.name,
             description: data.description,
             instructor_id: data.instructor_id
                 ? Number(data.instructor_id)
@@ -394,7 +393,7 @@ export function EditClassModal({
                 e.id === activeEvent.id
                     ? {
                           id: e.id,
-                          class_id: e.class_id,
+                          cohort_id: e.cohort_id,
                           duration: newDuration,
                           recurrence_rule: newRule,
                           room_id: data.room_id
@@ -403,7 +402,7 @@ export function EditClassModal({
                       }
                     : {
                           id: e.id,
-                          class_id: e.class_id,
+                          cohort_id: e.cohort_id,
                           duration: e.duration,
                           recurrence_rule: e.recurrence_rule,
                           room_id: e.room_id
@@ -423,6 +422,27 @@ export function EditClassModal({
             }
             toast.error(resp.message || 'Failed to update class');
             return;
+        }
+
+        // The name lives on the parent CLASS, not the cohort, so it is a second call to a
+        // different tier. Sent AFTER the cohort update on purpose: that call can come back
+        // 409 on a room conflict and abort, and a rename that survived a failed save would
+        // be a change the admin never confirmed. Only sent when the name actually changed.
+        const newName = data.class_name.trim();
+        if (newName !== cls.class_name) {
+            const renamed = await API.patch<unknown, { name: string }>(
+                `classes/${cls.program_class_id}`,
+                { name: newName }
+            );
+            if (!renamed.success) {
+                toast.error(
+                    renamed.message ||
+                        'Class details were saved, but the name could not be updated'
+                );
+                onUpdated();
+                onOpenChange(false);
+                return;
+            }
         }
 
         toast.success('Class updated successfully');
@@ -454,13 +474,13 @@ export function EditClassModal({
 
                                 <FormField
                                     control={control}
-                                    name="name"
+                                    name="class_name"
                                     render={({ field }) => (
                                         <FormItem className="space-y-2">
                                             <FormLabel>Class Name</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    id="edit-name"
+                                                    id="edit-class-name"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -752,7 +772,7 @@ export function EditClassModal({
                                                         <p className="text-sm text-amber-600 flex items-start gap-1">
                                                             <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
                                                             <span>
-                                                                Warning: Class
+                                                                Warning: Cohort
                                                                 has already
                                                                 started
                                                             </span>

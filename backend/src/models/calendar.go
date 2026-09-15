@@ -10,7 +10,7 @@ const (
 
 type EventInstance struct {
 	EventID     uint          `json:"event_id"`
-	ClassID     uint          `json:"class_id"`
+	CohortID    uint          `json:"cohort_id"`
 	ProgramName string        `json:"program_name"`
 	StartTime   time.Time     `json:"start_time"`
 	Duration    time.Duration `json:"duration"`

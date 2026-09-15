@@ -2,8 +2,14 @@ import { FAQContent } from './FAQs';
 import Tour from '@/components/Tour';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { PageHeader } from '@/components/shared';
+import { useAuth, hasFeature } from '@/auth/useAuth';
+import { FeatureAccess } from '@/types';
 
 export default function HelpCenter({ close }: { close?: () => void }) {
+    const { user } = useAuth();
+    const hasKnowledgeCenter =
+        !!user && hasFeature(user, FeatureAccess.OpenContentAccess);
+
     if (close) {
         return (
             <div className="flex flex-col gap-4">
@@ -16,7 +22,7 @@ export default function HelpCenter({ close }: { close?: () => void }) {
                     </button>
                 </div>
                 <PageHeader title="Help Center" />
-                <Tour close={close} />
+                {hasKnowledgeCenter && <Tour close={close} />}
                 <FAQContent />
             </div>
         );

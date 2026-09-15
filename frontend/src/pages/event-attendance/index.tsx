@@ -80,7 +80,7 @@ export default function EventAttendance() {
     }>();
     const navigate = useNavigate();
     const loaderData = useLoaderData() as ClassLoaderData;
-    const className = loaderData?.class?.name ?? '';
+    const className = loaderData?.class?.class_name ?? '';
     const [rows, setRows] = useState<RowState[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [initialized, setInitialized] = useState(false);

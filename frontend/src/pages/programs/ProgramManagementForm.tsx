@@ -55,6 +55,7 @@ function buildDefaultValues(program?: ProgramOverview): ProgramFormInput {
             credit_types: program.credit_types.map((ct) => ct.credit_type),
             funding_type: program.funding_type,
             is_active: program.is_active,
+            has_program_completion: program.has_program_completion ?? false,
             facility_ids: program.facilities.map((f) => f.id)
         };
     }
@@ -65,6 +66,7 @@ function buildDefaultValues(program?: ProgramOverview): ProgramFormInput {
         credit_types: [],
         funding_type: FundingType.OTHER,
         is_active: true,
+        has_program_completion: false,
         facility_ids: []
     };
 }
@@ -122,6 +124,7 @@ export default function ProgramManagementForm() {
             ),
             funding_type: data.funding_type,
             is_active: data.is_active,
+            has_program_completion: data.has_program_completion,
             facilities: data.facility_ids
         };
 
@@ -435,6 +438,38 @@ export default function ProgramManagementForm() {
                                         facility admins schedule classes.
                                         &apos;Inactive&apos; programs stay
                                         hidden.
+                                    </p>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={control}
+                            name="has_program_completion"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <Label>Program Completion</Label>
+                                    <div className="flex items-start gap-2">
+                                        <Checkbox
+                                            id="has-program-completion"
+                                            checked={field.value}
+                                            onCheckedChange={(checked) =>
+                                                field.onChange(checked === true)
+                                            }
+                                            className="mt-0.5"
+                                        />
+                                        <label
+                                            htmlFor="has-program-completion"
+                                            className="text-sm leading-snug"
+                                        >
+                                            Residents must complete all classes
+                                            to complete this program
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Leave unchecked when each class stands
+                                        on its own. Applies to every facility
+                                        offering this program.
                                     </p>
                                 </FormItem>
                             )}

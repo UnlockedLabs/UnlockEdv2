@@ -35,6 +35,8 @@ func (suite *ProgramsHandlerTestSuite) cleanDatabase() {
 	suite.env.DB.Exec("DELETE FROM program_class_event_attendance")
 	suite.env.DB.Exec("DELETE FROM program_class_events")
 	suite.env.DB.Exec("DELETE FROM program_class_enrollments")
+	suite.env.DB.Exec("DELETE FROM program_class_cohorts")
+	suite.env.DB.Exec("DELETE FROM program_class_credit_types")
 	suite.env.DB.Exec("DELETE FROM program_classes")
 	suite.env.DB.Exec("DELETE FROM facilities_programs")
 	suite.env.DB.Exec("DELETE FROM programs")
@@ -87,11 +89,10 @@ func (suite *ProgramsHandlerTestSuite) setupTestData() (*models.Facility, *model
 	suite.env.DB.Create(association)
 
 	// Create active class
-	class := &models.ProgramClass{
+	class := &models.ProgramClassCohort{
 		ProgramID:  program.ID,
 		FacilityID: facility.ID,
 		Status:     models.Active,
-		Name:       "Test Class",
 	}
 	suite.env.DB.Create(class)
 
@@ -108,7 +109,7 @@ func (suite *ProgramsHandlerTestSuite) setupTestData() (*models.Facility, *model
 
 	now := time.Now()
 	enrollment := &models.ProgramClassEnrollment{
-		ClassID:          class.ID,
+		CohortID:         class.ID,
 		UserID:           student.ID,
 		EnrollmentStatus: models.Enrolled,
 		EnrolledAt:       &now,

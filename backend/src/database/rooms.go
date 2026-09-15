@@ -167,12 +167,18 @@ func buildConflictsFromBookings(db *DB, w *conflictWindow, bookings []models.Roo
 		for id := range classIDs {
 			ids = append(ids, id)
 		}
-		var classes []models.ProgramClass
-		if err := db.Select("id, name").Where("id IN ?", ids).Find(&classes).Error; err != nil {
+		// The displayed name lives on the parent class, so this has to join -- a cohort
+		// has no name of its own. Both tables have a `name`, so qualify every column.
+		var classes []models.ProgramClassCohort
+		if err := db.Model(&models.ProgramClassCohort{}).
+			Select("program_class_cohorts.id, pc.name AS class_name").
+			Joins("JOIN program_classes pc ON pc.id = program_class_cohorts.class_id").
+			Where("program_class_cohorts.id IN ?", ids).
+			Find(&classes).Error; err != nil {
 			logrus.Warnf("failed to batch fetch class names for conflict display: %v", err)
 		}
 		for _, c := range classes {
-			classNamesCache[c.ID] = c.Name
+			classNamesCache[c.ID] = c.ClassName
 		}
 	}
 
@@ -223,7 +229,7 @@ func (db *DB) getRoomBookingsInRange(facilityID, roomID uint, rangeStart, rangeE
 	var events []models.ProgramClassEvent
 	if err := db.Table("program_class_events e").
 		Select("DISTINCT e.*").
-		Joins("JOIN program_classes c ON c.id = e.class_id").
+		Joins("JOIN program_class_cohorts c ON c.id = e.cohort_id").
 		Joins("LEFT JOIN program_class_event_overrides o ON o.event_id = e.id AND o.deleted_at IS NULL").
 		Where("c.facility_id = ? AND e.deleted_at IS NULL AND (e.room_id = ? OR o.room_id = ?)", facilityID, roomID, roomID).
 		Preload("Overrides").
@@ -295,7 +301,7 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 			StartTime:  occ,
 			EndTime:    occ.Add(duration),
 			EventID:    event.ID,
-			ClassID:    event.ClassID,
+			ClassID:    event.CohortID,
 			IsOverride: false,
 		})
 	}
@@ -326,7 +332,7 @@ func expandEventToBookings(event models.ProgramClassEvent, rangeStart, rangeEnd 
 				StartTime:  occ,
 				EndTime:    occ.Add(overrideDuration),
 				EventID:    event.ID,
-				ClassID:    event.ClassID,
+				ClassID:    event.CohortID,
 				IsOverride: true,
 			})
 		}

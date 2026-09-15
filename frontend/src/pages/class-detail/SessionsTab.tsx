@@ -5,7 +5,7 @@ import { Calendar, AlertCircle } from 'lucide-react';
 import API from '@/api/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Class } from '@/types/program';
+import { Cohort } from '@/types/program';
 import { ClassEventInstance } from '@/types/events';
 import { ServerResponseMany } from '@/types/server';
 import { BulkCancelSession } from './BulkCancelSessionsModal';
@@ -33,7 +33,7 @@ import {
 } from './useSessionFilters';
 
 interface SessionsTabProps {
-    cls: Class;
+    cls: Cohort;
     onClassMutate: () => void;
 }
 

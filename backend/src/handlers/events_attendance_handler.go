@@ -20,7 +20,7 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 		if claims.canSwitchFacility() {
 			return true
 		}
-		id, err := strconv.ParseUint(r.PathValue("class_id"), 10, 64)
+		id, err := strconv.ParseUint(r.PathValue("cohort_id"), 10, 64)
 		if err != nil {
 			return false
 		}
@@ -28,28 +28,28 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 			return true
 		}
 		var facID uint
-		return tx.Table("program_classes").
+		return tx.Table("program_class_cohorts").
 			Select("facility_id").
 			Where("id = ?", id).
 			Limit(1).Scan(&facID).Error == nil && claims.FacilityID == facID
 	}
 	return []routeDef{
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/historical-enrollment-batch", srv.handleGetHistoricalEnrollmentBatch, axx, resolver),
-		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
-		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{cohort_id}/historical-enrollment-batch", srv.handleGetHistoricalEnrollmentBatch, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{cohort_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{cohort_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
 	}
 }
 
 // O(N+1) query problem in this method, but it is not a performance critical endpoint
 // and the number of enrollments is usually small, so for now we're going to live with it.
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	classId, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	class, err := srv.Db.GetClassByID(classId)
+	class, err := srv.Db.GetCohortByID(classId)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -127,7 +127,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 			return err
 		}
 	}
-	if err := srv.WithUserContext(r).LogUserAttendance(attendances, args.Ctx, &args.UserID, class.Name); err != nil {
+	if err := srv.WithUserContext(r).LogUserAttendance(attendances, args.Ctx, &args.UserID, class.ClassName); err != nil {
 		return newDatabaseServiceError(err)
 	}
 
@@ -135,11 +135,11 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "class ID")
 	}
-	class, err := srv.Db.GetClassByID(classID)
+	class, err := srv.Db.GetCohortByID(classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -166,13 +166,13 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 	}
 
 	var enrollment models.ProgramClassEnrollment
-	enrollmentErr := srv.Db.Where("class_id = ? AND user_id = ? AND enrollment_status = ?",
+	enrollmentErr := srv.Db.Where("cohort_id = ? AND user_id = ? AND enrollment_status = ?",
 		classID, userID, models.Enrolled).First(&enrollment).Error
 	if enrollmentErr != nil {
 		return writeJsonResponse(w, http.StatusBadRequest, "user is not enrolled in class")
 	}
 
-	rowsAffected, err := srv.WithUserContext(r).DeleteAttendance(eventID, userID, date, args.Ctx, &args.UserID, class.Name)
+	rowsAffected, err := srv.WithUserContext(r).DeleteAttendance(eventID, userID, date, args.Ctx, &args.UserID, class.ClassName)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -185,7 +185,7 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 }
 
 func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "class_id")
 	}
@@ -203,7 +203,7 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 
 	args := srv.getQueryContext(r)
 
-	class, err := srv.Db.GetClassByID(classID)
+	class, err := srv.Db.GetCohortByID(classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -393,7 +393,7 @@ func applyTimeTracking(attendance *models.ProgramClassEventAttendance, scheduled
 }
 
 func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
@@ -416,7 +416,7 @@ func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) handleGetHistoricalEnrollmentBatch(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	classID, err := strconv.Atoi(r.PathValue("cohort_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}

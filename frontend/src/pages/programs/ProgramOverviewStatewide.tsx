@@ -16,7 +16,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import API from '@/api/api';
 import {
-    Class,
+    Cohort,
     ProgramOverview,
     SelectedClassStatus,
     ServerResponseMany,
@@ -118,7 +118,7 @@ const abbreviateScheduleDays = (schedule?: string): string => {
 interface FacilityStat {
     facilityId: number;
     facilityName: string;
-    classes: Class[];
+    classes: Cohort[];
     totalClasses: number;
     activeClasses: number;
     totalEnrolled: number;
@@ -186,7 +186,7 @@ export default function ProgramOverviewStatewide() {
         return 'Cannot delete program';
     })();
 
-    const { data: classesResp } = useSWR<ServerResponseMany<Class>>(
+    const { data: classesResp } = useSWR<ServerResponseMany<Cohort>>(
         `/api/programs/${program_id}/classes?all=true&order_by=ps.start_dt asc`
     );
     const classes = useMemo(() => classesResp?.data ?? [], [classesResp?.data]);
@@ -1088,7 +1088,7 @@ export default function ProgramOverviewStatewide() {
                                                                             >
                                                                                 <TableCell className="font-medium">
                                                                                     {
-                                                                                        cls.name
+                                                                                        cls.class_name
                                                                                     }
                                                                                 </TableCell>
                                                                                 <TableCell className="text-sm text-gray-600">

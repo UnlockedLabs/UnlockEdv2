@@ -156,7 +156,7 @@ func TestCancelAllFutureSessionsAcrossMultipleRows(t *testing.T) {
 	// The stray future-only row (B) must be soft-deleted, not left generating sessions.
 	var activeRows int64
 	require.NoError(t, env.DB.Model(&models.ProgramClassEvent{}).
-		Where("class_id = ? AND is_cancelled = ?", class.ID, false).
+		Where("cohort_id = ? AND is_cancelled = ?", class.ID, false).
 		Count(&activeRows).Error)
 	require.Equal(t, int64(1), activeRows, "only the capped original row should remain active")
 }
@@ -205,7 +205,7 @@ func TestUncancelSeriesRestoresFutureSessions(t *testing.T) {
 
 	// Locate the cancelled series row created by the cancel.
 	var cancelledSeries models.ProgramClassEvent
-	require.NoError(t, env.DB.Where("class_id = ? AND is_cancelled = ?", class.ID, true).
+	require.NoError(t, env.DB.Where("cohort_id = ? AND is_cancelled = ?", class.ID, true).
 		Order("created_at DESC").First(&cancelledSeries).Error)
 
 	// Undo: restore the series from today onward.

@@ -126,11 +126,11 @@ function FacilityAdminView({
     }, [metrics]);
     const handleAttendanceNavigate = (item: TodaysScheduleItem) => {
         if (!item.event_id) {
-            navigate('/program-classes/' + item.class_id + '/attendance');
+            navigate('/program-classes/' + item.cohort_id + '/attendance');
             return;
         }
         navigate(
-            `/program-classes/${item.class_id}/events/${item.event_id}/attendance/${item.date}`
+            `/program-classes/${item.cohort_id}/events/${item.event_id}/attendance/${item.date}`
         );
     };
 
@@ -346,14 +346,14 @@ function TodaysSchedule({
                         {todayClasses.map((item: TodaysScheduleItem) => {
                             return (
                                 <div
-                                    key={`${item.class_id}-${item.event_id}-${item.date}-${item.start_time}`}
+                                    key={`${item.cohort_id}-${item.event_id}-${item.date}-${item.start_time}`}
                                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-surface-hover dark:bg-[#262626] rounded-lg hover:bg-gray-100 dark:hover:bg-[#262626]/80 transition-colors group"
                                 >
                                     <div
                                         onClick={() =>
                                             navigate(
                                                 '/program-classes/' +
-                                                    item.class_id
+                                                    item.cohort_id
                                             )
                                         }
                                         className="flex items-center gap-4 flex-1 cursor-pointer min-w-0"
@@ -481,7 +481,7 @@ function MissingAttendanceWidget({
                             });
                             return (
                                 <div
-                                    key={`${item.class_id}-${item.date}-${item.event_id}`}
+                                    key={`${item.cohort_id}-${item.date}-${item.event_id}`}
                                     className={cn(
                                         'p-3 bg-amber-50 dark:bg-[#262626] border border-amber-200 dark:border-brand-gold/30 rounded-lg',
                                         isDepartment
@@ -492,7 +492,7 @@ function MissingAttendanceWidget({
                                         if (isDepartment) {
                                             navigate(
                                                 '/program-classes/' +
-                                                    item.class_id +
+                                                    item.cohort_id +
                                                     '/detail'
                                             );
                                         }
@@ -517,7 +517,7 @@ function MissingAttendanceWidget({
                                             onClick={() =>
                                                 navigate(
                                                     '/program-classes/' +
-                                                        item.class_id +
+                                                        item.cohort_id +
                                                         '/events/' +
                                                         item.event_id +
                                                         '/attendance/' +

@@ -38,7 +38,7 @@ export function useChangeEventField(
             }),
             ...(event.is_override && { id: event.override_id }),
             event_id: event.id,
-            class_id: event.class_id,
+            cohort_id: event.cohort_id,
             override_rrule: overrideRule,
             duration: event.duration,
             room_id: event.room_id ?? null,
@@ -49,7 +49,7 @@ export function useChangeEventField(
         };
 
         const resp = await API.put(
-            `program-classes/${event.class_id}/events/${event.id}`,
+            `program-classes/${event.cohort_id}/events/${event.id}`,
             [overrideEvent]
         );
 
@@ -75,7 +75,7 @@ export function useChangeEventField(
 
         const newEventSeries = {
             id: 0,
-            class_id: event.class_id,
+            cohort_id: event.cohort_id,
             duration: event.duration,
             room_id: event.room_id ?? null,
             instructor_id: event.instructor_id ?? null,
@@ -91,17 +91,20 @@ export function useChangeEventField(
         );
         const closedEventSeries = {
             id: event.id,
-            class_id: event.class_id,
+            cohort_id: event.cohort_id,
             recurrence_rule: new RRule({
                 ...currentRRule.origOptions,
                 until: untilDate
             }).toString()
         };
 
-        const resp = await API.put(`program-classes/${event.class_id}/events`, {
-            event_series: newEventSeries,
-            closed_event_series: closedEventSeries
-        });
+        const resp = await API.put(
+            `program-classes/${event.cohort_id}/events`,
+            {
+                event_series: newEventSeries,
+                closed_event_series: closedEventSeries
+            }
+        );
 
         return {
             success: resp.success,
@@ -125,7 +128,7 @@ export function useChangeEventField(
 
         const newEventSeries = {
             id: 0,
-            class_id: event.class_id,
+            cohort_id: event.cohort_id,
             duration: event.duration,
             room_id: event.room_id ?? null,
             instructor_id: event.instructor_id ?? null,
@@ -141,17 +144,20 @@ export function useChangeEventField(
         );
         const closedEventSeries = {
             id: event.id,
-            class_id: event.class_id,
+            cohort_id: event.cohort_id,
             recurrence_rule: new RRule({
                 ...currentRRule.origOptions,
                 until: untilDate
             }).toString()
         };
 
-        const resp = await API.put(`program-classes/${event.class_id}/events`, {
-            event_series: newEventSeries,
-            closed_event_series: closedEventSeries
-        });
+        const resp = await API.put(
+            `program-classes/${event.cohort_id}/events`,
+            {
+                event_series: newEventSeries,
+                closed_event_series: closedEventSeries
+            }
+        );
 
         return {
             success: resp.success,

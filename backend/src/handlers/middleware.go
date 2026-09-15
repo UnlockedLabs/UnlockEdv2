@@ -188,6 +188,17 @@ func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel .
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 		if !ok || !claims.hasFeatureAccess(accessLevel...) {
+			// Logged because this 401 was previously invisible: a feature-gated
+			// route rejected a resident with no trace anywhere but a prometheus
+			// counter, which is exactly the "not enough information in the logs"
+			// ID-846 ran into.
+			fields := log.Fields{"handler": "checkFeatureAccessMiddleware", "method": r.Method, "path": r.URL.Path, "required_features": accessLevel}
+			if ok {
+				fields["user_id"] = claims.UserID
+				fields["facility_id"] = claims.FacilityID
+				fields["feature_access"] = claims.FeatureAccess
+			}
+			log.WithFields(fields).Warn("feature not enabled for user")
 			srv.errorResponse(w, http.StatusUnauthorized, "Feature not enabled")
 			return
 		}

@@ -31,6 +31,8 @@ func (suite *ProgramOutcomesReportTestSuite) cleanDatabase() {
 	suite.env.DB.Exec("DELETE FROM program_class_event_attendance")
 	suite.env.DB.Exec("DELETE FROM program_class_events")
 	suite.env.DB.Exec("DELETE FROM program_class_enrollments")
+	suite.env.DB.Exec("DELETE FROM program_class_cohorts")
+	suite.env.DB.Exec("DELETE FROM program_class_credit_types")
 	suite.env.DB.Exec("DELETE FROM program_classes")
 	suite.env.DB.Exec("DELETE FROM program_types")
 	suite.env.DB.Exec("DELETE FROM facilities_programs")
@@ -453,9 +455,8 @@ func (suite *ProgramOutcomesReportTestSuite) addProgramType(programID uint, prog
 	suite.env.DB.Create(pt)
 }
 
-func (suite *ProgramOutcomesReportTestSuite) createClass(name string, programID, facilityID uint, status models.ClassStatus) *models.ProgramClass {
-	class := &models.ProgramClass{
-		Name:       name,
+func (suite *ProgramOutcomesReportTestSuite) createClass(name string, programID, facilityID uint, status models.ClassStatus) *models.ProgramClassCohort {
+	class := &models.ProgramClassCohort{
 		ProgramID:  programID,
 		FacilityID: facilityID,
 		Status:     status,
@@ -480,7 +481,7 @@ func (suite *ProgramOutcomesReportTestSuite) createStudent(firstName, lastName s
 
 func (suite *ProgramOutcomesReportTestSuite) createEnrollment(classID, userID uint, enrolledAt time.Time, status models.ProgramEnrollmentStatus) *models.ProgramClassEnrollment {
 	enrollment := &models.ProgramClassEnrollment{
-		ClassID:          classID,
+		CohortID:         classID,
 		UserID:           userID,
 		EnrolledAt:       &enrolledAt,
 		EnrollmentStatus: status,
@@ -500,7 +501,7 @@ func (suite *ProgramOutcomesReportTestSuite) createEvent(classID uint, eventDate
 		suite.T().Fatalf("failed to get instructor: %v", err)
 	}
 	event := &models.ProgramClassEvent{
-		ClassID:        classID,
+		CohortID:       classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
 		RoomID:         &roomID,

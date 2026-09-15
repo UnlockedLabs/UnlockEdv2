@@ -64,7 +64,7 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 		// Create class with instructor
 		class := newClassWithInstructor(program, facility, &instructor.ID)
 
-		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+		resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 			WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 			Do().
 			ExpectStatus(http.StatusCreated)
@@ -72,7 +72,6 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 		got := resp.GetData()
 
 		require.NotZero(t, got.ID)
-		require.Equal(t, class.Name, got.Name)
 		require.Equal(t, class.InstructorID, got.InstructorID)
 		require.Equal(t, class.Description, got.Description)
 		require.WithinDuration(t, class.StartDt, got.StartDt, time.Millisecond)
@@ -94,7 +93,7 @@ func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *mod
 
 	class := newClassWithInstructor(program, facility, &instructor.ID)
 
-	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
 		Do().
 		ExpectStatus(http.StatusUnauthorized)
@@ -113,7 +112,7 @@ func runCreateClassArchivedProgramTest(t *testing.T, env *TestEnv, facility *mod
 
 	class := newClassWithInstructor(program, facility, &instructor.ID)
 
-	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusUnauthorized)
@@ -128,7 +127,7 @@ func runCreateClassNotOfferedFacilityTest(t *testing.T, env *TestEnv, facility *
 
 	class := newClassWithInstructor(program, facility, &instructor.ID)
 
-	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
+	NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
 		ExpectStatus(http.StatusUnauthorized)
@@ -162,7 +161,7 @@ func TestCreateClassFacilityScopingForDeptAdmin(t *testing.T) {
 		// Body intentionally carries the home facility to prove it is ignored.
 		class := newClassWithInstructor(program, homeFacility, &instructor.ID)
 
-		resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost,
+		resp := NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost,
 			fmt.Sprintf("/api/programs/%d/classes?facility_id=%d", program.ID, targetFacility.ID), class).
 			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: deptAdmin.ID, FacilityID: homeFacility.ID}).
 			Do().
@@ -175,7 +174,7 @@ func TestCreateClassFacilityScopingForDeptAdmin(t *testing.T) {
 	t.Run("missing facility_id is rejected for a statewide admin", func(t *testing.T) {
 		class := newClassWithInstructor(program, targetFacility, &instructor.ID)
 
-		NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost,
+		NewRequest[*models.ProgramClassCohort](env.Client, t, http.MethodPost,
 			fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: deptAdmin.ID, FacilityID: homeFacility.ID}).
 			Do().
@@ -184,15 +183,14 @@ func TestCreateClassFacilityScopingForDeptAdmin(t *testing.T) {
 }
 
 // creates a boilerplate class with required instructor
-func newClassWithInstructor(program *models.Program, facility *models.Facility, instructorID *uint) models.ProgramClass {
+func newClassWithInstructor(program *models.Program, facility *models.Facility, instructorID *uint) models.ProgramClassCohort {
 	endDt := time.Now().Add(time.Hour * 24)
 	creditHours := int64(2)
 
-	class := models.ProgramClass{
+	class := models.ProgramClassCohort{
 		ProgramID:    program.ID,
 		FacilityID:   facility.ID,
 		Capacity:     10,
-		Name:         "Test Class",
 		InstructorID: instructorID,
 		Description:  "This is a test class created for integration testing purposes.",
 		StartDt:      time.Now(),
@@ -341,7 +339,7 @@ func runUpdateActiveClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 
 	// Verify enrollment statuses were updated and enrollment_ended_at was set
 	var updatedEnrollments []models.ProgramClassEnrollment
-	err = env.DB.Where("class_id = ?", class.ID).Find(&updatedEnrollments).Error
+	err = env.DB.Where("cohort_id = ?", class.ID).Find(&updatedEnrollments).Error
 	require.NoError(t, err)
 	require.Len(t, updatedEnrollments, 2)
 
@@ -409,7 +407,7 @@ func runUpdatePausedClassToCancelledTest(t *testing.T, env *TestEnv, facility *m
 
 	// Verify enrollment statuses were updated and enrollment_ended_at was set
 	var updatedEnrollments []models.ProgramClassEnrollment
-	err = env.DB.Where("class_id = ?", class.ID).Find(&updatedEnrollments).Error
+	err = env.DB.Where("cohort_id = ?", class.ID).Find(&updatedEnrollments).Error
 	require.NoError(t, err)
 	require.Len(t, updatedEnrollments, 2)
 
@@ -480,7 +478,7 @@ func runUpdateActivePausedActiveTest(t *testing.T, env *TestEnv, facility *model
 
 // When a class is marked Completed:
 // - All enrollments become Completed
-// - A ProgramCompletion record is created for each affected student
+// - A ClassCompletion record is created for each affected student
 
 func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *models.Facility, facilityAdmin *models.User) {
 	// Create program and make it available at facility
@@ -512,7 +510,7 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 	require.NoError(t, err)
 
 	var preUpdateEnrollments []models.ProgramClassEnrollment
-	err = env.DB.Where("class_id = ? AND user_id in (?, ?)", class.ID, user1.ID, user2.ID).Find(&preUpdateEnrollments).Error
+	err = env.DB.Where("cohort_id = ? AND user_id in (?, ?)", class.ID, user1.ID, user2.ID).Find(&preUpdateEnrollments).Error
 	require.NoError(t, err)
 
 	for _, enrollment := range preUpdateEnrollments {
@@ -521,7 +519,7 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 
 	var preUpdateEnrollmentsCount int64
 	err = env.DB.Model(&models.ProgramClassEnrollment{}).
-		Where("class_id = ? AND enrollment_status = ?", class.ID, models.Enrolled).
+		Where("cohort_id = ? AND enrollment_status = ?", class.ID, models.Enrolled).
 		Count(&preUpdateEnrollmentsCount).Error
 	require.NoError(t, err)
 
@@ -537,7 +535,7 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 
 	// Exactly 2 enrollments are found for the users in the class with an EnrollmentStatus of EnrollmentCompleted
 	var afterUpdateEnrollments []models.ProgramClassEnrollment
-	err = env.DB.Where("class_id = ? AND user_id in (?, ?)", class.ID, user1.ID, user2.ID).Find(&afterUpdateEnrollments).Error
+	err = env.DB.Where("cohort_id = ? AND user_id in (?, ?)", class.ID, user1.ID, user2.ID).Find(&afterUpdateEnrollments).Error
 	require.NoError(t, err)
 	require.Len(t, afterUpdateEnrollments, 2)
 
@@ -548,16 +546,16 @@ func runUpdateActiveClassToCompletedTest(t *testing.T, env *TestEnv, facility *m
 	// all  enrollments with the same class.ID should be completed
 	var afterUpdateEnrollmentsCount int64
 	err = env.DB.Model(&models.ProgramClassEnrollment{}).
-		Where("class_id = ? AND enrollment_status = ?", class.ID, models.Enrolled).
+		Where("cohort_id = ? AND enrollment_status = ?", class.ID, models.Enrolled).
 		Count(&afterUpdateEnrollmentsCount).Error
 	require.NoError(t, err)
 	require.Equal(t, 0, int(afterUpdateEnrollmentsCount), "records with enrollment_status of Enrolled should update to Completed so the count should be 0")
 
 	// query the program_completion table for records with a program_class_id matching the ID of the updated class.
-	var programCompletions []models.ProgramCompletion
+	var programCompletions []models.ClassCompletion
 	err = env.DB.
 		Where("user_id IN (?, ?)", user1.ID, user2.ID).
-		Where("program_class_id = ?", class.ID).
+		Where("cohort_id = ?", class.ID).
 		Find(&programCompletions).Error
 	require.NoError(t, err)
 

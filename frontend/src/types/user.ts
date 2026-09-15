@@ -20,6 +20,7 @@ export enum FeatureAccess {
     OpenContentAccess = 'open_content',
     ProgramAccess = 'program_management',
     LearningRecordAccess = 'learning_record',
+    AiTutorAccess = 'ai_tutor',
     RequestContentAccess = 'request_content',
     HelpfulLinksAccess = 'helpful_links',
     UploadVideoAccess = 'upload_video',
@@ -69,6 +70,7 @@ export interface LoginMetrics {
 export interface NewUserResponse {
     user: User;
     temp_password: string;
+    kratos_registered: boolean;
 }
 
 export interface ResetPasswordResponse {

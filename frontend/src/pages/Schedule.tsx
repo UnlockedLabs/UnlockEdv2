@@ -107,7 +107,7 @@ function facilityEventToSessionDisplay(
     return {
         instance: {
             id: event.id,
-            class_id: event.class_id,
+            cohort_id: event.cohort_id,
             duration: event.duration,
             room_id: event.room_id,
             recurrence_rule: event.recurrence_rule,
@@ -182,7 +182,7 @@ export default function Schedule() {
     const apiUrl = useMemo(() => {
         if (!user) return null;
         let url = `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`;
-        if (class_id && !showAllClasses) url += `&class_id=${class_id}`;
+        if (class_id && !showAllClasses) url += `&cohort_id=${class_id}`;
         if (canSwitchFac && activeFacilityId)
             url += `&facility_id=${activeFacilityId}`;
         return url;
@@ -294,7 +294,7 @@ export default function Schedule() {
             selectedEvent.class_status === SelectedClassStatus.Cancelled
         )
             return false;
-        if (class_id && selectedEvent.class_id.toString() !== class_id)
+        if (class_id && selectedEvent.cohort_id.toString() !== class_id)
             return false;
         return true;
     };
@@ -353,14 +353,14 @@ export default function Schedule() {
         const date = toDateString(d);
         setShowSheet(false);
         navigate(
-            `/program-classes/${selectedEvent.class_id}/events/${selectedEvent.id}/attendance/${date}`
+            `/program-classes/${selectedEvent.cohort_id}/events/${selectedEvent.id}/attendance/${date}`
         );
     };
 
     const handleViewClassDetails = () => {
         if (!selectedEvent) return;
         setShowSheet(false);
-        navigate(`/program-classes/${selectedEvent.class_id}/detail`);
+        navigate(`/program-classes/${selectedEvent.cohort_id}/detail`);
     };
 
     const handleRescheduleClick = () => {
@@ -546,7 +546,7 @@ export default function Schedule() {
                         originalInstructorName={
                             selectedEvent.original_instructor_name
                         }
-                        classId={selectedEvent.class_id}
+                        classId={selectedEvent.cohort_id}
                         facilityId={activeFacilityId}
                         classEvents={[]}
                         facilityEvent={selectedEvent}
@@ -579,7 +579,7 @@ export default function Schedule() {
                         }}
                         onViewClassDetails={() => {
                             navigate(
-                                `/program-classes/${selectedEvent.class_id}/detail`
+                                `/program-classes/${selectedEvent.cohort_id}/detail`
                             );
                         }}
                     />

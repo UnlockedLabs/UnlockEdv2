@@ -36,7 +36,7 @@ export function CompletedPrograms({
 
                         return (
                             <div
-                                key={`${program.program_id}-${program.class_id}`}
+                                key={`${program.program_id}-${program.cohort_id}`}
                                 className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
                             >
                                 <CheckCircle2 className="size-6 text-green-700 shrink-0" />

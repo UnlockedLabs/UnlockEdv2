@@ -96,7 +96,7 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
 };
 
 export const hasFeature = (user: User, ...axx: FeatureAccess[]): boolean => {
-    return axx.every((ax) => user.feature_access.includes(ax));
+    return axx.every((ax) => user.feature_access?.includes(ax) ?? false);
 };
 
 export const checkDefaultFacility: LoaderFunction = async () => {
@@ -196,15 +196,16 @@ const getAdminLink = (): string => {
 };
 
 const getResidentLink = (user: User): string => {
+    const features = user.feature_access ?? [];
     if (
-        user.feature_access.includes(FeatureAccess.OpenContentAccess) ||
-        user.feature_access.includes(FeatureAccess.LearningRecordAccess)
+        features.includes(FeatureAccess.OpenContentAccess) ||
+        features.includes(FeatureAccess.LearningRecordAccess)
     ) {
         return '/home';
     }
     if (
-        user.feature_access.includes(FeatureAccess.ProgramAccess) &&
-        user.feature_access.includes(FeatureAccess.ResidentProgramsAccess)
+        features.includes(FeatureAccess.ProgramAccess) &&
+        features.includes(FeatureAccess.ResidentProgramsAccess)
     ) {
         return '/resident-programs';
     }

@@ -66,7 +66,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 
 	case slices.Contains(include, "only_unenrolled"):
-		classID, err := strconv.Atoi(r.URL.Query().Get("class_id"))
+		classID, err := strconv.Atoi(r.URL.Query().Get("cohort_id"))
 		if err != nil {
 			return newInvalidIdServiceError(err, "class ID")
 		}
@@ -77,7 +77,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 			return newDatabaseServiceError(err)
 		}
 	case slices.Contains(include, "only_enrolled"):
-		classID, err := strconv.Atoi(r.URL.Query().Get("class_id"))
+		classID, err := strconv.Atoi(r.URL.Query().Get("cohort_id"))
 		if err != nil {
 			return newInvalidIdServiceError(err, "class ID")
 		}
@@ -241,11 +241,13 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newInternalServerServiceError(err, "Error creating temporary password")
 	}
 	response := struct {
-		TempPassword string      `json:"temp_password"`
-		User         models.User `json:"user"`
+		TempPassword     string      `json:"temp_password"`
+		User             models.User `json:"user"`
+		KratosRegistered bool        `json:"kratos_registered"`
 	}{
-		User:         reqForm.User,
-		TempPassword: tempPw,
+		User:             reqForm.User,
+		TempPassword:     tempPw,
+		KratosRegistered: true,
 	}
 	if reqForm.User.Role == models.Student {
 		accountCreation := models.NewUserAccountHistory(reqForm.User.ID, models.AccountCreation, &claims.UserID, nil, nil)
@@ -261,6 +263,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		// register the user as an Identity with Kratos + Kolibri
 		if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
 			log.infof("Error creating user in kratos: %v", err)
+			response.KratosRegistered = false
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
 		if err != nil {
@@ -906,7 +909,7 @@ func (srv *Server) handleExportResidentAttendanceCSV(w http.ResponseWriter, r *h
 
 	allFacilities := claims.canSwitchFacility() || queryCtx.All
 	var classID *uint
-	if cid := r.URL.Query().Get("class_id"); cid != "" {
+	if cid := r.URL.Query().Get("cohort_id"); cid != "" {
 		parsed, err := strconv.Atoi(cid)
 		if err != nil {
 			return newInvalidIdServiceError(err, "class_id")

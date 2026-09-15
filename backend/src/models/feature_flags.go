@@ -40,6 +40,7 @@ const (
 	ProviderAccess       FeatureAccess = "provider_platforms"
 	ProgramAccess        FeatureAccess = "program_management"
 	LearningRecordAccess FeatureAccess = "learning_record"
+	AiTutorAccess        FeatureAccess = "ai_tutor"
 
 	// these are the page/sub level features
 	RequestContentAccess   FeatureAccess = "request_content"
@@ -48,11 +49,11 @@ const (
 	ResidentProgramsAccess FeatureAccess = "resident_programs"
 )
 
-var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess, ResidentProgramsAccess}
+var AllFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess, RequestContentAccess, HelpfulLinksAccess, UploadVideoAccess, ResidentProgramsAccess}
 
 // TopLevelFeatures are the features shown as their own card/pill on the Feature Control
 // page. Page-level (sub-)features are nested under their parent below.
-var TopLevelFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess}
+var TopLevelFeatures = []FeatureAccess{OpenContentAccess, ProviderAccess, ProgramAccess, LearningRecordAccess, AiTutorAccess}
 
 // SubFeatureParent maps a page-level feature to the top-level feature that gates it:
 // a sub-feature can never be enabled at a facility where its parent is disabled.

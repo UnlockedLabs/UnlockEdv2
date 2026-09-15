@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
 import {
-    Class,
+    Cohort,
     Facility,
     Program,
     ServerResponseMany,
@@ -92,7 +92,7 @@ export default function ClassesPage() {
     >(null);
     const [facilitySearch, setFacilitySearch] = useState('');
     const [programSearch, setProgramSearch] = useState('');
-    const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
+    const [attendanceClass, setAttendanceClass] = useState<Cohort | null>(null);
     const [showBulkCancel, setShowBulkCancel] = useState(false);
     const {
         page: currentPage,
@@ -109,7 +109,7 @@ export default function ClassesPage() {
             : `/api/program-classes?per_page=100&facility_id=${facilityFilter}`
         : '/api/program-classes?per_page=100';
     const { data: classesResp, mutate: mutateClasses } =
-        useSWR<ServerResponseMany<Class>>(classesUrl);
+        useSWR<ServerResponseMany<Cohort>>(classesUrl);
     const programsUrl =
         showCreateModal || showFacilityModal
             ? `/api/programs?per_page=100${programSearch ? `&search=${encodeURIComponent(programSearch)}` : ''}${selectedFacilityForClass ? `&facility_id=${selectedFacilityForClass}` : ''}`
@@ -128,7 +128,9 @@ export default function ClassesPage() {
     const facilityClasses = useMemo(() => {
         if (crossFacility || !user) return allClasses;
         return allClasses.filter(
-            (c) => c.id >= CANVAS_CLASS_ID_OFFSET || c.facility_id === user.facility.id
+            (c) =>
+                c.id >= CANVAS_CLASS_ID_OFFSET ||
+                c.facility_id === user.facility.id
         );
     }, [allClasses, crossFacility, user]);
 
@@ -180,7 +182,7 @@ export default function ClassesPage() {
             const q = searchQuery.toLowerCase();
             result = result.filter(
                 (cls) =>
-                    cls.name.toLowerCase().includes(q) ||
+                    cls.class_name.toLowerCase().includes(q) ||
                     cls.program?.name?.toLowerCase().includes(q) ||
                     getInstructorName(cls.events).toLowerCase().includes(q)
             );
@@ -438,7 +440,11 @@ export default function ClassesPage() {
                                         key={cls.id}
                                         cls={cls}
                                         showFacility={crossFacility}
-                                        onClick={() => navigate(`/program-classes/${cls.id}/detail`)}
+                                        onClick={() =>
+                                            navigate(
+                                                `/program-classes/${cls.id}/detail`
+                                            )
+                                        }
                                         onAttendance={() =>
                                             setAttendanceClass(cls)
                                         }
@@ -606,7 +612,7 @@ export default function ClassesPage() {
                         if (!open) setAttendanceClass(null);
                     }}
                     classId={attendanceClass.id}
-                    className={attendanceClass.name}
+                    className={attendanceClass.class_name}
                 />
             )}
 
@@ -625,7 +631,7 @@ function ClassRow({
     onClick,
     onAttendance
 }: {
-    cls: Class;
+    cls: Cohort;
     showFacility: boolean;
     onClick?: () => void;
     onAttendance: () => void;
@@ -641,7 +647,9 @@ function ClassRow({
             onClick={onClick}
             className={cn(
                 'transition-colors',
-                onClick ? 'hover:bg-surface-hover/50 cursor-pointer' : 'cursor-default'
+                onClick
+                    ? 'hover:bg-surface-hover/50 cursor-pointer'
+                    : 'cursor-default'
             )}
         >
             <td className="px-6 py-4">
@@ -651,7 +659,7 @@ function ClassRow({
                     )}
                     <div>
                         <div className="text-brand-dark hover:text-brand transition-colors font-medium">
-                            {cls.name}
+                            {cls.class_name}
                         </div>
                         <Link
                             to={`/programs/${cls.program_id}`}
@@ -733,7 +741,10 @@ function ClassRow({
             </td>
             <td className="px-6 py-4">
                 {isCanvas && (
-                    <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50 gap-1 whitespace-nowrap">
+                    <Badge
+                        variant="outline"
+                        className="text-blue-700 border-blue-300 bg-blue-50 gap-1 whitespace-nowrap"
+                    >
                         <RefreshCw className="size-3" />
                         Canvas
                     </Badge>

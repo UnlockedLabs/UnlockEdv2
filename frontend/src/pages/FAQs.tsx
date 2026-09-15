@@ -5,7 +5,9 @@ import {
     AccordionItem,
     AccordionTrigger
 } from '@/components/ui/accordion';
-import { FAQ_CATEGORIES } from '@/data/faqData';
+import { getFaqCategories } from '@/data/faqData';
+import { useAuth, hasFeature } from '@/auth/useAuth';
+import { FeatureAccess } from '@/types';
 
 function logQuestionClick(question: string) {
     void API.post('analytics/faq-click', { question }).catch(() => {
@@ -14,6 +16,12 @@ function logQuestionClick(question: string) {
 }
 
 export function FAQContent({ compact = false }: { compact?: boolean }) {
+    const { user } = useAuth();
+    const hasKnowledgeCenter =
+        !!user && hasFeature(user, FeatureAccess.OpenContentAccess);
+    const hasLearningRecord =
+        !!user && hasFeature(user, FeatureAccess.LearningRecordAccess);
+
     return (
         <div className={compact ? 'space-y-4' : 'space-y-6'}>
             {!compact && (
@@ -21,7 +29,9 @@ export function FAQContent({ compact = false }: { compact?: boolean }) {
                     Frequently Asked Questions
                 </h2>
             )}
-            {Object.entries(FAQ_CATEGORIES).map(([category, questions]) => (
+            {Object.entries(
+                getFaqCategories(hasKnowledgeCenter, hasLearningRecord)
+            ).map(([category, questions]) => (
                 <div key={category}>
                     <h3
                         className={

@@ -64,7 +64,7 @@ func runEnrollInActiveClassTest(t *testing.T, env *TestEnv, facility *models.Fac
 
 	// Verify enrolled_at timestamps were set immediately for Active class
 	var enrollments []models.ProgramClassEnrollment
-	err = env.DB.Where("class_id = ?", activeClass.ID).Find(&enrollments).Error
+	err = env.DB.Where("cohort_id = ?", activeClass.ID).Find(&enrollments).Error
 	require.NoError(t, err)
 	require.Len(t, enrollments, 2, "Should have 2 enrollments")
 
@@ -102,7 +102,7 @@ func runEnrollInScheduledClassTest(t *testing.T, env *TestEnv, facility *models.
 
 	// Verify enrolled_at timestamps are NULL for Scheduled class
 	var enrollments []models.ProgramClassEnrollment
-	err = env.DB.Where("class_id = ?", scheduledClass.ID).Find(&enrollments).Error
+	err = env.DB.Where("cohort_id = ?", scheduledClass.ID).Find(&enrollments).Error
 	require.NoError(t, err)
 	require.Len(t, enrollments, 2, "Should have 2 enrollments")
 
@@ -187,7 +187,7 @@ func runUpdateToTerminalStatusTest(t *testing.T, env *TestEnv, facility *models.
 
 			// Verify enrollment_ended_at timestamp was set
 			var updatedEnrollment models.ProgramClassEnrollment
-			err = env.DB.Where("class_id = ? AND user_id = ?", activeClass.ID, user.ID).First(&updatedEnrollment).Error
+			err = env.DB.Where("cohort_id = ? AND user_id = ?", activeClass.ID, user.ID).First(&updatedEnrollment).Error
 			require.NoError(t, err)
 
 			require.Equal(t, status, updatedEnrollment.EnrollmentStatus, "status should be updated")
@@ -274,7 +274,7 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	// User1: enrolled on 2025-08-13
 	enrolledAt1 := time.Date(2025, 8, 13, 0, 0, 0, 0, time.UTC)
 	enrollment1 := &models.ProgramClassEnrollment{
-		ClassID:          activeClass.ID,
+		CohortID:         activeClass.ID,
 		UserID:           user1.ID,
 		EnrollmentStatus: models.Enrolled,
 		EnrolledAt:       &enrolledAt1,
@@ -285,7 +285,7 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	// User2: enrolled on 2025-08-14
 	enrolledAt2 := time.Date(2025, 8, 14, 0, 0, 0, 0, time.UTC)
 	enrollment2 := &models.ProgramClassEnrollment{
-		ClassID:          activeClass.ID,
+		CohortID:         activeClass.ID,
 		UserID:           user2.ID,
 		EnrollmentStatus: models.Enrolled,
 		EnrolledAt:       &enrolledAt2,
@@ -297,7 +297,7 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	enrolledAt3 := time.Date(2025, 8, 15, 0, 0, 0, 0, time.UTC)
 	endedAt3 := time.Date(2025, 8, 16, 0, 0, 0, 0, time.UTC)
 	enrollment3 := &models.ProgramClassEnrollment{
-		ClassID:           activeClass.ID,
+		CohortID:          activeClass.ID,
 		UserID:            user3.ID,
 		EnrollmentStatus:  models.EnrollmentCompleted,
 		EnrolledAt:        &enrolledAt3,
@@ -319,7 +319,7 @@ func TestGetHistoricalEnrollmentBatch(t *testing.T) {
 	})
 }
 
-func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
+func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClassCohort, facilityAdmin *models.User, facility *models.Facility) {
 	// Test single date queries
 	testCases := []struct {
 		date     string
@@ -347,7 +347,7 @@ func runSingleDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeCla
 	}
 }
 
-func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
+func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClassCohort, facilityAdmin *models.User, facility *models.Facility) {
 	// Test batch query with multiple dates
 	dates := "2025-08-12,2025-08-13,2025-08-14,2025-08-15,2025-08-16"
 	resp := NewRequest[map[string]int64](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch?dates=%s", activeClass.ID, dates), nil).
@@ -377,7 +377,7 @@ func runBatchDateHistoricalEnrollmentTest(t *testing.T, env *TestEnv, activeClas
 	t.Logf("Successfully retrieved historical enrollment data for %d dates in a single batch request", len(expectedResults))
 }
 
-func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClass, facilityAdmin *models.User, facility *models.Facility) {
+func runHistoricalEnrollmentEdgeCasesTest(t *testing.T, env *TestEnv, activeClass *models.ProgramClassCohort, facilityAdmin *models.User, facility *models.Facility) {
 	// Test case 1: Missing dates parameter
 	t.Run("Missing dates parameter", func(t *testing.T) {
 		NewRequest[any](env.Client, t, http.MethodGet, fmt.Sprintf("/api/program-classes/%d/historical-enrollment-batch", activeClass.ID), nil).
@@ -472,7 +472,7 @@ func TestEligibleResidentsFilteredByClassFacility(t *testing.T) {
 	t.Run("dept admin with facilityB context sees only unenrolled facilityA residents", func(t *testing.T) {
 		// Dept admin passes facility_id=B in the query — backend must ignore it and use class's facility
 		resp := NewRequest[[]models.User](env.Client, t, http.MethodGet,
-			fmt.Sprintf("/api/users?include=only_unenrolled&class_id=%d&facility_id=%d&per_page=50", class.ID, facilityB.ID), nil).
+			fmt.Sprintf("/api/users?include=only_unenrolled&cohort_id=%d&facility_id=%d&per_page=50", class.ID, facilityB.ID), nil).
 			WithTestClaims(&handlers.Claims{Role: models.DepartmentAdmin, UserID: deptAdmin.ID, FacilityID: facilityB.ID}).
 			Do().
 			ExpectStatus(http.StatusOK)

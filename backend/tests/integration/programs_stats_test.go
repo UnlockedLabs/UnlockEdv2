@@ -34,6 +34,8 @@ func (suite *ProgramsStatsTestSuite) cleanDatabase() {
 	suite.env.DB.Exec("DELETE FROM program_class_event_attendance")
 	suite.env.DB.Exec("DELETE FROM program_class_events")
 	suite.env.DB.Exec("DELETE FROM program_class_enrollments")
+	suite.env.DB.Exec("DELETE FROM program_class_cohorts")
+	suite.env.DB.Exec("DELETE FROM program_class_credit_types")
 	suite.env.DB.Exec("DELETE FROM program_classes")
 	suite.env.DB.Exec("DELETE FROM facilities_programs")
 	suite.env.DB.Exec("DELETE FROM programs")
@@ -84,12 +86,11 @@ func (suite *ProgramsStatsTestSuite) createProgramFacilityAssociation(programID,
 	assert.NoError(suite.T(), result.Error)
 }
 
-func (suite *ProgramsStatsTestSuite) createTestClass(programID, facilityID uint, status models.ClassStatus) *models.ProgramClass {
-	class := &models.ProgramClass{
+func (suite *ProgramsStatsTestSuite) createTestClass(programID, facilityID uint, status models.ClassStatus) *models.ProgramClassCohort {
+	class := &models.ProgramClassCohort{
 		ProgramID:  programID,
 		FacilityID: facilityID,
 		Status:     status,
-		Name:       "Test Class",
 	}
 	result := suite.env.DB.Create(class)
 	assert.NoError(suite.T(), result.Error)
@@ -98,7 +99,7 @@ func (suite *ProgramsStatsTestSuite) createTestClass(programID, facilityID uint,
 
 func (suite *ProgramsStatsTestSuite) createTestEnrollment(classID, userID uint, status models.ProgramEnrollmentStatus, enrolledAt, endedAt *time.Time) *models.ProgramClassEnrollment {
 	enrollment := &models.ProgramClassEnrollment{
-		ClassID:           classID,
+		CohortID:          classID,
 		UserID:            userID,
 		EnrollmentStatus:  status,
 		EnrolledAt:        enrolledAt,

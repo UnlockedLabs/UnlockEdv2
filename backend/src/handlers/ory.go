@@ -109,6 +109,14 @@ func (srv *Server) HandleCreateUserKratos(username, password string) error {
 		return errors.New("error creating identity")
 	}
 	user.KratosID = created.GetId()
+	// persist the ID before setting the password: if anything below fails, the
+	// stored ID lets a password reset repair the identity instead of trying to
+	// create a second one with the same (unique) username identifier
+	err = srv.Db.UpdateUser(user)
+	if err != nil {
+		log.Error("Error updating user")
+		return err
+	}
 	claims := &Claims{
 		UserID:        user.ID,
 		KratosID:      user.KratosID,
@@ -118,11 +126,6 @@ func (srv *Server) HandleCreateUserKratos(username, password string) error {
 	err = srv.handleUpdatePasswordKratos(claims, password, true)
 	if err != nil {
 		log.Error("Error updating password for new kratos user")
-		return err
-	}
-	err = srv.Db.UpdateUser(user)
-	if err != nil {
-		log.Error("Error updating user")
 		return err
 	}
 	log.Infof("user created successfully + identity registered with kratos: %v", user)
