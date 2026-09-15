@@ -173,18 +173,31 @@ export function captureEvent(
  * Tie subsequent events to a stable per-user identity so login frequency,
  * weekly-active-users and new-user metrics attribute correctly.
  *
- * Sends id/role/facility/features only — no names, usernames or emails — to keep
- * staff PII out of PostHog in the corrections context. `features` is the sorted
- * comma-joined feature_access list rather than a raw array so PostHog breakdowns
- * on it are usable; it lets pilot metrics be segmented by which flags a facility
- * actually has enabled.
+ * Sends id/role/facility/features/created-at only — no names, usernames or
+ * emails — to keep staff PII out of PostHog in the corrections context.
+ * `features` is the sorted comma-joined feature_access list rather than a raw
+ * array so PostHog breakdowns on it are usable; it lets pilot metrics be
+ * segmented by which flags a facility actually has enabled.
+ *
+ * `account_created_at` separates the accounts stood up for a pilot launch from
+ * the ones added later, which otherwise look identical in every insight. It
+ * stays person-only, unlike `facility` below: account age is a fact about the
+ * person, not about where an action happened, so nothing needs it on the event.
+ * Note it only lands for users who sign in after this ships — person properties
+ * are written on identify, so existing PostHog persons stay blank until their
+ * next login, and anyone who never returns never gets one.
  *
  * The identity is deployment-namespaced — see `analyticsDistinctId`.
  */
 export function identifyUser(
     user: Pick<
         User,
-        'id' | 'role' | 'facility_id' | 'feature_access' | 'facility'
+        | 'id'
+        | 'role'
+        | 'facility_id'
+        | 'feature_access'
+        | 'facility'
+        | 'created_at'
     >
 ): void {
     try {
@@ -201,6 +214,10 @@ export function identifyUser(
             : {};
         posthog.identify(analyticsDistinctId(user.id), {
             role: user.role,
+            // RFC3339 out of Go, which PostHog types as a DateTime — so the
+            // pilot dashboard gets real before/after operators on it rather
+            // than string matching.
+            account_created_at: user.created_at,
             features: [...(user.feature_access ?? [])].sort().join(','),
             ...facilityProps
         });
