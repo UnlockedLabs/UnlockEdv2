@@ -291,3 +291,24 @@ type ProgramCompletionMatrixCell struct {
 	Insufficient             bool    `json:"insufficient"`
 	DeltaFromFacilityAverage float64 `json:"delta_from_facility_average"`
 }
+
+type ProgramLoadBucket struct {
+	Bucket string `json:"bucket"` // "0", "1", "2", "3", "4+"
+	Count  int64  `json:"count"`
+}
+
+type ProgramLoadFacilityRow struct {
+	FacilityID   uint   `json:"facility_id"`
+	FacilityName string `json:"facility_name"`
+	Zero         int64  `json:"zero"`
+	One          int64  `json:"one"`
+	Two          int64  `json:"two"`
+	Three        int64  `json:"three"`
+	FourPlus     int64  `json:"four_plus"`
+	Total        int64  `json:"total"`
+}
+
+type ProgramLoadDistribution struct {
+	Statewide  []ProgramLoadBucket      `json:"statewide"`
+	ByFacility []ProgramLoadFacilityRow `json:"by_facility"`
+}

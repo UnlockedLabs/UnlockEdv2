@@ -335,3 +335,118 @@ func (db *DB) GetProgramCompletionMatrix(args *models.QueryContext, facilityID *
 	}
 	return result, nil
 }
+
+func loadBucketLabel(count int64) string {
+	switch {
+	case count <= 0:
+		return "0"
+	case count == 1:
+		return "1"
+	case count == 2:
+		return "2"
+	case count == 3:
+		return "3"
+	default:
+		return "4+"
+	}
+}
+
+// GetProgramLoadDistribution buckets each resident by their current active
+// enrollment count (0/1/2/3/4+), a current-state snapshot with no date
+// range. Facility scoping is deliberately mixed: the resident population
+// (who counts as a "0", and which facility a resident's bucket is attributed
+// to) uses the resident's home facility (u.facility_id), while the active
+// enrollment count per resident is joined through the enrollment's cohort
+// facility (pc.facility_id). This matches GetProgramEngagementOverview's
+// resident-population convention and GetSecondProgramEnrollmentRates'
+// cohort-facility convention for enrollment counting, applied together here.
+func (db *DB) GetProgramLoadDistribution(args *models.QueryContext, facilityID *uint) (models.ProgramLoadDistribution, error) {
+	var dist models.ProgramLoadDistribution
+
+	type resident struct {
+		ID           uint
+		FacilityID   uint
+		FacilityName string
+	}
+	residents := make([]resident, 0)
+	rtx := db.WithContext(args.Ctx).Table("users u").
+		Select("u.id, u.facility_id, f.name as facility_name").
+		Joins("JOIN facilities f ON f.id = u.facility_id").
+		Where("u.role = ? AND u.deactivated_at IS NULL", models.Student)
+	if facilityID != nil {
+		rtx = rtx.Where("u.facility_id = ?", *facilityID)
+	}
+	if err := rtx.Scan(&residents).Error; err != nil {
+		return dist, newGetRecordsDBError(err, "users")
+	}
+
+	type activeCount struct {
+		UserID uint
+		Cnt    int64
+	}
+	counts := make([]activeCount, 0)
+	ctx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
+		Select("pce.user_id, count(*) as cnt").
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		Where("pce.enrollment_status = ? AND pce.enrollment_ended_at IS NULL", models.Enrolled)
+	if facilityID != nil {
+		ctx = ctx.Where("pc.facility_id = ?", *facilityID)
+	}
+	if err := ctx.Group("pce.user_id").Scan(&counts).Error; err != nil {
+		return dist, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	countByUser := make(map[uint]int64, len(counts))
+	for _, c := range counts {
+		countByUser[c.UserID] = c.Cnt
+	}
+
+	statewide := map[string]int64{"0": 0, "1": 0, "2": 0, "3": 0, "4+": 0}
+	type facilityAgg struct {
+		name                        string
+		zero, one, two, three, four int64
+	}
+	byFacility := make(map[uint]*facilityAgg)
+	facilityOrder := make([]uint, 0)
+
+	for _, r := range residents {
+		bucket := loadBucketLabel(countByUser[r.ID])
+		statewide[bucket]++
+
+		agg, ok := byFacility[r.FacilityID]
+		if !ok {
+			agg = &facilityAgg{name: r.FacilityName}
+			byFacility[r.FacilityID] = agg
+			facilityOrder = append(facilityOrder, r.FacilityID)
+		}
+		switch bucket {
+		case "0":
+			agg.zero++
+		case "1":
+			agg.one++
+		case "2":
+			agg.two++
+		case "3":
+			agg.three++
+		default:
+			agg.four++
+		}
+	}
+
+	dist.Statewide = []models.ProgramLoadBucket{
+		{Bucket: "0", Count: statewide["0"]},
+		{Bucket: "1", Count: statewide["1"]},
+		{Bucket: "2", Count: statewide["2"]},
+		{Bucket: "3", Count: statewide["3"]},
+		{Bucket: "4+", Count: statewide["4+"]},
+	}
+	dist.ByFacility = make([]models.ProgramLoadFacilityRow, 0, len(facilityOrder))
+	for _, id := range facilityOrder {
+		agg := byFacility[id]
+		dist.ByFacility = append(dist.ByFacility, models.ProgramLoadFacilityRow{
+			FacilityID: id, FacilityName: agg.name,
+			Zero: agg.zero, One: agg.one, Two: agg.two, Three: agg.three, FourPlus: agg.four,
+			Total: agg.zero + agg.one + agg.two + agg.three + agg.four,
+		})
+	}
+	return dist, nil
+}
