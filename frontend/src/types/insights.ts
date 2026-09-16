@@ -241,3 +241,64 @@ export interface KnowledgeCenterMetrics {
     top_libraries: KCContentRow[];
     top_videos: KCContentRow[];
 }
+
+export interface ProgramCompletionRank {
+    program_name: string;
+    enrolled: number;
+    completed: number;
+    completion_rate: number;
+}
+
+export interface ProgramEngagementOverview {
+    active_residents: number;
+    never_engaged_residents: number;
+    total_residents: number;
+    top_programs: ProgramCompletionRank[];
+}
+
+export interface SecondProgramEnrollmentRow {
+    facility_name: string;
+    program_type: string;
+    completed_first: number;
+    enrolled_second: number;
+    rate: number;
+}
+
+export interface ProgramCompletionMatrixCell {
+    program_name: string;
+    facility_id: number;
+    facility_name: string;
+    enrolled: number;
+    completed: number;
+    completion_rate: number;
+    insufficient: boolean;
+    delta_from_facility_average: number;
+}
+
+export interface ProgramLoadBucket {
+    bucket: string;
+    count: number;
+}
+
+export interface ProgramLoadFacilityRow {
+    facility_id: number;
+    facility_name: string;
+    zero: number;
+    one: number;
+    two: number;
+    three: number;
+    four_plus: number;
+    total: number;
+}
+
+export interface ProgramLoadDistribution {
+    statewide: ProgramLoadBucket[];
+    by_facility: ProgramLoadFacilityRow[];
+}
+
+export interface ProgramTypeEnrollment {
+    program_type: string;
+    enrolled: number;
+    completed: number;
+    rate: number;
+}
