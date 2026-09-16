@@ -1,14 +1,17 @@
 import useSWR from 'swr';
 import { UsersIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import {
     ProgramCompletionMatrixCell,
     ProgramEngagementOverview,
+    ProgramLoadDistribution,
     SecondProgramEnrollmentRow,
     ServerResponseMany,
     ServerResponseOne
 } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import {
     Table,
     TableBody,
@@ -17,8 +20,18 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig
+} from '@/components/ui/chart';
 import { MetricCard } from './MetricCard';
 import { InsightsDateParams, dateQuery } from './insightsRange';
+
+const LOAD_CHART_CONFIG: ChartConfig = {
+    count: { label: 'Residents', color: 'var(--chart-1)' }
+};
 
 interface ProgramsTabProps {
     dateParams: InsightsDateParams;
@@ -64,6 +77,12 @@ export default function ProgramsTab({
         ServerResponseMany<ProgramCompletionMatrixCell>
     >(
         `/api/department-metrics/programs/completion-matrix?facility=${selectedFacility}`
+    );
+
+    const { data: loadResp } = useSWR<
+        ServerResponseOne<ProgramLoadDistribution>
+    >(
+        `/api/department-metrics/programs/load-distribution?facility=${selectedFacility}`
     );
 
     if (engagementLoading) {
@@ -289,6 +308,120 @@ export default function ProgramsTab({
                             label="-15pp+"
                         />
                         <LegendSwatch className="bg-muted" label="n<3" />
+                    </div>
+                </div>
+            )}
+
+            {loadResp?.data && (
+                <div>
+                    <h2 className="text-brand-dark dark:text-white mb-1 text-lg font-medium">
+                        Program Load Distribution
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Concurrent active enrollments per resident
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-card rounded-lg border border-border p-6">
+                            <h3 className="text-brand-dark dark:text-white font-medium mb-4">
+                                Statewide
+                            </h3>
+                            <ChartContainer
+                                config={LOAD_CHART_CONFIG}
+                                className="h-56 w-full"
+                            >
+                                <BarChart data={loadResp.data.statewide}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="bucket"
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis
+                                        tickLine={false}
+                                        axisLine={false}
+                                        allowDecimals={false}
+                                    />
+                                    <ChartTooltip
+                                        content={<ChartTooltipContent />}
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="var(--color-count)"
+                                        radius={4}
+                                    />
+                                </BarChart>
+                            </ChartContainer>
+                        </div>
+                        <div className="bg-card rounded-lg border border-border overflow-hidden">
+                            <div className="px-6 pt-5 pb-4">
+                                <h3 className="text-brand-dark dark:text-white font-medium">
+                                    By Facility
+                                </h3>
+                            </div>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Facility</TableHead>
+                                        <TableHead className="text-right">
+                                            0
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            1
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            2
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            3
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            4+
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loadResp.data.by_facility.map((row) => {
+                                        const zeroShare =
+                                            row.total > 0
+                                                ? row.zero / row.total
+                                                : 0;
+                                        return (
+                                            <TableRow key={row.facility_id}>
+                                                <TableCell className="font-medium text-brand-dark dark:text-white">
+                                                    {row.facility_name}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {zeroShare > 0.4 ? (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="badge-amber"
+                                                        >
+                                                            {row.zero}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            {row.zero}
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground">
+                                                    {row.one}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground">
+                                                    {row.two}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground">
+                                                    {row.three}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground">
+                                                    {row.four_plus}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                 </div>
             )}
