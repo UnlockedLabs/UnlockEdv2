@@ -325,10 +325,14 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if toUpdate.DeactivatedAt != nil {
 		return newBadRequestServiceError(errors.New("cannot update deactivated user"), "User is deactivated")
 	}
-	if toUpdate.Username != user.Username && user.Username != "" {
-		// usernames are immutable
+	if !strings.EqualFold(toUpdate.Username, user.Username) && user.Username != "" {
+		// usernames are immutable, but case-insensitively so (ID-849) — a
+		// same-username-different-case submission isn't actually a change.
 		return newBadRequestServiceError(errors.New("username cannot be updated"), "username")
 	}
+	// Casing is fixed at creation; even a same-identity resubmission must not
+	// silently re-case the stored value via UpdateStruct below.
+	user.Username = toUpdate.Username
 	if user.DocID == "" && toUpdate.DocID != "" {
 		user.DocID = toUpdate.DocID
 	}
