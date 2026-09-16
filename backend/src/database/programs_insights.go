@@ -243,3 +243,95 @@ func (db *DB) programTypeLabelsByProgramID(args *models.QueryContext) (map[uint]
 	}
 	return labels, nil
 }
+
+const minEnrolledPerMatrixCell = 3
+
+// GetProgramCompletionMatrix returns, for every (program, cohort facility)
+// pair, the lifetime enrollment/completion counts and completion rate,
+// flagging cells below minEnrolledPerMatrixCell as statistically
+// insufficient and reporting each sufficient cell's delta from its own
+// facility's overall completion rate. Facility scoping uses the enrollment's
+// cohort facility (pc.facility_id), matching GetSecondProgramEnrollmentRates,
+// not the resident's home facility.
+func (db *DB) GetProgramCompletionMatrix(args *models.QueryContext, facilityID *uint) ([]models.ProgramCompletionMatrixCell, error) {
+	type cellRow struct {
+		ProgramName  string
+		FacilityID   uint
+		FacilityName string
+		Status       models.ProgramEnrollmentStatus
+	}
+	rows := make([]cellRow, 0)
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
+		Select("p.name as program_name, pc.facility_id, f.name as facility_name, pce.enrollment_status as status").
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		Joins("JOIN programs p ON p.id = pc.program_id").
+		Joins("JOIN facilities f ON f.id = pc.facility_id")
+	if facilityID != nil {
+		tx = tx.Where("pc.facility_id = ?", *facilityID)
+	}
+	if err := tx.Scan(&rows).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+
+	type cellKey struct {
+		program  string
+		facility uint
+	}
+	type cellAgg struct {
+		facilityName string
+		enrolled     int64
+		completed    int64
+	}
+	cells := make(map[cellKey]*cellAgg)
+	facilityTotals := make(map[uint]*cellAgg) // enrolled/completed totals per facility, for the average
+	order := make([]cellKey, 0)
+
+	for _, row := range rows {
+		k := cellKey{program: row.ProgramName, facility: row.FacilityID}
+		agg, ok := cells[k]
+		if !ok {
+			agg = &cellAgg{facilityName: row.FacilityName}
+			cells[k] = agg
+			order = append(order, k)
+		}
+		agg.enrolled++
+		if row.Status == models.EnrollmentCompleted {
+			agg.completed++
+		}
+
+		fAgg, ok := facilityTotals[row.FacilityID]
+		if !ok {
+			fAgg = &cellAgg{}
+			facilityTotals[row.FacilityID] = fAgg
+		}
+		fAgg.enrolled++
+		if row.Status == models.EnrollmentCompleted {
+			fAgg.completed++
+		}
+	}
+
+	result := make([]models.ProgramCompletionMatrixCell, 0, len(order))
+	for _, k := range order {
+		agg := cells[k]
+		insufficient := agg.enrolled < minEnrolledPerMatrixCell
+		rate := 0.0
+		delta := 0.0
+		if !insufficient {
+			rate = float64(agg.completed) / float64(agg.enrolled) * 100
+			fTotal := facilityTotals[k.facility]
+			facilityAvg := float64(fTotal.completed) / float64(fTotal.enrolled) * 100
+			delta = rate - facilityAvg
+		}
+		result = append(result, models.ProgramCompletionMatrixCell{
+			ProgramName:              k.program,
+			FacilityID:               k.facility,
+			FacilityName:             agg.facilityName,
+			Enrolled:                 agg.enrolled,
+			Completed:                agg.completed,
+			CompletionRate:           rate,
+			Insufficient:             insufficient,
+			DeltaFromFacilityAverage: delta,
+		})
+	}
+	return result, nil
+}

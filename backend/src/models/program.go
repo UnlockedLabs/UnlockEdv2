@@ -280,3 +280,14 @@ type SecondProgramEnrollmentRow struct {
 	EnrolledSecond int64   `json:"enrolled_second"`
 	Rate           float64 `json:"rate"`
 }
+
+type ProgramCompletionMatrixCell struct {
+	ProgramName              string  `json:"program_name"`
+	FacilityID               uint    `json:"facility_id"`
+	FacilityName             string  `json:"facility_name"`
+	Enrolled                 int64   `json:"enrolled"`
+	Completed                int64   `json:"completed"`
+	CompletionRate           float64 `json:"completion_rate"`
+	Insufficient             bool    `json:"insufficient"`
+	DeltaFromFacilityAverage float64 `json:"delta_from_facility_average"`
+}

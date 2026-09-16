@@ -24,6 +24,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		newAdminRoute("GET /api/department-metrics/knowledge-center", srv.handleKnowledgeCenterMetrics),
 		newAdminRoute("GET /api/department-metrics/programs/engagement-overview", srv.handleProgramEngagementOverview),
 		newAdminRoute("GET /api/department-metrics/programs/second-enrollment", srv.handleSecondProgramEnrollment),
+		newAdminRoute("GET /api/department-metrics/programs/completion-matrix", srv.handleProgramCompletionMatrix),
 		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
 		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
@@ -350,6 +351,20 @@ func (srv *Server) handleSecondProgramEnrollment(w http.ResponseWriter, r *http.
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, rows)
+}
+
+func (srv *Server) handleProgramCompletionMatrix(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityID, err := resolveFacilityFilter(claims, r.URL.Query().Get("facility"), args.FacilityID)
+	if err != nil {
+		return err
+	}
+	cells, err := srv.Db.GetProgramCompletionMatrix(&args, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, cells)
 }
 
 func resolveFacilityFilter(claims *Claims, facility string, ownFacilityID uint) (*uint, error) {
