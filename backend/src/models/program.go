@@ -312,3 +312,10 @@ type ProgramLoadDistribution struct {
 	Statewide  []ProgramLoadBucket      `json:"statewide"`
 	ByFacility []ProgramLoadFacilityRow `json:"by_facility"`
 }
+
+type ProgramTypeEnrollment struct {
+	ProgramType string  `json:"program_type"`
+	Enrolled    int64   `json:"enrolled"`
+	Completed   int64   `json:"completed"`
+	Rate        float64 `json:"rate"`
+}

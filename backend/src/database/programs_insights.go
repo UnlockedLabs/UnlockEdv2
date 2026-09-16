@@ -450,3 +450,76 @@ func (db *DB) GetProgramLoadDistribution(args *models.QueryContext, facilityID *
 	}
 	return dist, nil
 }
+
+const maxIndividualProgramTypes = 4
+
+// GetEnrollmentByProgramType returns lifetime enrollment/completion counts
+// per program type label, capped to the maxIndividualProgramTypes
+// highest-enrollment types with the remainder rolled into a single "Other"
+// bucket (see programTypeLabel). Facility scoping uses the enrollment's
+// cohort facility (pc.facility_id), matching GetSecondProgramEnrollmentRates
+// and GetProgramCompletionMatrix.
+func (db *DB) GetEnrollmentByProgramType(args *models.QueryContext, facilityID *uint) ([]models.ProgramTypeEnrollment, error) {
+	type enrollmentRow struct {
+		ProgramID uint
+		Status    models.ProgramEnrollmentStatus
+	}
+	rows := make([]enrollmentRow, 0)
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
+		Select("pc.program_id, pce.enrollment_status as status").
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id")
+	if facilityID != nil {
+		tx = tx.Where("pc.facility_id = ?", *facilityID)
+	}
+	if err := tx.Scan(&rows).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+
+	programTypeByID, err := db.programTypeLabelsByProgramID(args)
+	if err != nil {
+		return nil, err
+	}
+
+	type typeAgg struct {
+		enrolled  int64
+		completed int64
+	}
+	byType := make(map[string]*typeAgg)
+	for _, row := range rows {
+		label := programTypeByID[row.ProgramID]
+		agg, ok := byType[label]
+		if !ok {
+			agg = &typeAgg{}
+			byType[label] = agg
+		}
+		agg.enrolled++
+		if row.Status == models.EnrollmentCompleted {
+			agg.completed++
+		}
+	}
+
+	all := make([]models.ProgramTypeEnrollment, 0, len(byType))
+	for label, agg := range byType {
+		all = append(all, models.ProgramTypeEnrollment{
+			ProgramType: label,
+			Enrolled:    agg.enrolled,
+			Completed:   agg.completed,
+			Rate:        float64(agg.completed) / float64(agg.enrolled) * 100,
+		})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].Enrolled > all[j].Enrolled })
+
+	if len(all) <= maxIndividualProgramTypes {
+		return all, nil
+	}
+	result := make([]models.ProgramTypeEnrollment, 0, maxIndividualProgramTypes+1)
+	result = append(result, all[:maxIndividualProgramTypes]...)
+	other := models.ProgramTypeEnrollment{ProgramType: "Other"}
+	for _, rest := range all[maxIndividualProgramTypes:] {
+		other.Enrolled += rest.Enrolled
+		other.Completed += rest.Completed
+	}
+	other.Rate = float64(other.Completed) / float64(other.Enrolled) * 100
+	result = append(result, other)
+	return result, nil
+}
