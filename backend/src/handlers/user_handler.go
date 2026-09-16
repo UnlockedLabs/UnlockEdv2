@@ -749,11 +749,16 @@ func (srv *Server) handleBulkUpload(w http.ResponseWriter, r *http.Request, log 
 	checkIdentity := func(username string, docID string) (bool, bool) {
 		return srv.Db.UserIdentityExists(username, docID)
 	}
+	normalizeUsername := func(username string) string {
+		return stripNonAlphaChars(username, func(char rune) bool {
+			return unicode.IsLetter(char) || unicode.IsDigit(char)
+		})
+	}
 
 	for i, record := range records[1:] {
 		rowNum := i + 2
 
-		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity, existingUsernames)
+		validRow, invalidRow := src.ValidateUserRow(record, rowNum, headerMap, existingResidentIDs, checkIdentity, existingUsernames, normalizeUsername)
 		if validRow != nil {
 			validRows = append(validRows, *validRow)
 		}

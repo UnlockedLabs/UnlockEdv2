@@ -84,7 +84,7 @@ export const confirmField = (
  * fields are hidden auth-flow values carried through to the API unchanged.
  */
 export const loginSchema = z.object({
-    identifier: z.string().min(1, VMSG.required('Username')),
+    identifier: z.string().trim().min(1, VMSG.required('Username')),
     password: z.string().min(1, VMSG.required('Password')),
     flow_id: z.string(),
     challenge: z.string(),
