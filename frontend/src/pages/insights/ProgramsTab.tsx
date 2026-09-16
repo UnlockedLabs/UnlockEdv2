@@ -1,8 +1,21 @@
 import useSWR from 'swr';
 import { UsersIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import { ProgramEngagementOverview, ServerResponseOne } from '@/types';
+import {
+    ProgramEngagementOverview,
+    SecondProgramEnrollmentRow,
+    ServerResponseMany,
+    ServerResponseOne
+} from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/components/ui/table';
 import { MetricCard } from './MetricCard';
 import { InsightsDateParams, dateQuery } from './insightsRange';
 
@@ -26,6 +39,12 @@ export default function ProgramsTab({
     const { data: engagementResp, isLoading: engagementLoading } = useSWR<
         ServerResponseOne<ProgramEngagementOverview>
     >(`/api/department-metrics/programs/engagement-overview?${query}`);
+
+    const { data: secondEnrollmentResp } = useSWR<
+        ServerResponseMany<SecondProgramEnrollmentRow>
+    >(
+        `/api/department-metrics/programs/second-enrollment?facility=${selectedFacility}`
+    );
 
     if (engagementLoading) {
         return (
@@ -152,6 +171,72 @@ export default function ProgramsTab({
                     </div>
                 </div>
             )}
+
+            {secondEnrollmentResp?.data &&
+                secondEnrollmentResp.data.length > 0 && (
+                    <div className="bg-card rounded-lg border border-border overflow-hidden">
+                        <div className="px-6 pt-5 pb-4">
+                            <h3 className="text-brand-dark dark:text-white font-medium">
+                                Second Program Enrollment After First Completion
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                By facility and the completed program's type
+                            </p>
+                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Facility</TableHead>
+                                    <TableHead>First Program Type</TableHead>
+                                    <TableHead className="text-right">
+                                        Completed First
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        Enrolled in Second
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        Rate
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {secondEnrollmentResp.data.map((row) => (
+                                    <TableRow
+                                        key={`${row.facility_name}-${row.program_type}`}
+                                    >
+                                        <TableCell className="text-muted-foreground">
+                                            {row.facility_name}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {row.program_type}
+                                        </TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {row.completed_first.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {row.enrolled_second.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <div className="w-16 bg-muted rounded-full h-1.5 overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full bg-brand"
+                                                        style={{
+                                                            width: `${row.rate}%`
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span className="text-muted-foreground w-10 text-right">
+                                                    {Math.round(row.rate)}%
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
 
             {topProgram && (
                 <Alert
