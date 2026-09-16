@@ -5,6 +5,7 @@ import {
     ProgramCompletionMatrixCell,
     ProgramEngagementOverview,
     ProgramLoadDistribution,
+    ProgramTypeEnrollment,
     SecondProgramEnrollmentRow,
     ServerResponseMany,
     ServerResponseOne
@@ -31,6 +32,10 @@ import { InsightsDateParams, dateQuery } from './insightsRange';
 
 const LOAD_CHART_CONFIG: ChartConfig = {
     count: { label: 'Residents', color: 'var(--chart-1)' }
+};
+
+const TYPE_CHART_CONFIG: ChartConfig = {
+    enrolled: { label: 'Enrolled', color: 'var(--chart-1)' }
 };
 
 interface ProgramsTabProps {
@@ -84,6 +89,10 @@ export default function ProgramsTab({
     >(
         `/api/department-metrics/programs/load-distribution?facility=${selectedFacility}`
     );
+
+    const { data: enrollmentByTypeResp } = useSWR<
+        ServerResponseMany<ProgramTypeEnrollment>
+    >('/api/department-metrics/programs/enrollment-by-type');
 
     if (engagementLoading) {
         return (
@@ -425,6 +434,91 @@ export default function ProgramsTab({
                     </div>
                 </div>
             )}
+
+            {enrollmentByTypeResp?.data &&
+                enrollmentByTypeResp.data.length > 0 && (
+                    <div className="bg-card rounded-lg border border-border p-6">
+                        <h3 className="text-brand-dark dark:text-white font-medium mb-1">
+                            Enrollment by Program Type (Statewide)
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Top program types by enrollment; remaining types
+                            grouped as Other
+                        </p>
+                        <ChartContainer
+                            config={TYPE_CHART_CONFIG}
+                            className="h-56 w-full"
+                        >
+                            <BarChart data={enrollmentByTypeResp.data}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="program_type"
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    allowDecimals={false}
+                                />
+                                <ChartTooltip
+                                    content={<ChartTooltipContent />}
+                                />
+                                <Bar
+                                    dataKey="enrolled"
+                                    fill="var(--color-enrolled)"
+                                    radius={4}
+                                />
+                            </BarChart>
+                        </ChartContainer>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead className="text-right">
+                                        Enrolled
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        Completed
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        Rate
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {enrollmentByTypeResp.data.map((row) => (
+                                    <TableRow key={row.program_type}>
+                                        <TableCell className="text-muted-foreground">
+                                            {row.program_type}
+                                        </TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {row.enrolled.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {row.completed.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <div className="w-16 bg-muted rounded-full h-1.5 overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full bg-brand"
+                                                        style={{
+                                                            width: `${row.rate}%`
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span className="text-muted-foreground w-10 text-right">
+                                                    {Math.round(row.rate)}%
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
 
             {topProgram && (
                 <Alert
