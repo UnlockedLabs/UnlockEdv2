@@ -92,7 +92,7 @@ export default function ProgramsTab({
 
     const { data: enrollmentByTypeResp } = useSWR<
         ServerResponseMany<ProgramTypeEnrollment>
-    >('/api/department-metrics/programs/enrollment-by-type');
+    >('/api/department-metrics/programs/enrollment-by-type?facility=all');
 
     if (engagementLoading) {
         return (
