@@ -380,7 +380,11 @@ function ProgramMatrixTable({
                                 <TableCell
                                     key={id}
                                     className={`text-center ${matrixCellClass(cell)}`}
-                                    title={`n=${cell.enrolled}, rate=${Math.round(cell.completion_rate)}%, delta=${cell.delta_from_facility_average >= 0 ? '+' : ''}${Math.round(cell.delta_from_facility_average)}pp`}
+                                    title={
+                                        cell.insufficient
+                                            ? `n=${cell.enrolled} (insufficient data, need 3+)`
+                                            : `n=${cell.enrolled}, rate=${Math.round(cell.completion_rate)}%, delta=${cell.delta_from_facility_average >= 0 ? '+' : ''}${Math.round(cell.delta_from_facility_average)}pp`
+                                    }
                                 >
                                     {cell.insufficient
                                         ? '—'
