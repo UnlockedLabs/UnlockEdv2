@@ -22,6 +22,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		newAdminRoute("GET /api/department-metrics/login-trend", srv.handleDepartmentLoginTrend),
 		newAdminRoute("GET /api/department-metrics/facility-comparison", srv.handleFacilityEngagementComparison),
 		newAdminRoute("GET /api/department-metrics/knowledge-center", srv.handleKnowledgeCenterMetrics),
+		newAdminRoute("GET /api/department-metrics/programs/engagement-overview", srv.handleProgramEngagementOverview),
 		newAdminRoute("GET /api/dashboard/class-metrics", srv.handleClassDashboardMetrics),
 		newAdminRoute("GET /api/dashboard/facility-health", srv.handleFacilityHealthSummary),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
@@ -316,6 +317,24 @@ func (srv *Server) handleDepartmentMetrics(w http.ResponseWriter, r *http.Reques
 	}
 
 	return writeJsonResponse(w, http.StatusOK, cachedData)
+}
+
+func (srv *Server) handleProgramEngagementOverview(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityID, err := resolveFacilityFilter(claims, r.URL.Query().Get("facility"), args.FacilityID)
+	if err != nil {
+		return err
+	}
+	start, end, _, err := parseDateRangeRequest(r)
+	if err != nil {
+		return err
+	}
+	overview, err := srv.Db.GetProgramEngagementOverview(&args, start, end, facilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, overview)
 }
 
 func resolveFacilityFilter(claims *Claims, facility string, ownFacilityID uint) (*uint, error) {

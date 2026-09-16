@@ -258,3 +258,17 @@ func (p *Program) GetUniqueCreditTypeString() string {
 	}
 	return strings.Join(keys, ",")
 }
+
+type ProgramEngagementOverview struct {
+	ActiveResidents       int64                   `json:"active_residents"`
+	NeverEngagedResidents int64                   `json:"never_engaged_residents"`
+	TotalResidents        int64                   `json:"total_residents"`
+	TopPrograms           []ProgramCompletionRank `json:"top_programs"`
+}
+
+type ProgramCompletionRank struct {
+	ProgramName    string  `json:"program_name"`
+	Enrolled       int64   `json:"enrolled"`
+	Completed      int64   `json:"completed"`
+	CompletionRate float64 `json:"completion_rate"`
+}
