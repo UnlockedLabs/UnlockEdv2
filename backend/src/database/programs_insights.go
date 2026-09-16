@@ -19,6 +19,20 @@ func (db *DB) piResidentScope(args *models.QueryContext, facilityID *uint) *gorm
 	return tx
 }
 
+// piEnrollmentResidentScope scopes program_class_enrollments to rows belonging
+// to active, resident (Student) users, optionally within one facility. Shared
+// base for the active-residents and ever-enrolled-residents counts, which
+// differ only in their enrollment-status filter.
+func (db *DB) piEnrollmentResidentScope(args *models.QueryContext, facilityID *uint) *gorm.DB {
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
+		Joins("JOIN users u ON u.id = pce.user_id").
+		Where("u.role = ? AND u.deactivated_at IS NULL", models.Student)
+	if facilityID != nil {
+		tx = tx.Where("u.facility_id = ?", *facilityID)
+	}
+	return tx
+}
+
 func (db *DB) GetProgramEngagementOverview(args *models.QueryContext, start, end *time.Time, facilityID *uint) (models.ProgramEngagementOverview, error) {
 	var overview models.ProgramEngagementOverview
 
@@ -26,29 +40,18 @@ func (db *DB) GetProgramEngagementOverview(args *models.QueryContext, start, end
 		return overview, newGetRecordsDBError(err, "users")
 	}
 
-	var activeUserIDs []uint
-	activeTx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
-		Joins("JOIN users u ON u.id = pce.user_id").
-		Where("pce.enrollment_status = ? AND pce.enrollment_ended_at IS NULL AND u.role = ? AND u.deactivated_at IS NULL", models.Enrolled, models.Student)
-	if facilityID != nil {
-		activeTx = activeTx.Where("u.facility_id = ?", *facilityID)
-	}
-	if err := activeTx.Distinct("pce.user_id").Pluck("pce.user_id", &activeUserIDs).Error; err != nil {
+	activeTx := db.piEnrollmentResidentScope(args, facilityID).
+		Where("pce.enrollment_status = ? AND pce.enrollment_ended_at IS NULL", models.Enrolled)
+	if err := activeTx.Distinct("pce.user_id").Count(&overview.ActiveResidents).Error; err != nil {
 		return overview, newGetRecordsDBError(err, "program_class_enrollments")
 	}
-	overview.ActiveResidents = int64(len(activeUserIDs))
 
-	var everEnrolledUserIDs []uint
-	everTx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
-		Joins("JOIN users u ON u.id = pce.user_id").
-		Where("u.role = ? AND u.deactivated_at IS NULL", models.Student)
-	if facilityID != nil {
-		everTx = everTx.Where("u.facility_id = ?", *facilityID)
-	}
-	if err := everTx.Distinct("pce.user_id").Pluck("pce.user_id", &everEnrolledUserIDs).Error; err != nil {
+	var everEnrolledCount int64
+	everTx := db.piEnrollmentResidentScope(args, facilityID)
+	if err := everTx.Distinct("pce.user_id").Count(&everEnrolledCount).Error; err != nil {
 		return overview, newGetRecordsDBError(err, "program_class_enrollments")
 	}
-	overview.NeverEngagedResidents = overview.TotalResidents - int64(len(everEnrolledUserIDs))
+	overview.NeverEngagedResidents = overview.TotalResidents - everEnrolledCount
 	if overview.NeverEngagedResidents < 0 {
 		overview.NeverEngagedResidents = 0
 	}
