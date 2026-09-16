@@ -129,8 +129,13 @@ func TestEnrollmentByProgramTypeCapping(t *testing.T) {
 	}
 	// Give each type a distinct enrollment count so ranking is unambiguous:
 	// Educational=6, Vocational=5, MentalHealth=4, Religious=3, ReEntry=2, Therapeutic=1.
+	// ReEntry and Therapeutic (the two rolled into "Other") are given
+	// deliberately different individual rates - ReEntry 2/2=100%,
+	// Therapeutic 1/0=0% - so a buggy average-of-rates implementation
+	// ((100+0)/2=50%) would diverge from the correct sum-then-recompute
+	// result (2/3=66.67%) and the assertion below would catch it.
 	counts := []int{6, 5, 4, 3, 2, 1}
-	completes := []int{3, 2, 1, 1, 0, 0}
+	completes := []int{3, 2, 1, 1, 2, 0}
 
 	classes := make([]classInfo, 0, len(allTypes))
 	for i, pt := range allTypes {
@@ -177,10 +182,50 @@ func TestEnrollmentByProgramTypeCapping(t *testing.T) {
 	require.Equal(t, int64(4), byType["Mental Health/Behavioral"].Enrolled)
 	require.Equal(t, int64(3), byType["Religious/Faith-Based"].Enrolled)
 
-	// Rolled up: ReEntry(2 enrolled, 0 completed) + Therapeutic(1 enrolled, 0 completed).
+	// Rolled up: ReEntry(2 enrolled, 2 completed) + Therapeutic(1 enrolled, 0 completed).
+	// Sum-then-recompute gives 2/3*100=66.67%; a buggy average-of-rates
+	// would give (100+0)/2=50%, so this assertion distinguishes the two.
 	other, ok := byType["Other"]
 	require.True(t, ok, "expected an Other bucket for the rolled-up remainder")
 	require.Equal(t, int64(3), other.Enrolled)
-	require.Equal(t, int64(0), other.Completed)
-	require.InDelta(t, 0.0, other.Rate, 0.01)
+	require.Equal(t, int64(2), other.Completed)
+	require.InDelta(t, 66.67, other.Rate, 0.01)
+}
+
+// TestEnrollmentByProgramTypeNoCappingAtBoundary exercises the len(all) <=
+// maxIndividualProgramTypes boundary with exactly 4 program types: no
+// capping should occur and no "Other" row should appear.
+func TestEnrollmentByProgramTypeNoCappingAtBoundary(t *testing.T) {
+	env := SetupTestEnv(t)
+	defer env.CleanupTestEnv()
+
+	facility, err := env.CreateTestFacility("Boundary Facility")
+	require.NoError(t, err)
+
+	fourTypes := []models.ProgType{
+		models.Educational, models.Vocational, models.MentalHealth, models.Religious,
+	}
+	for i, pt := range fourTypes {
+		prog, err := env.CreateTestProgram(string(pt)+" Program", models.StateGrants,
+			[]models.ProgramType{{ProgramType: pt}}, nil, true, nil)
+		require.NoError(t, err)
+		class, err := env.CreateTestClass(prog, facility, models.Active, nil)
+		require.NoError(t, err)
+		user, err := env.CreateTestUser("boundres"+strconv.Itoa(i), models.Student, facility.ID, "")
+		require.NoError(t, err)
+		_, err = env.CreateTestEnrollment(class.ID, user.ID, models.Enrolled)
+		require.NoError(t, err)
+	}
+
+	rows := NewRequest[[]models.ProgramTypeEnrollment](env.Client, t, http.MethodGet,
+		"/api/department-metrics/programs/enrollment-by-type?facility="+strconv.Itoa(int(facility.ID)), nil).
+		WithTestClaims(&handlers.Claims{Role: models.SystemAdmin, FacilityID: facility.ID}).
+		Do().
+		ExpectStatus(http.StatusOK).
+		GetData()
+
+	require.Len(t, rows, 4)
+	for _, row := range rows {
+		require.NotEqual(t, "Other", row.ProgramType)
+	}
 }
