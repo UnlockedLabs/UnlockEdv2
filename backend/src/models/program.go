@@ -272,3 +272,11 @@ type ProgramCompletionRank struct {
 	Completed      int64   `json:"completed"`
 	CompletionRate float64 `json:"completion_rate"`
 }
+
+type SecondProgramEnrollmentRow struct {
+	FacilityName   string  `json:"facility_name"`
+	ProgramType    string  `json:"program_type"`
+	CompletedFirst int64   `json:"completed_first"`
+	EnrolledSecond int64   `json:"enrolled_second"`
+	Rate           float64 `json:"rate"`
+}

@@ -118,3 +118,128 @@ func (db *DB) GetProgramEngagementOverview(args *models.QueryContext, start, end
 
 	return overview, nil
 }
+
+func (db *DB) GetSecondProgramEnrollmentRates(args *models.QueryContext, facilityID *uint) ([]models.SecondProgramEnrollmentRow, error) {
+	type enrollmentRow struct {
+		UserID            uint
+		FacilityID        uint
+		FacilityName      string
+		ProgramID         uint
+		Status            models.ProgramEnrollmentStatus
+		EnrolledAt        *time.Time
+		EnrollmentEndedAt *time.Time
+	}
+	rows := make([]enrollmentRow, 0)
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pce").
+		Select("pce.user_id, pc.facility_id, f.name as facility_name, pc.program_id, pce.enrollment_status as status, pce.enrolled_at, pce.enrollment_ended_at").
+		Joins("JOIN program_class_cohorts pc ON pc.id = pce.cohort_id").
+		Joins("JOIN facilities f ON f.id = pc.facility_id")
+	if facilityID != nil {
+		tx = tx.Where("pc.facility_id = ?", *facilityID)
+	}
+	if err := tx.Scan(&rows).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+
+	programTypeByID, err := db.programTypeLabelsByProgramID(args)
+	if err != nil {
+		return nil, err
+	}
+
+	type userEnrollment struct {
+		facilityID   uint
+		facilityName string
+		programID    uint
+		status       models.ProgramEnrollmentStatus
+		enrolledAt   *time.Time
+		endedAt      *time.Time
+	}
+	byUser := make(map[uint][]userEnrollment)
+	for _, row := range rows {
+		byUser[row.UserID] = append(byUser[row.UserID], userEnrollment{
+			facilityID: row.FacilityID, facilityName: row.FacilityName, programID: row.ProgramID,
+			status: row.Status, enrolledAt: row.EnrolledAt, endedAt: row.EnrollmentEndedAt,
+		})
+	}
+
+	type key struct {
+		facilityName string
+		programType  string
+	}
+	completedFirst := make(map[key]int64)
+	enrolledSecond := make(map[key]int64)
+
+	for _, enrollments := range byUser {
+		// Find this user's earliest completion by EnrollmentEndedAt.
+		var first *userEnrollment
+		for i := range enrollments {
+			e := &enrollments[i]
+			if e.status != models.EnrollmentCompleted || e.endedAt == nil {
+				continue
+			}
+			if first == nil || e.endedAt.Before(*first.endedAt) {
+				first = e
+			}
+		}
+		if first == nil {
+			continue
+		}
+		k := key{facilityName: first.facilityName, programType: programTypeByID[first.programID]}
+		completedFirst[k]++
+
+		for _, e := range enrollments {
+			if e.programID == first.programID && e.status == models.EnrollmentCompleted {
+				continue // this is the "first completion" itself, not a second enrollment
+			}
+			if e.enrolledAt != nil && e.enrolledAt.After(*first.endedAt) {
+				enrolledSecond[k]++
+				break
+			}
+		}
+	}
+
+	result := make([]models.SecondProgramEnrollmentRow, 0, len(completedFirst))
+	for k, completed := range completedFirst {
+		second := enrolledSecond[k]
+		result = append(result, models.SecondProgramEnrollmentRow{
+			FacilityName:   k.facilityName,
+			ProgramType:    k.programType,
+			CompletedFirst: completed,
+			EnrolledSecond: second,
+			Rate:           float64(second) / float64(completed) * 100,
+		})
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Rate > result[j].Rate
+	})
+	return result, nil
+}
+
+// programTypeLabel returns a deterministic single label for a program that
+// may have multiple attached ProgramTypes: alphabetically first. Most
+// programs have exactly one type; this is a pragmatic tie-break, not a bug.
+func programTypeLabel(types []models.ProgramType) string {
+	if len(types) == 0 {
+		return "Other"
+	}
+	labels := make([]string, 0, len(types))
+	for _, t := range types {
+		labels = append(labels, t.ProgramType.HumanReadable())
+	}
+	sort.Strings(labels)
+	return labels[0]
+}
+
+// programTypeLabelsByProgramID returns each program's deterministic type
+// label (see programTypeLabel), keyed by program ID.
+func (db *DB) programTypeLabelsByProgramID(args *models.QueryContext) (map[uint]string, error) {
+	var programs []models.Program
+	if err := db.WithContext(args.Ctx).Preload("ProgramTypes").Find(&programs).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "programs")
+	}
+	labels := make(map[uint]string, len(programs))
+	for _, p := range programs {
+		labels[p.ID] = programTypeLabel(p.ProgramTypes)
+	}
+	return labels, nil
+}
