@@ -78,6 +78,9 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     is_canvas_event?: boolean;
     source?: string;
     canvas_timezone?: string;
+    // Set on a placeholder standing in for a provider still being fetched; it
+    // carries no times and is never rendered on the calendar.
+    loading?: boolean;
 }
 
 export interface Instructor {

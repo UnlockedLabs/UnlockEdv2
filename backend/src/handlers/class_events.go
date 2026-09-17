@@ -52,14 +52,16 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	// Merge Canvas calendar events when not filtered to a single class
+	// Merge live provider calendar events when not filtered to a single class.
+	// These are read from the cache rather than fetched here, so the calendar
+	// answers with our own events immediately; while a refresh runs the response
+	// carries a placeholder per provider instead of blocking on it.
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	if classID == 0 && claims.hasFeatureAccess(models.ProviderAccess) {
-		canvasEvents, canvasErr := srv.appendCanvasEventsForFacility(dtRng, args.FacilityID)
-		if canvasErr != nil {
-			log.warnf("failed to fetch canvas calendar events: %v", canvasErr)
-		} else {
-			events = append(events, canvasEvents...)
+		canvasEvents, loading := srv.getCanvasProviderEvents(dtRng, args.FacilityID)
+		events = append(events, canvasEvents...)
+		if loading {
+			events = append(events, srv.loadingEventPlaceholders()...)
 		}
 	}
 	return writeJsonResponse(w, http.StatusOK, events)

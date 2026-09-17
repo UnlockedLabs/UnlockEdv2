@@ -28,6 +28,8 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCanvasLoadingPoll } from '@/hooks/useCanvasLoadingPoll';
+import { Loader2 } from 'lucide-react';
 import { RescheduleEventModal } from '@/components/schedule/RescheduleEventModal';
 import { RescheduleSessionModal } from '@/components/schedule/RescheduleSessionModal';
 import { RescheduleSeriesModal } from '@/components/schedule/RescheduleSeriesModal';
@@ -209,7 +211,23 @@ export default function Schedule() {
     );
 
     const rooms = useMemo(() => roomsResp?.data ?? [], [roomsResp]);
-    const rawEvents = useMemo(() => eventsResp?.data ?? [], [eventsResp]);
+    const allRows = useMemo(() => eventsResp?.data ?? [], [eventsResp]);
+
+    // Live providers are read from a background cache, so a response can carry a
+    // placeholder per provider whose events are still being fetched. They are not
+    // real events, so they stay out of the calendar and drive an indicator instead.
+    const loadingProviders = useMemo(
+        () => allRows.filter((e) => e.loading),
+        [allRows]
+    );
+    const rawEvents = useMemo(
+        () => allRows.filter((e) => !e.loading),
+        [allRows]
+    );
+    const { exhausted: eventPollExhausted } = useCanvasLoadingPoll(
+        loadingProviders.length > 0,
+        mutate
+    );
 
     const formattedEvents = useMemo(() => {
         return rawEvents.map((event) => {
@@ -406,6 +424,15 @@ export default function Schedule() {
                             {class_id ? 'Class Schedule' : 'Schedule'}
                         </h1>
                         <p className="text-gray-600">{subtitle}</p>
+                        {loadingProviders.map((provider) => (
+                            <SyncingProviderNotice
+                                key={`syncing-${provider.id}`}
+                                sourceLabel={externalSourceLabel(
+                                    provider.source
+                                )}
+                                exhausted={eventPollExhausted}
+                            />
+                        ))}
                     </div>
                     {class_id && (
                         <label className="clickable-row">
@@ -626,6 +653,38 @@ export default function Schedule() {
                     </>
                 )}
             </div>
+        </div>
+    );
+}
+
+// Mirrors the syncing row on the classes page: one line per live provider whose
+// events have not come back yet, with a retry prompt once polling gives up.
+function SyncingProviderNotice({
+    sourceLabel,
+    exhausted
+}: {
+    sourceLabel: string;
+    exhausted: boolean;
+}) {
+    if (exhausted) {
+        return (
+            <span className="text-sm text-amber-600">
+                {sourceLabel} is taking longer than expected —{' '}
+                <button
+                    className="underline"
+                    onClick={() => window.location.reload()}
+                >
+                    refresh to retry
+                </button>
+            </span>
+        );
+    }
+    return (
+        <div className="flex items-center gap-2 mt-1">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+            <span className="text-sm text-blue-600">
+                Syncing schedule from {sourceLabel}…
+            </span>
         </div>
     );
 }
