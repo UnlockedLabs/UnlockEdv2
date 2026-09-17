@@ -103,7 +103,7 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 		logger().WithFields(fields).Error("Failed to initialize service")
 		// Without a status the caller gets 200 and an empty body, which reads as
 		// "this provider has no users" instead of "this provider is unsupported".
-		http.Error(w, "Failed to initialize provider service", http.StatusBadRequest)
+		http.Error(w, "Failed to initialize provider service", providerServiceStatus(err))
 		return
 	}
 	users, err := service.GetUsers(sh.db)
@@ -133,7 +133,7 @@ func (sh *ServiceHandler) handleAllUsers(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		fields["error"] = err.Error()
 		logger().WithFields(fields).Error("Failed to initialize service")
-		http.Error(w, "Failed to initialize service", http.StatusInternalServerError)
+		http.Error(w, "Failed to initialize service", providerServiceStatus(err))
 		return
 	}
 	canvas, ok := service.(*CanvasService)

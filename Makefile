@@ -85,7 +85,17 @@ define canvas_bootstrap
 	@set -e; \
 	docker compose $(1) up -d canvas-postgres; \
 	echo "Waiting for canvas-postgres..."; \
-	until docker compose $(1) exec -T canvas-postgres pg_isready -U canvas >/dev/null 2>&1; do sleep 2; done; \
+	attempts=0; \
+	until docker compose $(1) exec -T canvas-postgres pg_isready -U canvas >/dev/null 2>&1; do \
+		attempts=$$((attempts + 1)); \
+		if [ $$attempts -ge 60 ]; then \
+			echo "canvas-postgres did not become ready after 2 minutes."; \
+			docker compose $(1) ps; \
+			docker compose $(1) logs --tail 50 canvas-postgres; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done; \
 	if [ -z "$$(docker compose $(1) exec -T canvas-postgres psql -U canvas -d canvas -tAc "SELECT to_regclass('public.accounts')" 2>/dev/null | tr -d '[:space:]')" ]; then \
 		echo "First run: creating the Canvas database. This takes several minutes."; \
 		docker compose $(1) run --rm \

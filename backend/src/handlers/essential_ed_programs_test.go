@@ -655,16 +655,22 @@ func TestWeeklyScheduleFacilityEvents(t *testing.T) {
 	provider.ID = 2
 	courses := []liveCourse{
 		{
-			rawID: 69742, name: "College Prep I", startDt: march(1),
+			rawID: 69742, name: "College Prep I", startDt: march(1), status: models.Active,
 			weeklySchedule: map[time.Weekday][]meetingTime{time.Monday: {{540, 660}}},
 		},
-		{rawID: 69743, name: "High School Prep I", startDt: march(1)},
+		{rawID: 69743, name: "High School Prep I", startDt: march(1), status: models.Active},
+		{
+			// active=0 with no close_date: the pattern would otherwise run forever.
+			rawID: 69744, name: "Retired Class", startDt: march(1), status: models.Completed,
+			weeklySchedule: map[time.Weekday][]meetingTime{time.Monday: {{540, 660}}},
+		},
 	}
 
 	events := weeklyScheduleFacilityEvents(provider, courses, march(2), march(15), time.UTC)
 
-	assert.Len(t, events, 2, "two Mondays in the range, and no events for the class with no schedule")
+	assert.Len(t, events, 2, "two Mondays in the range; no events for the class with no schedule, none for the completed one")
 	assert.Equal(t, "College Prep I", events[0].ClassName)
+	assert.Equal(t, models.Active, events[0].ClassStatus, "the course's own status, not a hardcoded Active")
 	assert.Equal(t, "essential_ed", events[0].Source)
 	assert.True(t, events[0].IsCanvasEvent, "external events stay read-only on the calendar")
 	assert.Equal(t, encodeCanvasClassID(2, 69742), events[0].CohortID, "click-through lands on the class")
@@ -734,4 +740,97 @@ func TestEssentialEdErrorIncludesResponseBody(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "422")
 	assert.Contains(t, err.Error(), "must be an array")
+}
+
+// Essential Ed has no calendar endpoint, so the class lists build their schedule
+// string from the weekly pattern on the class record itself.
+func TestWeeklyScheduleClassEvent(t *testing.T) {
+	chicago, err := time.LoadLocation("America/Chicago")
+	assert.NoError(t, err)
+	// 2026-03-04 is a Wednesday; the Monday that follows is 2026-03-09.
+	now := time.Date(2026, time.March, 4, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		schedule map[time.Weekday][]meetingTime
+		loc      *time.Location
+		wantOK   bool
+		wantRule string
+		wantDur  string
+	}{
+		{
+			name: "every scheduled weekday lands in BYDAY, in week order",
+			schedule: map[time.Weekday][]meetingTime{
+				time.Wednesday: {{600, 690}},
+				time.Monday:    {{540, 660}},
+			},
+			loc:      time.UTC,
+			wantOK:   true,
+			wantRule: "DTSTART:20260309T090000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE",
+			wantDur:  "2h0m0s",
+		},
+		{
+			name:     "the pattern's wall clock is anchored in the facility's zone",
+			schedule: map[time.Weekday][]meetingTime{time.Monday: {{540, 660}}},
+			loc:      chicago,
+			wantOK:   true,
+			// 09:00 on 2026-03-09 is CDT, so 14:00Z -- DST began the day before.
+			wantRule: "DTSTART:20260309T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO",
+			wantDur:  "2h0m0s",
+		},
+		{
+			name:     "a class with no pattern reports no schedule",
+			schedule: nil,
+			loc:      time.UTC,
+			wantOK:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			course := liveCourse{rawID: 69742, name: "College Prep I", weeklySchedule: tt.schedule}
+			ev, ok := weeklyScheduleClassEvent(course, tt.loc, now)
+			assert.Equal(t, tt.wantOK, ok)
+			if !tt.wantOK {
+				return
+			}
+			assert.Equal(t, tt.wantRule, ev.RecurrenceRule)
+			assert.Equal(t, tt.wantDur, ev.Duration)
+		})
+	}
+}
+
+// A resident's My Programs rows take the provider's own class status, not just
+// the end date: Essential Ed marks a class finished with active=0 and frequently
+// leaves close_date null.
+func TestFetchLiveCoursesForUserHonoursProviderStatus(t *testing.T) {
+	tests := []struct {
+		name      string
+		active    float64
+		closeDate interface{}
+		want      models.ProgramEnrollmentStatus
+	}{
+		{"active with no close date stays enrolled", 1, nil, models.Enrolled},
+		{"inactive with no close date completes", 0, nil, models.EnrollmentCompleted},
+		{"an elapsed close date still completes", 1, "2026-02-01 00:00:00", models.EnrollmentCompleted},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			classes := []map[string]interface{}{
+				{
+					"id": float64(69742), "active": tt.active, "name": "College Prep I",
+					"open_date": "2026-01-31 00:00:00", "close_date": tt.closeDate,
+					"students": []interface{}{map[string]interface{}{"id": float64(4329946)}},
+				},
+			}
+			srv, provider, done := essentialEdServer(t, func(w http.ResponseWriter, r *http.Request) {
+				_ = json.NewEncoder(w).Encode(envelope(classes, true))
+			})
+			defer done()
+
+			rows := srv.fetchLiveCoursesForUser(provider, "4329946")
+			assert.Len(t, rows, 1)
+			assert.Equal(t, tt.want, rows[0].EnrollmentStatus)
+		})
+	}
 }

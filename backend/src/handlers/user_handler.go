@@ -615,6 +615,11 @@ func (srv *Server) fetchLiveCoursesForUser(provider *models.ProviderPlatform, ex
 				enrollment = models.EnrollmentCompleted
 			}
 		}
+		// A provider can mark a class finished without giving it an end date --
+		// Essential Ed does exactly that when active is 0 -- so the status wins.
+		if course.status == models.Completed {
+			enrollment = models.EnrollmentCompleted
+		}
 		startDate := ""
 		if !course.startDt.IsZero() {
 			startDate = course.startDt.Format(time.RFC3339)

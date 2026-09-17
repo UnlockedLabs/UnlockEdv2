@@ -110,13 +110,16 @@ If this does not work because your directory is named something different, you c
   - `make canvas-init` and `make canvas-seed` are still available for doing either step by hand --
     re-seeding, or re-creating the database after `docker compose ... down --volumes`.
 
-  To connect UnlockEd to it, log in to Canvas at `localhost:3001` as that admin,
-  go to Account -> Settings -> New Access Token, and copy the token. Then in
-  UnlockEd, enable the `provider_platforms` feature flag for your facility (every Canvas call is
-  gated on it) and edit the seeded `Canvas` provider platform, pasting the token you just copied
-  into `access_key`.
+  To connect UnlockEd to it, first run `make seed` if you have not already. `make canvas` seeds
+  only the Canvas LMS database, so on a fresh UnlockEd database the `Canvas` provider platform the
+  next step asks you to edit does not exist yet.
 
-  That is the only field you need to fill in. `make seed` already points the platform at the local
+  Then log in to Canvas at `localhost:3001` as that admin, go to Account -> Settings ->
+  New Access Token, and copy the token. Back in UnlockEd, enable the `provider_platforms` feature
+  flag for your facility (every Canvas call is gated on it) and edit the seeded `Canvas` provider
+  platform, pasting the token you just copied into `access_key`.
+
+  That is the only field you need to fill in. `make seed` points the platform at the local
   Canvas (`base_url` `http://canvas`, `account_id` `1`) and leaves it enabled; the access key is
   the one value that can't be seeded, since you mint it per machine.
 

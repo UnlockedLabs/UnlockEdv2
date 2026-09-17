@@ -4,10 +4,15 @@ DAY      = 24 * 60 * 60
 account  = Account.default
 now      = Time.now.utc
 
+# Re-raise after logging. A swallowed failure here is not recoverable: enroll
+# drops a nil section silently, and its idempotency check keys on (user, type),
+# so a later re-run finds the enrollment already present and never repairs it.
+# Better to fail the whole seed than to hand over an instance that looks fine.
 def step(label)
   yield
 rescue => e
-  puts "  !! skipped #{label}: #{e.class}: #{e.message}"
+  puts "  !! FAILED #{label}: #{e.class}: #{e.message}"
+  raise
 end
 
 def find_or_create_user(name, email, account, password)

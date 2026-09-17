@@ -101,13 +101,32 @@ func (srv *Server) warmCanvasClassCache(facilityID *uint, cacheKey string, previ
 		}
 		if err != nil {
 			log.WithError(err).Warn("warmCanvasClassCache: failed to fetch provider classes")
-			// Clear the loading marker so the next request retries rather than
-			// polling a marker that will never resolve.
-			srv.putCanvasClasses(cacheKey, CachedCanvasClasses{Classes: previous, LastUpdated: time.Now(), Loading: false})
+			// Clear the loading marker, and date the entry so the next request
+			// refreshes it. Writing time.Now() here would serve this failed result
+			// as fresh for a full TTL instead.
+			srv.restoreCanvasClasses(cacheKey, previous)
 			return
 		}
 		srv.putCanvasClasses(cacheKey, CachedCanvasClasses{Classes: classes, LastUpdated: time.Now(), Loading: false})
 	}()
+}
+
+// restoreCanvasClasses puts a failed refresh back into a retryable state: the
+// stale listing it was replacing, dated so the next request refreshes it, or no
+// entry at all when there is nothing worth serving.
+func (srv *Server) restoreCanvasClasses(cacheKey string, previous []models.ProgramClassCohort) {
+	if previous == nil {
+		if kv := srv.buckets[CanvasClasses]; kv != nil {
+			if err := kv.Delete(cacheKey); err != nil {
+				log.WithError(err).Warnf("restoreCanvasClasses: failed to clear loading marker at %s", cacheKey)
+			}
+		}
+		return
+	}
+	srv.putCanvasClasses(cacheKey, CachedCanvasClasses{
+		Classes:     previous,
+		LastUpdated: retryableCacheTimestamp(canvasClassCacheTTL),
+	})
 }
 
 func (srv *Server) putCanvasClasses(cacheKey string, cached CachedCanvasClasses) {

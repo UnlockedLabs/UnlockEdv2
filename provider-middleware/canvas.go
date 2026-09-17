@@ -430,15 +430,24 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping 
 	}
 	for _, submission := range submissions {
 		externalUserID := fmt.Sprintf("%d", int(submission["user_id"].(float64)))
+		// The submissions endpoint does not honour the user filter we send, so it
+		// returns users we have no mapping for. Writing those gives UserID 0, which
+		// the users foreign key rejects -- skip them rather than log a failure per
+		// submission and then try the grade write for the same phantom user.
+		userID, mapped := reversed[externalUserID]
+		if !mapped {
+			log.WithFields(fields).Debugf("no user mapping for external user %s, skipping submission", externalUserID)
+			continue
+		}
 		milestone := models.Milestone{
-			UserID:      reversed[externalUserID],
+			UserID:      userID,
 			ExternalID:  fmt.Sprintf("%d", int(submission["id"].(float64))),
 			CourseID:    courseId,
 			Type:        "assignment_submission",
 			IsCompleted: submission["workflow_state"] == "complete" || submission["workflow_state"] == "graded",
 		}
-		if db.Create(&milestone).Error != nil {
-			log.Errorln("failed to create milestone in GetMilestonesForCourseUser: ", err)
+		if createErr := db.Create(&milestone).Error; createErr != nil {
+			log.WithFields(fields).Errorln("failed to create assignment_submission milestone: ", createErr)
 		}
 		_, ok := submission["grade"].(string)
 		if !ok {
@@ -449,13 +458,13 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping 
 			anonId := submission["anonymous_id"].(string)
 			gradeReceived := models.Milestone{
 				CourseID:    uint(courseId),
-				UserID:      uint(reversed[externalUserID]),
+				UserID:      userID,
 				ExternalID:  anonId,
 				Type:        "grade_received",
 				IsCompleted: true,
 			}
-			if db.Create(&gradeReceived).Error != nil {
-				log.WithFields(fields).Errorln("failed to create grade_received milestone: ", err)
+			if createErr := db.Create(&gradeReceived).Error; createErr != nil {
+				log.WithFields(fields).Errorln("failed to create grade_received milestone: ", createErr)
 				continue
 			}
 		}
