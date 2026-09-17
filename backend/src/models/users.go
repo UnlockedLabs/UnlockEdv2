@@ -57,7 +57,7 @@ type Role struct {
 
 type User struct {
 	DatabaseFields
-	Username      string     `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
+	Username      string     `gorm:"size:255;not null;unique" json:"username" validate:"alphanumperiod"`
 	NameFirst     string     `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
 	Email         string     `gorm:"size:255;not null;unique" json:"email" validate:"-"`
 	NameLast      string     `gorm:"size:255;not null" json:"name_last"  validate:"alphanumspace"`
