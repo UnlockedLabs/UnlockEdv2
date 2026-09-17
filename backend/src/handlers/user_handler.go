@@ -422,15 +422,34 @@ func canDeleteUser(currentUser *Claims, toDelete models.UserRole) bool {
 	}
 }
 
+func isUsernameChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsNumber(r)
+}
+
+func isNameChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-'
+}
+
+// validateUser returns a message naming the offending field and the exact
+// character that broke it, or "" when the user is valid. The message is shown
+// to the user verbatim in a toast, so it has to say what to fix (ID-848).
 func validateUser(user *models.User) string {
-	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsNumber(r) }) {
-		return "alphanum"
-	} else if strings.ContainsFunc(user.NameFirst, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '-' }) {
-		return "alphanum"
-	} else if strings.ContainsFunc(user.NameLast, func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '-'
-	}) {
-		return "alphanum"
+	fields := []struct {
+		label     string
+		value     string
+		isAllowed func(rune) bool
+		allowed   string
+	}{
+		{"Username", user.Username, isUsernameChar, "letters and numbers"},
+		{"First name", user.NameFirst, isNameChar, "letters, spaces, and hyphens"},
+		{"Last name", user.NameLast, isNameChar, "letters, spaces, and hyphens"},
+	}
+	for _, field := range fields {
+		for _, char := range field.value {
+			if !field.isAllowed(char) {
+				return fmt.Sprintf("%s cannot contain %q, please use only %s", field.label, string(char), field.allowed)
+			}
+		}
 	}
 	return ""
 }
